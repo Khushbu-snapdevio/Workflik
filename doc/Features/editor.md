@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Notelian editor is block-based — every piece of content is a discrete block that can be moved, transformed, nested, and styled independently. The editor is powered by **TipTap** (built on ProseMirror) and is the core interaction surface across all pages and database entries.
+The WorkFlik editor is block-based — every piece of content is a discrete block that can be moved, transformed, nested, and styled independently. The editor is powered by **TipTap** (built on ProseMirror) and is the core interaction surface across all pages and database entries.
 
 **Core principle:** A block can be anything. Paragraphs, headings, checkboxes, images, code, databases — all are blocks and behave consistently everywhere in the product.
 

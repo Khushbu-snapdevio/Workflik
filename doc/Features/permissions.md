@@ -2,7 +2,7 @@
 
 ## Overview
 
-Access control in Notelian operates at two levels: **workspace roles** (what a member can do across the entire workspace) and **page-level permissions** (what they can do on a specific page). These two layers combine to give precise control without complexity.
+Access control in WorkFlik operates at two levels: **workspace roles** (what a member can do across the entire workspace) and **page-level permissions** (what they can do on a specific page). These two layers combine to give precise control without complexity.
 
 ---
 
@@ -93,7 +93,7 @@ Any page can be set to **Private** — visible only to its creator and explicitl
 - Private pages do **not appear** in the sidebar for other members (including Admins)
 - Private pages are **not returned** in workspace-wide search results — **including for Admins** (intentional privacy guarantee)
 - A lock icon (🔒) appears next to private pages in the sidebar for their owner
-- The Notelian platform team (Platform Admins) can view a list of private page **titles only** (not content) via **Orbit Admin** for compliance purposes — this is **not** available to workspace Admins
+- The WorkFlik platform team (Platform Admins) can view a list of private page **titles only** (not content) via **Orbit Admin** for compliance purposes — this is **not** available to workspace Admins
 
 ---
 
@@ -129,7 +129,7 @@ Accessible from:
 
 ## Public Link Sharing
 
-Share a page with anyone on the internet — no Notelian account required.
+Share a page with anyone on the internet — no WorkFlik account required.
 
 ### How it works
 
@@ -146,7 +146,7 @@ Share a page with anyone on the internet — no Notelian account required.
 - **Subpages:** Not automatically public — each subpage requires its own public link
 - **Disabling:** Toggle off immediately revokes access. The old URL stops working.
 - **Re-enabling:** A new unique URL is generated (the old URL is permanently invalidated). The new token is a cryptographically random string — use `nanoid(21)` (URL-safe, 21 chars ≈ 126 bits of entropy). The token is stored directly in `public_links.token` (plain, not hashed — it is long enough to resist brute force, and leaking the DB grants no additional access beyond what the token itself would).
-- **Non-public subpage links:** If a visitor on a public page clicks a link to a subpage that has no public link enabled, they are shown a `"This page is not publicly available"` screen with a `"Sign in to Notelian"` button. It is never a 404 — the page exists, it is simply not shared publicly.
+- **Non-public subpage links:** If a visitor on a public page clicks a link to a subpage that has no public link enabled, they are shown a `"This page is not publicly available"` screen with a `"Sign in to WorkFlik"` button. It is never a 404 — the page exists, it is simply not shared publicly.
 
 | Public access level | Can read | Can comment | Can edit |
 |---------------------|---------|------------|---------|
@@ -172,7 +172,7 @@ The invitation link expires in **7 days**. If not accepted, the inviting user mu
 
 1. An email is sent with a link: `GET /invite/guest/:token`
 2. The server looks up the `guest_invitations` row by `token`; rejects if `expires_at` is in the past or `accepted_at` is already set.
-3. If the guest has no Notelian account, they complete a magic-link sign-in with their invited email (auto-creates the account).
+3. If the guest has no WorkFlik account, they complete a magic-link sign-in with their invited email (auto-creates the account).
 4. Once authenticated, the server creates (or upserts) a `page_permissions` row: `(page_id, user_id, access_level)` matching the invitation.
 5. Sets `guest_invitations.accepted_at = now()`.
 6. Redirects the guest to the shared page directly — no workspace sidebar, no onboarding wizard (per [onboarding.md](onboarding.md) business rule 4).
@@ -194,7 +194,7 @@ Remove the guest from the page's permission list. Access is revoked immediately.
 
 ## Orbit Admin — Platform Access
 
-Beyond workspace-level permissions, the Notelian platform team uses **Orbit Admin** for cross-workspace operations. These capabilities are not available to any end user, including workspace Admins.
+Beyond workspace-level permissions, the WorkFlik platform team uses **Orbit Admin** for cross-workspace operations. These capabilities are not available to any end user, including workspace Admins.
 
 | Action | Purpose |
 |--------|---------|

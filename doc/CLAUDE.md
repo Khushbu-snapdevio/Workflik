@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) and human contributo
 
 ## Project Overview
 
-Notelian is an opinionated team workspace — "Notion's core, pre-assembled" — for small teams (3–15 people). Everything is a **block**; pages nest unlimitedly; databases are pages where each entry is itself a page. The product surface is described in [README.md](README.md) and one spec per feature under [Features/](Features/).
+WorkFlik is an opinionated team workspace — "Notion's core, pre-assembled" — for small teams (3–15 people). Everything is a **block**; pages nest unlimitedly; databases are pages where each entry is itself a page. The product surface is described in [README.md](README.md) and one spec per feature under [Features/](Features/).
 
 **Status: pre-development.** No application code exists yet — this repository is currently the full design + schema + architecture spec. The docs are the source of truth that the first implementation must follow. When code lands, keep these docs current (see Rule 1).
 
@@ -30,7 +30,7 @@ Next.js (App Router, React, TypeScript strict) · Tailwind CSS · Radix UI (acce
 
 ## Architecture
 
-Notelian runs as **two processes sharing one PostgreSQL database + codebase**: **Next.js** (web UI + API routes + server actions + SSE) and a **pg-boss worker** (`worker/`, background jobs — email, digests, search reindex, trash purge, exports). **All slow, retryable, or scheduled work goes through the worker via a pg-boss job — never inline in a Next.js request.** This is a critical invariant (Rule 2).
+WorkFlik runs as **two processes sharing one PostgreSQL database + codebase**: **Next.js** (web UI + API routes + server actions + SSE) and a **pg-boss worker** (`worker/`, background jobs — email, digests, search reindex, trash purge, exports). **All slow, retryable, or scheduled work goes through the worker via a pg-boss job — never inline in a Next.js request.** This is a critical invariant (Rule 2).
 
 Detailed per-subsystem docs live under [docs/architecture/](docs/architecture/) (index: [docs/architecture/README.md](docs/architecture/README.md)). **Read the relevant file before working in that subsystem** — the list below is only a map.
 
@@ -67,7 +67,7 @@ Behavioral guidelines (bias toward correctness over speed; use judgment on trivi
 
 ## Rules
 
-These are derived from Notelian's [Phase-1 architecture decisions](README.md#phase-1-architecture-decisions) and schema invariants. They are **hard to change after data exists** — follow them from the first commit.
+These are derived from WorkFlik's [Phase-1 architecture decisions](README.md#phase-1-architecture-decisions) and schema invariants. They are **hard to change after data exists** — follow them from the first commit.
 
 1. **Keep the docs current.** When you add a feature, change architecture, add a rule/convention, change setup, or alter the schema, update CLAUDE.md (the lean index) **and** the detailed doc: the relevant `docs/architecture/*` file, [DATABASE-PLAN.md](DATABASE-PLAN.md), or the matching `Features/*.md` spec. Add a pointer in the Architecture map for any new subsystem doc.
 2. **Never do slow/IO/scheduled work inline in a Next.js route** — enqueue a pg-boss job and handle it in the worker. The only real-time exception is the SSE notification stream.

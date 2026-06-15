@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comments and mentions are Notelian's in-context collaboration layer. Comments can be attached to specific blocks, anchored to selected text ranges, or placed at the bottom of a page as general feedback. Mentions connect people, pages, and dates directly inside content.
+Comments and mentions are WorkFlik's in-context collaboration layer. Comments can be attached to specific blocks, anchored to selected text ranges, or placed at the bottom of a page as general feedback. Mentions connect people, pages, and dates directly inside content.
 
 ---
 

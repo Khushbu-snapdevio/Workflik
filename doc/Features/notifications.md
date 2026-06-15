@@ -2,7 +2,7 @@
 
 ## Overview
 
-Notifications keep users informed about activity that involves them — @mentions, replies to their comments, and changes to pages they care about. Notelian delivers notifications in-app in real time and via email on a configurable schedule.
+Notifications keep users informed about activity that involves them — @mentions, replies to their comments, and changes to pages they care about. WorkFlik delivers notifications in-app in real time and via email on a configurable schedule.
 
 **Powered by:** pg-boss (PostgreSQL-backed job queue) for delivery and scheduling; **Server-Sent Events (SSE)** for real-time in-app push — no Redis or separate message broker needed.
 
@@ -151,7 +151,7 @@ Real-time delivery via **Server-Sent Events (SSE)** while the user is active. If
 ### Daily / Weekly Digest Format
 
 ```
-Subject: Your Notelian activity for Wednesday, Jun 4
+Subject: Your WorkFlik activity for Wednesday, Jun 4
 
 == Meeting Notes (Engineering) ==
   → Sarah: "@You can you review before Friday?"

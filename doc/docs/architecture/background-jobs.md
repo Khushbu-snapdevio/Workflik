@@ -1,6 +1,6 @@
 # Background Jobs & Queues
 
-Notelian runs all asynchronous work through **pg-boss**, a job queue that lives
+WorkFlik runs all asynchronous work through **pg-boss**, a job queue that lives
 inside the same PostgreSQL database as the application data. There is no Redis
 and no separate message broker — one database is the single source of truth for
 both app state and the queue.
@@ -31,7 +31,7 @@ worker process does the slow part.
 
 ## Two-process model
 
-Notelian runs as **two processes against one database** (see
+WorkFlik runs as **two processes against one database** (see
 [backend-overview.md](backend-overview.md) for the full picture):
 
 | Process | Command | Responsibility |
@@ -167,7 +167,7 @@ job, so this catalog reflects code rather than drifting from it.
 
 pg-boss guarantees **at-least-once** delivery, not exactly-once. A job can run
 twice (retry after a worker crash, a duplicate enqueue). Every handler must be
-safe to run more than once. The patterns Notelian uses:
+safe to run more than once. The patterns WorkFlik uses:
 
 1. **Atomic status transition** — flip a status-bearing row and act only if the
    flip succeeded (`UPDATE … WHERE status = 'queued' RETURNING id` → 0 rows means

@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Orbit Admin** is Notelian's internal operations dashboard — an exclusive tool for the platform team to manage users, workspaces, and platform health. It is **not accessible to any end user**, including workspace Admins. All capabilities here exist at the platform layer, separate from in-product workspace Admin features.
+**Orbit Admin** is WorkFlik's internal operations dashboard — an exclusive tool for the platform team to manage users, workspaces, and platform health. It is **not accessible to any end user**, including workspace Admins. All capabilities here exist at the platform layer, separate from in-product workspace Admin features.
 
 **Powered by:** Better Auth Admin Plugin + custom Orbit Admin interface.
 
@@ -60,7 +60,7 @@
 
 ## Template Management (`/orbit/templates`)
 
-Built-in template content is authored and managed here by the Notelian team. End users and workspace Admins have no access. See the [Templates](./templates.md) document for the full specification.
+Built-in template content is authored and managed here by the WorkFlik team. End users and workspace Admins have no access. See the [Templates](./templates.md) document for the full specification.
 
 **Summary of capabilities:**
 

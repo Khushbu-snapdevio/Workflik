@@ -1,6 +1,6 @@
 # Backend Architecture & Reusable Pieces
 
-How Notelian is put together at the process, route, and module level — and the
+How WorkFlik is put together at the process, route, and module level — and the
 reusable **pieces** the whole product is assembled from. Read this before working
 in `app/`, `lib/`, or `components/`.
 
@@ -8,7 +8,7 @@ in `app/`, `lib/`, or `components/`.
 
 ## Two-process model
 
-Notelian runs as **two processes against one PostgreSQL database**:
+WorkFlik runs as **two processes against one PostgreSQL database**:
 
 | Process | Entry point | Does | Never does |
 | --- | --- | --- | --- |

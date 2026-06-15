@@ -1,4 +1,4 @@
-# Notelian — Getting Started & Project Blueprint
+# WorkFlik — Getting Started & Project Blueprint
 
 > **One-file reference.** Everything you need to start development: the full project inventory (every feature and every option included), the complete tech stack, all required credentials, and the local setup steps.
 >
@@ -6,7 +6,7 @@
 
 ---
 
-## 0. What Notelian Is
+## 0. What WorkFlik Is
 
 A Notion-style all-in-one workspace: notes, documents, databases, and project management in one place. **Everything is a block**, and **every database entry is itself a full page**.
 
@@ -80,7 +80,7 @@ Copy `.env.example` → `.env.local` and fill these in.
 
 ```bash
 # --- Database ---
-DATABASE_URL=postgresql://user:password@localhost:5432/notelian
+DATABASE_URL=postgresql://user:password@localhost:5432/workflik
 
 # --- Auth (Better Auth) ---
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
@@ -88,14 +88,14 @@ BETTER_AUTH_URL=http://localhost:3000      # base URL Better Auth builds magic-l
 
 # --- File Storage (S3-compatible) ---
 S3_ENDPOINT=                            # leave blank for the region's default S3 endpoint; set a full URL for a custom S3-compatible endpoint
-S3_BUCKET=notelian-uploads
+S3_BUCKET=workflik-uploads
 S3_REGION=us-east-1                      # use `auto` if your S3-compatible provider requires it
 S3_ACCESS_KEY_ID=<access key id>
 S3_SECRET_ACCESS_KEY=<secret access key>
-CDN_URL=https://cdn.notelian.app        # CDN base URL in front of the bucket
+CDN_URL=https://cdn.workflik.app        # CDN base URL in front of the bucket
 
 # --- Email (Nodemailer / SMTP) ---
-EMAIL_FROM=noreply@notelian.app
+EMAIL_FROM=noreply@workflik.app
 SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587                            # 587 = STARTTLS, 465 = TLS
 SMTP_USER=<smtp username>
@@ -288,7 +288,7 @@ MAXMIND_LICENSE_KEY=<optional — session-list geolocation>
   - `PUT {uploadUrl}` → upload bytes straight to the bucket
   - `POST /api/uploads/confirm` → verify object exists, record usage, return `fileUrl`
   - File deletion is **always async via pg-boss** — block deletes never delete the file synchronously (preserves undo + 7-day Version History; orphaned-media cleanup job removes the file once no live block or version references it)
-- Public URL pattern: `https://cdn.notelian.app/{objectKey}` (stable, never changes)
+- Public URL pattern: `https://cdn.workflik.app/{objectKey}` (stable, never changes)
 
 **Per-type size limits:**
 
@@ -343,7 +343,7 @@ Admin:          platform_audit_log
 ## 7. Repository Structure
 
 ```
-notelian/
+workflik/
 ├── app/                        # Next.js App Router
 │   ├── (auth)/                 # Sign in / sign up (magic link), magic-link verify
 │   ├── (app)/[workspace]/      # Main workspace UI
@@ -546,4 +546,4 @@ Real-time multiplayer (P2) · public REST API & webhooks (P3) · SSO/SAML (P3) �
 
 ---
 
-*Single-file development reference for Notelian. Last updated: 2026-06-11.*
+*Single-file development reference for WorkFlik. Last updated: 2026-06-11.*

@@ -2,7 +2,7 @@
 
 ## Overview
 
-A database in Notelian is a structured collection where each entry is a full page. Databases bring spreadsheet-style organization directly into the page-and-block world — without leaving the document experience. The same database can be displayed in multiple views (Table, Board, Calendar, Gallery) and the user switches between them without any data loss.
+A database in WorkFlik is a structured collection where each entry is a full page. Databases bring spreadsheet-style organization directly into the page-and-block world — without leaving the document experience. The same database can be displayed in multiple views (Table, Board, Calendar, Gallery) and the user switches between them without any data loss.
 
 ---
 

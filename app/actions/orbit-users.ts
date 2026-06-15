@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { ADMIN_ROLE, USER_ROLE } from "@/config/platform";
-import { user } from "@/db/schema";
+import { user } from "@/lib/db/schema";
 import { audit } from "@/lib/audit";
 import { requireAdmin } from "@/lib/authz";
 import { db } from "@/lib/db";

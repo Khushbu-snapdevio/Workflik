@@ -1,4 +1,4 @@
-import { auditLogs } from "@/db/schema";
+import { auditLogs } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 
 export interface AuditInput {

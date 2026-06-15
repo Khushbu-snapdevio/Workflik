@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { emailEvents } from "@/db/schema";
+import { emailEvents } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 

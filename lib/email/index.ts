@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { emailOutbox } from "@/db/schema";
+import { emailOutbox } from "@/lib/db/schema";
 import { db } from "@/lib/db";
-import { enqueueJob } from "@/lib/worker/enqueue";
-import { JOB_NAMES } from "@/lib/worker/job-types";
+import { enqueueJob } from "@/lib/jobs/enqueue";
+import { JOB_NAMES } from "@/lib/jobs/job-names";
 
 export interface SendEmailOptions {
   html: string;

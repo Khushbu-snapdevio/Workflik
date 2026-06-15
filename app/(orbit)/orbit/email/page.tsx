@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { emailEvents, emailOutbox } from "@/db/schema";
+import { emailEvents, emailOutbox } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/utils";
 

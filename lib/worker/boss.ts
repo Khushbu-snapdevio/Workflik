@@ -1,72 +1,75 @@
-import { PgBoss } from "pg-boss";
+import { type Job, PgBoss } from "pg-boss";
 import { env } from "@/lib/env";
+import { normalizePgConnectionString } from "@/lib/pg-connection";
+import { sleep } from "@/lib/utils";
 import { ensureJobQueues } from "@/lib/worker/ensure-queues";
 import { JOB_NAMES } from "@/lib/worker/job-types";
 
-export const boss = new PgBoss(env.DATABASE_URL);
+const boss = new PgBoss({
+  connectionString: normalizePgConnectionString(env.DATABASE_URL),
+});
 
-let initialized = false;
+export { boss };
 
-async function initializeBoss(): Promise<void> {
-  if (initialized) return;
-
-  boss.on("error", (error) => {
-    console.error("[worker] pg-boss error", error);
-  });
-
-  await ensureJobQueues(boss);
-  initialized = true;
+function work<T>(name: string, handler: (jobs: Job<T>[]) => Promise<void>) {
+  return boss.work<T>(name, { includeMetadata: true }, handler);
 }
 
-async function startBossWithRetry(maxRetries = 10): Promise<void> {
+async function startBossWithRetry(maxRetries = 10) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await boss.start();
       console.log("[worker] pg-boss started");
       return;
-    } catch (err) {
-      console.error(
-        `[worker] pg-boss start failed (attempt ${attempt}/${maxRetries}):`,
-        err instanceof Error ? err.message : err
-      );
+    } catch (error) {
       if (attempt === maxRetries) {
-        throw new Error(`pg-boss failed to start after ${maxRetries} attempts`);
+        throw error;
       }
       const delay = Math.min(2000 * 2 ** (attempt - 1), 30_000);
-      console.log(`[worker] retrying in ${delay / 1000}s...`);
-      await new Promise((r) => setTimeout(r, delay));
+      console.error(
+        `[worker] pg-boss start failed (${attempt}/${maxRetries}); retrying in ${
+          delay / 1000
+        }s`,
+        error
+      );
+      await sleep(delay);
     }
   }
 }
 
-export async function startWorker(): Promise<void> {
+export async function startWorker() {
+  boss.on("error", (error) => {
+    console.error("[worker] pg-boss error", error);
+  });
+
   await startBossWithRetry();
-  await initializeBoss();
+  await ensureJobQueues(boss);
 
-  const { handleSendEmail } = await import("@/lib/worker/handlers/send-email");
+  const { handleEmailSend } = await import("@/lib/worker/handlers/email-send");
+  const { handleEmailOutboxReap } = await import(
+    "@/lib/worker/handlers/email-outbox-reap"
+  );
+  const { handleEmailEventsPrune } = await import(
+    "@/lib/worker/handlers/email-events-prune"
+  );
+  const { handleScaffoldHealthcheck } = await import(
+    "@/lib/worker/handlers/scaffold-healthcheck"
+  );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await boss.work(JOB_NAMES.SEND_EMAIL, { includeMetadata: true }, handleSendEmail as any);
+  await Promise.all([
+    work(JOB_NAMES.EMAIL_SEND, handleEmailSend),
+    work(JOB_NAMES.EMAIL_OUTBOX_REAP, handleEmailOutboxReap),
+    work(JOB_NAMES.EMAIL_EVENTS_PRUNE, handleEmailEventsPrune),
+    work(JOB_NAMES.SCAFFOLD_HEALTHCHECK, handleScaffoldHealthcheck),
+  ]);
 
-  // ── Recurring cron schedules ──────────────────────────────────────────────
-  // Add cron jobs here as your app grows, e.g.:
-  // await boss.schedule(JOB_NAMES.REPORT_GENERATE, "0 9 * * 1"); // Mondays 09:00
+  await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP, "*/15 * * * *", {});
+  await boss.schedule(JOB_NAMES.EMAIL_EVENTS_PRUNE, "17 3 * * *", {});
+  await boss.schedule(JOB_NAMES.SCAFFOLD_HEALTHCHECK, "*/10 * * * *", {});
 
-  console.log("[worker] all handlers registered");
+  console.log("[worker] handlers registered");
 }
 
-const SHUTDOWN_TIMEOUT_MS = 30 * 1000;
-
-export async function stopWorker(timeoutMs = SHUTDOWN_TIMEOUT_MS): Promise<void> {
-  console.log(`[worker] shutting down (graceful, timeout=${timeoutMs / 1000}s)...`);
-  await boss.stop({ graceful: true, timeout: timeoutMs, close: true });
-  console.log("[worker] stopped");
-}
-
-export async function enqueue<T extends object>(
-  jobName: string,
-  data: T,
-  options?: Parameters<typeof boss.send>[2]
-): Promise<string | null> {
-  return boss.send(jobName, data, options);
+export async function stopWorker() {
+  await boss.stop({ graceful: true });
 }

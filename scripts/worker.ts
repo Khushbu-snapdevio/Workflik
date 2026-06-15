@@ -1,43 +1,32 @@
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
 
-if (existsSync(".env.local")) {
-  process.loadEnvFile(".env.local");
-} else if (existsSync(".env")) {
-  process.loadEnvFile(".env");
+if (existsSync(".env")) {
+  process.loadEnvFile();
 }
 
 async function main() {
-  // Validate env vars before starting — fail fast on missing config
   await import("@/lib/env");
-
   const { startWorker, stopWorker } = await import("@/lib/worker/boss");
 
-  console.log("Starting background worker...");
+  console.log("Starting KROVA background worker...");
   await startWorker();
 
   let shuttingDown = false;
-  const shutdown = async (signal: string) => {
+  async function shutdown(signal: string) {
     if (shuttingDown) {
-      console.log(`[worker] received ${signal} again, already draining — ignoring`);
       return;
     }
     shuttingDown = true;
-    console.log(`[worker] received ${signal} — draining in-flight jobs`);
-    try {
-      await stopWorker();
-      console.log("[worker] graceful shutdown complete");
-      process.exit(0);
-    } catch (err) {
-      console.error("[worker] graceful shutdown failed:", err);
-      process.exit(1);
-    }
-  };
+    console.log(`[worker] received ${signal}; draining jobs`);
+    await stopWorker();
+    process.exit(0);
+  }
 
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on("SIGINT", () => void shutdown("SIGINT"));
 }
 
-main().catch((err) => {
-  console.error("Worker failed to start:", err);
+main().catch((error) => {
+  console.error("Worker failed to start:", error);
   process.exit(1);
 });

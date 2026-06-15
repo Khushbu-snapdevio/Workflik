@@ -1,21 +1,19 @@
-// Single source of truth for every queue name. Add new entries here first;
-// ensure-queues.ts will fail to compile until a matching QUEUE_OPTIONS entry
-// exists (the Record<JobName, …> is exhaustive by design).
-
 export const JOB_NAMES = {
-  // Email
-  SEND_EMAIL: "send-email",
-
-  // Add your jobs here, e.g.:
-  // USER_WELCOME:    "user.welcome",
-  // REPORT_GENERATE: "report.generate",
+  EMAIL_EVENTS_PRUNE: "email.events-prune",
+  EMAIL_OUTBOX_REAP: "email.outbox-reap",
+  EMAIL_SEND: "email.send",
+  SCAFFOLD_HEALTHCHECK: "scaffold.healthcheck",
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];
 
-export type SendEmailPayload = {
-  to: string;
-  subject: string;
-  html: string;
-  text?: string;
+export interface EmailSendPayload {
+  outboxId: string;
+}
+
+export type JobPayloads = {
+  [JOB_NAMES.EMAIL_EVENTS_PRUNE]: Record<string, never>;
+  [JOB_NAMES.EMAIL_OUTBOX_REAP]: Record<string, never>;
+  [JOB_NAMES.EMAIL_SEND]: EmailSendPayload;
+  [JOB_NAMES.SCAFFOLD_HEALTHCHECK]: Record<string, never>;
 };

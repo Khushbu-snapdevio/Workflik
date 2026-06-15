@@ -2,7 +2,7 @@
 
 ## Overview
 
-The sidebar is the primary navigation structure in Notelian. It gives users instant access to their pages, workspaces, search, and settings. The sidebar is always present on desktop and collapses to a peek or fully hidden mode when not needed.
+The sidebar is the primary navigation structure in WorkFlik. It gives users instant access to their pages, workspaces, search, and settings. The sidebar is always present on desktop and collapses to a peek or fully hidden mode when not needed.
 
 ---
 

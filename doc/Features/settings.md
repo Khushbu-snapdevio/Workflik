@@ -296,7 +296,7 @@ Below the member list (Admin only):
 │  Invite link                                                 │
 │  Anyone with this link can join as Editor                    │
 │                                                              │
-│  https://notelian.app/invite/abc123def456  [Copy] [Disable]  │
+│  https://workflik.app/invite/abc123def456  [Copy] [Disable]  │
 │                                            [Regenerate]      │
 └──────────────────────────────────────────────────────────────┘
 ```

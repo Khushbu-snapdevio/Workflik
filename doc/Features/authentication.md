@@ -2,7 +2,7 @@
 
 ## Overview
 
-Authentication handles user identity — who you are, how you prove it, and how your session is maintained. Notelian uses **Better Auth** with the **Magic Link Plugin** and the **Admin Plugin**, integrated directly into Next.js App Router.
+Authentication handles user identity — who you are, how you prove it, and how your session is maintained. WorkFlik uses **Better Auth** with the **Magic Link Plugin** and the **Admin Plugin**, integrated directly into Next.js App Router.
 
 Authentication is **passwordless** — the only way to sign in or sign up is via a magic link sent to your email. There are no passwords and no OAuth / social providers (including Google).
 
@@ -101,7 +101,7 @@ Private page deletion is queued as a pg-boss job (`delete-user-private-pages`) t
 
 ## 4. Better Auth — Admin Plugin Features
 
-Used by the Notelian platform team via **Orbit Admin** — not exposed to customers.
+Used by the WorkFlik platform team via **Orbit Admin** — not exposed to customers.
 
 | Feature | Description |
 |---------|-------------|

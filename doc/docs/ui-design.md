@@ -1,6 +1,6 @@
 # UI Design System
 
-This document is the **single source of truth** for Notelian's visual design — tokens, component specs, layout patterns, and accessibility rules. Every UI component and page must be implemented from this reference. Read it before building any frontend feature.
+This document is the **single source of truth** for WorkFlik's visual design — tokens, component specs, layout patterns, and accessibility rules. Every UI component and page must be implemented from this reference. Read it before building any frontend feature.
 
 **Stack:** Tailwind CSS (utility-first) · Lucide React (icons) · Inter (UI font) · JetBrains Mono (code font) · Radix UI primitives (accessible headless components — dialogs, dropdowns, tooltips, checkboxes, switches).
 
@@ -702,10 +702,10 @@ Full-page, no sidebar. Background `bg-slate-50`.
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                                                          │
-│                  [Notelian wordmark]                     │
+│                  [WorkFlik wordmark]                     │
 │                                                          │
 │   ┌──────────────────────────────────────────────────┐  │
-│   │  Sign in to Notelian                             │  │
+│   │  Sign in to WorkFlik                             │  │
 │   │  Enter your email to receive a magic link.       │  │
 │   │                                                  │  │
 │   │  Email address                                   │  │
@@ -714,7 +714,7 @@ Full-page, no sidebar. Background `bg-slate-50`.
 │   │  [         Continue with email         ]  lg     │  │
 │   │                                                  │  │
 │   │  ─────────── or ───────────                      │  │
-│   │  New to Notelian? Sign up is the same            │  │
+│   │  New to WorkFlik? Sign up is the same            │  │
 │   │  flow — just enter your email.                   │  │
 │   └──────────────────────────────────────────────────┘  │
 │                                                          │
@@ -765,7 +765,7 @@ Step 1 — Profile
 
 Step 2 — Workspace
   [Emoji picker button — 48px emoji display]  + Workspace name input  side by side
-  Slug preview: "notelian.app/[slug]" (auto-generated, editable)
+  Slug preview: "workflik.app/[slug]" (auto-generated, editable)
   [Continue →] Primary lg
 
 Step 3 — Invite teammates
@@ -1219,7 +1219,7 @@ Main content:
 
 ## Accessibility
 
-Notelian targets **WCAG 2.1 AA** compliance.
+WorkFlik targets **WCAG 2.1 AA** compliance.
 
 ### Contrast Ratios (Light Mode)
 

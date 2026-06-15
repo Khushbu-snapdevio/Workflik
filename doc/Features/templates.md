@@ -2,7 +2,7 @@
 
 ## Overview
 
-Templates are reusable page structures that help users get started quickly without building from scratch. Notelian offers a built-in template gallery curated by the Notelian team, and users can save any page as a custom template scoped to their workspace.
+Templates are reusable page structures that help users get started quickly without building from scratch. WorkFlik offers a built-in template gallery curated by the WorkFlik team, and users can save any page as a custom template scoped to their workspace.
 
 ---
 
@@ -19,7 +19,7 @@ Templates are reusable page structures that help users get started quickly witho
 
 | Type | Created by | Available to |
 |------|-----------|-------------|
-| Built-in | Notelian team | All users across all workspaces |
+| Built-in | WorkFlik team | All users across all workspaces |
 | Custom | Workspace members | All members in that workspace |
 
 ---
@@ -100,11 +100,11 @@ Clicking a template shows a full-page preview (read-only). A `"Use Template"` bu
 
 ## How Built-in Templates Are Created and Managed
 
-Built-in templates are authored and maintained by the **Notelian team** through **Orbit Admin** at `/orbit/templates`. No direct database access or seed scripts are used — all template management goes through the admin UI so templates can be updated, previewed, and published without a deployment.
+Built-in templates are authored and maintained by the **WorkFlik team** through **Orbit Admin** at `/orbit/templates`. No direct database access or seed scripts are used — all template management goes through the admin UI so templates can be updated, previewed, and published without a deployment.
 
 ### Orbit Admin — Template Management (`/orbit/templates`)
 
-This interface is only available to platform admins (Notelian team). End users and workspace Admins have no access to it.
+This interface is only available to platform admins (WorkFlik team). End users and workspace Admins have no access to it.
 
 **Template list view:**
 ```
@@ -129,7 +129,7 @@ This interface is only available to platform admins (Notelian team). End users a
 | Publish / Unpublish | Toggle `status` between `draft` and `published` — only published templates appear in the user-facing gallery |
 | Delete | Permanently remove the template — does not affect pages already created from it |
 
-### Template Authoring Flow (Notelian team)
+### Template Authoring Flow (WorkFlik team)
 
 1. Go to `/orbit/templates` → click **New Template**
 2. Fill in: Name, Description, Category
@@ -140,7 +140,7 @@ This interface is only available to platform admins (Notelian team). End users a
 
 ### Launch Templates
 
-The following 18 built-in templates are authored by the Notelian team via Orbit Admin before the product launches. They are in `published` state at launch:
+The following 18 built-in templates are authored by the WorkFlik team via Orbit Admin before the product launches. They are in `published` state at launch:
 
 **Personal (4):** Daily Journal, Weekly Planner, Reading List, Habit Tracker
 **Productivity (4):** Meeting Notes, Task List, Project Brief, OKR Tracker
@@ -330,7 +330,7 @@ Template
 | Template Preview | Modal tab | All members |
 | Save as Template | Modal (from page options `···`) | Editor+ |
 
-### Orbit Admin (Notelian team only)
+### Orbit Admin (WorkFlik team only)
 
 | Screen | Route | Access |
 |--------|-------|--------|
@@ -346,7 +346,7 @@ Template
 2. A page created from a template is fully independent — editing the template does not retroactively change existing pages.
 3. Deleting a custom template does not affect pages already created from it.
 4. Only the template creator or a workspace Admin can edit or delete a custom template.
-5. Built-in templates are authored and managed exclusively by the Notelian team via Orbit Admin (`/orbit/templates`). Workspace members and workspace Admins have no ability to create, edit, or delete built-in templates.
+5. Built-in templates are authored and managed exclusively by the WorkFlik team via Orbit Admin (`/orbit/templates`). Workspace members and workspace Admins have no ability to create, edit, or delete built-in templates.
 6. Built-in templates have a `draft` / `published` status. Only published templates appear in the user-facing gallery. Draft templates are visible only in Orbit Admin.
 7. Each workspace allows up to **5 custom templates**. **Enforcement:** the `POST /api/workspaces/:workspaceId/templates` handler executes `SELECT COUNT(*) FROM templates WHERE workspace_id = :workspaceId AND is_built_in = false FOR UPDATE` before inserting; if count ≥ 5 it returns `400 { error: "Template limit reached. A workspace can have at most 5 custom templates." }`. The count check and the insert run in a single transaction (the `FOR UPDATE` prevents a race condition where two concurrent requests both read count = 4 and both succeed).
 8. Template Button block content is part of the page's block structure — it is not a separate template stored in the template library.

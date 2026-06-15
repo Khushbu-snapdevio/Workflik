@@ -2,7 +2,7 @@
 
 ## Overview
 
-Onboarding guides new users from account creation to their first meaningful action in Notelian. It runs in three stages: a setup wizard, a tooltip tour, and ongoing contextual hints. The goal is to reduce time-to-value — every step should feel purposeful, not like a chore.
+Onboarding guides new users from account creation to their first meaningful action in WorkFlik. It runs in three stages: a setup wizard, a tooltip tour, and ongoing contextual hints. The goal is to reduce time-to-value — every step should feel purposeful, not like a chore.
 
 ---
 
@@ -138,7 +138,7 @@ Users who dismissed the tour can return to onboarding resources via:
 
 ## Analytics Events
 
-These events are sent to the **product analytics service** configured in `lib/analytics/` (e.g. PostHog or Plausible — choose and configure before building). They are **not** stored in the Notelian PostgreSQL database; there is no `analytics_events` table. The `lib/analytics/` module wraps the chosen provider so all call sites are provider-agnostic — swapping providers requires changing only that module.
+These events are sent to the **product analytics service** configured in `lib/analytics/` (e.g. PostHog or Plausible — choose and configure before building). They are **not** stored in the WorkFlik PostgreSQL database; there is no `analytics_events` table. The `lib/analytics/` module wraps the chosen provider so all call sites are provider-agnostic — swapping providers requires changing only that module.
 
 | Event | Trigger |
 |-------|---------|

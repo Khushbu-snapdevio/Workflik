@@ -2,7 +2,7 @@
 
 ## Overview
 
-File Storage handles all binary uploads in Notelian — page cover images, page icons, and media blocks (Image, Video, Audio, File). Every uploaded file is stored in object storage (S3-compatible) and served through a CDN.
+File Storage handles all binary uploads in WorkFlik — page cover images, page icons, and media blocks (Image, Video, Audio, File). Every uploaded file is stored in object storage (S3-compatible) and served through a CDN.
 
 **Storage provider:** Any **S3-compatible** object storage — accessed via the S3 API
 **CDN:** A CDN in front of the bucket serves files from the edge
@@ -152,7 +152,7 @@ users/{userId}/{uuid}.{ext}              # user_avatar (no workspace)
 Example: `wsp_abc123/pg_xyz789/img_k3j9x2a.webp` · `users/usr_def456/avatar_k3j9x2a.webp`
 
 - Never publicly guessable — UUIDs are random
-- CDN public URL: `https://cdn.notelian.app/{objectKey}` (served via the CDN in front of the bucket)
+- CDN public URL: `https://cdn.workflik.app/{objectKey}` (served via the CDN in front of the bucket)
 
 ---
 

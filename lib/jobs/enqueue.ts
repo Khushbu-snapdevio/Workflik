@@ -1,8 +1,8 @@
 import { PgBoss } from "pg-boss";
 import { env } from "@/lib/env";
 import { normalizePgConnectionString } from "@/lib/pg-connection";
-import { ensureJobQueues } from "@/lib/worker/ensure-queues";
-import type { JobName, JobPayloads } from "@/lib/worker/job-types";
+import { ensureJobQueues } from "@/lib/jobs/queue-options";
+import type { JobName, JobPayloads } from "@/lib/jobs/job-names";
 
 let boss: PgBoss | null = null;
 let initPromise: Promise<PgBoss> | null = null;

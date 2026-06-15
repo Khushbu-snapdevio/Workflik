@@ -2,8 +2,8 @@ import { type Job, PgBoss } from "pg-boss";
 import { env } from "@/lib/env";
 import { normalizePgConnectionString } from "@/lib/pg-connection";
 import { sleep } from "@/lib/utils";
-import { ensureJobQueues } from "@/lib/worker/ensure-queues";
-import { JOB_NAMES } from "@/lib/worker/job-types";
+import { ensureJobQueues } from "@/lib/jobs/queue-options";
+import { JOB_NAMES } from "@/lib/jobs/job-names";
 
 const boss = new PgBoss({
   connectionString: normalizePgConnectionString(env.DATABASE_URL),
@@ -45,15 +45,15 @@ export async function startWorker() {
   await startBossWithRetry();
   await ensureJobQueues(boss);
 
-  const { handleEmailSend } = await import("@/lib/worker/handlers/email-send");
+  const { handleEmailSend } = await import("@/lib/jobs/handlers/email-send");
   const { handleEmailOutboxReap } = await import(
-    "@/lib/worker/handlers/email-outbox-reap"
+    "@/lib/jobs/handlers/email-outbox-reap"
   );
   const { handleEmailEventsPrune } = await import(
-    "@/lib/worker/handlers/email-events-prune"
+    "@/lib/jobs/handlers/email-events-prune"
   );
   const { handleScaffoldHealthcheck } = await import(
-    "@/lib/worker/handlers/scaffold-healthcheck"
+    "@/lib/jobs/handlers/scaffold-healthcheck"
   );
 
   await Promise.all([

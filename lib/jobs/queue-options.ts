@@ -1,5 +1,5 @@
 import type { PgBoss } from "pg-boss";
-import { JOB_NAMES, type JobName } from "@/lib/worker/job-types";
+import { JOB_NAMES, type JobName } from "@/lib/jobs/job-names";
 
 type QueuePolicy = "standard" | "short" | "singleton" | "stately" | "exclusive";
 

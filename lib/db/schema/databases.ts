@@ -1,0 +1,71 @@
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  text,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  entryOpenMode,
+  galleryCardSize,
+  propertyType,
+  updatedAt,
+  viewType,
+} from "./types";
+import { pages } from "./pages";
+
+export const databaseViews = pgTable("database_views", {
+  id:                 uuid("id").primaryKey().defaultRandom(),
+  databaseId:         uuid("database_id").notNull().references(() => pages.id, { onDelete: "cascade" }),
+  name:               text("name").notNull(),
+  type:               viewType("type").notNull(),
+  groupByPropertyId:  uuid("group_by_property_id").references((): AnyPgColumn => databaseProperties.id, { onDelete: "set null" }),
+  calendarPropertyId: uuid("calendar_property_id").references((): AnyPgColumn => databaseProperties.id, { onDelete: "set null" }),
+  filters:            jsonb("filters").notNull().default(sql`'[]'::jsonb`),
+  sorts:              jsonb("sorts").notNull().default(sql`'[]'::jsonb`),
+  cardDisplayProps:   jsonb("card_display_props").notNull().default(sql`'[]'::jsonb`),
+  hiddenPropertyIds:  jsonb("hidden_property_ids").notNull().default(sql`'[]'::jsonb`),
+  galleryCardSize:    galleryCardSize("gallery_card_size"),
+  entryOpenMode:      entryOpenMode("entry_open_mode").notNull().default("side_panel"),
+  orderIndex:         integer("order_index").notNull().default(0),
+  createdAt:          timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:          updatedAt(),
+}, (t) => [index("database_views_database_idx").on(t.databaseId)]);
+
+export const databaseProperties = pgTable("database_properties", {
+  id:             uuid("id").primaryKey().defaultRandom(),
+  databaseId:     uuid("database_id").notNull().references(() => pages.id, { onDelete: "cascade" }),
+  name:           text("name").notNull(),
+  type:           propertyType("type").notNull(),
+  config:         jsonb("config").notNull().default(sql`'{}'::jsonb`),
+  defaultValue:   jsonb("default_value"),
+  isHidden:       boolean("is_hidden").notNull().default(false),
+  isSystem:       boolean("is_system").notNull().default(false),
+  isBackRelation: boolean("is_back_relation").notNull().default(false),
+  orderIndex:     integer("order_index").notNull().default(0),
+  createdAt:      timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:      updatedAt(),
+}, (t) => [index("database_properties_database_idx").on(t.databaseId)]);
+
+export const propertyValues = pgTable("property_values", {
+  id:         uuid("id").primaryKey().defaultRandom(),
+  entryId:    uuid("entry_id").notNull().references(() => pages.id, { onDelete: "cascade" }),
+  propertyId: uuid("property_id").notNull().references(() => databaseProperties.id, { onDelete: "cascade" }),
+  value:      jsonb("value"),
+  createdAt:  timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:  updatedAt(),
+}, (t) => [
+  uniqueIndex("property_values_entry_prop_idx").on(t.entryId, t.propertyId),
+  index("property_values_property_idx").on(t.propertyId),
+  index("property_values_value_gin_idx").using("gin", t.value),
+]);
+
+export type DatabaseView     = typeof databaseViews.$inferSelect;
+export type DatabaseProperty = typeof databaseProperties.$inferSelect;
+export type PropertyValue    = typeof propertyValues.$inferSelect;

@@ -4,27 +4,31 @@ import { admin } from "better-auth/plugins/admin";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { PRODUCT_NAME } from "@/config/platform";
 import * as schema from "@/lib/db/schema";
-import { audit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { enqueueEmail } from "@/lib/email";
 import { magicLinkTemplate } from "@/lib/email/templates/magic-link";
 import { env } from "@/lib/env";
 
 export const auth = betterAuth({
+  advanced: {
+    database: {
+      generateId: "uuid",
+    },
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      user: schema.user,
-      session: schema.session,
-      account: schema.account,
-      verification: schema.verification,
+      user:         schema.users,
+      session:      schema.sessions,
+      account:      schema.accounts,
+      verification: schema.verifications,
     },
   }),
   secret: env.APP_SECRET,
   baseURL: env.NEXT_PUBLIC_APP_URL,
   plugins: [
     admin({
-      impersonationSessionDuration: 3600,
+      impersonationSessionDuration: 60 * 60 * 2,
       allowImpersonatingAdmins: false,
     }),
     magicLink({
@@ -33,20 +37,11 @@ export const auth = betterAuth({
           email,
           magicLinkUrl: url,
         });
-
         await enqueueEmail({
           to: email,
           subject: `Sign in to ${PRODUCT_NAME}`,
           html,
           text,
-        });
-
-        await audit({
-          action: "auth.magic_link_sent",
-          actorEmail: email,
-          description: `Magic link sent to ${email}`,
-          entityType: "user",
-          metadata: { email },
         });
       },
     }),
@@ -55,22 +50,6 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       maxAge: 60,
-    },
-  },
-  databaseHooks: {
-    user: {
-      create: {
-        after: async (user) => {
-          await audit({
-            action: "user.created",
-            actorEmail: user.email,
-            actorId: user.id,
-            description: `User created: ${user.email}`,
-            entityId: user.id,
-            entityType: "user",
-          });
-        },
-      },
     },
   },
 });

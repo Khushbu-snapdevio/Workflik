@@ -3,7 +3,7 @@ import { OrbitPageHeader } from "@/components/admin/orbit-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ADMIN_ROLE } from "@/config/platform";
-import { emailOutbox, user } from "@/lib/db/schema";
+import { emailOutbox, users } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { getQueueSummary } from "@/lib/jobs/queue-inspection";
 
@@ -13,10 +13,10 @@ export const metadata = {
 
 export default async function OrbitPage() {
   const [[userCount], [emailCount], queues, recentUsers] = await Promise.all([
-    db.select({ count: count() }).from(user),
+    db.select({ count: count() }).from(users),
     db.select({ count: count() }).from(emailOutbox),
     getQueueSummary(),
-    db.select().from(user).orderBy(desc(user.createdAt)).limit(5),
+    db.select().from(users).orderBy(desc(users.createdAt)).limit(5),
   ]);
 
   return (
@@ -24,7 +24,7 @@ export default async function OrbitPage() {
       <OrbitPageHeader
         eyebrow="Admin"
         title="Overview"
-        description="Operator surface for users, queues, email, and audit-ready admin actions."
+        description="Operator surface for users, queues, email, and admin actions."
       />
 
       <div className="grid gap-4 md:grid-cols-3">

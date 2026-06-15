@@ -6,6 +6,7 @@ import { sendEmailViaSmtp } from "@/lib/smtp/client";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { type EmailSendPayload, JOB_NAMES } from "@/lib/jobs/job-names";
 
+const MAX_ATTEMPTS = 3;
 const RETRY_BACKOFF_SECONDS = [60, 300, 900];
 
 export async function handleEmailSend(jobs: Job<EmailSendPayload>[]) {
@@ -21,83 +22,48 @@ async function processEmailSendJob(job: Job<EmailSendPayload>) {
     .update(emailOutbox)
     .set({
       attemptCount: sql`${emailOutbox.attemptCount} + 1`,
-      claimedAt: new Date(),
-      status: "sending",
-      updatedAt: new Date(),
+      status:       "sending",
+      updatedAt:    new Date(),
     })
     .where(and(eq(emailOutbox.id, outboxId), eq(emailOutbox.status, "queued")))
     .returning();
 
-  if (!claimed) {
-    return;
-  }
+  if (!claimed) return;
 
   const attempt = claimed.attemptCount;
-  const remainingAttempts = claimed.maxAttempts - attempt;
+  const remainingAttempts = MAX_ATTEMPTS - attempt;
 
   try {
-    const result = await sendEmailViaSmtp({
-      html: claimed.payload.html,
-      idempotencyKey: claimed.idempotencyKey,
-      subject: claimed.payload.subject,
-      text: claimed.payload.text,
-      to: claimed.payload.to,
+    await sendEmailViaSmtp({
+      html:    claimed.htmlBody,
+      subject: claimed.subject,
+      to:      claimed.recipientEmail,
     });
 
     await db
       .update(emailOutbox)
-      .set({
-        providerMessageId: result.id,
-        sentAt: new Date(),
-        status: "sent",
-        updatedAt: new Date(),
-      })
+      .set({ status: "sent", updatedAt: new Date() })
       .where(eq(emailOutbox.id, outboxId));
   } catch (error) {
-    const reason = describeEmailError(error);
+    const reason = error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500);
 
-    if (remainingAttempts > 0 && isRetryable(error)) {
+    if (remainingAttempts > 0) {
       await db
         .update(emailOutbox)
-        .set({
-          claimedAt: null,
-          lastError: reason,
-          status: "queued",
-          updatedAt: new Date(),
-        })
+        .set({ lastError: reason, status: "queued", updatedAt: new Date() })
         .where(eq(emailOutbox.id, outboxId));
 
       await enqueueJob(
         JOB_NAMES.EMAIL_SEND,
         { outboxId },
-        {
-          startAfter:
-            RETRY_BACKOFF_SECONDS[
-              Math.min(attempt - 1, RETRY_BACKOFF_SECONDS.length - 1)
-            ],
-        }
+        { startAfter: RETRY_BACKOFF_SECONDS[Math.min(attempt - 1, RETRY_BACKOFF_SECONDS.length - 1)] }
       );
       return;
     }
 
     await db
       .update(emailOutbox)
-      .set({
-        lastError: reason,
-        status: "failed",
-        updatedAt: new Date(),
-      })
+      .set({ lastError: reason, status: "failed", updatedAt: new Date() })
       .where(eq(emailOutbox.id, outboxId));
   }
-}
-
-function describeEmailError(error: unknown) {
-  if (error instanceof Error) {
-    return error.message.slice(0, 500);
-  }
-  return String(error).slice(0, 500);
-}
-
-function isRetryable(_error: unknown) {
-  return true;
 }

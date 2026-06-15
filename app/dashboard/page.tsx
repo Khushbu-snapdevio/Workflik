@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ADMIN_ROLE } from "@/config/platform";
-import { auditLogs, emailOutbox, user } from "@/lib/db/schema";
+import { emailOutbox, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/utils";
@@ -27,19 +27,15 @@ export default async function DashboardPage() {
   const session = await requireSession();
   const [freshUser] = await db
     .select()
-    .from(user)
-    .where(eq(user.id, session.user.id))
+    .from(users)
+    .where(eq(users.id, session.user.id))
     .limit(1);
 
-  const [emails, audits] = await Promise.all([
-    db.select().from(emailOutbox).orderBy(desc(emailOutbox.createdAt)).limit(5),
-    db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.actorId, session.user.id))
-      .orderBy(desc(auditLogs.createdAt))
-      .limit(8),
-  ]);
+  const emails = await db
+    .select()
+    .from(emailOutbox)
+    .orderBy(desc(emailOutbox.createdAt))
+    .limit(5);
 
   return (
     <AppShell
@@ -108,7 +104,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      <div className="mt-6">
         <Card>
           <CardHeader>
             <CardTitle>Recent Email Outbox</CardTitle>
@@ -126,7 +122,7 @@ export default async function DashboardPage() {
               <TableBody>
                 {emails.map((email) => (
                   <TableRow key={email.id}>
-                    <TableCell>{email.payload.subject}</TableCell>
+                    <TableCell>{email.subject}</TableCell>
                     <TableCell>
                       <Badge
                         className={
@@ -139,30 +135,6 @@ export default async function DashboardPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDateTime(email.createdAt)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Audit</CardTitle>
-            <CardDescription>Your recent account actions and security events.</CardDescription>
-          </CardHeader>
-          <CardContent className="overflow-x-auto p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Action</TableHead>
-                  <TableHead>When</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {audits.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>{entry.action}</TableCell>
-                    <TableCell>{formatDateTime(entry.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

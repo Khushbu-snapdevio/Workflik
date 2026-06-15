@@ -13,16 +13,16 @@ async function main() {
     process.exit(1);
   }
 
-  const [{ db }, { user }] = await Promise.all([
+  const [{ db }, { users }] = await Promise.all([
     import("@/lib/db"),
     import("@/lib/db/schema"),
   ]);
 
   const [updated] = await db
-    .update(user)
-    .set({ role: ADMIN_ROLE, updatedAt: new Date() })
-    .where(eq(user.email, email))
-    .returning({ email: user.email, role: user.role });
+    .update(users)
+    .set({ role: ADMIN_ROLE, isPlatformAdmin: true, updatedAt: new Date() })
+    .where(eq(users.email, email))
+    .returning({ email: users.email, role: users.role });
 
   if (!updated) {
     console.error(`No user found with email: ${email}`);

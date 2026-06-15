@@ -1,8 +1,7 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ADMIN_ROLE } from "@/config/platform";
-import { user } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -22,16 +21,17 @@ export async function requireAdmin() {
   const session = await requireSession();
   const [freshUser] = await db
     .select({
-      banned: user.banned,
-      email: user.email,
-      id: user.id,
-      role: user.role,
+      banned:          users.banned,
+      email:           users.email,
+      id:              users.id,
+      role:            users.role,
+      isPlatformAdmin: users.isPlatformAdmin,
     })
-    .from(user)
-    .where(eq(user.id, session.user.id))
+    .from(users)
+    .where(eq(users.id, session.user.id))
     .limit(1);
 
-  if (!freshUser || freshUser.banned || freshUser.role !== ADMIN_ROLE) {
+  if (!freshUser || freshUser.banned || freshUser.role !== "admin") {
     redirect("/dashboard");
   }
 
@@ -39,9 +39,10 @@ export async function requireAdmin() {
     ...session,
     user: {
       ...session.user,
-      banned: freshUser.banned,
-      email: freshUser.email,
-      role: freshUser.role,
+      banned:          freshUser.banned,
+      email:           freshUser.email,
+      role:            freshUser.role,
+      isPlatformAdmin: freshUser.isPlatformAdmin,
     },
   };
 }

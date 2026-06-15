@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { emailOutbox } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { enqueueJob } from "@/lib/jobs/enqueue";
@@ -9,15 +8,18 @@ export interface SendEmailOptions {
   subject: string;
   text?: string;
   to: string;
+  type?: "notification_email" | "digest_email";
 }
 
 export async function enqueueEmail(options: SendEmailOptions) {
   const [row] = await db
     .insert(emailOutbox)
     .values({
-      idempotencyKey: randomUUID(),
-      payload: options,
-      status: "queued",
+      recipientEmail: options.to,
+      subject:        options.subject,
+      htmlBody:       options.html,
+      type:           options.type ?? "notification_email",
+      status:         "queued",
     })
     .returning({ id: emailOutbox.id });
 

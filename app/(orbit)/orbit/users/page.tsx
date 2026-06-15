@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ADMIN_ROLE } from "@/config/platform";
-import { user } from "@/lib/db/schema";
+import { users as usersTable } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ export const metadata = {
 };
 
 export default async function OrbitUsersPage() {
-  const users = await db.select().from(user).orderBy(desc(user.createdAt));
+  const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
 
   return (
     <div>

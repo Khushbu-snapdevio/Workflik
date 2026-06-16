@@ -14,17 +14,17 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      user: schema.user,
-      session: schema.session,
-      account: schema.account,
-      verification: schema.verification,
+      user: schema.users,
+      session: schema.sessions,
+      account: schema.accounts,
+      verification: schema.verifications,
     },
   }),
   secret: env.APP_SECRET,
   baseURL: env.NEXT_PUBLIC_APP_URL,
   plugins: [
     admin({
-      impersonationSessionDuration: 3600,
+      impersonationSessionDuration: 7200,
       allowImpersonatingAdmins: false,
     }),
     magicLink({

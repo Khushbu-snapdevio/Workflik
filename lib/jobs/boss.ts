@@ -1,19 +1,15 @@
-import { type Job, PgBoss } from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { env } from "@/lib/env";
 import { normalizePgConnectionString } from "@/lib/pg-connection";
 import { sleep } from "@/lib/utils";
 import { ensureJobQueues } from "@/lib/jobs/queue-options";
-import { JOB_NAMES } from "@/lib/jobs/job-names";
+import { registerHandlers } from "@/lib/jobs/register";
 
 const boss = new PgBoss({
   connectionString: normalizePgConnectionString(env.DATABASE_URL),
 });
 
 export { boss };
-
-function work<T>(name: string, handler: (jobs: Job<T>[]) => Promise<void>) {
-  return boss.work<T>(name, { includeMetadata: true }, handler);
-}
 
 async function startBossWithRetry(maxRetries = 10) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -44,29 +40,7 @@ export async function startWorker() {
 
   await startBossWithRetry();
   await ensureJobQueues(boss);
-
-  const { handleEmailSend } = await import("@/lib/jobs/handlers/email-send");
-  const { handleEmailOutboxReap } = await import(
-    "@/lib/jobs/handlers/email-outbox-reap"
-  );
-  const { handleEmailEventsPrune } = await import(
-    "@/lib/jobs/handlers/email-events-prune"
-  );
-  const { handleScaffoldHealthcheck } = await import(
-    "@/lib/jobs/handlers/scaffold-healthcheck"
-  );
-
-  await Promise.all([
-    work(JOB_NAMES.EMAIL_SEND, handleEmailSend),
-    work(JOB_NAMES.EMAIL_OUTBOX_REAP, handleEmailOutboxReap),
-    work(JOB_NAMES.EMAIL_EVENTS_PRUNE, handleEmailEventsPrune),
-    work(JOB_NAMES.SCAFFOLD_HEALTHCHECK, handleScaffoldHealthcheck),
-  ]);
-
-  await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP, "*/15 * * * *", {});
-  await boss.schedule(JOB_NAMES.EMAIL_EVENTS_PRUNE, "17 3 * * *", {});
-  await boss.schedule(JOB_NAMES.SCAFFOLD_HEALTHCHECK, "*/10 * * * *", {});
-
+  await registerHandlers(boss);
   console.log("[worker] handlers registered");
 }
 

@@ -28,8 +28,8 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
   return (
     <div className="px-2 py-2">
       <div className="mb-1 flex items-center gap-2 px-2">
-        <ClockIcon className="text-sidebar-foreground/30" size={11} />
-        <span className="text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/30">
+        <ClockIcon className="text-sidebar-foreground/50" size={11} />
+        <span className="text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/50">
           Recently Visited
         </span>
       </div>
@@ -41,7 +41,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
           <Link
             key={item.id}
             href={`/${workspaceSlug}/${page.shortId}`}
-            className="flex min-w-0 items-center gap-1.5 px-2 py-1.5 text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="flex min-w-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             {page.icon ? (
               <span className="shrink-0 text-sm leading-none">{page.icon}</span>

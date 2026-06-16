@@ -4,12 +4,14 @@ import {
   BellIcon,
   CaretDoubleRightIcon,
   GearIcon,
+  HouseIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   SignOutIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { logoutAction } from "@/app/actions/auth";
 import { FavoritesSection } from "@/components/sidebar/favorites-section";
@@ -45,6 +47,7 @@ const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
 
 export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false }: Props) {
+  const pathname = usePathname();
   const [width, setWidth] = useState(240);
   const [collapsed, setCollapsed] = useState(false);
   const [filter, setFilter] = useState("");
@@ -157,23 +160,37 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
       style={{ width }}
     >
       {/* Workspace header */}
-      <div className="flex items-center gap-1 border-b border-sidebar-border px-2 py-2">
+      <div className="flex shrink-0 items-center gap-1 border-b border-sidebar-border px-2 py-2">
         <div className="min-w-0 flex-1">
           <WorkspaceSwitcher currentSlug={workspaceSlug} />
         </div>
         <Link
-          className="flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          className="flex size-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
           href={`/${workspaceSlug}/new`}
           title="New page"
         >
           <PlusIcon size={15} weight="bold" />
         </Link>
+        <button
+          className="flex size-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          onClick={toggleCollapse}
+          title="Collapse sidebar"
+          type="button"
+        >
+          <CaretDoubleRightIcon className="rotate-180" size={14} />
+        </button>
       </div>
 
       {/* Scrollable body */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {/* Quick nav */}
         <nav className="px-2 py-2">
+          <NavButton
+            href={`/${workspaceSlug}`}
+            icon={<HouseIcon size={15} />}
+            label="Home"
+            active={pathname === `/${workspaceSlug}`}
+          />
           <NavButton
             href={`/${workspaceSlug}/search`}
             icon={<MagnifyingGlassIcon size={15} />}
@@ -281,26 +298,21 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
       </div>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border px-3 py-3">
-        <div className="flex items-center gap-2">
-          <button
-            className="flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            onClick={toggleCollapse}
-            title="Collapse sidebar"
-            type="button"
-          >
-            <CaretDoubleRightIcon className="rotate-180" size={14} />
-          </button>
-          <span className="min-w-0 flex-1 truncate text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/30">
+      <div className="shrink-0 border-t border-sidebar-border px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold uppercase text-primary">
+            {userEmail[0].toUpperCase()}
+          </div>
+          <span className="min-w-0 flex-1 truncate text-xs text-sidebar-foreground/60">
             {userEmail}
           </span>
           <form action={logoutAction}>
             <button
-              className="flex size-7 shrink-0 items-center justify-center text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
               title="Sign out"
               type="submit"
             >
-              <SignOutIcon size={14} />
+              <SignOutIcon size={13} />
             </button>
           </form>
         </div>
@@ -323,15 +335,21 @@ function NavButton({
   icon,
   label,
   shortcut,
+  active,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
   shortcut?: string;
+  active?: boolean;
 }) {
   return (
     <Link
-      className="flex w-full items-center gap-2.5 px-2 py-1.5 text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground ${
+        active
+          ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+          : "text-sidebar-foreground/70"
+      }`}
       href={href}
     >
       <span className="shrink-0">{icon}</span>
@@ -354,7 +372,7 @@ function SectionLabel({
 }) {
   return (
     <div className="mb-1 flex items-center gap-2 px-2">
-      <span className="text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/30">
+      <span className="text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/50">
         {label}
       </span>
       {children}

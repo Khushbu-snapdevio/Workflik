@@ -142,7 +142,7 @@ export function PageTree({
 
   if (tree.length === 0) {
     return (
-      <p className="px-2 py-4 text-center text-2xs text-sidebar-foreground/30">
+      <p className="px-2 py-4 text-center text-2xs text-sidebar-foreground/50">
         {filter ? "No pages match" : "No pages yet"}
       </p>
     );
@@ -252,7 +252,7 @@ function PageTreeNode({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="group flex items-center gap-0.5 py-0.5 hover:bg-sidebar-accent">
+      <div className="group flex items-center gap-0.5 rounded-md py-0.5 transition-colors hover:bg-sidebar-accent">
         {/* Expand/collapse toggle */}
         <button
           className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground"

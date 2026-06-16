@@ -43,14 +43,16 @@ export async function startWorker() {
   await startBossWithRetry();
   await ensureJobQueues(boss);
 
-  const { handleEmailSend } = await import("@/lib/jobs/handlers/email-send");
-  const { handleEmailOutboxReap } = await import("@/lib/jobs/handlers/email-outbox-reap");
+  const { handleEmailSend }           = await import("@/lib/jobs/handlers/email-send");
+  const { handleEmailOutboxReap }     = await import("@/lib/jobs/handlers/email-outbox-reap");
   const { handleScaffoldHealthcheck } = await import("@/lib/jobs/handlers/scaffold-healthcheck");
+  const { handleWorkspaceInviteSend } = await import("@/lib/jobs/handlers/send-workspace-invite");
 
   await Promise.all([
     work(JOB_NAMES.EMAIL_SEND, handleEmailSend),
     work(JOB_NAMES.EMAIL_OUTBOX_REAP, handleEmailOutboxReap),
     work(JOB_NAMES.SCAFFOLD_HEALTHCHECK, handleScaffoldHealthcheck),
+    work(JOB_NAMES.WORKSPACE_INVITE_SEND, handleWorkspaceInviteSend),
   ]);
 
   await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP, "*/15 * * * *", {});

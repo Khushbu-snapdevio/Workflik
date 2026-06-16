@@ -33,7 +33,7 @@ export async function toggleUserBanAction(formData: FormData): Promise<void> {
   await db
     .update(users)
     .set({
-      banReason: banned ? "Disabled by Orbit admin" : null,
+      bannedReason: banned ? "Disabled by Orbit admin" : null,
       banned,
       updatedAt: new Date(),
     })

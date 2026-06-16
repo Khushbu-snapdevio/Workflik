@@ -1,8 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { emailEvents } from "@/lib/db/schema";
-import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 
 export async function POST(request: Request) {
@@ -15,33 +12,7 @@ export async function POST(request: Request) {
   if (!isValidWebhookSecret(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const payload = (await request.json()) as Record<string, unknown>;
-  const eventId = String(payload.id ?? payload.event_id ?? "");
-  const eventType = String(payload.type ?? payload.event ?? "unknown");
-  const emailObject = payload.email as Record<string, unknown> | undefined;
-  const providerEmailId = emailObject?.id ? String(emailObject.id) : null;
-  const recipient = emailObject?.to ?? payload.recipient ?? null;
-
-  if (!eventId) {
-    return NextResponse.json({ error: "Missing event id" }, { status: 400 });
-  }
-
-  const existing = await db.query.emailEvents.findFirst({
-    where: eq(emailEvents.providerEventId, eventId),
-  });
-  if (existing) {
-    return NextResponse.json({ ok: true, duplicate: true });
-  }
-
-  await db.insert(emailEvents).values({
-    providerEmailId,
-    providerEventId: eventId,
-    eventType,
-    payload,
-    recipient: recipient ? String(recipient) : null,
-  });
-
+  // Email event tracking removed in Phase 1 schema cleanup.
   return NextResponse.json({ ok: true });
 }
 
@@ -60,11 +31,7 @@ function isValidWebhookSecret(request: Request) {
 }
 
 function safeEqual(value: string, expected: string) {
-  const valueBuffer = Buffer.from(value);
-  const expectedBuffer = Buffer.from(expected);
-
-  return (
-    valueBuffer.length === expectedBuffer.length &&
-    timingSafeEqual(valueBuffer, expectedBuffer)
-  );
+  const a = Buffer.from(value);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }

@@ -3,8 +3,7 @@
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { account, session as sessionTable, user } from "@/lib/db/schema";
-import { audit } from "@/lib/audit";
+import { accounts, sessions as sessionTable, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 
@@ -28,19 +27,9 @@ export async function updateNameAction(
   }
 
   await db
-    .update(user)
+    .update(users)
     .set({ name, updatedAt: new Date() })
-    .where(eq(user.id, session.user.id));
-
-  await audit({
-    action: "profile.name_updated",
-    actorEmail: session.user.email,
-    actorId: session.user.id,
-    description: "Updated profile name",
-    entityId: session.user.id,
-    entityType: "user",
-    metadata: { name },
-  });
+    .where(eq(users.id, session.user.id));
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile");
@@ -61,9 +50,9 @@ export async function changeEmailAction(
   }
 
   const [existing] = await db
-    .select({ id: user.id })
-    .from(user)
-    .where(eq(user.email, newEmail))
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, newEmail))
     .limit(1);
 
   if (existing && existing.id !== current.user.id) {
@@ -71,23 +60,13 @@ export async function changeEmailAction(
   }
 
   await db
-    .update(user)
+    .update(users)
     .set({
       email: newEmail,
       emailVerified: false,
       updatedAt: new Date(),
     })
-    .where(eq(user.id, current.user.id));
-
-  await audit({
-    action: "profile.email_updated",
-    actorEmail: current.user.email,
-    actorId: current.user.id,
-    description: "Updated account email",
-    entityId: current.user.id,
-    entityType: "user",
-    metadata: { newEmail, oldEmail: current.user.email },
-  });
+    .where(eq(users.id, current.user.id));
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/profile");
@@ -116,15 +95,6 @@ export async function revokeSessionAction(formData: FormData): Promise<void> {
   }
 
   await db.delete(sessionTable).where(eq(sessionTable.id, sessionId));
-  await audit({
-    action: "profile.session_revoked",
-    actorEmail: current.user.email,
-    actorId: current.user.id,
-    description: "Revoked an active session",
-    entityId: sessionId,
-    entityType: "session",
-  });
-
   revalidatePath("/dashboard/profile");
 }
 
@@ -145,16 +115,6 @@ export async function signOutOtherSessionsAction(): Promise<void> {
     await db.delete(sessionTable).where(inArray(sessionTable.id, ids));
   }
 
-  await audit({
-    action: "profile.other_sessions_revoked",
-    actorEmail: current.user.email,
-    actorId: current.user.id,
-    description: `Signed out ${ids.length} other session(s)`,
-    entityId: current.user.id,
-    entityType: "user",
-    metadata: { revokedCount: ids.length },
-  });
-
   revalidatePath("/dashboard/profile");
 }
 
@@ -168,9 +128,9 @@ export async function deleteAccountAction(
     .toLowerCase();
 
   const [freshUser] = await db
-    .select({ email: user.email, id: user.id })
-    .from(user)
-    .where(eq(user.id, current.user.id))
+    .select({ email: users.email, id: users.id })
+    .from(users)
+    .where(eq(users.id, current.user.id))
     .limit(1);
 
   if (!freshUser) {
@@ -181,19 +141,10 @@ export async function deleteAccountAction(
     return { error: "Type your email address to confirm deletion." };
   }
 
-  await audit({
-    action: "profile.account_deleted",
-    actorEmail: freshUser.email,
-    actorId: freshUser.id,
-    description: "Deleted account",
-    entityId: freshUser.id,
-    entityType: "user",
-  });
-
   await db.transaction(async (tx) => {
     await tx.delete(sessionTable).where(eq(sessionTable.userId, freshUser.id));
-    await tx.delete(account).where(eq(account.userId, freshUser.id));
-    await tx.delete(user).where(eq(user.id, freshUser.id));
+    await tx.delete(accounts).where(eq(accounts.userId, freshUser.id));
+    await tx.delete(users).where(eq(users.id, freshUser.id));
   });
 
   redirect("/login");

@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ADMIN_ROLE } from "@/config/platform";
-import { session as sessionTable, user } from "@/lib/db/schema";
+import { sessions as sessionTable, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 
@@ -28,8 +28,8 @@ export const metadata = {
 
 export default async function ProfilePage() {
   const current = await requireSession();
-  const [freshUser, sessions] = await Promise.all([
-    db.query.user.findFirst({ where: eq(user.id, current.user.id) }),
+  const [freshUser, userSessions] = await Promise.all([
+    db.query.users.findFirst({ where: eq(users.id, current.user.id) }),
     db
       .select({
         createdAt: sessionTable.createdAt,
@@ -48,7 +48,7 @@ export default async function ProfilePage() {
     return null;
   }
 
-  const sessionRows: SessionRow[] = sessions.map((session) => ({
+  const sessionRows: SessionRow[] = userSessions.map((session) => ({
     createdAt: session.createdAt.toISOString(),
     expiresAt: session.expiresAt.toISOString(),
     id: session.id,
@@ -66,7 +66,7 @@ export default async function ProfilePage() {
       />
 
       <div className="space-y-6">
-        <AccountIdentityForms email={freshUser.email} name={freshUser.name} />
+        <AccountIdentityForms email={freshUser.email} name={freshUser.name ?? ""} />
 
         <SessionsCard sessions={sessionRows} />
 
@@ -75,7 +75,7 @@ export default async function ProfilePage() {
             <CardTitle>Export Your Data</CardTitle>
             <CardDescription>
               Download a JSON archive of your profile, linked auth accounts,
-              sessions, and audit entries.
+              and sessions.
             </CardDescription>
           </CardHeader>
           <CardContent>

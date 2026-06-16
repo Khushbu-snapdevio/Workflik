@@ -23,9 +23,7 @@ async function startBossWithRetry(maxRetries = 10) {
       }
       const delay = Math.min(2000 * 2 ** (attempt - 1), 30_000);
       console.error(
-        `[worker] pg-boss start failed (${attempt}/${maxRetries}); retrying in ${
-          delay / 1000
-        }s`,
+        `[worker] pg-boss start failed (${attempt}/${maxRetries}); retrying in ${delay / 1000}s`,
         error
       );
       await sleep(delay);
@@ -40,7 +38,20 @@ export async function startWorker() {
 
   await startBossWithRetry();
   await ensureJobQueues(boss);
-  await registerHandlers(boss);
+
+  const { handleEmailSend } = await import("@/lib/jobs/handlers/email-send");
+  const { handleEmailOutboxReap } = await import("@/lib/jobs/handlers/email-outbox-reap");
+  const { handleScaffoldHealthcheck } = await import("@/lib/jobs/handlers/scaffold-healthcheck");
+
+  await Promise.all([
+    work(JOB_NAMES.EMAIL_SEND, handleEmailSend),
+    work(JOB_NAMES.EMAIL_OUTBOX_REAP, handleEmailOutboxReap),
+    work(JOB_NAMES.SCAFFOLD_HEALTHCHECK, handleScaffoldHealthcheck),
+  ]);
+
+  await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP, "*/15 * * * *", {});
+  await boss.schedule(JOB_NAMES.SCAFFOLD_HEALTHCHECK, "*/10 * * * *", {});
+
   console.log("[worker] handlers registered");
 }
 

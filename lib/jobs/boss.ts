@@ -1,19 +1,15 @@
-import { type Job, PgBoss } from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { env } from "@/lib/env";
 import { normalizePgConnectionString } from "@/lib/pg-connection";
 import { sleep } from "@/lib/utils";
 import { ensureJobQueues } from "@/lib/jobs/queue-options";
-import { JOB_NAMES } from "@/lib/jobs/job-names";
+import { registerHandlers } from "@/lib/jobs/register";
 
 const boss = new PgBoss({
   connectionString: normalizePgConnectionString(env.DATABASE_URL),
 });
 
 export { boss };
-
-function work<T>(name: string, handler: (jobs: Job<T>[]) => Promise<void>) {
-  return boss.work<T>(name, { includeMetadata: true }, handler);
-}
 
 async function startBossWithRetry(maxRetries = 10) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

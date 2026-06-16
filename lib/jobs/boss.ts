@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 import { normalizePgConnectionString } from "@/lib/pg-connection";
 import { sleep } from "@/lib/utils";
 import { ensureJobQueues } from "@/lib/jobs/queue-options";
-import { registerHandlers } from "@/lib/jobs/register";
+import { JOB_NAMES } from "@/lib/jobs/job-names";
 
 const boss = new PgBoss({
   connectionString: normalizePgConnectionString(env.DATABASE_URL),
@@ -45,10 +45,10 @@ export async function startWorker() {
   const { handleWorkspaceInviteSend } = await import("@/lib/jobs/handlers/send-workspace-invite");
 
   await Promise.all([
-    work(JOB_NAMES.EMAIL_SEND, handleEmailSend),
-    work(JOB_NAMES.EMAIL_OUTBOX_REAP, handleEmailOutboxReap),
-    work(JOB_NAMES.SCAFFOLD_HEALTHCHECK, handleScaffoldHealthcheck),
-    work(JOB_NAMES.WORKSPACE_INVITE_SEND, handleWorkspaceInviteSend),
+    boss.work(JOB_NAMES.EMAIL_SEND, handleEmailSend),
+    boss.work(JOB_NAMES.EMAIL_OUTBOX_REAP, handleEmailOutboxReap),
+    boss.work(JOB_NAMES.SCAFFOLD_HEALTHCHECK, handleScaffoldHealthcheck),
+    boss.work(JOB_NAMES.WORKSPACE_INVITE_SEND, handleWorkspaceInviteSend),
   ]);
 
   await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP, "*/15 * * * *", {});

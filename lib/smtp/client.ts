@@ -22,11 +22,16 @@ export async function sendEmailViaSmtp(
   input: SmtpSendInput
 ): Promise<SmtpSendResult> {
   if (!isSmtpConfigured()) {
-    console.log("[email:dev]", {
-      subject: input.subject,
-      text: input.text,
-      to: input.to,
-    });
+    // Extract the URL from the plain-text body (first http/https link found)
+    const linkMatch = input.text?.match(/https?:\/\/\S+/);
+    console.log("[email:dev] SMTP not configured — email NOT sent");
+    console.log("[email:dev] to:", input.to);
+    console.log("[email:dev] subject:", input.subject);
+    if (linkMatch) {
+      console.log("[email:dev] link:", linkMatch[0]);
+    } else {
+      console.log("[email:dev] body:", input.text);
+    }
     return {
       id: `dev_${input.idempotencyKey ?? Date.now()}`,
       status: "logged",

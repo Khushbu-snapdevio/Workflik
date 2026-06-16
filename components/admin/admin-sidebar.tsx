@@ -11,7 +11,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
 import { PRODUCT_NAME } from "@/config/platform";
 
 const navItems = [
@@ -23,25 +22,27 @@ const navItems = [
 
 export function AdminSidebar({ email }: { email: string }) {
   const pathname = usePathname();
+  const avatarLetter = email[0].toUpperCase();
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-      {/* Brand */}
-      <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
-        <span className="grid size-9 shrink-0 place-items-center bg-sidebar-primary font-black text-sidebar-primary-foreground text-xs">
+    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+
+      {/* Brand header */}
+      <div className="flex items-center gap-2.5 border-b border-sidebar-border px-4 py-3.5">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-[10px] font-black text-primary-foreground shadow-sm">
           WF
         </span>
         <div className="min-w-0">
-          <p className="font-black text-sm leading-none">{PRODUCT_NAME}</p>
-          <p className="mt-1 text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/40">
+          <p className="text-sm font-black leading-none tracking-tight text-foreground">{PRODUCT_NAME}</p>
+          <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-ui text-muted-foreground">
             Admin Panel
           </p>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-5">
-        <p className="mb-2 px-3 text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/30">
+      <nav className="flex-1 px-2 py-3">
+        <p className="mb-1.5 px-2.5 text-[10px] font-semibold uppercase tracking-ui text-sidebar-foreground/40">
           Navigation
         </p>
         <div className="space-y-0.5">
@@ -51,10 +52,10 @@ export function AdminSidebar({ email }: { email: string }) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 border-l-2 px-3 py-2.5 text-xs font-semibold uppercase tracking-ui transition-colors ${
+                className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium transition-colors ${
                   isActive
-                    ? "border-sidebar-foreground bg-sidebar-accent text-sidebar-foreground"
-                    : "border-transparent text-sidebar-foreground/50 hover:border-sidebar-foreground/20 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    ? "bg-sidebar-accent font-semibold text-sidebar-primary"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 }`}
               >
                 <Icon size={15} weight={isActive ? "fill" : "regular"} />
@@ -66,32 +67,32 @@ export function AdminSidebar({ email }: { email: string }) {
       </nav>
 
       {/* Footer */}
-      <div className="space-y-2 border-t border-sidebar-border p-4">
-        <p className="truncate px-1 text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/30">
-          {email}
-        </p>
-        <Button
-          asChild
-          variant="secondary"
-          size="sm"
-          className="w-full justify-start gap-2"
+      <div className="border-t border-sidebar-border px-2 py-3 space-y-1">
+        <Link
+          href="/post-auth"
+          className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
         >
-          <Link href="/post-auth">
-            <ArrowLeftIcon size={14} />
-            Back to Workspace
-          </Link>
-        </Button>
-        <form action={logoutAction}>
-          <Button
-            type="submit"
-            variant="secondary"
-            size="sm"
-            className="w-full justify-start gap-2"
-          >
-            <SignOutIcon size={14} />
-            Sign out
-          </Button>
-        </form>
+          <ArrowLeftIcon size={14} />
+          Back to workspace
+        </Link>
+
+        <div className="mx-0.5 border-t border-sidebar-border my-1" />
+
+        <div className="flex items-center gap-2 px-1 py-1">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold uppercase text-primary">
+            {avatarLetter}
+          </div>
+          <span className="min-w-0 flex-1 truncate text-[11px] text-sidebar-foreground/60">{email}</span>
+          <form action={logoutAction}>
+            <button
+              className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              title="Sign out"
+              type="submit"
+            >
+              <SignOutIcon size={12} />
+            </button>
+          </form>
+        </div>
       </div>
     </aside>
   );

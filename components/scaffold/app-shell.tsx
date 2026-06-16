@@ -7,6 +7,7 @@ import { PRODUCT_NAME } from "@/config/platform";
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/profile", label: "Profile" },
+  { href: "/post-auth", label: "Workspace" },
 ];
 
 export function AppShell({

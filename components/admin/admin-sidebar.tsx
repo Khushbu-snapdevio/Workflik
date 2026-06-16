@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  ChartBar,
-  Envelope,
-  ArrowLeft,
-  SignOut,
-  Stack,
-  Users,
+  ArrowLeftIcon,
+  ChartBarIcon,
+  EnvelopeIcon,
+  SignOutIcon,
+  StackIcon,
+  UsersIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,10 +15,10 @@ import { Button } from "@/components/ui/button";
 import { PRODUCT_NAME } from "@/config/platform";
 
 const navItems = [
-  { href: "/orbit", label: "Overview", icon: ChartBar, exact: true },
-  { href: "/orbit/users", label: "Users", icon: Users, exact: false },
-  { href: "/orbit/queues", label: "Queues", icon: Stack, exact: false },
-  { href: "/orbit/email", label: "Email", icon: Envelope, exact: false },
+  { href: "/orbit", label: "Overview", icon: ChartBarIcon, exact: true },
+  { href: "/orbit/users", label: "Users", icon: UsersIcon, exact: false },
+  { href: "/orbit/queues", label: "Queues", icon: StackIcon, exact: false },
+  { href: "/orbit/email", label: "Email", icon: EnvelopeIcon, exact: false },
 ];
 
 export function AdminSidebar({ email }: { email: string }) {
@@ -76,9 +76,9 @@ export function AdminSidebar({ email }: { email: string }) {
           size="sm"
           className="w-full justify-start gap-2"
         >
-          <Link href="/dashboard">
-            <ArrowLeft size={14} />
-            Dashboard
+          <Link href="/post-auth">
+            <ArrowLeftIcon size={14} />
+            Back to Workspace
           </Link>
         </Button>
         <form action={logoutAction}>
@@ -88,7 +88,7 @@ export function AdminSidebar({ email }: { email: string }) {
             size="sm"
             className="w-full justify-start gap-2"
           >
-            <SignOut size={14} />
+            <SignOutIcon size={14} />
             Sign out
           </Button>
         </form>

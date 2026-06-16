@@ -1,10 +1,10 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { Job } from "pg-boss";
-import { emailOutbox } from "@/db/schema";
+import { emailOutbox } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { sendEmailViaSmtp } from "@/lib/smtp/client";
-import { enqueueJob } from "@/lib/worker/enqueue";
-import { type EmailSendPayload, JOB_NAMES } from "@/lib/worker/job-types";
+import { enqueueJob } from "@/lib/jobs/enqueue";
+import { type EmailSendPayload, JOB_NAMES } from "@/lib/jobs/job-names";
 
 const RETRY_BACKOFF_SECONDS = [60, 300, 900];
 

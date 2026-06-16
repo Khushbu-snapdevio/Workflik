@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { account, auditLogs, session as sessionTable, user } from "@/db/schema";
+import { account, auditLogs, session as sessionTable, user } from "@/lib/db/schema";
 import { audit } from "@/lib/audit";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";

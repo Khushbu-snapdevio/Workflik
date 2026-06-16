@@ -3,7 +3,7 @@
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { account, session as sessionTable, user } from "@/db/schema";
+import { account, session as sessionTable, user } from "@/lib/db/schema";
 import { audit } from "@/lib/audit";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";

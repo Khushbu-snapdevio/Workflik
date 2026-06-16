@@ -15,7 +15,7 @@ async function main() {
 
   const [{ db }, { user }] = await Promise.all([
     import("@/lib/db"),
-    import("@/db/schema"),
+    import("@/lib/db/schema"),
   ]);
 
   const [updated] = await db

@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getQueueSummary } from "@/lib/worker/queue-inspection";
+import { getQueueSummary } from "@/lib/jobs/queue-inspection";
 
 export const metadata = {
   title: "Queues",

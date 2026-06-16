@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ADMIN_ROLE } from "@/config/platform";
-import { session as sessionTable, user } from "@/db/schema";
+import { session as sessionTable, user } from "@/lib/db/schema";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 

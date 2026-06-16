@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ADMIN_ROLE } from "@/config/platform";
-import { auditLogs, emailOutbox, user } from "@/db/schema";
+import { auditLogs, emailOutbox, user } from "@/lib/db/schema";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/utils";

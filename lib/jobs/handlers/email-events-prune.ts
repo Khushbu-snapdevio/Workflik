@@ -1,6 +1,6 @@
 import { lt } from "drizzle-orm";
 import type { Job } from "pg-boss";
-import { emailEvents } from "@/db/schema";
+import { emailEvents } from "@/lib/db/schema";
 import { db } from "@/lib/db";
 
 export async function handleEmailEventsPrune(

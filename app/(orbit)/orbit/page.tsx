@@ -3,9 +3,9 @@ import { OrbitPageHeader } from "@/components/admin/orbit-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ADMIN_ROLE } from "@/config/platform";
-import { emailOutbox, user } from "@/db/schema";
+import { emailOutbox, user } from "@/lib/db/schema";
 import { db } from "@/lib/db";
-import { getQueueSummary } from "@/lib/worker/queue-inspection";
+import { getQueueSummary } from "@/lib/jobs/queue-inspection";
 
 export const metadata = {
   title: "Orbit",

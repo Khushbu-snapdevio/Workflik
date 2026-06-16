@@ -1,6 +1,6 @@
-export const PRODUCT_NAME = "KROVA";
+export const PRODUCT_NAME = "WORKFLIK";
 export const PRODUCT_DESCRIPTION =
-  "A lean Next.js, Postgres, pg-boss, email, and Orbit admin scaffold.";
+  "An opinionated team workspace for small teams — Notion's core, pre-assembled.";
 export const LOGO_PATH = "/logo.png";
 
 export const ADMIN_ROLE = "admin";

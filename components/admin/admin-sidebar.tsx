@@ -29,7 +29,7 @@ export function AdminSidebar({ email }: { email: string }) {
       {/* Brand */}
       <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
         <span className="grid size-9 shrink-0 place-items-center bg-sidebar-primary font-black text-sidebar-primary-foreground text-xs">
-          KR
+          WF
         </span>
         <div className="min-w-0">
           <p className="font-black text-sm leading-none">{PRODUCT_NAME}</p>

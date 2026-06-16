@@ -43,6 +43,7 @@ CREATE TABLE "sessions" (
 	"ip_address" text,
 	"user_agent" text,
 	"impersonated_by" uuid,
+	"impersonated_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "sessions_token_unique" UNIQUE("token")
@@ -59,7 +60,7 @@ CREATE TABLE "users" (
 	"timezone" text,
 	"is_platform_admin" boolean DEFAULT false NOT NULL,
 	"banned" boolean DEFAULT false NOT NULL,
-	"ban_reason" text,
+	"banned_reason" text,
 	"ban_expires" timestamp with time zone,
 	"onboarding_completed" boolean DEFAULT false NOT NULL,
 	"onboarding_step" integer DEFAULT 0 NOT NULL,
@@ -515,101 +516,3 @@ CREATE UNIQUE INDEX "urv_user_page_idx" ON "user_recently_visited" USING btree (
 CREATE INDEX "urv_recent_idx" ON "user_recently_visited" USING btree ("user_id","workspace_id","visited_at");--> statement-breakpoint
 CREATE INDEX "platform_audit_log_actor_idx" ON "platform_audit_log" USING btree ("actor_id");--> statement-breakpoint
 CREATE INDEX "platform_audit_log_created_idx" ON "platform_audit_log" USING btree ("created_at");
---> statement-breakpoint
--- Deferred FK: pages.default_view_id → database_views.id (circular, added after both tables exist)
-ALTER TABLE pages
-  ADD CONSTRAINT pages_default_view_fk
-  FOREIGN KEY (default_view_id) REFERENCES database_views(id) ON DELETE SET NULL;
---> statement-breakpoint
--- FTS trigger: re-index pages/blocks (source_type = 'page')
-CREATE OR REPLACE FUNCTION workflik_search_upsert() RETURNS trigger AS $$
-BEGIN
-  INSERT INTO search_index (id, workspace_id, source_type, source_id, title, search_vector, page_id, updated_at)
-  SELECT
-    gen_random_uuid(),
-    p.workspace_id,
-    'page',
-    p.id,
-    p.title,
-    setweight(to_tsvector('english', coalesce(p.title, '')), 'A'),
-    p.id,
-    now()
-  FROM pages p
-  WHERE p.id = NEW.page_id AND p.is_deleted = false
-  ON CONFLICT (source_type, source_id) DO UPDATE
-    SET search_vector = EXCLUDED.search_vector,
-        title = EXCLUDED.title,
-        updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
---> statement-breakpoint
-CREATE OR REPLACE TRIGGER blocks_search_update
-AFTER INSERT OR UPDATE OF content ON blocks
-FOR EACH ROW EXECUTE FUNCTION workflik_search_upsert();
---> statement-breakpoint
--- FTS trigger: re-index entries (source_type = 'entry', aggregates text property values)
-CREATE OR REPLACE FUNCTION workflik_entry_search_upsert() RETURNS trigger AS $$
-DECLARE
-  v_entry   pages%ROWTYPE;
-  v_prop_text text;
-BEGIN
-  SELECT * INTO v_entry FROM pages WHERE id = NEW.entry_id AND is_deleted = false;
-  IF NOT FOUND THEN RETURN NEW; END IF;
-
-  SELECT string_agg(pv.value::text, ' ')
-    INTO v_prop_text
-    FROM property_values pv
-    JOIN database_properties dp ON dp.id = pv.property_id
-   WHERE pv.entry_id = NEW.entry_id
-     AND dp.type IN ('text', 'select', 'multi_select', 'url', 'email', 'phone');
-
-  INSERT INTO search_index (id, workspace_id, source_type, source_id, title, search_vector, page_id, updated_at)
-  SELECT
-    gen_random_uuid(),
-    v_entry.workspace_id,
-    'entry',
-    v_entry.id,
-    v_entry.title,
-    setweight(to_tsvector('english', coalesce(v_entry.title, '')), 'B') ||
-    setweight(to_tsvector('english', coalesce(v_prop_text, '')), 'C'),
-    v_entry.id,
-    now()
-  ON CONFLICT (source_type, source_id) DO UPDATE
-    SET search_vector = EXCLUDED.search_vector,
-        title = EXCLUDED.title,
-        updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
---> statement-breakpoint
-CREATE OR REPLACE TRIGGER property_values_search_update
-AFTER INSERT OR UPDATE OF value ON property_values
-FOR EACH ROW EXECUTE FUNCTION workflik_entry_search_upsert();
---> statement-breakpoint
--- FTS trigger: re-index comments (source_type = 'comment', weight D)
-CREATE OR REPLACE FUNCTION workflik_comment_search_upsert() RETURNS trigger AS $$
-BEGIN
-  INSERT INTO search_index (id, workspace_id, source_type, source_id, title, search_vector, page_id, updated_at)
-  SELECT
-    gen_random_uuid(),
-    p.workspace_id,
-    'comment',
-    NEW.id,
-    p.title,
-    setweight(to_tsvector('english', coalesce(NEW.content::text, '')), 'D'),
-    p.id,
-    now()
-  FROM pages p
-  WHERE p.id = NEW.page_id AND p.is_deleted = false
-  ON CONFLICT (source_type, source_id) DO UPDATE
-    SET search_vector = EXCLUDED.search_vector,
-        title = EXCLUDED.title,
-        updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
---> statement-breakpoint
-CREATE OR REPLACE TRIGGER comments_search_update
-AFTER INSERT OR UPDATE OF content ON comments
-FOR EACH ROW EXECUTE FUNCTION workflik_comment_search_upsert();

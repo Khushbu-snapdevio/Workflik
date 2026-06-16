@@ -1,5 +1,5 @@
 {
-  "id": "506bcf7c-535d-411e-a41f-ea85e4291e0c",
+  "id": "4070bb69-6461-4bcf-9b00-e257ed4f9532",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -169,6 +169,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "impersonated_at": {
+          "name": "impersonated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -312,8 +318,8 @@
           "notNull": true,
           "default": false
         },
-        "ban_reason": {
-          "name": "ban_reason",
+        "banned_reason": {
+          "name": "banned_reason",
           "type": "text",
           "primaryKey": false,
           "notNull": false

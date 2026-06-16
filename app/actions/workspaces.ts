@@ -9,7 +9,6 @@ import { uniqueSlug } from "@/lib/workspaces/auth";
 export async function createWorkspaceAction(formData: FormData) {
   const session = await requireSession();
   const name = (formData.get("name") as string)?.trim();
-  const kind = (formData.get("kind") as string) === "team" ? "team" : "personal";
   if (!name) return;
 
   const slug = await uniqueSlug(name);
@@ -17,7 +16,7 @@ export async function createWorkspaceAction(formData: FormData) {
   const workspace = await db.transaction(async (tx) => {
     const [ws] = await tx
       .insert(workspaces)
-      .values({ name, slug, kind, createdBy: session.user.id })
+      .values({ name, slug, createdBy: session.user.id })
       .returning();
 
     await tx.insert(workspaceStorageUsage).values({ workspaceId: ws.id });
@@ -33,5 +32,5 @@ export async function createWorkspaceAction(formData: FormData) {
     return ws;
   });
 
-  redirect(`/workspaces/setup/${workspace.slug}`);
+  redirect(`/${workspace.slug}`);
 }

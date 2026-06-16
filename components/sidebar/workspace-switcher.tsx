@@ -39,6 +39,29 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
     router.push(`/${slug}`);
   }
 
+  function extractToken(value: string): string | null {
+    const trimmed = value.trim();
+    // Full URL: https://...../invite/TOKEN
+    const urlMatch = trimmed.match(/\/invite\/([a-zA-Z0-9_-]+)/);
+    if (urlMatch) return urlMatch[1];
+    // Raw token only
+    if (/^[a-zA-Z0-9_-]{8,}$/.test(trimmed)) return trimmed;
+    return null;
+  }
+
+  function handleJoin() {
+    setJoinError("");
+    const token = extractToken(joinLink);
+    if (!token) {
+      setJoinError("Please paste a valid invite link.");
+      return;
+    }
+    setOpen(false);
+    setShowJoin(false);
+    setJoinLink("");
+    router.push(`/invite/${token}`);
+  }
+
   if (loading) {
     return (
       <div className="flex h-9 items-center gap-2 px-2">

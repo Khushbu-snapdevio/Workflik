@@ -34,7 +34,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
         return;
       }
       const data = await res.json() as { workspaceSlug?: string };
-      router.replace(data.workspaceSlug ? `/${data.workspaceSlug}` : "/dashboard");
+      router.replace(data.workspaceSlug ? `/workspaces/join-setup/${data.workspaceSlug}` : "/dashboard");
     } finally {
       setLoading(false);
     }

@@ -17,7 +17,7 @@ export default async function HomePage() {
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-none bg-primary font-black text-primary-foreground text-xs">
-              KR
+              WF
             </span>
             <span className="font-black tracking-normal">{PRODUCT_NAME}</span>
           </div>

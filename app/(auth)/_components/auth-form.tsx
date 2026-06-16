@@ -63,7 +63,7 @@ function AuthFormInner() {
       <div className="w-full max-w-md">
         <Link className="mb-6 flex items-center justify-center gap-3" href="/">
           <span className="grid size-10 place-items-center rounded-none bg-primary font-black text-primary-foreground text-xs">
-            KR
+            WF
           </span>
           <span className="font-black tracking-normal">{PRODUCT_NAME}</span>
         </Link>
@@ -74,7 +74,7 @@ function AuthFormInner() {
             <CardDescription>
               {sent
                 ? "Your one-time sign-in link is on its way."
-                : "Enter your email and KROVA will send a magic link."}
+                : "Enter your email and WORKFLIK will send a magic link."}
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -24,7 +24,7 @@ export function AppShell({
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6">
           <Link className="flex items-center gap-3" href="/dashboard">
             <span className="grid size-9 place-items-center rounded-none bg-primary font-black text-primary-foreground text-xs">
-              KR
+              WF
             </span>
             <span className="font-black tracking-normal">{PRODUCT_NAME}</span>
           </Link>

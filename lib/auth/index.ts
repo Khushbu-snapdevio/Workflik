@@ -59,10 +59,10 @@ export const auth = betterAuth({
       update: {
         before: async (session) => {
           const raw = session as Record<string, unknown>;
-          if (raw["impersonatedBy"] && raw["createdAt"]) {
-            const createdAt = new Date(raw["createdAt"] as string);
+          if (raw["impersonatedBy"] && raw["impersonatedAt"]) {
+            const impersonatedAt = new Date(raw["impersonatedAt"] as string);
             const twoHoursMs = 2 * 60 * 60 * 1000;
-            if (Date.now() - createdAt.getTime() > twoHoursMs) {
+            if (Date.now() - impersonatedAt.getTime() > twoHoursMs) {
               return false;
             }
           }

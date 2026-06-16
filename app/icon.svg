@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Rounded square background -->
+  <rect width="32" height="32" rx="8" fill="#5B3FD6"/>
+  <!-- W lettermark -->
+  <path
+    d="M6 10 L10 22 L13.5 14 L16 20 L19.5 14 L23 22 L26 10"
+    stroke="white"
+    stroke-width="2.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>

@@ -14,6 +14,7 @@ export const workspaces = pgTable("workspaces", {
   id:                uuid("id").primaryKey().defaultRandom(),
   name:              text("name").notNull(),
   slug:              text("slug").notNull().unique(),
+  kind:              text("kind").notNull().default("personal"),
   icon:              text("icon"),
   defaultPageAccess: defaultPageAccess("default_page_access").notNull().default("shared"),
   inviteLinkToken:   text("invite_link_token").unique(),

@@ -21,7 +21,7 @@ export const users = pgTable("users", {
   timezone:       text("timezone"),
   isPlatformAdmin: boolean("is_platform_admin").notNull().default(false),
   banned:          boolean("banned").notNull().default(false),
-  banReason:       text("ban_reason"),
+  bannedReason:    text("banned_reason"),
   banExpires:      timestamp("ban_expires", { withTimezone: true }),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   onboardingStep:      integer("onboarding_step").notNull().default(0),
@@ -39,6 +39,7 @@ export const sessions = pgTable("sessions", {
   ipAddress:      text("ip_address"),
   userAgent:      text("user_agent"),
   impersonatedBy: uuid("impersonated_by").references(() => users.id, { onDelete: "set null" }),
+  impersonatedAt: timestamp("impersonated_at", { withTimezone: true }),
   createdAt:      timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt:      updatedAt(),
 }, (t) => [index("sessions_user_idx").on(t.userId)]);

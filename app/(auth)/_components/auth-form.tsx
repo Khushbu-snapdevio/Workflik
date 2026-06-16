@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PRODUCT_NAME } from "@/config/platform";
-import { signIn, useSession } from "@/lib/auth-client";
+import { signIn, useSession } from "@/lib/auth/client";
 
 export function AuthForm() {
   return (

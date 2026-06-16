@@ -1,0 +1,108 @@
+import { and, eq, ne } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { workspaceMembers, workspaces, workspaceSlugRedirects } from "@/lib/db/schema";
+import {
+  apiError,
+  ApiError,
+  getSession,
+  getWorkspace,
+  requireWorkspaceMember,
+  slugify,
+} from "@/lib/workspaces/auth";
+
+type Ctx = { params: Promise<{ id: string }> };
+
+// GET /api/workspaces/:id
+export async function GET(_req: Request, { params }: Ctx) {
+  try {
+    const { id } = await params;
+    const session = await getSession();
+    await requireWorkspaceMember(id, session.user.id);
+    const workspace = await getWorkspace(id);
+    return Response.json(workspace);
+  } catch (err) {
+    if (err instanceof ApiError) return apiError(err.status, err.message);
+    return apiError(500, "Internal server error");
+  }
+}
+
+const patchSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  icon: z.string().max(256).nullable().optional(),
+  slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, "Slug may only contain lowercase letters, numbers, and hyphens").optional(),
+  defaultPageAccess: z.enum(["private", "shared"]).optional(),
+});
+
+// PATCH /api/workspaces/:id
+export async function PATCH(req: Request, { params }: Ctx) {
+  try {
+    const { id } = await params;
+    const session = await getSession();
+    await requireWorkspaceMember(id, session.user.id, "admin");
+
+    const body = await req.json();
+    const parsed = patchSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    }
+
+    const { name, icon, slug, defaultPageAccess } = parsed.data;
+
+    // Slug change: insert redirect row BEFORE updating slug, in same transaction
+    const workspace = await db.transaction(async (tx) => {
+      if (slug !== undefined) {
+        const current = await getWorkspace(id);
+        if (current.slug !== slug) {
+          // Check uniqueness
+          const [existing] = await tx
+            .select({ id: workspaces.id })
+            .from(workspaces)
+            .where(and(eq(workspaces.slug, slug), ne(workspaces.id, id)))
+            .limit(1);
+          if (existing) throw new ApiError(409, "Slug is already taken");
+
+          await tx.insert(workspaceSlugRedirects).values({
+            workspaceId: id,
+            oldSlug:     current.slug,
+          });
+        }
+      }
+
+      const [updated] = await tx
+        .update(workspaces)
+        .set({
+          ...(name !== undefined && { name }),
+          ...(icon !== undefined && { icon }),
+          ...(slug !== undefined && { slug }),
+          ...(defaultPageAccess !== undefined && { defaultPageAccess }),
+          updatedAt: new Date(),
+        })
+        .where(eq(workspaces.id, id))
+        .returning();
+
+      return updated;
+    });
+
+    return Response.json(workspace);
+  } catch (err) {
+    if (err instanceof ApiError) return apiError(err.status, err.message);
+    return apiError(500, "Internal server error");
+  }
+}
+
+// DELETE /api/workspaces/:id
+export async function DELETE(_req: Request, { params }: Ctx) {
+  try {
+    const { id } = await params;
+    const session = await getSession();
+    await requireWorkspaceMember(id, session.user.id, "admin");
+
+    await db.delete(workspaces).where(eq(workspaces.id, id));
+
+    return new Response(null, { status: 204 });
+  } catch (err) {
+    if (err instanceof ApiError) return apiError(err.status, err.message);
+    return apiError(500, "Internal server error");
+  }
+}

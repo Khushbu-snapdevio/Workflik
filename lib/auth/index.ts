@@ -52,4 +52,23 @@ export const auth = betterAuth({
       maxAge: 60,
     },
   },
+  // Guard: reject any session refresh where the session was created via
+  // impersonation and the 2-hour hard TTL has elapsed.
+  databaseHooks: {
+    session: {
+      update: {
+        before: async (session) => {
+          const raw = session as Record<string, unknown>;
+          if (raw["impersonatedBy"] && raw["impersonatedAt"]) {
+            const impersonatedAt = new Date(raw["impersonatedAt"] as string);
+            const twoHoursMs = 2 * 60 * 60 * 1000;
+            if (Date.now() - impersonatedAt.getTime() > twoHoursMs) {
+              return false;
+            }
+          }
+          return { data: session };
+        },
+      },
+    },
+  },
 });

@@ -1,7 +1,8 @@
 export const JOB_NAMES = {
-  EMAIL_OUTBOX_REAP:    "email.outbox-reap",
-  EMAIL_SEND:           "email.send",
-  SCAFFOLD_HEALTHCHECK: "scaffold.healthcheck",
+  EMAIL_OUTBOX_REAP:        "email.outbox-reap",
+  EMAIL_SEND:               "email.send",
+  SCAFFOLD_HEALTHCHECK:     "scaffold.healthcheck",
+  WORKSPACE_INVITE_SEND:    "workspace.invite-send",
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];
@@ -10,8 +11,18 @@ export interface EmailSendPayload {
   outboxId: string;
 }
 
+export interface WorkspaceInviteSendPayload {
+  memberId:      string;
+  workspaceId:   string;
+  invitedEmail:  string;
+  inviterName:   string;
+  workspaceName: string;
+  inviteToken:   string;
+}
+
 export type JobPayloads = {
-  [JOB_NAMES.EMAIL_OUTBOX_REAP]:    Record<string, never>;
-  [JOB_NAMES.EMAIL_SEND]:           EmailSendPayload;
-  [JOB_NAMES.SCAFFOLD_HEALTHCHECK]: Record<string, never>;
+  [JOB_NAMES.EMAIL_OUTBOX_REAP]:     Record<string, never>;
+  [JOB_NAMES.EMAIL_SEND]:            EmailSendPayload;
+  [JOB_NAMES.SCAFFOLD_HEALTHCHECK]:  Record<string, never>;
+  [JOB_NAMES.WORKSPACE_INVITE_SEND]: WorkspaceInviteSendPayload;
 };

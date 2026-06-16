@@ -18,9 +18,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ADMIN_ROLE } from "@/config/platform";
-import { sessions as sessionTable, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
+import { sessions as sessionTable, users } from "@/lib/db/schema";
 
 export const metadata = {
   title: "Profile",
@@ -66,7 +66,10 @@ export default async function ProfilePage() {
       />
 
       <div className="space-y-6">
-        <AccountIdentityForms email={freshUser.email} name={freshUser.name ?? ""} />
+        <AccountIdentityForms
+          email={freshUser.email}
+          name={freshUser.name ?? ""}
+        />
 
         <SessionsCard sessions={sessionRows} />
 
@@ -74,12 +77,12 @@ export default async function ProfilePage() {
           <CardHeader>
             <CardTitle>Export Your Data</CardTitle>
             <CardDescription>
-              Download a JSON archive of your profile, linked auth accounts,
-              and sessions.
+              Download a JSON archive of your profile, linked auth accounts, and
+              sessions.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild variant="secondary" size="sm">
+            <Button asChild size="sm" variant="secondary">
               <a download href="/api/account/export">
                 Download JSON export
               </a>

@@ -129,7 +129,7 @@ export default async function WorkspacePage({ params }: Props) {
           </div>
 
           <Link
-            href={`/${slug}/new`}
+            href={`/app/${slug}/new`}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-xs font-semibold uppercase tracking-ui text-primary-foreground transition-colors hover:bg-[var(--primary-hover)]"
           >
             <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -148,7 +148,7 @@ export default async function WorkspacePage({ params }: Props) {
 
           {/* New Page — violet */}
           <Link
-            href={`/${slug}/new`}
+            href={`/app/${slug}/new`}
             className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm transition-all hover:border-[#C4B5FD] hover:shadow-md"
           >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary">
@@ -225,7 +225,7 @@ export default async function WorkspacePage({ params }: Props) {
                 </div>
                 <span className="text-sm font-semibold text-foreground">Recently Opened</span>
               </div>
-              <Link href={`/${slug}/search`} className="text-xs font-semibold text-primary hover:underline">
+              <Link href={`/app/${slug}/search`} className="text-xs font-semibold text-primary hover:underline">
                 View all
               </Link>
             </div>
@@ -247,7 +247,7 @@ export default async function WorkspacePage({ params }: Props) {
                 {recentPages.map((page) => (
                   <Link
                     key={page.id}
-                    href={`/${slug}/${page.shortId}`}
+                    href={`/app/${slug}/${page.shortId}`}
                     className="flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-secondary/50"
                   >
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-sm leading-none">
@@ -344,7 +344,7 @@ export default async function WorkspacePage({ params }: Props) {
               </div>
             </div>
             <Link
-              href={`/${slug}/new`}
+              href={`/app/${slug}/new`}
               className="inline-flex h-9 items-center rounded-lg bg-primary px-5 text-xs font-semibold uppercase tracking-ui text-primary-foreground transition-colors hover:bg-[var(--primary-hover)]"
             >
               Create Page

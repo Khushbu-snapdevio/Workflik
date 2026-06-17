@@ -52,6 +52,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   const [collapsed, setCollapsed] = useState(false);
   const [filter, setFilter] = useState("");
   const [pages, setPages] = useState<PageItem[]>([]);
+  const [pagesLoading, setPagesLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [recentlyVisited, setRecentlyVisited] = useState<{ id: string; pageId: string; visitedAt: string }[]>([]);
 
@@ -76,11 +77,12 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   }, []);
 
   useEffect(() => {
+    setPagesLoading(true);
     fetch(`/api/workspaces/${workspaceId}/pages/tree`)
       .then((r) => r.json())
-      .then((d) => setPages(Array.isArray(d) ? d : []))
-      .catch(() => {});
-  }, [workspaceId]);
+      .then((d) => { setPages(Array.isArray(d) ? d : []); setPagesLoading(false); })
+      .catch(() => setPagesLoading(false));
+  }, [workspaceId, pathname]);
 
   useEffect(() => {
     fetch(`/api/user/favorites?workspaceId=${workspaceId}`)
@@ -299,6 +301,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
           </SectionLabel>
           <PageTree
             filter={filter}
+            loading={pagesLoading}
             onPagesChange={setPages}
             pages={pages}
             workspaceId={workspaceId}

@@ -1,15 +1,12 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { logoutAction } from "@/app/actions/auth";
+import { Button } from "@/components/ui/button";
 import { PRODUCT_NAME } from "@/config/platform";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/profile", label: "Profile" },
-  { href: "/post-auth", label: "Workspace" },
 ];
 
 export function AppShell({
@@ -21,100 +18,67 @@ export function AppShell({
   email: string;
   isAdmin?: boolean;
 }) {
-  const pathname = usePathname();
-
   return (
     <div className="min-h-screen bg-page text-foreground">
-
-      {/* ── Top nav ─────────────────────────────── */}
-      <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-3">
-
-          {/* Logo */}
+      <header className="border-b border-border bg-background/85 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-3 sm:px-6">
           <Link className="flex items-center gap-3" href="/dashboard">
-            <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-[11px] font-black text-primary-foreground shadow-sm">
-              WF
+            <span className="grid size-9 place-items-center rounded-none bg-primary font-black text-primary-foreground text-xs">
+              KR
             </span>
-            <span className="text-sm font-black tracking-tight text-foreground">
-              {PRODUCT_NAME}
-            </span>
+            <span className="font-black tracking-normal">{PRODUCT_NAME}</span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden items-center gap-0.5 md:flex">
-            {navLinks.map((link) => {
-              const active = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-ui transition-colors ${
-                    active
-                      ? "bg-secondary text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-            {isAdmin && (
+          <nav className="hidden items-center gap-1 md:flex">
+            {navLinks.map((link) => (
               <Link
-                href="/orbit"
-                className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-ui text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="rounded-none px-3 py-2 text-xs font-semibold uppercase tracking-ui text-muted-foreground hover:bg-muted hover:text-foreground"
+                href={link.href}
+                key={link.href}
               >
-                Admin Panel
+                {link.label}
               </Link>
-            )}
+            ))}
           </nav>
 
-          {/* Right side */}
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-48 truncate text-xs text-muted-foreground sm:block">
+            {isAdmin && (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/orbit">Admin Panel</Link>
+              </Button>
+            )}
+            <span className="hidden max-w-56 truncate text-muted-foreground text-sm sm:block">
               {email}
             </span>
             <form action={logoutAction}>
-              <button
-                type="submit"
-                className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold uppercase tracking-ui text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
+              <Button type="submit" variant="secondary" size="sm">
                 Sign out
-              </button>
+              </Button>
             </form>
           </div>
         </div>
 
-        {/* Mobile nav */}
-        <nav className="mx-auto flex max-w-7xl gap-0.5 overflow-x-auto px-6 pb-3 md:hidden">
-          {navLinks.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-ui transition-colors ${
-                  active
-                    ? "bg-secondary text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
+        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-3 md:hidden">
+          {navLinks.map((link) => (
+            <Link
+              className="rounded-none px-3 py-2 text-xs font-semibold uppercase tracking-ui text-muted-foreground hover:bg-muted hover:text-foreground"
+              href={link.href}
+              key={link.href}
+            >
+              {link.label}
+            </Link>
+          ))}
           {isAdmin && (
             <Link
+              className="rounded-none px-3 py-2 text-xs font-semibold uppercase tracking-ui text-muted-foreground hover:bg-muted hover:text-foreground"
               href="/orbit"
-              className="rounded-md px-3 py-1.5 text-xs font-semibold uppercase tracking-ui text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               Admin Panel
             </Link>
           )}
         </nav>
       </header>
-
-      {/* ── Page content ────────────────────────── */}
-      <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">{children}</main>
     </div>
   );
 }

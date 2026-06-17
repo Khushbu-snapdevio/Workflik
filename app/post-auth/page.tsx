@@ -4,12 +4,24 @@ import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import {
   userPreferences,
+  users,
   workspaceMembers,
   workspaces,
 } from "@/lib/db/schema";
 
 export default async function PostAuthPage() {
   const session = await requireSession();
+
+  // First-time users must complete onboarding before seeing a workspace
+  const [freshUser] = await db
+    .select({ onboardingCompleted: users.onboardingCompleted })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (freshUser && !freshUser.onboardingCompleted) {
+    redirect("/onboarding");
+  }
 
   // Redirect to last active workspace if available
   const [prefs] = await db

@@ -8,17 +8,17 @@ export function PageHeader({
   title: string;
 }) {
   return (
-    <div className="mb-6 border-b border-border pb-4">
+    <div className="mb-6">
       {eyebrow && (
-        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-eyebrow text-primary">
+        <p className="mb-2 font-bold text-xs text-success uppercase tracking-eyebrow">
           {eyebrow}
         </p>
       )}
-      <h1 className="text-2xl font-black tracking-tight text-foreground">
+      <h1 className="font-black text-3xl text-foreground tracking-normal">
         {title}
       </h1>
       {description && (
-        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-2 max-w-2xl text-muted-foreground text-sm leading-relaxed">
           {description}
         </p>
       )}

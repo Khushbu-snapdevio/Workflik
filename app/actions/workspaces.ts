@@ -11,12 +11,15 @@ export async function createWorkspaceAction(formData: FormData) {
   const name = (formData.get("name") as string)?.trim();
   if (!name) return;
 
+  const rawKind = formData.get("kind") as string | null;
+  const kind: "personal" | "team" = rawKind === "team" ? "team" : "personal";
+
   const slug = await uniqueSlug(name);
 
   const workspace = await db.transaction(async (tx) => {
     const [ws] = await tx
       .insert(workspaces)
-      .values({ name, slug, createdBy: session.user.id })
+      .values({ name, slug, kind, createdBy: session.user.id })
       .returning();
 
     await tx.insert(workspaceStorageUsage).values({ workspaceId: ws.id });
@@ -32,5 +35,5 @@ export async function createWorkspaceAction(formData: FormData) {
     return ws;
   });
 
-  redirect(`/${workspace.slug}`);
+  redirect(`/workspaces/setup/${workspace.slug}`);
 }

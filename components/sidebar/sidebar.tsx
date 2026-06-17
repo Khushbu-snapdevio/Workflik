@@ -141,15 +141,63 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
 
   if (collapsed) {
     return (
-      <aside className="flex h-screen w-12 shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-3 text-sidebar-foreground">
-        <button
-          className="flex size-8 items-center justify-center text-sidebar-foreground/50 hover:text-sidebar-foreground"
-          onClick={toggleCollapse}
-          title="Expand sidebar"
-          type="button"
-        >
-          <CaretDoubleRightIcon size={16} />
-        </button>
+      <aside className="flex h-screen w-[52px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+
+        {/* Expand button */}
+        <div className="flex w-full items-center justify-center border-b border-sidebar-border py-[11px]">
+          <button
+            onClick={toggleCollapse}
+            title="Expand sidebar"
+            type="button"
+            className="flex size-8 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          >
+            <CaretDoubleRightIcon size={15} />
+          </button>
+        </div>
+
+        {/* Primary nav */}
+        <nav className="flex w-full flex-col items-center gap-1 px-1.5 py-3">
+          <CollapsedNavItem href={`/${workspaceSlug}`}              label="Home"          active={pathname === `/${workspaceSlug}`}><HouseIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/${workspaceSlug}/search`}       label="Search"        ><MagnifyingGlassIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/${workspaceSlug}/notifications`} label="Notifications" ><BellIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/${workspaceSlug}/settings`}     label="Settings"      ><GearIcon size={17} /></CollapsedNavItem>
+        </nav>
+
+        <div className="flex-1" />
+
+        {/* Footer nav */}
+        <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-1.5 py-3">
+          <CollapsedNavItem href={`/${workspaceSlug}/trash`} label="Trash"><TrashIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href="/dashboard" label="Dashboard">
+            <svg className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </CollapsedNavItem>
+          {isAdmin && (
+            <CollapsedNavItem href="/orbit" label="Admin Panel">
+              <svg className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </CollapsedNavItem>
+          )}
+        </nav>
+
+        {/* User avatar */}
+        <div className="flex w-full items-center justify-center border-t border-sidebar-border py-3">
+          <div className="group relative">
+            <div
+              className="flex size-7 cursor-default items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold uppercase text-primary"
+            >
+              {userEmail[0].toUpperCase()}
+            </div>
+            {/* Tooltip */}
+            <div className="pointer-events-none absolute bottom-0 left-full z-50 ml-2.5 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              <p className="text-xs font-medium text-popover-foreground">{userEmail}</p>
+            </div>
+          </div>
+        </div>
+
       </aside>
     );
   }
@@ -360,6 +408,37 @@ function NavButton({
         </span>
       )}
     </Link>
+  );
+}
+
+function CollapsedNavItem({
+  href,
+  label,
+  active,
+  children,
+}: {
+  href: string;
+  label: string;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="group relative w-full">
+      <Link
+        href={href}
+        className={`flex w-full items-center justify-center rounded-md py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground ${
+          active
+            ? "bg-sidebar-accent text-sidebar-primary"
+            : "text-sidebar-foreground/50"
+        }`}
+      >
+        {children}
+      </Link>
+      {/* Tooltip — appears to the right on hover */}
+      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+        <p className="text-xs font-semibold text-popover-foreground">{label}</p>
+      </div>
+    </div>
   );
 }
 

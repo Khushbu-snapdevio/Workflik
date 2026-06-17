@@ -54,7 +54,7 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
   function handleContinue() {
     if (isLastStep) {
       startTransition(() => {
-        router.push(`/${workspaceSlug}`);
+        router.push(`/app/${workspaceSlug}`);
       });
     } else {
       setStep((s) => s + 1);
@@ -63,7 +63,7 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
 
   function handleSkip() {
     if (isLastStep) {
-      router.push(`/${workspaceSlug}`);
+      router.push(`/app/${workspaceSlug}`);
     } else {
       setStep((s) => s + 1);
     }

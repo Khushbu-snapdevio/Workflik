@@ -34,7 +34,7 @@ function AuthFormInner() {
 
   useEffect(() => {
     if (session) {
-      router.replace("/post-auth");
+      router.replace("/platform/post-auth");
     }
   }, [router, session]);
 
@@ -47,7 +47,7 @@ function AuthFormInner() {
     setError(null);
     setSubmitting(true);
 
-    const callbackURL = searchParams.get("next") ?? "/post-auth";
+    const callbackURL = searchParams.get("next") ?? "/platform/post-auth";
     const result = await signIn.magicLink({ callbackURL, email });
 
     setSubmitting(false);

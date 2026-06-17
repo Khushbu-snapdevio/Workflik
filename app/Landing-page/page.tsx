@@ -6,7 +6,7 @@ import { getCurrentSession } from "@/lib/authz";
 export default async function HomePage() {
   const session = await getCurrentSession();
   if (session) {
-    redirect("/post-auth");
+    redirect("/platform/post-auth");
   }
 
   return (
@@ -23,13 +23,13 @@ export default async function HomePage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href="/login"
+              href="/auth/login"
               className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
             >
               Sign in
             </Link>
             <Link
-              href="/login"
+              href="/auth/login"
               className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-[var(--primary-hover)]"
             >
               Get started free
@@ -65,7 +65,7 @@ export default async function HomePage() {
 
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/login"
+              href="/auth/login"
               className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-[var(--primary-hover)] hover:shadow-primary/30"
             >
               Start for free
@@ -74,7 +74,7 @@ export default async function HomePage() {
               </svg>
             </Link>
             <Link
-              href="/login"
+              href="/auth/login"
               className="inline-flex h-12 items-center rounded-xl border border-border bg-card px-6 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
             >
               Sign in with magic link
@@ -222,7 +222,7 @@ export default async function HomePage() {
             Sign up in seconds — no setup, no credit card. Start writing in your first workspace today.
           </p>
           <Link
-            href="/login"
+            href="/auth/login"
             className="inline-flex h-12 items-center gap-2 rounded-xl bg-primary-foreground px-7 text-sm font-bold text-primary shadow-lg transition-all hover:bg-primary-foreground/90"
           >
             Get started for free
@@ -246,7 +246,7 @@ export default async function HomePage() {
             © {new Date().getFullYear()} {PRODUCT_NAME}. All rights reserved.
           </p>
           <Link
-            href="/login"
+            href="/auth/login"
             className="text-xs font-semibold text-primary hover:underline"
           >
             Sign in →

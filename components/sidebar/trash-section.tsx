@@ -10,7 +10,7 @@ type Props = {
 
 export function TrashSection({ workspaceSlug }: Props) {
   const pathname = usePathname();
-  const href = `/${workspaceSlug}/trash`;
+  const href = `/app/${workspaceSlug}/trash`;
   const isActive = pathname === href;
 
   return (

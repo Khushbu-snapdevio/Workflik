@@ -272,7 +272,7 @@ function PageTreeNode({
         {/* Drag handle + page link */}
         <Link
           className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground"
-          href={`/${workspaceSlug}/${node.shortId}`}
+          href={`/app/${workspaceSlug}/${node.shortId}`}
           {...listeners}
         >
           {node.icon && (

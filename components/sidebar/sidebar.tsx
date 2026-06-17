@@ -157,25 +157,25 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
 
         {/* Primary nav */}
         <nav className="flex w-full flex-col items-center gap-1 px-1.5 py-3">
-          <CollapsedNavItem href={`/${workspaceSlug}`}              label="Home"          active={pathname === `/${workspaceSlug}`}><HouseIcon size={17} /></CollapsedNavItem>
-          <CollapsedNavItem href={`/${workspaceSlug}/search`}       label="Search"        ><MagnifyingGlassIcon size={17} /></CollapsedNavItem>
-          <CollapsedNavItem href={`/${workspaceSlug}/notifications`} label="Notifications" ><BellIcon size={17} /></CollapsedNavItem>
-          <CollapsedNavItem href={`/${workspaceSlug}/settings`}     label="Settings"      ><GearIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/app/${workspaceSlug}`}              label="Home"          active={pathname === `/app/${workspaceSlug}`}><HouseIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/app/${workspaceSlug}/search`}       label="Search"        ><MagnifyingGlassIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/app/${workspaceSlug}/notifications`} label="Notifications" ><BellIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/app/${workspaceSlug}/settings`}     label="Settings"      ><GearIcon size={17} /></CollapsedNavItem>
         </nav>
 
         <div className="flex-1" />
 
         {/* Footer nav */}
         <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-1.5 py-3">
-          <CollapsedNavItem href={`/${workspaceSlug}/trash`} label="Trash"><TrashIcon size={17} /></CollapsedNavItem>
-          <CollapsedNavItem href="/dashboard" label="Dashboard">
+          <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><TrashIcon size={17} /></CollapsedNavItem>
+          <CollapsedNavItem href="/platform/dashboard" label="Dashboard">
             <svg className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
               <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
               <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
             </svg>
           </CollapsedNavItem>
           {isAdmin && (
-            <CollapsedNavItem href="/orbit" label="Admin Panel">
+            <CollapsedNavItem href="/Orbit-admin/orbit" label="Admin Panel">
               <svg className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -214,7 +214,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         </div>
         <Link
           className="flex size-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          href={`/${workspaceSlug}/new`}
+          href={`/app/${workspaceSlug}/new`}
           title="New page"
         >
           <PlusIcon size={15} weight="bold" />
@@ -234,24 +234,24 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         {/* Quick nav */}
         <nav className="px-2 py-2">
           <NavButton
-            href={`/${workspaceSlug}`}
+            href={`/app/${workspaceSlug}`}
             icon={<HouseIcon size={15} />}
             label="Home"
-            active={pathname === `/${workspaceSlug}`}
+            active={pathname === `/app/${workspaceSlug}`}
           />
           <NavButton
-            href={`/${workspaceSlug}/search`}
+            href={`/app/${workspaceSlug}/search`}
             icon={<MagnifyingGlassIcon size={15} />}
             label="Search"
             shortcut="Ctrl+K"
           />
           <NavButton
-            href={`/${workspaceSlug}/notifications`}
+            href={`/app/${workspaceSlug}/notifications`}
             icon={<BellIcon size={15} />}
             label="Notifications"
           />
           <NavButton
-            href={`/${workspaceSlug}/settings`}
+            href={`/app/${workspaceSlug}/settings`}
             icon={<GearIcon size={15} />}
             label="Settings"
           />
@@ -311,7 +311,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         {/* Trash */}
         <div className="px-2 py-2">
           <NavButton
-            href={`/${workspaceSlug}/trash`}
+            href={`/app/${workspaceSlug}/trash`}
             icon={<TrashIcon size={15} />}
             label="Trash"
           />
@@ -321,7 +321,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
       {/* Footer nav — Dashboard & Admin */}
       <div className="border-t border-sidebar-border px-2 py-2">
         <NavButton
-          href="/dashboard"
+          href="/platform/dashboard"
           icon={
             <svg className="size-[15px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
               <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -334,7 +334,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         />
         {isAdmin && (
           <NavButton
-            href="/orbit"
+            href="/Orbit-admin/orbit"
             icon={
               <svg className="size-[15px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinecap="round" strokeLinejoin="round" />

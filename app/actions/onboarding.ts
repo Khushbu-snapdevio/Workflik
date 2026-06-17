@@ -79,5 +79,5 @@ export async function completeOnboardingAction(
     }).catch(() => {});
   }
 
-  redirect(`/${workspace.slug}`);
+  redirect(`/app/${workspace.slug}`);
 }

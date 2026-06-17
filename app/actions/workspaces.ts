@@ -35,5 +35,5 @@ export async function createWorkspaceAction(formData: FormData) {
     return ws;
   });
 
-  redirect(`/workspaces/setup/${workspace.slug}`);
+  redirect(`/app/workspaces/setup/${workspace.slug}`);
 }

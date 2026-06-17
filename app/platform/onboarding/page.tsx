@@ -18,7 +18,7 @@ export default async function OnboardingPage() {
 
   // Already onboarded — skip straight to workspace
   if (user?.onboardingCompleted) {
-    redirect("/post-auth");
+    redirect("/platform/post-auth");
   }
 
   return <OnboardingUI />;

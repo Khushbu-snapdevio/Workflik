@@ -40,7 +40,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
         return (
           <Link
             key={item.id}
-            href={`/${workspaceSlug}/${page.shortId}`}
+            href={`/app/${workspaceSlug}/${page.shortId}`}
             className="flex min-w-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             {page.icon ? (

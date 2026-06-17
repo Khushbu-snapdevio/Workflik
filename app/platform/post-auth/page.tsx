@@ -20,7 +20,7 @@ export default async function PostAuthPage() {
     .limit(1);
 
   if (freshUser && !freshUser.onboardingCompleted) {
-    redirect("/onboarding");
+    redirect("/platform/onboarding");
   }
 
   // Redirect to last active workspace if available
@@ -37,7 +37,7 @@ export default async function PostAuthPage() {
       .where(eq(workspaces.id, prefs.lastWorkspaceId))
       .limit(1);
     if (ws) {
-      redirect(`/${ws.slug}`);
+      redirect(`/app/${ws.slug}`);
     }
   }
 
@@ -55,9 +55,9 @@ export default async function PostAuthPage() {
     .limit(1);
 
   if (firstMembership) {
-    redirect(`/${firstMembership.slug}`);
+    redirect(`/app/${firstMembership.slug}`);
   }
 
   // No workspace yet — send to workspace creation
-  redirect("/workspaces/new");
+  redirect("/app/workspaces/new");
 }

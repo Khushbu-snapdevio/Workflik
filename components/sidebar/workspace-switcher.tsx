@@ -46,7 +46,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
 
   function switchTo(slug: string) {
     setOpen(false);
-    router.push(`/${slug}`);
+    router.push(`/app/${slug}`);
   }
 
   function extractToken(value: string): string | null {
@@ -179,7 +179,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
             <div className={`border-t border-border p-1.5 ${showJoin ? "hidden" : ""}`}>
               <button
                 className="flex w-full items-center gap-2 rounded px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={() => { setOpen(false); router.push("/workspaces/new"); }}
+                onClick={() => { setOpen(false); router.push("/app/workspaces/new"); }}
                 type="button"
               >
                 <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">

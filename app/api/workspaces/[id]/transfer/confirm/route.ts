@@ -68,7 +68,7 @@ export async function GET(req: Request, { params }: Ctx) {
         .where(eq(verifications.id, verification.id));
     });
 
-    redirect(`/dashboard?transfer=success`);
+    redirect(`/platform/dashboard?transfer=success`);
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error(err);

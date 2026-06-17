@@ -80,7 +80,7 @@ export function FavoritesSection({
     <div className="px-2">
       {/* Clickable nav item — same style as Search / Notifications / Settings */}
       <Link
-        href={`/${workspaceSlug}/favorites`}
+        href={`/app/${workspaceSlug}/favorites`}
         className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
       >
         <StarIcon size={15} className="shrink-0" />
@@ -156,7 +156,7 @@ function FavoriteRow({
     >
       <Link
         className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground"
-        href={`/${workspaceSlug}/${shortId}`}
+        href={`/app/${workspaceSlug}/${shortId}`}
         {...listeners}
       >
         {icon ? (

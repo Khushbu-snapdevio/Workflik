@@ -14,10 +14,10 @@ import { logoutAction } from "@/app/actions/auth";
 import { PRODUCT_NAME } from "@/config/platform";
 
 const navItems = [
-  { href: "/orbit", label: "Overview", icon: ChartBarIcon, exact: true },
-  { href: "/orbit/users", label: "Users", icon: UsersIcon, exact: false },
-  { href: "/orbit/queues", label: "Queues", icon: StackIcon, exact: false },
-  { href: "/orbit/email", label: "Email", icon: EnvelopeIcon, exact: false },
+  { href: "/Orbit-admin/orbit", label: "Overview", icon: ChartBarIcon, exact: true },
+  { href: "/Orbit-admin/orbit/users", label: "Users", icon: UsersIcon, exact: false },
+  { href: "/Orbit-admin/orbit/queues", label: "Queues", icon: StackIcon, exact: false },
+  { href: "/Orbit-admin/orbit/email", label: "Email", icon: EnvelopeIcon, exact: false },
 ];
 
 export function AdminSidebar({ email }: { email: string }) {
@@ -69,7 +69,7 @@ export function AdminSidebar({ email }: { email: string }) {
       {/* Footer */}
       <div className="border-t border-sidebar-border px-2 py-3 space-y-1">
         <Link
-          href="/post-auth"
+          href="/platform/post-auth"
           className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
         >
           <ArrowLeftIcon size={14} />

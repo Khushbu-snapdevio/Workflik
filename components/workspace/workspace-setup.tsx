@@ -138,10 +138,10 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
       startTransition(async () => {
         setInviteError("");
         await sendInvites();
-        router.push(`/${workspaceSlug}`);
+        router.push(`/app/${workspaceSlug}`);
       });
     } else if (isLastStep) {
-      router.push(`/${workspaceSlug}`);
+      router.push(`/app/${workspaceSlug}`);
     } else {
       setStep((s) => s + 1);
     }
@@ -149,7 +149,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
 
   function handleSkip() {
     if (isLastStep || isInviteStep) {
-      router.push(`/${workspaceSlug}`);
+      router.push(`/app/${workspaceSlug}`);
     } else {
       setStep((s) => s + 1);
     }

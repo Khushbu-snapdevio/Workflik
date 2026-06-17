@@ -147,5 +147,5 @@ export async function deleteAccountAction(
     await tx.delete(users).where(eq(users.id, freshUser.id));
   });
 
-  redirect("/login");
+  redirect("/auth/login");
 }

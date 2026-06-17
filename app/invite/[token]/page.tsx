@@ -46,7 +46,7 @@ export default async function InvitePage({ params }: Props) {
 
   if (!session) {
     // Redirect to login with next param pointing back here
-    redirect(`/login?next=/invite/${token}`);
+    redirect(`/auth/login?next=/invite/${token}`);
   }
 
   // Signed-in user's email must match the invite email (if email-specific invite)
@@ -70,7 +70,7 @@ export default async function InvitePage({ params }: Props) {
     .limit(1);
 
   if (existing) {
-    redirect(`/dashboard`);
+    redirect(`/platform/dashboard`);
   }
 
   return (
@@ -91,7 +91,7 @@ function InviteError({ message }: { message: string }) {
         <p className="text-muted-foreground">{message}</p>
         <a
           className="mt-6 inline-block text-sm underline"
-          href="/dashboard"
+          href="/platform/dashboard"
         >
           Go to dashboard
         </a>

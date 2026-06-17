@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { logoutAction } from "@/app/actions/auth";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { FavoritesSection } from "@/components/sidebar/favorites-section";
 import { PageTree } from "@/components/sidebar/page-tree";
 import { RecentlyVisitedSection } from "@/components/sidebar/recently-visited-section";
@@ -354,15 +354,12 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
           <span className="min-w-0 flex-1 truncate text-xs text-sidebar-foreground/60">
             {userEmail}
           </span>
-          <form action={logoutAction}>
-            <button
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              title="Sign out"
-              type="submit"
-            >
-              <SignOutIcon size={13} />
-            </button>
-          </form>
+          <SignOutButton
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            title="Sign out"
+          >
+            <SignOutIcon size={13} />
+          </SignOutButton>
         </div>
       </div>
 

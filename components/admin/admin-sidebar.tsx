@@ -10,7 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logoutAction } from "@/app/actions/auth";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { PRODUCT_NAME } from "@/config/platform";
 
 const navItems = [
@@ -83,15 +83,12 @@ export function AdminSidebar({ email }: { email: string }) {
             {avatarLetter}
           </div>
           <span className="min-w-0 flex-1 truncate text-[11px] text-sidebar-foreground/60">{email}</span>
-          <form action={logoutAction}>
-            <button
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              title="Sign out"
-              type="submit"
-            >
-              <SignOutIcon size={12} />
-            </button>
-          </form>
+          <SignOutButton
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            title="Sign out"
+          >
+            <SignOutIcon size={12} />
+          </SignOutButton>
         </div>
       </div>
     </aside>

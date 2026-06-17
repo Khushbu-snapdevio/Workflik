@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { logoutAction } from "@/app/actions/auth";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { PRODUCT_NAME } from "@/config/platform";
 
@@ -50,11 +52,11 @@ export function AppShell({
             <span className="hidden max-w-56 truncate text-muted-foreground text-sm sm:block">
               {email}
             </span>
-            <form action={logoutAction}>
-              <Button type="submit" variant="secondary" size="sm">
-                Sign out
+            <SignOutButton>
+              <Button asChild variant="secondary" size="sm">
+                <span>Sign out</span>
               </Button>
-            </form>
+            </SignOutButton>
           </div>
         </div>
 

@@ -18,6 +18,8 @@ const envSchema = z.object({
   SMTP_PASS: optionalString,
   EMAIL_FROM: optionalString,
   EMAIL_WEBHOOK_SECRET: optionalString,
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalString,
 });
 
 const parsed = envSchema.safeParse(process.env);

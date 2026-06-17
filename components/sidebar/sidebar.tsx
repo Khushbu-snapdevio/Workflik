@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { logoutAction } from "@/app/actions/auth";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { FavoritesSection } from "@/components/sidebar/favorites-section";
 import { PageTree } from "@/components/sidebar/page-tree";
 import { RecentlyVisitedSection } from "@/components/sidebar/recently-visited-section";
@@ -52,6 +52,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   const [collapsed, setCollapsed] = useState(false);
   const [filter, setFilter] = useState("");
   const [pages, setPages] = useState<PageItem[]>([]);
+  const [pagesLoading, setPagesLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [recentlyVisited, setRecentlyVisited] = useState<{ id: string; pageId: string; visitedAt: string }[]>([]);
 
@@ -76,11 +77,12 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   }, []);
 
   useEffect(() => {
+    setPagesLoading(true);
     fetch(`/api/workspaces/${workspaceId}/pages/tree`)
       .then((r) => r.json())
-      .then((d) => setPages(Array.isArray(d) ? d : []))
-      .catch(() => {});
-  }, [workspaceId]);
+      .then((d) => { setPages(Array.isArray(d) ? d : []); setPagesLoading(false); })
+      .catch(() => setPagesLoading(false));
+  }, [workspaceId, pathname]);
 
   useEffect(() => {
     fetch(`/api/user/favorites?workspaceId=${workspaceId}`)
@@ -299,6 +301,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
           </SectionLabel>
           <PageTree
             filter={filter}
+            loading={pagesLoading}
             onPagesChange={setPages}
             pages={pages}
             workspaceId={workspaceId}
@@ -354,15 +357,12 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
           <span className="min-w-0 flex-1 truncate text-xs text-sidebar-foreground/60">
             {userEmail}
           </span>
-          <form action={logoutAction}>
-            <button
-              className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-              title="Sign out"
-              type="submit"
-            >
-              <SignOutIcon size={13} />
-            </button>
-          </form>
+          <SignOutButton
+            className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            title="Sign out"
+          >
+            <SignOutIcon size={13} />
+          </SignOutButton>
         </div>
       </div>
 

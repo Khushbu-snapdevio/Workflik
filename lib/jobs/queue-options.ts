@@ -33,6 +33,27 @@ export const QUEUE_OPTIONS: Record<
     retryLimit: 3,
     retryDelay: 60,
   },
+  [JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_TRASH]: {
+    expireInSeconds: 600,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
+  [JOB_NAMES.PAGE_WARN_EXPIRING_TRASH]: {
+    expireInSeconds: 600,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
+  [JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS]: {
+    expireInSeconds: 600,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
+  [JOB_NAMES.PAGE_EXPORT]: {
+    expireInSeconds: 300,
+    policy: "standard",
+    retryLimit: 2,
+    retryDelay: 30,
+  },
 };
 
 export async function ensureJobQueues(boss: PgBoss) {

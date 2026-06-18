@@ -109,12 +109,18 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       .where(eq(pageClosure.ancestorId, id));
 
     const descendantIds = descendants.map((d) => d.descendantId);
-    const now = new Date();
 
-    await db
-      .update(pages)
-      .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
-      .where(inArray(pages.id, descendantIds));
+    if (page.isDeleted) {
+      // Already in Trash — permanently delete
+      await db.delete(pages).where(inArray(pages.id, descendantIds));
+    } else {
+      // Soft delete — move to Trash
+      const now = new Date();
+      await db
+        .update(pages)
+        .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
+        .where(inArray(pages.id, descendantIds));
+    }
 
     return Response.json({ success: true, deleted: "soft" });
   } catch (err) {

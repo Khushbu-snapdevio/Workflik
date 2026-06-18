@@ -6,6 +6,7 @@ import { pageClosure, pages, userRecentlyVisited, workspaces } from "@/lib/db/sc
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { PageHeader } from "@/components/pages/page-header";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
+import { TrashBanner } from "@/components/pages/trash-banner";
 import { PageEditor } from "@/components/editor/editor";
 
 type Props = { params: Promise<{ workspace: string; pageId: string }> };
@@ -120,12 +121,7 @@ export default async function PageEditorPage({ params }: Props) {
 
           {/* Status banners */}
           {page.isDeleted && (
-            <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-              This page is in <strong className="ml-1">Trash</strong>. It will be permanently deleted in 30 days.
-            </div>
+            <TrashBanner pageId={page.id} workspaceSlug={slug} />
           )}
           {page.isLocked && (
             <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">

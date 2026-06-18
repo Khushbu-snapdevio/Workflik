@@ -285,6 +285,7 @@ function PageTreeNode({
     if (!confirm(`Move "${node.title || "Untitled"}" to Trash?`)) return;
     await fetch(`/api/pages/${node.id}`, { method: "DELETE" });
     onPagesChange(pages.filter((p) => p.id !== node.id));
+    router.refresh();
   }
 
   async function handleDuplicate() {

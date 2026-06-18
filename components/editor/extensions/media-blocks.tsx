@@ -18,7 +18,7 @@ function MediaPicker({
   accept: string;
   placeholder: string;
   onConfirm: (src: string) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }) {
   const [url, setUrl] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -26,6 +26,7 @@ function MediaPicker({
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
     onConfirm(URL.createObjectURL(file));
   };
 
@@ -35,7 +36,6 @@ function MediaPicker({
         {icon} {label}
       </p>
 
-      {/* URL input row */}
       <div className="flex gap-2">
         <input
           type="url"
@@ -47,7 +47,7 @@ function MediaPicker({
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && url.trim()) { e.preventDefault(); onConfirm(url.trim()); }
-            if (e.key === "Escape") onCancel();
+            if (e.key === "Escape") onCancel?.();
           }}
         />
         <button
@@ -61,14 +61,12 @@ function MediaPicker({
         </button>
       </div>
 
-      {/* Or divider */}
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
         <span className="text-xs text-muted-foreground">or</span>
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      {/* File chooser + cancel */}
       <div className="flex gap-2">
         <button
           type="button"
@@ -78,17 +76,49 @@ function MediaPicker({
         >
           Choose file from device
         </button>
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={onCancel}
-          className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Cancel
-        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onCancel}
+            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Cancel
+          </button>
+        )}
       </div>
 
       <input ref={fileRef} type="file" accept={accept} className="hidden" onChange={handleFile} />
+    </div>
+  );
+}
+
+// ── Shared hover action bar ───────────────────────────────────────────────────
+function MediaActions({
+  onChangeDirect,
+  onDelete,
+}: {
+  onChangeDirect: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onDelete}
+        className="rounded-md bg-black/50 px-2 py-1 text-[11px] text-white/90 backdrop-blur-sm hover:bg-red-600/80"
+      >
+        Delete
+      </button>
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onChangeDirect}
+        className="rounded-md bg-black/50 px-2 py-1 text-[11px] text-white backdrop-blur-sm hover:bg-black/70"
+      >
+        Change
+      </button>
     </div>
   );
 }
@@ -97,13 +127,28 @@ function MediaPicker({
 function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
   const src     = (node.attrs.src     as string) || "";
   const caption = (node.attrs.caption as string) || "";
-  const [picking, setPicking]         = useState(!src);
+  const [picking, setPicking]           = useState(!src);
   const [captionDraft, setCaptionDraft] = useState(caption);
+  const changeRef = useRef<HTMLInputElement>(null);
 
   const confirm = useCallback((newSrc: string) => {
     updateAttributes({ src: newSrc });
     setPicking(false);
   }, [updateAttributes]);
+
+  // Change — directly open file picker, no panel
+  function onChangeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    confirm(URL.createObjectURL(file));
+  }
+
+  // Delete — clear image and show picker panel so user can choose a new one
+  function handleDelete() {
+    updateAttributes({ src: "" });
+    setPicking(true);
+  }
 
   if (picking) {
     return (
@@ -114,7 +159,7 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
           accept="image/*"
           placeholder="Paste image URL…"
           onConfirm={confirm}
-          onCancel={() => { if (src) setPicking(false); }}
+          onCancel={src ? () => setPicking(false) : undefined}
         />
       </NodeViewWrapper>
     );
@@ -129,16 +174,13 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
             alt={captionDraft || "Image"}
             className="block max-w-full"
             style={{ maxHeight: 520, objectFit: "contain", width: "100%" }}
-            onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.25"; }}
+            onError={() => setPicking(true)}
           />
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setPicking(true)}
-            className="absolute right-2 top-2 rounded-md bg-black/50 px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100"
-          >
-            Change
-          </button>
+          <MediaActions
+            onChangeDirect={() => changeRef.current?.click()}
+            onDelete={handleDelete}
+          />
+          <input ref={changeRef} type="file" accept="image/*" className="hidden" onChange={onChangeFile} />
         </div>
         <input
           type="text"
@@ -158,11 +200,24 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
   const caption = (node.attrs.caption as string) || "";
   const [picking, setPicking]           = useState(!src);
   const [captionDraft, setCaptionDraft] = useState(caption);
+  const changeRef = useRef<HTMLInputElement>(null);
 
   const confirm = useCallback((newSrc: string) => {
     updateAttributes({ src: newSrc });
     setPicking(false);
   }, [updateAttributes]);
+
+  function onChangeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    confirm(URL.createObjectURL(file));
+  }
+
+  function handleDelete() {
+    updateAttributes({ src: "" });
+    setPicking(true);
+  }
 
   if (picking) {
     return (
@@ -173,7 +228,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
           accept="video/*"
           placeholder="Paste video URL…"
           onConfirm={confirm}
-          onCancel={() => { if (src) setPicking(false); }}
+          onCancel={src ? () => setPicking(false) : undefined}
         />
       </NodeViewWrapper>
     );
@@ -189,15 +244,13 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
             controls
             className="block max-w-full"
             style={{ maxHeight: 480, width: "100%" }}
+            onError={() => setPicking(true)}
           />
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setPicking(true)}
-            className="absolute right-2 top-2 rounded-md bg-black/50 px-2 py-1 text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100"
-          >
-            Change
-          </button>
+          <MediaActions
+            onChangeDirect={() => changeRef.current?.click()}
+            onDelete={handleDelete}
+          />
+          <input ref={changeRef} type="file" accept="video/*" className="hidden" onChange={onChangeFile} />
         </div>
         <input
           type="text"
@@ -217,11 +270,24 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   const caption = (node.attrs.caption as string) || "";
   const [picking, setPicking]           = useState(!src);
   const [captionDraft, setCaptionDraft] = useState(caption);
+  const changeRef = useRef<HTMLInputElement>(null);
 
   const confirm = useCallback((newSrc: string) => {
     updateAttributes({ src: newSrc });
     setPicking(false);
   }, [updateAttributes]);
+
+  function onChangeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    confirm(URL.createObjectURL(file));
+  }
+
+  function handleDelete() {
+    updateAttributes({ src: "" });
+    setPicking(true);
+  }
 
   if (picking) {
     return (
@@ -232,7 +298,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
           accept="audio/*"
           placeholder="Paste audio URL…"
           onConfirm={confirm}
-          onCancel={() => { if (src) setPicking(false); }}
+          onCancel={src ? () => setPicking(false) : undefined}
         />
       </NodeViewWrapper>
     );
@@ -241,18 +307,29 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-2">
-        <div className="flex items-center gap-3 rounded-lg border border-border/40 bg-muted/30 px-4 py-3">
+        <div className="relative flex items-center gap-3 rounded-lg border border-border/40 bg-muted/30 px-4 py-3">
           <span className="text-2xl">🎵</span>
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <audio src={src} controls className="h-9 flex-1" style={{ minWidth: 0 }} />
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => setPicking(true)}
-            className="shrink-0 rounded px-2 py-1 text-[11px] text-muted-foreground opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
-          >
-            Change
-          </button>
+          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleDelete}
+              className="rounded px-2 py-1 text-[11px] text-red-500 hover:bg-red-50"
+            >
+              Delete
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => changeRef.current?.click()}
+              className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+            >
+              Change
+            </button>
+          </div>
+          <input ref={changeRef} type="file" accept="audio/*" className="hidden" onChange={onChangeFile} />
         </div>
         <input
           type="text"
@@ -273,6 +350,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
   const [picking, setPicking]           = useState(!src);
   const defaultName                     = src.split("/").pop() || "File";
   const [captionDraft, setCaptionDraft] = useState(caption || defaultName);
+  const changeRef = useRef<HTMLInputElement>(null);
 
   const confirm = useCallback((newSrc: string) => {
     const name = newSrc.split("/").pop() || "File";
@@ -281,6 +359,18 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
     setCaptionDraft(newCaption);
     setPicking(false);
   }, [updateAttributes, caption]);
+
+  function onChangeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    confirm(URL.createObjectURL(file));
+  }
+
+  function handleDelete() {
+    updateAttributes({ src: "", caption: "" });
+    setPicking(true);
+  }
 
   if (picking) {
     return (
@@ -291,7 +381,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
           accept="*"
           placeholder="Paste file URL…"
           onConfirm={confirm}
-          onCancel={() => { if (src) setPicking(false); }}
+          onCancel={src ? () => setPicking(false) : undefined}
         />
       </NodeViewWrapper>
     );
@@ -314,14 +404,25 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
             <p className="max-w-xs truncate text-[11px] text-muted-foreground/50">{src}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => setPicking(true)}
-          className="ml-4 shrink-0 rounded px-2 py-1 text-[11px] text-muted-foreground opacity-0 transition-opacity hover:bg-accent group-hover:opacity-100"
-        >
-          Change
-        </button>
+        <div className="ml-4 flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleDelete}
+            className="rounded px-2 py-1 text-[11px] text-red-500 hover:bg-red-50"
+          >
+            Delete
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => changeRef.current?.click()}
+            className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+          >
+            Change
+          </button>
+          <input ref={changeRef} type="file" accept="*" className="hidden" onChange={onChangeFile} />
+        </div>
       </div>
       <input
         type="text"

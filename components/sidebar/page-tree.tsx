@@ -257,6 +257,8 @@ function PageTreeNode({
   const [open, setOpen] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+  const [confirmTrash, setConfirmTrash] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
@@ -280,10 +282,16 @@ function PageTreeNode({
     };
   }, [menuOpen]);
 
-  async function handleDelete() {
+  function handleDelete() {
     setMenuOpen(false);
-    if (!confirm(`Move "${node.title || "Untitled"}" to Trash?`)) return;
+    setConfirmTrash(true);
+  }
+
+  async function confirmDelete() {
+    setDeleting(true);
     await fetch(`/api/pages/${node.id}`, { method: "DELETE" });
+    setDeleting(false);
+    setConfirmTrash(false);
     onPagesChange(pages.filter((p) => p.id !== node.id));
     router.refresh();
   }
@@ -416,6 +424,44 @@ function PageTreeNode({
           workspaceId={workspaceId}
           workspaceSlug={workspaceSlug}
         />
+      )}
+
+      {/* Move to Trash confirmation dialog */}
+      {confirmTrash && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={() => !deleting && setConfirmTrash(false)} />
+          <div className="relative w-[360px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
+            <div className="mb-1 flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
+                <svg className="size-4 text-red-600" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              </div>
+              <h2 className="text-sm font-semibold text-foreground">Move to Trash</h2>
+            </div>
+            <p className="mb-5 mt-2 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">&ldquo;{node.title || "Untitled"}&rdquo;</span> will be moved to Trash and permanently deleted after 30 days.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setConfirmTrash(false)}
+                className="rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDelete}
+                className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Moving…" : "Move to Trash"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

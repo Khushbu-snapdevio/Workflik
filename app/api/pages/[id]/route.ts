@@ -79,8 +79,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 // DELETE /api/pages/:id
-// — If NOT in Trash: soft delete (moves to Trash, cascades to all descendants)
-// — If already in Trash: hard delete permanently (cascades to all descendants)
+//   • Page NOT in trash → soft delete (move to Trash, cascade to descendants)
+//   • Page already in Trash → hard delete (permanent, cascades via ON DELETE CASCADE)
 export async function DELETE(_req: Request, { params }: Ctx) {
   try {
     const { id } = await params;
@@ -96,7 +96,13 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
     await requireWorkspaceMember(page.workspaceId, session.user.id, "editor");
 
-    // Get all descendants via closure table (includes self)
+    if (page.isDeleted) {
+      // Hard delete — ON DELETE CASCADE handles blocks, page_closure, file_uploads etc.
+      await db.delete(pages).where(eq(pages.id, id));
+      return Response.json({ success: true, deleted: "permanent" });
+    }
+
+    // Soft delete — mark this page and all descendants as deleted
     const descendants = await db
       .select({ descendantId: pageClosure.descendantId })
       .from(pageClosure)
@@ -116,7 +122,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
         .where(inArray(pages.id, descendantIds));
     }
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, deleted: "soft" });
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error(err);

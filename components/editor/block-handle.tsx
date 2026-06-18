@@ -6,20 +6,84 @@ import type { Editor } from "@tiptap/react";
 import { Copy, DotsSixVertical, Trash } from "@phosphor-icons/react";
 
 interface BlockInfo {
-  /** Viewport Y for the vertical midpoint of the hovered block */
   top:      number;
-  /** Viewport X — 36 px left of the editor element's left edge */
   left:     number;
   nodePos:  number;
   nodeSize: number;
+}
+
+// Resolve which top-level block the mouse is over.
+// Regular (contentEditable) blocks: posAtCoords works fine.
+// Atom blocks (image, video, audio, file — contentEditable=false): posAtCoords
+// returns null, so we fall back to elementFromPoint + DOM traversal.
+function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
+  const editorEl = editor.view.dom as HTMLElement;
+  const er       = editorEl.getBoundingClientRect();
+
+  try {
+    // ── Primary path: posAtCoords (works for text blocks) ──
+    const posObj = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+
+    if (posObj) {
+      let $pos;
+      try { $pos = editor.state.doc.resolve(posObj.pos); } catch { /* skip */ }
+
+      if ($pos && $pos.depth >= 1) {
+        const nodePos = $pos.before(1);
+        const node    = editor.state.doc.nodeAt(nodePos);
+        if (node) {
+          const domInfo = editor.view.domAtPos(nodePos + 1);
+          let domNode   = domInfo.node as HTMLElement;
+          if (domNode.nodeType === Node.TEXT_NODE) domNode = domNode.parentElement!;
+          while (domNode.parentElement && domNode.parentElement !== editorEl) {
+            domNode = domNode.parentElement;
+          }
+          const br = domNode.getBoundingClientRect();
+          return {
+            top:      br.top + br.height / 2,
+            left:     er.left - 36,
+            nodePos,
+            nodeSize: node.nodeSize,
+          };
+        }
+      }
+
+      // posAtCoords returned something but depth was 0 — fall through to DOM path
+    }
+
+    // ── Fallback path: DOM traversal (works for atom/contentEditable=false blocks) ──
+    let el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    if (!el) return null;
+
+    // Walk up until we find a direct child of the editor element
+    while (el && el.parentElement !== editorEl) {
+      el = el.parentElement;
+    }
+    if (!el || el === editorEl) return null;
+
+    // posAtDOM gives the document position just before this DOM node's content
+    const rawPos  = editor.view.posAtDOM(el, 0);
+    // rawPos is the position inside the node; nodePos = position before the node
+    const nodePos = Math.max(0, rawPos - 1);
+    const node    = editor.state.doc.nodeAt(nodePos);
+    if (!node) return null;
+
+    const br = el.getBoundingClientRect();
+    return {
+      top:      br.top + br.height / 2,
+      left:     er.left - 36,
+      nodePos,
+      nodeSize: node.nodeSize,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function BlockHandle({ editor }: { editor: Editor }) {
   const [block, setBlock]       = useState<BlockInfo | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Refs let the document-level listener read current values without being
-  // re-registered every time state changes.
   const menuOpenRef = useRef(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef  = useRef<HTMLButtonElement>(null);
@@ -27,7 +91,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
 
   useEffect(() => { menuOpenRef.current = menuOpen; }, [menuOpen]);
 
-  // ── Document mousemove — track which block is hovered ────────────────────
+  // ── Document mousemove ────────────────────────────────────────────────────
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (menuOpenRef.current) return;
@@ -35,9 +99,6 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       const editorEl = editor.view.dom as HTMLElement;
       const er       = editorEl.getBoundingClientRect();
 
-      // "Safe zone" = editor bounds + 90 px left margin so the cursor can
-      // travel to the handle button (positioned to the left of the editor)
-      // without triggering a hide timer.
       const inSafeZone = (
         e.clientX >= er.left - 90 &&
         e.clientX <= er.right     &&
@@ -53,46 +114,17 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         return;
       }
 
-      // Inside safe zone → cancel any pending hide and keep the handle alive.
       clearTimeout(hideTimer.current);
 
-      // Only reposition when the cursor is actually over editor content.
-      // If it's in the safe zone but over the handle itself, just keep the
-      // current block position so the button doesn't jump.
+      // Only reposition when cursor is over the actual editor area
       const overEditor = (
         e.clientX >= er.left && e.clientX <= er.right &&
         e.clientY >= er.top  && e.clientY <= er.bottom
       );
       if (!overEditor) return;
 
-      const posObj = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
-      if (!posObj) return;
-
-      let $pos;
-      try { $pos = editor.state.doc.resolve(posObj.pos); }
-      catch { return; }
-      if ($pos.depth < 1) return;
-
-      const nodePos = $pos.before(1);
-      const node    = editor.state.doc.nodeAt(nodePos);
-      if (!node) return;
-
-      try {
-        const domInfo = editor.view.domAtPos(nodePos + 1);
-        let domNode   = domInfo.node as HTMLElement;
-        if (domNode.nodeType === Node.TEXT_NODE) domNode = domNode.parentElement!;
-        while (domNode.parentElement && domNode.parentElement !== editorEl) {
-          domNode = domNode.parentElement;
-        }
-
-        const br = domNode.getBoundingClientRect();
-        setBlock({
-          top:      br.top + br.height / 2, // viewport Y
-          left:     er.left - 36,           // 36 px left of the editor
-          nodePos,
-          nodeSize: node.nodeSize,
-        });
-      } catch { /* DOM not ready */ }
+      const info = resolveBlock(e, editor);
+      if (info) setBlock(info);
     };
 
     document.addEventListener("mousemove", onMove);
@@ -100,12 +132,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       document.removeEventListener("mousemove", onMove);
       clearTimeout(hideTimer.current);
     };
-  }, [editor]); // stable — menuOpen read via ref
+  }, [editor]);
 
-  // ── Outside-click closes the dropdown ────────────────────────────────────
-  // Use mousedown (not click) so there is no timing gap between the trigger
-  // mousedown opening the menu and the listener attaching. Exclude the
-  // trigger button itself — it handles its own toggle via onMouseDown.
+  // ── Outside-click closes dropdown ─────────────────────────────────────────
   useEffect(() => {
     if (!menuOpen) return;
     const close = (e: MouseEvent) => {
@@ -142,8 +171,6 @@ export function BlockHandle({ editor }: { editor: Editor }) {
 
   if (!block || typeof document === "undefined") return null;
 
-  // Render into document.body so no ancestor's overflow:hidden can clip the
-  // handle or the dropdown. position:fixed means scroll doesn't affect it.
   return createPortal(
     <div
       style={{

@@ -1089,7 +1089,20 @@ pnpm typecheck
 **Goal:** Real file uploads for covers, icons, avatars, and all media blocks.
 **Spec ref:** `doc/Features/file-storage.md`
 
-### File Size Limits (Enforced Server-Side Before Presigning)
+### Storage Driver Architecture
+
+Controlled by `STORAGE_DRIVER` in `.env`:
+
+| Driver | Value | Files live in | Client upload |
+|--------|-------|--------------|---------------|
+| Local (dev) | `local` | `./uploads/` on disk | `POST /api/uploads/local` (multipart) |
+| AWS S3 | `s3` | S3 bucket | `PUT` presigned URL (direct to S3) |
+| Cloudflare R2 | `r2` | R2 bucket | `PUT` presigned URL (direct to R2) |
+
+Storage abstraction: `lib/storage/index.ts` → `lib/storage/drivers/local.ts` or `lib/storage/drivers/s3.ts`.
+All limits and quota logic live in `lib/storage/index.ts` (single config module — Rule 13).
+
+### File Size Limits (Enforced at Sign Step)
 
 | Kind | Max Size | `file_upload_kind` enum |
 |------|---------|------------------------|
@@ -1102,42 +1115,68 @@ pnpm typecheck
 | Audio block | 50 MB | `block_media` |
 | File block | 100 MB | `block_media` |
 
-### Files to Create
+### Files Created
 
 | File | Purpose |
 |------|---------|
-| `app/api/files/presign/route.ts` | POST — validate → generate presigned PUT URL |
-| `app/api/files/confirm/route.ts` | POST — mark confirmed, increment `bytes_used` |
-| `lib/jobs/handlers/cleanup-stale-uploads.ts` | Every 30 min — delete unconfirmed uploads > 1hr |
-| `lib/jobs/handlers/cleanup-orphaned-media.ts` | Daily — delete files no longer referenced |
-| `lib/jobs/handlers/sync-storage-usage.ts` | Daily — reconcile `bytes_used` against S3 |
+| `lib/storage/index.ts` | `getStorage()` factory + size limits + quota constant |
+| `lib/storage/drivers/types.ts` | `StorageDriver` interface |
+| `lib/storage/drivers/local.ts` | Local filesystem driver |
+| `lib/storage/drivers/s3.ts` | S3/R2 driver (AWS SDK presigned PUT) |
+| `app/api/uploads/sign/route.ts` | POST — validate → create upload slot |
+| `app/api/uploads/confirm/route.ts` | POST — verify exists → mark confirmed → update quota |
+| `app/api/uploads/local/route.ts` | POST — local driver: receive multipart, save to disk |
+| `app/api/uploads/files/[...path]/route.ts` | GET — local driver: serve files from disk |
+| `lib/jobs/handlers/cleanup-stale-uploads.ts` | Every 30 min — remove unconfirmed uploads > 30 min old |
+| `lib/jobs/handlers/cleanup-orphaned-media.ts` | Daily — remove block_media no longer referenced by active blocks |
+| `lib/jobs/handlers/sync-storage-usage.ts` | Daily — reconcile `bytes_used` against actual confirmed uploads |
 
-### Upload Flow (Client → Server → S3)
+### Upload Flow
+
 ```
-1. Client: POST /api/files/presign  { kind, mimeType, fileSizeBytes, pageId? }
-2. Server: validate mimeType, size limit, workspace quota (5 GB, user_avatar exempt)
+1. Client: POST /api/uploads/sign  { kind, mimeType, fileSizeBytes, workspaceId?, pageId?, blockId? }
+2. Server: validate MIME type, size limit, workspace quota (5 GB — user_avatar exempt)
 3. Server: INSERT file_uploads row (confirmed_at = null)
-4. Server: generate presigned PUT URL via lib/storage/s3.ts
-5. Server: return { presignedUrl, objectKey, fileUploadId }
-6. Client: PUT file directly to S3 (never via app server)
-7. Client: POST /api/files/confirm  { fileUploadId }
-8. Server: SET confirmed_at = now(), increment workspace_storage_usage.bytes_used
+4. Server: return { fileUploadId, objectKey, fileUrl, upload: { url, method, headers } }
+
+5a. If method = "PUT"  (S3/R2):  Client PUT file bytes directly to presigned URL
+5b. If method = "POST" (local):   Client POST multipart to /api/uploads/local
+
+6. Client: POST /api/uploads/confirm  { fileUploadId }
+7. Server: verify object exists → SET confirmed_at = now(), increment bytes_used
 ```
 
 ### Workspace Quota Rules
 - Limit: 5 GB per workspace
-- Check quota in presign step — reject with 409 if would exceed
+- Check at sign step — reject 409 if `bytes_used + fileSizeBytes > 5 GB`
 - `user_avatar` uploads (`workspace_id = null`) are EXEMPT from quota
-- Decrement `bytes_used` only when the cleanup job actually deletes the S3 object (not on reference removal)
+- Decrement `bytes_used` only when the cleanup job actually deletes the object
+
+### Env Vars Added (Phase 7)
+```
+STORAGE_DRIVER=local          # "local" | "s3" | "r2"
+UPLOAD_DIR=./uploads          # local driver only — where files are saved
+S3_ENDPOINT=                  # R2/MinIO only — omit for AWS S3
+S3_BUCKET=workflik
+S3_REGION=auto
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
+CDN_URL=https://cdn.example.com
+```
 
 ### Verify Before Moving to Phase 8
 ```bash
 pnpm typecheck
-# Manual test:
-# 1. Upload a page cover image → file appears in S3, file_uploads row confirmed_at is set
-# 2. Upload a user avatar → workspace quota NOT incremented (user_avatar is exempt)
+# Manual test with STORAGE_DRIVER=local:
+# 1. Upload a page cover → file appears in ./uploads/, file_uploads row confirmed_at set
+# 2. Upload a user avatar → workspace quota NOT incremented
 # 3. workspace_storage_usage.bytes_used increments after non-avatar upload
-# 4. Reject upload if workspace is at 5 GB quota (test with mock quota at near-limit)
+# 4. GET /api/uploads/files/{objectKey} → file served correctly
+# 5. Reject upload if fileSizeBytes > kind limit → returns 400
+# Manual test with STORAGE_DRIVER=s3/r2 (once credentials available):
+# 6. POST /api/uploads/sign → upload.method = "PUT", upload.url is a presigned S3 URL
+# 7. PUT bytes to presigned URL → object appears in bucket
+# 8. POST /api/uploads/confirm → confirmed_at set, bytes_used incremented
 ```
 
 ---

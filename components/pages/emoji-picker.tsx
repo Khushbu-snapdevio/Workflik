@@ -33,7 +33,7 @@ export function EmojiPicker({ onSelect, onRemove, onClose }: EmojiPickerProps) {
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-14 z-50 w-64 rounded-xl border border-border bg-popover p-3 shadow-lg"
+      className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-border bg-popover p-3 shadow-lg"
     >
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-ui text-muted-foreground">
         Pick an icon

@@ -4,18 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EmojiPicker } from "@/components/pages/emoji-picker";
 
 interface PageHeaderProps {
-  pageId:       string;
-  shortId:      string;
-  initialTitle: string;
-  initialIcon:  string | null;
-  initialCoverUrl: string | null;
-  isLocked:     boolean;
-  isDeleted:    boolean;
-  isEditor:     boolean;
+  pageId:        string;
+  shortId:       string;
+  initialTitle:  string;
+  initialIcon:   string | null;
+  isLocked:      boolean;
+  isDeleted:     boolean;
+  isEditor:      boolean;
   workspaceSlug: string;
-  fontFamily:   "default" | "serif" | "mono";
-  isSmallText:  boolean;
-  isFullWidth:  boolean;
+  workspaceId:   string;
+  fontFamily:    "default" | "serif" | "mono";
+  isSmallText:   boolean;
+  isFullWidth:   boolean;
 }
 
 export function PageHeader({

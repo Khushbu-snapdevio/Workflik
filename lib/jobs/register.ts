@@ -12,6 +12,9 @@ export async function registerHandlers(boss: PgBoss) {
     { handleWarnExpiringTrash },
     { handleAutoDeleteExpiredVersions },
     { handleExportPage },
+    { handleCleanupStaleUploads },
+    { handleCleanupOrphanedMedia },
+    { handleSyncStorageUsage },
   ] = await Promise.all([
     import("@/lib/jobs/handlers/email-send"),
     import("@/lib/jobs/handlers/email-outbox-reap"),
@@ -20,22 +23,31 @@ export async function registerHandlers(boss: PgBoss) {
     import("@/lib/jobs/handlers/warn-expiring-trash"),
     import("@/lib/jobs/handlers/auto-delete-expired-versions"),
     import("@/lib/jobs/handlers/export-page"),
+    import("@/lib/jobs/handlers/cleanup-stale-uploads"),
+    import("@/lib/jobs/handlers/cleanup-orphaned-media"),
+    import("@/lib/jobs/handlers/sync-storage-usage"),
   ]);
 
   await Promise.all([
-    boss.work(JOB_NAMES.EMAIL_SEND,                           { includeMetadata: true }, handleEmailSend),
-    boss.work(JOB_NAMES.EMAIL_OUTBOX_REAP,                    { includeMetadata: true }, handleEmailOutboxReap),
-    boss.work(JOB_NAMES.SCAFFOLD_HEALTHCHECK,                 { includeMetadata: true }, handleScaffoldHealthcheck),
-    boss.work(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_TRASH,       { includeMetadata: true }, handleAutoDeleteExpiredTrash),
-    boss.work(JOB_NAMES.PAGE_WARN_EXPIRING_TRASH,             { includeMetadata: true }, handleWarnExpiringTrash),
-    boss.work(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS,    { includeMetadata: true }, handleAutoDeleteExpiredVersions),
-    boss.work(JOB_NAMES.PAGE_EXPORT,                          { includeMetadata: true }, handleExportPage),
+    boss.work(JOB_NAMES.EMAIL_SEND,                            { includeMetadata: true }, handleEmailSend),
+    boss.work(JOB_NAMES.EMAIL_OUTBOX_REAP,                     { includeMetadata: true }, handleEmailOutboxReap),
+    boss.work(JOB_NAMES.SCAFFOLD_HEALTHCHECK,                  { includeMetadata: true }, handleScaffoldHealthcheck),
+    boss.work(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_TRASH,        { includeMetadata: true }, handleAutoDeleteExpiredTrash),
+    boss.work(JOB_NAMES.PAGE_WARN_EXPIRING_TRASH,              { includeMetadata: true }, handleWarnExpiringTrash),
+    boss.work(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS,     { includeMetadata: true }, handleAutoDeleteExpiredVersions),
+    boss.work(JOB_NAMES.PAGE_EXPORT,                           { includeMetadata: true }, handleExportPage),
+    boss.work(JOB_NAMES.STORAGE_CLEANUP_STALE_UPLOADS,         { includeMetadata: true }, handleCleanupStaleUploads),
+    boss.work(JOB_NAMES.STORAGE_CLEANUP_ORPHANED_MEDIA,        { includeMetadata: true }, handleCleanupOrphanedMedia),
+    boss.work(JOB_NAMES.STORAGE_SYNC_USAGE,                    { includeMetadata: true }, handleSyncStorageUsage),
   ]);
 
   // Scheduled cron jobs
-  await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP,                 "*/15 * * * *",  {});
-  await boss.schedule(JOB_NAMES.SCAFFOLD_HEALTHCHECK,              "*/10 * * * *",  {});
-  await boss.schedule(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_TRASH,    "0 2 * * *",     {}); // Daily 02:00 UTC
-  await boss.schedule(JOB_NAMES.PAGE_WARN_EXPIRING_TRASH,          "0 2 * * *",     {}); // Daily 02:00 UTC
-  await boss.schedule(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS, "0 3 * * *",     {}); // Daily 03:00 UTC
+  await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP,                  "*/15 * * * *",  {});
+  await boss.schedule(JOB_NAMES.SCAFFOLD_HEALTHCHECK,               "*/10 * * * *",  {});
+  await boss.schedule(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_TRASH,     "0 2 * * *",     {}); // Daily 02:00 UTC
+  await boss.schedule(JOB_NAMES.PAGE_WARN_EXPIRING_TRASH,           "0 2 * * *",     {}); // Daily 02:00 UTC
+  await boss.schedule(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS,  "0 3 * * *",     {}); // Daily 03:00 UTC
+  await boss.schedule(JOB_NAMES.STORAGE_CLEANUP_STALE_UPLOADS,      "*/30 * * * *",  {}); // Every 30 minutes
+  await boss.schedule(JOB_NAMES.STORAGE_CLEANUP_ORPHANED_MEDIA,     "0 4 * * *",     {}); // Daily 04:00 UTC
+  await boss.schedule(JOB_NAMES.STORAGE_SYNC_USAGE,                 "0 4 * * *",     {}); // Daily 04:00 UTC
 }

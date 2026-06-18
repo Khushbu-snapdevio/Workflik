@@ -210,7 +210,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, fontFamily =
 
       <EditorContent
         editor={editor}
-        className={["[&_.ProseMirror]:min-h-[120px]", fontClass, sizeClass].join(" ")}
+        className={["outline-none [&_.ProseMirror]:min-h-[120px]", fontClass, sizeClass].join(" ")}
       />
     </div>
   );

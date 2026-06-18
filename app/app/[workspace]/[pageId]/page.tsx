@@ -6,6 +6,7 @@ import { pageClosure, pages, userRecentlyVisited, workspaces } from "@/lib/db/sc
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { PageHeader } from "@/components/pages/page-header";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
+import { PageEditor } from "@/components/editor/editor";
 
 type Props = { params: Promise<{ workspace: string; pageId: string }> };
 
@@ -151,15 +152,16 @@ export default async function PageEditorPage({ params }: Props) {
             isFullWidth={page.isFullWidth}
           />
 
-          {/* Content body */}
-          <div className={`mt-6 ${page.isSmallText ? "text-sm" : "text-[15px]"} ${page.fontFamily === "serif" ? "font-serif" : page.fontFamily === "mono" ? "font-mono" : ""}`}>
-            {!page.isLocked && !page.isDeleted && (
-              <p className="cursor-text select-none text-sm text-foreground/20">
-                Start writing, or press{" "}
-                <kbd className="rounded border border-border bg-muted px-1.5 py-px text-xs font-medium text-foreground/40">/</kbd>
-                {" "}to insert a block
-              </p>
-            )}
+          {/* Block editor */}
+          <div className="mt-6">
+            <PageEditor
+              pageId={page.id}
+              isLocked={page.isLocked}
+              isDeleted={page.isDeleted}
+              isEditor={isEditor}
+              fontFamily={page.fontFamily}
+              isSmallText={page.isSmallText}
+            />
           </div>
 
         </div>

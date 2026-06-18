@@ -54,6 +54,21 @@ export const QUEUE_OPTIONS: Record<
     retryLimit: 2,
     retryDelay: 30,
   },
+  [JOB_NAMES.STORAGE_CLEANUP_STALE_UPLOADS]: {
+    expireInSeconds: 300,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
+  [JOB_NAMES.STORAGE_CLEANUP_ORPHANED_MEDIA]: {
+    expireInSeconds: 600,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
+  [JOB_NAMES.STORAGE_SYNC_USAGE]: {
+    expireInSeconds: 300,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
 };
 
 export async function ensureJobQueues(boss: PgBoss) {

@@ -76,13 +76,20 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
+  const fetchPages = useCallback(() => {
     setPagesLoading(true);
     fetch(`/api/workspaces/${workspaceId}/pages/tree`)
       .then((r) => r.json())
       .then((d) => { setPages(Array.isArray(d) ? d : []); setPagesLoading(false); })
       .catch(() => setPagesLoading(false));
-  }, [workspaceId, pathname]);
+  }, [workspaceId]);
+
+  useEffect(() => { fetchPages(); }, [fetchPages, pathname]);
+
+  useEffect(() => {
+    window.addEventListener("pages:refresh", fetchPages);
+    return () => window.removeEventListener("pages:refresh", fetchPages);
+  }, [fetchPages]);
 
   useEffect(() => {
     fetch(`/api/user/favorites?workspaceId=${workspaceId}`)

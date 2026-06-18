@@ -34,6 +34,8 @@ export function PageActionsMenu({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [confirmTrash, setConfirmTrash] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,11 +58,17 @@ export function PageActionsMenu({
     }
   }
 
-  async function handleDelete() {
-    await run("delete", async () => {
-      const res = await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
-      if (res.ok) router.push(`/app/${workspaceSlug}`);
-    });
+  function handleDelete() {
+    setOpen(false);
+    setConfirmTrash(true);
+  }
+
+  async function confirmDelete() {
+    setDeleting(true);
+    await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
+    setDeleting(false);
+    setConfirmTrash(false);
+    router.refresh();
   }
 
   async function handleRestore() {
@@ -127,10 +135,11 @@ export function PageActionsMenu({
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={loading !== null}
-        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+        className="flex h-8 items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 text-xs font-medium text-foreground/70 shadow-sm transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:opacity-50"
         aria-label="Page actions"
       >
-        <DotsThreeIcon size={16} weight="bold" />
+        <DotsThreeIcon size={14} weight="bold" />
+        More
       </button>
 
       {open && (
@@ -198,6 +207,42 @@ export function PageActionsMenu({
               Restore from Trash
             </button>
           )}
+        </div>
+      )}
+
+      {/* Move to Trash confirmation dialog */}
+      {confirmTrash && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={() => !deleting && setConfirmTrash(false)} />
+          <div className="relative w-[360px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
+            <div className="mb-1 flex items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
+                <TrashIcon size={16} className="text-red-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-foreground">Move to Trash</h2>
+            </div>
+            <p className="mb-5 mt-2 text-sm text-muted-foreground">
+              This page will be moved to Trash and permanently deleted after 30 days.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setConfirmTrash(false)}
+                className="rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDelete}
+                className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Moving…" : "Move to Trash"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

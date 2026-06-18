@@ -7,6 +7,9 @@ export const JOB_NAMES = {
   PAGE_WARN_EXPIRING_TRASH:        "page.warn-expiring-trash",
   PAGE_AUTO_DELETE_EXPIRED_VERSIONS: "page.auto-delete-expired-versions",
   PAGE_EXPORT:                     "page.export",
+  STORAGE_CLEANUP_STALE_UPLOADS:  "storage.cleanup-stale-uploads",
+  STORAGE_CLEANUP_ORPHANED_MEDIA: "storage.cleanup-orphaned-media",
+  STORAGE_SYNC_USAGE:             "storage.sync-usage",
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];
@@ -39,4 +42,7 @@ export type JobPayloads = {
   [JOB_NAMES.PAGE_WARN_EXPIRING_TRASH]:             Record<string, never>;
   [JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS]:    Record<string, never>;
   [JOB_NAMES.PAGE_EXPORT]:                          PageExportPayload;
+  [JOB_NAMES.STORAGE_CLEANUP_STALE_UPLOADS]:        Record<string, never>;
+  [JOB_NAMES.STORAGE_CLEANUP_ORPHANED_MEDIA]:       Record<string, never>;
+  [JOB_NAMES.STORAGE_SYNC_USAGE]:                   Record<string, never>;
 };

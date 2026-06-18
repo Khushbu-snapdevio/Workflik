@@ -2,10 +2,17 @@
 
 ## Overview
 
-File Storage handles all binary uploads in WorkFlik — page cover images, page icons, and media blocks (Image, Video, Audio, File). Every uploaded file is stored in object storage (S3-compatible) and served through a CDN.
+File Storage handles all binary uploads in WorkFlik — page cover images, page icons, and media blocks (Image, Video, Audio, File).
 
-**Storage provider:** Any **S3-compatible** object storage — accessed via the S3 API
-**CDN:** A CDN in front of the bucket serves files from the edge
+**Storage driver:** Controlled by the `STORAGE_DRIVER` env var:
+
+| `STORAGE_DRIVER` | Where files go | How served | When to use |
+|-----------------|---------------|------------|------------|
+| `local` (default) | `./uploads/` on disk | `/api/uploads/files/*` API route | Local development — no credentials needed |
+| `s3` | AWS S3 bucket via presigned PUT URL | CDN (`CDN_URL`) | Production with AWS S3 |
+| `r2` | Cloudflare R2 via presigned PUT URL (S3-compatible) | CDN (`CDN_URL`) | Production with Cloudflare R2 |
+
+The storage abstraction lives in `lib/storage/` — drivers are in `lib/storage/drivers/`. Switching drivers requires only changing `STORAGE_DRIVER` in `.env`; all API routes and job handlers work with either driver.
 
 ---
 
@@ -38,9 +45,12 @@ Client                     API Server              S3-compatible storage
 
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
-| POST | `/api/uploads/sign` | Request a pre-signed PUT URL. Request body: `{ kind: "page_cover" \| "page_icon" \| "block_media" \| "user_avatar" \| "workspace_icon", size: number, mimeType: string, pageId?: uuid, blockId?: uuid }`. For `user_avatar`, `pageId` and `blockId` are omitted. Validates declared `mimeType` against the Allowed MIME Types list and `size` against per-type limits **before** issuing the URL — returns `400` if either check fails. If the signed URL expires before the upload completes (15-min TTL), the S3 PUT will be rejected; the client must call this endpoint again to get a fresh URL and retry. | Authenticated member |
-| POST | `/api/uploads/confirm` | Confirm upload complete, verify object exists, record usage | Authenticated member |
-| DELETE | `/api/uploads/:objectKey` | Delete a stored file — **called only by pg-boss cleanup jobs, never by end-user actions**; a block delete does not trigger this endpoint (files are preserved for undo + Version History) | System (cleanup jobs only) |
+| POST | `/api/uploads/sign` | Validate file type + size + quota, create unconfirmed `file_uploads` row, return upload slot (`{ fileUploadId, objectKey, fileUrl, upload: { url, method, headers } }`). `method` is `"PUT"` for S3/R2 (presigned URL) or `"POST"` for the local driver. | Authenticated member |
+| POST | `/api/uploads/confirm` | Verify object exists in storage, mark `confirmed_at`, increment `workspace_storage_usage.bytes_used`. Idempotent. | Authenticated member (must be uploader) |
+| POST | `/api/uploads/local` | **Local driver only.** Accepts `multipart/form-data` with `file` + `objectKey` fields. Saves file to `UPLOAD_DIR`. Returns 404 when `STORAGE_DRIVER != "local"`. | Authenticated member |
+| GET | `/api/uploads/files/[...path]` | **Local driver only.** Serves files from `UPLOAD_DIR`. Returns 404 in production (`STORAGE_DRIVER != "local"`). | Public (files served with immutable cache headers) |
+
+> **File deletion** is always async via pg-boss job handlers — no delete endpoint for end-user actions. Cleanup jobs call `lib/storage/index.ts#getStorage().delete()` directly.
 
 ---
 

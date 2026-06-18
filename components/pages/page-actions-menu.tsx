@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface PageActionsMenuProps {
   pageId:        string;
@@ -32,19 +33,23 @@ export function PageActionsMenu({
   pageShortId,
 }: PageActionsMenuProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState<string | null>(null);
+  const [open, setOpen]               = useState(false);
+  const [loading, setLoading]         = useState<string | null>(null);
   const [confirmTrash, setConfirmTrash] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [deleting, setDeleting]       = useState(false);
+  const buttonRef  = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
 
+  // Close when clicking outside the portal dropdown
   useEffect(() => {
+    if (!open) return;
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (buttonRef.current?.contains(e.target as Node)) return;
+      if (dropdownRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
     }
-    if (open) document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
@@ -110,7 +115,7 @@ export function PageActionsMenu({
       });
 
       if (res.status === 501) {
-        alert("PDF export is coming soon (Phase 7).");
+        alert("PDF export is coming soon.");
         return;
       }
       if (!res.ok) return;
@@ -129,11 +134,20 @@ export function PageActionsMenu({
     });
   }
 
+  function openMenu() {
+    if (buttonRef.current) {
+      const r = buttonRef.current.getBoundingClientRect();
+      setDropdownPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    }
+    setOpen(true);
+  }
+
   return (
-    <div className="relative" ref={menuRef}>
+    <>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? setOpen(false) : openMenu())}
         disabled={loading !== null}
         className="flex h-8 items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 text-xs font-medium text-foreground/70 shadow-sm transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:opacity-50"
         aria-label="Page actions"
@@ -142,9 +156,13 @@ export function PageActionsMenu({
         More
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-52 overflow-hidden rounded-xl border border-border bg-popover py-1 shadow-lg">
-
+      {/* Dropdown — rendered in document.body so it escapes overflow:hidden containers */}
+      {open && dropdownPos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[200] w-52 overflow-hidden rounded-xl border border-border bg-popover py-1 shadow-lg"
+          style={{ top: dropdownPos.top, right: dropdownPos.right }}
+        >
           {!isDeleted && (
             <>
               <button type="button" onClick={handleDuplicate} className={menuItemClass}>
@@ -170,7 +188,7 @@ export function PageActionsMenu({
               <div className="mx-2 my-1 border-t border-border" />
 
               <div className="px-3 pb-0.5 pt-1">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-ui text-muted-foreground">Export</p>
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Export</p>
               </div>
               {(["markdown", "html", "pdf"] as const).map((fmt) => (
                 <button
@@ -207,13 +225,17 @@ export function PageActionsMenu({
               Restore from Trash
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Move to Trash confirmation dialog */}
-      {confirmTrash && (
+      {confirmTrash && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[300] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={() => !deleting && setConfirmTrash(false)} />
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            onClick={() => !deleting && setConfirmTrash(false)}
+          />
           <div className="relative w-[360px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
             <div className="mb-1 flex items-center gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
@@ -243,8 +265,9 @@ export function PageActionsMenu({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }

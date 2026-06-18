@@ -167,13 +167,13 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <figure className="group my-2">
-        <div className="relative overflow-hidden rounded-lg border border-border/40">
+      <figure className="group my-3">
+        <div className="relative overflow-hidden rounded-xl border border-border bg-muted/20 shadow-sm">
           <img
             src={src}
             alt={captionDraft || "Image"}
-            className="block max-w-full"
-            style={{ maxHeight: 520, objectFit: "contain", width: "100%" }}
+            className="block w-full"
+            style={{ maxHeight: 520, objectFit: "contain" }}
             onError={() => setPicking(true)}
           />
           <MediaActions
@@ -187,7 +187,7 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
           value={captionDraft}
           onChange={(e) => { setCaptionDraft(e.target.value); updateAttributes({ caption: e.target.value }); }}
           placeholder="Add a caption…"
-          className="mt-1.5 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+          className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
         />
       </figure>
     </NodeViewWrapper>
@@ -236,14 +236,14 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <figure className="group my-2">
-        <div className="relative overflow-hidden rounded-lg border border-border/40 bg-black">
+      <figure className="group my-3">
+        <div className="relative overflow-hidden rounded-xl border border-border bg-black shadow-sm">
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <video
             src={src}
             controls
-            className="block max-w-full"
-            style={{ maxHeight: 480, width: "100%" }}
+            className="block w-full"
+            style={{ maxHeight: 480 }}
             onError={() => setPicking(true)}
           />
           <MediaActions
@@ -257,7 +257,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
           value={captionDraft}
           onChange={(e) => { setCaptionDraft(e.target.value); updateAttributes({ caption: e.target.value }); }}
           placeholder="Add a caption…"
-          className="mt-1.5 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+          className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
         />
       </figure>
     </NodeViewWrapper>

@@ -116,33 +116,182 @@ function LinkedPageView({ node, updateAttributes }: NodeViewProps) {
 }
 
 // ── Template Button ────────────────────────────────────────────────────────────
-function TemplateButtonView({ node, updateAttributes }: NodeViewProps) {
-  const label = (node.attrs.label as string) || "Template";
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(label);
 
-  const confirm = useCallback(() => {
-    updateAttributes({ label: draft.trim() || "Template" });
-    setEditing(false);
-  }, [draft, updateAttributes]);
+type TplBlock = { type: string; text: string };
 
-  const cancel = useCallback(() => {
-    setDraft(label);
+function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeViewProps) {
+  const label          = (node.attrs.label          as string) || "New Entry";
+  const insertLocation = (node.attrs.insertLocation as string) || "below_button";
+  const templateBlocks = (node.attrs.templateBlocks as TplBlock[]) || [{ type: "paragraph", text: "" }];
+
+  const [editing, setEditing]    = useState(false);
+  const [draftLabel, setDraftLabel]       = useState(label);
+  const [draftLocation, setDraftLocation] = useState(insertLocation);
+  const [draftBlocks, setDraftBlocks]     = useState<TplBlock[]>(templateBlocks);
+
+  const saveEdit = useCallback(() => {
+    updateAttributes({
+      label:          draftLabel.trim() || "New Entry",
+      insertLocation: draftLocation,
+      templateBlocks: draftBlocks,
+    });
     setEditing(false);
-  }, [label]);
+  }, [draftLabel, draftLocation, draftBlocks, updateAttributes]);
+
+  const cancelEdit = useCallback(() => {
+    setDraftLabel(label);
+    setDraftLocation(insertLocation);
+    setDraftBlocks(templateBlocks);
+    setEditing(false);
+  }, [label, insertLocation, templateBlocks]);
+
+  function handleClick() {
+    if (editing) return;
+    const pos     = typeof getPos === "function" ? getPos() : null;
+    if (pos == null) return;
+
+    const schema = editor.schema;
+    const nodesToInsert = templateBlocks.map((b) => {
+      const nodeType = schema.nodes[b.type === "todo" ? "taskItem" : b.type === "bullet" ? "listItem" : "paragraph"] ?? schema.nodes.paragraph;
+      const textNode = b.text ? schema.text(b.text) : null;
+      return nodeType.create({}, textNode ? [textNode] : []);
+    });
+
+    const tr = editor.view.state.tr;
+    if (insertLocation === "below_button") {
+      const insertPos = pos + node.nodeSize;
+      for (let i = nodesToInsert.length - 1; i >= 0; i--) {
+        tr.insert(insertPos, nodesToInsert[i]);
+      }
+    } else {
+      // bottom of page
+      const docSize = editor.view.state.doc.content.size;
+      for (let i = nodesToInsert.length - 1; i >= 0; i--) {
+        tr.insert(docSize - 1, nodesToInsert[i]);
+      }
+    }
+    editor.view.dispatch(tr);
+  }
 
   if (editing) {
     return (
       <NodeViewWrapper contentEditable={false}>
-        <InlineEditorRow
-          icon="⚡"
-          value={draft}
-          onChange={setDraft}
-          placeholder="Button label…"
-          confirmLabel="Save"
-          onConfirm={confirm}
-          onCancel={cancel}
-        />
+        <div className="my-2 rounded-xl border border-primary/30 bg-primary/[0.03] p-4 shadow-sm">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-primary/60">
+            ⚡ Template Button — Edit
+          </p>
+
+          {/* Label */}
+          <div className="mb-3">
+            <label className="mb-1 block text-[11px] font-semibold text-foreground/70">Button label</label>
+            <input
+              type="text"
+              value={draftLabel}
+              onChange={(e) => setDraftLabel(e.target.value)}
+              placeholder="e.g. + Add Today's Log"
+              // biome-ignore lint/a11y/noAutofocus: intentional — edit panel just opened
+              autoFocus
+              className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-[13px] text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          {/* Insert location */}
+          <div className="mb-3">
+            <label className="mb-1.5 block text-[11px] font-semibold text-foreground/70">Insert location</label>
+            <div className="flex gap-2">
+              {([
+                { key: "below_button", label: "Below button" },
+                { key: "bottom_of_page", label: "Bottom of page" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setDraftLocation(opt.key)}
+                  className={[
+                    "rounded-lg border px-3 py-1 text-[11.5px] font-medium transition-colors",
+                    draftLocation === opt.key
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-muted",
+                  ].join(" ")}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Template blocks */}
+          <div className="mb-3">
+            <label className="mb-1.5 block text-[11px] font-semibold text-foreground/70">Template content</label>
+            <div className="flex flex-col gap-1.5">
+              {draftBlocks.map((b, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <select
+                    value={b.type}
+                    onChange={(e) => {
+                      const next = [...draftBlocks];
+                      next[i] = { ...next[i], type: e.target.value };
+                      setDraftBlocks(next);
+                    }}
+                    className="w-28 rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="paragraph">Paragraph</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                    <option value="todo">To-do</option>
+                    <option value="bullet">Bullet</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={b.text}
+                    onChange={(e) => {
+                      const next = [...draftBlocks];
+                      next[i] = { ...next[i], text: e.target.value };
+                      setDraftBlocks(next);
+                    }}
+                    placeholder="Block text…"
+                    className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setDraftBlocks(draftBlocks.filter((_, j) => j !== i))}
+                    className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/40 hover:bg-red-50 hover:text-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setDraftBlocks([...draftBlocks, { type: "paragraph", text: "" }])}
+                className="mt-0.5 self-start rounded-md border border-dashed border-border/60 px-3 py-1 text-[11px] text-muted-foreground/60 hover:border-primary/30 hover:text-primary"
+              >
+                + Add block
+              </button>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={saveEdit}
+              className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-primary/90"
+            >
+              Save ↵
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={cancelEdit}
+              className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       </NodeViewWrapper>
     );
   }
@@ -153,13 +302,20 @@ function TemplateButtonView({ node, updateAttributes }: NodeViewProps) {
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => { setDraft(label); setEditing(true); }}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-4 py-1.5 text-sm font-medium text-secondary-foreground transition-colors hover:bg-secondary/70"
+          onClick={handleClick}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-4 py-2 text-[13px] font-semibold text-secondary-foreground shadow-sm transition-colors hover:bg-secondary/70 active:scale-[0.98]"
         >
           <span>⚡</span>
           <span>{label}</span>
         </button>
-        <span className="text-[10px] text-muted-foreground/50">click to edit label</span>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { setDraftLabel(label); setDraftLocation(insertLocation); setDraftBlocks(templateBlocks); setEditing(true); }}
+          className="rounded-md px-2 py-1 text-[10px] text-muted-foreground/40 hover:bg-muted hover:text-muted-foreground"
+        >
+          Edit
+        </button>
       </div>
     </NodeViewWrapper>
   );
@@ -553,8 +709,10 @@ export const TemplateButton = Node.create({
 
   addAttributes() {
     return {
-      blockId: { default: null },
-      label:   { default: "Template" },
+      blockId:        { default: null },
+      label:          { default: "New Entry" },
+      insertLocation: { default: "below_button" },
+      templateBlocks: { default: [{ type: "paragraph", text: "" }] },
     };
   },
 

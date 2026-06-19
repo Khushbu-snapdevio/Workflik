@@ -5,6 +5,7 @@ import {
   ChartBarIcon,
   EnvelopeIcon,
   SignOutIcon,
+  SquaresFourIcon,
   StackIcon,
   UsersIcon,
 } from "@phosphor-icons/react";
@@ -16,6 +17,7 @@ import { PRODUCT_NAME } from "@/config/platform";
 const navItems = [
   { href: "/Orbit-admin/orbit", label: "Overview", icon: ChartBarIcon, exact: true },
   { href: "/Orbit-admin/orbit/users", label: "Users", icon: UsersIcon, exact: false },
+  { href: "/Orbit-admin/orbit/templates", label: "Templates", icon: SquaresFourIcon, exact: false },
   { href: "/Orbit-admin/orbit/queues", label: "Queues", icon: StackIcon, exact: false },
   { href: "/Orbit-admin/orbit/email", label: "Email", icon: EnvelopeIcon, exact: false },
 ];

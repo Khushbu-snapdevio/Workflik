@@ -48,7 +48,7 @@ export const emailFrequency = pgEnum("email_frequency", ["realtime", "daily", "w
 export const emailOutboxStatus = pgEnum("email_outbox_status", ["queued", "sending", "sent", "failed"]);
 export const emailOutboxType = pgEnum("email_outbox_type", ["notification_email", "digest_email"]);
 
-export const templateCategory = pgEnum("template_category", ["personal", "productivity", "project_mgmt", "team", "crm"]);
+export const templateCategory = pgEnum("template_category", ["productivity", "project_mgmt", "marketing", "engineering", "sales"]);
 export const templateStatus = pgEnum("template_status", ["draft", "published"]);
 
 export const searchSourceType = pgEnum("search_source_type", ["page", "entry", "comment"]);

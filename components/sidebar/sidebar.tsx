@@ -8,6 +8,7 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
   SignOutIcon,
+  SquaresFourIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -18,6 +19,7 @@ import { FavoritesSection } from "@/components/sidebar/favorites-section";
 import { PageTree } from "@/components/sidebar/page-tree";
 import { RecentlyVisitedSection } from "@/components/sidebar/recently-visited-section";
 import { WorkspaceSwitcher } from "@/components/sidebar/workspace-switcher";
+import { TemplateGalleryModal } from "@/components/templates/template-gallery-modal";
 
 type PageItem = {
   id: string;
@@ -56,6 +58,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [recentlyVisited, setRecentlyVisited] = useState<{ id: string; pageId: string; visitedAt: string }[]>([]);
   const [newMenu, setNewMenu] = useState(false);
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const newMenuRef = useRef<HTMLDivElement>(null);
 
   const resizingRef = useRef(false);
@@ -306,7 +309,32 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
                   <span className="block text-[11px] leading-tight text-muted-foreground">Tables, boards, calendars</span>
                 </span>
               </Link>
+
+              <div className="mx-3 border-t border-border/60" />
+
+              {/* From Template */}
+              <button
+                type="button"
+                onClick={() => { setNewMenu(false); setShowTemplateGallery(true); }}
+                className="group flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-accent"
+              >
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
+                  <SquaresFourIcon size={13} />
+                </span>
+                <span>
+                  <span className="block text-[12.5px] font-semibold leading-tight text-foreground">From Template</span>
+                  <span className="block text-[11px] leading-tight text-muted-foreground">Start from a template</span>
+                </span>
+              </button>
             </div>
+          )}
+
+          {showTemplateGallery && (
+            <TemplateGalleryModal
+              workspaceId={workspaceId}
+              workspaceSlug={workspaceSlug}
+              onClose={() => setShowTemplateGallery(false)}
+            />
           )}
         </div>
         <button
@@ -344,6 +372,11 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             href={`/app/${workspaceSlug}/settings`}
             icon={<GearIcon size={15} />}
             label="Settings"
+          />
+          <NavButton
+            href={`/app/${workspaceSlug}/templates`}
+            icon={<SquaresFourIcon size={15} />}
+            label="Templates"
           />
         </nav>
 

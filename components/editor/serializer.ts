@@ -61,16 +61,18 @@ function tiptapContentToInline(nodes: TipTapNode[]): InlineNode[] {
 
 // Our InlineNode array → TipTap inline content array
 function inlineToTiptapContent(nodes: InlineNode[]): TipTapNode[] {
-  return (nodes ?? []).map((n): TipTapNode => {
+  return (nodes ?? []).flatMap((n): TipTapNode[] => {
     if ("type" in n) {
-      return { type: n.type, attrs: n.attrs };
+      return [{ type: n.type, attrs: n.attrs }];
     }
+    // TipTap/ProseMirror does not allow empty text nodes
+    if (!n.text) return [];
     const marks = (n.marks ?? []).map((m) => {
       try { const p = JSON.parse(m) as string | { type: string; attrs: Record<string, unknown> }; return stringToTiptapMark(p) as { type: string; attrs?: Record<string, unknown> }; } catch { return stringToTiptapMark(m) as { type: string; attrs?: Record<string, unknown> }; }
     });
     const node: TipTapNode = { type: "text", text: n.text };
     if (marks.length) node.marks = marks;
-    return node;
+    return [node];
   });
 }
 
@@ -93,7 +95,7 @@ export interface DbBlock {
 
 // Convert one DB block → TipTap node
 export function blockToTipTapNode(block: DbBlock): TipTapNode {
-  const c = block.content;
+  const c = (block.content ?? {}) as BlockContent;
   const id = block.id;
 
   switch (block.type) {

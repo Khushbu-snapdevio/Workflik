@@ -1,13 +1,21 @@
-import { and, asc, eq, gt } from "drizzle-orm";
+import { and, asc, eq, gt, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { pageClosure, pages, userRecentlyVisited, workspaces } from "@/lib/db/schema";
+import {
+  databaseProperties,
+  databaseViews,
+  pageClosure,
+  pages,
+  propertyValues,
+  userRecentlyVisited,
+  workspaces,
+} from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { PageClient } from "@/components/pages/page-client";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { TrashBanner } from "@/components/pages/trash-banner";
-import { DatabasePage } from "@/components/database/database-page";
+import { TemplatePageClient } from "@/components/templates/template-page-client";
 
 type Props = { params: Promise<{ workspace: string; pageId: string }> };
 
@@ -25,28 +33,24 @@ export default async function PageEditorPage({ params }: Props) {
   const { workspace: slug, pageId: shortId } = await params;
   const session = await requireSession();
 
-  // Resolve workspace
   const [ws] = await db
     .select({ id: workspaces.id, name: workspaces.name })
     .from(workspaces)
     .where(eq(workspaces.slug, slug))
     .limit(1);
-
   if (!ws) notFound();
 
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) notFound();
 
-  // Resolve page by shortId
   const [page] = await db
     .select()
     .from(pages)
     .where(and(eq(pages.shortId, shortId), eq(pages.workspaceId, ws.id)))
     .limit(1);
-
   if (!page) notFound();
 
-  // Record visit (fire-and-forget — do not block render)
+  // Record visit (fire-and-forget)
   db.insert(userRecentlyVisited)
     .values({ userId: session.user.id, workspaceId: ws.id, pageId: page.id })
     .onConflictDoUpdate({
@@ -55,7 +59,7 @@ export default async function PageEditorPage({ params }: Props) {
     })
     .catch(() => {});
 
-  // Build breadcrumbs — get all ancestors ordered by depth descending (root first)
+  // Breadcrumbs — ancestors root → parent
   const ancestorRows = await db
     .select({ id: pages.id, shortId: pages.shortId, title: pages.title, depth: pageClosure.depth })
     .from(pageClosure)
@@ -69,12 +73,59 @@ export default async function PageEditorPage({ params }: Props) {
 
   const isEditor = member.role === "admin" || member.role === "editor";
 
-  // Status banners — TrashBanner is a client component (has restore + delete actions)
+  // ── Database pages → TemplatePageClient (Notion-style, no stats bar) ─────────
+  if (page.kind === "database") {
+    const [props, views, entries] = await Promise.all([
+      db
+        .select()
+        .from(databaseProperties)
+        .where(eq(databaseProperties.databaseId, page.id))
+        .orderBy(asc(databaseProperties.orderIndex)),
+      db
+        .select()
+        .from(databaseViews)
+        .where(eq(databaseViews.databaseId, page.id))
+        .orderBy(asc(databaseViews.orderIndex)),
+      db
+        .select({ id: pages.id, shortId: pages.shortId, title: pages.title, orderIndex: pages.orderIndex })
+        .from(pages)
+        .where(and(eq(pages.databaseId, page.id), eq(pages.kind, "entry"), eq(pages.isDeleted, false)))
+        .orderBy(asc(pages.orderIndex)),
+    ]);
+
+    const entryIds = entries.map((e) => e.id);
+    const values =
+      entryIds.length > 0
+        ? await db.select().from(propertyValues).where(inArray(propertyValues.entryId, entryIds))
+        : [];
+
+    return (
+      <TemplatePageClient
+        page={{
+          id:       page.id,
+          shortId:  page.shortId,
+          title:    page.title,
+          icon:     page.icon,
+          coverUrl: page.coverUrl,
+          kind:     page.kind,
+        }}
+        properties={props}
+        views={views}
+        entries={entries}
+        values={values}
+        workspaceSlug={slug}
+        workspaceName={ws.name}
+        workspaceId={ws.id}
+        breadcrumbs={breadcrumbs}
+        defaultViewId={page.defaultViewId ?? null}
+      />
+    );
+  }
+
+  // ── Regular / doc pages → PageClient ─────────────────────────────────────────
   const statusBanner = (
     <>
-      {page.isDeleted && (
-        <TrashBanner pageId={page.id} workspaceSlug={slug} />
-      )}
+      {page.isDeleted && <TrashBanner pageId={page.id} workspaceSlug={slug} />}
       {page.isLocked && (
         <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -88,8 +139,7 @@ export default async function PageEditorPage({ params }: Props) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background" data-page-id={page.id}>
-
-      {/* ── Top bar: breadcrumbs + actions ── */}
+      {/* Top bar: breadcrumbs + actions */}
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
           <a
@@ -133,46 +183,33 @@ export default async function PageEditorPage({ params }: Props) {
               isLocked={page.isLocked}
               isDeleted={page.isDeleted}
               workspaceSlug={slug}
+              workspaceId={ws.id}
               pageShortId={page.shortId}
+              pageTitle={page.title ?? ""}
               pageKind={page.kind}
             />
           </div>
         )}
       </div>
 
-      {/* ── Content area — database vs regular page ── */}
-      {page.kind === "database" ? (
-        <DatabasePage
-          databaseId={page.id}
-          workspaceId={ws.id}
-          workspaceSlug={slug}
-          isEditor={isEditor}
-          initialTitle={page.title}
-          initialIcon={page.icon}
-          isLocked={page.isLocked}
-          isDeleted={page.isDeleted}
-          pageShortId={page.shortId}
-        />
-      ) : (
-        <PageClient
-          pageId={page.id}
-          shortId={page.shortId}
-          initialTitle={page.title}
-          initialIcon={page.icon}
-          initialCoverUrl={page.coverUrl}
-          initialCoverPosition={page.coverPosition}
-          isLocked={page.isLocked}
-          isDeleted={page.isDeleted}
-          isEditor={isEditor}
-          workspaceSlug={slug}
-          workspaceId={ws.id}
-          fontFamily={page.fontFamily}
-          isSmallText={page.isSmallText}
-          isFullWidth={page.isFullWidth}
-          statusBanner={statusBanner}
-          databaseId={page.databaseId}
-        />
-      )}
+      <PageClient
+        pageId={page.id}
+        shortId={page.shortId}
+        initialTitle={page.title}
+        initialIcon={page.icon}
+        initialCoverUrl={page.coverUrl}
+        initialCoverPosition={page.coverPosition}
+        isLocked={page.isLocked}
+        isDeleted={page.isDeleted}
+        isEditor={isEditor}
+        workspaceSlug={slug}
+        workspaceId={ws.id}
+        fontFamily={page.fontFamily}
+        isSmallText={page.isSmallText}
+        isFullWidth={page.isFullWidth}
+        statusBanner={statusBanner}
+        databaseId={page.databaseId}
+      />
     </div>
   );
 }

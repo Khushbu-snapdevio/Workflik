@@ -8,18 +8,22 @@ import {
   LockKeyIcon,
   LockKeyOpenIcon,
   StarIcon,
+  SquaresFourIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { SaveAsTemplateModal } from "@/components/templates/save-as-template-modal";
 
 interface PageActionsMenuProps {
   pageId:        string;
   isLocked:      boolean;
   isDeleted:     boolean;
   workspaceSlug: string;
+  workspaceId:   string;
   pageShortId:   string;
+  pageTitle?:    string;
   pageKind?:     string;
 }
 
@@ -31,14 +35,17 @@ export function PageActionsMenu({
   isLocked,
   isDeleted,
   workspaceSlug,
+  workspaceId,
   pageShortId,
+  pageTitle,
   pageKind,
 }: PageActionsMenuProps) {
   const router = useRouter();
-  const [open, setOpen]               = useState(false);
-  const [loading, setLoading]         = useState<string | null>(null);
-  const [confirmTrash, setConfirmTrash] = useState(false);
-  const [deleting, setDeleting]       = useState(false);
+  const [open, setOpen]                   = useState(false);
+  const [loading, setLoading]             = useState<string | null>(null);
+  const [confirmTrash, setConfirmTrash]   = useState(false);
+  const [deleting, setDeleting]           = useState(false);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const buttonRef  = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
@@ -210,6 +217,17 @@ export function PageActionsMenu({
                 Add to favorites
               </button>
 
+              {pageKind !== "database" && (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); setSaveAsTemplate(true); }}
+                  className={menuItemClass}
+                >
+                  <SquaresFourIcon size={14} />
+                  Save as Template
+                </button>
+              )}
+
               <div className="mx-2 my-1 border-t border-border" />
 
               <div className="px-3 pb-0.5 pt-1">
@@ -298,6 +316,15 @@ export function PageActionsMenu({
           </div>
         </div>,
         document.body,
+      )}
+
+      {saveAsTemplate && typeof document !== "undefined" && (
+        <SaveAsTemplateModal
+          pageId={pageId}
+          pageTitle={pageTitle ?? ""}
+          workspaceId={workspaceId}
+          onClose={() => setSaveAsTemplate(false)}
+        />
       )}
     </>
   );

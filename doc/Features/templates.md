@@ -53,48 +53,566 @@ Clicking a template shows a full-page preview (read-only). A `"Use Template"` bu
 
 ## Built-in Templates
 
-### Personal
+All 16 built-in templates are **database pages**. Each spec below lists the exact icon, tagline, default view, all views, every database property (type + options), and the 3 sample rows pre-seeded in the template.
 
-| Template | Description |
-|----------|-------------|
-| Daily Journal | Date-stamped entries with mood, highlights, and reflection prompts |
-| Weekly Planner | Goals, schedule, and review sections for the week |
-| Reading List | Database of books with status, rating, and notes |
-| Habit Tracker | Checkbox-based daily habit tracking database |
+---
 
 ### Productivity
 
-| Template | Description |
-|----------|-------------|
-| Meeting Notes | Agenda, attendees, action items, and decisions |
-| Task List | Simple to-do page with checkbox blocks |
-| Project Brief | Goals, scope, timeline, and stakeholders for a project |
-| OKR Tracker | Objectives and key results in a database |
+---
+
+#### 📅 Meeting Notes
+
+> *"Capture every meeting, stay on top of every decision."*
+
+**Page type:** Database · **Default view:** All Meetings (table)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| All Meetings ★ | Table | — |
+| My Notes | Table | Created by = me |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Meeting name | Title | — |
+| Date | Date | — |
+| Category | Select | `Retro` · `Standup` · `Presentation` |
+| Attendees | Person | multi |
+| Created by | Created by | auto |
+
+**Sample rows (3):**
+
+| Meeting name | Date | Category |
+|-------------|------|----------|
+| Product release post-mortem | Feb 13, 2025 | Retro |
+| Weekly team sync | Feb 13, 2025 | Standup |
+| GTM strategy presentation | Feb 13, 2025 | Presentation |
+
+---
+
+#### ✅ Tasks Tracker
+
+> *"Stay organized with tasks, your way."*
+
+**Page type:** Database · **Default view:** All Tasks (table)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| All Tasks ★ | Table | — |
+| By Status | Table | Group by Status |
+| My Tasks | Table | Assignee = me |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Task name | Title | — |
+| Status | Select | `Done` · `In progress` · `Not started` |
+| Assignee | Person | multi |
+| Due date | Date | — |
+| Priority | Select | `High` · `Medium` · `Low` |
+| Task type | Select | `Polish` · `Feature request` |
+| Description | Text | — |
+| Effort level | Select | `Small` · `Medium` · `Large` |
+
+**Sample rows (3):**
+
+| Task name | Status | Due date | Priority | Task type | Effort level |
+|-----------|--------|----------|----------|-----------|--------------|
+| Improve website copy | Done | 02/03/2025 | High | Polish | Medium |
+| Update help center & FAQ | In progress | 02/20/2025 | Medium | Feature request | Small |
+| Publish release notes | Not started | 02/28/2025 | Low | Feature request | Small |
+
+---
+
+#### 🎯 Goals Tracker
+
+> *"Align your team's objectives. Track progress seamlessly."*
+
+**Page type:** Database · **Default view:** All Goals (table)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| All Goals ★ | Table | — |
+| By Status | Table | Group by Status |
+| My Goals | Table | Owner = me |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Goal name | Title | — |
+| Owner | Person | single |
+| Status | Select | `In progress` · `Not started` · `Done` |
+| Due date | Date | — |
+| Priority | Select | `High` · `Medium` · `Low` |
+| Team | Select | `Business Development` · `Account Management` · `Engineering` · `Marketing` · `Product` |
+
+**Sample rows (3):**
+
+| Goal name | Status | Due date | Priority | Team |
+|-----------|--------|----------|----------|------|
+| Increase sales by 20% | In progress | 02/26/2025 | High | Business Development |
+| Launch 3 new products | Not started | 04/16/2025 | Medium | Account Management |
+| Acquire 20K new users | Done | 02/03/2025 | Medium | Business Development |
+
+---
+
+#### 💡 Brainstorm Session
+
+> *"Capture ideas. Prioritize together."*
+
+**Page type:** Database · **Default view:** All Ideas (table)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| All Ideas ★ | Table | — |
+| By category | Table | Group by Category |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Idea | Title | — |
+| Created by | Created by | auto |
+| Priority | Select | `High` · `Medium` · `Low` |
+| Category | Select | `Activation` · `Conversion` · `Top of funnel` |
+| Upvote | Button | label: `Upvote` — increments Total votes by 1 and appends current user to Upvoted by |
+| Total votes | Number | integer; default 0 |
+| Upvoted by | Person | multi |
+
+**Sample rows (3):**
+
+| Idea | Priority | Category | Total votes |
+|------|----------|----------|-------------|
+| Launch back to school campaign | High | Activation | 0 |
+| Simplify onboarding experience | Medium | Conversion | 0 |
+| Improve SEO | Low | Top of funnel | 0 |
+
+---
 
 ### Project Management
 
-| Template | Description |
-|----------|-------------|
-| Project Tracker | Database with status, priority, assignee, and due date |
-| Sprint Board | Kanban board pre-configured for sprint workflow |
-| Bug Tracker | Database for tracking bugs with severity and status |
-| Content Calendar | Calendar view database for content publishing schedule |
+---
 
-### Team & Knowledge
+#### 🔵 Projects
 
-| Template | Description |
-|----------|-------------|
-| Team Wiki | Structured knowledge base with sections and subpages |
-| Company Handbook | Policies, culture, and onboarding info |
-| Meeting Agenda | Pre-meeting agenda with action item tracking |
-| Decision Log | Database for logging decisions with context and outcome |
+> *"Manage and execute projects from start to finish."*
 
-### Personal CRM
+**Page type:** Database · **Default view:** By Status (board)
 
-| Template | Description |
-|----------|-------------|
-| Contact Database | People database with company, last contact, and notes |
-| Company Tracker | Company database linked to contacts (uses Relation property) |
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| By Status | Board | Group by Status |
+| All Projects ★ | Table | — |
+| Gantt | — | *(Phase 2 — shown in UI, opens table fallback in MVP)* |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Project name | Title | — |
+| Status | Select | `Not started` · `In progress` · `Done` |
+| Priority | Select | `High` · `Medium` · `Low` |
+| Owner | Person | single |
+
+**Sample rows (3) — shown as board cards:**
+
+| Project name | Status | Priority |
+|-------------|--------|----------|
+| Quarterly sales planning | Not started | Medium |
+| Public launch of iOS app | In progress | High |
+| Revamp new hire onboarding | Done | Low |
+
+---
+
+#### 🔴 Issue Tracking
+
+> *"Easily manage issues and feedback to ensure timely resolutions."*
+
+**Page type:** Database · **Default view:** Kanban (board)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| Kanban | Board | Group by Status |
+| All Issues ★ | Table | — |
+| My Issues | Table | Assignee = me |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Issue name | Title | — |
+| Status | Select | `Backlog` · `Open` · `In progress` · `In review` · `Testing` · `Won't fix` · `Done` |
+| Priority | Select | `High` · `Medium` · `Low` |
+| Assignee | Person | single |
+| Reporter | Person | single |
+
+**Sample rows (2) — shown as board cards:**
+
+| Issue name | Status | Priority |
+|------------|--------|----------|
+| New issue 1 | Open | High |
+| New issue 2 | In progress | Medium |
+
+---
+
+#### 🔴 Feature Requests
+
+> *"Track and assign new feature requests."*
+
+**Page type:** Database · **Default view:** By Status (board)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| By Status | Board | Group by Status |
+| All Requests ★ | Table | — |
+| Assigned to Me | Table | Assignee = me |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Request name | Title | — |
+| Status | Select | `New` · `Under Review` · `Planned` · `In Development` · `Launched` · `Declined` |
+| Assignee | Person | single |
+| Priority | Select | `High` · `Medium` · `Low` |
+
+**Sample rows (3) — shown as board cards:**
+
+| Request name | Status |
+|-------------|--------|
+| Drawing feature | New |
+| New integration | Under Review |
+| Easier login | In Development |
+
+---
+
+#### 🔵 Creative Projects
+
+> *"Efficiently organize and manage creative projects."*
+
+**Page type:** Database · **Default view:** By Status (board)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| By Status | Board | Group by Status |
+| All Projects ★ | Table | — |
+| My Projects | Table | Owner = me |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Project name | Title | — |
+| Status | Select | `Not started` · `In progress` · `Needs review` · `In review` · `Done` |
+| Type | Select | `Branding` · `Illustration` · `Photography` · `Video` · `Copywriting` |
+| Owner | Person | single |
+
+**Sample rows (3) — shown as board cards:**
+
+| Project name | Status | Type |
+|-------------|--------|------|
+| Project 1 | Needs review | Photography |
+| Project 2 | In progress | Illustration |
+| Project 3 | Not started | Branding |
+
+---
+
+### Marketing & Content
+
+---
+
+#### 🚩 Campaign Management
+
+> *"Plan and track your campaigns."*
+
+**Page type:** Database · **Default view:** By Status (board)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| By Status | Board | Group by Status |
+| All Campaigns ★ | Table | — |
+| Calendar | Calendar | By Start date |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Campaign name | Title | — |
+| Status | Select | `Blocked` · `Not started` · `Planning` · `On Hold` · `In Production` · `Launched` · `Done` |
+| Channel | Multi-select | `X` · `LinkedIn` · `Instagram` · `Email` · `YouTube` · `Facebook` |
+| Region | Multi-select | `EMEA` · `AMER` · `APAC` · `Global` |
+| Campaign type | Multi-select | `Product launch` · `Sales promotion` · `Brand awareness` · `Event` |
+| Start date | Date | — |
+
+**Sample rows (3) — shown as board cards:**
+
+| Campaign name | Status | Channel | Region | Campaign type |
+|--------------|--------|---------|--------|---------------|
+| New mobile app | Blocked | X | EMEA | Product launch |
+| Engineering content | Not started | LinkedIn | AMER | Sales promotion |
+| Win the market | Planning | Instagram | APAC | Brand awareness |
+
+---
+
+#### 📅 Content Calendar
+
+> *"Plan and manage your content pipeline."*
+
+**Page type:** Database · **Default view:** Calendar
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| Calendar | Calendar | By Publish date |
+| All Content ★ | Table | — |
+| By Status | Table | Group by Status |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Content title | Title | — |
+| Status | Select | `Idea` · `Draft` · `In Review` · `Scheduled` · `Published` |
+| Channel | Select | `Blog` · `Twitter/X` · `LinkedIn` · `Email` · `YouTube` · `Instagram` |
+| Publish date | Date | used as the calendar date |
+| Author | Person | single |
+| Tags | Multi-select | `Product` · `Engineering` · `Marketing` · `Company` |
+
+**Sample rows:** none pre-seeded — calendar opens empty so users start fresh.
+
+---
+
+#### 📅 Social Media Planner
+
+> *"Plan and manage your social media content."*
+
+**Page type:** Database · **Default view:** Calendar
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| Calendar | Calendar | By Scheduled date |
+| All Posts ★ | Table | — |
+| By Status | Table | Group by Status |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Post title | Title | — |
+| Status | Select | `Idea` · `Draft` · `Scheduled` · `Published` |
+| Platform | Select | `Instagram` · `Twitter/X` · `LinkedIn` · `Facebook` · `YouTube` · `TikTok` |
+| Scheduled date | Date | used as the calendar date |
+| Author | Person | single |
+| Tags | Multi-select | freeform |
+
+**Sample rows:** none pre-seeded — calendar opens empty.
+
+---
+
+#### 🗓️ Event Management
+
+> *"Plan and manage your events."*
+
+**Page type:** Database · **Default view:** All Events (table)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| All Events ★ | Table | — |
+| By Status | Table | Group by Status |
+| Calendar | Calendar | By Event date |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Event name | Title | — |
+| Event date | Date | — |
+| Status | Select | `Registration open` · `Planning` · `Done` |
+| Event owner | Person | single |
+| Format | Select | `In person` · `Virtual` |
+| Category | Select | `Community meetup` · `Internal event` · `Conference` · `Webinar` |
+| Venue | Text | — |
+
+**Sample rows (3):**
+
+| Event name | Event date | Status | Format | Category | Venue |
+|-----------|-----------|--------|--------|----------|-------|
+| Make with WorkFlik | Sep 16, 2025 | Registration open | In person | Community meetup | Venue 3 |
+| Fireside chat | Mar 13, 2025 | Planning | In person | Internal event | Venue 2 |
+| VIP dinner | Feb 12, 2025 | Done | Virtual | Community meetup | Venue 1 |
+
+---
+
+### Engineering & Docs
+
+---
+
+#### 📄 Document Hub
+
+> *"Create and collaborate on documents in one place."*
+
+**Page type:** Database · **Default view:** All Docs (table)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| All Docs ★ | Table | — |
+| My Docs | Table | Created by = me |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Doc name | Title | — |
+| Category | Select | `Strategy doc` · `Proposal` · `Customer research` · `Report` · `Other` |
+| Created by | Created by | auto |
+| Created time | Created time | auto |
+| Last edited by | Last edited by | auto |
+| Last updated time | Last edited time | auto |
+
+**Sample rows (3):**
+
+| Doc name | Category |
+|----------|----------|
+| Company mission and strategy | Strategy doc |
+| Proposal for new year campaign | Proposal |
+| Customer feedback report | Customer research |
+
+---
+
+#### 📄 Engineering Docs
+
+> *"Organize documents for transparent team communication."*
+
+**Page type:** Database · **Default view:** All Docs (table)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| All Docs ★ | Table | — |
+| Published Docs | Table | Status = `Published` |
+| Docs by Category | Table | Group by Category |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Doc name | Title | — |
+| Author | Person | single |
+| Status | Select | `Draft` · `In Review` · `Published` |
+| Category | Multi-select | `PRD` · `Best Practices` · `Guide` · `RFC` · `Runbook` |
+| Last edited time | Last edited time | auto |
+
+**Sample rows (3):**
+
+| Doc name | Status | Category |
+|----------|--------|----------|
+| New feature PRD | Draft | PRD |
+| New engineering doc | Published | PRD, Best Practices |
+| User guide | In Review | Guide |
+
+---
+
+### Sales & Finance
+
+---
+
+#### 🔵 Pipeline Tracking
+
+> *"Track your sales pipeline."*
+
+**Page type:** Database · **Default view:** By Deal Stage (board)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| By Deal Stage | Board | Group by Deal Stage |
+| All Deals ★ | Table | — |
+| Active Deals | Table | Deal Stage not in `Won` · `Lost` · `No Deal` |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Deal name | Title | — |
+| Deal Stage | Select | `New` · `Discovery` · `Negotiation` · `Won` · `Lost` · `No Deal` |
+| Priority | Select | `High` · `Medium` · `Low` |
+| Owner | Person | single |
+| Company | Text | — |
+| Value | Number | currency |
+
+**Sample rows (3) — shown as board cards:**
+
+| Deal name | Deal Stage | Priority |
+|-----------|-----------|----------|
+| Auto manufacturer | New | High |
+| Software tech company | Discovery | Low |
+| Consulting firm | Won | Medium |
+
+---
+
+#### 🏦 Fundraising Tracker
+
+> *"Keep all information about potential investors in one place."*
+
+**Page type:** Database · **Default view:** By Status (board)
+
+**Views:**
+
+| View | Type | Filter / Sort |
+|------|------|---------------|
+| By Status | Board | Group by Status |
+| All Investors ★ | Table | — |
+| Won | Table | Status = `Won` |
+
+**Database properties:**
+
+| Property | Type | Options |
+|----------|------|---------|
+| Investor name | Title | — |
+| Status | Select | `Not started` · `Diligence` · `Pitched` · `Won` · `Lost` |
+| Email | Email | — |
+| Contact | Person | single |
+| Fund size | Text | — |
+| Notes | Text | — |
+
+**Sample rows (3) — shown as board cards:**
+
+| Investor name | Status | Email |
+|--------------|--------|-------|
+| VC firm 1 | Won | contact@vcfirm1.com |
+| VC firm 2 | Pitched | contact@vcfirm2.com |
+| VC firm 3 | Lost | contact@vcfirm3.com |
 
 ---
 
@@ -113,9 +631,9 @@ This interface is only available to platform admins (WorkFlik team). End users a
 ├──────────────────────┬──────────────────┬───────────────┤
 │ Name                 │ Category         │ Status        │
 ├──────────────────────┼──────────────────┼───────────────┤
-│ Meeting Notes        │ Productivity     │ Published     │
-│ Sprint Board         │ Project Mgmt     │ Published     │
-│ Daily Journal        │ Personal         │ Draft         │
+│ Tasks Tracker        │ Productivity     │ Published     │
+│ Projects             │ Project Mgmt     │ Published     │
+│ Campaign Management  │ Marketing        │ Draft         │
 └──────────────────────┴──────────────────┴───────────────┘
 ```
 
@@ -140,13 +658,13 @@ This interface is only available to platform admins (WorkFlik team). End users a
 
 ### Launch Templates
 
-The following 18 built-in templates are authored by the WorkFlik team via Orbit Admin before the product launches. They are in `published` state at launch:
+The following 16 built-in templates are authored by the WorkFlik team via Orbit Admin before the product launches. They are in `published` state at launch:
 
-**Personal (4):** Daily Journal, Weekly Planner, Reading List, Habit Tracker
-**Productivity (4):** Meeting Notes, Task List, Project Brief, OKR Tracker
-**Project Management (4):** Project Tracker, Sprint Board, Bug Tracker, Content Calendar
-**Team & Knowledge (4):** Team Wiki, Company Handbook, Meeting Agenda, Decision Log
-**Personal CRM (2):** Contact Database, Company Tracker
+**Productivity (4):** Meeting Notes, Tasks Tracker, Goals Tracker, Brainstorm Session
+**Project Management (4):** Projects, Issue Tracking, Feature Requests, Creative Projects
+**Marketing & Content (4):** Campaign Management, Content Calendar, Social Media Planner, Event Management
+**Engineering & Docs (2):** Document Hub, Engineering Docs
+**Sales & Finance (2):** Pipeline Tracking, Fundraising Tracker
 
 ---
 

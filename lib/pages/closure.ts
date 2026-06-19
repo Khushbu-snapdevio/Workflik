@@ -1,8 +1,10 @@
 // ALL parent_id mutations must go through these functions — never update parent_id directly.
 // Skipping this corrupts the entire page hierarchy and all permission checks that depend on it.
 
-import { sql } from "drizzle-orm";
+import { createId } from "@paralleldrive/cuid2";
+import { max, sql, eq, and, isNull } from "drizzle-orm";
 import type { db } from "@/lib/db";
+import { pages } from "@/lib/db/schema";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -64,3 +66,52 @@ export async function deletePageClosure(
   _tx: Tx,
   _pageId: string
 ): Promise<void> {}
+
+// Create a page row and wire it into the closure table in one transaction step.
+// Used by API routes that need to create database/entry pages.
+export async function createPageWithClosure(
+  tx: Tx,
+  opts: {
+    workspaceId:  string;
+    title:        string;
+    kind:         "page" | "database" | "entry";
+    parentId:     string | null;
+    databaseId?:  string | null;
+    createdBy:    string;
+  }
+): Promise<typeof pages.$inferSelect> {
+  const { workspaceId, title, kind, parentId, databaseId, createdBy } = opts;
+
+  // Compute next orderIndex among siblings
+  const [{ maxIdx }] = await tx
+    .select({ maxIdx: max(pages.orderIndex) })
+    .from(pages)
+    .where(
+      and(
+        eq(pages.workspaceId, workspaceId),
+        eq(pages.isDeleted, false),
+        parentId ? eq(pages.parentId, parentId) : isNull(pages.parentId)
+      )
+    );
+
+  const shortId    = createId().slice(0, 10);
+  const orderIndex = (maxIdx ?? -1) + 1;
+
+  const [page] = await tx
+    .insert(pages)
+    .values({
+      shortId,
+      workspaceId,
+      title,
+      kind,
+      parentId,
+      databaseId: databaseId ?? null,
+      orderIndex,
+      createdBy,
+      lastEditedBy: createdBy,
+    })
+    .returning();
+
+  await insertPageWithClosure(tx, page.id, parentId);
+  return page;
+}

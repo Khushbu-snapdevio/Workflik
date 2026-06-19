@@ -79,15 +79,16 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 // DELETE /api/pages/:id
-//   • Page NOT in trash → soft delete (move to Trash, cascade to descendants)
-//   • Page already in Trash → hard delete (permanent, cascades via ON DELETE CASCADE)
+//   • Database page → always hard-delete (permanent); DB CASCADE removes entries/views/properties
+//   • Regular page NOT in trash → soft delete (move to Trash, cascade to descendants)
+//   • Regular page already in Trash → hard delete (permanent, cascades via ON DELETE CASCADE)
 export async function DELETE(_req: Request, { params }: Ctx) {
   try {
     const { id } = await params;
     const session = await getSession();
 
     const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted })
+      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, kind: pages.kind })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
@@ -96,8 +97,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
     await requireWorkspaceMember(page.workspaceId, session.user.id, "editor");
 
-    if (page.isDeleted) {
-      // Hard delete — ON DELETE CASCADE handles blocks, page_closure, file_uploads etc.
+    // Databases and already-trashed pages are permanently deleted immediately.
+    // ON DELETE CASCADE on databaseId removes all entries; pageClosure/blocks cascade too.
+    if (page.kind === "database" || page.isDeleted) {
       await db.delete(pages).where(eq(pages.id, id));
       return Response.json({ success: true, deleted: "permanent" });
     }
@@ -109,18 +111,12 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       .where(eq(pageClosure.ancestorId, id));
 
     const descendantIds = descendants.map((d) => d.descendantId);
+    const now = new Date();
 
-    if (page.isDeleted) {
-      // Already in Trash — permanently delete
-      await db.delete(pages).where(inArray(pages.id, descendantIds));
-    } else {
-      // Soft delete — move to Trash
-      const now = new Date();
-      await db
-        .update(pages)
-        .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
-        .where(inArray(pages.id, descendantIds));
-    }
+    await db
+      .update(pages)
+      .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
+      .where(inArray(pages.id, descendantIds));
 
     return Response.json({ success: true, deleted: "soft" });
   } catch (err) {

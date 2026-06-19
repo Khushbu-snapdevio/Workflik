@@ -506,3 +506,9 @@ body {
   z-index: 10;
 }
 .ProseMirror table p { margin: 0; }
+
+/* ── Database table borders ── */
+.db-border-b  { border-bottom: 1px solid rgba(26, 26, 20, 0.08) !important; }
+.db-header-b  { border-bottom: 1px solid rgba(26, 26, 20, 0.12) !important; }
+.dark .db-border-b  { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .db-header-b  { border-bottom-color: rgba(255, 255, 255, 0.12) !important; }

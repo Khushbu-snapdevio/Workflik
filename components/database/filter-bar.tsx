@@ -1,0 +1,227 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { X, Check } from "@phosphor-icons/react";
+import type { DbProperty, FilterRule } from "./types";
+import type { SelectOption } from "./types";
+
+const OPERATORS: Record<string, { value: string; label: string }[]> = {
+  text:         [{ value: "contains", label: "contains" }, { value: "not_contains", label: "doesn't contain" }, { value: "is", label: "is exactly" }, { value: "is_not", label: "is not" }, { value: "starts_with", label: "starts with" }, { value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
+  number:       [{ value: "=", label: "=" }, { value: "!=", label: "≠" }, { value: "<", label: "<" }, { value: ">", label: ">" }, { value: "<=", label: "≤" }, { value: ">=", label: "≥" }, { value: "is_empty", label: "is empty" }],
+  select:       [{ value: "is", label: "is" }, { value: "is_not", label: "is not" }, { value: "is_any_of", label: "is any of" }, { value: "is_none_of", label: "is none of" }, { value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
+  multi_select: [{ value: "contains", label: "contains" }, { value: "not_contains", label: "doesn't contain" }, { value: "is_empty", label: "is empty" }],
+  date:         [{ value: "is", label: "is" }, { value: "is_before", label: "is before" }, { value: "is_after", label: "is after" }, { value: "is_empty", label: "is empty" }],
+  checkbox:     [{ value: "is_checked", label: "is checked" }, { value: "is_not_checked", label: "is not checked" }],
+  url:          [{ value: "contains", label: "contains" }, { value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
+  email:        [{ value: "contains", label: "contains" }, { value: "is_empty", label: "is empty" }],
+  phone:        [{ value: "contains", label: "contains" }, { value: "is_empty", label: "is empty" }],
+  person:       [{ value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
+  relation:     [{ value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
+};
+
+const NO_VALUE_OPS  = new Set(["is_empty", "is_not_empty", "is_checked", "is_not_checked"]);
+const MULTI_VAL_OPS = new Set(["is_any_of", "is_none_of"]);
+
+// ── Multi-option picker for is_any_of / is_none_of ───────────────────────────
+
+function MultiOptionPicker({ options, value, onChange }: {
+  options: SelectOption[];
+  value:   string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref             = useRef<HTMLDivElement>(null);
+  const selected        = new Set(value);
+
+  useEffect(() => {
+    if (!open) return;
+    function h(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  function toggle(id: string) {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    onChange(Array.from(next));
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-7 min-w-[80px] items-center justify-between gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+      >
+        <span className="truncate text-left">
+          {selected.size === 0 ? <span className="text-muted-foreground/50">Choose…</span> : `${selected.size} option${selected.size === 1 ? "" : "s"}`}
+        </span>
+        <svg viewBox="0 0 10 6" className="size-2.5 shrink-0 text-muted-foreground/50" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <path d="M1 1l4 4 4-4"/>
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+          {options.length === 0 ? (
+            <p className="px-3 py-2.5 text-[11px] text-muted-foreground/50">No options defined</p>
+          ) : (
+            options.map((o) => {
+              const on = selected.has(o.id);
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => toggle(o.id)}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] text-foreground hover:bg-accent"
+                >
+                  <div className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${on ? "border-primary bg-primary" : "border-border"}`}>
+                    {on && <Check size={9} weight="bold" className="text-white" />}
+                  </div>
+                  <span className="truncate">{o.name}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface FilterBarProps {
+  properties: DbProperty[];
+  filters: FilterRule[];
+  filterLogic: "and" | "or";
+  onChange: (filters: FilterRule[]) => void;
+  onFilterLogicChange: (logic: "and" | "or") => void;
+}
+
+export function FilterBar({ properties, filters, filterLogic, onChange, onFilterLogicChange }: FilterBarProps) {
+  const usable = properties.filter((p) => !p.isSystem);
+
+  function add() {
+    const first = usable[0];
+    if (!first) return;
+    const ops = OPERATORS[first.type] ?? OPERATORS.text;
+    onChange([...filters, { propertyId: first.id, operator: ops[0].value, value: "" }]);
+  }
+
+  function update(idx: number, patch: Partial<FilterRule>) {
+    onChange(filters.map((f, i) => (i === idx ? { ...f, ...patch } : f)));
+  }
+
+  function remove(idx: number) {
+    onChange(filters.filter((_, i) => i !== idx));
+  }
+
+  return (
+    <div className="flex shrink-0 flex-col gap-1.5 border-b border-border/60 bg-primary/[0.03] px-4 py-2.5 dark:bg-primary/[0.06]">
+      {/* Header with logic toggle */}
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary/60">Filters</p>
+        {filters.length > 1 && (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-muted-foreground/60">Match</span>
+            <div className="flex overflow-hidden rounded-md border border-border">
+              {(["and", "or"] as const).map((logic) => (
+                <button
+                  key={logic}
+                  onClick={() => onFilterLogicChange(logic)}
+                  className={[
+                    "px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors",
+                    filterLogic === logic
+                      ? "bg-primary text-white"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    logic === "or" ? "border-l border-border" : "",
+                  ].join(" ")}
+                >
+                  {logic}
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-muted-foreground/60">rules</span>
+          </div>
+        )}
+      </div>
+
+      {filters.map((filter, idx) => {
+        const prop = usable.find((p) => p.id === filter.propertyId);
+        const ops  = OPERATORS[prop?.type ?? "text"] ?? OPERATORS.text;
+        const needsValue = !NO_VALUE_OPS.has(filter.operator);
+
+        const isMultiVal = MULTI_VAL_OPS.has(filter.operator) && prop?.type === "select";
+
+        return (
+          <div key={idx} className="flex items-center gap-2 text-xs">
+            <span className="w-14 shrink-0 text-right">
+              {idx === 0 ? (
+                <span className="text-muted-foreground">Where</span>
+              ) : (
+                <span className={[
+                  "inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                  filterLogic === "or"
+                    ? "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
+                    : "bg-primary/10 text-primary",
+                ].join(" ")}>
+                  {filterLogic}
+                </span>
+              )}
+            </span>
+
+            <select
+              value={filter.propertyId}
+              onChange={(e) => {
+                const np = usable.find((p) => p.id === e.target.value);
+                const nops = OPERATORS[np?.type ?? "text"] ?? OPERATORS.text;
+                update(idx, { propertyId: e.target.value, operator: nops[0].value, value: "" });
+              }}
+              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+            >
+              {usable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+
+            <select
+              value={filter.operator}
+              onChange={(e) => update(idx, { operator: e.target.value, value: MULTI_VAL_OPS.has(e.target.value) ? [] : "" })}
+              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+            >
+              {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+            </select>
+
+            {needsValue && isMultiVal && (
+              <MultiOptionPicker
+                options={(prop?.config?.options as SelectOption[]) ?? []}
+                value={(filter.value as string[]) ?? []}
+                onChange={(ids) => update(idx, { value: ids })}
+              />
+            )}
+
+            {needsValue && !isMultiVal && (
+              <input
+                type={prop?.type === "number" ? "number" : prop?.type === "date" ? "date" : "text"}
+                value={String(filter.value ?? "")}
+                onChange={(e) => update(idx, { value: e.target.value })}
+                placeholder="Value…"
+                className="w-32 rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+            )}
+
+            <button
+              onClick={() => remove(idx)}
+              className="ml-auto flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground"
+            >
+              <X size={11} />
+            </button>
+          </div>
+        );
+      })}
+
+      <button
+        onClick={add}
+        className="w-fit rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+      >
+        + Add filter
+      </button>
+    </div>
+  );
+}

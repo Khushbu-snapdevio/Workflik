@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, ne, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
@@ -31,6 +31,7 @@ export async function GET(_req: Request, { params }: Ctx) {
         and(
           eq(pages.workspaceId, workspaceId),
           eq(pages.isDeleted, false),
+          ne(pages.kind, "entry"),
           or(
             eq(pages.isPrivate, false),
             eq(pages.createdBy, session.user.id)

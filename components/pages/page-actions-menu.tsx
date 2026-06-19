@@ -8,18 +8,23 @@ import {
   LockKeyIcon,
   LockKeyOpenIcon,
   StarIcon,
+  SquaresFourIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { SaveAsTemplateModal } from "@/components/templates/save-as-template-modal";
 
 interface PageActionsMenuProps {
   pageId:        string;
   isLocked:      boolean;
   isDeleted:     boolean;
   workspaceSlug: string;
+  workspaceId:   string;
   pageShortId:   string;
+  pageTitle?:    string;
+  pageKind?:     string;
 }
 
 const menuItemClass =
@@ -30,13 +35,17 @@ export function PageActionsMenu({
   isLocked,
   isDeleted,
   workspaceSlug,
+  workspaceId,
   pageShortId,
+  pageTitle,
+  pageKind,
 }: PageActionsMenuProps) {
   const router = useRouter();
-  const [open, setOpen]               = useState(false);
-  const [loading, setLoading]         = useState<string | null>(null);
-  const [confirmTrash, setConfirmTrash] = useState(false);
-  const [deleting, setDeleting]       = useState(false);
+  const [open, setOpen]                   = useState(false);
+  const [loading, setLoading]             = useState<string | null>(null);
+  const [confirmTrash, setConfirmTrash]   = useState(false);
+  const [deleting, setDeleting]           = useState(false);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const buttonRef  = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
@@ -70,10 +79,33 @@ export function PageActionsMenu({
 
   async function confirmDelete() {
     setDeleting(true);
-    await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
+    let res: Response | null = null;
+    try {
+      res = await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
+    } catch (_) {
+      // network error — treat as failed but still redirect for databases
+    }
+
+    // For databases: always navigate away — never call router.refresh() on the current
+    // database URL after deletion (that re-renders the now-deleted page → 404).
+    if (pageKind === "database") {
+      window.location.replace(`/app/${workspaceSlug}`);
+      return;
+    }
+
     setDeleting(false);
     setConfirmTrash(false);
-    router.refresh();
+
+    if (res?.ok) {
+      const data = await res.json().catch(() => ({})) as { deleted?: string };
+      if (data.deleted === "permanent") {
+        window.location.replace(`/app/${workspaceSlug}`);
+      } else {
+        router.refresh();
+      }
+    } else {
+      router.refresh();
+    }
   }
 
   async function handleRestore() {
@@ -185,6 +217,17 @@ export function PageActionsMenu({
                 Add to favorites
               </button>
 
+              {pageKind !== "database" && (
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); setSaveAsTemplate(true); }}
+                  className={menuItemClass}
+                >
+                  <SquaresFourIcon size={14} />
+                  Save as Template
+                </button>
+              )}
+
               <div className="mx-2 my-1 border-t border-border" />
 
               <div className="px-3 pb-0.5 pt-1">
@@ -210,7 +253,7 @@ export function PageActionsMenu({
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
               >
                 <TrashIcon size={14} />
-                Move to Trash
+                {pageKind === "database" ? "Delete database" : "Move to Trash"}
               </button>
             </>
           )}
@@ -229,22 +272,26 @@ export function PageActionsMenu({
         document.body,
       )}
 
-      {/* Move to Trash confirmation dialog */}
+      {/* Delete confirmation dialog */}
       {confirmTrash && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[300] flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => !deleting && setConfirmTrash(false)}
           />
-          <div className="relative w-[360px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
+          <div className="relative w-[380px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
             <div className="mb-1 flex items-center gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
                 <TrashIcon size={16} className="text-red-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Move to Trash</h2>
+              <h2 className="text-sm font-semibold text-foreground">
+                {pageKind === "database" ? "Delete database forever?" : "Move to Trash"}
+              </h2>
             </div>
             <p className="mb-5 mt-2 text-sm text-muted-foreground">
-              This page will be moved to Trash and permanently deleted after 30 days.
+              {pageKind === "database"
+                ? "This database and all its entries, properties, and views will be permanently deleted. This action cannot be undone."
+                : "This page will be moved to Trash and permanently deleted after 30 days."}
             </p>
             <div className="flex items-center justify-end gap-2">
               <button
@@ -261,12 +308,23 @@ export function PageActionsMenu({
                 onClick={confirmDelete}
                 className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
               >
-                {deleting ? "Moving…" : "Move to Trash"}
+                {deleting
+                  ? (pageKind === "database" ? "Deleting…" : "Moving…")
+                  : (pageKind === "database" ? "Delete forever" : "Move to Trash")}
               </button>
             </div>
           </div>
         </div>,
         document.body,
+      )}
+
+      {saveAsTemplate && typeof document !== "undefined" && (
+        <SaveAsTemplateModal
+          pageId={pageId}
+          pageTitle={pageTitle ?? ""}
+          workspaceId={workspaceId}
+          onClose={() => setSaveAsTemplate(false)}
+        />
       )}
     </>
   );

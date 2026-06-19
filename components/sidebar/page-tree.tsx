@@ -293,7 +293,15 @@ function PageTreeNode({
     setDeleting(false);
     setConfirmTrash(false);
     onPagesChange(pages.filter((p) => p.id !== node.id));
-    router.refresh();
+
+    // If currently viewing the deleted page (or a database whose entries were cascade-deleted),
+    // navigate away instead of refreshing the current route — refreshing a deleted page shows 404.
+    const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(node.shortId);
+    if (onDeletedPage || node.kind === "database") {
+      window.location.replace(`/app/${workspaceSlug}`);
+    } else {
+      router.refresh();
+    }
   }
 
   async function handleDuplicate() {

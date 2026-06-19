@@ -13,6 +13,7 @@ import {
 import { sql } from "drizzle-orm";
 import {
   entryOpenMode,
+  filterLogicType,
   galleryCardSize,
   propertyType,
   updatedAt,
@@ -33,6 +34,7 @@ export const databaseViews = pgTable("database_views", {
   hiddenPropertyIds:  jsonb("hidden_property_ids").notNull().default(sql`'[]'::jsonb`),
   galleryCardSize:    galleryCardSize("gallery_card_size"),
   entryOpenMode:      entryOpenMode("entry_open_mode").notNull().default("side_panel"),
+  filterLogic:        filterLogicType("filter_logic").notNull().default("and"),
   orderIndex:         integer("order_index").notNull().default(0),
   createdAt:          timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt:          updatedAt(),

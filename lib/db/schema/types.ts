@@ -29,6 +29,7 @@ export const blockType = pgEnum("block_type", [
 export const viewType = pgEnum("view_type", ["table", "board", "calendar", "gallery"]);
 export const galleryCardSize = pgEnum("gallery_card_size", ["small", "medium", "large"]);
 export const entryOpenMode = pgEnum("entry_open_mode", ["side_panel", "full_page"]);
+export const filterLogicType = pgEnum("filter_logic_type", ["and", "or"]);
 
 export const propertyType = pgEnum("property_type", [
   "text", "number", "select", "multi_select", "date",
@@ -47,7 +48,7 @@ export const emailFrequency = pgEnum("email_frequency", ["realtime", "daily", "w
 export const emailOutboxStatus = pgEnum("email_outbox_status", ["queued", "sending", "sent", "failed"]);
 export const emailOutboxType = pgEnum("email_outbox_type", ["notification_email", "digest_email"]);
 
-export const templateCategory = pgEnum("template_category", ["personal", "productivity", "project_mgmt", "team", "crm"]);
+export const templateCategory = pgEnum("template_category", ["productivity", "project_mgmt", "marketing", "engineering", "sales"]);
 export const templateStatus = pgEnum("template_status", ["draft", "published"]);
 
 export const searchSourceType = pgEnum("search_source_type", ["page", "entry", "comment"]);

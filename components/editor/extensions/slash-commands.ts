@@ -67,7 +67,7 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
             columns:         { type: "columns",        attrs: { columnCount: 2 }, content: [{ type: "paragraph" }, { type: "paragraph" }] },
             linked_page:     { type: "linkedPage",     attrs: { pageId: "" } },
             database:        { type: "inlineDatabase", attrs: { databaseId: "", defaultViewId: "" } },
-            template_button: { type: "templateButton", attrs: { label: "Template" } },
+            template_button: { type: "templateButton", attrs: { label: "New Entry", insertLocation: "below_button", templateBlocks: [{ type: "paragraph", text: "" }] } },
           };
 
           const content = custom[def.type];

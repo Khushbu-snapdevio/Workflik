@@ -180,7 +180,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         {/* Primary nav */}
         <nav className="flex w-full flex-col items-center gap-1 px-1.5 py-3">
           <CollapsedNavItem href={`/app/${workspaceSlug}`}              label="Home"          active={pathname === `/app/${workspaceSlug}`}><HouseIcon size={17} /></CollapsedNavItem>
-          <CollapsedNavItem href={`/app/${workspaceSlug}/search`}       label="Search"        ><MagnifyingGlassIcon size={17} /></CollapsedNavItem>
+          <CollapsedSearchItem label="Search"><MagnifyingGlassIcon size={17} /></CollapsedSearchItem>
           <CollapsedNavItem href={`/app/${workspaceSlug}/notifications`} label="Notifications" ><BellIcon size={17} /></CollapsedNavItem>
           <CollapsedNavItem href={`/app/${workspaceSlug}/settings`}     label="Settings"      ><GearIcon size={17} /></CollapsedNavItem>
           <div className="my-1 w-6 border-t border-sidebar-border" />
@@ -357,12 +357,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             label="Home"
             active={pathname === `/app/${workspaceSlug}`}
           />
-          <NavButton
-            href={`/app/${workspaceSlug}/search`}
-            icon={<MagnifyingGlassIcon size={15} />}
-            label="Search"
-            shortcut="Ctrl+K"
-          />
+          <SearchNavButton icon={<MagnifyingGlassIcon size={15} />} />
           <NavButton
             href={`/app/${workspaceSlug}/notifications`}
             icon={<BellIcon size={15} />}
@@ -560,6 +555,37 @@ function CollapsedNavItem({
         <p className="text-xs font-semibold text-popover-foreground">{label}</p>
       </div>
     </div>
+  );
+}
+
+function CollapsedSearchItem({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="group relative w-full">
+      <button
+        type="button"
+        onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
+        className="flex w-full items-center justify-center rounded-md py-2 text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      >
+        {children}
+      </button>
+      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+        <p className="text-xs font-semibold text-popover-foreground">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function SearchNavButton({ icon }: { icon: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
+      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+    >
+      <span className="shrink-0">{icon}</span>
+      <span className="flex-1 text-left">Search</span>
+      <span className="shrink-0 text-2xs text-sidebar-foreground/30">Ctrl+K</span>
+    </button>
   );
 }
 

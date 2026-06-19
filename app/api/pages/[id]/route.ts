@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { pageClosure, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { upsertPageSearchIndex } from "@/lib/search/index-page";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -69,6 +70,16 @@ export async function PATCH(req: Request, { params }: Ctx) {
       .set({ ...parsed.data, lastEditedBy: session.user.id, updatedAt: new Date() })
       .where(eq(pages.id, id))
       .returning();
+
+    // Keep search index current whenever title changes
+    if (parsed.data.title !== undefined) {
+      upsertPageSearchIndex(db, {
+        id:          updated.id,
+        workspaceId: updated.workspaceId,
+        title:       updated.title,
+        kind:        updated.kind,
+      }).catch(() => {});
+    }
 
     return Response.json(updated);
   } catch (err) {

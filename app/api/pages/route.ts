@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { blocks, pages } from "@/lib/db/schema";
 import { insertPageWithClosure } from "@/lib/pages/closure";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { upsertPageSearchIndex } from "@/lib/search/index-page";
 
 const createPageSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -85,6 +86,13 @@ export async function POST(req: Request) {
           createdBy:     session.user.id,
         });
       }
+
+      await upsertPageSearchIndex(tx, {
+        id:          page.id,
+        workspaceId: page.workspaceId,
+        title:       page.title,
+        kind:        page.kind,
+      });
 
       return page;
     });

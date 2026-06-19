@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { userRecentlyVisited } from "@/lib/db/schema";
+import { pages, userRecentlyVisited } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 // GET /api/user/recently-visited?workspaceId=xxx
@@ -17,8 +17,19 @@ export async function GET(req: Request) {
     }
 
     const rows = await db
-      .select()
+      .select({
+        id:        userRecentlyVisited.id,
+        pageId:    userRecentlyVisited.pageId,
+        visitedAt: userRecentlyVisited.visitedAt,
+        page: {
+          shortId: pages.shortId,
+          title:   pages.title,
+          icon:    pages.icon,
+          kind:    pages.kind,
+        },
+      })
       .from(userRecentlyVisited)
+      .innerJoin(pages, and(eq(pages.id, userRecentlyVisited.pageId), eq(pages.isDeleted, false)))
       .where(
         and(
           eq(userRecentlyVisited.userId, session.user.id),

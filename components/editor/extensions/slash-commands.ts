@@ -1,6 +1,7 @@
 import { Extension } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
 import type { SuggestionProps } from "@tiptap/suggestion";
+import { PluginKey } from "@tiptap/pm/state";
 import { BLOCK_REGISTRY, searchBlocks, type BlockDefinition } from "../block-registry";
 
 export type SlashSuggestionProps = SuggestionProps<BlockDefinition>;
@@ -27,6 +28,7 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
 
     return [
       Suggestion<BlockDefinition>({
+        pluginKey: new PluginKey("slashCommands"),
         editor: this.editor,
         char:          "/",
         startOfLine:   false,

@@ -14,6 +14,7 @@ import {
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { PageClient } from "@/components/pages/page-client";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
+import { PageCommentButton } from "@/components/pages/page-comment-button";
 import { TrashBanner } from "@/components/pages/trash-banner";
 import { TemplatePageClient } from "@/components/templates/template-page-client";
 
@@ -72,6 +73,7 @@ export default async function PageEditorPage({ params }: Props) {
     .map((r) => ({ id: r.id, shortId: r.shortId, title: r.title || "Untitled" }));
 
   const isEditor = member.role === "admin" || member.role === "editor";
+  const isAdmin  = member.role === "admin";
 
   // ── Database pages → TemplatePageClient (Notion-style, no stats bar) ─────────
   if (page.kind === "database") {
@@ -176,8 +178,9 @@ export default async function PageEditorPage({ params }: Props) {
           </span>
         </nav>
 
-        {isEditor && (
-          <div className="ml-3 shrink-0">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <PageCommentButton pageId={page.id} />
+          {isEditor && (
             <PageActionsMenu
               pageId={page.id}
               isLocked={page.isLocked}
@@ -188,8 +191,8 @@ export default async function PageEditorPage({ params }: Props) {
               pageTitle={page.title ?? ""}
               pageKind={page.kind}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <PageClient
@@ -209,6 +212,8 @@ export default async function PageEditorPage({ params }: Props) {
         isFullWidth={page.isFullWidth}
         statusBanner={statusBanner}
         databaseId={page.databaseId}
+        currentUserId={session.user.id}
+        isAdmin={isAdmin}
       />
     </div>
   );

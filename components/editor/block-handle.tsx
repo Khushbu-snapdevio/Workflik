@@ -3,7 +3,7 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { Copy, DotsSixVertical, Trash } from "@phosphor-icons/react";
+import { Copy, DotsSixVertical, Trash, ChatText } from "@phosphor-icons/react";
 
 interface BlockInfo {
   top:      number;
@@ -80,7 +80,7 @@ function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
   }
 }
 
-export function BlockHandle({ editor }: { editor: Editor }) {
+export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?: (nodePos: number, absoluteY: number) => void }) {
   const [block, setBlock]       = useState<BlockInfo | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -169,6 +169,12 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     });
   }, [editor, block]);
 
+  const commentBlock = useCallback(() => {
+    if (!block || !onComment) return;
+    setMenuOpen(false);
+    onComment(block.nodePos, block.top); // block.top is absolute viewport Y of block centre
+  }, [block, onComment]);
+
   if (!block || typeof document === "undefined") return null;
 
   return createPortal(
@@ -205,6 +211,18 @@ export function BlockHandle({ editor }: { editor: Editor }) {
           style={{ zIndex: 9999 }}
         >
           <div className="py-1">
+            {onComment && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={commentBlock}
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+              >
+                <ChatText size={14} className="shrink-0 text-muted-foreground" />
+                Comment
+              </button>
+            )}
+
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}

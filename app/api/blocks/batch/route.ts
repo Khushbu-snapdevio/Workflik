@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { blocks, pages, pageVersions } from "@/lib/db/schema";
+import { blocks, comments, pages, pageVersions } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import type { Block } from "@/lib/db/schema";
 
@@ -42,8 +42,14 @@ export async function POST(req: Request) {
     const savedBlocks: Pick<Block, "id" | "pageId" | "parentBlockId" | "type" | "content" | "orderIndex" | "schemaVersion">[] = [];
 
     await db.transaction(async (tx) => {
-      // Delete removed blocks
+      // Delete removed blocks — mark their comments as orphaned FIRST,
+      // before the cascade nulls out comment.blockId
       if (deletedIds.length > 0) {
+        await tx
+          .update(comments)
+          .set({ isOrphaned: true })
+          .where(inArray(comments.blockId as any, deletedIds));
+
         await tx.delete(blocks).where(
           and(eq(blocks.pageId, pageId), inArray(blocks.id, deletedIds))
         );

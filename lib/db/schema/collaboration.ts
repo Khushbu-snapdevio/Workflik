@@ -33,6 +33,7 @@ export const comments = pgTable("comments", {
   isOrphaned:   boolean("is_orphaned").notNull().default(false),
   authorId:     uuid("author_id").references(() => users.id, { onDelete: "set null" }),
   content:      jsonb("content").notNull(),
+  reactions:    jsonb("reactions").$type<Record<string, string[]>>().default({}).notNull(),
   createdAt:    timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   editedAt:     timestamp("edited_at", { withTimezone: true }),
   deletedAt:    timestamp("deleted_at", { withTimezone: true }),

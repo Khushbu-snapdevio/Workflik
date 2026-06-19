@@ -23,7 +23,7 @@ This document is the single source of truth for building WorkFlik. Follow these 
 9. **Slow/IO/scheduled work = pg-boss job, never inline** in a Next.js route (Rule 2).
 10. **Every phase ends with a verify step** — run it before moving to the next phase.
 
-**Current active phase: PHASE 4 — Navigation & Sidebar (in progress).**
+**Current active phase: PHASE 12 — Permissions & Sharing (in progress).**
 Update this line to the current phase as you complete each one.
 
 ---

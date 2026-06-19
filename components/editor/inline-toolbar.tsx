@@ -4,18 +4,19 @@ import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import {
   TextBIcon, TextItalicIcon, TextUnderlineIcon, TextStrikethroughIcon,
-  CodeIcon, LinkIcon, PaintBucketIcon, HighlighterIcon,
+  CodeIcon, LinkIcon, PaintBucketIcon, HighlighterIcon, ChatTextIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
 
 interface Props {
-  editor: Editor;
+  editor:               Editor;
+  onCommentSelection?:  (anchorStart: number, anchorEnd: number) => void;
 }
 
 const btnBase = "flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
 const btnActive = "bg-accent text-foreground";
 
-export function InlineToolbar({ editor }: Props) {
+export function InlineToolbar({ editor, onCommentSelection }: Props) {
   const [linkInput, setLinkInput] = useState(false);
   const [linkUrl,   setLinkUrl]   = useState("");
 
@@ -125,6 +126,21 @@ export function InlineToolbar({ editor }: Props) {
             title="Highlight"
           >
             <HighlighterIcon size={14} />
+          </button>
+
+          <div className="mx-0.5 h-4 w-px bg-border" />
+
+          {/* Comment on selection */}
+          <button
+            type="button"
+            title="Comment (Ctrl+Shift+Alt+X)"
+            className={btnBase}
+            onClick={() => {
+              const { from, to } = editor.state.selection;
+              if (onCommentSelection && from !== to) onCommentSelection(from, to);
+            }}
+          >
+            <ChatTextIcon size={14} />
           </button>
         </>
       )}

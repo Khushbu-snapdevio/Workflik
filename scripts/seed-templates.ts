@@ -49,13 +49,13 @@ function snap(title: string, icon: string, blockDefs: BlockDef[]) {
 const TEMPLATES: {
   name: string;
   description: string;
-  category: "personal" | "productivity" | "project_mgmt" | "team" | "crm";
+  category: "productivity" | "project_mgmt" | "sales" | "marketing" | "engineering";
   icon: string;
   blocks: BlockDef[];
 }[] = [
   // ── Personal ─────────────────────────────────────────────────────────────────
   {
-    name: "Daily Journal", description: "Date-stamped entries with mood, highlights, and reflection prompts.", category: "personal", icon: "📔",
+    name: "Daily Journal", description: "Date-stamped entries with mood, highlights, and reflection prompts.", category: "productivity", icon: "📔",
     blocks: [
       { type: "callout",   text: "📅 Date: _____________   ·   Mood: 😊 Happy  😐 Okay  😔 Tough   ·   Energy: ⚡ High  🔋 Medium  💤 Low", icon: "📔" },
       { type: "divider" },
@@ -82,7 +82,7 @@ const TEMPLATES: {
     ],
   },
   {
-    name: "Weekly Planner", description: "Goals, schedule, and review sections for the week.", category: "personal", icon: "📅",
+    name: "Weekly Planner", description: "Goals, schedule, and review sections for the week.", category: "productivity", icon: "📅",
     blocks: [
       { type: "callout",   text: "📅 Week of: _____________   ·   🎯 Theme / Focus: _____________", icon: "📅" },
       { type: "divider" },
@@ -117,7 +117,7 @@ const TEMPLATES: {
     ],
   },
   {
-    name: "Reading List", description: "Track books with status, rating, and notes.", category: "personal", icon: "📚",
+    name: "Reading List", description: "Track books with status, rating, and notes.", category: "productivity", icon: "📚",
     blocks: [
       { type: "paragraph", text: "Track every book — fiction, non-fiction, articles, and more." },
       { type: "divider" },
@@ -141,7 +141,7 @@ const TEMPLATES: {
     ],
   },
   {
-    name: "Habit Tracker", description: "Checkbox-based daily habit tracking.", category: "personal", icon: "✅",
+    name: "Habit Tracker", description: "Checkbox-based daily habit tracking.", category: "productivity", icon: "✅",
     blocks: [
       { type: "callout",   text: "📅 Month: _____________   ·   Goal: Build consistent routines that compound over time.", icon: "🎯" },
       { type: "divider" },
@@ -396,7 +396,7 @@ const TEMPLATES: {
 
   // ── Team & Knowledge ─────────────────────────────────────────────────────────
   {
-    name: "Team Wiki", description: "Structured knowledge base with sections and subpages.", category: "team", icon: "🏛️",
+    name: "Team Wiki", description: "Structured knowledge base with sections and subpages.", category: "project_mgmt", icon: "🏛️",
     blocks: [
       { type: "paragraph", text: "👋 Welcome to the team knowledge base. Find everything you need to get up to speed and stay aligned." },
       { type: "divider" },
@@ -430,7 +430,7 @@ const TEMPLATES: {
     ],
   },
   {
-    name: "Company Handbook", description: "Policies, culture, and onboarding info.", category: "team", icon: "📖",
+    name: "Company Handbook", description: "Policies, culture, and onboarding info.", category: "project_mgmt", icon: "📖",
     blocks: [
       { type: "paragraph", text: "Everything you need to know about working here. Last updated: _____________" },
       { type: "divider" },
@@ -471,7 +471,7 @@ const TEMPLATES: {
     ],
   },
   {
-    name: "Meeting Agenda", description: "Pre-meeting agenda with action item tracking.", category: "team", icon: "🗓️",
+    name: "Meeting Agenda", description: "Pre-meeting agenda with action item tracking.", category: "project_mgmt", icon: "🗓️",
     blocks: [
       { type: "callout",   text: "📅 Date: _____________   ·   ⏱ Time: _______   ·   📍 Location / Link: _______\n👤 Facilitator: _____________   ·   📝 Note-taker: _____________\n👥 Attendees: _______________________________________________", icon: "🗓️" },
       { type: "divider" },
@@ -499,7 +499,7 @@ const TEMPLATES: {
     ],
   },
   {
-    name: "Decision Log", description: "Log decisions with context and outcome.", category: "team", icon: "⚖️",
+    name: "Decision Log", description: "Log decisions with context and outcome.", category: "project_mgmt", icon: "⚖️",
     blocks: [
       { type: "callout",   text: "📅 Date: _____________   ·   👤 Owner: _____________   ·   🏷 Status: Proposed  /  Approved  /  Rejected", icon: "⚖️" },
       { type: "divider" },
@@ -532,7 +532,7 @@ const TEMPLATES: {
 
   // ── CRM ──────────────────────────────────────────────────────────────────────
   {
-    name: "Contact Database", description: "People database with company, last contact, and notes.", category: "crm", icon: "👥",
+    name: "Contact Database", description: "People database with company, last contact, and notes.", category: "sales", icon: "👥",
     blocks: [
       { type: "paragraph", text: "Track and nurture your professional and personal network." },
       { type: "divider" },
@@ -557,7 +557,7 @@ const TEMPLATES: {
     ],
   },
   {
-    name: "Company Tracker", description: "Track companies and organizations you interact with.", category: "crm", icon: "🏢",
+    name: "Company Tracker", description: "Track companies and organizations you interact with.", category: "sales", icon: "🏢",
     blocks: [
       { type: "paragraph", text: "Track companies and organizations you work with, sell to, or want to build relationships with." },
       { type: "divider" },

@@ -18,6 +18,7 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { common, createLowlight } from "lowlight";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CommentHighlight, setCommentHighlights, type HighlightComment } from "./extensions/comment-highlight";
 import { Callout } from "./extensions/callout";
 import { Toggle, ToggleSummary } from "./extensions/toggle";
 import { ImageBlock, VideoBlock, AudioBlock, FileBlock } from "./extensions/media-blocks";
@@ -31,26 +32,52 @@ import type { DbBlock } from "./serializer";
 import { SlashMenu, type SlashMenuHandle } from "./slash-menu";
 import { InlineToolbar } from "./inline-toolbar";
 import { BlockHandle } from "./block-handle";
+import { CommentCard } from "./comment-card";
+import { CommentGutter } from "./comment-gutter";
+import { MentionCommands, type MentionSuggestionProps } from "./extensions/mention-extension";
+import { MentionList, type MentionListHandle } from "./mention-list";
 
 const lowlight = createLowlight(common);
 
 const VERSION_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 interface EditorProps {
-  pageId:        string;
-  isLocked:      boolean;
-  isDeleted:     boolean;
-  isEditor:      boolean;
-  workspaceId?:  string;
+  pageId:         string;
+  isLocked:       boolean;
+  isDeleted:      boolean;
+  isEditor:       boolean;
+  isAdmin?:       boolean;
+  currentUserId?: string;
+  workspaceId?:   string;
   workspaceSlug?: string;
-  fontFamily?:   "default" | "serif" | "mono";
-  isSmallText?:  boolean;
+  fontFamily?:    "default" | "serif" | "mono";
+  isSmallText?:   boolean;
 }
 
-export function PageEditor({ pageId, isLocked, isDeleted, isEditor, workspaceId = "", workspaceSlug = "", fontFamily = "default", isSmallText = false }: EditorProps) {
+export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = false, currentUserId = "", workspaceId = "", workspaceSlug = "", fontFamily = "default", isSmallText = false }: EditorProps) {
   const [saveState, setSaveState]         = useState<"idle" | "saving" | "saved" | "offline">("idle");
   const [initialBlocks, setInitialBlocks] = useState<DbBlock[] | null>(null);
   const [slashProps, setSlashProps]       = useState<SlashSuggestionProps | null>(null);
+  const [mentionProps, setMentionProps]   = useState<MentionSuggestionProps | null>(null);
+  const mentionListRef = useRef<MentionListHandle>(null);
+  const [gutterRefresh, setGutterRefresh] = useState(0);
+  const highlightCommentsRef = useRef<HighlightComment[]>([]);
+
+  // Comment card state — which block's card is open, optional text-range anchor, and Y offset
+  const [commentCard, setCommentCard] = useState<{
+    blockId:     string | null;
+    anchorStart: number | null;
+    anchorEnd:   number | null;
+    blockY:      number;           // px from top of editor container
+  } | null>(null);
+
+  function openCommentCard(blockId: string | null, anchorStart: number | null, anchorEnd: number | null, blockY = 0) {
+    setCommentCard({ blockId, anchorStart, anchorEnd, blockY });
+  }
+  function closeCommentCard() {
+    setCommentCard(null);
+    setGutterRefresh((n) => n + 1);
+  }
 
   // Ref to the slash menu component so the TipTap extension can forward keyboard events
   const slashMenuRef = useRef<SlashMenuHandle>(null);
@@ -152,12 +179,21 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, workspaceId 
       TableOfContents,
       MathBlock,
       Columns,
+      CommentHighlight,
       // Slash command menu — uses @tiptap/suggestion so the range is always
       // maintained by the ProseMirror plugin (no manual position tracking).
       SlashCommands.configure({
         onUpdate:  (props) => setSlashProps(props),
         onKeyDown: (event) => slashMenuRef.current?.onKeyDown(event) ?? false,
       }),
+      // @mention extension — @name / @page / @date
+      ...(workspaceId
+        ? [MentionCommands.configure({
+            workspaceId,
+            onUpdate:  (props) => setMentionProps(props),
+            onKeyDown: (event) => mentionListRef.current?.onKeyDown(event) ?? false,
+          })]
+        : []),
     ],
     editable,
     content: initialBlocks ? blocksToTiptapDoc(initialBlocks) : undefined,
@@ -175,6 +211,60 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, workspaceId 
 
   // Flush pending save timer on unmount
   useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+    let cancelled = false;
+    fetch(`/api/pages/${pageId}/comments`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const textRange: HighlightComment[] = (data.comments ?? []).flatMap(
+          (t: { id: string; blockId: string | null; anchorStart: number | null; anchorEnd: number | null; isResolved: boolean; deletedAt: string | null }) => {
+            if (!t.anchorStart || !t.anchorEnd || t.isResolved || t.deletedAt) return [];
+            return [{ id: t.id, blockId: t.blockId, anchorStart: t.anchorStart, anchorEnd: t.anchorEnd }];
+          }
+        );
+        highlightCommentsRef.current = textRange;
+        setCommentHighlights(editor.view, textRange);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [pageId, editor, gutterRefresh]);
+
+  useEffect(() => {
+    if (!editor) return;
+    const editorEl = editor.view.dom as HTMLElement;
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      const highlighted = target.closest(".comment-highlight") as HTMLElement | null;
+      if (!highlighted) return;
+      const commentId = highlighted.dataset.commentId;
+      if (!commentId) return;
+      const comment = highlightCommentsRef.current.find((c) => c.id === commentId);
+      if (!comment) return;
+      const editorRect = editorEl.getBoundingClientRect();
+      const hit = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
+      const blockY = hit
+        ? editor.view.coordsAtPos(hit.pos).top - editorRect.top - 20
+        : e.clientY - editorRect.top - 20;
+      openCommentCard(comment.blockId, comment.anchorStart, comment.anchorEnd, blockY);
+    }
+    editorEl.addEventListener("click", handleClick);
+    return () => editorEl.removeEventListener("click", handleClick);
+  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ctrl+Shift+Alt+X → open comment card on active block
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.ctrlKey && e.shiftKey && e.altKey && e.key === "X") {
+        e.preventDefault();
+        openCommentCard(null, null, null);  // page-level comment (no specific block)
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   if (initialBlocks === null) {
     return (
@@ -199,21 +289,114 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, workspaceId 
         </div>
       )}
 
-      {/* Inline formatting toolbar (BubbleMenu) */}
-      {editor && editable && <InlineToolbar editor={editor} />}
+      {/* Inline formatting toolbar (BubbleMenu) — includes Comment button */}
+      {editor && editable && (
+        <InlineToolbar
+          editor={editor}
+          onCommentSelection={(anchorStart, anchorEnd) => {
+            // Position the card near the current selection
+            const { from } = editor.state.selection;
+            const coords = editor.view.coordsAtPos(from);
+            const editorEl = editor.view.dom as HTMLElement;
+            const editorRect = editorEl.getBoundingClientRect();
+            const blockY = coords.top - editorRect.top - 20;
+            openCommentCard(null, anchorStart, anchorEnd, blockY);
+          }}
+        />
+      )}
 
       {/* Per-block handle — ⠿ grip button that appears on hover */}
-      {editor && editable && <BlockHandle editor={editor} />}
+      {editor && editable && (
+        <BlockHandle
+          editor={editor}
+          onComment={(nodePos, absoluteY) => {
+            // Compute blockY relative to the editor container so the card scrolls with the page
+            const editorEl = editor.view.dom as HTMLElement;
+            const editorRect = editorEl.getBoundingClientRect();
+            const blockY = absoluteY - editorRect.top - 20; // -20 keeps card slightly above the block centre
+
+            // Custom nodes store blockId in attrs; standard nodes need index-based lookup
+            const doc = editor.state.doc;
+            const node = doc.nodeAt(nodePos);
+            const attrId = node?.attrs?.blockId as string | undefined;
+            if (attrId) { openCommentCard(attrId, null, null, blockY); return; }
+
+            let foundIdx = -1;
+            doc.forEach((_child, offset, idx) => {
+              if (offset === nodePos) foundIdx = idx;
+            });
+            if (foundIdx >= 0) {
+              const sorted = [...currentBlocksRef.current].sort((a, b) => a.orderIndex - b.orderIndex);
+              const blockId = sorted[foundIdx]?.id;
+              if (blockId) openCommentCard(blockId, null, null, blockY);
+            }
+          }}
+        />
+      )}
 
       {/* Slash command popup — rendered when suggestion is active */}
       {slashProps && editable && (
         <SlashMenu ref={slashMenuRef} suggestionProps={slashProps} />
       )}
 
+      {/* @mention popup */}
+      {mentionProps && editable && (
+        <MentionList ref={mentionListRef} suggestionProps={mentionProps} />
+      )}
+
       <EditorContent
         editor={editor}
         className={["outline-none [&_.ProseMirror]:min-h-[120px]", fontClass, sizeClass].join(" ")}
       />
+
+      {/* Comment gutter — speech-bubble badges in right margin, hidden for the open card's block */}
+      {editor && workspaceId && (
+        <CommentGutter
+          pageId={pageId}
+          editor={editor}
+          blocksRef={currentBlocksRef}
+          refresh={gutterRefresh}
+          activeBlockId={commentCard?.blockId ?? null}
+          onOpen={(blockId) => {
+            // Resolve Y for this block from its gutter badge position
+            const sorted = [...currentBlocksRef.current].sort((a, b) => a.orderIndex - b.orderIndex);
+            const idx = sorted.findIndex((b) => b.id === blockId);
+            let blockY = 0;
+            if (idx >= 0) {
+              let nodeOffset: number | null = null;
+              editor.state.doc.forEach((_n, offset, di) => { if (di === idx) nodeOffset = offset; });
+              if (nodeOffset !== null) {
+                try {
+                  const editorEl = editor.view.dom as HTMLElement;
+                  const editorRect = editorEl.getBoundingClientRect();
+                  const domInfo = editor.view.domAtPos(nodeOffset + 1);
+                  let el = domInfo.node as HTMLElement;
+                  if (el.nodeType === Node.TEXT_NODE) el = el.parentElement!;
+                  while (el.parentElement && el.parentElement !== editorEl) el = el.parentElement;
+                  blockY = el.getBoundingClientRect().top - editorRect.top - 20;
+                } catch { /* ignore */ }
+              }
+            }
+            openCommentCard(blockId, null, null, blockY);
+          }}
+        />
+      )}
+
+      {/* Floating comment card — anchored to the clicked block's Y position */}
+      {commentCard && workspaceId && (
+        <div style={{ position: "absolute", right: "-420px", top: Math.max(0, commentCard.blockY), zIndex: 50 }}>
+          <CommentCard
+            pageId={pageId}
+            workspaceId={workspaceId}
+            blockId={commentCard.blockId}
+            anchorStart={commentCard.anchorStart}
+            anchorEnd={commentCard.anchorEnd}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+            onClose={closeCommentCard}
+          />
+        </div>
+      )}
     </div>
   );
 }

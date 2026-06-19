@@ -7,6 +7,7 @@ import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { PageClient } from "@/components/pages/page-client";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { TrashBanner } from "@/components/pages/trash-banner";
+import { DatabasePage } from "@/components/database/database-page";
 
 type Props = { params: Promise<{ workspace: string; pageId: string }> };
 
@@ -133,29 +134,45 @@ export default async function PageEditorPage({ params }: Props) {
               isDeleted={page.isDeleted}
               workspaceSlug={slug}
               pageShortId={page.shortId}
+              pageKind={page.kind}
             />
           </div>
         )}
       </div>
 
-      {/* ── Cover + scrollable body (client-managed) ── */}
-      <PageClient
-        pageId={page.id}
-        shortId={page.shortId}
-        initialTitle={page.title}
-        initialIcon={page.icon}
-        initialCoverUrl={page.coverUrl}
-        initialCoverPosition={page.coverPosition}
-        isLocked={page.isLocked}
-        isDeleted={page.isDeleted}
-        isEditor={isEditor}
-        workspaceSlug={slug}
-        workspaceId={ws.id}
-        fontFamily={page.fontFamily}
-        isSmallText={page.isSmallText}
-        isFullWidth={page.isFullWidth}
-        statusBanner={statusBanner}
-      />
+      {/* ── Content area — database vs regular page ── */}
+      {page.kind === "database" ? (
+        <DatabasePage
+          databaseId={page.id}
+          workspaceId={ws.id}
+          workspaceSlug={slug}
+          isEditor={isEditor}
+          initialTitle={page.title}
+          initialIcon={page.icon}
+          isLocked={page.isLocked}
+          isDeleted={page.isDeleted}
+          pageShortId={page.shortId}
+        />
+      ) : (
+        <PageClient
+          pageId={page.id}
+          shortId={page.shortId}
+          initialTitle={page.title}
+          initialIcon={page.icon}
+          initialCoverUrl={page.coverUrl}
+          initialCoverPosition={page.coverPosition}
+          isLocked={page.isLocked}
+          isDeleted={page.isDeleted}
+          isEditor={isEditor}
+          workspaceSlug={slug}
+          workspaceId={ws.id}
+          fontFamily={page.fontFamily}
+          isSmallText={page.isSmallText}
+          isFullWidth={page.isFullWidth}
+          statusBanner={statusBanner}
+          databaseId={page.databaseId}
+        />
+      )}
     </div>
   );
 }

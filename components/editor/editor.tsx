@@ -37,15 +37,17 @@ const lowlight = createLowlight(common);
 const VERSION_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 interface EditorProps {
-  pageId:       string;
-  isLocked:     boolean;
-  isDeleted:    boolean;
-  isEditor:     boolean;
-  fontFamily?:  "default" | "serif" | "mono";
-  isSmallText?: boolean;
+  pageId:        string;
+  isLocked:      boolean;
+  isDeleted:     boolean;
+  isEditor:      boolean;
+  workspaceId?:  string;
+  workspaceSlug?: string;
+  fontFamily?:   "default" | "serif" | "mono";
+  isSmallText?:  boolean;
 }
 
-export function PageEditor({ pageId, isLocked, isDeleted, isEditor, fontFamily = "default", isSmallText = false }: EditorProps) {
+export function PageEditor({ pageId, isLocked, isDeleted, isEditor, workspaceId = "", workspaceSlug = "", fontFamily = "default", isSmallText = false }: EditorProps) {
   const [saveState, setSaveState]         = useState<"idle" | "saving" | "saved" | "offline">("idle");
   const [initialBlocks, setInitialBlocks] = useState<DbBlock[] | null>(null);
   const [slashProps, setSlashProps]       = useState<SlashSuggestionProps | null>(null);
@@ -145,7 +147,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, fontFamily =
       AudioBlock,
       FileBlock,
       LinkedPage,
-      InlineDatabase,
+      InlineDatabase.configure({ workspaceId, workspaceSlug, isEditor }),
       TemplateButton,
       TableOfContents,
       MathBlock,

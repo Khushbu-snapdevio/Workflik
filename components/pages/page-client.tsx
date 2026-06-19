@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EmojiPicker } from "@/components/pages/emoji-picker";
 import { PageEditor } from "@/components/editor/editor";
 import { useUpload } from "@/lib/storage/use-upload";
+import { EntryPropertiesPanel } from "@/components/database/entry-properties-panel";
 
 interface PageClientProps {
   pageId:               string;
@@ -21,6 +22,7 @@ interface PageClientProps {
   isSmallText:          boolean;
   isFullWidth:          boolean;
   statusBanner:         React.ReactNode;
+  databaseId?:          string | null;
 }
 
 export function PageClient({
@@ -33,10 +35,12 @@ export function PageClient({
   isDeleted,
   isEditor,
   workspaceId,
+  workspaceSlug,
   fontFamily,
   isSmallText,
   isFullWidth,
   statusBanner,
+  databaseId,
 }: PageClientProps) {
   const [coverUrl, setCoverUrl]   = useState<string | null>(initialCoverUrl);
   const [coverPos]                = useState<number>(initialCoverPosition);
@@ -266,6 +270,16 @@ export function PageClient({
           )}
         </div>
 
+        {/* Database entry properties */}
+        {databaseId && (
+          <EntryPropertiesPanel
+            entryId={pageId}
+            databaseId={databaseId}
+            workspaceId={workspaceId}
+            isEditor={isEditor && !isLocked && !isDeleted}
+          />
+        )}
+
         {/* Editor */}
         <div className="mt-3">
           <PageEditor
@@ -273,6 +287,8 @@ export function PageClient({
             isLocked={isLocked}
             isDeleted={isDeleted}
             isEditor={isEditor}
+            workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
             fontFamily={fontFamily}
             isSmallText={isSmallText}
           />

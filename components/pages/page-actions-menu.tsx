@@ -20,6 +20,7 @@ interface PageActionsMenuProps {
   isDeleted:     boolean;
   workspaceSlug: string;
   pageShortId:   string;
+  pageKind?:     string;
 }
 
 const menuItemClass =
@@ -31,6 +32,7 @@ export function PageActionsMenu({
   isDeleted,
   workspaceSlug,
   pageShortId,
+  pageKind,
 }: PageActionsMenuProps) {
   const router = useRouter();
   const [open, setOpen]               = useState(false);
@@ -70,10 +72,33 @@ export function PageActionsMenu({
 
   async function confirmDelete() {
     setDeleting(true);
-    await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
+    let res: Response | null = null;
+    try {
+      res = await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
+    } catch (_) {
+      // network error — treat as failed but still redirect for databases
+    }
+
+    // For databases: always navigate away — never call router.refresh() on the current
+    // database URL after deletion (that re-renders the now-deleted page → 404).
+    if (pageKind === "database") {
+      window.location.replace(`/app/${workspaceSlug}`);
+      return;
+    }
+
     setDeleting(false);
     setConfirmTrash(false);
-    router.refresh();
+
+    if (res?.ok) {
+      const data = await res.json().catch(() => ({})) as { deleted?: string };
+      if (data.deleted === "permanent") {
+        window.location.replace(`/app/${workspaceSlug}`);
+      } else {
+        router.refresh();
+      }
+    } else {
+      router.refresh();
+    }
   }
 
   async function handleRestore() {
@@ -210,7 +235,7 @@ export function PageActionsMenu({
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
               >
                 <TrashIcon size={14} />
-                Move to Trash
+                {pageKind === "database" ? "Delete database" : "Move to Trash"}
               </button>
             </>
           )}
@@ -229,22 +254,26 @@ export function PageActionsMenu({
         document.body,
       )}
 
-      {/* Move to Trash confirmation dialog */}
+      {/* Delete confirmation dialog */}
       {confirmTrash && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[300] flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => !deleting && setConfirmTrash(false)}
           />
-          <div className="relative w-[360px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
+          <div className="relative w-[380px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
             <div className="mb-1 flex items-center gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
                 <TrashIcon size={16} className="text-red-600" />
               </div>
-              <h2 className="text-sm font-semibold text-foreground">Move to Trash</h2>
+              <h2 className="text-sm font-semibold text-foreground">
+                {pageKind === "database" ? "Delete database forever?" : "Move to Trash"}
+              </h2>
             </div>
             <p className="mb-5 mt-2 text-sm text-muted-foreground">
-              This page will be moved to Trash and permanently deleted after 30 days.
+              {pageKind === "database"
+                ? "This database and all its entries, properties, and views will be permanently deleted. This action cannot be undone."
+                : "This page will be moved to Trash and permanently deleted after 30 days."}
             </p>
             <div className="flex items-center justify-end gap-2">
               <button
@@ -261,7 +290,9 @@ export function PageActionsMenu({
                 onClick={confirmDelete}
                 className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
               >
-                {deleting ? "Moving…" : "Move to Trash"}
+                {deleting
+                  ? (pageKind === "database" ? "Deleting…" : "Moving…")
+                  : (pageKind === "database" ? "Delete forever" : "Move to Trash")}
               </button>
             </div>
           </div>

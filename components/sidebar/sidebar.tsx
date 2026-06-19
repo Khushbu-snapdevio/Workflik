@@ -55,6 +55,8 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   const [pagesLoading, setPagesLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [recentlyVisited, setRecentlyVisited] = useState<{ id: string; pageId: string; visitedAt: string }[]>([]);
+  const [newMenu, setNewMenu] = useState(false);
+  const newMenuRef = useRef<HTMLDivElement>(null);
 
   const resizingRef = useRef(false);
   const startXRef = useRef(0);
@@ -104,6 +106,14 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
       .then((d) => setRecentlyVisited(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [workspaceId]);
+
+  useEffect(() => {
+    function h(e: MouseEvent) {
+      if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) setNewMenu(false);
+    }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
 
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     resizingRef.current = true;
@@ -170,6 +180,22 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
           <CollapsedNavItem href={`/app/${workspaceSlug}/search`}       label="Search"        ><MagnifyingGlassIcon size={17} /></CollapsedNavItem>
           <CollapsedNavItem href={`/app/${workspaceSlug}/notifications`} label="Notifications" ><BellIcon size={17} /></CollapsedNavItem>
           <CollapsedNavItem href={`/app/${workspaceSlug}/settings`}     label="Settings"      ><GearIcon size={17} /></CollapsedNavItem>
+          <div className="my-1 w-6 border-t border-sidebar-border" />
+          <CollapsedNavItem href={`/app/${workspaceSlug}/new`}          label="New Page">
+            <svg viewBox="0 0 16 16" className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9.5 2H4a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 004 14h8a1.5 1.5 0 001.5-1.5V6.5L9.5 2z"/>
+              <path d="M9.5 2v4.5H14"/>
+              <line x1="5" y1="9" x2="11" y2="9"/>
+            </svg>
+          </CollapsedNavItem>
+          <CollapsedNavItem href={`/app/${workspaceSlug}/new-database`} label="New Database">
+            <svg viewBox="0 0 16 16" className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1.5" y="1.5" width="13" height="13" rx="1.5"/>
+              <line x1="1.5" y1="5.5" x2="14.5" y2="5.5"/>
+              <line x1="1.5" y1="9.5" x2="14.5" y2="9.5"/>
+              <line x1="5.5" y1="5.5" x2="5.5" y2="14.5"/>
+            </svg>
+          </CollapsedNavItem>
         </nav>
 
         <div className="flex-1" />
@@ -221,13 +247,68 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         <div className="min-w-0 flex-1">
           <WorkspaceSwitcher currentSlug={workspaceSlug} />
         </div>
-        <Link
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          href={`/app/${workspaceSlug}/new`}
-          title="New page"
-        >
-          <PlusIcon size={15} weight="bold" />
-        </Link>
+        {/* ── New dropdown ── */}
+        <div className="relative" ref={newMenuRef}>
+          <button
+            onClick={() => setNewMenu((v) => !v)}
+            title="Create new…"
+            type="button"
+            className={`flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+              newMenu
+                ? "bg-sidebar-accent text-sidebar-foreground"
+                : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            }`}
+          >
+            <PlusIcon size={12} weight="bold" />
+            <span>New</span>
+          </button>
+
+          {newMenu && (
+            <div className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+              {/* New Page */}
+              <Link
+                href={`/app/${workspaceSlug}/new`}
+                onClick={() => setNewMenu(false)}
+                className="group flex items-center gap-2.5 px-3 py-2.5 transition-colors hover:bg-accent"
+              >
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
+                  <svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 1.5H3A1.5 1.5 0 001.5 3v8A1.5 1.5 0 003 12.5h8A1.5 1.5 0 0012.5 11V6L8 1.5z"/>
+                    <path d="M8 1.5V6h4.5"/>
+                    <line x1="4" y1="8.5" x2="10" y2="8.5"/>
+                    <line x1="4" y1="10.5" x2="7" y2="10.5"/>
+                  </svg>
+                </span>
+                <span>
+                  <span className="block text-[12.5px] font-semibold leading-tight text-foreground">New Page</span>
+                  <span className="block text-[11px] leading-tight text-muted-foreground">Docs, notes, wikis</span>
+                </span>
+              </Link>
+
+              <div className="mx-3 border-t border-border/60" />
+
+              {/* New Database */}
+              <Link
+                href={`/app/${workspaceSlug}/new-database`}
+                onClick={() => setNewMenu(false)}
+                className="group flex items-center gap-2.5 px-3 py-2.5 transition-colors hover:bg-accent"
+              >
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
+                  <svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1.5" y="1.5" width="11" height="11" rx="1.5"/>
+                    <line x1="1.5" y1="5" x2="12.5" y2="5"/>
+                    <line x1="1.5" y1="8.5" x2="12.5" y2="8.5"/>
+                    <line x1="5" y1="5" x2="5" y2="12.5"/>
+                  </svg>
+                </span>
+                <span>
+                  <span className="block text-[12.5px] font-semibold leading-tight text-foreground">New Database</span>
+                  <span className="block text-[11px] leading-tight text-muted-foreground">Tables, boards, calendars</span>
+                </span>
+              </Link>
+            </div>
+          )}
+        </div>
         <button
           className="flex size-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
           onClick={toggleCollapse}

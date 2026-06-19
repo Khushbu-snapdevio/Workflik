@@ -29,6 +29,7 @@ export const blockType = pgEnum("block_type", [
 export const viewType = pgEnum("view_type", ["table", "board", "calendar", "gallery"]);
 export const galleryCardSize = pgEnum("gallery_card_size", ["small", "medium", "large"]);
 export const entryOpenMode = pgEnum("entry_open_mode", ["side_panel", "full_page"]);
+export const filterLogicType = pgEnum("filter_logic_type", ["and", "or"]);
 
 export const propertyType = pgEnum("property_type", [
   "text", "number", "select", "multi_select", "date",

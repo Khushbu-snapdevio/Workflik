@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { guestInvitations, pagePermissions, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { triggerGuestAcceptedNotification } from "@/lib/notifications/triggers";
 
 type Ctx = { params: Promise<{ token: string }> };
 
@@ -67,6 +68,12 @@ export async function POST(_req: Request, { params }: Ctx) {
       return apiError(403, "This invitation was sent to a different email address");
     }
 
+    const [page] = await db
+      .select({ shortId: pages.shortId, workspaceId: pages.workspaceId })
+      .from(pages)
+      .where(eq(pages.id, inv.pageId))
+      .limit(1);
+
     await db.transaction(async (tx) => {
       // Mark accepted
       await tx
@@ -88,13 +95,19 @@ export async function POST(_req: Request, { params }: Ctx) {
           target: [pagePermissions.pageId, pagePermissions.userId],
           set:    { accessLevel: inv.accessLevel, updatedAt: new Date() },
         });
-    });
 
-    const [page] = await db
-      .select({ shortId: pages.shortId, workspaceId: pages.workspaceId })
-      .from(pages)
-      .where(eq(pages.id, inv.pageId))
-      .limit(1);
+      // Notify the original inviter that their guest accepted
+      if (inv.invitedBy && page?.workspaceId) {
+        await triggerGuestAcceptedNotification(tx, {
+          workspaceId:  page.workspaceId,
+          inviterId:    inv.invitedBy,
+          acceptorId:   session.user.id,
+          pageId:       inv.pageId,
+          invitationId: inv.id,
+          acceptorName: session.user.name ?? session.user.email ?? inv.email,
+        });
+      }
+    });
 
     return Response.json({ ok: true, pageId: inv.pageId, shortId: page?.shortId });
   } catch (err) {

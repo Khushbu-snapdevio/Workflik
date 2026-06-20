@@ -10,6 +10,9 @@ export const JOB_NAMES = {
   STORAGE_CLEANUP_STALE_UPLOADS:  "storage.cleanup-stale-uploads",
   STORAGE_CLEANUP_ORPHANED_MEDIA: "storage.cleanup-orphaned-media",
   STORAGE_SYNC_USAGE:             "storage.sync-usage",
+  NOTIFICATION_EMAIL_SEND:        "notification.email-send",
+  NOTIFICATION_DIGEST_SEND:       "notification.digest-send",
+  NOTIFICATION_CLEANUP:           "notification.cleanup",
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];
@@ -33,6 +36,11 @@ export interface PageExportPayload {
   format:    "markdown" | "html" | "pdf";
 }
 
+export interface NotificationEmailSendPayload {
+  notificationId: string;
+  recipientId:    string;
+}
+
 export type JobPayloads = {
   [JOB_NAMES.EMAIL_OUTBOX_REAP]:                    Record<string, never>;
   [JOB_NAMES.EMAIL_SEND]:                           EmailSendPayload;
@@ -45,4 +53,7 @@ export type JobPayloads = {
   [JOB_NAMES.STORAGE_CLEANUP_STALE_UPLOADS]:        Record<string, never>;
   [JOB_NAMES.STORAGE_CLEANUP_ORPHANED_MEDIA]:       Record<string, never>;
   [JOB_NAMES.STORAGE_SYNC_USAGE]:                   Record<string, never>;
+  [JOB_NAMES.NOTIFICATION_EMAIL_SEND]:              NotificationEmailSendPayload;
+  [JOB_NAMES.NOTIFICATION_DIGEST_SEND]:             Record<string, never>;
+  [JOB_NAMES.NOTIFICATION_CLEANUP]:                 Record<string, never>;
 };

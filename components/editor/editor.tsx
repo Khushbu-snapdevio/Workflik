@@ -233,7 +233,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
   }, [pageId, editor, gutterRefresh]);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || !editor.view?.dom) return;
     const editorEl = editor.view.dom as HTMLElement;
     function handleClick(e: MouseEvent) {
       const target = e.target as HTMLElement;

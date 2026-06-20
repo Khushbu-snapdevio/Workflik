@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  BellIcon,
   CaretDoubleRightIcon,
   GearIcon,
   HouseIcon,
@@ -20,6 +19,7 @@ import { PageTree } from "@/components/sidebar/page-tree";
 import { RecentlyVisitedSection } from "@/components/sidebar/recently-visited-section";
 import { WorkspaceSwitcher } from "@/components/sidebar/workspace-switcher";
 import { TemplateGalleryModal } from "@/components/templates/template-gallery-modal";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type PageItem = {
   id: string;
@@ -181,7 +181,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         <nav className="flex w-full flex-col items-center gap-1 px-1.5 py-3">
           <CollapsedNavItem href={`/app/${workspaceSlug}`}              label="Home"          active={pathname === `/app/${workspaceSlug}`}><HouseIcon size={17} /></CollapsedNavItem>
           <CollapsedSearchItem label="Search"><MagnifyingGlassIcon size={17} /></CollapsedSearchItem>
-          <CollapsedNavItem href={`/app/${workspaceSlug}/notifications`} label="Notifications" ><BellIcon size={17} /></CollapsedNavItem>
+          <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} collapsed />
           <CollapsedNavItem href={`/app/${workspaceSlug}/settings`}     label="Settings"      ><GearIcon size={17} /></CollapsedNavItem>
           <div className="my-1 w-6 border-t border-sidebar-border" />
           <CollapsedNavItem href={`/app/${workspaceSlug}/new`}          label="New Page">
@@ -358,11 +358,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             active={pathname === `/app/${workspaceSlug}`}
           />
           <SearchNavButton icon={<MagnifyingGlassIcon size={15} />} />
-          <NavButton
-            href={`/app/${workspaceSlug}/notifications`}
-            icon={<BellIcon size={15} />}
-            label="Notifications"
-          />
+          <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} />
           <NavButton
             href={`/app/${workspaceSlug}/settings`}
             icon={<GearIcon size={15} />}

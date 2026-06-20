@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, workspaceMembers } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
+import { triggerWorkspaceInviteNotification } from "@/lib/notifications/triggers";
 import {
   apiError,
   ApiError,
@@ -111,19 +112,33 @@ export async function POST(req: Request, { params }: Ctx) {
     const inviteToken   = crypto.randomUUID();
     const inviteExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const [member] = await db
-      .insert(workspaceMembers)
-      .values({
-        workspaceId:  id,
-        userId:       existingUser?.id ?? null,
-        role,
-        status:       "invited",
-        invitedEmail: email,
-        inviteToken,
-        inviteExpires,
-        invitedBy:    session.user.id,
-      })
-      .returning();
+    const [member] = await db.transaction(async (tx) => {
+      const [m] = await tx
+        .insert(workspaceMembers)
+        .values({
+          workspaceId:  id,
+          userId:       existingUser?.id ?? null,
+          role,
+          status:       "invited",
+          invitedEmail: email,
+          inviteToken,
+          inviteExpires,
+          invitedBy:    session.user.id,
+        })
+        .returning();
+
+      // Notify the invitee only when they already have an account
+      if (existingUser) {
+        await triggerWorkspaceInviteNotification(tx, {
+          workspaceId: id,
+          inviterId:   session.user.id,
+          recipientId: existingUser.id,
+          memberId:    m.id,
+        });
+      }
+
+      return [m];
+    });
 
     // Enqueue invite email (Rule 2: async work via pg-boss, never inline)
     await enqueueJob(JOB_NAMES.WORKSPACE_INVITE_SEND, {

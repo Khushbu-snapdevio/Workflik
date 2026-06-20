@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/sidebar/sidebar";
 import { SearchProvider } from "@/components/search/search-provider";
+import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { userPreferences, users, workspaces } from "@/lib/db/schema";
@@ -50,15 +51,17 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
   return (
     <SearchProvider workspaceSlug={ws.slug} workspaceId={ws.id}>
-      <div className="flex h-screen overflow-hidden bg-page">
-        <Sidebar
-          isAdmin={freshUser?.role === ADMIN_ROLE}
-          userEmail={session.user.email}
-          workspaceId={ws.id}
-          workspaceSlug={ws.slug}
-        />
-        <main className="flex-1 overflow-y-auto">{children}</main>
-      </div>
+      <NotificationProvider workspaceId={ws.id} workspaceSlug={ws.slug}>
+        <div className="flex h-screen overflow-hidden bg-page">
+          <Sidebar
+            isAdmin={freshUser?.role === ADMIN_ROLE}
+            userEmail={session.user.email}
+            workspaceId={ws.id}
+            workspaceSlug={ws.slug}
+          />
+          <main className="flex-1 overflow-y-auto">{children}</main>
+        </div>
+      </NotificationProvider>
     </SearchProvider>
   );
 }

@@ -5,6 +5,7 @@ import { pagePermissions, pages, workspaceMembers, users } from "@/lib/db/schema
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import { requirePagePermission, capAccessToRole } from "@/lib/permissions/resolver";
 import type { AccessLevel } from "@/lib/permissions/resolver";
+import { triggerAccessGrantedNotification } from "@/lib/notifications/triggers";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -88,18 +89,31 @@ export async function POST(req: Request, { params }: Ctx) {
 
     const actual = capAccessToRole(requested as AccessLevel, member.role);
 
-    await db
-      .insert(pagePermissions)
-      .values({
-        pageId,
-        userId,
-        accessLevel: actual,
-        grantedBy:   session.user.id,
-      })
-      .onConflictDoUpdate({
-        target: [pagePermissions.pageId, pagePermissions.userId],
-        set:    { accessLevel: actual, updatedAt: new Date() },
-      });
+    await db.transaction(async (tx) => {
+      const [perm] = await tx
+        .insert(pagePermissions)
+        .values({
+          pageId,
+          userId,
+          accessLevel: actual,
+          grantedBy:   session.user.id,
+        })
+        .onConflictDoUpdate({
+          target: [pagePermissions.pageId, pagePermissions.userId],
+          set:    { accessLevel: actual, updatedAt: new Date() },
+        })
+        .returning({ id: pagePermissions.id });
+
+      if (perm) {
+        await triggerAccessGrantedNotification(tx, {
+          pageId,
+          workspaceId:  page.workspaceId,
+          granterId:    session.user.id,
+          recipientId:  userId,
+          permissionId: perm.id,
+        });
+      }
+    });
 
     return Response.json({ ok: true, accessLevel: actual });
   } catch (err) {

@@ -1,17 +1,80 @@
-/**
- * Notification trigger stubs for Phase 11.
- * All functions are no-ops — Phase 13 fills the bodies.
- * Signatures are locked: call sites in comment API routes must not change when Phase 13 lands.
- *
- * Rule 11: all calls must happen inside the same DB transaction as the triggering event.
- */
+import { and, eq, isNull, not } from "drizzle-orm";
+import { comments, notifications, pages } from "@/lib/db/schema";
+import { enqueueJob } from "@/lib/jobs/enqueue";
+import { JOB_NAMES } from "@/lib/jobs/job-names";
+import { extractMentionedUserIds, extractPlainText } from "@/lib/comments/mentions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTx = any;
 
+function snippet(content: Record<string, unknown>, max = 100): string {
+  const text = extractPlainText(content);
+  return text.length > max ? text.slice(0, max - 1) + "…" : text;
+}
+
+async function getEmailPreference(tx: AnyTx, userId: string): Promise<string> {
+  const { notificationPreferences } = await import("@/lib/db/schema");
+  const [pref] = await tx
+    .select({ emailFrequency: notificationPreferences.emailFrequency })
+    .from(notificationPreferences)
+    .where(eq(notificationPreferences.userId, userId))
+    .limit(1);
+  return pref?.emailFrequency ?? "daily";
+}
+
+async function insertAndEnqueue(
+  tx: AnyTx,
+  row: {
+    workspaceId:    string;
+    recipientId:    string;
+    senderId:       string | null;
+    type:           typeof notifications.$inferInsert["type"];
+    pageId:         string | null;
+    sourceId:       string | null;
+    contentSnippet: string | null;
+  }
+) {
+  const [inserted] = await tx
+    .insert(notifications)
+    .values(row)
+    .returning({ id: notifications.id });
+
+  const freq = await getEmailPreference(tx, row.recipientId);
+  if (freq === "realtime") {
+    await enqueueJob(JOB_NAMES.NOTIFICATION_EMAIL_SEND, {
+      notificationId: inserted.id,
+      recipientId:    row.recipientId,
+    });
+  }
+}
+
+async function getThreadParticipants(tx: AnyTx, rootCommentId: string, excludeUserId: string): Promise<string[]> {
+  const replies = await tx
+    .select({ authorId: comments.authorId })
+    .from(comments)
+    .where(
+      and(
+        eq(comments.parentId, rootCommentId),
+        not(isNull(comments.authorId)),
+      )
+    );
+
+  const [root] = await tx
+    .select({ authorId: comments.authorId })
+    .from(comments)
+    .where(eq(comments.id, rootCommentId))
+    .limit(1);
+
+  const allIds = new Set<string>();
+  if (root?.authorId) allIds.add(root.authorId);
+  for (const r of replies) if (r.authorId) allIds.add(r.authorId);
+  allIds.delete(excludeUserId);
+  return [...allIds];
+}
+
 export async function triggerCommentNotifications(
-  _tx: AnyTx,
-  _params: {
+  tx: AnyTx,
+  params: {
     commentId:   string;
     pageId:      string;
     workspaceId: string;
@@ -20,49 +83,214 @@ export async function triggerCommentNotifications(
     content:     Record<string, unknown>;
   }
 ): Promise<void> {
-  // Phase 13 implementation:
-  // - If parentId = null: notify page creator (if not author)
-  // - If parentId set: notify all prior thread participants (excluding author)
+  const { commentId, pageId, workspaceId, authorId, parentId, content } = params;
+  const snip = snippet(content);
+
+  if (parentId === null) {
+    const [page] = await tx
+      .select({ createdBy: pages.createdBy })
+      .from(pages)
+      .where(eq(pages.id, pageId))
+      .limit(1);
+
+    if (page?.createdBy && page.createdBy !== authorId) {
+      await insertAndEnqueue(tx, {
+        workspaceId,
+        recipientId:    page.createdBy,
+        senderId:       authorId,
+        type:           "comment",
+        pageId,
+        sourceId:       commentId,
+        contentSnippet: snip,
+      });
+    }
+  } else {
+    const participants = await getThreadParticipants(tx, parentId, authorId);
+    for (const recipientId of participants) {
+      await insertAndEnqueue(tx, {
+        workspaceId,
+        recipientId,
+        senderId:       authorId,
+        type:           "reply",
+        pageId,
+        sourceId:       commentId,
+        contentSnippet: snip,
+      });
+    }
+  }
 }
 
 export async function triggerMentionNotifications(
-  _tx: AnyTx,
-  _params: {
+  tx: AnyTx,
+  params: {
     commentId:    string;
     pageId:       string;
     workspaceId:  string;
     authorId:     string;
     content:      Record<string, unknown>;
-    skipUserIds?: string[];  // already-notified users (for edit case)
+    skipUserIds?: string[];
   }
 ): Promise<void> {
-  // Phase 13 implementation:
-  // - Extract mentioned userIds from content
-  // - Subtract skipUserIds (already notified)
-  // - INSERT notifications + enqueue SEND_NOTIFICATION_EMAIL job per recipient
-  // - Never notify the author (Rule 11)
+  const { commentId, pageId, workspaceId, authorId, content, skipUserIds = [] } = params;
+
+  const mentioned = extractMentionedUserIds(content);
+  const toNotify  = mentioned.filter((id) => id !== authorId && !skipUserIds.includes(id));
+  if (!toNotify.length) return;
+
+  const snip = snippet(content);
+  for (const recipientId of toNotify) {
+    await insertAndEnqueue(tx, {
+      workspaceId,
+      recipientId,
+      senderId:       authorId,
+      type:           "mention",
+      pageId,
+      sourceId:       commentId,
+      contentSnippet: snip,
+    });
+  }
 }
 
 export async function triggerResolvedNotification(
-  _tx: AnyTx,
-  _params: {
+  tx: AnyTx,
+  params: {
     commentId:   string;
     pageId:      string;
     workspaceId: string;
     resolverId:  string;
   }
 ): Promise<void> {
-  // Phase 13 implementation: notify all thread participants except the resolver
+  const { commentId, pageId, workspaceId, resolverId } = params;
+  const participants = await getThreadParticipants(tx, commentId, resolverId);
+  for (const recipientId of participants) {
+    await insertAndEnqueue(tx, {
+      workspaceId,
+      recipientId,
+      senderId:       resolverId,
+      type:           "resolved",
+      pageId,
+      sourceId:       commentId,
+      contentSnippet: null,
+    });
+  }
 }
 
 export async function triggerReopenedNotification(
-  _tx: AnyTx,
-  _params: {
+  tx: AnyTx,
+  params: {
     commentId:   string;
     pageId:      string;
     workspaceId: string;
     reopenerId:  string;
   }
 ): Promise<void> {
-  // Phase 13 implementation: notify all thread participants except the reopener
+  const { commentId, pageId, workspaceId, reopenerId } = params;
+  const participants = await getThreadParticipants(tx, commentId, reopenerId);
+  for (const recipientId of participants) {
+    await insertAndEnqueue(tx, {
+      workspaceId,
+      recipientId,
+      senderId:       reopenerId,
+      type:           "reopened",
+      pageId,
+      sourceId:       commentId,
+      contentSnippet: null,
+    });
+  }
+}
+
+export async function triggerAccessGrantedNotification(
+  tx: AnyTx,
+  params: {
+    pageId:       string;
+    workspaceId:  string;
+    granterId:    string;
+    recipientId:  string;
+    permissionId: string;
+  }
+): Promise<void> {
+  const { pageId, workspaceId, granterId, recipientId, permissionId } = params;
+  if (granterId === recipientId) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId,
+    senderId:       granterId,
+    type:           "access_granted",
+    pageId,
+    sourceId:       permissionId,
+    contentSnippet: null,
+  });
+}
+
+export async function triggerWorkspaceInviteNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId: string;
+    inviterId:   string;
+    recipientId: string;
+    memberId:    string;
+  }
+): Promise<void> {
+  const { workspaceId, inviterId, recipientId, memberId } = params;
+  if (inviterId === recipientId) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId,
+    senderId:       inviterId,
+    type:           "workspace_invite",
+    pageId:         null,
+    sourceId:       memberId,
+    contentSnippet: null,
+  });
+}
+
+export async function triggerGuestAcceptedNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId:  string;
+    inviterId:    string;
+    acceptorId:   string;
+    pageId:       string;
+    invitationId: string;
+    acceptorName: string;
+  }
+): Promise<void> {
+  const { workspaceId, inviterId, acceptorId, pageId, invitationId, acceptorName } = params;
+  if (inviterId === acceptorId) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId:    inviterId,
+    senderId:       acceptorId,
+    type:           "guest_accepted",
+    pageId,
+    sourceId:       invitationId,
+    contentSnippet: acceptorName.slice(0, 100),
+  });
+}
+
+export async function triggerTrashWarningNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId: string;
+    pageId:      string;
+    deletedBy:   string;
+    createdBy:   string;
+    pageTitle:   string;
+  }
+): Promise<void> {
+  const { workspaceId, pageId, deletedBy, createdBy, pageTitle } = params;
+  const snip = pageTitle.slice(0, 100);
+
+  const recipients = new Set<string>([deletedBy, createdBy]);
+  for (const recipientId of recipients) {
+    await insertAndEnqueue(tx, {
+      workspaceId,
+      recipientId,
+      senderId:       null,
+      type:           "trash_warning",
+      pageId,
+      sourceId:       pageId,
+      contentSnippet: snip,
+    });
+  }
 }

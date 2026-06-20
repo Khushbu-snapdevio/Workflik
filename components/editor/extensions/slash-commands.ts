@@ -7,8 +7,9 @@ import { BLOCK_REGISTRY, searchBlocks, type BlockDefinition } from "../block-reg
 export type SlashSuggestionProps = SuggestionProps<BlockDefinition>;
 
 export interface SlashCommandsOptions {
-  onUpdate:  (props: SlashSuggestionProps | null) => void;
-  onKeyDown: (event: KeyboardEvent) => boolean;
+  onUpdate:              (props: SlashSuggestionProps | null) => void;
+  onKeyDown:             (event: KeyboardEvent) => boolean;
+  onOpenTemplateGallery: () => void;
 }
 
 export const SlashCommands = Extension.create<SlashCommandsOptions>({
@@ -16,8 +17,9 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
 
   addOptions() {
     return {
-      onUpdate:  () => {},
-      onKeyDown: () => false,
+      onUpdate:              () => {},
+      onKeyDown:             () => false,
+      onOpenTemplateGallery: () => {},
     };
   },
 
@@ -71,6 +73,12 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
             database:        { type: "inlineDatabase", attrs: { databaseId: "", defaultViewId: "" } },
             template_button: { type: "templateButton", attrs: { label: "New Entry", insertLocation: "below_button", templateBlocks: [{ type: "paragraph", text: "" }] } },
           };
+
+          if (def.type === "template_gallery") {
+            editor.chain().deleteRange(range).run();
+            opts.onOpenTemplateGallery();
+            return;
+          }
 
           const content = custom[def.type];
           if (content) editor.chain().deleteRange(range).insertContentAt(range.from, content).run();

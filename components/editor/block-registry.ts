@@ -6,7 +6,7 @@ export type BlockType =
   | "bullet" | "numbered" | "toggle" | "quote" | "callout" | "divider"
   | "todo" | "image" | "video" | "audio" | "file"
   | "toc" | "table" | "columns" | "code" | "equation"
-  | "linked_page" | "database" | "template_button";
+  | "linked_page" | "database" | "template_button" | "template_gallery";
 
 export interface BlockDefinition {
   type:        BlockType;
@@ -112,6 +112,10 @@ export const BLOCK_REGISTRY: Record<BlockType, BlockDefinition> = {
   template_button: {
     type: "template_button", label: "Template Button", description: "A button that inserts a block template.",
     icon: "⚡", category: "reference", slashCmd: "template-button", requiresPhase: 9,
+  },
+  template_gallery: {
+    type: "template_gallery", label: "Template Gallery", description: "Browse and apply a page template.",
+    icon: "🗂", category: "reference", slashCmd: "template",
   },
 };
 

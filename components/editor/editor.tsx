@@ -34,6 +34,7 @@ import { InlineToolbar } from "./inline-toolbar";
 import { BlockHandle } from "./block-handle";
 import { CommentCard } from "./comment-card";
 import { CommentGutter } from "./comment-gutter";
+import { TemplateGalleryModal } from "@/components/templates/template-gallery-modal";
 import { MentionCommands, type MentionSuggestionProps } from "./extensions/mention-extension";
 import { MentionList, type MentionListHandle } from "./mention-list";
 
@@ -55,10 +56,11 @@ interface EditorProps {
 }
 
 export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = false, currentUserId = "", workspaceId = "", workspaceSlug = "", fontFamily = "default", isSmallText = false }: EditorProps) {
-  const [saveState, setSaveState]         = useState<"idle" | "saving" | "saved" | "offline">("idle");
-  const [initialBlocks, setInitialBlocks] = useState<DbBlock[] | null>(null);
-  const [slashProps, setSlashProps]       = useState<SlashSuggestionProps | null>(null);
-  const [mentionProps, setMentionProps]   = useState<MentionSuggestionProps | null>(null);
+  const [saveState, setSaveState]               = useState<"idle" | "saving" | "saved" | "offline">("idle");
+  const [initialBlocks, setInitialBlocks]       = useState<DbBlock[] | null>(null);
+  const [slashProps, setSlashProps]             = useState<SlashSuggestionProps | null>(null);
+  const [mentionProps, setMentionProps]         = useState<MentionSuggestionProps | null>(null);
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const mentionListRef = useRef<MentionListHandle>(null);
   const [gutterRefresh, setGutterRefresh] = useState(0);
   const highlightCommentsRef = useRef<HighlightComment[]>([]);
@@ -183,8 +185,9 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
       // Slash command menu — uses @tiptap/suggestion so the range is always
       // maintained by the ProseMirror plugin (no manual position tracking).
       SlashCommands.configure({
-        onUpdate:  (props) => setSlashProps(props),
-        onKeyDown: (event) => slashMenuRef.current?.onKeyDown(event) ?? false,
+        onUpdate:              (props) => setSlashProps(props),
+        onKeyDown:             (event) => slashMenuRef.current?.onKeyDown(event) ?? false,
+        onOpenTemplateGallery: ()      => setShowTemplateGallery(true),
       }),
       // @mention extension — @name / @page / @date
       ...(workspaceId
@@ -385,6 +388,16 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
             }
             openCommentCard(blockId, null, null, blockY);
           }}
+        />
+      )}
+
+      {/* Template gallery modal — opened via /template slash command */}
+      {showTemplateGallery && workspaceId && workspaceSlug && (
+        <TemplateGalleryModal
+          workspaceId={workspaceId}
+          workspaceSlug={workspaceSlug}
+          parentId={pageId}
+          onClose={() => setShowTemplateGallery(false)}
         />
       )}
 

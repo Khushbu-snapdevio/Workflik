@@ -1,0 +1,89 @@
+import { count, desc, eq } from "drizzle-orm";
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { workspaceMembers, workspaces } from "@/lib/db/schema";
+import { formatDateTime } from "@/lib/utils";
+
+export const metadata = { title: "Workspaces – Orbit Admin" };
+
+function ago(d: Date | null | undefined) {
+  if (!d) return "—";
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+export default async function OrbitWorkspacesPage() {
+  const allWorkspaces = await db
+    .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug, icon: workspaces.icon, createdAt: workspaces.createdAt })
+    .from(workspaces)
+    .orderBy(desc(workspaces.createdAt));
+
+  const memberCounts = await db
+    .select({ workspaceId: workspaceMembers.workspaceId, cnt: count() })
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.status, "active"))
+    .groupBy(workspaceMembers.workspaceId);
+
+  const countMap = new Map(memberCounts.map(r => [r.workspaceId, r.cnt]));
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-8 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#059669] to-[#10b981] p-6 shadow-[0_4px_24px_rgba(5,150,105,0.22)]">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Orbit Admin</p>
+        <h1 className="mt-1 text-[26px] font-black tracking-tight text-white">Workspaces</h1>
+        <p className="mt-1 text-[13px] text-white/70">All tenant workspaces — inspect members, force delete.</p>
+        <div className="mt-4 flex gap-4">
+          <div>
+            <span className="text-[22px] font-black text-white">{allWorkspaces.length}</span>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/60">Total</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {allWorkspaces.map(ws => {
+          const memberCount = countMap.get(ws.id) ?? 0;
+          const letter = (ws.icon && ws.icon.length <= 2 ? ws.icon : ws.name?.slice(0, 1) ?? "W").toUpperCase();
+          return (
+            <Link key={ws.id} href={`/Orbit-admin/orbit/workspaces/${ws.id}`}
+              className="group flex flex-col gap-3 overflow-hidden rounded-[16px] border border-black/[0.07] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition hover:shadow-[0_3px_12px_rgba(0,0,0,0.09)]">
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#059669] to-[#34d399] text-[15px] font-black text-white shadow-sm">
+                  {letter}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13.5px] font-bold text-[#1c1917] group-hover:text-[#059669]">{ws.name}</p>
+                  <p className="truncate text-[11px] text-[#a8a29e]">/{ws.slug}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t border-black/[0.05] pt-3">
+                <div className="flex items-center gap-1 text-[11px] text-[#787774]">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3">
+                    <circle cx="4.5" cy="4" r="2"/><path d="M1 10c0-2 1.7-3.5 3.5-3.5S8 8 8 10"/>
+                    <path d="M8 2.5a2 2 0 010 4M10.5 8.5c1 .4 1.5 1.1 1.5 2"/>
+                  </svg>
+                  <span className="font-semibold">{memberCount}</span> member{memberCount !== 1 ? "s" : ""}
+                </div>
+                <span className="text-[10.5px] text-[#c4c1bb]">{ago(ws.createdAt)}</span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {allWorkspaces.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-[14px] bg-[#f5f4f2]">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#c4c1bb" strokeWidth="1.5" className="size-7">
+              <path d="M3 7h14M3 13h14M7 2v16M13 2v16" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <p className="text-[14px] font-semibold text-[#a8a29e]">No workspaces yet</p>
+        </div>
+      )}
+    </div>
+  );
+}

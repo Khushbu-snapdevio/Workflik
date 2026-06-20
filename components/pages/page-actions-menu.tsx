@@ -7,7 +7,6 @@ import {
   DownloadSimpleIcon,
   LockKeyIcon,
   LockKeyOpenIcon,
-  StarIcon,
   SquaresFourIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
@@ -212,10 +211,6 @@ export function PageActionsMenu({
                 Copy link
               </button>
 
-              <button type="button" disabled className={`${menuItemClass} cursor-not-allowed opacity-40`}>
-                <StarIcon size={14} />
-                Add to favorites
-              </button>
 
               {pageKind !== "database" && (
                 <button

@@ -226,15 +226,21 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
           }
         );
         highlightCommentsRef.current = textRange;
-        setCommentHighlights(editor.view, textRange);
+        try { setCommentHighlights(editor.view, textRange); } catch { /* editor not yet mounted */ }
       })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [pageId, editor, gutterRefresh]);
 
   useEffect(() => {
-    if (!editor || !editor.view?.dom) return;
-    const editorEl = editor.view.dom as HTMLElement;
+    if (!editor || editor.isDestroyed) return;
+    let editorEl: HTMLElement;
+    try {
+      if (!editor.view?.dom) return;
+      editorEl = editor.view.dom as HTMLElement;
+    } catch {
+      return;
+    }
     function handleClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
       const highlighted = target.closest(".comment-highlight") as HTMLElement | null;

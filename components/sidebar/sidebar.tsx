@@ -61,6 +61,8 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const newMenuRef = useRef<HTMLDivElement>(null);
 
+  const favoritePageIds = new Set(favorites.map((f) => f.pageId));
+
   const resizingRef = useRef(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
@@ -96,12 +98,19 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
     return () => window.removeEventListener("pages:refresh", fetchPages);
   }, [fetchPages]);
 
-  useEffect(() => {
+  const fetchFavorites = useCallback(() => {
     fetch(`/api/user/favorites?workspaceId=${workspaceId}`)
       .then((r) => r.json())
       .then((d) => setFavorites(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [workspaceId]);
+
+  useEffect(() => { fetchFavorites(); }, [fetchFavorites]);
+
+  useEffect(() => {
+    window.addEventListener("workflik:favorites-changed", fetchFavorites);
+    return () => window.removeEventListener("workflik:favorites-changed", fetchFavorites);
+  }, [fetchFavorites]);
 
   useEffect(() => {
     fetch(`/api/user/recently-visited?workspaceId=${workspaceId}`)
@@ -148,6 +157,32 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
       document.removeEventListener("mouseup", onUp);
     };
   }, []);
+
+  function handleToggleFavorite(pageId: string, isFav: boolean) {
+    window.dispatchEvent(new CustomEvent("workflik:favorites-changed", { detail: { pageId, isFavorited: !isFav } }));
+    if (isFav) {
+      setFavorites((prev) => prev.filter((f) => f.pageId !== pageId));
+      fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" }).catch(() => {});
+    } else {
+      // Optimistic add
+      const tempId = crypto.randomUUID();
+      setFavorites((prev) => [...prev, { id: tempId, pageId, orderIndex: prev.length }]);
+      fetch("/api/user/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, workspaceId }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data) {
+            setFavorites((prev) => prev.map((f) => (f.id === tempId ? data : f)));
+          }
+        })
+        .catch(() => {
+          setFavorites((prev) => prev.filter((f) => f.id !== tempId));
+        });
+    }
+  }
 
   function toggleCollapse() {
     const next = !collapsed;
@@ -416,9 +451,11 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             />
           </SectionLabel>
           <PageTree
+            favoritePageIds={favoritePageIds}
             filter={filter}
             loading={pagesLoading}
             onPagesChange={setPages}
+            onToggleFavorite={handleToggleFavorite}
             pages={pages}
             workspaceId={workspaceId}
             workspaceSlug={workspaceSlug}

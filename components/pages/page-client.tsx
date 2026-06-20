@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EmojiPicker } from "@/components/pages/emoji-picker";
 import { PageEditor } from "@/components/editor/editor";
-import { CommentCard } from "@/components/editor/comment-card";
 import { useUpload } from "@/lib/storage/use-upload";
 import { EntryPropertiesPanel } from "@/components/database/entry-properties-panel";
 
@@ -118,7 +117,7 @@ export function PageClient({
   const contentCls = isFullWidth ? "max-w-full px-10" : "max-w-[760px] px-16";
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div id="page-scroll-container" className="flex-1 overflow-y-auto">
 
       {/* ── Cover — full viewport width ── */}
       {coverUrl && (
@@ -301,20 +300,6 @@ export function PageClient({
           />
         </div>
 
-        {/* Page-level comments — scroll target for the Comments button in the top bar */}
-        {workspaceId && (
-          <div id="page-comments" className="mt-12 border-t border-border/40 pt-6 pb-4">
-            <CommentCard
-              variant="inline"
-              pageId={pageId}
-              workspaceId={workspaceId}
-              blockId={null}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              onClose={() => {}}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

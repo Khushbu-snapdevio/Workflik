@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages, pageClosure, searchIndex, workspaceMembers } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
@@ -52,8 +52,9 @@ export async function GET(req: Request) {
     // Build conditions
     const conditions = [
       eq(searchIndex.workspaceId, workspaceId),
-      // Exclude deleted pages
       eq(pages.isDeleted, false),
+      // Exclude other users' private pages
+      or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id)),
     ];
     if (typeFilter)  conditions.push(typeFilter);
     if (dateFilter)  conditions.push(dateFilter);

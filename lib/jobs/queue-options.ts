@@ -85,6 +85,22 @@ export const QUEUE_OPTIONS: Record<
     policy: "exclusive",
     retryLimit: 1,
   },
+  [JOB_NAMES.WORKSPACE_DELETE]: {
+    expireInSeconds: 600,
+    policy: "standard",
+    retryLimit: 2,
+    retryDelay: 30,
+  },
+  [JOB_NAMES.EXPIRE_INVITATIONS]: {
+    expireInSeconds: 300,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
+  [JOB_NAMES.NOTIFY_STORAGE_THRESHOLD]: {
+    expireInSeconds: 300,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
 };
 
 export async function ensureJobQueues(boss: PgBoss) {

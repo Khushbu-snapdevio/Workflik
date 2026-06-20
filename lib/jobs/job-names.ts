@@ -13,6 +13,9 @@ export const JOB_NAMES = {
   NOTIFICATION_EMAIL_SEND:        "notification.email-send",
   NOTIFICATION_DIGEST_SEND:       "notification.digest-send",
   NOTIFICATION_CLEANUP:           "notification.cleanup",
+  WORKSPACE_DELETE:               "workspace.delete",
+  EXPIRE_INVITATIONS:             "workspace.expire-invitations",
+  NOTIFY_STORAGE_THRESHOLD:       "storage.notify-threshold",
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];
@@ -41,6 +44,10 @@ export interface NotificationEmailSendPayload {
   recipientId:    string;
 }
 
+export interface WorkspaceDeletePayload {
+  workspaceId: string;
+}
+
 export type JobPayloads = {
   [JOB_NAMES.EMAIL_OUTBOX_REAP]:                    Record<string, never>;
   [JOB_NAMES.EMAIL_SEND]:                           EmailSendPayload;
@@ -56,4 +63,7 @@ export type JobPayloads = {
   [JOB_NAMES.NOTIFICATION_EMAIL_SEND]:              NotificationEmailSendPayload;
   [JOB_NAMES.NOTIFICATION_DIGEST_SEND]:             Record<string, never>;
   [JOB_NAMES.NOTIFICATION_CLEANUP]:                 Record<string, never>;
+  [JOB_NAMES.WORKSPACE_DELETE]:                     WorkspaceDeletePayload;
+  [JOB_NAMES.EXPIRE_INVITATIONS]:                   Record<string, never>;
+  [JOB_NAMES.NOTIFY_STORAGE_THRESHOLD]:             Record<string, never>;
 };

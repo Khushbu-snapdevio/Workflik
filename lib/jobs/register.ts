@@ -18,6 +18,9 @@ export async function registerHandlers(boss: PgBoss) {
     { handleNotificationEmailSend },
     { handleNotificationDigestSend },
     { handleNotificationCleanup },
+    { handleWorkspaceDelete },
+    { handleExpireInvitations },
+    { handleNotifyStorageThreshold },
   ] = await Promise.all([
     import("@/lib/jobs/handlers/email-send"),
     import("@/lib/jobs/handlers/email-outbox-reap"),
@@ -32,6 +35,9 @@ export async function registerHandlers(boss: PgBoss) {
     import("@/lib/jobs/handlers/notification-email-send"),
     import("@/lib/jobs/handlers/notification-digest-send"),
     import("@/lib/jobs/handlers/notification-cleanup"),
+    import("@/lib/jobs/handlers/delete-workspace"),
+    import("@/lib/jobs/handlers/expire-invitations"),
+    import("@/lib/jobs/handlers/notify-storage-threshold"),
   ]);
 
   await Promise.all([
@@ -48,6 +54,9 @@ export async function registerHandlers(boss: PgBoss) {
     boss.work(JOB_NAMES.NOTIFICATION_EMAIL_SEND,               { includeMetadata: true }, handleNotificationEmailSend),
     boss.work(JOB_NAMES.NOTIFICATION_DIGEST_SEND,              { includeMetadata: true }, handleNotificationDigestSend),
     boss.work(JOB_NAMES.NOTIFICATION_CLEANUP,                  { includeMetadata: true }, handleNotificationCleanup),
+    boss.work(JOB_NAMES.WORKSPACE_DELETE,                      { includeMetadata: true }, handleWorkspaceDelete),
+    boss.work(JOB_NAMES.EXPIRE_INVITATIONS,                    { includeMetadata: true }, handleExpireInvitations),
+    boss.work(JOB_NAMES.NOTIFY_STORAGE_THRESHOLD,              { includeMetadata: true }, handleNotifyStorageThreshold),
   ]);
 
   // Scheduled cron jobs
@@ -61,4 +70,6 @@ export async function registerHandlers(boss: PgBoss) {
   await boss.schedule(JOB_NAMES.STORAGE_SYNC_USAGE,                 "0 4 * * *",     {}); // Daily 04:00 UTC
   await boss.schedule(JOB_NAMES.NOTIFICATION_DIGEST_SEND,           "0 * * * *",     {}); // Hourly (filters by hour inside handler)
   await boss.schedule(JOB_NAMES.NOTIFICATION_CLEANUP,               "0 5 * * *",     {}); // Daily 05:00 UTC
+  await boss.schedule(JOB_NAMES.EXPIRE_INVITATIONS,                 "0 1 * * *",     {}); // Daily 01:00 UTC
+  await boss.schedule(JOB_NAMES.NOTIFY_STORAGE_THRESHOLD,           "0 6 * * *",     {}); // Daily 06:00 UTC
 }

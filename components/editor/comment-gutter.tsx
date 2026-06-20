@@ -83,12 +83,10 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
         if (el.nodeType === Node.TEXT_NODE) el = el.parentElement!;
         while (el.parentElement && el.parentElement !== editorEl) el = el.parentElement;
         const rect = el.getBoundingClientRect();
-        result.push({
-          blockId,
-          count,
-          top:  rect.top + rect.height / 2 - 10,
-          left: editorRect.right + 16,
-        });
+        const top  = rect.top + rect.height / 2 - 10;
+        // Don't render badges below the editor's bottom edge (avoids overlapping page-level comments)
+        if (top > editorRect.bottom - 10) continue;
+        result.push({ blockId, count, top, left: editorRect.right + 16 });
       } catch { /* skip this block, don't wipe others */ }
     }
 

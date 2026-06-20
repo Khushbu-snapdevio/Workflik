@@ -382,8 +382,91 @@ export function CommentCard({
     loadComments();
   }
 
-  const inner = (
-    <>
+  // ── Inline variant — full-width page section ──────────────────────────────
+  if (variant === "inline") {
+    return (
+      <div ref={cardRef}>
+        {/* Section header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2.5">
+            <ChatTextIcon size={17} className="text-gray-500" />
+            <span className="text-[15px] font-semibold text-gray-800">Comments</span>
+            {unresolvedCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-blue-500 px-1.5 text-[11px] font-semibold text-white leading-none">
+                {unresolvedCount}
+              </span>
+            )}
+            {resolvedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowResolved((v) => !v)}
+                className="text-[12px] text-gray-400 hover:text-gray-600 underline decoration-dotted underline-offset-2 transition-colors"
+              >
+                {showResolved ? "Hide resolved" : `${resolvedCount} resolved`}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* New comment composer — at the top (Notion-style) */}
+        <div className="mb-6">
+          <CommentComposer
+            workspaceId={workspaceId}
+            mode="new"
+            placeholder="Add a comment…"
+            onSubmit={createComment}
+          />
+        </div>
+
+        {/* Thread list */}
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="h-4 w-4 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin" />
+          </div>
+        ) : activeVisible.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-8 text-center">
+            <ChatTextIcon size={26} className="text-gray-200" />
+            <p className="text-[13px] text-gray-400">No page-level comments yet. Be the first!</p>
+          </div>
+        ) : (
+          <div className="space-y-0 divide-y divide-gray-100 rounded-xl border border-gray-100 overflow-hidden">
+            {activeVisible.map((thread) => (
+              <ThreadSection
+                key={thread.id}
+                thread={thread}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                workspaceId={workspaceId}
+                onMutate={loadComments}
+                onResolve={resolveThread}
+                onReopen={reopenThread}
+                onReply={createReply}
+              />
+            ))}
+          </div>
+        )}
+
+        {orphaned.length > 0 && (
+          <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50/50 px-4 py-3">
+            <p className="text-[11px] font-semibold text-amber-600 mb-2">⚠ Original content removed</p>
+            {orphaned.map((thread) => (
+              <div key={thread.id} className="flex items-start gap-2 py-1.5">
+                <UserAvatar name={thread.author?.name} image={thread.author?.image} />
+                <p className="text-[13px] text-gray-600">{renderContent(thread.content)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Floating variant — compact card ───────────────────────────────────────
+  return (
+    <div
+      ref={cardRef}
+      className="w-[360px] rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
         <div className="flex items-center gap-2">
@@ -404,35 +487,31 @@ export function CommentCard({
             </button>
           )}
         </div>
-        {variant === "floating" && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <XIcon size={14} weight="bold" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          <XIcon size={14} weight="bold" />
+        </button>
       </div>
 
       {/* Thread list */}
-      <div className={variant === "floating" ? "max-h-[400px] overflow-y-auto" : undefined}>
+      <div className="max-h-[400px] overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-8">
             <div className="h-4 w-4 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin" />
           </div>
         )}
-
         {!loading && activeVisible.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
             <ChatTextIcon size={28} className="text-gray-200 mb-2" />
             <p className="text-[13px] text-gray-400">
-              {blockId ? "No comments on this block yet." : "No page-level comments yet."}
+              {blockId ? "No comments on this block yet." : "No comments yet."}
             </p>
             <p className="text-[12px] text-gray-300 mt-0.5">Be the first to comment</p>
           </div>
         )}
-
         {activeVisible.map((thread) => (
           <ThreadSection
             key={thread.id}
@@ -446,7 +525,6 @@ export function CommentCard({
             onReply={createReply}
           />
         ))}
-
         {orphaned.length > 0 && (
           <div className="border-t border-gray-100 px-4 pt-2 pb-3">
             <p className="text-[11px] font-medium text-amber-600 mb-2">⚠ Original content removed</p>
@@ -469,19 +547,6 @@ export function CommentCard({
           onSubmit={createComment}
         />
       </div>
-    </>
-  );
-
-  if (variant === "inline") {
-    return <div ref={cardRef}>{inner}</div>;
-  }
-
-  return (
-    <div
-      ref={cardRef}
-      className="w-[360px] rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden"
-    >
-      {inner}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { PageClient } from "@/components/pages/page-client";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PageCommentButton } from "@/components/pages/page-comment-button";
+import { ShareButton } from "@/components/pages/share-button";
 import { TrashBanner } from "@/components/pages/trash-banner";
 import { TemplatePageClient } from "@/components/templates/template-page-client";
 
@@ -179,7 +180,18 @@ export default async function PageEditorPage({ params }: Props) {
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
-          <PageCommentButton pageId={page.id} />
+          <ShareButton
+            pageId={page.id}
+            currentUserId={session.user.id}
+            isPrivate={page.isPrivate}
+            isEditor={isEditor}
+          />
+          <PageCommentButton
+            pageId={page.id}
+            workspaceId={ws.id}
+            currentUserId={session.user.id}
+            isAdmin={isAdmin}
+          />
           {isEditor && (
             <PageActionsMenu
               pageId={page.id}

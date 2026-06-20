@@ -8,6 +8,7 @@ import {
   pageClosure,
   pages,
   propertyValues,
+  userFavorites,
   userRecentlyVisited,
   workspaces,
 } from "@/lib/db/schema";
@@ -15,6 +16,7 @@ import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { PageClient } from "@/components/pages/page-client";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PageCommentButton } from "@/components/pages/page-comment-button";
+import { FavoriteButton } from "@/components/pages/favorite-button";
 import { ShareButton } from "@/components/pages/share-button";
 import { TrashBanner } from "@/components/pages/trash-banner";
 import { TemplatePageClient } from "@/components/templates/template-page-client";
@@ -75,6 +77,14 @@ export default async function PageEditorPage({ params }: Props) {
 
   const isEditor = member.role === "admin" || member.role === "editor";
   const isAdmin  = member.role === "admin";
+
+  // Check if page is in user's favorites
+  const [favRow] = await db
+    .select({ id: userFavorites.id })
+    .from(userFavorites)
+    .where(and(eq(userFavorites.userId, session.user.id), eq(userFavorites.pageId, page.id)))
+    .limit(1);
+  const isFavorited = !!favRow;
 
   // ── Database pages → TemplatePageClient (Notion-style, no stats bar) ─────────
   if (page.kind === "database") {
@@ -191,6 +201,11 @@ export default async function PageEditorPage({ params }: Props) {
             workspaceId={ws.id}
             currentUserId={session.user.id}
             isAdmin={isAdmin}
+          />
+          <FavoriteButton
+            pageId={page.id}
+            workspaceId={ws.id}
+            isFavorited={isFavorited}
           />
           {isEditor && (
             <PageActionsMenu

@@ -17,10 +17,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CaretDownIcon, CaretRightIcon, DotsThreeIcon, PlusIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, CaretRightIcon, DotsThreeIcon, PlusIcon, StarIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+
+const ROOT_VISIBLE_MAX = 4;
 
 type PageItem = {
   id: string;
@@ -42,6 +45,8 @@ type Props = {
   workspaceSlug: string;
   workspaceId: string;
   onPagesChange: (pages: PageItem[]) => void;
+  favoritePageIds: Set<string>;
+  onToggleFavorite: (pageId: string, isFav: boolean) => void;
 };
 
 function buildTree(pages: PageItem[]): TreeNode[] {
@@ -96,11 +101,30 @@ export function PageTree({
   workspaceSlug,
   workspaceId,
   onPagesChange,
+  favoritePageIds,
+  onToggleFavorite,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  // All hooks must be declared before any early returns
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (moreRef.current?.contains(e.target as Node)) return;
+      if (popupRef.current?.contains(e.target as Node)) return;
+      setMoreOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [moreOpen]);
 
   const lower = filter.toLowerCase();
   const tree = applyFilter(buildTree(pages), lower);
@@ -164,18 +188,93 @@ export function PageTree({
     );
   }
 
+  // When a filter is active, show all matches; otherwise cap at ROOT_VISIBLE_MAX
+  const visibleRoots = filter ? tree : tree.slice(0, ROOT_VISIBLE_MAX);
+  const hiddenCount  = filter ? 0 : Math.max(0, tree.length - ROOT_VISIBLE_MAX);
+
+  function openMorePopup() {
+    if (moreRef.current) {
+      const r = moreRef.current.getBoundingClientRect();
+      setPopupPos({ top: r.top, left: r.right + 8 });
+    }
+    setMoreOpen((v) => !v);
+  }
+
   return (
-    <Level
-      depth={0}
-      nodes={tree}
-      onDragEnd={handleDragEnd}
-      onPagesChange={onPagesChange}
-      pages={pages}
-      parentId={null}
-      sensors={sensors}
-      workspaceId={workspaceId}
-      workspaceSlug={workspaceSlug}
-    />
+    <>
+      <Level
+        depth={0}
+        favoritePageIds={favoritePageIds}
+        nodes={visibleRoots}
+        onDragEnd={handleDragEnd}
+        onPagesChange={onPagesChange}
+        onToggleFavorite={onToggleFavorite}
+        pages={pages}
+        parentId={null}
+        sensors={sensors}
+        workspaceId={workspaceId}
+        workspaceSlug={workspaceSlug}
+      />
+
+      {hiddenCount > 0 && (
+        <button
+          ref={moreRef}
+          type="button"
+          onClick={openMorePopup}
+          className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
+        >
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-3">
+            <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
+          </svg>
+          {hiddenCount} more
+        </button>
+      )}
+
+      {moreOpen && popupPos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={popupRef}
+          className="fixed z-[300] w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-xl"
+          style={{ top: popupPos.top, left: popupPos.left }}
+        >
+          <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+            <span className="text-xs font-semibold text-foreground">Pages</span>
+            <span className="text-xs text-muted-foreground">{tree.length} total</span>
+          </div>
+          <div className="max-h-72 overflow-y-auto py-1">
+            {tree.map((node) => (
+              <Link
+                key={node.id}
+                href={`/app/${workspaceSlug}/${node.shortId}`}
+                onClick={() => setMoreOpen(false)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+              >
+                {node.icon ? (
+                  <span className="shrink-0 text-sm leading-none">{node.icon}</span>
+                ) : (
+                  <svg className="size-3.5 shrink-0 text-foreground/30" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                )}
+                <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="border-t border-border px-3 py-2">
+            <Link
+              href={`/app/${workspaceSlug}/library`}
+              onClick={() => setMoreOpen(false)}
+              className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <svg className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+              Open in Library
+            </Link>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 
@@ -187,6 +286,8 @@ function Level({
   sensors,
   onDragEnd,
   onPagesChange,
+  onToggleFavorite,
+  favoritePageIds,
   pages,
   parentId,
 }: {
@@ -195,12 +296,10 @@ function Level({
   workspaceSlug: string;
   workspaceId: string;
   sensors: ReturnType<typeof useSensors>;
-  onDragEnd: (
-    event: DragEndEvent,
-    siblings: TreeNode[],
-    parentId: string | null
-  ) => void;
+  onDragEnd: (event: DragEndEvent, siblings: TreeNode[], parentId: string | null) => void;
   onPagesChange: (pages: PageItem[]) => void;
+  onToggleFavorite: (pageId: string, isFav: boolean) => void;
+  favoritePageIds: Set<string>;
   pages: PageItem[];
   parentId: string | null;
 }) {
@@ -218,10 +317,12 @@ function Level({
           {nodes.map((node) => (
             <PageTreeNode
               depth={depth}
+              favoritePageIds={favoritePageIds}
               key={node.id}
               node={node}
               onDragEnd={onDragEnd}
               onPagesChange={onPagesChange}
+              onToggleFavorite={onToggleFavorite}
               pages={pages}
               sensors={sensors}
               workspaceId={workspaceId}
@@ -242,6 +343,8 @@ function PageTreeNode({
   sensors,
   onDragEnd,
   onPagesChange,
+  onToggleFavorite,
+  favoritePageIds,
   pages,
 }: {
   node: TreeNode;
@@ -251,6 +354,8 @@ function PageTreeNode({
   sensors: ReturnType<typeof useSensors>;
   onDragEnd: (event: DragEndEvent, siblings: TreeNode[], parentId: string | null) => void;
   onPagesChange: (pages: PageItem[]) => void;
+  onToggleFavorite: (pageId: string, isFav: boolean) => void;
+  favoritePageIds: Set<string>;
   pages: PageItem[];
 }) {
   const router = useRouter();
@@ -265,6 +370,7 @@ function PageTreeNode({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : undefined };
   const hasChildren = node.children.length > 0;
+  const isFav = favoritePageIds.has(node.id);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -385,6 +491,19 @@ function PageTreeNode({
             style={{ left: menuPos.x, top: menuPos.y }}
           >
             <div className="py-1">
+              <button
+                className={menuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onToggleFavorite(node.id, isFav);
+                  window.dispatchEvent(new CustomEvent("workflik:favorites-changed", { detail: { pageId: node.id, isFavorited: !isFav } }));
+                }}
+                type="button"
+              >
+                <StarIcon size={14} weight={isFav ? "fill" : "regular"} className={isFav ? "text-amber-400" : undefined} />
+                {isFav ? "Remove from Favorites" : "Add to Favorites"}
+              </button>
+              <div className="my-1 border-t border-border" />
               <Link
                 className={menuItem}
                 href={`/app/${workspaceSlug}/${node.shortId}`}
@@ -423,9 +542,11 @@ function PageTreeNode({
       {hasChildren && open && (
         <Level
           depth={depth + 1}
+          favoritePageIds={favoritePageIds}
           nodes={node.children}
           onDragEnd={onDragEnd}
           onPagesChange={onPagesChange}
+          onToggleFavorite={onToggleFavorite}
           pages={pages}
           parentId={node.id}
           sensors={sensors}

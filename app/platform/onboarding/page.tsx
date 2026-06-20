@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
   const session = await requireSession();
 
   const [user] = await db
-    .select({ onboardingCompleted: users.onboardingCompleted })
+    .select({ onboardingCompleted: users.onboardingCompleted, name: users.name })
     .from(users)
     .where(eq(users.id, session.user.id))
     .limit(1);
@@ -21,5 +21,5 @@ export default async function OnboardingPage() {
     redirect("/platform/post-auth");
   }
 
-  return <OnboardingUI />;
+  return <OnboardingUI initialName={user?.name ?? ""} />;
 }

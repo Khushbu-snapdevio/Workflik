@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { completeOnboardingAction, type InviteEntry } from "@/app/actions/onboarding";
 import { PRODUCT_NAME } from "@/config/platform";
 
-/* ─── Question steps (0-2) ─────────────────────────────────────── */
+/* ─── Question steps ────────────────────────────────────────────── */
 
 const QUESTION_STEPS = [
   {
@@ -39,41 +39,77 @@ const QUESTION_STEPS = [
   },
 ];
 
-const TEAM_SIZE_STEP = 2;
-const WORKSPACE_NAME_STEP = 3;
-const INVITE_STEP = 4;
+/* ─── Templates ─────────────────────────────────────────────────── */
+
+const TEMPLATES = [
+  { key: "blank",            emoji: "📄", label: "Start blank",       desc: "A clean slate, just for you" },
+  { key: "getting-started",  emoji: "👋", label: "Getting Started",   desc: "Intro guide for your workspace" },
+  { key: "project-tracker",  emoji: "📋", label: "Project Tracker",   desc: "Tasks, milestones, and progress" },
+  { key: "meeting-notes",    emoji: "📝", label: "Meeting Notes",     desc: "Capture agendas and action items" },
+  { key: "personal-journal", emoji: "📓", label: "Personal Journal",  desc: "Daily reflections and ideas" },
+];
+
+/* ─── Step constants ─────────────────────────────────────────────── */
+
+const PROFILE_STEP      = 0;
+const Q_FIRST_STEP      = 1;
+const Q_LAST_STEP       = 3;   // teamsize = 3rd question, overall index 3
+const WORKSPACE_STEP    = 4;
+const INVITE_STEP       = 5;   // team only — solo skips to template at step 5
+const TEMPLATE_TEAM     = 6;
+const TEMPLATE_SOLO     = 5;
+
 const EMPTY_INVITE: InviteEntry = { email: "", role: "editor" };
+
+/* ─── Avatar colour ──────────────────────────────────────────────── */
+
+const AVATAR_COLORS = ["#6366f1","#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
+function avatarColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
 
 /* ─── Component ─────────────────────────────────────────────────── */
 
-export function OnboardingUI() {
-  const [step, setStep] = useState(0);
-  const [selections, setSelections] = useState(["", "", ""]);
-  const [workspaceName, setWorkspaceName] = useState("");
-  const [invites, setInvites] = useState<InviteEntry[]>([
-    { ...EMPTY_INVITE },
-    { ...EMPTY_INVITE },
-    { ...EMPTY_INVITE },
+interface Props { initialName: string }
+
+export function OnboardingUI({ initialName }: Props) {
+  const [step,         setStep]        = useState(PROFILE_STEP);
+  const [displayName,  setDisplayName] = useState(initialName);
+  const [jobTitle,     setJobTitle]    = useState("");
+  const [selections,   setSelections]  = useState(["", "", ""]);  // role, usecase, teamsize
+  const [workspaceName,setWorkspaceName] = useState("");
+  const [invites,      setInvites]     = useState<InviteEntry[]>([
+    { ...EMPTY_INVITE }, { ...EMPTY_INVITE }, { ...EMPTY_INVITE },
   ]);
-  const [pending, startTransition] = useTransition();
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [templateKey,  setTemplateKey] = useState("blank");
+  const [pending, startTransition]     = useTransition();
 
-  const isTeam = selections[TEAM_SIZE_STEP] !== "solo" && selections[TEAM_SIZE_STEP] !== "";
-  const totalSteps = isTeam ? 5 : 4;
-  const isQuestionStep = step < QUESTION_STEPS.length;
-  const isNameStep = step === WORKSPACE_NAME_STEP;
-  const isInviteStep = step === INVITE_STEP;
+  const nameInputRef   = useRef<HTMLInputElement>(null);
+  const profileNameRef = useRef<HTMLInputElement>(null);
 
-  // Progress: show total known steps, defaulting to 4 until team is chosen
-  const knownTotal = step <= TEAM_SIZE_STEP
-    ? 4 // show 4 dots until we know; adjusts after step 2
-    : totalSteps;
+  // Auto-focus profile name on mount
+  useEffect(() => { profileNameRef.current?.focus(); }, []);
 
-  /* selection helpers */
+  const isTeam = selections[2] !== "solo" && selections[2] !== "";
+
+  const totalSteps     = isTeam ? 7 : 6;
+  const progressTotal  = selections[2] ? totalSteps : 6;  // known after teamsize selection
+
+  const isProfileStep  = step === PROFILE_STEP;
+  const isQuestionStep = step >= Q_FIRST_STEP && step <= Q_LAST_STEP;
+  const isNameStep     = step === WORKSPACE_STEP;
+  const isInviteStep   = isTeam && step === INVITE_STEP;
+  const isTemplateStep = isTeam ? step === TEMPLATE_TEAM : step === TEMPLATE_SOLO;
+  const isLast         = isTemplateStep;
+
+  /* ─── helpers ─────────────────────────────────────────────────── */
+
   function selectOption(value: string) {
     setSelections((prev) => {
       const next = [...prev];
-      next[step] = value;
+      next[step - 1] = value;  // question index = step - 1
       return next;
     });
   }
@@ -90,70 +126,100 @@ export function OnboardingUI() {
     if (invites.length < 8) setInvites((prev) => [...prev, { ...EMPTY_INVITE }]);
   }
 
-  /* navigation */
+  /* ─── navigation ─────────────────────────────────────────────── */
+
   function handleContinue() {
+    if (isProfileStep) {
+      setStep(Q_FIRST_STEP);
+      return;
+    }
     if (isQuestionStep) {
-      // After team-size step we know the full total
-      setStep((s) => s + 1);
-      if (step + 1 === WORKSPACE_NAME_STEP) {
-        setTimeout(() => nameInputRef.current?.focus(), 50);
-      }
+      const next = step + 1;
+      setStep(next);
+      if (next === WORKSPACE_STEP) setTimeout(() => nameInputRef.current?.focus(), 50);
       return;
     }
-
     if (isNameStep) {
-      if (isTeam) {
-        setStep(INVITE_STEP);
-      } else {
-        // Personal — create workspace immediately
-        finish();
-      }
+      if (isTeam) { setStep(INVITE_STEP); }
+      else { setStep(TEMPLATE_SOLO); }
       return;
     }
-
     if (isInviteStep) {
-      finish();
+      setStep(TEMPLATE_TEAM);
+      return;
+    }
+    if (isTemplateStep) {
+      finish(); // uses selected templateKey
     }
   }
 
   function handleSkip() {
-    if (isInviteStep) {
-      finish();
+    if (isProfileStep) {
+      setStep(Q_FIRST_STEP);
+      return;
+    }
+    if (isQuestionStep) {
+      const next = step + 1;
+      setStep(next);
+      if (next === WORKSPACE_STEP) setTimeout(() => nameInputRef.current?.focus(), 50);
       return;
     }
     if (isNameStep) {
-      if (isTeam) {
-        setStep(INVITE_STEP);
-      } else {
-        finish();
-      }
+      if (isTeam) { setStep(INVITE_STEP); }
+      else { setStep(TEMPLATE_SOLO); }
       return;
     }
-    setStep((s) => s + 1);
-    if (step + 1 === WORKSPACE_NAME_STEP) {
-      setTimeout(() => nameInputRef.current?.focus(), 50);
+    if (isInviteStep) {
+      setStep(TEMPLATE_TEAM);
+      return;
+    }
+    if (isTemplateStep) {
+      finish("blank"); // "Start blank instead" always resets
     }
   }
 
-  function finish() {
+  function finish(overrideTemplate?: string) {
     const kind = isTeam ? "team" : "personal";
+    const timezone = typeof Intl !== "undefined"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : "UTC";
     startTransition(() =>
-      completeOnboardingAction(kind, workspaceName, isTeam ? invites : [])
+      completeOnboardingAction({
+        kind,
+        workspaceName,
+        invites: isTeam ? invites : [],
+        displayName:  displayName.trim(),
+        jobTitle:     jobTitle.trim(),
+        timezone,
+        templateKey:  overrideTemplate ?? templateKey,
+      })
     );
   }
 
-  /* button state */
+  /* ─── button state ────────────────────────────────────────────── */
+
   const canContinue = (() => {
-    if (isQuestionStep) return !!selections[step];
-    if (isNameStep) return workspaceName.trim().length > 0;
-    if (isInviteStep) return true; // invite is always skippable
+    if (isProfileStep)  return displayName.trim().length > 0;
+    if (isQuestionStep) return !!selections[step - 1];
+    if (isNameStep)     return workspaceName.trim().length > 0;
+    if (isInviteStep)   return true;
+    if (isTemplateStep) return true;
     return false;
   })();
 
-  const isLast = isInviteStep || (!isTeam && isNameStep);
+  const btnLabel = (() => {
+    if (pending)       return "Setting up…";
+    if (isInviteStep)  return "Send invites & open workspace";
+    if (isLast)        return `Start using ${PRODUCT_NAME}`;
+    return "Continue";
+  })();
 
-  /* progress dot count */
-  const progressTotal = step <= TEAM_SIZE_STEP ? 4 : totalSteps;
+  /* ─── Avatar preview ──────────────────────────────────────────── */
+
+  const avatarLetter = displayName.trim()[0]?.toUpperCase() ?? "?";
+  const color        = displayName.trim() ? avatarColor(displayName.trim()) : "#94a3b8";
+
+  /* ─── Render ──────────────────────────────────────────────────── */
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-page px-4 py-16">
@@ -185,24 +251,66 @@ export function OnboardingUI() {
           ))}
         </div>
 
-        {/* Step counter */}
+        {/* Step label */}
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-ui text-muted-foreground">
           {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${progressTotal}`}
         </p>
 
-        {/* ── Question step ─────────────────────────────── */}
+        {/* ── Profile step ──────────────────────────────────── */}
+        {isProfileStep && (
+          <>
+            <h1 className="mb-1.5 text-center text-2xl font-black tracking-tight text-foreground">
+              First, what's your name?
+            </h1>
+            <p className="mb-8 text-center text-sm text-muted-foreground">
+              This is how you'll appear to teammates.
+            </p>
+
+            {/* Avatar preview */}
+            <div
+              className="mb-6 flex size-[72px] items-center justify-center rounded-full text-2xl font-black text-white shadow-md select-none transition-colors duration-200"
+              style={{ background: color }}
+            >
+              {avatarLetter}
+            </div>
+
+            <div className="mb-6 w-full space-y-3">
+              <input
+                ref={profileNameRef}
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
+                placeholder="Your full name"
+                maxLength={80}
+                className="h-12 w-full rounded-xl border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <input
+                type="text"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
+                placeholder="Job title (optional)"
+                maxLength={80}
+                className="h-12 w-full rounded-xl border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </>
+        )}
+
+        {/* ── Question steps ────────────────────────────────── */}
         {isQuestionStep && (
           <>
             <h1 className="mb-1.5 text-center text-2xl font-black tracking-tight text-foreground">
-              {QUESTION_STEPS[step].question}
+              {QUESTION_STEPS[step - 1].question}
             </h1>
             <p className="mb-8 text-center text-sm text-muted-foreground">
-              {QUESTION_STEPS[step].subtitle}
+              {QUESTION_STEPS[step - 1].subtitle}
             </p>
 
             <div className="mb-6 grid w-full grid-cols-2 gap-3">
-              {QUESTION_STEPS[step].options.map((opt) => {
-                const isSelected = selections[step] === opt.value;
+              {QUESTION_STEPS[step - 1].options.map((opt) => {
+                const isSelected = selections[step - 1] === opt.value;
                 return (
                   <button
                     key={opt.value}
@@ -228,7 +336,7 @@ export function OnboardingUI() {
           </>
         )}
 
-        {/* ── Workspace name step ───────────────────────── */}
+        {/* ── Workspace name step ───────────────────────────── */}
         {isNameStep && (
           <>
             <h1 className="mb-1.5 text-center text-2xl font-black tracking-tight text-foreground">
@@ -241,14 +349,12 @@ export function OnboardingUI() {
             </p>
 
             <div className="mb-6 w-full">
-              {/* Kind badge */}
               <div className="mb-4 flex justify-center">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
                   <span>{isTeam ? "👥" : "👤"}</span>
                   {isTeam ? "Team workspace" : "Personal workspace"}
                 </span>
               </div>
-
               <input
                 ref={nameInputRef}
                 type="text"
@@ -266,7 +372,7 @@ export function OnboardingUI() {
           </>
         )}
 
-        {/* ── Invite step (team only) ───────────────────── */}
+        {/* ── Invite step (team only) ───────────────────────── */}
         {isInviteStep && (
           <>
             <h1 className="mb-1.5 text-center text-2xl font-black tracking-tight text-foreground">
@@ -325,20 +431,59 @@ export function OnboardingUI() {
           </>
         )}
 
-        {/* ── Actions ───────────────────────────────────── */}
+        {/* ── Template step ─────────────────────────────────── */}
+        {isTemplateStep && (
+          <>
+            <h1 className="mb-1.5 text-center text-2xl font-black tracking-tight text-foreground">
+              Choose a starting point
+            </h1>
+            <p className="mb-6 text-center text-sm text-muted-foreground">
+              Pick a template or start with a blank workspace. You can always add more later.
+            </p>
+
+            <div className="mb-6 grid w-full grid-cols-2 gap-3">
+              {TEMPLATES.map((tpl) => {
+                const isSelected = templateKey === tpl.key;
+                return (
+                  <button
+                    key={tpl.key}
+                    type="button"
+                    onClick={() => setTemplateKey(tpl.key)}
+                    className={`relative flex flex-col items-start gap-2.5 rounded-xl border p-4 text-left transition-all ${
+                      isSelected
+                        ? "border-primary bg-secondary shadow-sm ring-1 ring-primary/20"
+                        : "border-border bg-card hover:border-primary/40 hover:bg-secondary/30"
+                    }`}
+                  >
+                    {isSelected && (
+                      <span className="absolute right-3 top-3 flex size-[18px] items-center justify-center rounded-full bg-primary">
+                        <svg viewBox="0 0 12 12" fill="white" className="size-[10px]">
+                          <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                        </svg>
+                      </span>
+                    )}
+                    <span className="text-2xl leading-none">{tpl.emoji}</span>
+                    <div>
+                      <p className={`text-sm font-semibold leading-tight ${isSelected ? "text-primary" : "text-foreground"}`}>
+                        {tpl.label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{tpl.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── Actions ───────────────────────────────────────── */}
         <button
           type="button"
           onClick={handleContinue}
           disabled={!canContinue || pending}
           className="flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {pending
-            ? "Setting up…"
-            : isInviteStep
-            ? "Send invites & open workspace"
-            : isLast
-            ? `Get started with ${PRODUCT_NAME}`
-            : "Continue"}
+          {btnLabel}
           {!pending && !isLast && !isInviteStep && (
             <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
               <path d="M5 12h14M12 5l7 7-7 7" />
@@ -352,7 +497,7 @@ export function OnboardingUI() {
           disabled={pending}
           className="mt-3 text-xs text-muted-foreground/60 underline-offset-2 hover:text-muted-foreground hover:underline"
         >
-          {isInviteStep ? "Skip for now" : "Skip this step"}
+          {isInviteStep ? "Skip for now" : isLast ? "Start blank instead" : "Skip this step"}
         </button>
       </div>
     </div>

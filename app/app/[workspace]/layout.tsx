@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import { Sidebar } from "@/components/sidebar/sidebar";
 import { SearchProvider } from "@/components/search/search-provider";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
+import { HintProvider } from "@/components/onboarding/hint-provider";
+import { TooltipTour } from "@/components/onboarding/tooltip-tour";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { userPreferences, users, workspaces } from "@/lib/db/schema";
+import { userHintStates, userPreferences, users, workspaces } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { ADMIN_ROLE } from "@/config/platform";
 
@@ -34,11 +36,19 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     redirect("/auth/login");
   }
 
-  const [freshUser] = await db
-    .select({ role: users.role })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
+  const [[freshUser], dismissedHintsRows] = await Promise.all([
+    db
+      .select({ role: users.role, tourCompleted: users.tourCompleted })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1),
+    db
+      .select({ hintKey: userHintStates.hintKey })
+      .from(userHintStates)
+      .where(eq(userHintStates.userId, session.user.id)),
+  ]);
+
+  const dismissedHints = dismissedHintsRows.map((r) => r.hintKey);
 
   // Track last active workspace for post-login redirect (fire-and-forget upsert)
   db.insert(userPreferences)
@@ -52,15 +62,18 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   return (
     <SearchProvider workspaceSlug={ws.slug} workspaceId={ws.id}>
       <NotificationProvider workspaceId={ws.id} workspaceSlug={ws.slug}>
-        <div className="flex h-screen overflow-hidden bg-page">
-          <Sidebar
-            isAdmin={freshUser?.role === ADMIN_ROLE}
-            userEmail={session.user.email}
-            workspaceId={ws.id}
-            workspaceSlug={ws.slug}
-          />
-          <main className="flex-1 overflow-y-auto">{children}</main>
-        </div>
+        <HintProvider dismissed={dismissedHints}>
+          <div className="flex h-screen overflow-hidden bg-page">
+            <Sidebar
+              isAdmin={freshUser?.role === ADMIN_ROLE}
+              userEmail={session.user.email}
+              workspaceId={ws.id}
+              workspaceSlug={ws.slug}
+            />
+            <main className="flex-1 overflow-y-auto">{children}</main>
+          </div>
+          <TooltipTour tourCompleted={freshUser?.tourCompleted ?? true} />
+        </HintProvider>
       </NotificationProvider>
     </SearchProvider>
   );

@@ -242,6 +242,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
 
   return (
     <aside
+      data-tour="sidebar"
       className="relative flex h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
       style={{ width }}
     >
@@ -253,6 +254,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         {/* ── New dropdown ── */}
         <div className="relative" ref={newMenuRef}>
           <button
+            data-tour="new-page"
             onClick={() => setNewMenu((v) => !v)}
             title="Create new…"
             type="button"
@@ -357,8 +359,10 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             label="Home"
             active={pathname === `/app/${workspaceSlug}`}
           />
-          <SearchNavButton icon={<MagnifyingGlassIcon size={15} />} />
-          <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} />
+          <span data-tour="search"><SearchNavButton icon={<MagnifyingGlassIcon size={15} />} /></span>
+          <span data-tour="notifications">
+            <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} />
+          </span>
           <NavButton
             href={`/app/${workspaceSlug}/settings`}
             icon={<GearIcon size={15} />}

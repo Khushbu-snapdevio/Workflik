@@ -99,7 +99,7 @@ function EditableCell({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={onKey}
-        className="w-full bg-white dark:bg-background border border-primary/60 rounded px-2 py-0.5 text-[13px] text-foreground outline-none shadow-sm"
+        className="w-full bg-card dark:bg-background border border-primary/60 rounded px-2 py-0.5 text-sm text-foreground outline-none shadow-[var(--shadow-card)]"
       />
     );
   }
@@ -116,7 +116,7 @@ function EditableCell({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="flex min-w-0 flex-1 items-center gap-1 truncate text-[13px] text-primary underline-offset-2 hover:underline"
+          className="flex min-w-0 flex-1 items-center gap-1 truncate text-sm text-primary underline-offset-2 hover:underline"
         >
           <LinkIcon size={11} className="shrink-0" />
           <span className="truncate">{display}</span>
@@ -135,11 +135,11 @@ function EditableCell({
   return (
     <button
       onClick={startEdit}
-      className="w-full rounded px-1 py-0.5 text-left text-[13px] hover:bg-muted/60 transition-colors"
+      className="w-full rounded px-1 py-0.5 text-left text-sm hover:bg-muted/60 transition-colors"
     >
       {display
         ? <span className="text-foreground">{display}</span>
-        : <span className="text-muted-foreground/30 text-[12px]">{placeholder}</span>
+        : <span className="text-muted-foreground/30 text-xs">{placeholder}</span>
       }
     </button>
   );
@@ -174,18 +174,18 @@ function SelectCell({
         className="flex w-full items-center gap-1 rounded px-1 py-0.5 hover:bg-muted/60 transition-colors"
       >
         {current
-          ? <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${optionCls(current.color)}`}>{current.name}</span>
-          : <span className="text-[12px] text-muted-foreground/30">Empty</span>
+          ? <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(current.color)}`}>{current.name}</span>
+          : <span className="text-xs text-muted-foreground/30">Empty</span>
         }
         <CaretDownIcon size={10} className="ml-auto shrink-0 text-muted-foreground/40" />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-[300] mt-0.5 min-w-[160px] rounded-xl border border-border bg-popover p-1 shadow-xl">
+        <div className="absolute left-0 top-full z-[300] mt-0.5 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-raised)]">
           {current && (
             <button
               onClick={() => { onSave(null); setOpen(false); }}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted transition-colors"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
             >
               Clear
             </button>
@@ -194,10 +194,10 @@ function SelectCell({
             <button
               key={opt.id}
               onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-muted transition-colors"
             >
-              <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${optionCls(opt.color)}`}>{opt.name}</span>
-              {opt.id === current?.id && <span className="ml-auto text-primary text-[11px] font-bold">✓</span>}
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>{opt.name}</span>
+              {opt.id === current?.id && <span className="ml-auto text-primary text-xs font-bold">✓</span>}
             </button>
           ))}
         </div>
@@ -244,27 +244,27 @@ function MultiSelectCell({
       >
         {selectedOpts.length > 0
           ? selectedOpts.map((o) => (
-              <span key={o.id} className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${optionCls(o.color)}`}>{o.name}</span>
+              <span key={o.id} className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(o.color)}`}>{o.name}</span>
             ))
-          : <span className="text-[12px] text-muted-foreground/30">Empty</span>
+          : <span className="text-xs text-muted-foreground/30">Empty</span>
         }
         <CaretDownIcon size={10} className="ml-auto shrink-0 text-muted-foreground/40" />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-[300] mt-0.5 min-w-[180px] rounded-xl border border-border bg-popover p-1 shadow-xl">
+        <div className="absolute left-0 top-full z-[300] mt-0.5 min-w-[180px] rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-raised)]">
           {options.map((opt) => {
             const checked = selectedIds.includes(opt.id);
             return (
               <button
                 key={opt.id}
                 onClick={() => toggle(opt.id)}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-muted transition-colors"
               >
                 <span className={`flex size-3.5 items-center justify-center rounded border text-[9px] font-bold transition-colors ${checked ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
                   {checked && "✓"}
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${optionCls(opt.color)}`}>{opt.name}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>{opt.name}</span>
               </button>
             );
           })}
@@ -313,7 +313,7 @@ function PersonCell({ value, onSave }: { value: PersonVal | null | undefined; on
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
         placeholder="Assignee name…"
-        className="w-full rounded border border-primary/60 bg-background px-2 py-0.5 text-[13px] outline-none shadow-sm"
+        className="w-full rounded border border-primary/60 bg-background px-2 py-0.5 text-sm outline-none shadow-[var(--shadow-card)]"
       />
     );
   }
@@ -328,12 +328,12 @@ function PersonCell({ value, onSave }: { value: PersonVal | null | undefined; on
           <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
             {name.charAt(0).toUpperCase()}
           </span>
-          <span className="truncate text-[13px] text-foreground">{name}</span>
+          <span className="truncate text-sm text-foreground">{name}</span>
         </>
       ) : (
         <>
           <UserIcon size={12} className="shrink-0 text-muted-foreground/40" />
-          <span className="text-[12px] text-muted-foreground/30">Empty</span>
+          <span className="text-xs text-muted-foreground/30">Empty</span>
         </>
       )}
     </button>
@@ -396,7 +396,7 @@ function ColumnHeader({
     <div className="flex items-center justify-between gap-1 w-full">
       <div className="flex min-w-0 items-center gap-1.5">
         <Icon size={12} className="shrink-0 text-muted-foreground/60" />
-        <span className="truncate text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">
+        <span className="truncate text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           {prop.name}
         </span>
       </div>
@@ -410,7 +410,7 @@ function ColumnHeader({
         </button>
 
         {menuOpen && (
-          <div className="absolute right-0 top-full z-[500] mt-0.5 w-[190px] rounded-xl border border-border bg-popover p-1 shadow-xl">
+          <div className="absolute right-0 top-full z-[500] mt-0.5 w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-raised)]">
             {renaming ? (
               <div className="flex items-center gap-2 px-2 py-1.5">
                 <input
@@ -422,21 +422,21 @@ function ColumnHeader({
                     if (e.key === "Enter")  commitRename();
                     if (e.key === "Escape") { setRenaming(false); setMenuOpen(false); }
                   }}
-                  className="flex-1 rounded-lg border border-primary/60 bg-background px-2 py-1 text-[12px] text-foreground outline-none"
+                  className="flex-1 rounded-[var(--radius-sm)] border border-primary/60 bg-background px-2 py-1 text-xs text-foreground outline-none"
                 />
               </div>
             ) : (
               <>
                 <button
                   onClick={() => { setDraftName(prop.name); setRenaming(true); }}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] text-foreground hover:bg-muted transition-colors"
+                  className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
                 >
                   Rename
                 </button>
                 <div className="my-1 h-px bg-border/40" />
                 <button
                   onClick={() => { onDelete(prop.id); setMenuOpen(false); }}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors"
+                  className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <TrashIcon size={13} /> Delete property
                 </button>
@@ -483,24 +483,24 @@ function RowMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-[500] mt-0.5 w-[180px] rounded-xl border border-border bg-popover p-1 shadow-xl">
+        <div className="absolute right-0 top-full z-[500] mt-0.5 w-[180px] rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-raised)]">
           <Link
             href={`/app/${workspaceSlug}/${shortId}`}
             onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] text-foreground hover:bg-muted transition-colors"
+            className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
           >
             <ArrowSquareOutIcon size={13} /> Open page
           </Link>
           <button
             onClick={() => { onDuplicate(entryId); setOpen(false); }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] text-foreground hover:bg-muted transition-colors"
+            className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-muted transition-colors"
           >
             <CopyIcon size={13} /> Duplicate
           </button>
           <div className="my-1 h-px bg-border/40" />
           <button
             onClick={() => { onDelete(entryId); setOpen(false); }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] text-destructive hover:bg-destructive/10 transition-colors"
+            className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
           >
             <TrashIcon size={13} /> Delete
           </button>
@@ -555,12 +555,12 @@ function AddPropertyPanel({
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full z-[500] mt-1 w-[240px] rounded-xl border border-border bg-popover shadow-2xl"
+      className="absolute right-0 top-full z-[500] mt-1 w-[240px] rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-float)]"
     >
       {step === "name" ? (
         <>
           <div className="border-b border-border/40 px-4 py-3">
-            <span className="text-[13px] font-semibold">New property</span>
+            <span className="text-sm font-semibold">New property</span>
           </div>
           <div className="p-3">
             <input
@@ -572,12 +572,12 @@ function AddPropertyPanel({
                 if (e.key === "Escape") onClose();
               }}
               placeholder="Property name…"
-              className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
+              className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
             />
             <button
               onClick={() => name.trim() && setStep("type")}
               disabled={!name.trim()}
-              className="mt-2 w-full rounded-lg bg-primary py-1.5 text-[12px] font-semibold text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors"
+              className="mt-2 w-full rounded-[var(--radius-sm)] bg-primary py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors"
             >
               Continue →
             </button>
@@ -588,18 +588,18 @@ function AddPropertyPanel({
           <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
             <button
               onClick={() => setStep("name")}
-              className="text-muted-foreground hover:text-foreground text-[12px] transition-colors"
+              className="text-muted-foreground hover:text-foreground text-xs transition-colors"
             >
               ← Back
             </button>
-            <span className="text-[13px] font-semibold">Choose type</span>
+            <span className="text-sm font-semibold">Choose type</span>
           </div>
           <div className="p-2">
             {PROP_TYPES.map(({ type, label, Icon }) => (
               <button
                 key={type}
                 onClick={() => { setSelType(type); submit(type); }}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] hover:bg-muted transition-colors ${selType === type ? "bg-muted font-medium" : ""}`}
+                className={`flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm hover:bg-muted transition-colors ${selType === type ? "bg-muted font-medium" : ""}`}
               >
                 <Icon size={14} className="shrink-0 text-muted-foreground" />
                 {label}
@@ -638,7 +638,7 @@ function InlineTitleInput({
         if (e.key === "Enter") commit();
         if (e.key === "Escape") onSave(entryId, initialTitle);
       }}
-      className="w-full bg-transparent text-[13px] font-medium text-foreground outline-none"
+      className="w-full bg-transparent text-sm font-medium text-foreground outline-none"
       placeholder="Untitled"
     />
   );
@@ -694,7 +694,7 @@ function CellContent({
       return <EditableCell value={pv?.phone} type="text" placeholder="Empty" onSave={(v) => onSave(v ? { phone: (v as { text: string }).text } : null)} />;
     }
     default:
-      return <span className="px-1 text-[12px] text-muted-foreground/40">—</span>;
+      return <span className="px-1 text-xs text-muted-foreground/40">—</span>;
   }
 }
 
@@ -777,7 +777,7 @@ export function TemplateTableView({
 
             {/* Title column */}
             <th className="py-2.5 pl-1 pr-4 text-left">
-              <span className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
             </th>
 
             {/* Property columns */}
@@ -796,7 +796,7 @@ export function TemplateTableView({
               <div className="relative">
                 <button
                   onClick={() => setShowAddProp((p) => !p)}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <PlusIcon size={12} weight="bold" /> Add property
                 </button>
@@ -849,7 +849,7 @@ export function TemplateTableView({
                       ) : (
                         <button
                           onClick={() => onClickEntry(entry.id)}
-                          className="w-full rounded px-0.5 text-left text-[13px] font-medium hover:bg-muted/40 transition-colors"
+                          className="w-full rounded px-0.5 text-left text-sm font-medium hover:bg-muted/40 transition-colors"
                         >
                           {entry.title
                             ? <span className="text-foreground">{entry.title}</span>
@@ -903,8 +903,8 @@ export function TemplateTableView({
             <tr>
               <td colSpan={visibleProps.length + 3} className="py-16 text-center">
                 <div className="space-y-1">
-                  <p className="text-[13px] font-medium text-muted-foreground">No entries yet</p>
-                  <p className="text-[12px] text-muted-foreground/50">Click &quot;+ New&quot; below to add your first row</p>
+                  <p className="text-sm font-medium text-muted-foreground">No entries yet</p>
+                  <p className="text-xs text-muted-foreground/50">Click &quot;+ New&quot; below to add your first row</p>
                 </div>
               </td>
             </tr>
@@ -912,14 +912,6 @@ export function TemplateTableView({
         </tbody>
       </table>
 
-      {/* New row button */}
-      <button
-        onClick={handleAdd}
-        className="flex w-full items-center gap-2 border-b border-border/20 px-[58px] py-2 text-[13px] text-muted-foreground hover:bg-muted/20 hover:text-foreground transition-colors"
-      >
-        <PlusIcon size={13} weight="bold" />
-        New
-      </button>
     </div>
   );
 }

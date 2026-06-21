@@ -64,18 +64,18 @@ export default async function PublicPage({ params }: Props) {
     .orderBy(blocks.orderIndex);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-page">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-gray-100 bg-white/95 px-6 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur-sm">
         <a
           href="/"
-          className="text-sm font-black tracking-tight text-gray-900 hover:opacity-70 transition-opacity"
+          className="text-sm font-black tracking-tight text-foreground hover:opacity-70 transition-opacity"
         >
           WORKFLIK
         </a>
         <a
           href="/auth/login"
-          className="rounded-lg bg-gray-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-gray-700 transition-colors"
+          className="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors"
         >
           Sign in to Workflik
         </a>
@@ -83,7 +83,7 @@ export default async function PublicPage({ params }: Props) {
 
       {/* Cover image */}
       {page.coverUrl && (
-        <div className="relative h-52 w-full overflow-hidden bg-gray-100 sm:h-64">
+        <div className="relative h-52 w-full overflow-hidden bg-muted sm:h-64">
           <img
             src={page.coverUrl}
             alt=""
@@ -102,7 +102,7 @@ export default async function PublicPage({ params }: Props) {
               {page.icon}
             </div>
           )}
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {page.title || "Untitled"}
           </h1>
         </div>
@@ -111,10 +111,10 @@ export default async function PublicPage({ params }: Props) {
         <PublicPageViewer blocks={pageBlocks as unknown as DbBlock[]} />
 
         {/* Footer */}
-        <div className="mt-16 border-t border-gray-100 pt-6 text-center">
-          <p className="text-xs text-gray-400">
+        <div className="mt-16 border-t border-border pt-6 text-center">
+          <p className="text-xs text-muted-foreground/60">
             Made with{" "}
-            <a href="/" className="font-semibold text-gray-600 hover:text-gray-900 transition-colors">
+            <a href="/" className="font-semibold text-muted-foreground hover:text-foreground transition-colors">
               Workflik
             </a>
           </p>
@@ -126,15 +126,15 @@ export default async function PublicPage({ params }: Props) {
 
 function NotPublicScreen() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-page px-4 text-center">
       <div className="mb-4 text-5xl">🔒</div>
-      <h1 className="text-xl font-semibold text-gray-900">This page is not publicly available</h1>
-      <p className="mt-2 max-w-sm text-sm text-gray-500">
+      <h1 className="text-xl font-semibold text-foreground">This page is not publicly available</h1>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
         The page you&apos;re looking for is either private or the public link has been disabled.
       </p>
       <a
         href="/auth/login"
-        className="mt-6 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
+        className="mt-6 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors"
       >
         Sign in to Workflik
       </a>

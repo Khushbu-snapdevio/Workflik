@@ -30,14 +30,16 @@ export default async function OrbitWorkspacesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 overflow-hidden rounded-[20px] bg-gradient-to-br from-[#059669] to-[#10b981] p-6 shadow-[0_4px_24px_rgba(5,150,105,0.22)]">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">Orbit Admin</p>
-        <h1 className="mt-1 text-[26px] font-black tracking-tight text-white">Workspaces</h1>
-        <p className="mt-1 text-[13px] text-white/70">All tenant workspaces — inspect members, force delete.</p>
-        <div className="mt-4 flex gap-4">
-          <div>
-            <span className="text-[22px] font-black text-white">{allWorkspaces.length}</span>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/60">Total</p>
+      <div className="mb-8 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card shadow-[var(--shadow-card)]">
+        <div className="h-[3px] bg-gradient-to-r from-primary to-sky-400/50" />
+        <div className="p-6">
+          <h1 className="text-[26px] font-black tracking-tight text-foreground">Workspaces</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">All tenant workspaces — inspect members, force delete.</p>
+          <div className="mt-4 flex gap-4">
+            <div>
+              <span className="text-[22px] font-black text-primary">{allWorkspaces.length}</span>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Total</p>
+            </div>
           </div>
         </div>
       </div>
@@ -49,25 +51,25 @@ export default async function OrbitWorkspacesPage() {
           const letter = (ws.icon && ws.icon.length <= 2 ? ws.icon : ws.name?.slice(0, 1) ?? "W").toUpperCase();
           return (
             <Link key={ws.id} href={`/Orbit-admin/orbit/workspaces/${ws.id}`}
-              className="group flex flex-col gap-3 overflow-hidden rounded-[16px] border border-black/[0.07] bg-white p-5 shadow-[0_1px_4px_rgba(0,0,0,0.05)] transition hover:shadow-[0_3px_12px_rgba(0,0,0,0.09)]">
+              className="group flex flex-col gap-3 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card p-5 shadow-[var(--shadow-card)] transition hover:shadow-[var(--shadow-raised)]">
               <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#059669] to-[#34d399] text-[15px] font-black text-white shadow-sm">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-[#0284C7] to-[#38bdf8] text-[15px] font-black text-white shadow-[var(--shadow-card)]">
                   {letter}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13.5px] font-bold text-[#1c1917] group-hover:text-[#059669]">{ws.name}</p>
-                  <p className="truncate text-[11px] text-[#a8a29e]">/{ws.slug}</p>
+                  <p className="truncate text-[13.5px] font-bold text-foreground group-hover:text-muted-foreground">{ws.name}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">/{ws.slug}</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between border-t border-black/[0.05] pt-3">
-                <div className="flex items-center gap-1 text-[11px] text-[#787774]">
+              <div className="flex items-center justify-between border-t border-border/40 pt-3">
+                <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3">
                     <circle cx="4.5" cy="4" r="2"/><path d="M1 10c0-2 1.7-3.5 3.5-3.5S8 8 8 10"/>
                     <path d="M8 2.5a2 2 0 010 4M10.5 8.5c1 .4 1.5 1.1 1.5 2"/>
                   </svg>
                   <span className="font-semibold">{memberCount}</span> member{memberCount !== 1 ? "s" : ""}
                 </div>
-                <span className="text-[10.5px] text-[#c4c1bb]">{ago(ws.createdAt)}</span>
+                <span className="text-[10.5px] text-muted-foreground/60">{ago(ws.createdAt)}</span>
               </div>
             </Link>
           );
@@ -76,12 +78,12 @@ export default async function OrbitWorkspacesPage() {
 
       {allWorkspaces.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24">
-          <div className="mb-4 flex size-14 items-center justify-center rounded-[14px] bg-[#f5f4f2]">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
             <svg viewBox="0 0 20 20" fill="none" stroke="#c4c1bb" strokeWidth="1.5" className="size-7">
               <path d="M3 7h14M3 13h14M7 2v16M13 2v16" strokeLinecap="round"/>
             </svg>
           </div>
-          <p className="text-[14px] font-semibold text-[#a8a29e]">No workspaces yet</p>
+          <p className="text-[14px] font-semibold text-muted-foreground">No workspaces yet</p>
         </div>
       )}
     </div>

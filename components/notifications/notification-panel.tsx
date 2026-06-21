@@ -27,13 +27,12 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   const router = useRouter();
   const { panelOpen, closePanel, markRead, markAllRead, refreshCount } = useNotifications();
 
-  const [filter, setFilter]         = useState<FilterKey>("all");
-  const [items, setItems]           = useState<NotificationItem[]>([]);
-  const [loading, setLoading]       = useState(false);
-  const [seeding, setSeeding]       = useState(false);
-  const [mounted, setMounted]       = useState(false);
+  const [filter, setFilter]   = useState<FilterKey>("all");
+  const [items, setItems]     = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Animation states: shouldRender keeps panel in DOM during exit, animIn drives CSS
   const [shouldRender, setShouldRender] = useState(false);
   const [animIn, setAnimIn]             = useState(false);
 
@@ -82,19 +81,15 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
   function handleClick(notification: NotificationItem) {
     if (notification.pageShortId) {
-      // Has a page → navigate there and close the panel
       closePanel();
       router.push(`/app/${workspaceSlug}/${notification.pageShortId}`);
     }
-    // No page (workspace_invite, etc.) → just mark read, keep panel open
   }
 
   async function handleSeedTest() {
     setSeeding(true);
     try {
-      await fetch(`/api/notifications/test?workspaceId=${encodeURIComponent(workspaceId)}`, {
-        method: "POST",
-      });
+      await fetch(`/api/notifications/test?workspaceId=${encodeURIComponent(workspaceId)}`, { method: "POST" });
       fetchNotifications();
       refreshCount();
     } catch { /* no-op */ }
@@ -104,9 +99,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   async function handleClearTest() {
     setSeeding(true);
     try {
-      await fetch(`/api/notifications/test?workspaceId=${encodeURIComponent(workspaceId)}`, {
-        method: "DELETE",
-      });
+      await fetch(`/api/notifications/test?workspaceId=${encodeURIComponent(workspaceId)}`, { method: "DELETE" });
       setItems([]);
       refreshCount();
     } catch { /* no-op */ }
@@ -119,117 +112,126 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
   return createPortal(
     <>
-      {/* Invisible click-outside backdrop */}
+      {/* Backdrop */}
       <div
         className="fixed inset-0"
-        style={{
-          zIndex:        190,
-          pointerEvents: animIn ? "auto" : "none",
-        }}
+        style={{ zIndex: 190, pointerEvents: animIn ? "auto" : "none" }}
         onClick={closePanel}
       />
 
       {/* Panel */}
       <div
-        className="fixed top-0 right-0 h-full flex flex-col"
+        className="fixed top-0 right-0 flex h-full flex-col"
         style={{
-          width:      480,
+          width:      460,
           zIndex:     191,
-          background: "#ffffff",
-          boxShadow:  "-8px 0 32px rgba(0,0,0,0.10), -1px 0 0 #e8e8e5",
-          transform:  animIn ? "translateX(0)" : "translateX(24px)",
+          background: "var(--card)",
+          boxShadow:  "-8px 0 40px rgba(15,23,42,0.10), -1px 0 0 var(--border)",
+          transform:  animIn ? "translateX(0)" : "translateX(20px)",
           opacity:    animIn ? 1 : 0,
           transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease",
         }}
       >
         {/* ── Header ── */}
-        <div
-          className="flex items-center justify-between shrink-0 px-5"
-          style={{ height: 52, borderBottom: "1px solid #f0f0ee" }}
-        >
-          <span className="text-[15px] font-semibold text-[#1a1a1a] tracking-tight">
-            Inbox
-          </span>
+        <div className="shrink-0 border-b border-border bg-gradient-to-r from-sky-50/50 to-transparent px-5 py-3.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10">
+                  <svg className="size-[15px] text-primary" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+                  </svg>
+                </div>
+                {unread > 0 && (
+                  <span className="absolute -top-1 -right-1 flex size-[16px] items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white leading-none">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="text-[14px] font-bold text-foreground tracking-tight leading-none">Inbox</p>
+                <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+                  {unread > 0 ? `${unread} unread notification${unread !== 1 ? "s" : ""}` : "You're all caught up"}
+                </p>
+              </div>
+            </div>
 
-          <div className="flex items-center gap-0.5">
-            {unread > 0 && (
+            <div className="flex items-center gap-1">
+              {unread > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllRead}
+                  className="rounded-[var(--radius-sm)] px-2.5 py-1 text-[11.5px] font-medium text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
+                >
+                  Mark all read
+                </button>
+              )}
+              <a
+                href={`/app/${workspaceSlug}/settings/notifications`}
+                title="Notification settings"
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <GearIcon size={14} />
+              </a>
               <button
                 type="button"
-                onClick={handleMarkAllRead}
-                className="mr-1 rounded-md px-2.5 py-1 text-[12px] font-medium text-[#9b9b9b] hover:bg-[#f1f1ef] hover:text-[#37352f] transition-colors"
+                onClick={closePanel}
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-muted hover:text-foreground"
               >
-                Mark all read
+                <XIcon size={14} weight="bold" />
               </button>
-            )}
-            <a
-              href={`/app/${workspaceSlug}/settings/notifications`}
-              title="Notification settings"
-              className="flex size-7 items-center justify-center rounded-md text-[#b0b0ab] hover:bg-[#f1f1ef] hover:text-[#37352f] transition-colors"
-            >
-              <GearIcon size={15} />
-            </a>
-            <button
-              type="button"
-              onClick={closePanel}
-              className="flex size-7 items-center justify-center rounded-md text-[#b0b0ab] hover:bg-[#f1f1ef] hover:text-[#37352f] transition-colors"
-            >
-              <XIcon size={15} weight="bold" />
-            </button>
+            </div>
           </div>
         </div>
 
-        {/* ── Filter tabs ── */}
-        <div
-          className="flex items-center gap-0.5 shrink-0 px-3"
-          style={{ height: 44, borderBottom: "1px solid #f0f0ee" }}
-        >
-          {FILTERS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={`relative rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors ${
-                filter === key
-                  ? "bg-[#f0f0ee] text-[#1a1a1a]"
-                  : "text-[#9b9b9b] hover:bg-[#f7f7f5] hover:text-[#37352f]"
-              }`}
-            >
-              {label}
-              {key === "all" && unread > 0 && (
-                <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-bold text-white leading-none">
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* ── Filter tabs — segmented control ── */}
+        <div className="shrink-0 border-b border-border px-4 py-2.5">
+          <div className="flex items-center gap-0.5 rounded-[var(--radius-sm)] bg-muted/60 p-0.5">
+            {FILTERS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                className={`relative flex-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-[11.5px] font-medium transition-all ${
+                  filter === key
+                    ? "bg-card text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08),0_0_0_1px_var(--border)]"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+                {key === "all" && unread > 0 && (
+                  <span className="ml-1 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-white leading-none">
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* ── DEV test bar ── */}
+        {/* ── DEV bar ── */}
         {IS_DEV && (
-          <div
-            className="flex items-center justify-between shrink-0 px-4 py-2"
-            style={{ background: "#fffbeb", borderBottom: "1px solid #fde68a" }}
-          >
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-amber-700">
-              <FlaskIcon size={12} />
+          <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-4 py-1.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/60">
+              <FlaskIcon size={11} />
               Dev only
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 disabled={seeding}
                 onClick={handleSeedTest}
-                className="rounded-md bg-amber-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                className="rounded-[var(--radius-sm)] bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white disabled:opacity-40"
               >
-                {seeding ? "…" : "Seed notifications"}
+                {seeding ? "…" : "Seed"}
               </button>
               <button
                 type="button"
                 disabled={seeding}
                 onClick={handleClearTest}
-                className="rounded-md border border-amber-300 px-2.5 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50 transition-colors"
+                className="rounded-[var(--radius-sm)] border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
               >
-                Clear all
+                Clear
               </button>
             </div>
           </div>
@@ -238,21 +240,11 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
         {/* ── Content ── */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {loading ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="flex gap-1.5">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="size-1.5 rounded-full bg-[#d4d4d0] animate-bounce"
-                    style={{ animationDelay: `${i * 0.12}s` }}
-                  />
-                ))}
-              </div>
-            </div>
+            <LoadingSkeleton />
           ) : items.length === 0 ? (
             <EmptyState filter={filter} onSeed={handleSeedTest} seeding={seeding} />
           ) : (
-            <div className="divide-y divide-[#f5f5f3]">
+            <div className="divide-y divide-border/50">
               {items.map((n) => (
                 <NotificationCard
                   key={n.id}
@@ -271,6 +263,22 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   );
 }
 
+function LoadingSkeleton() {
+  return (
+    <div className="divide-y divide-border/50">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="flex gap-3 px-4 py-3.5">
+          <div className="size-9 shrink-0 animate-pulse rounded-full bg-muted/60" />
+          <div className="flex-1 space-y-2 pt-0.5">
+            <div className="h-3 w-3/4 animate-pulse rounded bg-muted/60" style={{ animationDelay: `${i * 0.06}s` }} />
+            <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted/40" style={{ animationDelay: `${i * 0.06 + 0.05}s` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function EmptyState({
   filter,
   onSeed,
@@ -281,29 +289,24 @@ function EmptyState({
   seeding: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-8 gap-5">
-      <div className="relative flex size-20 items-center justify-center rounded-2xl bg-[#f7f7f5] border border-[#ebebea]">
-        <svg viewBox="0 0 48 48" fill="none" className="size-11">
-          <rect x="6" y="12" width="36" height="26" rx="4" fill="#eaeae7" />
-          <rect x="6" y="12" width="36" height="10" rx="4" fill="#d9d9d5" />
-          <path d="M16 28h16M16 34h10" stroke="#b0b0ab" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="35" cy="14" r="7" fill="#22c55e" />
-          <path d="M32 14l2 2 3-3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="flex flex-col items-center justify-center gap-5 px-8 py-20">
+      <div className="relative flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 ring-1 ring-primary/20">
+        <svg className="size-8 text-primary/60" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
         </svg>
+        <span className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">✓</span>
       </div>
       <div className="text-center">
-        <p className="text-[14px] font-semibold text-[#37352f]">All caught up</p>
-        <p className="mt-1 text-[13px] text-[#9b9b9b]">
-          {filter === "all"
-            ? "No notifications yet"
-            : `No ${filter} notifications`}
+        <p className="text-[14px] font-bold text-foreground">All caught up</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          {filter === "all" ? "No notifications yet" : `No ${filter} notifications`}
         </p>
         {process.env.NODE_ENV !== "production" && (
           <button
             type="button"
             onClick={onSeed}
             disabled={seeding}
-            className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-1.5 text-[12px] font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-colors"
+            className="mt-4 rounded-[var(--radius-sm)] border border-border bg-card px-4 py-1.5 text-[11.5px] font-medium text-muted-foreground shadow-[var(--shadow-card)] transition-colors hover:border-primary/30 hover:bg-primary/[0.03] hover:text-primary disabled:opacity-50"
           >
             {seeding ? "Seeding…" : "Seed test notifications"}
           </button>

@@ -207,7 +207,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
       {menuOpen && (
         <div
           ref={dropdownRef}
-          className="absolute left-6 top-0 w-44 overflow-hidden rounded-lg border border-border bg-popover shadow-xl"
+          className="absolute left-6 top-0 w-44 overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover shadow-[var(--shadow-raised)]"
           style={{ zIndex: 9999 }}
         >
           <div className="py-1">

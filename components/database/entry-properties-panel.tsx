@@ -88,14 +88,14 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
           return (
             <div
               key={prop.id}
-              className="group/row flex min-h-[32px] items-start gap-2 rounded-lg px-1 py-0.5 hover:bg-muted/50"
+              className="group/row flex min-h-[32px] items-start gap-2 rounded-[var(--radius-sm)] px-1 py-0.5 hover:bg-muted/50"
             >
               {/* Label column */}
               <div className="flex w-[180px] shrink-0 items-center gap-2 pt-1">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-[11px] font-semibold text-muted-foreground">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-xs font-semibold text-muted-foreground">
                   {reg?.icon ?? "·"}
                 </span>
-                <span className="truncate text-[13px] text-muted-foreground">
+                <span className="truncate text-sm text-muted-foreground">
                   {prop.name}
                 </span>
               </div>
@@ -140,7 +140,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                         if (e.key === "Enter") { e.preventDefault(); inputRef.current?.blur(); }
                         if (e.key === "Escape") { setEditingId(null); }
                       }}
-                      className="w-full rounded border-none bg-transparent text-[13px] text-foreground outline-none ring-0 focus:outline-none"
+                      className="w-full rounded border-none bg-transparent text-sm text-foreground outline-none ring-0 focus:outline-none"
                       autoFocus
                     />
                   ) : (
@@ -160,7 +160,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                     >
                       {val && <CellDisplay property={prop} value={val} />}
                       {!val && (
-                        <span className="text-[13px] text-muted-foreground/40 opacity-0 transition-opacity group-hover/row:opacity-100">
+                        <span className="text-sm text-muted-foreground/40 opacity-0 transition-opacity group-hover/row:opacity-100">
                           Empty
                         </span>
                       )}
@@ -181,7 +181,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                   >
                     {val && <CellDisplay property={prop} value={val} />}
                     {!val && (
-                      <span className="text-[13px] text-muted-foreground/40 opacity-0 transition-opacity group-hover/row:opacity-100">
+                      <span className="text-sm text-muted-foreground/40 opacity-0 transition-opacity group-hover/row:opacity-100">
                         Empty
                       </span>
                     )}

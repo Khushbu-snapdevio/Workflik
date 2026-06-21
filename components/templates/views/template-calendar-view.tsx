@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CaretLeftIcon, CaretRightIcon, PlusIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
@@ -11,6 +12,8 @@ const MONTH_NAMES = [
 ];
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
+const SHOW_MAX = 2;
+
 type DateVal = { date?: string };
 
 interface Props {
@@ -18,20 +21,25 @@ interface Props {
   properties:    DatabaseProperty[];
   activeView:    DatabaseView;
   entryValueMap: Map<string, Map<string, unknown>>;
+  year:          number;
+  month:         number;
+  onYearChange:  (y: number) => void;
+  onMonthChange: (m: number) => void;
   onAddEntry:    (defaultValues?: Record<string, unknown>) => void;
   onDeleteEntry: (entryId: string) => void;
   onClickEntry:  (entryId: string) => void;
 }
 
 export function TemplateCalendarView({
-  entries, properties, activeView, entryValueMap, onAddEntry, onDeleteEntry, onClickEntry,
+  entries, properties, activeView, entryValueMap,
+  year, month, onYearChange, onMonthChange,
+  onAddEntry, onDeleteEntry, onClickEntry,
 }: Props) {
   const today = new Date();
-  const [year,      setYear]      = useState(today.getFullYear());
-  const [month,     setMonth]     = useState(today.getMonth());
-  const [expandDay, setExpandDay] = useState<string | null>(null);
 
-  const calProp = properties.find((p) => p.id === activeView.calendarPropertyId);
+  // Fall back to first date property if the view doesn't have one pinned yet
+  const calProp = properties.find((p) => p.id === activeView.calendarPropertyId)
+    ?? properties.find((p) => p.type === "date");
 
   function pad(n: number) { return String(n).padStart(2, "0"); }
   function dateKey(y: number, m: number, d: number) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
@@ -43,11 +51,10 @@ export function TemplateCalendarView({
     const valMap = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
     const raw    = calProp ? valMap.get(calProp.id) : undefined;
     if (raw && typeof raw === "object") {
-      const dv   = raw as DateVal;
-      const date = dv.date;
-      if (date) {
-        if (!dateMap.has(date)) dateMap.set(date, []);
-        dateMap.get(date)!.push(entry);
+      const dv = raw as DateVal;
+      if (dv.date) {
+        if (!dateMap.has(dv.date)) dateMap.set(dv.date, []);
+        dateMap.get(dv.date)!.push(entry);
       }
     }
   }
@@ -62,21 +69,35 @@ export function TemplateCalendarView({
   while (cells.length % 7 !== 0) cells.push(null);
 
   function goPrev() {
-    if (month === 0) { setMonth(11); setYear((y) => y - 1); }
-    else setMonth((m) => m - 1);
+    if (month === 0) { onMonthChange(11); onYearChange(year - 1); }
+    else onMonthChange(month - 1);
   }
   function goNext() {
-    if (month === 11) { setMonth(0); setYear((y) => y + 1); }
-    else setMonth((m) => m + 1);
+    if (month === 11) { onMonthChange(0); onYearChange(year + 1); }
+    else onMonthChange(month + 1);
   }
-  function goToday() { setYear(today.getFullYear()); setMonth(today.getMonth()); }
+  function goToday() { onYearChange(today.getFullYear()); onMonthChange(today.getMonth()); }
 
   function handleAddOnDate(day: number) {
     if (!calProp) { onAddEntry(); return; }
     onAddEntry({ [calProp.id]: { date: dateKey(year, month, day) } });
   }
 
-  const SHOW_MAX = 3;
+  // ── Hover-popup for "+N more" ──────────────────────────────────────────────
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [morePopup, setMorePopup] = useState<{ key: string; x: number; y: number } | null>(null);
+
+  function openPopup(key: string, e: React.MouseEvent<HTMLButtonElement>) {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setMorePopup({ key, x: e.clientX, y: e.clientY });
+  }
+  function scheduleClose() {
+    hoverTimer.current = setTimeout(() => setMorePopup(null), 150);
+  }
+  function cancelClose() {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+  }
+
   const rows = cells.length / 7;
 
   return (
@@ -87,21 +108,14 @@ export function TemplateCalendarView({
           {MONTH_NAMES[month]} {year}
         </h2>
         <div className="flex items-center gap-1">
-          <button onClick={goPrev} className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          <button onClick={goPrev} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
             <CaretLeftIcon size={14} />
           </button>
-          <button onClick={goToday} className="rounded-md px-3 py-1 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          <button onClick={goToday} className="rounded-[var(--radius-sm)] px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
             Today
           </button>
-          <button onClick={goNext} className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+          <button onClick={goNext} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
             <CaretRightIcon size={14} />
-          </button>
-          <button
-            onClick={() => onAddEntry()}
-            className="ml-3 flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            <PlusIcon size={12} weight="bold" />
-            New
           </button>
         </div>
       </div>
@@ -109,7 +123,7 @@ export function TemplateCalendarView({
       {/* ── Day-of-week headers ───────────────────────────────────────────────── */}
       <div className="grid shrink-0 grid-cols-7 border-b border-border/40 bg-muted/20">
         {DAY_NAMES.map((d) => (
-          <div key={d} className="py-2 text-center text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
             {d.slice(0, 3)}
           </div>
         ))}
@@ -137,19 +151,18 @@ export function TemplateCalendarView({
             <div
               key={i}
               className={[
-                "group relative flex flex-col overflow-hidden p-1.5 transition-colors",
-                day === null ? "bg-muted/10" : "bg-background hover:bg-accent/20 cursor-pointer",
+                "group relative flex flex-col p-1.5 transition-colors",
+                day === null ? "bg-muted/10" : "bg-background hover:bg-accent/20",
                 !isLastRow ? "border-b border-border/30" : "",
                 !isLastCol ? "border-r border-border/30" : "",
               ].join(" ")}
-              onClick={() => day !== null && handleAddOnDate(day)}
             >
               {day !== null && (
                 <>
                   {/* Day number row */}
                   <div className="mb-1 flex items-center justify-between">
                     <span className={[
-                      "flex size-[22px] items-center justify-center rounded-full text-[12px] font-medium leading-none",
+                      "flex size-[22px] items-center justify-center rounded-full text-xs font-medium leading-none",
                       isToday ? "bg-primary text-primary-foreground font-bold" : "text-foreground/70",
                     ].join(" ")}>
                       {day}
@@ -167,23 +180,26 @@ export function TemplateCalendarView({
                     {shown.map((e) => (
                       <div
                         key={e.id}
-                        className="group/event flex items-center gap-1 rounded-[5px] bg-primary/10 px-1.5 py-[3px] text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+                        className="group/event flex items-center gap-1 rounded-[5px] bg-primary/10 px-1.5 py-[3px] text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
                         onClick={(ev) => { ev.stopPropagation(); onClickEntry(e.id); }}
                       >
                         <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
                         <span className="flex-1 truncate">{e.title || "Untitled"}</span>
                         <button
                           onClick={(ev) => { ev.stopPropagation(); onDeleteEntry(e.id); }}
-                          className="hidden shrink-0 size-3.5 items-center justify-center rounded hover:bg-destructive/20 hover:text-destructive group-hover/event:flex transition-colors"
+                          className="flex shrink-0 size-3.5 items-center justify-center rounded opacity-0 group-hover/event:opacity-100 hover:bg-destructive/20 hover:text-destructive transition-all"
                         >
                           <XIcon size={8} weight="bold" />
                         </button>
                       </div>
                     ))}
+
+                    {/* "+N more" hover trigger */}
                     {extra > 0 && (
                       <button
-                        onClick={(ev) => { ev.stopPropagation(); setExpandDay(key); }}
-                        className="px-1.5 py-0.5 text-left text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        onMouseEnter={(e) => openPopup(key!, e)}
+                        onMouseLeave={scheduleClose}
+                        className="px-1.5 py-0.5 text-left text-[10px] font-medium text-primary/70 hover:text-primary transition-colors"
                       >
                         +{extra} more
                       </button>
@@ -196,47 +212,66 @@ export function TemplateCalendarView({
         })}
       </div>
 
-      {/* ── Expand-day modal ──────────────────────────────────────────────────── */}
-      {expandDay && (() => {
-        const dayEvents = dateMap.get(expandDay) ?? [];
-        const [y, m, d] = expandDay.split("-").map(Number);
-        const label = `${DAY_NAMES[new Date(y, m - 1, d).getDay()]}, ${MONTH_NAMES[m - 1]} ${d}`;
-        return (
-          <>
-            <div className="fixed inset-0 z-[590] bg-black/20 backdrop-blur-[2px]" onClick={() => setExpandDay(null)} />
-            <div className="fixed left-1/2 top-1/2 z-[600] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-popover shadow-2xl">
-              <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-                <span className="text-[13px] font-semibold text-foreground">{label}</span>
-                <button onClick={() => setExpandDay(null)} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
+      {/* ── Hover popup (portal — escapes overflow-hidden grid) ───────────────── */}
+      {morePopup && typeof window !== "undefined" && createPortal(
+        (() => {
+          const POPUP_W = 220;
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+
+          // If cursor is in the bottom 38% of the viewport, anchor from bottom
+          // so the popup grows upward — no height estimate needed.
+          const showAbove = morePopup.y > vh * 0.62;
+          const left = Math.min(morePopup.x + 4, vw - POPUP_W - 8);
+
+          const posStyle: React.CSSProperties = showAbove
+            ? { position: "fixed", bottom: vh - morePopup.y + 8, left, zIndex: 9999, width: POPUP_W }
+            : { position: "fixed", top: morePopup.y + 16,        left, zIndex: 9999, width: POPUP_W };
+
+          return (
+            <div style={posStyle}
+              onMouseEnter={cancelClose}
+              onMouseLeave={scheduleClose}
+              className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-float)]"
+            >
+              {/* Date label */}
+              <div className="border-b border-border/40 px-3 py-2">
+                {(() => {
+                  const [ey, em, ed] = morePopup.key.split("-").map(Number);
+                  return (
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {MONTH_NAMES[em - 1]} {ed}, {ey}
+                    </span>
+                  );
+                })()}
               </div>
-              <div className="max-h-[320px] overflow-y-auto p-2 space-y-0.5">
-                {dayEvents.map((e) => (
-                  <div key={e.id} className="group/de flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-muted transition-colors cursor-pointer"
-                    onClick={() => { onClickEntry(e.id); setExpandDay(null); }}>
-                    <span className="size-2 shrink-0 rounded-full bg-primary/60" />
-                    <span className="flex-1 truncate text-[13px] font-medium text-foreground">{e.title || "Untitled"}</span>
+
+              {/* All entries for this date */}
+              <div className="max-h-[220px] overflow-y-auto p-1">
+                {(dateMap.get(morePopup.key) ?? []).map((e) => (
+                  <div
+                    key={e.id}
+                    className="group/pe flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-muted transition-colors cursor-pointer"
+                    onClick={() => { onClickEntry(e.id); setMorePopup(null); }}
+                  >
+                    <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
+                    <span className="flex-1 truncate text-[13px] font-medium text-foreground">
+                      {e.title || "Untitled"}
+                    </span>
                     <button
-                      onClick={(ev) => { ev.stopPropagation(); onDeleteEntry(e.id); setExpandDay(null); }}
-                      className="hidden size-5 shrink-0 items-center justify-center rounded hover:bg-destructive/10 hover:text-destructive group-hover/de:flex transition-colors"
+                      onClick={(ev) => { ev.stopPropagation(); onDeleteEntry(e.id); setMorePopup(null); }}
+                      className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
                     >
                       <TrashIcon size={11} />
                     </button>
                   </div>
                 ))}
               </div>
-              <div className="border-t border-border/40 p-3">
-                <button
-                  onClick={() => { handleAddOnDate(d); setExpandDay(null); }}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <PlusIcon size={12} weight="bold" />
-                  Add entry on this day
-                </button>
-              </div>
             </div>
-          </>
-        );
-      })()}
+          );
+        })(),
+        document.body
+      )}
     </div>
   );
 }

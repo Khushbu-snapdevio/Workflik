@@ -65,7 +65,7 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
           left: pos.left,
           zIndex: 400,
         }}
-        className="w-[240px] rounded-xl border border-border bg-popover shadow-xl overflow-hidden py-1"
+        className="w-[240px] rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-raised)] overflow-hidden py-1"
       >
         {people.length > 0 && (
           <Section label="People">
@@ -140,7 +140,7 @@ function MentionRow({
   return (
     <button
       type="button"
-      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-left transition-colors ${
+      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left transition-colors ${
         isSelected ? "bg-accent" : "hover:bg-accent/50"
       }`}
       onClick={onClick}
@@ -164,7 +164,7 @@ function MentionRow({
       )}
       {item.mentionType === "date" && (
         <>
-          <span className="w-5 text-center text-violet-500">📅</span>
+          <span className="w-5 text-center text-muted-foreground">📅</span>
           <span className="text-foreground">{item.label}</span>
         </>
       )}
@@ -183,7 +183,7 @@ function UserAvatar({ name, image }: { name: string; image?: string }) {
     );
   }
   return (
-    <div className="h-5 w-5 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-semibold text-white flex-shrink-0 select-none">
+    <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-semibold text-white flex-shrink-0 select-none">
       {name[0]?.toUpperCase()}
     </div>
   );

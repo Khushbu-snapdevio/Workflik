@@ -19,7 +19,7 @@ const OPTION_STYLES: Record<string, ColStyle> = {
   purple:     { header: "bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-900/40", dot: "bg-purple-500", badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400" },
   pink:       { header: "bg-pink-50 border-pink-200 dark:bg-pink-950/30 dark:border-pink-900/40",     dot: "bg-pink-500",   badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400"       },
   brown:      { header: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/40", dot: "bg-amber-600",  badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400"   },
-  light_gray: { header: "bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-800",        dot: "bg-gray-400",   badge: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"          },
+  light_gray: { header: "bg-gray-50 border-border dark:bg-gray-900/20 dark:border-gray-800",        dot: "bg-gray-400",   badge: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"          },
   gray:       { header: "bg-gray-100 border-gray-300 dark:bg-gray-800/30 dark:border-gray-700",       dot: "bg-gray-500",   badge: "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"          },
 };
 
@@ -67,7 +67,7 @@ function InlineCardInput({
   useEffect(() => { ref.current?.focus(); }, []);
 
   return (
-    <div className="rounded-lg border border-primary/50 bg-background p-3 shadow-sm">
+    <div className="rounded-[var(--radius-sm)] border border-primary/50 bg-background p-3 shadow-[var(--shadow-card)]">
       <textarea
         ref={ref}
         value={val}
@@ -78,18 +78,18 @@ function InlineCardInput({
         }}
         placeholder="Card title…"
         rows={2}
-        className="w-full resize-none bg-transparent text-[13px] font-medium text-foreground outline-none placeholder:text-muted-foreground/50"
+        className="w-full resize-none bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50"
       />
       <div className="mt-2 flex items-center gap-2">
         <button
           onClick={() => onConfirm(val.trim())}
-          className="rounded-md bg-primary px-3 py-1 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="rounded-[var(--radius-sm)] bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors"
         >
           Add card
         </button>
         <button
           onClick={onCancel}
-          className="rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted transition-colors"
+          className="rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
         >
           Cancel
         </button>
@@ -152,7 +152,13 @@ export function TemplateBoardView({
     })),
     // Always show "No Status" column for unmatched entries
     { optionId: null, label: groupProp ? "No Status" : "All Items", color: "gray", entries: buckets.get(null)! },
-  ].filter((col) => col.entries.length > 0 || groupOptions.length > 0);
+  ].filter((col) => {
+    // Always show named option columns (valid targets for adding cards)
+    if (col.optionId !== null) return true;
+    // "No Status" / "All Items": show only when it has entries,
+    // or when there are no defined options (single-column fallback mode)
+    return col.entries.length > 0 || groupOptions.length === 0;
+  });
 
   async function handleAddCard(optionId: string | null, title: string) {
     setAddingTo(null);
@@ -175,13 +181,13 @@ export function TemplateBoardView({
         return (
           <div
             key={col.optionId ?? "none"}
-            className="flex w-[272px] flex-shrink-0 flex-col rounded-xl border border-border/40 bg-muted/10 overflow-hidden"
+            className="flex w-[272px] flex-shrink-0 flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden"
           >
             {/* Column header */}
             <div className={`flex items-center justify-between border-b px-3 py-2.5 ${style.header}`}>
               <div className="flex items-center gap-2">
                 <span className={`size-2 flex-shrink-0 rounded-full ${style.dot}`} />
-                <span className="text-[13px] font-semibold text-foreground">{col.label}</span>
+                <span className="text-sm font-semibold text-foreground">{col.label}</span>
                 <span className="flex min-w-[18px] items-center justify-center rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                   {col.entries.length}
                 </span>
@@ -202,10 +208,10 @@ export function TemplateBoardView({
                 return (
                   <div
                     key={entry.id}
-                    className="group relative rounded-lg border border-border/50 bg-background p-3 shadow-sm transition-all hover:border-border hover:shadow-md cursor-pointer"
+                    className="group relative rounded-[var(--radius-sm)] border border-border/50 bg-background p-3 shadow-[var(--shadow-card)] transition-all hover:border-border hover:-translate-y-0.5 hover:shadow-[var(--shadow-raised)] cursor-pointer"
                     onClick={() => onClickEntry(entry.id)}
                   >
-                    <p className="pr-5 text-[13px] font-medium leading-snug text-foreground">
+                    <p className="pr-5 text-sm font-medium leading-snug text-foreground">
                       {entry.title || <span className="text-muted-foreground/40">Untitled</span>}
                     </p>
 
@@ -275,14 +281,14 @@ export function TemplateBoardView({
               )}
 
               {col.entries.length === 0 && !isAddingHere && (
-                <p className="py-4 text-center text-[12px] text-muted-foreground/40">No items</p>
+                <p className="py-4 text-center text-xs text-muted-foreground/40">No items</p>
               )}
 
               {/* Add card button at bottom of column */}
               {!isAddingHere && (
                 <button
                   onClick={() => setAddingTo(col.optionId ?? "none")}
-                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-[12px] text-muted-foreground/50 hover:bg-muted/30 hover:text-muted-foreground transition-colors"
+                  className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground/50 hover:bg-muted/30 hover:text-muted-foreground transition-colors"
                 >
                   <PlusIcon size={12} weight="bold" />
                   Add card

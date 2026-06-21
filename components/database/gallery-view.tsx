@@ -92,17 +92,17 @@ export function GalleryView({
             <div key={group.id ?? "no-group"} className="mb-6">
               <div className="mb-3 flex items-center gap-2.5">
                 {group.id && color ? (
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${color.bg} ${color.text}`}>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold uppercase tracking-wide ${color.bg} ${color.text}`}>
                     <span className={`size-1.5 rounded-full ${color.dot}`} />
                     {group.label}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[12px] font-semibold text-muted-foreground/70">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/60">
                     <span className="size-1.5 rounded-full bg-muted-foreground/30" />
                     {group.label}
                   </span>
                 )}
-                <span className="text-[12px] text-muted-foreground/40">{group.entries.length}</span>
+                <span className="text-xs text-muted-foreground/40">{group.entries.length}</span>
                 <div className="h-px flex-1 bg-border/50" />
               </div>
               <div className={`grid gap-4 ${SIZE_GRID[cardSize]}`}>
@@ -111,13 +111,13 @@ export function GalleryView({
                   <button
                     onClick={() => onCreateEntry(group.id ? { [groupPropId!]: { optionId: group.id } } : {})}
                     className={[
-                      "flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/40",
-                      "text-muted-foreground/40 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
+                      "flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
+                      "text-muted-foreground/40 transition-colors hover:border-primary/30 hover:bg-primary/[0.03] hover:text-primary",
                       "h-24",
                     ].join(" ")}
                   >
                     <Plus size={16} />
-                    <span className="text-[11px] font-medium">New entry</span>
+                    <span className="text-xs font-medium">New entry</span>
                   </button>
                 )}
               </div>
@@ -138,13 +138,13 @@ export function GalleryView({
           <button
             onClick={() => onCreateEntry()}
             className={[
-              "flex flex-col items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-border/40",
-              "text-muted-foreground/40 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
+              "flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
+              "text-muted-foreground/40 transition-colors hover:border-primary/30 hover:bg-primary/[0.03] hover:text-primary",
               SIZE_COVER[cardSize],
             ].join(" ")}
           >
             <Plus size={20} />
-            <span className="text-[12px] font-medium">New entry</span>
+            <span className="text-xs font-medium">New entry</span>
           </button>
         )}
       </div>
@@ -181,13 +181,13 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
 
   if (confirming) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-red-200 bg-red-50/50 p-4 dark:border-red-900/40 dark:bg-red-950/20">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius-lg)] border border-red-200 bg-red-50/50 p-4 dark:border-red-900/40 dark:bg-red-950/20">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/40">
           <Trash size={16} className="text-red-600 dark:text-red-400" />
         </div>
         <div className="w-full text-center">
-          <p className="text-[13px] font-semibold text-foreground">Delete entry?</p>
-          <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+          <p className="text-sm font-semibold text-foreground">Delete entry?</p>
+          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
             <span className="font-medium">{entry.title || "Untitled"}</span> will be removed.
           </p>
         </div>
@@ -200,13 +200,13 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
               setDeleting(false);
               setConfirming(false);
             }}
-            className="w-full whitespace-nowrap rounded-xl bg-red-600 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+            className="w-full whitespace-nowrap rounded-[var(--radius-md)] bg-red-600 py-2 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
           >
             {deleting ? "Deleting…" : "Delete"}
           </button>
           <button
             onClick={() => setConfirming(false)}
-            className="w-full whitespace-nowrap rounded-xl border border-border py-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="w-full whitespace-nowrap rounded-[var(--radius-md)] border border-border py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Cancel
           </button>
@@ -218,14 +218,14 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
   const isSidePanel = entryOpenMode === "side_panel" && !!onOpenEntry;
 
   return (
-    <div className="group/card relative flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-sm transition-all hover:shadow-md hover:ring-1 hover:ring-border/60">
+    <div className="group/card relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-raised)]">
       {/* Action buttons — top-right, visible on hover */}
       <div className="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
         <Link
           href={`/app/${workspaceSlug}/${entry.shortId}`}
           onClick={(e) => e.stopPropagation()}
           title="Open full page"
-          className="flex size-7 items-center justify-center rounded-lg bg-background/80 text-foreground/60 shadow-sm backdrop-blur-sm transition-colors hover:bg-background hover:text-foreground"
+          className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-foreground/60 shadow-[var(--shadow-card)] backdrop-blur-sm transition-colors hover:bg-background hover:text-foreground"
         >
           <ArrowSquareOut size={13} />
         </Link>
@@ -233,7 +233,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
           <button
             onClick={() => setConfirming(true)}
             title="Delete entry"
-            className="flex size-7 items-center justify-center rounded-lg bg-background/80 text-foreground/60 shadow-sm backdrop-blur-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+            className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-foreground/60 shadow-[var(--shadow-card)] backdrop-blur-sm transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
           >
             <Trash size={13} />
           </button>
@@ -262,6 +262,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
               )}
             </div>
           )}
+          <div className="absolute inset-0 bg-black/0 transition-all group-hover/card:bg-black/10" />
         </button>
       ) : (
         <Link
@@ -284,11 +285,12 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
               )}
             </div>
           )}
+          <div className="absolute inset-0 bg-black/0 transition-all group-hover/card:bg-black/10" />
         </Link>
       )}
 
       {/* Content */}
-      <div className="flex flex-1 flex-col gap-2 p-3">
+      <div className="flex flex-1 flex-col px-3.5 pt-3 pb-3.5">
         {isSidePanel ? (
           <button onClick={() => onOpenEntry!(entry)} className="text-left">
             <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground transition-colors hover:text-primary">
@@ -304,7 +306,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
         )}
 
         {filledProps.length > 0 && (
-          <div className="flex flex-col gap-1">
+          <div className="mt-1.5 space-y-0.5">
             {filledProps.map((prop) => {
               const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
               return (

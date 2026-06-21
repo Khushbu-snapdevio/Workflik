@@ -92,7 +92,7 @@ export function PageHeader({
           type="button"
           disabled={!editable}
           onClick={() => editable && setShowEmojiPicker(true)}
-          className="mb-3 flex size-[52px] items-center justify-center rounded-2xl text-[2rem] leading-none transition-colors hover:bg-accent disabled:cursor-default"
+          className="mb-3 flex size-[52px] items-center justify-center rounded-[var(--radius-lg)] text-[2rem] leading-none transition-colors hover:bg-accent disabled:cursor-default"
           aria-label="Change icon"
         >
           {icon}
@@ -102,7 +102,7 @@ export function PageHeader({
           <button
             type="button"
             onClick={() => setShowEmojiPicker(true)}
-            className="mb-3 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground/40 opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-muted-foreground"
+            className="mb-3 flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground/40 opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-muted-foreground"
           >
             <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/>
@@ -139,7 +139,7 @@ export function PageHeader({
 
       {/* Saving indicator */}
       {saving && (
-        <span className="absolute -top-6 right-0 text-[11px] text-muted-foreground/40 animate-pulse">
+        <span className="absolute -top-6 right-0 text-xs text-muted-foreground/40 animate-pulse">
           Saving…
         </span>
       )}

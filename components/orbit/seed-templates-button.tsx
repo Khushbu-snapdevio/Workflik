@@ -30,7 +30,7 @@ export function SeedTemplatesButton({ currentCount }: { currentCount: number }) 
           type="button"
           onClick={() => seed(true)}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50 dark:border-orange-900/40 dark:bg-orange-950/20 dark:text-orange-400"
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50 dark:border-orange-900/40 dark:bg-orange-950/20 dark:text-orange-400"
         >
           {loading ? "Resetting…" : done ? "✓ Done" : "↺ Reset & Re-seed"}
         </button>
@@ -43,7 +43,7 @@ export function SeedTemplatesButton({ currentCount }: { currentCount: number }) 
       type="button"
       onClick={() => seed(false)}
       disabled={loading || done}
-      className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
     >
       {loading ? "Seeding…" : done ? "✓ Done" : "⚡ Seed 16 default templates"}
     </button>

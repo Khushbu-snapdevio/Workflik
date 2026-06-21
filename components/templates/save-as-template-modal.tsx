@@ -63,19 +63,19 @@ export function SaveAsTemplateModal({
     <div className="fixed inset-0 z-[400] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
 
-      <div className="relative w-[440px] rounded-2xl border border-border bg-background p-6 shadow-2xl">
+      <div className="relative w-[440px] rounded-[var(--radius-lg)] border border-border bg-background p-6 shadow-[var(--shadow-float)]">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-bold text-foreground">Save as Template</h2>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Saved templates are available to all workspace members
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <XIcon size={14} />
           </button>
@@ -87,7 +87,7 @@ export function SaveAsTemplateModal({
               <CheckCircleIcon size={24} weight="fill" className="text-emerald-600" />
             </div>
             <p className="text-sm font-semibold text-foreground">Template saved!</p>
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               <span className="font-medium">{name}</span> is now available in the template gallery
             </p>
           </div>
@@ -95,7 +95,7 @@ export function SaveAsTemplateModal({
           <>
             {/* Name */}
             <div className="mb-4">
-              <label className="mb-1.5 block text-[12px] font-semibold text-foreground">
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">
                 Template name <span className="text-red-500">*</span>
               </label>
               <input
@@ -105,13 +105,13 @@ export function SaveAsTemplateModal({
                 placeholder="e.g. Sprint Planning"
                 // biome-ignore lint/a11y/noAutofocus: intentional — modal just opened
                 autoFocus
-                className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             {/* Description */}
             <div className="mb-4">
-              <label className="mb-1.5 block text-[12px] font-semibold text-foreground">
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">
                 Description <span className="text-muted-foreground font-normal">(optional)</span>
               </label>
               <textarea
@@ -119,13 +119,13 @@ export function SaveAsTemplateModal({
                 onChange={(e) => setDesc(e.target.value)}
                 placeholder="What is this template for?"
                 rows={2}
-                className="w-full resize-none rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             {/* Category */}
             <div className="mb-5">
-              <label className="mb-1.5 block text-[12px] font-semibold text-foreground">Category</label>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">Category</label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((cat) => (
                   <button
@@ -133,7 +133,7 @@ export function SaveAsTemplateModal({
                     type="button"
                     onClick={() => setCategory(cat.key)}
                     className={[
-                      "rounded-lg border px-3 py-1 text-[11.5px] font-medium transition-colors",
+                      "rounded-[var(--radius-sm)] border px-3 py-1 text-xs font-medium transition-colors",
                       category === cat.key
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-muted-foreground hover:border-border hover:bg-muted",
@@ -146,7 +146,7 @@ export function SaveAsTemplateModal({
             </div>
 
             {error && (
-              <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-600 dark:bg-red-950/20">
+              <p className="mb-3 rounded-[var(--radius-sm)] bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-950/20">
                 {error}
               </p>
             )}
@@ -157,7 +157,7 @@ export function SaveAsTemplateModal({
                 type="button"
                 onClick={onClose}
                 disabled={saving}
-                className="rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -165,7 +165,7 @@ export function SaveAsTemplateModal({
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !name.trim()}
-                className="rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Save Template"}
               </button>

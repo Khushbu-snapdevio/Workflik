@@ -63,13 +63,13 @@ function Avatar({ name, image }: { name?: string | null; image?: string | null }
     );
   }
   const colors = [
-    "bg-violet-500", "bg-blue-500", "bg-emerald-500",
-    "bg-rose-500",   "bg-amber-500", "bg-indigo-500",
+    "bg-[#0284C7]", "bg-[#0369a1]", "bg-emerald-500",
+    "bg-rose-500",  "bg-amber-500", "bg-[#0891b2]",
   ];
   const color = colors[(name?.charCodeAt(0) ?? 0) % colors.length];
   return (
     <div
-      className={`h-7 w-7 rounded-full ${color} flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0 select-none`}
+      className={`h-7 w-7 rounded-full ${color} flex items-center justify-center text-xs font-semibold text-white flex-shrink-0 select-none`}
     >
       {name?.[0]?.toUpperCase() ?? "?"}
     </div>
@@ -91,7 +91,7 @@ function SelectField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full appearance-none cursor-pointer rounded-md border border-gray-200 bg-white py-1.5 pl-2.5 pr-7 text-[12px] text-gray-700 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-300 disabled:cursor-not-allowed disabled:opacity-50 hover:border-gray-300 transition-colors"
+        className="w-full appearance-none cursor-pointer rounded-[var(--radius-sm)] border border-border bg-card py-1.5 pl-2.5 pr-7 text-xs text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 hover:border-border/80 transition-colors"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -100,7 +100,7 @@ function SelectField({
       <CaretDownIcon
         size={11}
         weight="bold"
-        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50"
       />
     </div>
   );
@@ -108,7 +108,7 @@ function SelectField({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+    <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
       {children}
     </p>
   );
@@ -128,12 +128,12 @@ function Toggle({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       disabled={disabled}
-      className={`relative inline-flex h-[22px] w-10 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 disabled:opacity-50 ${
-        checked ? "bg-violet-600" : "bg-gray-200"
+      className={`relative inline-flex h-[22px] w-10 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50 ${
+        checked ? "bg-primary" : "bg-muted"
       }`}
     >
       <span
-        className={`inline-block h-[17px] w-[17px] transform rounded-full bg-white shadow transition-transform ${
+        className={`inline-block h-[17px] w-[17px] transform rounded-full bg-card shadow transition-transform ${
           checked ? "translate-x-[19px]" : "translate-x-[2px]"
         }`}
       />
@@ -285,16 +285,16 @@ export function SharePanel({
   return (
     <div
       ref={panelRef}
-      className="w-[460px] max-w-[calc(100vw-32px)] rounded-xl border border-gray-200/80 bg-white shadow-xl overflow-hidden flex flex-col"
+      className="w-[460px] max-w-[calc(100vw-32px)] rounded-[var(--radius-md)] border border-border/80 bg-card shadow-[var(--shadow-raised)] overflow-hidden flex flex-col"
       style={{ maxHeight: "calc(100vh - 80px)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <span className="text-[14px] font-semibold text-gray-900 tracking-tight">Share</span>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+        <span className="text-sm font-semibold text-foreground tracking-tight">Share</span>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <XIcon size={14} weight="bold" />
         </button>
@@ -313,7 +313,7 @@ export function SharePanel({
               onChange={(e) => { setInviteEmail(e.target.value); setInviteError(""); setInviteSuccess(false); }}
               onKeyDown={(e) => { if (e.key === "Enter") invite(); }}
               placeholder="Add email address…"
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-[13px] text-gray-900 placeholder-gray-400 focus:border-violet-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-violet-300 transition-all"
+              className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
             />
             <div className="flex items-center gap-2">
               <SelectField
@@ -326,7 +326,7 @@ export function SharePanel({
                 type="button"
                 onClick={invite}
                 disabled={inviting || !inviteEmail.trim()}
-                className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-[12px] font-semibold text-white hover:bg-violet-700 active:bg-violet-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
               >
                 {inviting ? (
                   <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -338,14 +338,14 @@ export function SharePanel({
             </div>
           </div>
           {inviteError && (
-            <p className="mt-2 text-[12px] text-red-500">{inviteError}</p>
+            <p className="mt-2 text-xs text-red-500">{inviteError}</p>
           )}
           {inviteSuccess && (
-            <p className="mt-2 text-[12px] text-emerald-600">Invitation sent successfully.</p>
+            <p className="mt-2 text-xs text-primary font-medium">Invitation sent successfully.</p>
           )}
         </div>
 
-        <div className="h-px bg-gray-100 mx-5" />
+        <div className="h-px bg-border/40 mx-5" />
 
         {/* People with access */}
         <div className="px-5 py-4">
@@ -353,14 +353,14 @@ export function SharePanel({
 
           {loading ? (
             <div className="flex items-center justify-center py-5">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-violet-500" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
             </div>
           ) : permissions.length === 0 ? (
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 px-3.5 py-3">
-              <div className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                <LockIcon size={12} className="text-gray-400" />
+            <div className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-muted/30 px-3.5 py-3">
+              <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <LockIcon size={12} className="text-muted-foreground/60" />
               </div>
-              <p className="text-[12px] text-gray-500">Only you have access to this page.</p>
+              <p className="text-xs text-muted-foreground">Only you have access to this page.</p>
             </div>
           ) : (
             <div className="space-y-0.5">
@@ -374,26 +374,26 @@ export function SharePanel({
                 return (
                   <div
                     key={grant.id}
-                    className="group flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-gray-50 transition-colors"
+                    className="group flex items-center gap-3 rounded-[var(--radius-sm)] px-2 py-2 hover:bg-muted/40 transition-colors"
                   >
                     <Avatar name={displayName} image={grant.userImage} />
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[13px] font-medium text-gray-800 truncate leading-tight">
+                        <span className="text-sm font-medium text-foreground truncate leading-tight">
                           {displayName}
                         </span>
                         {isCurrentUser && (
-                          <span className="text-[11px] text-gray-400 flex-shrink-0">(you)</span>
+                          <span className="text-xs text-muted-foreground/60 flex-shrink-0">(you)</span>
                         )}
                         {isGuest && (
-                          <span className="flex-shrink-0 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-px text-[9px] font-semibold text-amber-600 leading-none">
+                          <span className="flex-shrink-0 rounded-full border border-primary/20 bg-primary/[0.06] px-1.5 py-px text-[9px] font-semibold text-primary leading-none">
                             GUEST
                           </span>
                         )}
                       </div>
                       {showEmail && (
-                        <p className="text-[11px] text-gray-400 truncate leading-tight">
+                        <p className="text-xs text-muted-foreground/60 truncate leading-tight">
                           {displayEmail}
                         </p>
                       )}
@@ -413,7 +413,7 @@ export function SharePanel({
                           type="button"
                           onClick={() => removeGrant(grant)}
                           title="Remove access"
-                          className="rounded-md p-1.5 text-gray-300 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 transition-all"
+                          className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
                         >
                           <XIcon size={12} weight="bold" />
                         </button>
@@ -426,18 +426,18 @@ export function SharePanel({
           )}
         </div>
 
-        <div className="h-px bg-gray-100 mx-5" />
+        <div className="h-px bg-border/40 mx-5" />
 
         {/* Publish to web */}
         <div className="px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2.5 min-w-0">
-              <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-blue-50">
-                <GlobeIcon size={14} className="text-blue-500" />
+              <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary/10">
+                <GlobeIcon size={14} className="text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-gray-900 leading-tight">Publish to web</p>
-                <p className="mt-0.5 text-[11px] text-gray-400 leading-snug">
+                <p className="text-sm font-medium text-foreground leading-tight">Publish to web</p>
+                <p className="mt-0.5 text-xs text-muted-foreground/60 leading-snug">
                   {isPublicActive
                     ? "Anyone with the link can access this page"
                     : "Share publicly with anyone on the internet"}
@@ -453,25 +453,25 @@ export function SharePanel({
 
           {isPublicActive && publicLink && (
             <div className="mt-3.5 space-y-2.5">
-              <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
-                <LinkIcon size={11} weight="bold" className="text-gray-400 flex-shrink-0" />
-                <span className="flex-1 truncate text-[11px] text-gray-500 font-mono">
+              <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2.5">
+                <LinkIcon size={11} weight="bold" className="text-muted-foreground/50 flex-shrink-0" />
+                <span className="flex-1 truncate text-xs text-muted-foreground font-mono">
                   {publicUrl}
                 </span>
                 <button
                   type="button"
                   onClick={copyLink}
-                  className="flex-shrink-0 flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                  className="flex-shrink-0 flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground/70 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
                 >
                   {copied
-                    ? <CheckIcon size={11} weight="bold" className="text-emerald-500" />
+                    ? <CheckIcon size={11} weight="bold" className="text-primary" />
                     : <CopyIcon size={11} />}
                   {copied ? "Copied!" : "Copy link"}
                 </button>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-[12px] text-gray-500">Visitors can</span>
+                <span className="text-xs text-muted-foreground">Visitors can</span>
                 <SelectField
                   value={publicLink.accessLevel}
                   options={PUBLIC_OPTIONS}
@@ -482,7 +482,7 @@ export function SharePanel({
           )}
         </div>
 
-        <div className="h-px bg-gray-100 mx-5" />
+        <div className="h-px bg-border/40 mx-5" />
 
         {/* Page settings */}
         <div className="px-5 py-4">
@@ -491,31 +491,35 @@ export function SharePanel({
             type="button"
             onClick={handlePrivateToggle}
             disabled={savingPrivate}
-            className="w-full flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50/50 px-3.5 py-3 text-left hover:bg-gray-50 transition-colors disabled:opacity-60 group"
+            className={`w-full flex items-center gap-3 rounded-[var(--radius-sm)] border px-3.5 py-3 text-left transition-colors disabled:opacity-60 group ${
+              isPrivate
+                ? "border-primary/20 bg-primary/[0.04] hover:bg-primary/[0.07]"
+                : "border-border bg-muted/20 hover:bg-muted/40"
+            }`}
           >
-            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
-              isPrivate ? "bg-amber-100" : "bg-gray-100 group-hover:bg-gray-200"
+            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors ${
+              isPrivate ? "bg-primary/10" : "bg-muted group-hover:bg-muted/80"
             }`}>
               <LockIcon
                 size={14}
                 weight={isPrivate ? "fill" : "regular"}
-                className={isPrivate ? "text-amber-600" : "text-gray-500"}
+                className={isPrivate ? "text-primary" : "text-muted-foreground/60"}
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-[13px] font-medium leading-tight ${isPrivate ? "text-amber-800" : "text-gray-800"}`}>
+              <p className={`text-sm font-medium leading-tight ${isPrivate ? "text-primary" : "text-foreground"}`}>
                 {isPrivate ? "Private page" : "Make private"}
               </p>
-              <p className="mt-0.5 text-[11px] leading-snug text-gray-400">
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground/60">
                 {isPrivate
                   ? "Only you and invited people can see this."
                   : "Hide from workspace members — only you can access."}
               </p>
             </div>
             {savingPrivate ? (
-              <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+              <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
             ) : isPrivate ? (
-              <span className="flex-shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+              <span className="flex-shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
                 Private
               </span>
             ) : null}

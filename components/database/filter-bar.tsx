@@ -52,7 +52,7 @@ function MultiOptionPicker({ options, value, onChange }: {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex h-7 min-w-[80px] items-center justify-between gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+        className="flex h-7 min-w-[80px] items-center justify-between gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
       >
         <span className="truncate text-left">
           {selected.size === 0 ? <span className="text-muted-foreground/50">Choose…</span> : `${selected.size} option${selected.size === 1 ? "" : "s"}`}
@@ -62,9 +62,9 @@ function MultiOptionPicker({ options, value, onChange }: {
         </svg>
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+        <div className="absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-[var(--shadow-raised)]">
           {options.length === 0 ? (
-            <p className="px-3 py-2.5 text-[11px] text-muted-foreground/50">No options defined</p>
+            <p className="px-3 py-2.5 text-xs text-muted-foreground/50">No options defined</p>
           ) : (
             options.map((o) => {
               const on = selected.has(o.id);
@@ -72,7 +72,7 @@ function MultiOptionPicker({ options, value, onChange }: {
                 <button
                   key={o.id}
                   onClick={() => toggle(o.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12px] text-foreground hover:bg-accent"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-foreground hover:bg-accent"
                 >
                   <div className={`flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${on ? "border-primary bg-primary" : "border-border"}`}>
                     {on && <Check size={9} weight="bold" className="text-white" />}
@@ -115,24 +115,22 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
   }
 
   return (
-    <div className="flex shrink-0 flex-col gap-1.5 border-b border-border/60 bg-primary/[0.03] px-4 py-2.5 dark:bg-primary/[0.06]">
+    <div className="flex shrink-0 flex-col gap-1.5 border-b border-border px-4 py-2.5 bg-sidebar">
       {/* Header with logic toggle */}
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary/60">Filters</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Filters</p>
         {filters.length > 1 && (
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-muted-foreground/60">Match</span>
-            <div className="flex overflow-hidden rounded-md border border-border">
+            <div className="flex items-center rounded-[var(--radius-sm)] border border-border bg-muted/40 p-0.5 gap-0">
               {(["and", "or"] as const).map((logic) => (
                 <button
                   key={logic}
                   onClick={() => onFilterLogicChange(logic)}
                   className={[
-                    "px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors",
                     filterLogic === logic
-                      ? "bg-primary text-white"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                    logic === "or" ? "border-l border-border" : "",
+                      ? "bg-primary text-white rounded-[var(--radius-sm)] px-2.5 py-1 text-[11px] font-semibold"
+                      : "text-muted-foreground px-2.5 py-1 text-[11px] font-medium hover:text-foreground",
                   ].join(" ")}
                 >
                   {logic}
@@ -175,7 +173,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
                 const nops = OPERATORS[np?.type ?? "text"] ?? OPERATORS.text;
                 update(idx, { propertyId: e.target.value, operator: nops[0].value, value: "" });
               }}
-              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-[12px] text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20"
             >
               {usable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -183,7 +181,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
             <select
               value={filter.operator}
               onChange={(e) => update(idx, { operator: e.target.value, value: MULTI_VAL_OPS.has(e.target.value) ? [] : "" })}
-              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-[12px] text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20"
             >
               {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
             </select>
@@ -202,13 +200,13 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
                 value={String(filter.value ?? "")}
                 onChange={(e) => update(idx, { value: e.target.value })}
                 placeholder="Value…"
-                className="w-32 rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                className="w-32 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-[12px] text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20"
               />
             )}
 
             <button
               onClick={() => remove(idx)}
-              className="ml-auto flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground"
+              className="ml-auto flex size-5 items-center justify-center rounded text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500"
             >
               <X size={11} />
             </button>
@@ -218,7 +216,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
 
       <button
         onClick={add}
-        className="w-fit rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-muted-foreground shadow-[var(--shadow-card)] transition-colors hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary"
       >
         + Add filter
       </button>

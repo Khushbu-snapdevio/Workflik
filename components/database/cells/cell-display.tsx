@@ -17,13 +17,13 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
     case "text": {
       const text = (v as { text?: string } | null)?.text ?? "";
       if (!text) return null;
-      return <span className="truncate text-[13px] text-foreground">{text}</span>;
+      return <span className="truncate text-sm text-foreground">{text}</span>;
     }
 
     case "number": {
       const n = (v as { number?: number | null } | null)?.number ?? null;
       return (
-        <span className="truncate text-[13px] tabular-nums text-foreground">
+        <span className="truncate text-sm tabular-nums text-foreground">
           {formatNumber(n, (property.config?.format as NumberFormat) ?? "number")}
         </span>
       );
@@ -37,7 +37,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
       if (!opt) return null;
       const color = getOptionColor(opt.color);
       return (
-        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${color.bg} ${color.text}`}>
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
           <span className={`size-1.5 shrink-0 rounded-full ${color.dot}`} />
           {opt.name}
         </span>
@@ -55,14 +55,14 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
           {shown.map((opt) => {
             const color = getOptionColor(opt.color);
             return (
-              <span key={opt.id} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${color.bg} ${color.text}`}>
+              <span key={opt.id} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
                 <span className={`size-1.5 shrink-0 rounded-full ${color.dot}`} />
                 {opt.name}
               </span>
             );
           })}
           {compact && selected.length > 2 && (
-            <span className="text-[11px] text-muted-foreground">+{selected.length - 2}</span>
+            <span className="text-xs text-muted-foreground">+{selected.length - 2}</span>
           )}
         </div>
       );
@@ -79,7 +79,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
       return (
         <span className="flex items-center">
           {checked ? (
-            <svg className="size-4 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+            <svg className="size-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
               <rect x="2" y="2" width="16" height="16" rx="4" />
               <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </svg>
@@ -101,7 +101,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="truncate text-xs text-blue-600 hover:underline dark:text-blue-400"
+          className="truncate text-xs text-primary hover:underline"
         >
           {url.replace(/^https?:\/\//, "")}
         </a>
@@ -115,7 +115,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
         <a
           href={`mailto:${email}`}
           onClick={(e) => e.stopPropagation()}
-          className="truncate text-xs text-blue-600 hover:underline dark:text-blue-400"
+          className="truncate text-xs text-primary hover:underline"
         >
           {email}
         </a>
@@ -146,19 +146,19 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
             return (
               <span
                 key={id}
-                className="inline-flex items-center gap-1 rounded-full bg-violet-100 pl-0.5 pr-2 py-0.5 dark:bg-violet-950/40"
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 pl-0.5 pr-2 py-0.5"
               >
-                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-blue-500 text-[9px] font-bold text-white">
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
                   {initial}
                 </span>
-                <span className="max-w-[80px] truncate text-[11px] font-medium text-violet-700 dark:text-violet-300">
+                <span className="max-w-[80px] truncate text-xs font-medium text-primary">
                   {label}
                 </span>
               </span>
             );
           })}
           {userIds.length > (compact ? 2 : 3) && (
-            <span className="text-[11px] text-muted-foreground">+{userIds.length - (compact ? 2 : 3)}</span>
+            <span className="text-xs text-muted-foreground">+{userIds.length - (compact ? 2 : 3)}</span>
           )}
         </div>
       );

@@ -1,10 +1,10 @@
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { blocks, pageVersions, pages } from "@/lib/db/schema";
+import { blocks, pageVersions, pages, users } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
-// GET /api/pages/:id/versions — list version history (last 30 within 7-day window)
+// GET /api/pages/:id/versions — list version history (last 30)
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -22,13 +22,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     const versions = await db
       .select({
-        id:          pageVersions.id,
-        label:       pageVersions.label,
-        createdBy:   pageVersions.createdBy,
-        createdAt:   pageVersions.createdAt,
-        schemaVersion: pageVersions.schemaVersion,
+        id:              pageVersions.id,
+        label:           pageVersions.label,
+        createdBy:       pageVersions.createdBy,
+        createdAt:       pageVersions.createdAt,
+        schemaVersion:   pageVersions.schemaVersion,
+        createdByName:   users.name,
+        createdByEmail:  users.email,
       })
       .from(pageVersions)
+      .leftJoin(users, eq(pageVersions.createdBy, users.id))
       .where(eq(pageVersions.pageId, id))
       .orderBy(desc(pageVersions.createdAt))
       .limit(30);

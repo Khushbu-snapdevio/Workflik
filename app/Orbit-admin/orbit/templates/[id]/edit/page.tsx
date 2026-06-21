@@ -24,28 +24,30 @@ export default async function EditTemplatePage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Back */}
-      <Link href="/Orbit-admin/orbit/templates"
-        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#a8a29e] transition hover:text-[#5c5a55]">
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3">
-          <path d="M8 2L4 6l4 4"/>
-        </svg>
-        Back to templates
-      </Link>
+      {/* Breadcrumb navigation */}
+      <div className="mb-4 flex items-center gap-2">
+        <Link href="/Orbit-admin/orbit/templates"
+          className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground shadow-[var(--shadow-card)] transition-all hover:border-primary/30 hover:bg-sky-50 hover:text-primary">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3">
+            <path d="M7.5 2.5L4 6l3.5 3.5"/>
+          </svg>
+          Templates
+        </Link>
+        <span className="select-none text-[13px] font-light text-muted-foreground/30">/</span>
+        <span className="text-[11.5px] font-semibold text-foreground">Edit</span>
+      </div>
 
       {/* Header */}
-      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#4f46e5] via-[#6366f1] to-[#818cf8] p-7 shadow-[0_8px_32px_rgba(79,70,229,0.25)]">
-        <div className="pointer-events-none absolute inset-0"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-        <div className="relative">
-          <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-white/50">Templates / Edit</p>
-          <h1 className="mt-1 text-[26px] font-black tracking-tight text-white">{tpl.name}</h1>
-          <p className="mt-1 text-[13px] text-white/55">Update content, name, category, or publish status.</p>
+      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card shadow-[var(--shadow-card)]">
+        <div className="h-[3px] bg-gradient-to-r from-primary to-sky-400/50" />
+        <div className="p-6">
+          <h1 className="text-[28px] font-black tracking-tight text-foreground">{tpl.name}</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">Update content, name, category, or publish status.</p>
         </div>
       </div>
 
       {/* Form */}
-      <div className="overflow-hidden rounded-[18px] border border-black/[0.07] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card shadow-[var(--shadow-card)]">
         <TemplateForm template={tpl as Parameters<typeof TemplateForm>[0]["template"] & { id: string; name: string; description: string | null; category: string }} />
       </div>
     </div>

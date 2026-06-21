@@ -56,7 +56,7 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
   };
 
   return (
-    <div ref={ref} style={baseStyle} className="overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+    <div ref={ref} style={baseStyle} className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-[var(--shadow-raised)]">
       {(property.type === "select" || property.type === "multi_select") && (
         <SelectEditor
           property={property}
@@ -169,12 +169,12 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
           const color    = getOptionColor(opt.color);
           const selected = multi ? currentIds.includes(opt.id) : currentId === opt.id;
           return (
-            <div key={opt.id} className="group/opt relative flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent">
+            <div key={opt.id} className="group/opt relative flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent">
               <button
                 onClick={() => toggle(opt.id)}
                 className="flex min-w-0 flex-1 items-center gap-2"
               >
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${color.bg} ${color.text}`}>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
                   <span className={`size-1.5 shrink-0 rounded-full ${color.dot}`} />
                   {opt.name}
                 </span>
@@ -192,7 +192,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
 
               {/* Color palette */}
               {colorPick === opt.id && (
-                <div className="absolute right-8 top-0 z-10 flex gap-1 rounded-xl border border-border bg-background p-2 shadow-lg">
+                <div className="absolute right-8 top-0 z-10 flex gap-1 rounded-[var(--radius-md)] border border-border bg-background p-2 shadow-[var(--shadow-float)]">
                   {OPTION_COLORS.map((c) => (
                     <button
                       key={c.id}
@@ -210,7 +210,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
         {canCreate && (
           <button
             onClick={createOption}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+            className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
           >
             <Plus size={12} />
             Create <span className="font-medium text-foreground">"{search}"</span>
@@ -253,20 +253,20 @@ function DateEditor({ value, onSave, onClose }: DateEditorProps) {
         value={dateStr}
         onChange={(e) => setDateStr(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
-        className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       <div className="flex gap-2">
         {dateStr && (
           <button
             onClick={() => { onSave({ date: null }); onClose(); }}
-            className="flex-1 rounded-lg border border-border py-1.5 text-xs text-muted-foreground hover:bg-accent"
+            className="flex-1 rounded-[var(--radius-sm)] border border-border py-1.5 text-xs text-muted-foreground hover:bg-accent"
           >
             Clear
           </button>
         )}
         <button
           onClick={save}
-          className="flex-1 rounded-lg bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          className="flex-1 rounded-[var(--radius-sm)] bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
         >
           Apply
         </button>
@@ -340,14 +340,14 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
             <button
               key={m.userId}
               onClick={() => toggle(m.userId)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-accent"
+              className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent"
             >
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-blue-500 text-[10px] font-bold text-white">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
                 {initials}
               </span>
               <span className="min-w-0 flex-1 text-left">
                 <p className="truncate text-xs font-medium text-foreground">{m.userName ?? m.userEmail}</p>
-                {m.userName && <p className="truncate text-[11px] text-muted-foreground">{m.userEmail}</p>}
+                {m.userName && <p className="truncate text-xs text-muted-foreground">{m.userEmail}</p>}
               </span>
               {selected && <Check size={13} className="shrink-0 text-primary" weight="bold" />}
             </button>
@@ -416,7 +416,7 @@ function RelationEditor({ value, property, onSave }: RelationEditorProps) {
             <button
               key={entry.id}
               onClick={() => toggle(entry.id)}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent"
+              className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent"
             >
               <span className="min-w-0 flex-1 truncate text-left text-xs text-foreground">
                 {entry.title || "Untitled"}

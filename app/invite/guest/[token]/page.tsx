@@ -56,16 +56,16 @@ export default function GuestInvitePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-page px-4">
+      <div className="w-full max-w-md rounded-[var(--radius-lg)] border border-border bg-card p-8 shadow-[var(--shadow-float)]">
         {/* Logo */}
         <div className="mb-6 flex justify-center">
-          <span className="text-2xl font-black tracking-tight text-gray-900">WORKFLIK</span>
+          <span className="text-2xl font-black tracking-tight text-foreground font-black tracking-tight">WORKFLIK</span>
         </div>
 
         {state === "loading" && (
           <div className="flex justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-blue-500" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" />
           </div>
         )}
 
@@ -73,26 +73,26 @@ export default function GuestInvitePage() {
           <>
             <div className="mb-6 text-center">
               <div className="mb-3 text-4xl">{invitation.page.icon ?? "📄"}</div>
-              <h1 className="text-xl font-bold text-gray-900">You've been invited</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                to access <span className="font-semibold text-gray-800">{invitation.page.title || "Untitled"}</span>
+              <h1 className="text-xl font-bold text-foreground">You've been invited</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                to access <span className="font-semibold text-foreground">{invitation.page.title || "Untitled"}</span>
               </p>
             </div>
 
-            <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm">
+            <div className="mb-6 rounded-[var(--radius-lg)] border border-border bg-page px-4 py-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-500">Invited email</span>
-                <span className="font-medium text-gray-800">{invitation.email}</span>
+                <span className="text-muted-foreground">Invited email</span>
+                <span className="font-medium text-foreground">{invitation.email}</span>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-gray-500">Access level</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-muted-foreground">Access level</span>
+                <span className="font-medium text-foreground">
                   {ACCESS_LABELS[invitation.accessLevel] ?? invitation.accessLevel}
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-gray-500">Expires</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-muted-foreground">Expires</span>
+                <span className="font-medium text-foreground">
                   {new Date(invitation.expiresAt).toLocaleDateString("en-US", {
                     month: "short", day: "numeric", year: "numeric",
                   })}
@@ -103,12 +103,12 @@ export default function GuestInvitePage() {
             <button
               type="button"
               onClick={accept}
-              className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-800"
+              className="w-full rounded-[var(--radius-sm)] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-[var(--primary-hover)] active:scale-[0.97]"
             >
               Accept invitation
             </button>
 
-            <p className="mt-4 text-center text-xs text-gray-400">
+            <p className="mt-4 text-center text-xs text-muted-foreground/70">
               Make sure you're signed in with <span className="font-medium">{invitation.email}</span> before accepting.
             </p>
           </>
@@ -116,16 +116,16 @@ export default function GuestInvitePage() {
 
         {state === "accepting" && (
           <div className="flex flex-col items-center gap-3 py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-blue-500" />
-            <p className="text-sm text-gray-500">Accepting invitation…</p>
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" />
+            <p className="text-sm text-muted-foreground">Accepting invitation…</p>
           </div>
         )}
 
         {state === "expired" && (
           <div className="py-4 text-center">
             <div className="mb-3 text-4xl">⏰</div>
-            <h2 className="text-lg font-semibold text-gray-900">Invitation expired</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-foreground">Invitation expired</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               This invitation link has expired. Ask the page owner to send a new one.
             </p>
           </div>
@@ -134,10 +134,10 @@ export default function GuestInvitePage() {
         {state === "accepted" && (
           <div className="py-4 text-center">
             <div className="mb-3 text-4xl">✅</div>
-            <h2 className="text-lg font-semibold text-gray-900">Already accepted</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-foreground">Already accepted</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               This invitation has already been accepted.{" "}
-              <a href="/app" className="text-blue-600 hover:underline">Go to your workspace →</a>
+              <a href="/app" className="text-primary hover:underline">Go to your workspace →</a>
             </p>
           </div>
         )}
@@ -145,9 +145,9 @@ export default function GuestInvitePage() {
         {state === "error" && (
           <div className="py-4 text-center">
             <div className="mb-3 text-4xl">⚠️</div>
-            <h2 className="text-lg font-semibold text-gray-900">Something went wrong</h2>
-            <p className="mt-1 text-sm text-gray-500">{errorMsg}</p>
-            <a href="/app" className="mt-4 inline-block text-sm text-blue-600 hover:underline">
+            <h2 className="text-lg font-semibold text-foreground">Something went wrong</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{errorMsg}</p>
+            <a href="/app" className="mt-4 inline-block text-sm text-primary hover:underline">
               Back to workspace
             </a>
           </div>

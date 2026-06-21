@@ -20,6 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { CaretDownIcon, CaretRightIcon, DotsThreeIcon, PlusIcon, StarIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { NewPageButton } from "@/components/workspace/new-page-button";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -221,7 +222,7 @@ export function PageTree({
           ref={moreRef}
           type="button"
           onClick={openMorePopup}
-          className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
+          className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
         >
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-3">
             <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
@@ -233,20 +234,22 @@ export function PageTree({
       {moreOpen && popupPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popupRef}
-          className="fixed z-[300] w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-xl"
+          className="fixed z-[300] w-64 overflow-hidden rounded-[var(--radius-md)] border border-primary/30 shadow-[var(--shadow-raised)]"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
-          <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-            <span className="text-xs font-semibold text-foreground">Pages</span>
-            <span className="text-xs text-muted-foreground">{tree.length} total</span>
+          {/* Colored header */}
+          <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "linear-gradient(135deg, #0284c7, #0ea5e9)" }}>
+            <span className="text-xs font-semibold text-white">Pages</span>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{tree.length} total</span>
           </div>
-          <div className="max-h-72 overflow-y-auto py-1">
+          {/* White body */}
+          <div className="max-h-72 overflow-y-auto bg-white py-1">
             {tree.map((node) => (
               <Link
                 key={node.id}
                 href={`/app/${workspaceSlug}/${node.shortId}`}
                 onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-primary/[0.07] hover:text-primary"
               >
                 {node.icon ? (
                   <span className="shrink-0 text-sm leading-none">{node.icon}</span>
@@ -259,11 +262,12 @@ export function PageTree({
               </Link>
             ))}
           </div>
-          <div className="border-t border-border px-3 py-2">
+          {/* Footer */}
+          <div className="border-t border-border bg-white px-3 py-2">
             <Link
               href={`/app/${workspaceSlug}/library`}
               onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="flex items-center gap-2 text-xs font-medium text-primary transition-colors hover:text-[var(--primary-hover)]"
             >
               <svg className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
@@ -400,13 +404,11 @@ function PageTreeNode({
     setConfirmTrash(false);
     onPagesChange(pages.filter((p) => p.id !== node.id));
 
-    // If currently viewing the deleted page (or a database whose entries were cascade-deleted),
-    // navigate away instead of refreshing the current route — refreshing a deleted page shows 404.
+    // Navigate away only if currently viewing the deleted page — otherwise the
+    // local onPagesChange update is enough; no full router.refresh() needed.
     const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(node.shortId);
     if (onDeletedPage || node.kind === "database") {
       window.location.replace(`/app/${workspaceSlug}`);
-    } else {
-      router.refresh();
     }
   }
 
@@ -426,11 +428,11 @@ function PageTreeNode({
     await navigator.clipboard.writeText(`${window.location.origin}/app/${workspaceSlug}/${node.shortId}`);
   }
 
-  const menuItem = "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground";
+  const menuItem = "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs text-foreground/80 transition-colors hover:bg-primary/[0.07] hover:text-primary cursor-pointer";
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="group relative flex items-center gap-0.5 rounded-md py-0.5 transition-colors hover:bg-sidebar-accent">
+      <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
         {/* Expand/collapse */}
         <button
           className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground"
@@ -459,13 +461,15 @@ function PageTreeNode({
 
         {/* Hover actions */}
         <div className="flex shrink-0 items-center gap-0.5 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <Link
-            className="flex size-5 items-center justify-center rounded text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            href={`/app/${workspaceSlug}/new?parent=${node.id}`}
+          <NewPageButton
+            workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
+            parentId={node.id}
             title="Add subpage"
+            className="flex size-5 items-center justify-center rounded text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <PlusIcon size={12} weight="bold" />
-          </Link>
+          </NewPageButton>
           <button
             ref={btnRef}
             className="flex size-5 items-center justify-center rounded text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
@@ -487,9 +491,11 @@ function PageTreeNode({
         {menuOpen && (
           <div
             ref={menuRef}
-            className="fixed z-[200] min-w-[168px] overflow-hidden rounded-lg border border-border bg-popover shadow-xl"
+            className="fixed z-[200] min-w-[168px] overflow-hidden rounded-[var(--radius-md)] border border-primary/30 bg-white shadow-[var(--shadow-raised)]"
             style={{ left: menuPos.x, top: menuPos.y }}
           >
+            {/* Colored accent bar at top */}
+            <div className="h-[3px]" style={{ background: "linear-gradient(90deg, #0284c7, #0ea5e9, #38bdf8)" }} />
             <div className="py-1">
               <button
                 className={menuItem}
@@ -512,14 +518,16 @@ function PageTreeNode({
                 <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 Open
               </Link>
-              <Link
+              <NewPageButton
+                workspaceId={workspaceId}
+                workspaceSlug={workspaceSlug}
+                parentId={node.id}
+                onBeforeCreate={() => setMenuOpen(false)}
                 className={menuItem}
-                href={`/app/${workspaceSlug}/new?parent=${node.id}`}
-                onClick={() => setMenuOpen(false)}
               >
                 <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add subpage
-              </Link>
+              </NewPageButton>
               <button className={menuItem} onClick={handleDuplicate} type="button">
                 <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Duplicate
@@ -529,7 +537,7 @@ function PageTreeNode({
                 Copy link
               </button>
               <div className="my-1 border-t border-border" />
-              <button className={`${menuItem} text-red-500 hover:bg-red-50 hover:text-red-600`} onClick={handleDelete} type="button">
+              <button className={`${menuItem} !text-red-500 hover:!bg-red-50 hover:!text-red-600`} onClick={handleDelete} type="button">
                 <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 Move to Trash
               </button>
@@ -559,9 +567,9 @@ function PageTreeNode({
       {confirmTrash && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={() => !deleting && setConfirmTrash(false)} />
-          <div className="relative w-[360px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
+          <div className="relative w-[360px] rounded-[var(--radius-lg)] border border-border bg-popover p-6 shadow-[var(--shadow-float)]">
             <div className="mb-1 flex items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-100">
                 <svg className="size-4 text-red-600" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
                 </svg>
@@ -576,7 +584,7 @@ function PageTreeNode({
                 type="button"
                 disabled={deleting}
                 onClick={() => setConfirmTrash(false)}
-                className="rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -584,7 +592,7 @@ function PageTreeNode({
                 type="button"
                 disabled={deleting}
                 onClick={confirmDelete}
-                className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
               >
                 {deleting ? "Moving…" : "Move to Trash"}
               </button>

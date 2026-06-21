@@ -55,12 +55,12 @@ function InviteRow({
         placeholder={`teammate${index + 1}@company.com`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-10 flex-1 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="h-10 flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
       />
       <select
         value={role}
         onChange={(e) => onRoleChange(e.target.value)}
-        className="h-10 rounded-lg border border-border bg-background px-2 text-xs font-medium text-muted-foreground focus:border-primary focus:outline-none"
+        className="h-10 rounded-[var(--radius-sm)] border border-border bg-background px-2 text-xs font-medium text-muted-foreground focus:border-primary focus:outline-none"
       >
         <option value="editor">Editor</option>
         <option value="viewer">Viewer</option>
@@ -165,7 +165,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
 
         {/* Logo */}
-        <div className="mb-8 flex size-14 items-center justify-center rounded-2xl bg-primary font-black text-primary-foreground text-lg shadow-lg shadow-primary/25">
+        <div className="mb-8 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-primary font-black text-primary-foreground text-lg shadow-lg shadow-primary/25">
           WF
         </div>
 
@@ -182,7 +182,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
         </div>
 
         {/* Step label */}
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-ui text-muted-foreground">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-ui text-muted-foreground">
           {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${totalSteps}`}
         </p>
 
@@ -204,9 +204,9 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
                     key={opt.value}
                     type="button"
                     onClick={() => selectOption(opt.value)}
-                    className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all ${
+                    className={`flex flex-col items-start gap-2 rounded-[var(--radius-md)] border p-4 text-left transition-all ${
                       isSelected
-                        ? "border-primary bg-secondary shadow-sm"
+                        ? "border-primary bg-secondary shadow-[var(--shadow-card)]"
                         : "border-border bg-card hover:border-primary/40 hover:bg-secondary/40"
                     }`}
                   >
@@ -265,7 +265,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
               <p className="mb-4 text-xs text-destructive">{inviteError}</p>
             )}
 
-            <div className="mb-6 w-full rounded-xl border border-border bg-muted/40 p-3.5">
+            <div className="mb-6 w-full rounded-[var(--radius-md)] border border-border bg-muted/40 p-3.5">
               <div className="flex items-start gap-2.5">
                 <svg className="mt-0.5 size-4 shrink-0 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" />
@@ -283,7 +283,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
           type="button"
           onClick={handleContinue}
           disabled={(!isInviteStep && !selected) || pending}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending
             ? "Setting up…"

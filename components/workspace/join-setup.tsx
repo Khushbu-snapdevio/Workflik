@@ -79,7 +79,7 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
 
         {/* Logo */}
-        <div className="mb-8 flex size-14 items-center justify-center rounded-2xl bg-primary font-black text-primary-foreground text-lg shadow-lg shadow-primary/25">
+        <div className="mb-8 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-primary font-black text-primary-foreground text-lg shadow-lg shadow-primary/25">
           WF
         </div>
 
@@ -111,7 +111,7 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
         </div>
 
         {/* Step label */}
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Step {step + 1} of {totalSteps}
         </p>
 
@@ -132,9 +132,9 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
                 key={opt.value}
                 type="button"
                 onClick={() => selectOption(opt.value)}
-                className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all ${
+                className={`flex flex-col items-start gap-2 rounded-[var(--radius-md)] border p-4 text-left transition-all ${
                   isSelected
-                    ? "border-primary bg-secondary shadow-sm"
+                    ? "border-primary bg-secondary shadow-[var(--shadow-card)]"
                     : "border-border bg-card hover:border-primary/40 hover:bg-secondary/40"
                 }`}
               >
@@ -155,7 +155,7 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
           type="button"
           onClick={handleContinue}
           disabled={!selections[step]}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isLastStep ? `Open ${workspaceName}` : "Continue"}
           {!isLastStep && (

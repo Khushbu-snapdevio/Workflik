@@ -33,17 +33,17 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon, isAdm
   const bg          = avatarColor(displayName);
 
   return (
-    <aside className="flex h-full w-[240px] shrink-0 flex-col overflow-y-auto border-r border-black/[0.06] bg-[#f9f8f7]">
+    <aside className="flex h-full w-[240px] shrink-0 flex-col overflow-y-auto border-r border-border bg-muted/20">
 
       {/* Workspace header */}
       <div className="px-3 pb-3 pt-5 pr-11">
-        <div className="flex items-center gap-3 rounded-[12px] border border-black/[0.07] bg-gradient-to-br from-[#f5f4f2] to-white px-3 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-          <span className="flex size-[32px] shrink-0 items-center justify-center rounded-[8px] bg-gradient-to-br from-[#2383e2] to-[#60a5fa] text-[13px] font-bold text-white shadow-[0_2px_6px_rgba(35,131,226,0.35)]">
+        <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-border bg-card px-3 py-3 shadow-[var(--shadow-card)]">
+          <span className="flex size-[32px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-gradient-to-br from-primary to-sky-400 text-sm font-bold text-white shadow-[var(--shadow-card)]">
             {workspaceName.slice(0, 1).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-bold text-[#1c1917] leading-tight">{workspaceName}</p>
-            <p className="text-[10.5px] text-[#a8a29e] leading-tight">Workspace</p>
+            <p className="truncate text-sm font-bold text-foreground leading-tight">{workspaceName}</p>
+            <p className="text-[10.5px] text-muted-foreground leading-tight">Workspace</p>
           </div>
         </div>
       </div>
@@ -52,22 +52,22 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon, isAdm
       <div className="px-3">
         <Link
           href={`${base}/profile`}
-          className={`group flex items-center gap-2.5 rounded-[9px] px-3 py-2.5 transition-all ${
+          className={`group flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 transition-all ${
             active("profile")
-              ? "bg-white text-[#37352f] shadow-[0_1px_3px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.04)]"
-              : "text-[#37352f] hover:bg-black/[0.04]"
+              ? "bg-card text-foreground shadow-[var(--shadow-card)]"
+              : "text-foreground hover:bg-muted/40"
           }`}
         >
           {user.image ? (
             <img src={user.image} alt={displayName} className="size-8 rounded-full object-cover shrink-0 ring-2 ring-white" />
           ) : (
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ring-2 ring-white shadow-sm" style={{ background: bg }}>
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-white shadow-[var(--shadow-card)]" style={{ background: bg }}>
               {initials}
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13.5px] font-semibold leading-tight">{displayName}</p>
-            <p className="text-[11px] leading-tight text-[#9b9b9b]">My settings</p>
+            <p className="truncate text-sm font-semibold leading-tight">{displayName}</p>
+            <p className="text-xs leading-tight text-muted-foreground">My settings</p>
           </div>
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className={`size-3.5 shrink-0 transition-opacity ${active("profile") ? "opacity-40" : "opacity-0 group-hover:opacity-30"}`}><path d="M5 3l4 4-4 4"/></svg>
         </Link>
@@ -95,7 +95,7 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon, isAdm
 
       {/* Bottom */}
       <div className="mt-auto px-5 pb-5 pt-4">
-        <p className="text-[11px] text-[#c4c1bb]">Settings · Workflik</p>
+        <p className="text-xs text-muted-foreground/50">Settings · Workflik</p>
       </div>
     </aside>
   );
@@ -104,7 +104,7 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon, isAdm
 function NavSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="px-3 pb-1">
-      <p className="mb-1 px-3 pt-1 text-[10.5px] font-bold uppercase tracking-widest text-[#c4c1bb]">{label}</p>
+      <p className="mb-1 px-3 pt-1 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">{label}</p>
       {children}
     </div>
   );
@@ -113,14 +113,14 @@ function NavSection({ label, children }: { label: string; children: React.ReactN
 function NavItem({ href, active, icon, label }: { href: string; active: boolean; icon: React.ReactNode; label: string }) {
   return (
     <Link href={href}
-      className={`group relative flex items-center gap-2.5 rounded-[8px] px-3 py-[7px] text-[13.5px] transition-all ${
+      className={`group relative flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-[7px] text-sm transition-all ${
         active
-          ? "bg-white font-semibold text-[#37352f] shadow-[0_1px_3px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.04)]"
-          : "text-[#5c5a55] hover:bg-black/[0.04] hover:text-[#37352f]"
+          ? "bg-card font-semibold text-foreground shadow-[var(--shadow-card)]"
+          : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
       }`}
     >
-      {active && <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] rounded-r-full bg-[#2383e2]" />}
-      <span className={`shrink-0 transition-colors ${active ? "text-[#2383e2]" : "text-[#9b9995] group-hover:text-[#5c5a55]"}`}>{icon}</span>
+      {active && <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] rounded-r-full bg-primary" />}
+      <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-muted-foreground/50 group-hover:text-muted-foreground"}`}>{icon}</span>
       {label}
     </Link>
   );
@@ -128,7 +128,7 @@ function NavItem({ href, active, icon, label }: { href: string; active: boolean;
 
 function LockedItem({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex cursor-not-allowed items-center gap-2.5 rounded-[8px] px-3 py-[7px] text-[13.5px] text-[#c4c1bb]">
+    <div className="flex cursor-not-allowed items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-[7px] text-sm text-muted-foreground/50">
       <span className="shrink-0">{icon}</span>
       {label}
       <LockIcon />

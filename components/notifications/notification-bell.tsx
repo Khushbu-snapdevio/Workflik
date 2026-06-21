@@ -23,19 +23,19 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
           <button
             type="button"
             onClick={toggle}
-            className={`relative flex w-full items-center justify-center rounded-md py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground ${
-              panelOpen ? "bg-sidebar-accent text-sidebar-foreground" : "text-sidebar-foreground/50"
+            className={`relative flex size-9 items-center justify-center rounded-[var(--radius-sm)] transition-all ${
+              panelOpen ? "bg-primary/[0.10] text-primary" : "text-sidebar-foreground/50 hover:bg-primary/[0.05] hover:text-sidebar-foreground"
             }`}
           >
-            <BellIcon size={17} />
+            <BellIcon size={18} />
             {badge && (
-              <span className="absolute top-1 right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-blue-500 px-0.5 text-[9px] font-bold text-white leading-none">
+              <span className="absolute top-1 right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white leading-none">
                 {badge}
               </span>
             )}
           </button>
           {/* Tooltip */}
-          <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+          <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-[var(--shadow-float)] transition-opacity group-hover:opacity-100">
             <p className="text-xs font-semibold text-popover-foreground">Notifications</p>
           </div>
         </div>
@@ -43,16 +43,16 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
         <button
           type="button"
           onClick={toggle}
-          className={`relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground ${
+          className={`relative flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-[13px] font-medium transition-colors ${
             panelOpen
-              ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-              : "text-sidebar-foreground/70"
+              ? "bg-primary/[0.08] text-foreground font-semibold"
+              : "text-sidebar-foreground/65 hover:bg-primary/[0.04] hover:text-sidebar-foreground"
           }`}
         >
-          <span className="relative shrink-0">
+          <span className={`relative shrink-0 transition-colors ${panelOpen ? "text-primary" : "text-sidebar-foreground/40"}`}>
             <BellIcon size={15} />
             {badge && (
-              <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-blue-500 px-0.5 text-[9px] font-bold text-white leading-none">
+              <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white leading-none">
                 {badge}
               </span>
             )}

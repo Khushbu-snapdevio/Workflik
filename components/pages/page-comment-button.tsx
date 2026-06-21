@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { XIcon, ChatTextIcon } from "@phosphor-icons/react";
+import { XIcon, ChatTextIcon, FileTextIcon, ChatDotsIcon } from "@phosphor-icons/react";
 import { CommentCard } from "@/components/editor/comment-card";
 
 interface Props {
@@ -29,9 +29,8 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
         setUnresolvedCount(count);
       })
       .catch(() => {});
-  }, [pageId, open]); // re-fetch when panel closes so badge stays current
+  }, [pageId, open]);
 
-  // Close panel on Escape
   useEffect(() => {
     if (!open) return;
     function handler(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
@@ -45,53 +44,69 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+        className={`relative flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
           open
-            ? "bg-accent text-foreground"
+            ? "bg-primary/10 text-primary"
             : "text-muted-foreground hover:bg-accent hover:text-foreground"
         }`}
       >
         <ChatTextIcon size={14} />
         Comments
         {unresolvedCount != null && unresolvedCount > 0 && (
-          <span className="rounded-full bg-blue-500 px-1.5 py-px text-[10px] font-semibold text-white leading-none">
+          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground leading-none">
             {unresolvedCount}
           </span>
         )}
       </button>
 
-      {/* Right-side panel portal */}
+      {/* Panel portal */}
       {mounted && open && createPortal(
         <>
-          {/* Backdrop */}
+          {/* Invisible backdrop */}
           <div
             className="fixed inset-0"
-            style={{ zIndex: 190 }}
+            style={{ zIndex: 599 }}
             onClick={() => setOpen(false)}
           />
 
-          {/* Panel */}
+          {/* Slide-in panel */}
           <div
-            className="fixed top-0 right-0 h-full bg-white border-l border-gray-200 shadow-2xl flex flex-col"
-            style={{ width: 380, zIndex: 191 }}
+            className="fixed top-3 right-3 bottom-3 flex flex-col bg-background border border-border/50 shadow-[var(--shadow-float)] overflow-hidden"
+            style={{ width: 380, zIndex: 600, borderRadius: "var(--radius-xl)" }}
           >
-            {/* Panel header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-              <div className="flex items-center gap-2">
-                <ChatTextIcon size={16} className="text-gray-500" />
-                <span className="text-[14px] font-semibold text-gray-900 tracking-tight">Page comments</span>
+            {/* ── Header ── */}
+            <div className="shrink-0 border-b border-border/40 bg-card">
+              <div className="flex items-center justify-between px-4 pt-4 pb-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 border border-primary/[0.12]">
+                    <FileTextIcon size={15} className="text-primary" weight="duotone" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[13px] font-semibold text-foreground leading-tight">Page Comments</p>
+                      <span className="inline-flex items-center rounded-full bg-primary/[0.08] px-1.5 py-px text-[9px] font-bold text-primary border border-primary/20 leading-none">
+                        PAGE
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground/50 leading-tight mt-0.5">
+                      {unresolvedCount != null && unresolvedCount > 0
+                        ? `${unresolvedCount} open · whole page`
+                        : "Whole page · not block-specific"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <XIcon size={14} weight="bold" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-              >
-                <XIcon size={14} weight="bold" />
-              </button>
             </div>
 
-            {/* Comments content — scrollable */}
-            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+            {/* ── Scrollable content ── */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               <CommentCard
                 variant="inline"
                 pageId={pageId}

@@ -153,10 +153,10 @@ export function TableView({
       <div style={{ minWidth: totalW, paddingRight: 32 }}>
 
         {/* ═══════════ HEADER ═══════════ */}
-        <div className="sticky top-0 z-20 flex items-stretch db-header-b bg-background/95 backdrop-blur-[6px]">
+        <div className="sticky top-0 z-20 flex items-stretch db-header-b bg-card border-b border-border/60 backdrop-blur-sm shadow-[0_1px_0_rgba(0,0,0,0.06)]">
           {/* Checkbox / select-all */}
           <div
-            className="flex shrink-0 items-center justify-center bg-background/95"
+            className="flex shrink-0 items-center justify-center bg-muted/30"
             style={{ width: IDX_COL_W, minWidth: IDX_COL_W }}
           >
             {isEditor && (
@@ -192,15 +192,15 @@ export function TableView({
 
           {/* Name header */}
           <div
-            className="flex shrink-0 items-center gap-2 bg-background/95 px-3 py-0"
-            style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: 34, borderRight: "1px solid rgba(26,26,20,0.08)" }}
+            className="flex shrink-0 items-center gap-2 bg-muted/30 px-3 py-0"
+            style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: 34, borderRight: "1px solid var(--color-border)" }}
           >
             <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/10">
               <svg viewBox="0 0 16 16" className="size-3 text-primary/70" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
                 <polyline points="3 4 3 3 13 3 13 4"/><line x1="8" y1="3" x2="8" y2="13"/><line x1="5" y1="13" x2="11" y2="13"/>
               </svg>
             </span>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Name</span>
+            <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</span>
           </div>
 
           {/* Property headers */}
@@ -222,7 +222,7 @@ export function TableView({
                       if (e.key === "Escape") setRenamingProp(null);
                     }}
                     autoFocus
-                    className="h-full w-full bg-transparent px-3 text-[12px] font-semibold text-foreground/70 focus:outline-none"
+                    className="h-full w-full bg-transparent px-3 text-xs font-semibold text-foreground/70 focus:outline-none"
                   />
                 ) : (
                   <button
@@ -232,12 +232,12 @@ export function TableView({
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       setPropMenu(propMenu?.propId === prop.id ? null : { propId: prop.id, rect });
                     }}
-                    className="flex h-full w-full items-center gap-2 px-3 transition-colors hover:bg-accent/60"
+                    className="flex h-full w-full items-center gap-2 bg-muted/30 px-3 transition-colors hover:bg-accent/60"
                   >
                     <span className="flex size-4 shrink-0 items-center justify-center rounded-md bg-muted/50">
                       <Icon size={10} />
                     </span>
-                    <span className="truncate text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">{prop.name}</span>
+                    <span className="truncate text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">{prop.name}</span>
                   </button>
                 )}
                 {/* Resize handle */}
@@ -279,18 +279,18 @@ export function TableView({
               {group.id && group.color ? (() => {
                 const c = getOptionColor(group.color);
                 return (
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${c.bg} ${c.text}`}>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.bg} ${c.text}`}>
                     <span className={`size-1.5 rounded-full ${c.dot}`} />
                     {group.label}
                   </span>
                 );
               })() : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground/70">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground/70">
                   <span className="size-1.5 rounded-full bg-muted-foreground/30" />
                   {group.label}
                 </span>
               )}
-              <span className="text-[11px] text-muted-foreground/40">{group.entries.length}</span>
+              <span className="text-xs text-muted-foreground/40">{group.entries.length}</span>
             </div>
           );
 
@@ -301,7 +301,7 @@ export function TableView({
               key={entry.id}
               className={[
                 "group/row flex items-stretch db-border-b transition-colors duration-100",
-                isSelected ? "bg-primary/[0.08]" : "hover:bg-[rgba(201,106,43,0.04)]",
+                isSelected ? "bg-primary/[0.06]" : "hover:bg-primary/[0.03]",
               ].join(" ")}
             >
               {/* Checkbox / index */}
@@ -318,7 +318,7 @@ export function TableView({
                       className="sr-only"
                     />
                     {/* Row number — fades out on hover/select */}
-                    <span className={`absolute select-none text-[11px] tabular-nums text-muted-foreground/30 transition-opacity duration-150 ${
+                    <span className={`absolute select-none text-xs tabular-nums text-muted-foreground/30 transition-opacity duration-150 ${
                       isSelected ? "opacity-0" : "opacity-100 group-hover/row:opacity-0"
                     }`}>
                       {rowIdx + 1}
@@ -337,14 +337,14 @@ export function TableView({
                     </span>
                   </label>
                 ) : (
-                  <span className="select-none text-[11px] tabular-nums text-muted-foreground/30">{rowIdx + 1}</span>
+                  <span className="select-none text-xs tabular-nums text-muted-foreground/30">{rowIdx + 1}</span>
                 )}
               </div>
 
               {/* Title cell */}
               <div
                 className="group/title flex shrink-0 items-center gap-2.5 px-3"
-                style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: ROW_H, borderRight: "1px solid rgba(26,26,20,0.08)" }}
+                style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: ROW_H, borderRight: "1px solid var(--color-border)" }}
               >
                 {entry.icon ? (
                   <span className="shrink-0 text-base leading-none">{entry.icon}</span>
@@ -366,7 +366,7 @@ export function TableView({
                       if (e.key === "Enter" || e.key === "Tab") { onUpdateTitle(entry.id, editValue); setActiveCell(null); e.preventDefault(); }
                       if (e.key === "Escape") setActiveCell(null);
                     }}
-                    className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-foreground focus:outline-none"
+                    className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground focus:outline-none"
                     placeholder="Untitled"
                   />
                 ) : (
@@ -380,7 +380,7 @@ export function TableView({
                         setEditValue(entry.title ?? "");
                       }
                     }}
-                    className={`min-w-0 flex-1 truncate text-[13px] font-medium cursor-pointer ${
+                    className={`min-w-0 flex-1 truncate text-sm font-medium cursor-pointer ${
                       entry.title ? "text-foreground" : "text-muted-foreground/30"
                     }`}
                   >
@@ -392,7 +392,7 @@ export function TableView({
                 <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/title:opacity-100">
                   <Link
                     href={`/app/${workspaceSlug}/${entry.shortId}`}
-                    className="flex size-6 items-center justify-center rounded-md text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+                    className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
                     title="Open full page"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -405,7 +405,7 @@ export function TableView({
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                         setRowMenu(rowMenu?.entryId === entry.id ? null : { entryId: entry.id, shortId: entry.shortId, rect });
                       }}
-                      className="flex size-6 items-center justify-center rounded-md text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+                      className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
                     >
                       <DotsThree size={13} weight="bold" />
                     </button>
@@ -423,8 +423,8 @@ export function TableView({
                     className={[
                       "group/cell relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
                       isActive
-                        ? "bg-[rgba(201,106,43,0.06)] ring-1 ring-inset ring-primary/40"
-                        : "hover:bg-[rgba(201,106,43,0.04)]",
+                        ? "bg-[rgba(2,132,199,0.06)] ring-1 ring-inset ring-primary/40"
+                        : "hover:bg-[rgba(2,132,199,0.04)]",
                     ].join(" ")}
                     style={{ width: colW(prop.id), minWidth: colW(prop.id), height: ROW_H }}
                     onClick={(e) => activateCell(entry.id, prop.id, e)}
@@ -440,7 +440,7 @@ export function TableView({
                           if (e.key === "Escape") setActiveCell(null);
                         }}
                         type={prop.type === "number" ? "number" : "text"}
-                        className="w-full bg-transparent text-[13px] text-foreground focus:outline-none"
+                        className="w-full bg-transparent text-sm text-foreground focus:outline-none"
                       />
                     ) : rawVal ? (
                       <CellDisplay property={prop} value={rawVal} compact />
@@ -448,7 +448,7 @@ export function TableView({
                       <>
                         <CellDisplay property={prop} value={rawVal} compact />
                         {isEditor && TEXT_TYPES.has(prop.type) && (
-                          <span className="pointer-events-none select-none text-[13px] text-muted-foreground/25 opacity-0 transition-opacity duration-100 group-hover/cell:opacity-100">
+                          <span className="pointer-events-none select-none text-sm text-muted-foreground/25 opacity-0 transition-opacity duration-100 group-hover/cell:opacity-100">
                             Type…
                           </span>
                         )}
@@ -470,7 +470,7 @@ export function TableView({
         {entries.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-6 py-24">
             <div className="relative">
-              <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/8">
+              <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-primary/8">
                 <svg viewBox="0 0 24 24" className="size-8 text-primary/60" fill="none" stroke="currentColor" strokeWidth={1.5}>
                   <rect x="3" y="3" width="18" height="18" rx="2.5"/>
                   <line x1="3" y1="9" x2="21" y2="9"/>
@@ -480,14 +480,14 @@ export function TableView({
             </div>
             <div className="text-center">
               <p className="text-[17px] font-semibold text-foreground">No entries yet</p>
-              <p className="mt-1.5 text-[14px] text-muted-foreground/60">
+              <p className="mt-1.5 text-sm text-muted-foreground/60">
                 Add your first entry to start building your database
               </p>
             </div>
             {isEditor && (
               <button
                 onClick={() => onCreateEntry()}
-                className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_2px_8px_rgba(201,106,43,0.30)] transition-all duration-200 hover:bg-primary/90 hover:shadow-[0_4px_16px_rgba(201,106,43,0.35)] hover:-translate-y-px active:translate-y-0"
+                className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-[0_2px_8px_rgba(2,132,199,0.20)] transition-all duration-200 hover:bg-primary/90 hover:shadow-[0_4px_16px_rgba(2,132,199,0.25)] hover:-translate-y-px active:translate-y-0"
               >
                 <svg viewBox="0 0 16 16" className="size-3.5" fill="currentColor"><path d="M8 2a1 1 0 011 1v4h4a1 1 0 010 2H9v4a1 1 0 01-2 0V9H3a1 1 0 010-2h4V3a1 1 0 011-1z"/></svg>
                 Add first entry
@@ -498,12 +498,12 @@ export function TableView({
 
         {/* ═══════════ ADD ROW ═══════════ */}
         {isEditor && entries.length > 0 && (
-          <div className="border-b border-dashed border-border/30">
+          <div>
             <button
               onClick={() => onCreateEntry()}
-              className="group/add flex h-10 w-full items-center gap-2 px-4 text-[13px] font-medium text-muted-foreground/40 transition-all duration-200 hover:text-primary/70"
+              className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-muted-foreground/50 transition-colors hover:bg-primary/[0.04] hover:text-primary cursor-pointer w-full"
             >
-              <Plus size={13} className="transition-transform duration-200 group-hover/add:scale-110" />
+              <Plus size={13} />
               <span>New entry</span>
             </button>
           </div>
@@ -587,11 +587,11 @@ function RowContextMenu({ menu, workspaceSlug, onDeleteRequest, onClose }: RowCo
     <div
       ref={ref}
       style={{ position: "fixed", top: menu.rect.bottom + 6, left: menu.rect.left, zIndex: 300 }}
-      className="w-48 overflow-hidden rounded-xl border border-border bg-background p-1.5 shadow-xl"
+      className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5 shadow-[var(--shadow-raised)]"
     >
       <Link
         href={`/app/${workspaceSlug}/${menu.shortId}`}
-        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-foreground transition-colors hover:bg-accent"
+        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
         onClick={onClose}
       >
         <ArrowSquareOut size={13} /> Open full page
@@ -599,7 +599,7 @@ function RowContextMenu({ menu, workspaceSlug, onDeleteRequest, onClose }: RowCo
       <div className="my-1 h-px bg-border/60" />
       <button
         onClick={onDeleteRequest}
-        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-950/30"
+        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-950/30"
       >
         <Trash size={13} /> Delete entry
       </button>
@@ -628,15 +628,15 @@ function DeleteConfirmDialog({ onConfirm, onCancel }: DeleteConfirmDialogProps) 
       className="fixed inset-0 z-[500] flex items-center justify-center bg-black/25 backdrop-blur-[2px]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
-      <div className="w-[340px] overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+      <div className="w-[340px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background shadow-[var(--shadow-float)]">
         {/* Header */}
         <div className="flex flex-col items-center gap-3 px-6 pb-4 pt-6">
           <div className="flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/40">
             <Trash size={20} className="text-red-500" />
           </div>
           <div className="text-center">
-            <h3 className="text-[15px] font-semibold text-foreground">Delete entry?</h3>
-            <p className="mt-1 text-[13px] text-muted-foreground">
+            <h3 className="text-base font-semibold text-foreground">Delete entry?</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               This entry and all its content will be permanently deleted. This action cannot be undone.
             </p>
           </div>
@@ -648,7 +648,7 @@ function DeleteConfirmDialog({ onConfirm, onCancel }: DeleteConfirmDialogProps) 
             type="button"
             onClick={onCancel}
             disabled={deleting}
-            className="flex-1 rounded-xl border border-border/80 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            className="flex-1 rounded-[var(--radius-md)] border border-border/80 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
           >
             Cancel
           </button>
@@ -656,7 +656,7 @@ function DeleteConfirmDialog({ onConfirm, onCancel }: DeleteConfirmDialogProps) 
             type="button"
             onClick={handleConfirm}
             disabled={deleting}
-            className="flex-1 rounded-xl bg-red-500 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-60"
+            className="flex-1 rounded-[var(--radius-md)] bg-red-500 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-60"
           >
             {deleting ? "Deleting…" : "Delete"}
           </button>
@@ -693,19 +693,19 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onClos
     <div
       ref={ref}
       style={{ position: "fixed", top: menu.rect.bottom + 4, left: menu.rect.left, zIndex: 300 }}
-      className="w-48 overflow-hidden rounded-xl border border-border bg-background p-1.5 shadow-xl"
+      className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5 shadow-[var(--shadow-raised)]"
     >
       {sortable && (
         <>
-          <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
-          <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
+          <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
+          <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
           <div className="my-1 h-px bg-border/60" />
         </>
       )}
-      <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
-      <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
+      <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
+      <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
       <div className="my-1 h-px bg-border/60" />
-      <button onClick={() => onDelete(menu.propId)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"><Trash size={13} /> Delete column</button>
+      <button onClick={() => onDelete(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"><Trash size={13} /> Delete column</button>
     </div>,
     document.body
   );
@@ -735,16 +735,16 @@ function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPr
     <div
       ref={ref}
       style={{ position: "fixed", top: rect.bottom + 6, left: Math.max(8, rect.right - 240), zIndex: 300, width: 240 }}
-      className="overflow-hidden rounded-xl border border-border bg-background shadow-xl"
+      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-[var(--shadow-raised)]"
     >
       <div className="border-b border-border px-3 py-2.5">
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">New property</p>
+        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">New property</p>
         <input
           autoFocus
           value={propName}
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="Property name…"
-          className="w-full bg-transparent text-[13px] placeholder:text-muted-foreground/40 focus:outline-none"
+          className="w-full bg-transparent text-sm placeholder:text-muted-foreground/40 focus:outline-none"
           onKeyDown={(e) => e.stopPropagation()}
         />
       </div>
@@ -755,7 +755,7 @@ function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPr
             <button
               key={def.type}
               onClick={() => onAdd(propName.trim() || def.label, def.type)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-foreground hover:bg-accent"
+              className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-sm text-foreground hover:bg-accent"
             >
               <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted/50 text-muted-foreground">
                 <Icon size={12} />

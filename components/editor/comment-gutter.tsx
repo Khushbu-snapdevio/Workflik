@@ -140,7 +140,7 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
           type="button"
           onClick={() => onOpen(blockId)}
           style={{ position: "fixed", top, left, zIndex: 100 }}
-          className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-full shadow-sm hover:bg-blue-100 transition-colors"
+          className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-primary bg-primary/[0.06] border border-primary/20 rounded-full shadow-[var(--shadow-card)] hover:bg-primary/[0.1] transition-colors"
         >
           <ChatText size={10} />
           {count}

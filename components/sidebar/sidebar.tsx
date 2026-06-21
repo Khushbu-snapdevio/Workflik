@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpenIcon,
   CaretDoubleRightIcon,
   GearIcon,
   HouseIcon,
@@ -20,6 +21,7 @@ import { RecentlyVisitedSection } from "@/components/sidebar/recently-visited-se
 import { WorkspaceSwitcher } from "@/components/sidebar/workspace-switcher";
 import { TemplateGalleryModal } from "@/components/templates/template-gallery-modal";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { NewPageButton } from "@/components/workspace/new-page-button";
 
 type PageItem = {
   id: string;
@@ -45,12 +47,13 @@ type Props = {
   isAdmin?: boolean;
 };
 
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 480;
+const MIN_WIDTH     = 260;
+const MAX_WIDTH     = 480;
+const DEFAULT_WIDTH = 300;
 
 export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false }: Props) {
   const pathname = usePathname();
-  const [width, setWidth] = useState(240);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [collapsed, setCollapsed] = useState(false);
   const [filter, setFilter] = useState("");
   const [pages, setPages] = useState<PageItem[]>([]);
@@ -66,15 +69,16 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   const resizingRef = useRef(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
-  const currentWidthRef = useRef(240);
+  const currentWidthRef = useRef(DEFAULT_WIDTH);
 
   useEffect(() => {
     fetch("/api/user/preferences")
       .then((r) => r.json())
       .then((d) => {
         if (typeof d.sidebarWidth === "number") {
-          setWidth(d.sidebarWidth);
-          currentWidthRef.current = d.sidebarWidth;
+          const clamped = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, d.sidebarWidth));
+          setWidth(clamped);
+          currentWidthRef.current = clamped;
         }
         if (typeof d.sidebarCollapsed === "boolean") {
           setCollapsed(d.sidebarCollapsed);
@@ -198,7 +202,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
 
   if (collapsed) {
     return (
-      <aside className="flex h-screen w-[52px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <aside className="flex h-screen w-[64px] shrink-0 flex-col items-center border-r border-primary/20 bg-sidebar text-sidebar-foreground">
 
         {/* Expand button */}
         <div className="flex w-full items-center justify-center border-b border-sidebar-border py-[11px]">
@@ -206,51 +210,50 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             onClick={toggleCollapse}
             title="Expand sidebar"
             type="button"
-            className="flex size-8 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/35 outline-none transition-all hover:bg-primary/[0.06] hover:text-sidebar-foreground active:scale-[0.92]"
           >
-            <CaretDoubleRightIcon size={15} />
+            <CaretDoubleRightIcon size={16} />
           </button>
         </div>
 
         {/* Primary nav */}
-        <nav className="flex w-full flex-col items-center gap-1 px-1.5 py-3">
-          <CollapsedNavItem href={`/app/${workspaceSlug}`}              label="Home"          active={pathname === `/app/${workspaceSlug}`}><HouseIcon size={17} /></CollapsedNavItem>
-          <CollapsedSearchItem label="Search"><MagnifyingGlassIcon size={17} /></CollapsedSearchItem>
+        <nav className="flex w-full flex-col items-center gap-1 px-2 py-3">
+          <CollapsedNavItem href={`/app/${workspaceSlug}`} label="Home" active={pathname === `/app/${workspaceSlug}`}>
+            <HouseIcon size={18} weight={pathname === `/app/${workspaceSlug}` ? "fill" : "regular"} />
+          </CollapsedNavItem>
+          <CollapsedSearchItem label="Search"><MagnifyingGlassIcon size={18} /></CollapsedSearchItem>
           <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} collapsed />
-          <CollapsedNavItem href={`/app/${workspaceSlug}/settings`}     label="Settings"      ><GearIcon size={17} /></CollapsedNavItem>
-          <div className="my-1 w-6 border-t border-sidebar-border" />
-          <CollapsedNavItem href={`/app/${workspaceSlug}/new`}          label="New Page">
-            <svg viewBox="0 0 16 16" className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9.5 2H4a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 004 14h8a1.5 1.5 0 001.5-1.5V6.5L9.5 2z"/>
-              <path d="M9.5 2v4.5H14"/>
-              <line x1="5" y1="9" x2="11" y2="9"/>
-            </svg>
+          <CollapsedNavItem href={`/app/${workspaceSlug}/library`} label="Library" active={pathname.startsWith(`/app/${workspaceSlug}/library`)}>
+            <BookOpenIcon size={18} weight={pathname.startsWith(`/app/${workspaceSlug}/library`) ? "fill" : "regular"} />
           </CollapsedNavItem>
-          <CollapsedNavItem href={`/app/${workspaceSlug}/new-database`} label="New Database">
-            <svg viewBox="0 0 16 16" className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1.5" y="1.5" width="13" height="13" rx="1.5"/>
-              <line x1="1.5" y1="5.5" x2="14.5" y2="5.5"/>
-              <line x1="1.5" y1="9.5" x2="14.5" y2="9.5"/>
-              <line x1="5.5" y1="5.5" x2="5.5" y2="14.5"/>
-            </svg>
+          <CollapsedNavItem href={`/app/${workspaceSlug}/templates`} label="Templates" active={pathname.startsWith(`/app/${workspaceSlug}/templates`)}>
+            <SquaresFourIcon size={18} weight={pathname.startsWith(`/app/${workspaceSlug}/templates`) ? "fill" : "regular"} />
           </CollapsedNavItem>
+          <div className="my-1 w-8 border-t border-sidebar-border/70" />
+          <div className="group relative w-full">
+            <NewPageButton
+              workspaceId={workspaceId}
+              workspaceSlug={workspaceSlug}
+              className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/50 transition-all hover:bg-primary/[0.05] hover:text-sidebar-foreground disabled:opacity-60"
+            >
+              <PlusIcon size={18} weight="bold" />
+            </NewPageButton>
+            <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-[var(--shadow-float)] transition-opacity group-hover:opacity-100">
+              <p className="text-xs font-semibold text-popover-foreground">New Page</p>
+            </div>
+          </div>
         </nav>
 
         <div className="flex-1" />
 
         {/* Footer nav */}
-        <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-1.5 py-3">
-          <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><TrashIcon size={17} /></CollapsedNavItem>
-          <CollapsedNavItem href="/platform/dashboard" label="Dashboard">
-            <svg className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-              <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-            </svg>
-          </CollapsedNavItem>
+        <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-2 py-3">
+          <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><TrashIcon size={18} /></CollapsedNavItem>
+          <CollapsedNavItem href={`/app/${workspaceSlug}/settings`} label="Settings"><GearIcon size={18} /></CollapsedNavItem>
           {isAdmin && (
             <CollapsedNavItem href="/Orbit-admin/orbit" label="Admin Panel">
-              <svg className="size-[17px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinecap="round" strokeLinejoin="round" />
+              <svg className="size-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V5l7-3z"/>
               </svg>
             </CollapsedNavItem>
           )}
@@ -259,18 +262,15 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         {/* User avatar */}
         <div className="flex w-full items-center justify-center border-t border-sidebar-border py-3">
           <div className="group relative">
-            <div
-              className="flex size-7 cursor-default items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold uppercase text-primary"
-            >
+            <div className="flex size-8 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] bg-primary text-[13px] font-bold uppercase text-primary-foreground shadow-sm transition-all hover:scale-105 hover:shadow-md hover:ring-2 hover:ring-primary/30">
               {userEmail[0].toUpperCase()}
             </div>
-            {/* Tooltip */}
-            <div className="pointer-events-none absolute bottom-0 left-full z-50 ml-2.5 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-              <p className="text-xs font-medium text-popover-foreground">{userEmail}</p>
+            <div className="pointer-events-none absolute bottom-0 left-full z-50 ml-3 min-w-[160px] whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-3 py-2 opacity-0 shadow-[var(--shadow-float)] transition-opacity group-hover:opacity-100">
+              <p className="text-xs font-semibold text-popover-foreground">{userEmail.split("@")[0]}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">{userEmail}</p>
             </div>
           </div>
         </div>
-
       </aside>
     );
   }
@@ -278,63 +278,59 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
   return (
     <aside
       data-tour="sidebar"
-      className="relative flex h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+      className="relative flex h-screen shrink-0 flex-col border-r border-primary/20 bg-sidebar text-sidebar-foreground"
       style={{ width }}
     >
       {/* Workspace header */}
-      <div className="flex shrink-0 items-center gap-1 border-b border-sidebar-border px-2 py-2">
+      <div className="flex shrink-0 items-center gap-1 border-b border-sidebar-border px-2 py-1.5">
         <div className="min-w-0 flex-1">
           <WorkspaceSwitcher currentSlug={workspaceSlug} />
         </div>
-        {/* ── New dropdown ── */}
+
+        {/* New dropdown */}
         <div className="relative" ref={newMenuRef}>
           <button
             data-tour="new-page"
             onClick={() => setNewMenu((v) => !v)}
             title="Create new…"
             type="button"
-            className={`flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+            className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] outline-none transition-all ${
               newMenu
-                ? "bg-sidebar-accent text-sidebar-foreground"
-                : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                ? "bg-primary text-white"
+                : "text-sidebar-foreground/35 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground"
             }`}
           >
-            <PlusIcon size={12} weight="bold" />
-            <span>New</span>
+            <PlusIcon size={14} weight="bold" />
           </button>
 
           {newMenu && (
-            <div className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
-              {/* New Page */}
-              <Link
-                href={`/app/${workspaceSlug}/new`}
-                onClick={() => setNewMenu(false)}
-                className="group flex items-center gap-2.5 px-3 py-2.5 transition-colors hover:bg-accent"
+            <div className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover p-1 shadow-[var(--shadow-float)]">
+              <NewPageButton
+                workspaceId={workspaceId}
+                workspaceSlug={workspaceSlug}
+                onBeforeCreate={() => setNewMenu(false)}
+                className="group flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors hover:bg-accent disabled:opacity-60"
               >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
-                  <svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground">
+                  <svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M8 1.5H3A1.5 1.5 0 001.5 3v8A1.5 1.5 0 003 12.5h8A1.5 1.5 0 0012.5 11V6L8 1.5z"/>
                     <path d="M8 1.5V6h4.5"/>
-                    <line x1="4" y1="8.5" x2="10" y2="8.5"/>
-                    <line x1="4" y1="10.5" x2="7" y2="10.5"/>
+                    <line x1="4.5" y1="8.5" x2="9.5" y2="8.5"/>
                   </svg>
                 </span>
                 <span>
-                  <span className="block text-[12.5px] font-semibold leading-tight text-foreground">New Page</span>
-                  <span className="block text-[11px] leading-tight text-muted-foreground">Docs, notes, wikis</span>
+                  <span className="block text-xs font-semibold text-foreground">New Page</span>
+                  <span className="block text-xs text-muted-foreground">Docs, notes, wikis</span>
                 </span>
-              </Link>
+              </NewPageButton>
 
-              <div className="mx-3 border-t border-border/60" />
-
-              {/* New Database */}
               <Link
                 href={`/app/${workspaceSlug}/new-database`}
                 onClick={() => setNewMenu(false)}
-                className="group flex items-center gap-2.5 px-3 py-2.5 transition-colors hover:bg-accent"
+                className="group flex items-center gap-3 rounded-[var(--radius-sm)] px-2.5 py-2 transition-colors hover:bg-accent"
               >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
-                  <svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground">
+                  <svg viewBox="0 0 14 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="1.5" y="1.5" width="11" height="11" rx="1.5"/>
                     <line x1="1.5" y1="5" x2="12.5" y2="5"/>
                     <line x1="1.5" y1="8.5" x2="12.5" y2="8.5"/>
@@ -342,25 +338,24 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
                   </svg>
                 </span>
                 <span>
-                  <span className="block text-[12.5px] font-semibold leading-tight text-foreground">New Database</span>
-                  <span className="block text-[11px] leading-tight text-muted-foreground">Tables, boards, calendars</span>
+                  <span className="block text-xs font-semibold text-foreground">New Database</span>
+                  <span className="block text-xs text-muted-foreground">Tables, boards, calendars</span>
                 </span>
               </Link>
 
-              <div className="mx-3 border-t border-border/60" />
+              <div className="my-1 border-t border-border" />
 
-              {/* From Template */}
               <button
                 type="button"
                 onClick={() => { setNewMenu(false); setShowTemplateGallery(true); }}
-                className="group flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-accent"
+                className="group flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors hover:bg-accent"
               >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground/60 transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground">
                   <SquaresFourIcon size={13} />
                 </span>
                 <span>
-                  <span className="block text-[12.5px] font-semibold leading-tight text-foreground">From Template</span>
-                  <span className="block text-[11px] leading-tight text-muted-foreground">Start from a template</span>
+                  <span className="block text-xs font-semibold text-foreground">From Template</span>
+                  <span className="block text-xs text-muted-foreground">Start from a template</span>
                 </span>
               </button>
             </div>
@@ -374,23 +369,24 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             />
           )}
         </div>
+
         <button
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/35 outline-none transition-all hover:bg-sidebar-accent/70 hover:text-sidebar-foreground active:scale-[0.92]"
           onClick={toggleCollapse}
           title="Collapse sidebar"
           type="button"
         >
-          <CaretDoubleRightIcon className="rotate-180" size={14} />
+          <CaretDoubleRightIcon className="rotate-180" size={13} />
         </button>
       </div>
 
       {/* Scrollable body */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {/* Quick nav */}
-        <nav className="px-2 py-2">
+        <nav className="px-2 py-1.5">
           <NavButton
             href={`/app/${workspaceSlug}`}
-            icon={<HouseIcon size={15} />}
+            icon={<HouseIcon size={15} weight={pathname === `/app/${workspaceSlug}` ? "fill" : "regular"} />}
             label="Home"
             active={pathname === `/app/${workspaceSlug}`}
           />
@@ -399,14 +395,16 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} />
           </span>
           <NavButton
-            href={`/app/${workspaceSlug}/settings`}
-            icon={<GearIcon size={15} />}
-            label="Settings"
+            href={`/app/${workspaceSlug}/library`}
+            icon={<BookOpenIcon size={15} weight={pathname.startsWith(`/app/${workspaceSlug}/library`) ? "fill" : "regular"} />}
+            label="Library"
+            active={pathname.startsWith(`/app/${workspaceSlug}/library`)}
           />
           <NavButton
             href={`/app/${workspaceSlug}/templates`}
-            icon={<SquaresFourIcon size={15} />}
+            icon={<SquaresFourIcon size={15} weight={pathname.startsWith(`/app/${workspaceSlug}/templates`) ? "fill" : "regular"} />}
             label="Templates"
+            active={pathname.startsWith(`/app/${workspaceSlug}/templates`)}
           />
         </nav>
 
@@ -465,53 +463,54 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
         <div className="mx-2 border-t border-sidebar-border" />
 
         {/* Trash */}
-        <div className="px-2 py-2">
+        <div className="px-2 py-1.5">
           <NavButton
             href={`/app/${workspaceSlug}/trash`}
             icon={<TrashIcon size={15} />}
             label="Trash"
+            active={pathname.startsWith(`/app/${workspaceSlug}/trash`)}
           />
         </div>
       </div>
 
-      {/* Footer nav — Dashboard & Admin */}
-      <div className="border-t border-sidebar-border px-2 py-2">
+      {/* Bottom nav — Settings + Admin */}
+      <div className="shrink-0 border-t border-sidebar-border px-2 py-1.5">
         <NavButton
-          href="/platform/dashboard"
-          icon={
-            <svg className="size-[15px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-            </svg>
-          }
-          label="Dashboard"
+          href={`/app/${workspaceSlug}/settings`}
+          icon={<GearIcon size={15} />}
+          label="Settings"
+          active={pathname.startsWith(`/app/${workspaceSlug}/settings`)}
         />
         {isAdmin && (
           <NavButton
             href="/Orbit-admin/orbit"
             icon={
-              <svg className="size-[15px]" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" strokeLinecap="round" strokeLinejoin="round" />
+              <svg className="size-[15px]" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M12 2l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V5l7-3z"/>
               </svg>
             }
-            label="Admin Panel"
+            label="Orbit Admin"
+            active={pathname.startsWith("/Orbit-admin")}
           />
         )}
       </div>
 
-      {/* Footer */}
-      <div className="shrink-0 border-t border-sidebar-border px-3 py-2.5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold uppercase text-primary">
+      {/* User footer */}
+      <div className="shrink-0 border-t border-sidebar-border px-2 py-2">
+        <div className="group flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 transition-all hover:bg-primary/[0.07] hover:ring-1 hover:ring-primary/20">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary text-xs font-bold uppercase text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
             {userEmail[0].toUpperCase()}
           </div>
-          <span className="min-w-0 flex-1 truncate text-xs text-sidebar-foreground/60">
-            {userEmail}
-          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold text-sidebar-foreground group-hover:text-foreground">
+              {userEmail.split("@")[0]}
+            </p>
+            <p className="truncate text-[10px] text-sidebar-foreground/50 group-hover:text-muted-foreground">
+              {userEmail}
+            </p>
+          </div>
           <SignOutButton
-            className="flex size-6 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/30 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
             title="Sign out"
           >
             <SignOutIcon size={13} />
@@ -546,19 +545,19 @@ function NavButton({
 }) {
   return (
     <Link
-      className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground ${
+      className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-[13px] font-medium transition-colors ${
         active
-          ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-          : "text-sidebar-foreground/70"
+          ? "bg-primary/[0.08] text-foreground font-semibold"
+          : "text-sidebar-foreground/65 hover:bg-primary/[0.04] hover:text-sidebar-foreground"
       }`}
       href={href}
     >
-      <span className="shrink-0">{icon}</span>
+      <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/80"}`}>{icon}</span>
       <span className="flex-1">{label}</span>
       {shortcut && (
-        <span className="shrink-0 text-2xs text-sidebar-foreground/30">
+        <kbd className="shrink-0 rounded bg-sidebar-border/50 px-1 py-0.5 text-[10px] font-medium text-sidebar-foreground/35">
           {shortcut}
-        </span>
+        </kbd>
       )}
     </Link>
   );
@@ -579,16 +578,16 @@ function CollapsedNavItem({
     <div className="group relative w-full">
       <Link
         href={href}
-        className={`flex w-full items-center justify-center rounded-md py-2 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground ${
+        className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] transition-all ${
           active
-            ? "bg-sidebar-accent text-sidebar-primary"
-            : "text-sidebar-foreground/50"
+            ? "bg-primary/[0.10] text-primary"
+            : "text-sidebar-foreground/50 hover:bg-primary/[0.05] hover:text-sidebar-foreground"
         }`}
       >
         {children}
       </Link>
       {/* Tooltip — appears to the right on hover */}
-      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-[var(--shadow-float)] transition-opacity group-hover:opacity-100">
         <p className="text-xs font-semibold text-popover-foreground">{label}</p>
       </div>
     </div>
@@ -601,11 +600,11 @@ function CollapsedSearchItem({ label, children }: { label: string; children: Rea
       <button
         type="button"
         onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-        className="flex w-full items-center justify-center rounded-md py-2 text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/50 transition-all hover:bg-primary/[0.05] hover:text-sidebar-foreground"
       >
         {children}
       </button>
-      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 shadow-[var(--shadow-float)] transition-opacity group-hover:opacity-100">
         <p className="text-xs font-semibold text-popover-foreground">{label}</p>
       </div>
     </div>
@@ -617,11 +616,11 @@ function SearchNavButton({ icon }: { icon: React.ReactNode }) {
     <button
       type="button"
       onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-[13px] font-medium text-sidebar-foreground/65 transition-colors hover:bg-primary/[0.04] hover:text-sidebar-foreground"
     >
-      <span className="shrink-0">{icon}</span>
+      <span className="shrink-0 text-sidebar-foreground/40">{icon}</span>
       <span className="flex-1 text-left">Search</span>
-      <span className="shrink-0 text-2xs text-sidebar-foreground/30">Ctrl+K</span>
+      <kbd className="shrink-0 rounded bg-sidebar-border/50 px-1 py-0.5 text-[10px] font-medium text-sidebar-foreground/35">Ctrl+K</kbd>
     </button>
   );
 }
@@ -634,8 +633,8 @@ function SectionLabel({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-1 flex items-center gap-2 px-2">
-      <span className="text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/50">
+    <div className="mb-0.5 flex items-center gap-2 px-2.5">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
         {label}
       </span>
       {children}

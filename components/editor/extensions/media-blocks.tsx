@@ -31,7 +31,7 @@ function MediaPicker({
   };
 
   return (
-    <div className="my-2 space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+    <div className="my-2 space-y-3 rounded-[var(--radius-md)] border border-border bg-muted/30 p-4">
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         {icon} {label}
       </p>
@@ -41,7 +41,7 @@ function MediaPicker({
           type="url"
           // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
           autoFocus
-          className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40"
+          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40"
           placeholder={placeholder}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -55,7 +55,7 @@ function MediaPicker({
           onMouseDown={(e) => e.preventDefault()}
           disabled={!url.trim()}
           onClick={() => url.trim() && onConfirm(url.trim())}
-          className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-40"
+          className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-40"
         >
           Embed ↵
         </button>
@@ -72,7 +72,7 @@ function MediaPicker({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => fileRef.current?.click()}
-          className="flex-1 rounded-md border border-dashed border-border py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+          className="flex-1 rounded-[var(--radius-sm)] border border-dashed border-border py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
         >
           Choose file from device
         </button>
@@ -81,7 +81,7 @@ function MediaPicker({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onCancel}
-            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Cancel
           </button>
@@ -107,7 +107,7 @@ function MediaActions({
         type="button"
         onMouseDown={(e) => e.preventDefault()}
         onClick={onDelete}
-        className="rounded-md bg-black/50 px-2 py-1 text-[11px] text-white/90 backdrop-blur-sm hover:bg-red-600/80"
+        className="rounded-[var(--radius-sm)] bg-foreground/60 px-2 py-1 text-xs text-white/90 backdrop-blur-sm hover:bg-destructive/80"
       >
         Delete
       </button>
@@ -115,7 +115,7 @@ function MediaActions({
         type="button"
         onMouseDown={(e) => e.preventDefault()}
         onClick={onChangeDirect}
-        className="rounded-md bg-black/50 px-2 py-1 text-[11px] text-white backdrop-blur-sm hover:bg-black/70"
+        className="rounded-[var(--radius-sm)] bg-foreground/60 px-2 py-1 text-xs text-white backdrop-blur-sm hover:bg-foreground/80"
       >
         Change
       </button>
@@ -168,7 +168,7 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-xl border border-border bg-muted/20 shadow-sm">
+        <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-border bg-muted/20 shadow-[var(--shadow-card)]">
           <img
             src={src}
             alt={captionDraft || "Image"}
@@ -237,7 +237,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-xl border border-border bg-black shadow-sm">
+        <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-border bg-black shadow-[var(--shadow-card)]">
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <video
             src={src}
@@ -307,7 +307,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-2">
-        <div className="relative flex items-center gap-3 rounded-lg border border-border/40 bg-muted/30 px-4 py-3">
+        <div className="relative flex items-center gap-3 rounded-[var(--radius-sm)] border border-border/40 bg-muted/30 px-4 py-3">
           <span className="text-2xl">🎵</span>
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <audio src={src} controls className="h-9 flex-1" style={{ minWidth: 0 }} />
@@ -316,7 +316,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={handleDelete}
-              className="rounded px-2 py-1 text-[11px] text-red-500 hover:bg-red-50"
+              className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
             >
               Delete
             </button>
@@ -324,7 +324,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => changeRef.current?.click()}
-              className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+              className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
             >
               Change
             </button>
@@ -389,7 +389,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="group my-2 flex items-center justify-between rounded-lg border border-border/40 bg-muted/30 px-4 py-3">
+      <div className="group my-2 flex items-center justify-between rounded-[var(--radius-sm)] border border-border/40 bg-muted/30 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-2xl">📎</span>
           <div className="min-w-0">
@@ -401,7 +401,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
             >
               {captionDraft}
             </a>
-            <p className="max-w-xs truncate text-[11px] text-muted-foreground/50">{src}</p>
+            <p className="max-w-xs truncate text-xs text-muted-foreground/50">{src}</p>
           </div>
         </div>
         <div className="ml-4 flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -409,7 +409,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={handleDelete}
-            className="rounded px-2 py-1 text-[11px] text-red-500 hover:bg-red-50"
+            className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
           >
             Delete
           </button>
@@ -417,7 +417,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => changeRef.current?.click()}
-            className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+            className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
           >
             Change
           </button>

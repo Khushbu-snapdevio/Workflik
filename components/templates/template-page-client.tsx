@@ -18,6 +18,10 @@ import { TemplateTableView }    from "./views/template-table-view";
 import { TemplateBoardView }    from "./views/template-board-view";
 import { TemplateCalendarView } from "./views/template-calendar-view";
 import { TemplateGalleryView }  from "./views/template-gallery-view";
+import { ShareButton }          from "@/components/pages/share-button";
+import { FavoriteButton }       from "@/components/pages/favorite-button";
+import { PageActionsMenu }      from "@/components/pages/page-actions-menu";
+import { PageCommentButton }    from "@/components/pages/page-comment-button";
 
 export type TemplateEntry = { id: string; shortId: string; title: string; orderIndex: number };
 export type TemplateValue = { id: string; entryId: string; propertyId: string; value: unknown };
@@ -149,13 +153,13 @@ function IconPicker({
     : QUICK_EMOJIS;
 
   return (
-    <div className="absolute left-0 top-full z-[400] mt-1 w-[300px] rounded-xl border border-border bg-popover p-3 shadow-2xl">
+    <div className="absolute left-0 top-full z-[400] mt-1 w-[300px] rounded-[var(--radius-md)] border border-border bg-popover p-3 shadow-[var(--shadow-float)]">
       <input
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Filter emoji…"
         autoFocus
-        className="mb-2.5 w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-[13px] outline-none focus:border-primary"
+        className="mb-2.5 w-full rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
       />
       <div className="grid max-h-[200px] grid-cols-10 gap-0.5 overflow-y-auto">
         {filtered.map((e) => (
@@ -171,7 +175,7 @@ function IconPicker({
       <div className="mt-2.5 border-t border-border/40 pt-2.5">
         <button
           onClick={() => { onSelect(""); onClose(); }}
-          className="w-full rounded-lg py-1 text-[12px] text-muted-foreground hover:bg-muted transition-colors"
+          className="w-full rounded-[var(--radius-sm)] py-1 text-xs text-muted-foreground hover:bg-muted transition-colors"
         >
           Remove icon
         </button>
@@ -232,10 +236,10 @@ function CoverPicker({
       <div className="fixed inset-0 z-[590] bg-black/20 backdrop-blur-[2px]" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 z-[600] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-popover shadow-2xl">
+      <div className="fixed left-1/2 top-1/2 z-[600] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-popover shadow-[var(--shadow-float)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-          <span className="text-[14px] font-semibold text-foreground">Page Cover</span>
+          <span className="text-sm font-semibold text-foreground">Page Cover</span>
           <button onClick={onClose} className="text-muted-foreground transition-colors hover:text-foreground">
             <XIcon size={15} />
           </button>
@@ -243,11 +247,11 @@ function CoverPicker({
 
         <div className="p-5">
           {/* File upload */}
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Upload image</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upload image</p>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="mb-1 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-4 text-[13px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/30 hover:text-foreground disabled:opacity-50"
+            className="mb-1 flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border-2 border-dashed border-border py-4 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/30 hover:text-foreground disabled:opacity-50"
           >
             <ImageIcon size={16} />
             {uploading ? "Uploading…" : "Choose a file to upload"}
@@ -259,36 +263,36 @@ function CoverPicker({
             className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
           />
-          {uploadErr && <p className="mb-2 text-[11px] text-destructive">{uploadErr}</p>}
+          {uploadErr && <p className="mb-2 text-xs text-destructive">{uploadErr}</p>}
 
 
           <div className="my-3 border-t border-border/40" />
 
           {/* Gradients */}
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Color & Gradient</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Color & Gradient</p>
           <div className="mb-4 grid grid-cols-6 gap-1.5">
             {COVER_GRADIENTS.map((g) => (
               <button
                 key={g}
                 onClick={() => { onSelect(g); onClose(); }}
                 style={{ background: g }}
-                className="h-8 rounded-lg border border-border/20 transition-all hover:scale-105 hover:ring-2 hover:ring-primary/50"
+                className="h-8 rounded-[var(--radius-sm)] border border-border/20 transition-all hover:scale-105 hover:ring-2 hover:ring-primary/50"
               />
             ))}
           </div>
 
           {/* URL */}
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Image URL</p>
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Image URL</p>
           <div className="flex gap-2">
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://…"
-              className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[12px] outline-none focus:border-primary"
+              className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-primary"
             />
             <button
               onClick={() => { if (url.trim()) { onSelect(url.trim()); onClose(); } }}
-              className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Set
             </button>
@@ -296,7 +300,7 @@ function CoverPicker({
 
           <button
             onClick={() => { onRemove(); onClose(); }}
-            className="mt-3 w-full rounded-lg py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted"
+            className="mt-3 w-full rounded-[var(--radius-sm)] py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
           >
             Remove cover
           </button>
@@ -333,14 +337,14 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
   function remove(id: string) { onChange(filters.filter((f) => f.id !== id)); }
 
   return (
-    <div className="absolute right-0 top-full z-[400] mt-1 w-[380px] rounded-xl border border-border bg-popover shadow-2xl">
+    <div className="absolute right-0 top-full z-[400] mt-1 w-[380px] rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-float)]">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <span className="text-[13px] font-semibold">Filter</span>
+        <span className="text-sm font-semibold">Filter</span>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
       </div>
       <div className="max-h-[320px] overflow-y-auto p-3 space-y-2">
         {filters.length === 0 && (
-          <p className="py-4 text-center text-[12px] text-muted-foreground">No filters applied. Add one below.</p>
+          <p className="py-4 text-center text-xs text-muted-foreground">No filters applied. Add one below.</p>
         )}
         {filters.map((f) => {
           const prop    = props.find((p) => p.id === f.propertyId);
@@ -356,14 +360,14 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
                   const ops2 = getOperators(np?.type ?? "text");
                   update(f.id, { propertyId: e.target.value, operator: ops2[0].value, value: "" });
                 }}
-                className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary"
+                className="rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
               >
                 {props.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
               <select
                 value={f.operator}
                 onChange={(e) => update(f.id, { operator: e.target.value, value: "" })}
-                className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary"
+                className="rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
               >
                 {ops.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -371,7 +375,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
                 <select
                   value={String(f.value ?? "")}
                   onChange={(e) => update(f.id, { value: e.target.value })}
-                  className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary"
+                  className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
                 >
                   <option value="">Any</option>
                   {config.options?.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
@@ -383,7 +387,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
                   value={String(f.value ?? "")}
                   onChange={(e) => update(f.id, { value: e.target.value })}
                   placeholder="Value…"
-                  className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary"
+                  className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
                 />
               )}
               <button onClick={() => remove(f.id)} className="text-muted-foreground hover:text-destructive transition-colors">
@@ -394,11 +398,11 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
         })}
       </div>
       <div className="flex items-center gap-2 border-t border-border/40 px-4 py-3">
-        <button onClick={addRule} className="flex items-center gap-1.5 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors">
+        <button onClick={addRule} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
           <PlusIcon size={12} weight="bold" /> Add filter
         </button>
         {filters.length > 0 && (
-          <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted transition-colors">
+          <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors">
             <TrashIcon size={12} /> Clear all
           </button>
         )}
@@ -431,28 +435,28 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
   function remove(id: string) { onChange(sorts.filter((s) => s.id !== id)); }
 
   return (
-    <div className="absolute right-0 top-full z-[400] mt-1 w-[300px] rounded-xl border border-border bg-popover shadow-2xl">
+    <div className="absolute right-0 top-full z-[400] mt-1 w-[300px] rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-float)]">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <span className="text-[13px] font-semibold">Sort</span>
+        <span className="text-sm font-semibold">Sort</span>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
       </div>
       <div className="max-h-[280px] overflow-y-auto p-3 space-y-2">
         {sorts.length === 0 && (
-          <p className="py-4 text-center text-[12px] text-muted-foreground">No sorts applied.</p>
+          <p className="py-4 text-center text-xs text-muted-foreground">No sorts applied.</p>
         )}
         {sorts.map((s) => (
           <div key={s.id} className="flex items-center gap-2">
             <select
               value={s.propertyId}
               onChange={(e) => update(s.id, { propertyId: e.target.value })}
-              className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary"
+              className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
             >
               {props.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select
               value={s.direction}
               onChange={(e) => update(s.id, { direction: e.target.value as "asc" | "desc" })}
-              className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] outline-none focus:border-primary"
+              className="rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
             >
               <option value="asc">A → Z</option>
               <option value="desc">Z → A</option>
@@ -464,11 +468,11 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
         ))}
       </div>
       <div className="flex items-center gap-2 border-t border-border/40 px-4 py-3">
-        <button onClick={addSort} className="flex items-center gap-1.5 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors">
+        <button onClick={addSort} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
           <PlusIcon size={12} weight="bold" /> Add sort
         </button>
         {sorts.length > 0 && (
-          <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-muted transition-colors">
+          <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors">
             <TrashIcon size={12} /> Clear all
           </button>
         )}
@@ -486,9 +490,9 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
 }) {
   const visible = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
   return (
-    <div className="absolute right-0 top-full z-[400] mt-1 w-[240px] rounded-xl border border-border bg-popover shadow-2xl">
+    <div className="absolute right-0 top-full z-[400] mt-1 w-[240px] rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-float)]">
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <span className="text-[13px] font-semibold">Properties</span>
+        <span className="text-sm font-semibold">Properties</span>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
       </div>
       <div className="max-h-[320px] overflow-y-auto p-2">
@@ -496,12 +500,12 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
           <button
             key={p.id}
             onClick={() => onToggle(p.id, !p.isHidden)}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted transition-colors"
+            className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 hover:bg-muted transition-colors"
           >
             <span className={`flex size-4 items-center justify-center rounded border text-[10px] ${!p.isHidden ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
               {!p.isHidden ? <CheckIcon size={10} weight="bold" /> : ""}
             </span>
-            <span className="text-[13px] text-foreground">{p.name}</span>
+            <span className="text-sm text-foreground">{p.name}</span>
           </button>
         ))}
       </div>
@@ -553,10 +557,10 @@ function PanelPropRow({
   const config = (prop.config ?? {}) as PPropConfig;
 
   return (
-    <div className="flex min-h-[32px] items-start gap-0 rounded-lg transition-colors hover:bg-muted/30">
+    <div className="flex min-h-[32px] items-start gap-0 rounded-[var(--radius-sm)] transition-colors hover:bg-muted/30">
       <div className="flex w-[160px] shrink-0 items-center gap-2 px-2 py-[7px]">
         <Icon size={13} className="text-muted-foreground/60" />
-        <span className="truncate text-[12px] text-muted-foreground">{prop.name}</span>
+        <span className="truncate text-xs text-muted-foreground">{prop.name}</span>
       </div>
       <div className="flex-1 px-2 py-[5px]">
         <PanelPropValue type={prop.type} config={config} value={value} onSave={onSave} />
@@ -601,21 +605,21 @@ function PanelPropValue({
           className="flex min-h-[22px] w-full items-center text-left"
         >
           {selectedOpt
-            ? <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${poptionCls(selectedOpt.color)}`}>{selectedOpt.name}</span>
-            : <span className="text-[12px] text-muted-foreground/40">Empty</span>
+            ? <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(selectedOpt.color)}`}>{selectedOpt.name}</span>
+            : <span className="text-xs text-muted-foreground/40">Empty</span>
           }
         </button>
         {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-xl border border-border bg-popover p-1 shadow-xl">
+          <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-raised)]">
             {options.map((opt) => (
               <button key={opt.id} onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-muted transition-colors">
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
               </button>
             ))}
             {selectedOpt && (
               <button onClick={() => { onSave(null); setOpen(false); }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] text-muted-foreground hover:bg-muted transition-colors">
+                className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors">
                 Clear
               </button>
             )}
@@ -633,17 +637,17 @@ function PanelPropValue({
       <div className="relative">
         <button onClick={() => setOpen((p) => !p)} className="flex min-h-[22px] w-full flex-wrap items-center gap-1 text-left">
           {selectedIds.length === 0
-            ? <span className="text-[12px] text-muted-foreground/40">Empty</span>
+            ? <span className="text-xs text-muted-foreground/40">Empty</span>
             : selectedIds.map((id) => {
                 const opt = options.find((o) => o.id === id);
                 return opt ? (
-                  <span key={id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+                  <span key={id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
                 ) : null;
               })
           }
         </button>
         {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-xl border border-border bg-popover p-1 shadow-xl">
+          <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-raised)]">
             {options.map((opt) => {
               const isOn = selectedIds.includes(opt.id);
               return (
@@ -652,12 +656,12 @@ function PanelPropValue({
                     const next = isOn ? selectedIds.filter((i) => i !== opt.id) : [...selectedIds, opt.id];
                     onSave(next.length ? { optionIds: next } : null);
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                  className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-muted transition-colors"
                 >
                   <span className={`flex size-3.5 items-center justify-center rounded border ${isOn ? "border-primary bg-primary" : "border-border"}`}>
                     {isOn && <CheckIcon size={9} weight="bold" className="text-primary-foreground" />}
                   </span>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
                 </button>
               );
             })}
@@ -678,13 +682,13 @@ function PanelPropValue({
             if (e.key === "Enter")  { setEditing(false); onSave(draft.trim() ? { name: draft.trim() } : null); }
             if (e.key === "Escape") setEditing(false);
           }}
-          className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-[12px] outline-none focus:border-primary"
+          className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
         />
       );
     }
     return (
       <button onClick={() => { setDraft(name); setEditing(true); }}
-        className="flex min-h-[22px] w-full items-center gap-1.5 text-left text-[12px] hover:text-foreground transition-colors">
+        className="flex min-h-[22px] w-full items-center gap-1.5 text-left text-xs hover:text-foreground transition-colors">
         {name
           ? <><span className="flex size-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">{name[0]?.toUpperCase()}</span><span className="text-foreground">{name}</span></>
           : <span className="text-muted-foreground/40">Empty</span>
@@ -703,13 +707,13 @@ function PanelPropValue({
           onKeyDown={(e) => {
             if (e.key === "Escape") setEditing(false);
           }}
-          className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-[12px] outline-none focus:border-primary"
+          className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
         />
       );
     }
     return (
       <button onClick={() => { setDraft(dateStr); setEditing(true); }}
-        className="min-h-[22px] w-full text-left text-[12px] hover:text-foreground transition-colors">
+        className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
         {dateStr
           ? <span className="text-foreground">{new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
           : <span className="text-muted-foreground/40">Empty</span>
@@ -729,13 +733,13 @@ function PanelPropValue({
             if (e.key === "Enter")  { setEditing(false); const n = Number(draft); onSave(isNaN(n) || draft === "" ? null : { number: n }); }
             if (e.key === "Escape") setEditing(false);
           }}
-          className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-[12px] outline-none focus:border-primary"
+          className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
         />
       );
     }
     return (
       <button onClick={() => { setDraft(num != null ? String(num) : ""); setEditing(true); }}
-        className="min-h-[22px] w-full text-left text-[12px] hover:text-foreground transition-colors">
+        className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
         {num != null ? <span className="text-foreground">{num}</span> : <span className="text-muted-foreground/40">Empty</span>}
       </button>
     );
@@ -755,7 +759,7 @@ function PanelPropValue({
           if (e.key === "Enter")  { setEditing(false); onSave(draft.trim() ? { [fieldKey]: draft.trim() } : null); }
           if (e.key === "Escape") setEditing(false);
         }}
-        className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-[12px] outline-none focus:border-primary"
+        className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
       />
     );
   }
@@ -765,7 +769,7 @@ function PanelPropValue({
     return (
       <div className="flex items-center gap-1">
         <a href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-          className="min-h-[22px] flex-1 truncate text-[12px] text-primary underline-offset-2 hover:underline">
+          className="min-h-[22px] flex-1 truncate text-xs text-primary underline-offset-2 hover:underline">
           {textVal}
         </a>
         <button onClick={() => { setDraft(textVal); setEditing(true); }}
@@ -778,7 +782,7 @@ function PanelPropValue({
 
   return (
     <button onClick={() => { setDraft(textVal); setEditing(true); }}
-      className="min-h-[22px] w-full text-left text-[12px] hover:text-foreground transition-colors">
+      className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
       {textVal ? <span className="text-foreground">{textVal}</span> : <span className="text-muted-foreground/40">Empty</span>}
     </button>
   );
@@ -818,27 +822,27 @@ function EntryDetailPanel({
       <div className="fixed inset-0 z-[580] bg-black/50 backdrop-blur-[3px]" onClick={onClose} />
 
       {/* Centered modal */}
-      <div className="fixed left-1/2 top-1/2 z-[590] flex w-[680px] max-h-[82vh] -translate-x-1/2 -translate-y-1/2 flex-col rounded-2xl border border-border bg-background shadow-2xl overflow-hidden">
+      <div className="fixed left-1/2 top-1/2 z-[590] flex w-[680px] max-h-[82vh] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[var(--radius-lg)] border border-border bg-background shadow-[var(--shadow-float)] overflow-hidden">
 
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-3.5">
           <button
             onClick={onClose}
-            className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <XIcon size={15} />
           </button>
           <div className="flex items-center gap-1.5">
             <Link
               href={`/app/${workspaceSlug}/${entry.shortId}`}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <ArrowSquareOutIcon size={13} />
               Open page
             </Link>
             <button
               onClick={() => { onDelete(entry.id); onClose(); }}
-              className="flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               title="Delete entry"
             >
               <TrashIcon size={14} />
@@ -860,7 +864,7 @@ function EntryDetailPanel({
           {/* "View details" link like Notion */}
           <Link
             href={`/app/${workspaceSlug}/${entry.shortId}`}
-            className="mb-6 inline-block text-[12px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            className="mb-6 inline-block text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
           >
             View details
           </Link>
@@ -883,10 +887,10 @@ function EntryDetailPanel({
 
           {/* Divider + open full page */}
           <div className="mt-6 border-t border-border/30 pt-5 text-center">
-            <p className="mb-3 text-[12px] text-muted-foreground/60">Open the full page to add content, comments, and more</p>
+            <p className="mb-3 text-xs text-muted-foreground/60">Open the full page to add content, comments, and more</p>
             <Link
               href={`/app/${workspaceSlug}/${entry.shortId}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <ArrowSquareOutIcon size={12} />
               Open full page
@@ -921,6 +925,13 @@ interface Props {
   workspaceId:   string;
   breadcrumbs:   { shortId: string; title: string }[];
   defaultViewId: string | null;
+  currentUserId: string;
+  isPrivate:     boolean;
+  isFavorited:   boolean;
+  isEditor:      boolean;
+  isAdmin:       boolean;
+  isLocked:      boolean;
+  isDeleted:     boolean;
 }
 
 export function TemplatePageClient({
@@ -934,9 +945,16 @@ export function TemplatePageClient({
   workspaceId,
   breadcrumbs,
   defaultViewId,
+  currentUserId,
+  isPrivate,
+  isFavorited,
+  isEditor,
+  isAdmin,
+  isLocked,
+  isDeleted,
 }: Props) {
   const [properties, setProperties] = useState<DatabaseProperty[]>(initProps);
-  const [views]                     = useState<DatabaseView[]>(initViews);
+  const [views, setViews]           = useState<DatabaseView[]>(initViews);
   const [entries,    setEntries]    = useState<TemplateEntry[]>(initEntries);
   const [values,     setValues]     = useState<TemplateValue[]>(initValues);
 
@@ -971,6 +989,7 @@ export function TemplatePageClient({
   const [showFilter,     setShowFilter]     = useState(false);
   const [showSort,       setShowSort]       = useState(false);
   const [showProperties, setShowProperties] = useState(false);
+  const [showAddView,    setShowAddView]    = useState(false);
   const [filterRules,    setFilterRules]    = useState<FilterRule[]>([]);
   const [sortRules,      setSortRules]      = useState<SortRule[]>([]);
 
@@ -979,7 +998,100 @@ export function TemplatePageClient({
   const [viewSwitching, setViewSwitching] = useState(false);
   const activeView = views.find((v) => v.id === activeViewId) ?? views[0];
 
-  const pageTitleRef = useRef<HTMLInputElement>(null);
+  // Lifted calendar navigation state so the "+New" button can target the viewed month
+  const [calYear,  setCalYear]  = useState(() => new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
+
+  const pageTitleRef  = useRef<HTMLInputElement>(null);
+  const addViewRef    = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showAddView) return;
+    function h(e: MouseEvent) {
+      if (addViewRef.current && !addViewRef.current.contains(e.target as Node)) setShowAddView(false);
+    }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [showAddView]);
+
+  // ── Auto-wire calendar property ───────────────────────────────────────────
+  // When switching to a calendar view that has no calendarPropertyId, find or
+  // create a Date property and patch the view so entries appear on the grid.
+  useEffect(() => {
+    if (activeView?.type !== "calendar") return;
+    if (activeView.calendarPropertyId) return; // already wired
+
+    let cancelled = false;
+    async function wire() {
+      let dateProp = properties.find((p) => p.type === "date");
+      if (!dateProp) {
+        const pRes = await fetch(`/api/databases/${page.id}/properties`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Date", type: "date", config: {} }),
+        });
+        if (!pRes.ok || cancelled) return;
+        dateProp = await pRes.json() as DatabaseProperty;
+        if (cancelled) return;
+        setProperties((prev) => [...prev, dateProp!]);
+      }
+      // Patch the view so calendarPropertyId is persisted
+      const vRes = await fetch(`/api/databases/${page.id}/views/${activeView!.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calendarPropertyId: dateProp!.id }),
+      });
+      if (!vRes.ok || cancelled) return;
+      const updated = await vRes.json() as DatabaseView;
+      if (cancelled) return;
+      setViews((prev) => prev.map((v) => v.id === updated.id ? updated : v));
+    }
+    wire();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView?.id, activeView?.type]);
+
+  // ── Auto-wire board group property ────────────────────────────────────────
+  // When switching to a board view with no groupByPropertyId, find or create a
+  // "Status" select property (with sensible defaults) and persist it on the view.
+  useEffect(() => {
+    if (activeView?.type !== "board") return;
+    if (activeView.groupByPropertyId) return;
+
+    let cancelled = false;
+    async function wire() {
+      let selectProp = properties.find((p) => p.type === "select");
+      if (!selectProp) {
+        const pRes = await fetch(`/api/databases/${page.id}/properties`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "Status",
+            type: "select",
+            config: {
+              options: [
+                { id: crypto.randomUUID(), name: "To Do",       color: "gray"   },
+                { id: crypto.randomUUID(), name: "In Progress",  color: "blue"   },
+                { id: crypto.randomUUID(), name: "Done",         color: "green"  },
+              ],
+            },
+          }),
+        });
+        if (!pRes.ok || cancelled) return;
+        selectProp = await pRes.json() as DatabaseProperty;
+        if (cancelled) return;
+        setProperties((prev) => [...prev, selectProp!]);
+      }
+      const vRes = await fetch(`/api/databases/${page.id}/views/${activeView!.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupByPropertyId: selectProp!.id }),
+      });
+      if (!vRes.ok || cancelled) return;
+      const updated = await vRes.json() as DatabaseView;
+      if (cancelled) return;
+      setViews((prev) => prev.map((v) => v.id === updated.id ? updated : v));
+    }
+    wire();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView?.id, activeView?.type]);
 
   // ── Value map ──────────────────────────────────────────────────────────────
 
@@ -1163,6 +1275,35 @@ export function TemplatePageClient({
     await fetch(`/api/databases/${page.id}/properties/${propId}`, { method: "DELETE" });
   }, [page.id]);
 
+  const addView = useCallback(async (name: string, type: string) => {
+    let calendarPropertyId: string | null = null;
+
+    if (type === "calendar") {
+      // Find or create a Date property so the calendar has something to group by
+      let dateProp = properties.find((p) => p.type === "date");
+      if (!dateProp) {
+        const pRes = await fetch(`/api/databases/${page.id}/properties`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Date", type: "date", config: {} }),
+        });
+        if (pRes.ok) {
+          dateProp = await pRes.json() as DatabaseProperty;
+          setProperties((prev) => [...prev, dateProp!]);
+        }
+      }
+      calendarPropertyId = dateProp?.id ?? null;
+    }
+
+    const res = await fetch(`/api/databases/${page.id}/views`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, type, calendarPropertyId }),
+    });
+    if (!res.ok) return;
+    const view = await res.json() as DatabaseView;
+    setViews((prev) => [...prev, view]);
+    setActiveViewId(view.id);
+  }, [page.id, properties]);
+
   const togglePropertyVisibility = useCallback(async (propId: string, hidden: boolean) => {
     setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, isHidden: hidden } : p));
     await fetch(`/api/databases/${page.id}/properties/${propId}`, {
@@ -1208,36 +1349,69 @@ export function TemplatePageClient({
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
 
-      {/* Breadcrumbs */}
-      <div className="flex h-12 shrink-0 items-center border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm">
+      {/* Breadcrumbs + actions */}
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card/95 px-3 backdrop-blur-sm">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
           <Link
             href={`/app/${workspaceSlug}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <HouseIcon size={13} />
             <span className="font-medium">{workspaceName}</span>
           </Link>
 
           {breadcrumbs.map((crumb) => (
-            <span key={crumb.shortId} className="flex items-center gap-0.5">
-              <CaretRightIcon size={11} className="shrink-0 text-muted-foreground/30" />
+            <span key={crumb.shortId} className="flex min-w-0 items-center gap-0.5">
+              <CaretRightIcon size={11} className="shrink-0 text-border" />
               <Link
                 href={`/app/${workspaceSlug}/${crumb.shortId}`}
-                className="max-w-[120px] truncate rounded-md px-2 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 {crumb.title}
               </Link>
             </span>
           ))}
 
-          <span className="flex items-center gap-0.5">
-            <CaretRightIcon size={11} className="shrink-0 text-muted-foreground/30" />
-            <span className="max-w-[200px] truncate rounded-md px-2 py-1.5 font-medium text-foreground/80">
+          <span className="flex min-w-0 items-center gap-0.5">
+            <CaretRightIcon size={11} className="shrink-0 text-border" />
+            <span className="max-w-[240px] truncate px-2 py-1 text-xs font-semibold text-foreground/80">
               {pageTitle || "Untitled"}
             </span>
           </span>
         </nav>
+
+        {/* Action buttons — same as page editor */}
+        <div className="ml-2 flex shrink-0 items-center gap-0.5">
+          <ShareButton
+            pageId={page.id}
+            currentUserId={currentUserId}
+            isPrivate={isPrivate}
+            isEditor={isEditor}
+          />
+          <PageCommentButton
+            pageId={page.id}
+            workspaceId={workspaceId}
+            currentUserId={currentUserId}
+            isAdmin={isAdmin}
+          />
+          <FavoriteButton
+            pageId={page.id}
+            workspaceId={workspaceId}
+            isFavorited={isFavorited}
+          />
+          {isEditor && (
+            <PageActionsMenu
+              pageId={page.id}
+              isLocked={isLocked}
+              isDeleted={isDeleted}
+              workspaceSlug={workspaceSlug}
+              workspaceId={workspaceId}
+              pageShortId={page.shortId}
+              pageTitle={pageTitle}
+              pageKind={page.kind}
+            />
+          )}
+        </div>
       </div>
 
       {/* Cover */}
@@ -1252,7 +1426,7 @@ export function TemplatePageClient({
             <div className="relative">
               <button
                 onClick={() => { setShowCoverPicker((p) => !p); setShowIconPicker(false); }}
-                className="rounded-lg bg-black/50 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+                className="rounded-[var(--radius-sm)] bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
               >
                 Change cover
               </button>
@@ -1267,7 +1441,7 @@ export function TemplatePageClient({
               )}
             </div>
             <button onClick={() => savePageCover("")}
-              className="rounded-lg bg-black/50 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors">
+              className="rounded-[var(--radius-sm)] bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors">
               Remove
             </button>
           </div>
@@ -1275,13 +1449,13 @@ export function TemplatePageClient({
       )}
 
       {/* Page header */}
-      <div className="relative px-10 pb-2 pt-6">
+      <div className="relative mx-auto w-full max-w-[1100px] px-8 pb-2 pt-6">
         {/* Emoji icon — only visible when set */}
         {pageIcon && (
           <div className="relative mb-2 inline-block">
             <button
               onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-              className="flex size-14 items-center justify-center rounded-xl text-[48px] leading-none transition-all hover:bg-muted/50"
+              className="flex size-14 items-center justify-center rounded-[var(--radius-md)] text-[48px] leading-none transition-all hover:bg-muted/50"
             >
               {pageIcon}
             </button>
@@ -1300,7 +1474,7 @@ export function TemplatePageClient({
             <div className="relative">
               <button
                 onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-muted-foreground/50 hover:bg-muted hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground/50 hover:bg-muted hover:text-foreground transition-colors"
               >
                 <SmileyStickerIcon size={13} /> Add icon
               </button>
@@ -1315,7 +1489,7 @@ export function TemplatePageClient({
           {pageIcon && (
             <button
               onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-muted-foreground/50 hover:bg-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground/50 hover:bg-muted hover:text-foreground transition-colors"
             >
               <SmileyStickerIcon size={13} /> Change icon
             </button>
@@ -1324,7 +1498,7 @@ export function TemplatePageClient({
             <div className="relative">
               <button
                 onClick={() => { setShowCoverPicker((p) => !p); setShowIconPicker(false); }}
-                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] text-muted-foreground/50 hover:bg-muted hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground/50 hover:bg-muted hover:text-foreground transition-colors"
               >
                 <ImageIcon size={13} /> Add cover
               </button>
@@ -1375,12 +1549,12 @@ export function TemplatePageClient({
               if (e.key === "Escape") saveDescription((e.target as HTMLTextAreaElement).value);
             }}
             placeholder="Add a description…"
-            className="mt-1.5 w-full resize-none bg-transparent text-[14px] text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+            className="mt-1.5 w-full resize-none bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
           />
         ) : (
           <p
             onClick={() => setEditingDescription(true)}
-            className="-mx-1 mt-1.5 cursor-text rounded px-1 text-[14px] text-muted-foreground transition-colors hover:bg-muted/30"
+            className="-mx-1 mt-1.5 cursor-text rounded px-1 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
           >
             {pageDescription || <span className="text-muted-foreground/25">Add a description…</span>}
           </p>
@@ -1388,7 +1562,8 @@ export function TemplatePageClient({
       </div>
 
       {/* View tabs + toolbar */}
-      <div className="flex items-end justify-between border-b border-border/60 px-6">
+      <div className="border-b border-border/60">
+      <div className="mx-auto flex max-w-[1100px] items-end justify-between px-6">
         <div className="flex items-end">
           {views.map((view) => {
             const Icon     = VIEW_ICON[view.type] ?? TableIcon;
@@ -1404,22 +1579,67 @@ export function TemplatePageClient({
                     : "border-transparent text-muted-foreground hover:text-foreground",
                 ].join(" ")}
               >
-                <Icon size={14} weight={isActive ? "bold" : "regular"} />
+                <Icon size={13} weight={isActive ? "bold" : "regular"} />
                 {view.name}
               </button>
             );
           })}
+
+          {/* Add a view */}
+          <div ref={addViewRef} className="relative mb-1 ml-1">
+            <button
+              onClick={() => setShowAddView((p) => !p)}
+              title="Add a view"
+              className={[
+                "flex size-[26px] items-center justify-center rounded-[var(--radius-sm)] border transition-all",
+                showAddView
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border/50 text-muted-foreground/60 hover:border-primary/40 hover:bg-primary/[0.05] hover:text-primary",
+              ].join(" ")}
+            >
+              <PlusIcon size={14} weight="bold" />
+            </button>
+            {showAddView && (
+              <div className="absolute left-0 top-full z-[400] mt-1.5 w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card shadow-[var(--shadow-float)]">
+                <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
+                  <PlusIcon size={13} className="text-primary" weight="bold" />
+                  <span className="text-[13px] font-semibold text-foreground">Add a new view</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 p-3">
+                  {([
+                    { type: "table",    label: "Table",    Icon: TableIcon },
+                    { type: "board",    label: "Board",    Icon: SquaresFourIcon },
+                    { type: "calendar", label: "Calendar", Icon: CalendarIcon },
+                    { type: "gallery",  label: "Gallery",  Icon: GridFourIcon },
+                  ] as const).map(({ type, label, Icon }) => (
+                    <button
+                      key={type}
+                      onClick={() => { addView(label, type); setShowAddView(false); }}
+                      className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all hover:bg-primary/[0.06] active:scale-[0.96]"
+                    >
+                      <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border/70 bg-muted/50 transition-all group-hover:border-primary/40 group-hover:bg-primary/10">
+                        <Icon size={24} weight="duotone" className="text-foreground/50 transition-colors group-hover:text-primary" />
+                      </div>
+                      <span className="text-[11px] font-medium leading-tight text-muted-foreground transition-colors group-hover:text-primary">
+                        {label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mb-1 flex shrink-0 items-center gap-0.5">
           <div className="relative">
             <button
               onClick={() => { setShowFilter((p) => !p); setShowSort(false); setShowProperties(false); }}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${activeFilterCount > 0 ? "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+              className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeFilterCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
             >
               <FunnelIcon size={13} />
               Filter
-              {activeFilterCount > 0 && <span className="rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">{activeFilterCount}</span>}
+              {activeFilterCount > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">{activeFilterCount}</span>}
             </button>
             {showFilter && (
               <FilterPanel
@@ -1435,11 +1655,11 @@ export function TemplatePageClient({
           <div className="relative">
             <button
               onClick={() => { setShowSort((p) => !p); setShowFilter(false); setShowProperties(false); }}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors ${activeSortCount > 0 ? "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+              className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeSortCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
             >
               <SortAscendingIcon size={13} />
               Sort
-              {activeSortCount > 0 && <span className="rounded-full bg-blue-600 px-1.5 text-[10px] font-bold text-white">{activeSortCount}</span>}
+              {activeSortCount > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">{activeSortCount}</span>}
             </button>
             {showSort && (
               <SortPanel
@@ -1455,7 +1675,7 @@ export function TemplatePageClient({
           <div className="relative">
             <button
               onClick={() => { setShowProperties((p) => !p); setShowFilter(false); setShowSort(false); }}
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <EyeIcon size={13} /> Properties
             </button>
@@ -1471,33 +1691,51 @@ export function TemplatePageClient({
           <div className="mx-1 h-4 w-px bg-border/60" />
 
           <button
-            onClick={() => addEntry()}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+            onClick={() => {
+              if (activeView?.type === "calendar") {
+                const calPropId = activeView.calendarPropertyId
+                  ?? properties.find((p) => p.type === "date")?.id;
+                if (calPropId) {
+                  const now = new Date();
+                  const pad = (n: number) => String(n).padStart(2, "0");
+                  // If user is viewing the current month use today; otherwise use 1st of viewed month
+                  const isCurrentMonth = calYear === now.getFullYear() && calMonth === now.getMonth();
+                  const day = isCurrentMonth ? now.getDate() : 1;
+                  addEntry({ [calPropId]: { date: `${calYear}-${pad(calMonth + 1)}-${pad(day)}` } });
+                  return;
+                }
+              }
+              addEntry();
+            }}
+            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <PlusIcon size={12} weight="bold" />
             New
           </button>
         </div>
       </div>
+      </div>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 border-b border-border/40 bg-primary/5 px-6 py-2">
-          <span className="text-[13px] font-medium">
+        <div className="border-b border-border/40 bg-primary/5">
+        <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-6 py-2">
+          <span className="text-sm font-medium">
             {selectedIds.size} {selectedIds.size === 1 ? "row" : "rows"} selected
           </span>
           <button
             onClick={deleteSelected}
-            className="flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-[12px] font-medium text-destructive-foreground hover:bg-destructive/90 transition-colors"
+            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             <TrashIcon size={12} /> Delete
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[12px] text-muted-foreground hover:bg-muted transition-colors"
+            className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors"
           >
             <XIcon size={12} /> Cancel
           </button>
+        </div>
         </div>
       )}
 
@@ -1526,6 +1764,7 @@ export function TemplatePageClient({
             <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         )}
+        <div className="mx-auto h-full w-full max-w-[1100px]">
         {activeView?.type === "board" ? (
           <TemplateBoardView
             entries={displayedEntries}
@@ -1544,6 +1783,10 @@ export function TemplatePageClient({
             properties={properties}
             activeView={activeView}
             entryValueMap={entryValueMap}
+            year={calYear}
+            month={calMonth}
+            onYearChange={setCalYear}
+            onMonthChange={setCalMonth}
             onAddEntry={addEntry}
             onDeleteEntry={deleteEntry}
             onClickEntry={setDetailEntryId}
@@ -1581,6 +1824,7 @@ export function TemplatePageClient({
             onDeleteProperty={deleteProperty}
           />
         )}
+        </div>
       </div>
     </div>
   );

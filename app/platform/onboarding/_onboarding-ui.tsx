@@ -63,7 +63,7 @@ const EMPTY_INVITE: InviteEntry = { email: "", role: "editor" };
 
 /* ─── Avatar colour ──────────────────────────────────────────────── */
 
-const AVATAR_COLORS = ["#6366f1","#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899"];
+const AVATAR_COLORS = ["#0284C7","#0369a1","#0ea5e9","#0891b2","#10b981","#f59e0b","#ef4444"];
 function avatarColor(name: string) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
@@ -231,7 +231,7 @@ export function OnboardingUI({ initialName }: Props) {
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center">
 
         {/* Logo */}
-        <div className="mb-8 flex size-14 items-center justify-center rounded-2xl bg-primary font-black text-primary-foreground text-lg shadow-lg shadow-primary/25">
+        <div className="mb-8 flex size-14 items-center justify-center rounded-[var(--radius-xl)] bg-primary font-black text-primary-foreground text-lg shadow-[var(--shadow-card)] shadow-primary/25">
           WF
         </div>
 
@@ -268,7 +268,7 @@ export function OnboardingUI({ initialName }: Props) {
 
             {/* Avatar preview */}
             <div
-              className="mb-6 flex size-[72px] items-center justify-center rounded-full text-2xl font-black text-white shadow-md select-none transition-colors duration-200"
+              className="mb-6 flex size-[72px] items-center justify-center rounded-full text-2xl font-black text-white shadow-[var(--shadow-card)] select-none transition-colors duration-200"
               style={{ background: color }}
             >
               {avatarLetter}
@@ -283,7 +283,7 @@ export function OnboardingUI({ initialName }: Props) {
                 onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
                 placeholder="Your full name"
                 maxLength={80}
-                className="h-12 w-full rounded-xl border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-12 w-full rounded-[var(--radius-lg)] border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <input
                 type="text"
@@ -292,7 +292,7 @@ export function OnboardingUI({ initialName }: Props) {
                 onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
                 placeholder="Job title (optional)"
                 maxLength={80}
-                className="h-12 w-full rounded-xl border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-12 w-full rounded-[var(--radius-lg)] border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </>
@@ -316,10 +316,10 @@ export function OnboardingUI({ initialName }: Props) {
                     key={opt.value}
                     type="button"
                     onClick={() => selectOption(opt.value)}
-                    className={`flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all ${
+                    className={`flex flex-col items-start gap-2 rounded-[var(--radius-lg)] border p-4 text-left transition-all ${
                       isSelected
                         ? "border-primary bg-secondary shadow-sm"
-                        : "border-border bg-card hover:border-primary/40 hover:bg-secondary/40"
+                        : "border-border bg-card hover:-translate-y-0.5 hover:border-primary/40 hover:bg-secondary/40 hover:shadow-[var(--shadow-card)]"
                     }`}
                   >
                     <span className="text-2xl leading-none">{opt.emoji}</span>
@@ -363,7 +363,7 @@ export function OnboardingUI({ initialName }: Props) {
                 onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
                 placeholder={isTeam ? "e.g. Acme Corp" : "e.g. My Projects"}
                 maxLength={100}
-                className="h-12 w-full rounded-xl border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-12 w-full rounded-[var(--radius-lg)] border border-border bg-card px-4 text-base font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <p className="mt-2 text-xs text-muted-foreground/60">
                 You can rename or create more workspaces later in settings.
@@ -391,12 +391,12 @@ export function OnboardingUI({ initialName }: Props) {
                     placeholder={`teammate${i + 1}@company.com`}
                     value={inv.email}
                     onChange={(e) => updateInviteEmail(i, e.target.value)}
-                    className="h-10 flex-1 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="h-10 flex-1 rounded-[var(--radius-md)] border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   <select
                     value={inv.role}
                     onChange={(e) => updateInviteRole(i, e.target.value as "editor" | "viewer")}
-                    className="h-10 rounded-lg border border-border bg-card px-2 text-xs font-medium text-muted-foreground focus:border-primary focus:outline-none"
+                    className="h-10 rounded-[var(--radius-md)] border border-border bg-card px-2 text-xs font-medium text-muted-foreground focus:border-primary focus:outline-none"
                   >
                     <option value="editor">Editor</option>
                     <option value="viewer">Viewer</option>
@@ -418,7 +418,7 @@ export function OnboardingUI({ initialName }: Props) {
               </button>
             )}
 
-            <div className="mb-5 w-full rounded-xl border border-border bg-muted/40 p-3.5">
+            <div className="mb-5 w-full rounded-[var(--radius-lg)] border border-border bg-muted/40 p-3.5">
               <div className="flex items-start gap-2.5">
                 <svg className="mt-0.5 size-4 shrink-0 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" />
@@ -449,10 +449,10 @@ export function OnboardingUI({ initialName }: Props) {
                     key={tpl.key}
                     type="button"
                     onClick={() => setTemplateKey(tpl.key)}
-                    className={`relative flex flex-col items-start gap-2.5 rounded-xl border p-4 text-left transition-all ${
+                    className={`relative flex flex-col items-start gap-2.5 rounded-[var(--radius-lg)] border p-4 text-left transition-all ${
                       isSelected
                         ? "border-primary bg-secondary shadow-sm ring-1 ring-primary/20"
-                        : "border-border bg-card hover:border-primary/40 hover:bg-secondary/30"
+                        : "border-border bg-card hover:-translate-y-0.5 hover:border-primary/40 hover:bg-secondary/30 hover:shadow-[var(--shadow-card)]"
                     }`}
                   >
                     {isSelected && (
@@ -481,7 +481,7 @@ export function OnboardingUI({ initialName }: Props) {
           type="button"
           onClick={handleContinue}
           disabled={!canContinue || pending}
-          className="flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-all hover:bg-[var(--primary-hover)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {btnLabel}
           {!pending && !isLast && !isInviteStep && (

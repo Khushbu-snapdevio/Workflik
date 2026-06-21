@@ -78,12 +78,12 @@ export function BoardView({
   if (!groupProp) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-        <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/40">
+        <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
           <SquaresFour size={28} className="text-muted-foreground/40" weight="duotone" />
         </div>
         <div>
-          <p className="text-[14px] font-semibold text-foreground">No group-by property</p>
-          <p className="mt-1 text-[12px] text-muted-foreground">
+          <p className="text-sm font-semibold text-foreground">No group-by property</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             Open the <strong>Group</strong> dropdown in the toolbar and pick a Select property to organise cards into columns.
           </p>
         </div>
@@ -159,7 +159,7 @@ export function BoardView({
               strategy={verticalListSortingStrategy}
             >
               <div
-                className={`flex shrink-0 flex-col rounded-2xl border border-border/60 bg-muted/20 transition-all duration-200 ${isCollapsed ? "w-12" : "w-[272px]"}`}
+                className={`flex shrink-0 flex-col rounded-[var(--radius-lg)] border border-border/50 bg-muted/40 transition-all duration-200 ${isCollapsed ? "w-12" : "w-[272px]"}`}
                 data-col-id={colKey}
               >
                 {/* Column header */}
@@ -180,7 +180,7 @@ export function BoardView({
                       </span>
                     )}
                     <span
-                      className="text-[11px] font-semibold text-muted-foreground/60"
+                      className="text-xs font-semibold text-muted-foreground/60"
                       style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
                     >
                       {col.label}
@@ -188,31 +188,34 @@ export function BoardView({
                   </button>
                 ) : (
                   <>
-                    <div className="flex items-center gap-2 px-3 pb-2 pt-3">
+                    <div className="flex items-center justify-between px-3 py-2.5">
+                      <div className="flex items-center gap-2">
                       {col.id ? (
-                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${color.bg} ${color.text}`}>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-semibold ${color.bg} ${color.text}`}>
                           <span className={`size-1.5 rounded-full ${color.dot}`} />
                           {col.label}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground/70">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[13px] font-semibold text-muted-foreground/70">
                           <span className="size-1.5 rounded-full bg-muted-foreground/30" />
                           {col.label}
                         </span>
                       )}
-                      <span className="flex size-5 items-center justify-center rounded-full bg-background text-[10px] font-semibold text-muted-foreground/50 shadow-sm">
+                      <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                         {col.entries.length}
                       </span>
+                      </div>
                       <button
                         onClick={toggleCollapse}
                         title="Collapse column"
-                        className="ml-auto flex size-6 items-center justify-center rounded-lg text-muted-foreground/30 transition-colors hover:bg-accent hover:text-muted-foreground"
+                        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/30 transition-colors hover:bg-accent hover:text-muted-foreground"
                       >
                         <svg viewBox="0 0 12 12" className="size-3" fill="none" stroke="currentColor" strokeWidth={1.5}>
                           <path d="M2 2h3M2 6h3M2 10h3M8 3l2 3-2 3"/>
                         </svg>
                       </button>
                     </div>
+
 
                     {/* Cards */}
                     <div className="flex flex-col gap-2 px-2 pb-1">
@@ -232,8 +235,8 @@ export function BoardView({
                       ))}
 
                       {col.entries.length === 0 && (
-                        <div className="flex h-14 items-center justify-center rounded-xl border-2 border-dashed border-border/30">
-                          <span className="text-[11px] text-muted-foreground/30">Drop cards here</span>
+                        <div className="flex h-16 items-center justify-center rounded-[var(--radius-md)] border-2 border-dashed border-border/40 bg-background/40">
+                          <span className="text-[12px] text-muted-foreground/40">Drop cards here</span>
                         </div>
                       )}
                     </div>
@@ -245,7 +248,7 @@ export function BoardView({
                           const dv = col.id ? { [groupPropId!]: { optionId: col.id } } : {};
                           onCreateEntry(dv);
                         }}
-                        className="group mx-2 mb-2 mt-1 flex h-8 items-center gap-1.5 rounded-xl px-2 text-[12px] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+                        className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-[12px] font-medium text-muted-foreground/50 transition-colors hover:bg-primary/[0.06] hover:text-primary"
                       >
                         <Plus size={13} className="transition-transform group-hover:scale-110" />
                         Add entry
@@ -267,15 +270,15 @@ export function BoardView({
                   setAddingOption(true);
                   setTimeout(() => addOptInputRef.current?.focus(), 50);
                 }}
-                className="flex h-10 w-full items-center gap-2 rounded-2xl border-2 border-dashed border-border/40 px-3 text-[12px] text-muted-foreground/40 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+                className="flex h-10 w-full items-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 px-3 text-xs text-muted-foreground/40 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
               >
                 <Plus size={13} />
                 Add option to &ldquo;{groupProp.name}&rdquo;
               </button>
             ) : (
-              <div className="rounded-2xl border border-border bg-background p-3.5 shadow-md">
+              <div className="rounded-[var(--radius-lg)] border border-border bg-background p-3.5 shadow-[var(--shadow-raised)]">
                 <div className="mb-3 flex items-center justify-between">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">
                     New option
                   </p>
                   <button
@@ -295,7 +298,7 @@ export function BoardView({
                     if (e.key === "Escape") { setAddingOption(false); setNewOptName(""); }
                   }}
                   placeholder="Option name…"
-                  className="w-full rounded-lg border border-border bg-muted/30 px-2.5 py-2 text-[13px] text-foreground placeholder:text-muted-foreground/40 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
 
                 <p className="mb-1.5 mt-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
@@ -319,12 +322,12 @@ export function BoardView({
 
                 <div className="mt-3 flex min-h-[26px] items-center">
                   {newOptName.trim() ? (
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${previewColor.bg} ${previewColor.text}`}>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${previewColor.bg} ${previewColor.text}`}>
                       <span className={`size-1.5 rounded-full ${previewColor.dot}`} />
                       {newOptName.trim()}
                     </span>
                   ) : (
-                    <span className="text-[11px] text-muted-foreground/30">Preview will appear here</span>
+                    <span className="text-xs text-muted-foreground/30">Preview will appear here</span>
                   )}
                 </div>
 
@@ -332,13 +335,13 @@ export function BoardView({
                   <button
                     onClick={handleAddOption}
                     disabled={!newOptName.trim()}
-                    className="flex-1 rounded-lg bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="flex-1 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Add option
                   </button>
                   <button
                     onClick={() => { setAddingOption(false); setNewOptName(""); }}
-                    className="rounded-lg border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-accent"
+                    className="rounded-[var(--radius-sm)] border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
                   >
                     Cancel
                   </button>
@@ -355,7 +358,7 @@ export function BoardView({
                         return (
                           <span
                             key={opt.id}
-                            className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${c.bg} ${c.text}`}
+                            className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.bg} ${c.text}`}
                           >
                             <span className={`size-1.5 rounded-full ${c.dot}`} />
                             {opt.name}
@@ -424,21 +427,21 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
 
   return (
     <div className={[
-      "group/card rounded-xl border bg-background transition-all",
+      "group/card rounded-[var(--radius-md)] border bg-card transition-all",
       confirming
         ? "border-red-200 dark:border-red-900/60"
         : dragging
-          ? "border-primary/40 shadow-xl ring-2 ring-primary/20"
-          : "border-border shadow-sm hover:shadow-md",
+          ? "border-primary/40 shadow-[var(--shadow-raised)] ring-2 ring-primary/20"
+          : "border-border/60 shadow-[var(--shadow-card)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-raised)]",
     ].join(" ")}>
 
       {/* ── Delete confirm state — replaces card body ── */}
       {confirming ? (
         <div className="flex items-center gap-2 px-3 py-2.5">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-950/40">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-red-100 dark:bg-red-950/40">
             <Trash size={13} className="text-red-600 dark:text-red-400" />
           </div>
-          <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-foreground/70">
+          <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground/70">
             {entry.title || "Untitled"}
           </span>
           <div className="flex shrink-0 gap-1.5">
@@ -451,13 +454,13 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
                 setDeleting(false);
                 setConfirming(false);
               }}
-              className="rounded-md bg-red-600 px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              className="rounded-[var(--radius-sm)] bg-destructive/10 text-destructive px-2.5 py-1 text-xs font-semibold transition-colors hover:bg-destructive/20 disabled:opacity-50"
             >
               {deleting ? "…" : "Delete"}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setConfirming(false); }}
-              className="rounded-md border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent"
+              className="rounded-[var(--radius-sm)] border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent"
             >
               Cancel
             </button>
@@ -472,11 +475,11 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
             />
           )}
 
-          <div className="p-3">
+          <div className="p-3.5">
             {/* Title row */}
             <div className="flex items-start gap-2">
               {entry.icon ? (
-                <span className="mt-0.5 shrink-0 text-[15px] leading-none">{entry.icon}</span>
+                <span className="mt-0.5 shrink-0 text-base leading-none">{entry.icon}</span>
               ) : (
                 <span className="mt-0.5 shrink-0">
                   <PageIcon />
@@ -484,7 +487,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
               )}
               <button
                 onClick={() => entryOpenMode === "side_panel" && onOpenEntry ? onOpenEntry(entry) : undefined}
-                className={`min-w-0 flex-1 text-left text-[13px] font-semibold leading-snug text-foreground ${
+                className={`min-w-0 flex-1 text-left text-sm font-semibold leading-snug text-foreground ${
                   entryOpenMode === "side_panel" && onOpenEntry ? "cursor-pointer hover:text-primary" : "cursor-default"
                 }`}
               >
@@ -497,7 +500,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
                   href={`/app/${workspaceSlug}/${entry.shortId}`}
                   onClick={(e) => e.stopPropagation()}
                   title="Open full page"
-                  className="flex size-6 items-center justify-center rounded-md text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+                  className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
                 >
                   <ArrowSquareOut size={12} />
                 </Link>
@@ -505,7 +508,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
                     title="Delete entry"
-                    className="flex size-6 items-center justify-center rounded-md text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                    className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Trash size={12} />
                   </button>

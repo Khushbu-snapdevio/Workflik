@@ -52,7 +52,7 @@ export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: Fa
       onClick={toggle}
       disabled={pending}
       title={favorited ? "Remove from favorites" : "Add to favorites"}
-      className={`flex size-7 items-center justify-center rounded-md transition-colors hover:bg-accent disabled:opacity-50 ${
+      className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] transition-colors hover:bg-accent disabled:opacity-50 ${
         favorited
           ? "text-amber-400 hover:text-amber-500"
           : "text-muted-foreground hover:text-foreground"

@@ -336,20 +336,24 @@ export function DatabasePage({
 
   if (loading) {
     return (
-      <div className="flex h-full flex-col">
-        <div className="shrink-0 px-16 pt-10 pb-6">
-          <div className="mb-3 h-10 w-64 animate-pulse rounded-xl bg-muted/50" />
-          <div className="h-4 w-40 animate-pulse rounded-lg bg-muted/30" />
+      <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col">
+        <div className="shrink-0">
+          <div className="px-16 pt-10 pb-6">
+            <div className="mb-3 h-10 w-64 animate-pulse rounded-[var(--radius-md)] bg-muted/50" />
+            <div className="h-4 w-40 animate-pulse rounded-[var(--radius-sm)] bg-muted/30" />
+          </div>
         </div>
         <div className="h-11 shrink-0 animate-pulse border-y border-border bg-muted/10" />
-        <div className="flex-1 px-16 pt-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="mb-0.5 h-11 animate-pulse rounded-lg bg-muted/20"
-              style={{ animationDelay: `${i * 50}ms`, opacity: 1 - i * 0.1 }}
-            />
-          ))}
+        <div className="flex-1">
+          <div className="px-16 pt-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="mb-0.5 h-11 animate-pulse rounded-[var(--radius-sm)] bg-muted/20"
+                style={{ animationDelay: `${i * 50}ms`, opacity: 1 - i * 0.1 }}
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -358,109 +362,30 @@ export function DatabasePage({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden bg-background">
 
       {/* ── Page title / icon (hidden in inline/embedded mode) ── */}
       {!inline && (
-        <div className="shrink-0 px-16 pt-10 pb-5 group/page">
-          <PageHeader
-            pageId={databaseId}
-            shortId={pageShortId}
-            initialTitle={initialTitle ?? ""}
-            initialIcon={initialIcon}
-            isLocked={isLocked}
-            isDeleted={isDeleted}
-            isEditor={isEditor}
-            workspaceSlug={workspaceSlug}
-            workspaceId={workspaceId}
-            fontFamily="default"
-            isSmallText={false}
-            isFullWidth
-          />
-        </div>
-      )}
-
-      {/* ── Summary cards ── */}
-      {!loading && !inline && (
-        <div className="shrink-0 px-16 pb-5">
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              {
-                label: "Total entries",
-                value: displayedEntries.length,
-                sub: displayedEntries.length === 1 ? "record" : "records",
-                icon: (
-                  <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
-                    <rect x="3" y="3" width="14" height="14" rx="3"/>
-                    <line x1="3" y1="8" x2="17" y2="8"/>
-                    <line x1="8" y1="8" x2="8" y2="17"/>
-                  </svg>
-                ),
-                accent: true,
-              },
-              {
-                label: "Properties",
-                value: properties.filter((p) => !p.isSystem).length,
-                sub: "defined",
-                icon: (
-                  <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
-                    <circle cx="6" cy="6" r="2"/><circle cx="6" cy="14" r="2"/>
-                    <line x1="10" y1="6" x2="17" y2="6"/><line x1="10" y1="14" x2="17" y2="14"/>
-                  </svg>
-                ),
-              },
-              {
-                label: "Views",
-                value: views.length,
-                sub: views.map((v) => v.type).join(", ") || "—",
-                icon: (
-                  <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
-                    <path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/>
-                    <circle cx="10" cy="10" r="2.5"/>
-                  </svg>
-                ),
-              },
-              {
-                label: "Selected",
-                value: selectedIds.size,
-                sub: selectedIds.size > 0 ? "click to act" : "none",
-                icon: (
-                  <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
-                    <polyline points="4 10 8 14 16 6"/>
-                  </svg>
-                ),
-              },
-            ].map((card) => (
-              <div
-                key={card.label}
-                className="group flex items-center gap-3.5 rounded-2xl border border-border/60 bg-card px-4 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all duration-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.10)] hover:-translate-y-px"
-              >
-                <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-200 ${
-                  card.accent
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-                }`}>
-                  {card.icon}
-                </span>
-                <div className="min-w-0">
-                  <div className={`text-[22px] font-bold leading-none tracking-tight ${card.accent ? "text-primary" : "text-foreground"}`}>
-                    {card.value}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5 truncate">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">{card.label}</span>
-                    {card.sub && (
-                      <>
-                        <span className="text-muted-foreground/30">·</span>
-                        <span className="truncate text-[11px] text-muted-foreground/50">{card.sub}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="shrink-0 group/page">
+          <div className="px-16 pt-10 pb-3">
+            <PageHeader
+              pageId={databaseId}
+              shortId={pageShortId}
+              initialTitle={initialTitle ?? ""}
+              initialIcon={initialIcon}
+              isLocked={isLocked}
+              isDeleted={isDeleted}
+              isEditor={isEditor}
+              workspaceSlug={workspaceSlug}
+              workspaceId={workspaceId}
+              fontFamily="default"
+              isSmallText={false}
+              isFullWidth
+            />
           </div>
         </div>
       )}
+
 
       {/* ── Toolbar ── */}
       <DatabaseToolbar
@@ -511,16 +436,18 @@ export function DatabasePage({
       )}
 
       {/* ── View content ── */}
-      <div className="min-h-0 flex-1 border-t border-border/40">
-        {!activeView && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">No views configured.</p>
-          </div>
-        )}
-        {activeView?.type === "table"    && <TableView    {...sharedViewProps} />}
-        {activeView?.type === "board"    && <BoardView    {...sharedViewProps} />}
-        {activeView?.type === "calendar" && <CalendarView {...sharedViewProps} />}
-        {activeView?.type === "gallery"  && <GalleryView  {...sharedViewProps} />}
+      <div className="min-h-0 flex-1">
+        <div className="h-full w-full">
+          {!activeView && (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-muted-foreground">No views configured.</p>
+            </div>
+          )}
+          {activeView?.type === "table"    && <TableView    {...sharedViewProps} />}
+          {activeView?.type === "board"    && <BoardView    {...sharedViewProps} />}
+          {activeView?.type === "calendar" && <CalendarView {...sharedViewProps} />}
+          {activeView?.type === "gallery"  && <GalleryView  {...sharedViewProps} />}
+        </div>
       </div>
 
       {/* ── Entry side panel ── */}

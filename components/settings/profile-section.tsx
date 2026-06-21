@@ -96,16 +96,16 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
     <div
       ref={panelRef}
       style={{ position: "fixed", zIndex: 9999, right: pos.right, ...(pos.top !== undefined ? { top: pos.top } : { bottom: pos.bottom }) }}
-      className="w-[280px] overflow-hidden rounded-[14px] border border-black/[0.08] bg-white shadow-[0_16px_48px_rgba(0,0,0,0.18)]"
+      className="w-[280px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card shadow-[0_16px_48px_rgba(0,0,0,0.18)]"
     >
       {/* Search */}
-      <div className="border-b border-black/[0.06] px-3 py-2.5">
-        <div className="flex items-center gap-2 rounded-[8px] border border-black/[0.1] bg-[#fafaf9] px-2.5 py-1.5">
-          <svg viewBox="0 0 14 14" fill="none" stroke="#b3b0aa" strokeWidth="1.5" strokeLinecap="round" className="size-3.5 shrink-0"><circle cx="6" cy="6" r="4"/><path d="M9.5 9.5l3 3"/></svg>
+      <div className="border-b border-border/60 px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-1.5">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-3.5 shrink-0"><circle cx="6" cy="6" r="4"/><path d="M9.5 9.5l3 3"/></svg>
           <input ref={inputRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search timezone…"
-            className="flex-1 bg-transparent text-[13px] text-[#37352f] outline-none placeholder:text-[#b3b0aa]" />
+            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40" />
           {search && (
-            <button type="button" onClick={() => setSearch("")} className="text-[#b3b0aa] hover:text-[#787774]">
+            <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/40 hover:text-muted-foreground">
               <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="size-3"><path d="M1 1l8 8M9 1L1 9"/></svg>
             </button>
           )}
@@ -116,13 +116,13 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
       <div className="max-h-[240px] overflow-y-auto py-1">
         {Object.entries(regionGroups).map(([region, tzs]) => (
           <div key={region}>
-            <p className="sticky top-0 z-10 bg-white/90 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[#b3b0aa] backdrop-blur-sm">{region}</p>
+            <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 backdrop-blur-sm">{region}</p>
             {tzs.map(tz => {
               const isActive = tz === value;
               return (
                 <button key={tz} type="button" onClick={() => { onChange(tz); setOpen(false); }}
-                  className={`flex w-full items-center gap-2.5 px-3.5 py-[7px] text-left text-[13px] transition-colors ${
-                    isActive ? "bg-[#7c3aed]/5 font-semibold text-[#7c3aed]" : "text-[#37352f] hover:bg-[#f5f4f2]"
+                  className={`flex w-full items-center gap-2.5 px-3.5 py-[7px] text-left text-sm transition-colors ${
+                    isActive ? "bg-primary/5 font-semibold text-primary" : "text-foreground hover:bg-muted/50"
                   }`}>
                   <span className={`flex size-4 shrink-0 items-center justify-center ${isActive ? "" : "opacity-0"}`}>
                     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="size-3"><path d="M1.5 6l3 3 6-6"/></svg>
@@ -133,7 +133,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
             })}
           </div>
         ))}
-        {filtered.length === 0 && <div className="py-6 text-center text-[13px] text-[#b3b0aa]">No timezones found</div>}
+        {filtered.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground/40">No timezones found</div>}
       </div>
     </div>,
     document.body
@@ -142,14 +142,14 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
   return (
     <>
       <button ref={btnRef} type="button" onClick={handleOpen}
-        className={`flex w-[220px] items-center justify-between rounded-[10px] border bg-[#fafaf9] px-3 py-2 text-[14px] text-[#1c1917] outline-none transition-all ${
-          open ? "border-[#7c3aed] bg-white shadow-[0_0_0_3px_rgba(124,58,237,0.1)]" : "border-black/[0.1] hover:border-black/[0.2]"
+        className={`flex w-[220px] items-center justify-between rounded-[var(--radius-sm)] border bg-muted/20 px-3 py-2 text-sm text-foreground outline-none transition-all ${
+          open ? "border-primary bg-card shadow-[0_0_0_3px_hsl(var(--primary)/0.1)]" : "border-border hover:border-border/80"
         }`}>
         <div className="flex min-w-0 items-center gap-2">
-          <svg viewBox="0 0 14 14" fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" className="size-3.5 shrink-0"><circle cx="7" cy="7" r="5.5"/><path d="M7 1.5c-2 0-4 2.7-4 5.5s2 5.5 4 5.5 4-2.7 4-5.5-2-5.5-4-5.5z"/><path d="M1.5 7h11"/></svg>
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-3.5 shrink-0 text-primary"><circle cx="7" cy="7" r="5.5"/><path d="M7 1.5c-2 0-4 2.7-4 5.5s2 5.5 4 5.5 4-2.7 4-5.5-2-5.5-4-5.5z"/><path d="M1.5 7h11"/></svg>
           <span className="truncate">{value.replace(/_/g, " ")}</span>
         </div>
-        <svg className={`size-3.5 shrink-0 text-[#a8a29e] transition-transform duration-150 ${open ? "rotate-180" : ""}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+        <svg className={`size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4"/></svg>
       </button>
       {panel}
     </>
@@ -253,20 +253,20 @@ export function ProfileSection({ user }: Props) {
 
       {/* ── Header — matches all other settings pages ── */}
       <div className="mb-8 flex items-center gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#7c3aed] to-[#a78bfa] shadow-[0_4px_12px_rgba(124,58,237,0.35)]">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-gradient-to-br from-primary to-sky-400 shadow-[var(--shadow-raised)]">
           <svg viewBox="0 0 20 20" fill="white" className="size-5.5">
             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
           </svg>
         </div>
         <div>
-          <h1 className="text-[22px] font-bold text-[#1c1917]">My profile</h1>
-          <p className="text-[13.5px] text-[#78716c]">Manage your name, photo, and personal details.</p>
+          <h1 className="text-[22px] font-bold text-foreground">My profile</h1>
+          <p className="text-sm text-muted-foreground">Manage your name, photo, and personal details.</p>
         </div>
       </div>
 
       {/* ── Photo ── */}
-      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-[#b3b0aa]">Photo</p>
-      <div className="mb-7 overflow-hidden rounded-[16px] border border-black/[0.07] bg-white">
+      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Photo</p>
+      <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
         <div className="flex items-center gap-5 px-5 py-5">
           {/* Clickable avatar */}
           <div
@@ -277,8 +277,8 @@ export function ProfileSection({ user }: Props) {
             title="Click to upload a photo"
           >
             {displayImage
-              ? <img src={displayImage} alt={displayName} className="size-[72px] rounded-full object-cover ring-2 ring-white shadow-md" />
-              : <div className="flex size-[72px] items-center justify-center rounded-full text-[22px] font-bold text-white ring-2 ring-white shadow-md" style={{ background: bg }}>{initials}</div>
+              ? <img src={displayImage} alt={displayName} className="size-[72px] rounded-full object-cover ring-2 ring-white shadow-[var(--shadow-card)]" />
+              : <div className="flex size-[72px] items-center justify-center rounded-full text-[22px] font-bold text-white ring-2 ring-white shadow-[var(--shadow-card)]" style={{ background: bg }}>{initials}</div>
             }
             <div className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/45 transition-opacity ${avatarUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
               {avatarUploading
@@ -291,15 +291,15 @@ export function ProfileSection({ user }: Props) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold text-[#1c1917]">{displayName}</p>
-            <p className="mt-0.5 text-[13px] text-[#78716c]">
+            <p className="text-base font-semibold text-foreground">{displayName}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
               {avatarUploading ? "Uploading…" : "Click the photo to change it"}
             </p>
-            <p className="mt-0.5 text-[12px] text-[#a8a29e]">JPG, PNG, WebP or GIF · Max 1 MB</p>
-            {avatarError && <p className="mt-1.5 text-[12px] text-red-500">{avatarError}</p>}
+            <p className="mt-0.5 text-xs text-muted-foreground">JPG, PNG, WebP or GIF · Max 1 MB</p>
+            {avatarError && <p className="mt-1.5 text-xs text-red-500">{avatarError}</p>}
             {currentImage && !avatarUploading && (
               <button type="button" onClick={handleRemovePhoto}
-                className="mt-2 flex items-center gap-1.5 text-[12.5px] font-medium text-red-500 transition-colors hover:text-red-700">
+                className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-500 transition-colors hover:text-red-700">
                 <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="size-3"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9"/></svg>
                 Remove photo
               </button>
@@ -309,57 +309,57 @@ export function ProfileSection({ user }: Props) {
       </div>
 
       {/* ── Identity ── */}
-      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-[#b3b0aa]">Identity</p>
-      <div className="mb-7 overflow-hidden rounded-[16px] border border-black/[0.07] bg-white">
+      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Identity</p>
+      <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
         {/* Name */}
-        <div className="flex items-center justify-between gap-4 border-b border-black/[0.05] px-5 py-4">
+        <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
           <div className="min-w-0">
-            <p className="text-[14px] font-medium text-[#1c1917]">Preferred name</p>
-            <p className="mt-0.5 text-[12.5px] text-[#78716c]">How your name appears to teammates.</p>
+            <p className="text-sm font-medium text-foreground">Preferred name</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">How your name appears to teammates.</p>
           </div>
           <div className="relative shrink-0">
             <input type="text" value={name} placeholder="Your name"
               onChange={e => setName(e.target.value)}
               onBlur={() => { const v = nameRef.current.trim(); if (v && v !== (user.name ?? "")) patch("name", v); }}
-              className="w-[220px] rounded-[10px] border border-black/[0.1] bg-[#fafaf9] px-3 py-2 text-[14px] outline-none focus:border-[#7c3aed] focus:bg-white transition-colors" />
-            {saving === "name" && <span className="absolute -bottom-5 right-0 text-[11px] text-[#78716c]">Saving…</span>}
-            {saved  === "name" && <span className="absolute -bottom-5 right-0 text-[11px] text-[#7c3aed]">Saved ✓</span>}
+              className="w-[220px] rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary focus:bg-card transition-colors" />
+            {saving === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saving…</span>}
+            {saved  === "name" && <span className="absolute -bottom-5 right-0 text-xs text-primary">Saved ✓</span>}
           </div>
         </div>
 
         {/* Job title */}
-        <div className="flex items-center justify-between gap-4 border-b border-black/[0.05] px-5 py-4">
-          <p className="text-[14px] font-medium text-[#1c1917]">Job title</p>
+        <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
+          <p className="text-sm font-medium text-foreground">Job title</p>
           <div className="relative shrink-0">
             <input type="text" value={jobTitle} placeholder="e.g. Product Designer"
               onChange={e => setJobTitle(e.target.value)}
               onBlur={() => { const v = jobRef.current.trim() || null; if (v !== (user.jobTitle ?? null)) patch("jobTitle", v); }}
-              className="w-[220px] rounded-[10px] border border-black/[0.1] bg-[#fafaf9] px-3 py-2 text-[14px] outline-none focus:border-[#7c3aed] focus:bg-white transition-colors" />
-            {saving === "jobTitle" && <span className="absolute -bottom-5 right-0 text-[11px] text-[#78716c]">Saving…</span>}
-            {saved  === "jobTitle" && <span className="absolute -bottom-5 right-0 text-[11px] text-[#7c3aed]">Saved ✓</span>}
+              className="w-[220px] rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary focus:bg-card transition-colors" />
+            {saving === "jobTitle" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saving…</span>}
+            {saved  === "jobTitle" && <span className="absolute -bottom-5 right-0 text-xs text-primary">Saved ✓</span>}
           </div>
         </div>
 
         {/* Email */}
         <div className="flex items-center justify-between gap-4 px-5 py-4">
           <div className="min-w-0">
-            <p className="text-[14px] font-medium text-[#1c1917]">Email</p>
-            <p className="mt-0.5 text-[12.5px] text-[#78716c]">Contact support to change your email address.</p>
+            <p className="text-sm font-medium text-foreground">Email</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Contact support to change your email address.</p>
           </div>
           <div className="shrink-0">
             <input type="text" value={user.email} readOnly
-              className="w-[220px] cursor-not-allowed rounded-[10px] border border-black/[0.1] bg-[#fafaf9] px-3 py-2 text-[14px] text-[#a8a29e] outline-none" />
+              className="w-[220px] cursor-not-allowed rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground outline-none" />
           </div>
         </div>
       </div>
 
       {/* ── Language & time ── */}
-      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-[#b3b0aa]">Language &amp; time</p>
-      <div className="mb-7 overflow-hidden rounded-[16px] border border-black/[0.07] bg-white">
+      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Language &amp; time</p>
+      <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
         <div className="flex items-start justify-between gap-4 px-5 py-4">
           <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-medium text-[#1c1917]">Timezone</p>
-            <p className="mt-0.5 text-[12.5px] text-[#78716c]">Used for digest emails and date/time displays.</p>
+            <p className="text-sm font-medium text-foreground">Timezone</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Used for digest emails and date/time displays.</p>
           </div>
           <div className="shrink-0 flex flex-col items-end gap-2">
             <TimezoneDropdown
@@ -367,22 +367,22 @@ export function ProfileSection({ user }: Props) {
               onChange={tz => { setTimezone(tz); patch("timezone", tz); }}
             />
             {tzTime && (
-              <p className="flex items-center gap-1.5 text-[12px] text-[#78716c]">
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-3 shrink-0">
                   <circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1.5"/>
                 </svg>
-                Current time: <span className="font-semibold text-[#1c1917]">{tzTime}</span>
+                Current time: <span className="font-semibold text-foreground">{tzTime}</span>
               </p>
             )}
-            {saving === "timezone" && <p className="text-[11px] text-[#78716c]">Saving…</p>}
-            {saved  === "timezone" && <p className="text-[11px] text-[#7c3aed]">Saved ✓</p>}
+            {saving === "timezone" && <p className="text-xs text-muted-foreground">Saving…</p>}
+            {saved  === "timezone" && <p className="text-xs text-primary">Saved ✓</p>}
           </div>
         </div>
       </div>
 
       {/* ── Danger zone ── */}
-      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-[#b3b0aa]">Danger zone</p>
-      <div className="overflow-hidden rounded-[16px] border border-red-200/60 bg-gradient-to-br from-red-50/40 to-white">
+      <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Danger zone</p>
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-red-200/60 bg-gradient-to-br from-red-50/40 to-white">
         <div className="flex items-start gap-4 px-5 py-5">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-red-100">
             <svg viewBox="0 0 20 20" fill="none" stroke="#dc2626" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5">
@@ -390,28 +390,28 @@ export function ProfileSection({ user }: Props) {
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-semibold text-[#1c1917]">Delete account</p>
-            <p className="mt-0.5 text-[13px] text-[#78716c]">
+            <p className="text-sm font-semibold text-foreground">Delete account</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
               Permanently delete your account and all personal data. This cannot be undone.
             </p>
             {!deleteOpen ? (
               <button type="button" onClick={() => setDeleteOpen(true)}
-                className="mt-4 rounded-[10px] border border-red-200 bg-white px-4 py-2 text-[13px] font-medium text-red-600 transition-all hover:bg-red-50 active:scale-95">
+                className="mt-4 rounded-[var(--radius-sm)] border border-red-200 bg-card px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 active:scale-[0.97]">
                 Delete account…
               </button>
             ) : (
               <div className="mt-4 space-y-3">
-                <p className="text-[13px] text-[#37352f]">Type <strong className="font-semibold text-red-700">{user.email}</strong> to confirm:</p>
+                <p className="text-sm text-foreground">Type <strong className="font-semibold text-red-700">{user.email}</strong> to confirm:</p>
                 <input type="email" value={deleteEmail} onChange={e => setDeleteEmail(e.target.value)} placeholder={user.email}
-                  className="w-full rounded-[10px] border border-red-200 bg-white px-3 py-2.5 text-[13.5px] outline-none focus:border-red-500 focus:ring-1 focus:ring-red-200 transition-colors" />
-                {deleteError && <p className="text-[12.5px] text-red-600">{deleteError}</p>}
+                  className="w-full rounded-[var(--radius-sm)] border border-red-200 bg-card px-3 py-2.5 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-200 transition-colors" />
+                {deleteError && <p className="text-xs text-red-600">{deleteError}</p>}
                 <div className="flex gap-2">
                   <button type="button" onClick={() => { setDeleteOpen(false); setDeleteEmail(""); setDeleteError(""); }}
-                    className="rounded-[10px] border border-black/[0.1] bg-white px-4 py-2 text-[13px] font-medium text-[#37352f] hover:bg-[#f7f7f5] transition-colors">
+                    className="rounded-[var(--radius-sm)] border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/30 transition-colors">
                     Cancel
                   </button>
                   <button type="button" onClick={handleDeleteAccount} disabled={deleting || deleteEmail !== user.email}
-                    className="rounded-[10px] bg-red-600 px-4 py-2 text-[13px] font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50 active:scale-95">
+                    className="rounded-[var(--radius-sm)] bg-red-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:opacity-50 active:scale-[0.97]">
                     {deleting ? "Deleting…" : "Delete account"}
                   </button>
                 </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ClockCounterClockwiseIcon,
   CopyIcon,
   CopySimpleIcon,
   DotsThreeIcon,
@@ -14,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SaveAsTemplateModal } from "@/components/templates/save-as-template-modal";
+import { PageHistoryPanel } from "@/components/pages/page-history-panel";
 
 interface PageActionsMenuProps {
   pageId:        string;
@@ -27,7 +29,7 @@ interface PageActionsMenuProps {
 }
 
 const menuItemClass =
-  "flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted cursor-pointer";
+  "flex w-full items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-muted cursor-pointer";
 
 export function PageActionsMenu({
   pageId,
@@ -45,6 +47,7 @@ export function PageActionsMenu({
   const [confirmTrash, setConfirmTrash]   = useState(false);
   const [deleting, setDeleting]           = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [historyAnchor, setHistoryAnchor] = useState<{ top: number; right: number } | null>(null);
   const buttonRef  = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
@@ -180,7 +183,7 @@ export function PageActionsMenu({
         type="button"
         onClick={() => (open ? setOpen(false) : openMenu())}
         disabled={loading !== null}
-        className="flex h-8 items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 text-xs font-medium text-foreground/70 shadow-sm transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:opacity-50"
+        className="flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border/70 bg-background px-3 text-xs font-medium text-foreground/70 shadow-[var(--shadow-card)] transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:opacity-50"
         aria-label="Page actions"
       >
         <DotsThreeIcon size={14} weight="bold" />
@@ -191,7 +194,7 @@ export function PageActionsMenu({
       {open && dropdownPos && typeof document !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[200] w-52 overflow-hidden rounded-xl border border-border bg-popover py-1 shadow-lg"
+          className="fixed z-[200] w-52 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover py-1 shadow-[var(--shadow-float)]"
           style={{ top: dropdownPos.top, right: dropdownPos.right }}
         >
           {!isDeleted && (
@@ -211,7 +214,6 @@ export function PageActionsMenu({
                 Copy link
               </button>
 
-
               {pageKind !== "database" && (
                 <button
                   type="button"
@@ -220,6 +222,23 @@ export function PageActionsMenu({
                 >
                   <SquaresFourIcon size={14} />
                   Save as Template
+                </button>
+              )}
+
+              {pageKind !== "database" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    if (buttonRef.current) {
+                      const r = buttonRef.current.getBoundingClientRect();
+                      setHistoryAnchor({ top: r.bottom + 6, right: window.innerWidth - r.right });
+                    }
+                  }}
+                  className={menuItemClass}
+                >
+                  <ClockCounterClockwiseIcon size={14} />
+                  Page history
                 </button>
               )}
 
@@ -274,9 +293,9 @@ export function PageActionsMenu({
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => !deleting && setConfirmTrash(false)}
           />
-          <div className="relative w-[380px] rounded-2xl border border-border bg-popover p-6 shadow-2xl">
+          <div className="relative w-[380px] rounded-[var(--radius-lg)] border border-border bg-popover p-6 shadow-[var(--shadow-float)]">
             <div className="mb-1 flex items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-100">
                 <TrashIcon size={16} className="text-red-600" />
               </div>
               <h2 className="text-sm font-semibold text-foreground">
@@ -293,7 +312,7 @@ export function PageActionsMenu({
                 type="button"
                 disabled={deleting}
                 onClick={() => setConfirmTrash(false)}
-                className="rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -301,7 +320,7 @@ export function PageActionsMenu({
                 type="button"
                 disabled={deleting}
                 onClick={confirmDelete}
-                className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
               >
                 {deleting
                   ? (pageKind === "database" ? "Deleting…" : "Moving…")
@@ -321,6 +340,13 @@ export function PageActionsMenu({
           onClose={() => setSaveAsTemplate(false)}
         />
       )}
+
+      <PageHistoryPanel
+        pageId={pageId}
+        open={historyAnchor !== null}
+        anchorPos={historyAnchor}
+        onClose={() => setHistoryAnchor(null)}
+      />
     </>
   );
 }

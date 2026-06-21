@@ -33,7 +33,7 @@ export function EmojiPicker({ onSelect, onRemove, onClose }: EmojiPickerProps) {
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-full z-50 mt-1 w-64 rounded-xl border border-border bg-popover p-3 shadow-lg"
+      className="absolute left-0 top-full z-50 mt-1 w-64 rounded-[var(--radius-md)] border border-border bg-popover p-3 shadow-[var(--shadow-float)]"
     >
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-ui text-muted-foreground">
         Pick an icon
@@ -44,7 +44,7 @@ export function EmojiPicker({ onSelect, onRemove, onClose }: EmojiPickerProps) {
             key={emoji}
             type="button"
             onClick={() => onSelect(emoji)}
-            className="flex size-7 items-center justify-center rounded-md text-base hover:bg-muted transition-colors"
+            className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-base hover:bg-muted transition-colors"
           >
             {emoji}
           </button>
@@ -54,7 +54,7 @@ export function EmojiPicker({ onSelect, onRemove, onClose }: EmojiPickerProps) {
         <button
           type="button"
           onClick={onRemove}
-          className="mt-2 w-full rounded-md py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="mt-2 w-full rounded-[var(--radius-sm)] py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           Remove icon
         </button>

@@ -22,7 +22,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
 
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
         {/* Logo mark */}
-        <div className="mb-7 flex size-16 items-center justify-center rounded-2xl bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/30">
+        <div className="mb-7 flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/30">
           WF
         </div>
 
@@ -37,7 +37,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
         </p>
 
         {/* Type badge */}
-        <div className="mb-5 flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 shadow-sm">
+        <div className="mb-5 flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 shadow-[var(--shadow-card)]">
           <span className="text-base leading-none">{isTeam ? "👥" : "👤"}</span>
           <span className="text-xs font-semibold text-muted-foreground">
             {isTeam ? "Team workspace" : "Personal workspace"}
@@ -45,7 +45,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
         </div>
 
         {/* Card */}
-        <div className="w-full rounded-2xl border border-border bg-card shadow-md">
+        <div className="w-full rounded-[var(--radius-lg)] border border-border bg-card shadow-[var(--shadow-card)]">
           <form action={createWorkspaceAction} className="p-7">
             {/* Hidden kind field */}
             <input type="hidden" name="kind" value={isTeam ? "team" : "personal"} />

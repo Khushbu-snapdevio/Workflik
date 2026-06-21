@@ -17,6 +17,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableRow } from "@tiptap/extension-table-row";
 import { common, createLowlight } from "lowlight";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { CommentHighlight, setCommentHighlights, type HighlightComment } from "./extensions/comment-highlight";
 import { Callout } from "./extensions/callout";
@@ -252,11 +253,10 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
       if (!commentId) return;
       const comment = highlightCommentsRef.current.find((c) => c.id === commentId);
       if (!comment) return;
-      const editorRect = editorEl.getBoundingClientRect();
       const hit = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
       const blockY = hit
-        ? editor.view.coordsAtPos(hit.pos).top - editorRect.top - 20
-        : e.clientY - editorRect.top - 20;
+        ? editor.view.coordsAtPos(hit.pos).top - 20
+        : e.clientY - 20;
       openCommentCard(comment.blockId, comment.anchorStart, comment.anchorEnd, blockY);
     }
     editorEl.addEventListener("click", handleClick);
@@ -286,12 +286,12 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
   }
 
   const fontClass = fontFamily === "serif" ? "font-serif" : fontFamily === "mono" ? "font-mono" : "";
-  const sizeClass = isSmallText ? "text-sm" : "text-[15px]";
+  const sizeClass = isSmallText ? "text-sm" : "text-base";
 
   return (
     <div className="relative">
       {saveState !== "idle" && (
-        <div className="absolute -top-7 right-0 text-[11px] text-muted-foreground/50 select-none">
+        <div className="absolute -top-7 right-0 text-xs text-muted-foreground/50 select-none">
           {saveState === "saving"  && <span className="animate-pulse">Saving…</span>}
           {saveState === "saved"   && <span>Saved</span>}
           {saveState === "offline" && <span className="text-amber-500">Offline — changes will sync when reconnected</span>}
@@ -306,9 +306,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
             // Position the card near the current selection
             const { from } = editor.state.selection;
             const coords = editor.view.coordsAtPos(from);
-            const editorEl = editor.view.dom as HTMLElement;
-            const editorRect = editorEl.getBoundingClientRect();
-            const blockY = coords.top - editorRect.top - 20;
+            const blockY = coords.top - 20;
             openCommentCard(null, anchorStart, anchorEnd, blockY);
           }}
         />
@@ -319,10 +317,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
         <BlockHandle
           editor={editor}
           onComment={(nodePos, absoluteY) => {
-            // Compute blockY relative to the editor container so the card scrolls with the page
-            const editorEl = editor.view.dom as HTMLElement;
-            const editorRect = editorEl.getBoundingClientRect();
-            const blockY = absoluteY - editorRect.top - 20; // -20 keeps card slightly above the block centre
+            const blockY = absoluteY - 20;
 
             // Custom nodes store blockId in attrs; standard nodes need index-based lookup
             const doc = editor.state.doc;
@@ -401,9 +396,9 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
         />
       )}
 
-      {/* Floating comment card — anchored to the clicked block's Y position */}
-      {commentCard && workspaceId && (
-        <div style={{ position: "absolute", right: "-420px", top: Math.max(0, commentCard.blockY), zIndex: 50 }}>
+      {/* Floating comment card — fixed to viewport right edge, no layout overflow */}
+      {commentCard && workspaceId && typeof document !== "undefined" && createPortal(
+        <div style={{ position: "fixed", right: 16, top: Math.max(8, commentCard.blockY), zIndex: 400, width: 400 }}>
           <CommentCard
             pageId={pageId}
             workspaceId={workspaceId}
@@ -414,7 +409,8 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
             isAdmin={isAdmin}
             onClose={closeCommentCard}
           />
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

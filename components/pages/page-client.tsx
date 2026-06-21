@@ -114,38 +114,35 @@ export function PageClient({
     if (result) saveCover(result.fileUrl);
   }
 
-  const contentCls = isFullWidth ? "max-w-full px-10" : "max-w-[760px] px-16";
+  const contentCls = isFullWidth ? "max-w-full px-12" : "max-w-[780px] px-14";
 
   return (
     <div id="page-scroll-container" className="flex-1 overflow-y-auto">
 
-      {/* ── Cover — full viewport width ── */}
+      {/* ── Cover ── */}
       {coverUrl && (
-        <div className="group/cover relative h-[220px] w-full shrink-0 bg-muted">
+        <div className="group/cover relative h-[240px] w-full shrink-0 overflow-hidden bg-muted">
           <div
-            className="absolute inset-0 bg-cover"
+            className="absolute inset-0 bg-cover bg-center transition-all duration-300"
             style={{
               backgroundImage: `url(${coverUrl})`,
               backgroundPosition: `center ${coverPos * 100}%`,
             }}
           />
-          {/* bottom gradient so icon is readable against any photo */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/30 to-transparent" />
-
           {editable && (
-            <div className="absolute bottom-3 right-4 flex items-center gap-2 opacity-0 transition-opacity duration-150 group-hover/cover:opacity-100">
+            <div className="absolute bottom-3 right-4 flex items-center gap-1.5 opacity-0 transition-opacity duration-200 group-hover/cover:opacity-100">
               <button
                 type="button"
                 onClick={() => coverInput.current?.click()}
                 disabled={coverUploading}
-                className="rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm hover:bg-background disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] bg-background/85 px-3 py-1.5 text-xs font-medium shadow-[var(--shadow-raised)] backdrop-blur-sm transition-colors hover:bg-background disabled:opacity-50"
               >
                 {coverUploading ? "Uploading…" : "Change cover"}
               </button>
               <button
                 type="button"
                 onClick={() => saveCover(null)}
-                className="rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm hover:bg-background"
+                className="rounded-[var(--radius-sm)] bg-background/85 px-3 py-1.5 text-xs font-medium shadow-[var(--shadow-raised)] backdrop-blur-sm transition-colors hover:bg-background"
               >
                 Remove
               </button>
@@ -186,7 +183,7 @@ export function PageClient({
               onClick={() => editable && setShowPicker(true)}
               aria-label="Change icon"
               style={{ fontSize: "3rem", width: "4rem", height: "4rem" }}
-              className="flex items-center justify-center rounded-2xl leading-none transition-colors hover:bg-accent/70 disabled:cursor-default"
+              className="flex items-center justify-center rounded-[var(--radius-lg)] leading-none transition-colors hover:bg-primary/[0.07] disabled:cursor-default"
             >
               {icon}
             </button>
@@ -202,13 +199,13 @@ export function PageClient({
 
         {/* Page toolbar — Add cover / Add icon */}
         {editable && (!coverUrl || !icon) && (
-          <div className="mb-4 flex items-center gap-1">
+          <div className="mb-5 flex items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover/page:opacity-100">
             {!coverUrl && (
               <button
                 type="button"
                 onClick={() => coverInput.current?.click()}
                 disabled={coverUploading}
-                className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground/60 transition-colors hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
               >
                 <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
@@ -221,7 +218,7 @@ export function PageClient({
                 <button
                   type="button"
                   onClick={() => setShowPicker(true)}
-                  className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground"
+                  className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground/60 transition-colors hover:bg-accent hover:text-muted-foreground"
                 >
                   <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/>
@@ -243,7 +240,7 @@ export function PageClient({
         {statusBanner}
 
         {/* Title */}
-        <div className="relative mt-1">
+        <div className="mt-1">
           <div
             ref={titleRef}
             contentEditable={editable}
@@ -262,15 +259,13 @@ export function PageClient({
             }}
             data-placeholder="Untitled"
             className={[
-              "w-full break-words text-[2.5rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
-              "empty:before:content-[attr(data-placeholder)] empty:before:text-foreground/20",
+              "w-full break-words text-[2.6rem] font-black leading-[1.15] tracking-[-0.03em] text-foreground outline-none",
+              "empty:before:content-[attr(data-placeholder)] empty:before:text-foreground/15",
               editable ? "cursor-text" : "cursor-default select-text",
             ].join(" ")}
           />
           {saving && (
-            <span className="absolute -top-5 right-0 animate-pulse text-[11px] text-muted-foreground/40">
-              Saving…
-            </span>
+            <p className="mt-1.5 text-[11px] text-muted-foreground/40 animate-pulse">Saving…</p>
           )}
         </div>
 

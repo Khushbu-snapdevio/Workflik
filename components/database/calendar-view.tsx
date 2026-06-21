@@ -41,7 +41,7 @@ export function CalendarView({
   if (!calProp) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 text-center px-8">
-        <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/40">
+        <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
           <svg className="size-7 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
             <rect x="3" y="4" width="18" height="18" rx="2"/>
             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -50,8 +50,8 @@ export function CalendarView({
           </svg>
         </div>
         <div>
-          <p className="text-[14px] font-semibold text-foreground">No date property selected</p>
-          <p className="mt-1 text-[12px] text-muted-foreground">
+          <p className="text-sm font-semibold text-foreground">No date property selected</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             Open the <strong>Date</strong> dropdown in the toolbar and pick a Date property to show entries on the calendar.
           </p>
         </div>
@@ -101,18 +101,18 @@ export function CalendarView({
       <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-5 py-2.5">
         <button
           onClick={prevMonth}
-          className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <CaretLeft size={14} weight="bold" />
         </button>
 
-        <h2 className="min-w-[152px] text-center text-[14px] font-bold tracking-tight text-foreground">
+        <h2 className="min-w-[152px] text-center text-sm font-bold tracking-tight text-foreground">
           {MONTHS[month]} {year}
         </h2>
 
         <button
           onClick={nextMonth}
-          className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <CaretRight size={14} weight="bold" />
         </button>
@@ -120,14 +120,14 @@ export function CalendarView({
         {!isCurrentMonth && (
           <button
             onClick={goToday}
-            className="ml-2 rounded-lg border border-border bg-background px-3 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="ml-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Today
           </button>
         )}
 
         {/* Total entries this month */}
-        <div className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+        <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground/60">
           <span className="tabular-nums font-semibold text-foreground/50">
             {[...dateMap.values()].flat().length}
           </span>
@@ -181,7 +181,7 @@ export function CalendarView({
               {/* Day number + add button row */}
               <div className="mb-1.5 flex items-center justify-between">
                 <span className={[
-                  "flex size-[22px] items-center justify-center rounded-full text-[12px] font-semibold tabular-nums transition-colors",
+                  "flex size-[22px] items-center justify-center rounded-full text-xs font-semibold tabular-nums transition-colors",
                   isToday
                     ? "bg-primary text-primary-foreground"
                     : "text-foreground/50 group-hover/cell:text-foreground/80",
@@ -195,7 +195,7 @@ export function CalendarView({
                     onClick={() => onCreateEntry({ [calPropId!]: { date: key } })}
                     title={`Add entry on ${MONTHS[month]} ${day}`}
                     className={[
-                      "flex size-[18px] items-center justify-center rounded-md text-muted-foreground/40 transition-all hover:bg-primary/10 hover:text-primary",
+                      "flex size-[18px] items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-all hover:bg-primary/10 hover:text-primary",
                       isHovered ? "opacity-100" : "opacity-0",
                     ].join(" ")}
                   >
@@ -209,7 +209,7 @@ export function CalendarView({
                 {dayEntries.slice(0, 3).map((entry, i) => (
                   <div
                     key={entry.id}
-                    className={`group/chip relative flex items-center rounded-md text-[11px] font-medium transition-colors ${CHIP_COLORS[i % CHIP_COLORS.length]}`}
+                    className={`group/chip relative flex items-center rounded-md text-xs font-medium transition-colors ${CHIP_COLORS[i % CHIP_COLORS.length]}`}
                   >
                     {(activeView?.entryOpenMode ?? "side_panel") === "side_panel" && onOpenEntry ? (
                       <button
@@ -248,8 +248,8 @@ export function CalendarView({
 
                     {/* Confirm pill */}
                     {confirmId === entry.id && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-between gap-1 rounded-md bg-red-100 px-1.5 dark:bg-red-950/60">
-                        <span className="truncate text-[10px] font-semibold text-red-700 dark:text-red-300">
+                      <div className="absolute inset-0 z-10 flex items-center justify-between gap-1 rounded-[var(--radius-sm)] bg-destructive/10 px-1.5">
+                        <span className="truncate text-[10px] font-semibold text-destructive">
                           Delete?
                         </span>
                         <div className="flex shrink-0 gap-1">
@@ -262,13 +262,13 @@ export function CalendarView({
                               setDeletingId(null);
                               setConfirmId(null);
                             }}
-                            className="rounded px-1.5 py-0.5 text-[10px] font-bold text-red-700 hover:bg-red-200 dark:text-red-300 dark:hover:bg-red-900/60 disabled:opacity-50"
+                            className="rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/20 disabled:opacity-50"
                           >
                             {deletingId === entry.id ? "…" : "Yes"}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); setConfirmId(null); }}
-                            className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-red-600/60 hover:bg-red-200 dark:hover:bg-red-900/60"
+                            className="rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
                           >
                             No
                           </button>
@@ -289,7 +289,7 @@ export function CalendarView({
               {isEditor && dayEntries.length === 0 && isHovered && (
                 <button
                   onClick={() => onCreateEntry({ [calPropId!]: { date: key } })}
-                  className="mt-auto flex items-center gap-1 rounded-md px-1 py-0.5 text-[10px] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+                  className="mt-auto flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-[10px] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
                 >
                   <Plus size={9} />
                   <span>Add entry</span>

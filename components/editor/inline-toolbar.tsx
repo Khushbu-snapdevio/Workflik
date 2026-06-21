@@ -33,7 +33,7 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
   return (
     <BubbleMenu
       editor={editor}
-      className="flex items-center gap-0.5 rounded-lg border border-border bg-popover p-1 shadow-lg"
+      className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1 shadow-[var(--shadow-float)]"
     >
       {linkInput ? (
         <div className="flex items-center gap-1 px-1">
@@ -164,7 +164,7 @@ function ColorPicker({ onSelect, active }: { onSelect: (c: string) => void; acti
         <PaintBucketIcon size={14} />
       </button>
       {open && (
-        <div className="absolute left-0 top-8 z-10 flex gap-1 rounded-lg border border-border bg-popover p-1.5 shadow-lg">
+        <div className="absolute left-0 top-8 z-10 flex gap-1 rounded-[var(--radius-sm)] border border-border bg-popover p-1.5 shadow-[var(--shadow-float)]">
           {COLORS.map((c) => (
             <button
               key={c}

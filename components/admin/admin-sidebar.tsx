@@ -84,62 +84,62 @@ export function AdminSidebar({ email }: { email: string }) {
   const avatarLetter = email[0]?.toUpperCase() ?? "A";
 
   return (
-    <aside className="flex h-screen w-[210px] shrink-0 flex-col border-r border-black/[0.06] bg-[#f8f7f6]">
+    <aside className="flex h-screen w-[280px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
 
       {/* Brand */}
       <div className="px-4 pb-3 pt-4">
-        <Link href="/platform/post-auth" className="flex items-center gap-2.5 rounded-[8px] transition hover:opacity-80">
-          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] text-[11px] font-black text-white shadow-[0_2px_8px_rgba(29,78,216,0.35)]">
+        <Link href="/platform/post-auth" className="flex items-center gap-2.5 rounded-[var(--radius-md)] transition hover:opacity-80">
+          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-br from-primary to-sky-400 text-xs font-black text-white shadow-[0_2px_8px_rgba(2,132,199,0.35)]">
             WF
           </span>
           <div className="min-w-0">
-            <p className="text-[13px] font-extrabold leading-none tracking-tight text-[#1c1917]">{PRODUCT_NAME}</p>
-            <p className="mt-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-[#b0ada8]">Orbit Admin</p>
+            <p className="text-sm font-extrabold leading-none tracking-tight text-foreground">{PRODUCT_NAME}</p>
+            <p className="mt-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/50">Orbit Admin</p>
           </div>
         </Link>
       </div>
 
       {/* Divider */}
-      <div className="mx-4 mb-3 h-px bg-black/[0.05]" />
+      <div className="mx-4 mb-3 h-px bg-border/50" />
 
       {/* Main nav */}
       <nav className="flex-1 overflow-y-auto px-2">
-        <p className="mb-1 px-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#c4c1bb]">Main</p>
+        <p className="mb-1 px-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/40">Main</p>
         <div className="space-y-0.5">
           {NAV.map(({ href, label, icon, exact }) => {
             const active = exact ? pathname === href : pathname.startsWith(href);
             return (
               <Link key={href} href={href}
-                className={`group flex items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-[12.5px] font-medium transition-all duration-100 ${
+                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-sm font-medium transition-all duration-100 ${
                   active
-                    ? "bg-white text-[#1c1917] shadow-[0_1px_3px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.04)]"
-                    : "text-[#6b6966] hover:bg-black/[0.04] hover:text-[#37352f]"
+                    ? "bg-background text-foreground shadow-[var(--shadow-card)]"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}>
-                <span className={`shrink-0 transition-colors ${active ? "text-[#2383e2]" : "text-[#b0ada8] group-hover:text-[#6b6966]"}`}>
+                <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-muted-foreground/50 group-hover:text-muted-foreground"}`}>
                   {icon}
                 </span>
                 <span className={active ? "font-semibold" : ""}>{label}</span>
                 {active && (
-                  <span className="ml-auto flex size-1.5 shrink-0 rounded-full bg-[#2383e2]" />
+                  <span className="ml-auto flex size-1.5 shrink-0 rounded-full bg-primary" />
                 )}
               </Link>
             );
           })}
         </div>
 
-        <div className="mx-2.5 my-3 h-px bg-black/[0.05]" />
-        <p className="mb-1 px-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#c4c1bb]">System</p>
+        <div className="mx-2.5 my-3 h-px bg-border/50" />
+        <p className="mb-1 px-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/40">System</p>
         <div className="space-y-0.5">
           {SECONDARY.map(({ href, label, icon }) => {
             const active = pathname.startsWith(href);
             return (
               <Link key={href} href={href}
-                className={`group flex items-center gap-2.5 rounded-[9px] px-2.5 py-[7px] text-[12.5px] font-medium transition-all duration-100 ${
+                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-sm font-medium transition-all duration-100 ${
                   active
-                    ? "bg-white text-[#1c1917] shadow-[0_1px_3px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.04)]"
-                    : "text-[#6b6966] hover:bg-black/[0.04] hover:text-[#37352f]"
+                    ? "bg-background text-foreground shadow-[var(--shadow-card)]"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}>
-                <span className={`shrink-0 transition-colors ${active ? "text-[#2383e2]" : "text-[#b0ada8] group-hover:text-[#6b6966]"}`}>
+                <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-muted-foreground/50 group-hover:text-muted-foreground"}`}>
                   {icon}
                 </span>
                 <span className={active ? "font-semibold" : ""}>{label}</span>
@@ -150,24 +150,31 @@ export function AdminSidebar({ email }: { email: string }) {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-black/[0.06] px-2 py-3">
+      <div className="border-t border-border/60 px-2 py-3">
         <Link href="/platform/post-auth"
-          className="flex items-center gap-2 rounded-[9px] px-2.5 py-2 text-[12px] font-medium text-[#9b9995] transition hover:bg-black/[0.04] hover:text-[#37352f]">
+          className="flex items-center gap-2 rounded-[var(--radius-md)] px-2.5 py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted/50 hover:text-foreground">
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0">
             <path d="M8 6H2M4 3.5L1.5 6 4 8.5"/><path d="M5 1.5h5a.5.5 0 01.5.5v8a.5.5 0 01-.5.5H5"/>
           </svg>
           Back to workspace
         </Link>
 
-        <div className="mx-2.5 my-2 h-px bg-black/[0.05]" />
+        <div className="mx-2.5 my-2 h-px bg-border/50" />
 
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2383e2] to-[#60a5fa] text-[10px] font-bold text-white shadow-sm">
+        <div className="group flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 transition-all hover:bg-primary/[0.07] hover:ring-1 hover:ring-primary/20">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary text-[10px] font-bold text-white shadow-sm transition-transform group-hover:scale-105">
             {avatarLetter}
           </div>
-          <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-[#9b9995]">{email}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold text-foreground/80 group-hover:text-foreground">
+              {email.split("@")[0]}
+            </p>
+            <p className="truncate text-[10px] text-muted-foreground/60 group-hover:text-muted-foreground">
+              {email}
+            </p>
+          </div>
           <SignOutButton
-            className="flex size-6 shrink-0 items-center justify-center rounded-[6px] text-[#b3b0aa] transition hover:bg-black/[0.06] hover:text-[#37352f]"
+            className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/30 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
             title="Sign out">
             <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
               <path d="M4 6h7M8.5 3.5L11 6l-2.5 2.5"/><path d="M7 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h5"/>

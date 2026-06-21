@@ -112,7 +112,7 @@ export function FavoritesSection({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
       >
         <StarIcon size={15} className="shrink-0" />
         <span className="flex-1 text-left">Favorites</span>
@@ -162,7 +162,7 @@ export function FavoritesSection({
                 ref={moreRef}
                 type="button"
                 onClick={openPopup}
-                className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
+                className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
               >
                 <span className="flex size-3.5 items-center justify-center">
                   <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-3">
@@ -180,14 +180,16 @@ export function FavoritesSection({
       {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popupRef}
-          className="fixed z-[300] w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-xl"
+          className="fixed z-[300] w-64 overflow-hidden rounded-[var(--radius-md)] border border-primary/30 shadow-[var(--shadow-raised)]"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
-          <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-            <span className="text-xs font-semibold text-foreground">Favorites</span>
-            <span className="text-xs text-muted-foreground">{localFavs.length} pages</span>
+          {/* Colored header */}
+          <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "linear-gradient(135deg, #0284c7, #0ea5e9)" }}>
+            <span className="text-xs font-semibold text-white">Favorites</span>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{localFavs.length} total</span>
           </div>
-          <div className="max-h-72 overflow-y-auto py-1">
+          {/* White body */}
+          <div className="max-h-72 overflow-y-auto bg-white py-1">
             {localFavs.map((fav) => {
               const page = pagesMap[fav.pageId];
               return (
@@ -195,7 +197,7 @@ export function FavoritesSection({
                   key={fav.pageId}
                   href={`/app/${workspaceSlug}/${page?.shortId ?? fav.pageId}`}
                   onClick={() => setPopupOpen(false)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-accent hover:text-foreground"
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-primary/[0.07] hover:text-primary"
                 >
                   {page?.icon ? (
                     <span className="shrink-0 text-sm leading-none">{page.icon}</span>
@@ -209,11 +211,12 @@ export function FavoritesSection({
               );
             })}
           </div>
-          <div className="border-t border-border px-3 py-2">
+          {/* Footer */}
+          <div className="border-t border-border bg-white px-3 py-2">
             <Link
               href={`/app/${workspaceSlug}/library`}
               onClick={() => setPopupOpen(false)}
-              className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="flex items-center gap-2 text-xs font-medium text-primary transition-colors hover:text-[var(--primary-hover)]"
             >
               <svg className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
@@ -255,7 +258,7 @@ function FavoriteRow({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="group flex items-center rounded-md hover:bg-sidebar-accent"
+      className="group flex items-center rounded-[var(--radius-sm)] hover:bg-sidebar-accent"
     >
       <Link
         className="flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground"

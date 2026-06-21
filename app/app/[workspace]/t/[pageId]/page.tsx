@@ -8,6 +8,7 @@ import {
   pageClosure,
   pages,
   propertyValues,
+  userFavorites,
   workspaces,
 } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
@@ -39,16 +40,27 @@ export default async function TemplateDatabasePage({ params }: Props) {
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) notFound();
 
+  const isEditor = member.role === "admin" || member.role === "editor";
+  const isAdmin  = member.role === "admin";
+
   const [page] = await db
     .select({
       id: pages.id, shortId: pages.shortId, title: pages.title,
       icon: pages.icon, coverUrl: pages.coverUrl, kind: pages.kind,
       defaultViewId: pages.defaultViewId,
+      isPrivate: pages.isPrivate, isLocked: pages.isLocked, isDeleted: pages.isDeleted,
     })
     .from(pages)
     .where(and(eq(pages.shortId, shortId), eq(pages.workspaceId, ws.id)))
     .limit(1);
   if (!page) notFound();
+
+  const [favRow] = await db
+    .select({ id: userFavorites.id })
+    .from(userFavorites)
+    .where(and(eq(userFavorites.userId, session.user.id), eq(userFavorites.pageId, page.id)))
+    .limit(1);
+  const isFavorited = !!favRow;
 
   // Breadcrumbs — ancestors ordered root → parent
   const ancestorRows = await db
@@ -114,6 +126,13 @@ export default async function TemplateDatabasePage({ params }: Props) {
       workspaceId={ws.id}
       breadcrumbs={breadcrumbs}
       defaultViewId={page.defaultViewId ?? null}
+      currentUserId={session.user.id}
+      isPrivate={page.isPrivate ?? false}
+      isFavorited={isFavorited}
+      isEditor={isEditor}
+      isAdmin={isAdmin}
+      isLocked={page.isLocked ?? false}
+      isDeleted={page.isDeleted ?? false}
     />
   );
 }

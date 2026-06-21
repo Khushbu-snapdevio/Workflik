@@ -28,16 +28,15 @@ const TYPE_ACTION: Record<string, string> = {
   trash_warning:    "page being deleted",
 };
 
-// Color dot on avatar corner to indicate notification type at a glance
 const TYPE_COLOR: Record<string, string> = {
-  mention:          "#3b82f6",
-  comment:          "#8b5cf6",
-  reply:            "#6366f1",
-  resolved:         "#10b981",
+  mention:          "#0284C7",
+  comment:          "#0ea5e9",
+  reply:            "#0369a1",
+  resolved:         "#0891b2",
   reopened:         "#f59e0b",
-  access_granted:   "#10b981",
-  workspace_invite: "#6366f1",
-  guest_accepted:   "#10b981",
+  access_granted:   "#06b6d4",
+  workspace_invite: "#0284C7",
+  guest_accepted:   "#0ea5e9",
   trash_warning:    "#ef4444",
 };
 
@@ -49,7 +48,7 @@ interface Props {
 }
 
 export function NotificationCard({ notification, workspaceSlug, onMarkRead, onClick }: Props) {
-  void workspaceSlug; // navigation handled by onClick → handleClick in panel
+  void workspaceSlug;
   const who      = notification.senderName ?? "System";
   const action   = TYPE_ACTION[notification.type] ?? "sent you a notification";
   const initials = who.slice(0, 2).toUpperCase();
@@ -66,61 +65,59 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
   return (
     <div
       onClick={handleCardClick}
-      className={`group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors duration-100 ${
-        isUnread ? "bg-[#f4f7ff] hover:bg-[#edf2ff]" : "hover:bg-[#fafaf9]"
+      className={`group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors ${
+        isUnread ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-muted/25"
       }`}
     >
       {/* Unread left accent */}
       {isUnread && (
-        <span className="absolute left-0 inset-y-3 w-[3px] rounded-r-sm bg-blue-500" />
+        <span className="absolute left-0 top-3.5 bottom-3.5 w-[3px] rounded-r bg-primary" />
       )}
 
       {/* Avatar */}
-      <div className="relative shrink-0 mt-0.5">
+      <div className="relative mt-0.5 shrink-0">
         {isSystem ? (
-          <div className="flex size-[36px] items-center justify-center rounded-full bg-[#f3f4f6]">
-            <svg viewBox="0 0 20 20" fill="#9ca3af" className="size-[15px]">
+          <div className="flex size-9 items-center justify-center rounded-full bg-muted/70 ring-2 ring-border/40">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 text-muted-foreground/60">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
             </svg>
           </div>
         ) : (
           <div
-            className="flex size-[36px] items-center justify-center rounded-full text-[12px] font-bold text-white select-none"
+            className="flex size-9 items-center justify-center rounded-full text-[12px] font-bold text-white shadow-sm ring-2 ring-white select-none"
             style={{ background: avatarColor(who) }}
           >
             {initials}
           </div>
         )}
-        {/* Type-color indicator dot */}
         {dotColor && (
           <span
-            className="absolute -bottom-0.5 -right-0.5 size-[10px] rounded-full border-[2px] border-white"
+            className="absolute -bottom-0.5 -right-0.5 size-[11px] rounded-full border-[2px] border-white shadow-sm"
             style={{ background: dotColor }}
           />
         )}
       </div>
 
       {/* Content */}
-      <div className="min-w-0 flex-1">
-        {/* Action + timestamp */}
+      <div className="min-w-0 flex-1 pt-0.5">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[13px] leading-snug text-[#37352f]">
-            {!isSystem && <span className="font-semibold">{who}</span>}
+          <p className="text-[12.5px] leading-snug">
+            {!isSystem && <span className="font-semibold text-foreground">{who}</span>}
             {!isSystem && " "}
-            <span className="text-[#6b6b6b]">{action}</span>
+            <span className="text-muted-foreground">{action}</span>
           </p>
-          <span className="shrink-0 text-[11px] text-[#b0b0ab] whitespace-nowrap mt-px">
+          <span className="mt-px shrink-0 whitespace-nowrap text-[10.5px] text-muted-foreground/50">
             {timeAgo}
           </span>
         </div>
 
         {/* Page breadcrumb */}
         {notification.pageTitle && (
-          <div className="mt-0.5 flex items-center gap-1">
-            <span className="text-[12px]" style={{ opacity: 0.65 }}>
+          <div className="mt-1 flex items-center gap-1">
+            <span className="text-[11px] opacity-60">
               {notification.pageIcon ?? "📄"}
             </span>
-            <span className="truncate text-[11.5px] text-[#a3a3a0]">
+            <span className="truncate text-[11px] font-medium text-muted-foreground/60">
               {notification.pageTitle}
             </span>
           </div>
@@ -128,8 +125,8 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
 
         {/* Content snippet */}
         {notification.contentSnippet && (
-          <div className="mt-1.5 rounded-md border border-[#ebebea] bg-white px-2.5 py-1.5">
-            <p className="text-[12px] leading-relaxed text-[#5c5c5c] line-clamp-2">
+          <div className="mt-1.5 rounded-[var(--radius-sm)] border border-border/50 bg-muted/30 px-2.5 py-1.5">
+            <p className="line-clamp-2 text-[11.5px] leading-relaxed text-muted-foreground">
               {notification.contentSnippet}
             </p>
           </div>
@@ -137,15 +134,15 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       </div>
 
       {/* Hover action buttons */}
-      <div className="absolute right-3 top-2.5 hidden group-hover:flex items-center gap-0.5 rounded-md border border-[#e5e5e3] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-0.5">
+      <div className="absolute right-3 top-3 hidden items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-card p-0.5 shadow-[var(--shadow-raised)] group-hover:flex">
         {isUnread && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
             title="Mark as read"
-            className="flex size-[26px] items-center justify-center rounded text-[#9b9b9b] hover:bg-[#f1f1ef] hover:text-[#37352f] transition-colors"
+            className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
           >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-[11px]">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-[10px]">
               <path d="M2 8l4 4 8-8" />
             </svg>
           </button>
@@ -158,9 +155,9 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
             onClick(notification);
           }}
           title="Open page"
-          className="flex size-[26px] items-center justify-center rounded text-[#9b9b9b] hover:bg-[#f1f1ef] hover:text-[#37352f] transition-colors"
+          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
         >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-[11px]">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-[10px]">
             <path d="M4 8h8M9 5l3 3-3 3" />
           </svg>
         </button>
@@ -185,8 +182,8 @@ function relativeTime(iso: string): string {
 }
 
 const COLORS = [
-  "#6366f1", "#3b82f6", "#10b981", "#f59e0b",
-  "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316",
+  "#0284C7", "#0369a1", "#0ea5e9", "#0891b2",
+  "#06b6d4", "#075985", "#0e7490", "#1d4ed8", "#2563eb",
 ];
 function avatarColor(name: string) {
   let h = 0;

@@ -5,7 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { PaperclipIcon, At, XCircleIcon, ArrowCircleUpIcon, XIcon } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface CommentComposerProps {
   workspaceId:     string;
@@ -28,10 +28,8 @@ export function CommentComposer({
   const fileInputRef                      = useRef<HTMLInputElement>(null);
   const [attachment, setAttachment]       = useState<{ preview: string; name: string } | null>(null);
   const [attachLoading, setAttachLoading] = useState(false);
-  // Track empty state as React state — editor.isEmpty alone doesn't trigger re-renders
   const [editorEmpty, setEditorEmpty]     = useState(true);
 
-  // Revoke object URLs on unmount
   useEffect(() => {
     return () => {
       if (attachment?.preview.startsWith("blob:")) URL.revokeObjectURL(attachment.preview);
@@ -55,6 +53,7 @@ export function CommentComposer({
   }
 
   const editor = useEditor({
+    immediatelyRender: true,
     extensions: [
       StarterKit.configure({
         heading:        false,
@@ -63,6 +62,7 @@ export function CommentComposer({
         bulletList:     false,
         orderedList:    false,
         horizontalRule: false,
+        link:           false,
       }),
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder }),
@@ -78,10 +78,10 @@ export function CommentComposer({
     editorProps: {
       attributes: {
         class: [
-          "text-[13px] text-gray-800 leading-5 focus:outline-none",
-          "min-h-[24px] max-h-[120px] overflow-y-auto px-3 pt-2 pb-1",
+          "text-sm text-foreground leading-5 focus:outline-none",
+          "min-h-[24px] max-h-[120px] overflow-y-auto px-3 pt-2.5 pb-1",
           "[&_p.is-empty:first-child]:before:content-[attr(data-placeholder)]",
-          "[&_p.is-empty:first-child]:before:text-gray-400",
+          "[&_p.is-empty:first-child]:before:text-muted-foreground/40",
           "[&_p.is-empty:first-child]:before:pointer-events-none",
           "[&_p.is-empty:first-child]:before:float-left",
           "[&_p.is-empty:first-child]:before:h-0",
@@ -106,7 +106,6 @@ export function CommentComposer({
   async function handleSubmit() {
     if (editorEmpty && !attachment) return;
 
-    // Embed the attachment as an image node at the end of the TipTap doc
     const rawContent = editor?.getJSON() as Record<string, unknown> | undefined;
     let content: Record<string, unknown>;
 
@@ -135,14 +134,12 @@ export function CommentComposer({
 
   const isEmpty = editorEmpty && !attachment;
 
+  const containerCls = mode === "edit"
+    ? "border-primary/40 bg-primary/[0.02] focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.06)]"
+    : "border-border/60 bg-card focus-within:border-primary/40 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.05)]";
+
   return (
-    <div
-      className={`rounded-lg border transition-colors ${
-        mode === "edit"
-          ? "border-blue-400 bg-blue-50/30 focus-within:border-blue-500"
-          : "border-gray-200 bg-white focus-within:border-gray-300 focus-within:shadow-sm"
-      }`}
-    >
+    <div className={`rounded-[var(--radius-sm)] border transition-all ${containerCls}`}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -154,13 +151,13 @@ export function CommentComposer({
 
       <EditorContent editor={editor} />
 
-      {/* Image / file preview */}
+      {/* Attachment preview */}
       {(attachment || attachLoading) && (
         <div className="px-3 pb-2">
           {attachLoading ? (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200">
-              <div className="h-3 w-3 rounded-full border-2 border-gray-300 border-t-blue-500 animate-spin" />
-              <span className="text-[12px] text-gray-400">Loading…</span>
+            <div className="flex items-center gap-2 p-2 rounded-[var(--radius-sm)] bg-muted border border-border">
+              <div className="h-3 w-3 rounded-full border-2 border-border border-t-primary animate-spin" />
+              <span className="text-xs text-muted-foreground">Loading…</span>
             </div>
           ) : attachment ? (
             <div className="relative inline-block group">
@@ -168,18 +165,18 @@ export function CommentComposer({
                 <img
                   src={attachment.preview}
                   alt={attachment.name}
-                  className="max-w-full max-h-[180px] rounded-lg border border-gray-200 object-cover"
+                  className="max-w-full max-h-[180px] rounded-[var(--radius-sm)] border border-border object-cover"
                 />
               ) : (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
-                  <PaperclipIcon size={14} className="text-gray-400" />
-                  <span className="text-[12px] text-gray-600 truncate max-w-[200px]">{attachment.name}</span>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] bg-muted border border-border">
+                  <PaperclipIcon size={14} className="text-muted-foreground" />
+                  <span className="text-xs text-foreground/70 truncate max-w-[200px]">{attachment.name}</span>
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => setAttachment(null)}
-                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-gray-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-foreground/70 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <XIcon size={9} weight="bold" />
               </button>
@@ -194,7 +191,7 @@ export function CommentComposer({
           <button
             type="button"
             title="Attach image or file"
-            className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+            className="p-1 rounded text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
             <PaperclipIcon size={13} />
@@ -203,7 +200,7 @@ export function CommentComposer({
           <button
             type="button"
             title="Mention (@)"
-            className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+            className="p-1 rounded text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted transition-colors"
             onClick={() => {
               editor?.commands.focus("end");
               editor?.commands.insertContent("@");
@@ -216,7 +213,7 @@ export function CommentComposer({
             <button
               type="button"
               title="Cancel (Esc)"
-              className="p-1 rounded text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+              className="p-1 rounded text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-colors"
               onClick={onCancel}
             >
               <XCircleIcon size={13} />
@@ -231,8 +228,8 @@ export function CommentComposer({
           onClick={handleSubmit}
           className={`p-1 rounded transition-colors ${
             isEmpty
-              ? "text-gray-200 cursor-not-allowed"
-              : "text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+              ? "text-muted-foreground/20 cursor-not-allowed"
+              : "text-primary hover:text-primary/80 hover:bg-primary/10"
           }`}
         >
           <ArrowCircleUpIcon size={16} weight="fill" />

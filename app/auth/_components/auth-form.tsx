@@ -63,7 +63,7 @@ function AuthFormInner() {
     <main className="grid min-h-screen place-items-center bg-page px-4 py-10">
       <div className="w-full max-w-md">
         <Link className="mb-6 flex items-center justify-center gap-3" href="/">
-          <span className="grid size-10 place-items-center rounded-none bg-primary font-black text-primary-foreground text-xs">
+          <span className="grid size-10 place-items-center rounded-[var(--radius-sm)] bg-primary font-black text-primary-foreground text-xs">
             WF
           </span>
           <span className="font-black tracking-normal">{PRODUCT_NAME}</span>
@@ -81,7 +81,7 @@ function AuthFormInner() {
           <CardContent>
             {sent ? (
               <div className="space-y-4">
-                <p className="rounded-none bg-success-subtle p-3 text-success-foreground text-sm">
+                <p className="rounded-[var(--radius-sm)] bg-success-subtle p-3 text-success-foreground text-sm">
                   Magic link sent to <strong>{email}</strong>.
                 </p>
                 <Button
@@ -144,7 +144,7 @@ function AuthFormInner() {
                   />
                 </label>
                 {error && (
-                  <p className="rounded-none bg-destructive/10 p-3 text-destructive text-sm">
+                  <p className="rounded-[var(--radius-sm)] bg-destructive/10 p-3 text-destructive text-sm">
                     {error}
                   </p>
                 )}

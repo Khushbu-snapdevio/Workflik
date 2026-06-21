@@ -6,7 +6,7 @@ import {
   SmileyIcon, CheckIcon, ArrowCounterClockwiseIcon,
   DotsThreeIcon, ChatTextIcon, XIcon,
   EnvelopeIcon, PencilSimpleIcon, LinkIcon,
-  BellSlashIcon, TrashIcon,
+  BellSlashIcon, TrashIcon, CursorTextIcon, ChatDotsIcon,
 } from "@phosphor-icons/react";
 import { CommentComposer } from "@/components/editor/comment-composer";
 
@@ -96,7 +96,7 @@ function renderContent(content: Record<string, unknown> | null): React.ReactNode
             key={key++}
             src={attrs.src}
             alt={attrs.alt ?? "attachment"}
-            className="mt-1.5 max-w-full max-h-[200px] rounded-lg border border-gray-200 object-cover block"
+            className="mt-1.5 max-w-full max-h-[200px] rounded-[var(--radius-sm)] border border-border object-cover block"
           />
         );
       }
@@ -107,19 +107,19 @@ function renderContent(content: Record<string, unknown> | null): React.ReactNode
       if (attrs?.label) {
         if (attrs.mentionType === "user") {
           parts.push(
-            <span key={key++} className="text-blue-600 font-medium bg-blue-50 rounded px-0.5 mx-px">
+            <span key={key++} className="text-primary font-medium bg-primary/[0.06] rounded px-0.5 mx-px">
               @{attrs.label}
             </span>
           );
         } else if (attrs.mentionType === "page") {
           parts.push(
-            <span key={key++} className="text-gray-700 underline decoration-dotted cursor-pointer">
+            <span key={key++} className="text-foreground/80 underline decoration-dotted cursor-pointer">
               📄 {attrs.label}
             </span>
           );
         } else {
           parts.push(
-            <span key={key++} className="text-violet-600 font-medium">
+            <span key={key++} className="text-primary font-medium">
               @{attrs.label}
             </span>
           );
@@ -143,7 +143,7 @@ function UserAvatar({ name, image, size = 24 }: { name?: string | null; image?: 
   return (
     <div
       style={{ width: px, height: px, fontSize: size <= 24 ? "11px" : "13px" }}
-      className="rounded-full bg-blue-500 flex items-center justify-center font-semibold text-white flex-shrink-0 select-none"
+      className="rounded-full bg-primary flex items-center justify-center font-semibold text-primary-foreground flex-shrink-0 select-none"
     >
       {initial}
     </div>
@@ -189,7 +189,7 @@ function EmojiPicker({
       ref={ref}
       data-comment-exempt          // tells the card's outside-click handler to ignore this portal
       style={{ position: "fixed", top, left, zIndex: 9999 }}
-      className="bg-white border border-gray-200 rounded-xl shadow-xl p-2"
+      className="bg-card border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-raised)] p-2"
     >
       <div className="grid grid-cols-6 gap-0.5">
         {EMOJI_LIST.map((emoji) => (
@@ -197,7 +197,7 @@ function EmojiPicker({
             key={emoji}
             type="button"
             onClick={() => { onSelect(emoji); onClose(); }}
-            className="text-[18px] rounded-lg hover:bg-gray-100 p-1.5 transition-colors leading-none"
+            className="text-[18px] rounded-[var(--radius-sm)] hover:bg-muted p-1.5 transition-colors leading-none"
           >
             {emoji}
           </button>
@@ -229,10 +229,10 @@ function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNo
     <div ref={ref} className="relative">
       <div onClick={() => setOpen((v) => !v)}>{trigger}</div>
       {open && (
-        <div data-comment-exempt className="absolute right-0 top-full mt-1 z-[500] w-[188px] rounded-lg border border-gray-200 bg-white py-1 shadow-xl">
+        <div data-comment-exempt className="absolute right-0 top-full mt-1 z-[500] w-[188px] rounded-[var(--radius-sm)] border border-border bg-card py-1 shadow-[var(--shadow-raised)]">
           {/* Pass close fn via context-like prop-drilling trick: clone children with close */}
           {React.Children.map(children, (child) =>
-            React.isValidElement(child)
+            React.isValidElement(child) && child.type !== React.Fragment
               ? React.cloneElement(child as React.ReactElement<{ _close?: () => void }>, { _close: close })
               : child
           )}
@@ -255,18 +255,18 @@ function DropdownItem({
     <button
       type="button"
       onClick={() => { onClick?.(); _close?.(); }}
-      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] transition-colors ${
-        danger ? "text-red-500 hover:bg-red-50" : "text-gray-700 hover:bg-gray-50"
+      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors ${
+        danger ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-muted/50"
       }`}
     >
-      {icon && <span className="text-gray-400 flex-shrink-0">{icon}</span>}
+      {icon && <span className="text-muted-foreground flex-shrink-0">{icon}</span>}
       {children}
     </button>
   );
 }
 
 function DropdownSeparator() {
-  return <div className="my-1 border-t border-gray-100" />;
+  return <div className="my-1 border-t border-border/40" />;
 }
 
 // ---------- CommentCard ----------
@@ -382,54 +382,55 @@ export function CommentCard({
     loadComments();
   }
 
-  // ── Inline variant — full-width page section ──────────────────────────────
+  // ── Inline variant — renders inside the Comments panel ───────────────────
   if (variant === "inline") {
     return (
       <div ref={cardRef}>
-        {/* Section header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2.5">
-            <ChatTextIcon size={17} className="text-gray-500" />
-            <span className="text-[15px] font-semibold text-gray-800">Comments</span>
-            {unresolvedCount > 0 && (
-              <span className="inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-blue-500 px-1.5 text-[11px] font-semibold text-white leading-none">
-                {unresolvedCount}
-              </span>
-            )}
-            {resolvedCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowResolved((v) => !v)}
-                className="text-[12px] text-gray-400 hover:text-gray-600 underline decoration-dotted underline-offset-2 transition-colors"
-              >
-                {showResolved ? "Hide resolved" : `${resolvedCount} resolved`}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* New comment composer — at the top (Notion-style) */}
-        <div className="mb-6">
+        {/* ── Compose area ── */}
+        <div className="px-4 pt-4 pb-4">
           <CommentComposer
             workspaceId={workspaceId}
             mode="new"
-            placeholder="Add a comment…"
+            placeholder="Write a comment…"
             onSubmit={createComment}
           />
         </div>
 
-        {/* Thread list */}
+        {/* ── Divider + resolved toggle row ── */}
+        <div className="flex items-center gap-3 px-4 mb-1">
+          <div className="flex-1 border-t border-border/30" />
+          {resolvedCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowResolved((v) => !v)}
+              className="inline-flex items-center gap-1 shrink-0 text-[10px] font-medium text-muted-foreground/50 hover:text-primary transition-colors"
+            >
+              <CheckIcon size={10} className={showResolved ? "text-primary" : ""} />
+              {showResolved ? "Hide resolved" : `${resolvedCount} resolved`}
+            </button>
+          )}
+          {resolvedCount === 0 && <div className="flex-1 border-t border-border/30" />}
+        </div>
+
+        {/* ── Thread list / states ── */}
         {loading ? (
-          <div className="flex items-center justify-center py-10">
-            <div className="h-4 w-4 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin" />
+          <div className="flex items-center justify-center py-16">
+            <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
           </div>
         ) : activeVisible.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-center">
-            <ChatTextIcon size={26} className="text-gray-200" />
-            <p className="text-[13px] text-gray-400">No page-level comments yet. Be the first!</p>
+          <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
+            <div className="flex size-14 items-center justify-center rounded-xl bg-primary/[0.06] border border-primary/[0.08]">
+              <ChatDotsIcon size={24} className="text-primary/40" weight="duotone" />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-foreground/50">No page-level comments</p>
+              <p className="mt-1 text-[11px] text-muted-foreground/40 leading-relaxed max-w-[200px]">
+                These comments apply to the whole page, not a specific block.
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="space-y-0 divide-y divide-gray-100 rounded-xl border border-gray-100 overflow-hidden">
+          <div className="divide-y divide-border/25">
             {activeVisible.map((thread) => (
               <ThreadSection
                 key={thread.id}
@@ -447,12 +448,12 @@ export function CommentCard({
         )}
 
         {orphaned.length > 0 && (
-          <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50/50 px-4 py-3">
-            <p className="text-[11px] font-semibold text-amber-600 mb-2">⚠ Original content removed</p>
+          <div className="mx-4 mb-4 mt-2 rounded-[var(--radius-md)] border border-amber-200/60 bg-amber-50/40 px-4 py-3">
+            <p className="text-xs font-semibold text-amber-600 mb-2">⚠ Original content removed</p>
             {orphaned.map((thread) => (
               <div key={thread.id} className="flex items-start gap-2 py-1.5">
                 <UserAvatar name={thread.author?.name} image={thread.author?.image} />
-                <p className="text-[13px] text-gray-600">{renderContent(thread.content)}</p>
+                <p className="text-sm text-foreground/70">{renderContent(thread.content)}</p>
               </div>
             ))}
           </div>
@@ -461,55 +462,65 @@ export function CommentCard({
     );
   }
 
-  // ── Floating variant — compact card ───────────────────────────────────────
+  // ── Floating variant — block-level comment card ───────────────────────────
   return (
     <div
       ref={cardRef}
-      className="w-[360px] rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden"
+      className="w-[360px] border border-border bg-card shadow-[var(--shadow-raised)] overflow-hidden"
+      style={{ borderRadius: "var(--radius-xl)" }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
+      {/* ── Context header ── shows user this is a BLOCK comment, not page-level */}
+      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/40 bg-muted/20">
         <div className="flex items-center gap-2">
-          <ChatTextIcon size={15} className="text-gray-400" />
-          <span className="text-[13px] font-semibold text-gray-800">Comments</span>
+          <div className="flex size-6 items-center justify-center rounded-md bg-primary/10">
+            <CursorTextIcon size={12} className="text-primary" weight="fill" />
+          </div>
+          <span className="text-[12px] font-semibold text-foreground/80">
+            {blockId ? "Block comment" : "Page comment"}
+          </span>
+          <span className="inline-flex items-center rounded-full px-1.5 py-px text-[9px] font-bold leading-none border bg-primary/[0.08] text-primary border-primary/20">
+            {blockId ? "BLOCK" : "PAGE"}
+          </span>
           {unresolvedCount > 0 && (
-            <span className="text-[11px] font-medium text-white bg-blue-500 rounded-full px-1.5 py-0.5 leading-none">
-              {unresolvedCount}
+            <span className="text-[10px] font-semibold text-muted-foreground/50">
+              · {unresolvedCount} open
             </span>
           )}
           {resolvedCount > 0 && (
             <button
               type="button"
               onClick={() => setShowResolved((v) => !v)}
-              className="text-[11px] text-gray-400 hover:text-gray-600 underline decoration-dotted transition-colors"
+              className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors"
             >
-              {showResolved ? "Hide resolved" : `${resolvedCount} resolved`}
+              {showResolved ? "hide resolved" : `${resolvedCount} resolved`}
             </button>
           )}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors"
         >
-          <XIcon size={14} weight="bold" />
+          <XIcon size={12} weight="bold" />
         </button>
       </div>
 
       {/* Thread list */}
-      <div className="max-h-[400px] overflow-y-auto">
+      <div className="max-h-[380px] overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-8">
-            <div className="h-4 w-4 rounded-full border-2 border-gray-200 border-t-blue-500 animate-spin" />
+            <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
           </div>
         )}
         {!loading && activeVisible.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-            <ChatTextIcon size={28} className="text-gray-200 mb-2" />
-            <p className="text-[13px] text-gray-400">
-              {blockId ? "No comments on this block yet." : "No comments yet."}
+          <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/[0.06] mb-2.5">
+              <ChatTextIcon size={20} className="text-primary/40" weight="duotone" />
+            </div>
+            <p className="text-[13px] font-medium text-foreground/50">No comments yet</p>
+            <p className="text-xs text-muted-foreground/40 mt-0.5">
+              {blockId ? "Comment on this block" : "Start the conversation"}
             </p>
-            <p className="text-[12px] text-gray-300 mt-0.5">Be the first to comment</p>
           </div>
         )}
         {activeVisible.map((thread) => (
@@ -526,24 +537,24 @@ export function CommentCard({
           />
         ))}
         {orphaned.length > 0 && (
-          <div className="border-t border-gray-100 px-4 pt-2 pb-3">
-            <p className="text-[11px] font-medium text-amber-600 mb-2">⚠ Original content removed</p>
+          <div className="border-t border-border/40 px-4 pt-2 pb-3">
+            <p className="text-xs font-medium text-amber-600 mb-2">⚠ Original content removed</p>
             {orphaned.map((thread) => (
               <div key={thread.id} className="flex items-start gap-2 py-1.5">
                 <UserAvatar name={thread.author?.name} image={thread.author?.image} />
-                <p className="text-[13px] text-gray-600">{renderContent(thread.content)}</p>
+                <p className="text-sm text-foreground/70">{renderContent(thread.content)}</p>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* New comment composer */}
-      <div className="border-t border-gray-100 px-3 py-2.5">
+      {/* Composer */}
+      <div className="border-t border-border/40 px-3 py-2.5">
         <CommentComposer
           workspaceId={workspaceId}
           mode="new"
-          placeholder="Add a comment…"
+          placeholder={blockId ? "Comment on this block…" : "Add a page comment…"}
           onSubmit={createComment}
         />
       </div>
@@ -625,134 +636,106 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
   return (
     <div
       id={`comment-${thread.id}`}
-      className={`border-b border-gray-100 last:border-0 ${thread.isResolved ? "opacity-50" : ""}`}
+      className={`group/thread relative border-b border-border/30 last:border-0 transition-colors hover:bg-muted/[0.06] ${thread.isResolved ? "opacity-55" : ""}`}
     >
-      {/* Thread label */}
-      {thread.threadNumber && (
-        <div className="px-4 pt-2.5 flex items-center gap-1.5">
-          <span className="text-[11px] font-medium text-gray-300">#{thread.threadNumber}</span>
-          {isUnread  && <span className="h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" title="Unread" />}
-          {isMuted   && <span className="text-[10px] text-gray-300">muted</span>}
+      {/* ── Floating action pill — appears top-right on hover ── */}
+      {!thread.deletedAt && (
+        <div className="absolute top-2.5 right-3 z-10 hidden group-hover/thread:flex items-center gap-px rounded-[var(--radius-sm)] border border-border/60 bg-card shadow-[var(--shadow-raised)] px-0.5 py-0.5">
+          {thread.isResolved ? (
+            <button
+              type="button"
+              title="Reopen thread"
+              onClick={() => onReopen(thread.id)}
+              className="flex size-6 items-center justify-center rounded text-primary hover:bg-primary/10 transition-colors"
+            >
+              <ArrowCounterClockwiseIcon size={12} weight="bold" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              title="Resolve thread"
+              onClick={() => onResolve(thread.id)}
+              className="flex size-6 items-center justify-center rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            >
+              <CheckIcon size={12} weight="bold" />
+            </button>
+          )}
+          <button
+            type="button"
+            title="Add reaction"
+            onClick={(e) => setEmojiAnchor(e.currentTarget.getBoundingClientRect())}
+            className="flex size-6 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <SmileyIcon size={12} />
+          </button>
+          {emojiAnchor && (
+            <EmojiPicker
+              anchor={emojiAnchor}
+              onSelect={(emoji) => { void toggleReaction(emoji); }}
+              onClose={() => setEmojiAnchor(null)}
+            />
+          )}
+          <SimpleDropdown
+            trigger={
+              <button
+                type="button"
+                className="flex size-6 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <DotsThreeIcon size={13} weight="bold" />
+              </button>
+            }
+          >
+            <DropdownItem icon={<EnvelopeIcon size={13} />} onClick={() => setIsUnread((v) => !v)}>
+              {isUnread ? "Mark as read" : "Mark as unread"}
+            </DropdownItem>
+            {isAuthor && (
+              <DropdownItem icon={<PencilSimpleIcon size={13} />} onClick={() => setEditingId(thread.id)}>
+                Edit
+              </DropdownItem>
+            )}
+            <DropdownItem
+              icon={<LinkIcon size={13} />}
+              onClick={() => {
+                const url = `${window.location.href.split("#")[0]}#comment-${thread.id}`;
+                navigator.clipboard.writeText(url);
+              }}
+            >
+              Copy link
+            </DropdownItem>
+            <DropdownSeparator />
+            <DropdownItem icon={<BellSlashIcon size={13} />} onClick={() => setIsMuted((v) => !v)}>
+              {isMuted ? "Unmute replies" : "Mute replies"}
+            </DropdownItem>
+            {(isAuthor || isAdmin) && (
+              <DropdownItem icon={<TrashIcon size={13} />} danger onClick={handleDeleteRoot}>
+                Delete
+              </DropdownItem>
+            )}
+          </SimpleDropdown>
         </div>
       )}
 
-      {/* Root comment */}
-      <div className="group flex items-start gap-2.5 px-4 py-2.5 hover:bg-gray-50/70 transition-colors">
+      {/* ── Root comment body ── */}
+      <div className="flex items-start gap-2.5 px-4 pt-3.5 pb-2.5">
         <UserAvatar name={thread.author?.name} image={thread.author?.image} />
-        <div className="flex-1 min-w-0">
-          {/* Header row */}
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[13px] font-semibold text-gray-800 truncate">
+        <div className="flex-1 min-w-0 pr-6">
+          {/* Name + time row */}
+          <div className="flex items-baseline gap-1.5 mb-1">
+            <span className="text-[13px] font-semibold text-foreground leading-tight truncate">
               {thread.author?.name ?? "Former Member"}
             </span>
-            <span className="text-[11px] text-gray-400 flex-shrink-0">
+            {isUnread && <span className="size-1.5 rounded-full bg-primary flex-shrink-0 mb-0.5" title="Unread" />}
+            <span className="text-[11px] text-muted-foreground/50 flex-shrink-0">
               {formatTime(thread.createdAt)}
             </span>
             {thread.editedAt && !thread.deletedAt && (
-              <span className="text-[11px] text-gray-300 flex-shrink-0">(edited)</span>
-            )}
-
-            {/* Hover actions — shown on group-hover */}
-            {!thread.deletedAt && (
-              <div className="ml-auto hidden group-hover:flex items-center gap-0.5">
-                {thread.isResolved ? (
-                  <button
-                    type="button"
-                    title="Reopen thread"
-                    onClick={() => onReopen(thread.id)}
-                    className="p-1 rounded-md text-green-500 hover:bg-green-50 transition-colors"
-                  >
-                    <ArrowCounterClockwiseIcon size={13} />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    title="Resolve thread"
-                    onClick={() => onResolve(thread.id)}
-                    className="p-1 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
-                  >
-                    <CheckIcon size={13} weight="bold" />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  title="Add reaction"
-                  onClick={(e) => setEmojiAnchor(e.currentTarget.getBoundingClientRect())}
-                  className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                >
-                  <SmileyIcon size={13} />
-                </button>
-                {emojiAnchor && (
-                  <EmojiPicker
-                    anchor={emojiAnchor}
-                    onSelect={(emoji) => { void toggleReaction(emoji); }}
-                    onClose={() => setEmojiAnchor(null)}
-                  />
-                )}
-
-                <SimpleDropdown
-                  trigger={
-                    <button
-                      type="button"
-                      className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                    >
-                      <DotsThreeIcon size={13} weight="bold" />
-                    </button>
-                  }
-                >
-                  <DropdownItem
-                    icon={<EnvelopeIcon size={13} />}
-                    onClick={() => setIsUnread((v) => !v)}
-                  >
-                    {isUnread ? "Mark as read" : "Mark as unread"}
-                  </DropdownItem>
-
-                  {isAuthor && (
-                    <DropdownItem
-                      icon={<PencilSimpleIcon size={13} />}
-                      onClick={() => setEditingId(thread.id)}
-                    >
-                      Edit
-                    </DropdownItem>
-                  )}
-
-                  <DropdownItem
-                    icon={<LinkIcon size={13} />}
-                    onClick={() => {
-                      const url = `${window.location.href.split("#")[0]}#comment-${thread.id}`;
-                      navigator.clipboard.writeText(url);
-                    }}
-                  >
-                    Copy link
-                  </DropdownItem>
-
-                  <DropdownSeparator />
-
-                  <DropdownItem
-                    icon={<BellSlashIcon size={13} />}
-                    onClick={() => setIsMuted((v) => !v)}
-                  >
-                    {isMuted ? "Unmute replies" : "Mute replies"}
-                  </DropdownItem>
-
-                  {(isAuthor || isAdmin) && (
-                    <DropdownItem
-                      icon={<TrashIcon size={13} />}
-                      danger
-                      onClick={handleDeleteRoot}
-                    >
-                      Delete
-                    </DropdownItem>
-                  )}
-                </SimpleDropdown>
-              </div>
+              <span className="text-[10px] text-muted-foreground/30 flex-shrink-0">edited</span>
             )}
           </div>
 
           {/* Content */}
           {thread.deletedAt ? (
-            <p className="text-[13px] text-gray-300 italic">[Comment deleted]</p>
+            <p className="text-sm text-muted-foreground/35 italic">[Comment deleted]</p>
           ) : editingId === thread.id ? (
             <CommentComposer
               workspaceId={workspaceId}
@@ -763,14 +746,14 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
               onCancel={() => setEditingId(null)}
             />
           ) : (
-            <p className="text-[13px] text-gray-700 leading-5 whitespace-pre-wrap break-words">
+            <p className="text-[13px] text-foreground/85 leading-[1.5] whitespace-pre-wrap break-words">
               {renderContent(thread.content)}
             </p>
           )}
 
           {/* Reaction badges */}
           {Object.keys(reactions).length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
+            <div className="flex flex-wrap gap-1 mt-2">
               {Object.entries(reactions).map(([emoji, userIds]) => {
                 const iMine = userIds.includes(currentUserId);
                 return (
@@ -779,14 +762,14 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
                     type="button"
                     title={iMine ? "Remove reaction" : "Add reaction"}
                     onClick={() => { void toggleReaction(emoji); }}
-                    className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[12px] rounded-full border transition-colors ${
+                    className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-full border transition-colors ${
                       iMine
-                        ? "bg-blue-50 border-blue-300 text-blue-700"
-                        : "bg-gray-100 hover:bg-blue-50 border-gray-200 hover:border-blue-300 text-gray-700"
+                        ? "bg-primary/10 border-primary/30 text-primary"
+                        : "bg-muted/50 hover:bg-primary/[0.06] border-border/50 hover:border-primary/30 text-foreground/70"
                     }`}
                   >
                     {emoji}
-                    <span className="text-[10px] font-medium ml-0.5">{userIds.length}</span>
+                    <span className="text-[10px] font-semibold ml-0.5">{userIds.length}</span>
                   </button>
                 );
               })}
@@ -795,9 +778,9 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
         </div>
       </div>
 
-      {/* Replies */}
+      {/* ── Replies ── */}
       {thread.replies.length > 0 && (
-        <div className="ml-9 border-l-2 border-gray-100 pl-3 pb-1">
+        <div className="ml-[52px] mr-4 mb-2 border-l-2 border-primary/15 pl-3">
           {thread.replies.map((reply) => (
             <ReplyRow
               key={reply.id}
@@ -813,9 +796,9 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
         </div>
       )}
 
-      {/* Reply input — always visible so user can click directly into it */}
+      {/* ── Reply input ── */}
       {!thread.isResolved && (
-        <div className="px-4 pb-3 pl-[52px]">
+        <div className="pl-[52px] pr-4 pb-3">
           <CommentComposer
             key={replyKey}
             workspaceId={workspaceId}
@@ -860,49 +843,22 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
   }
 
   return (
-    <div className="group flex items-start gap-2 py-2 rounded-md hover:bg-gray-50/70 transition-colors pr-1">
+    <div className="group/reply relative flex items-start gap-2 py-2 rounded-md hover:bg-muted/20 transition-colors">
       <UserAvatar name={reply.author?.name} image={reply.author?.image} size={20} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-[12px] font-semibold text-gray-800 truncate">
+      <div className="flex-1 min-w-0 pr-7">
+        {/* Name + time */}
+        <div className="flex items-baseline gap-1.5 mb-0.5">
+          <span className="text-[12px] font-semibold text-foreground truncate">
             {reply.author?.name ?? "Former Member"}
           </span>
-          <span className="text-[11px] text-gray-400 flex-shrink-0">
+          <span className="text-[11px] text-muted-foreground/50 flex-shrink-0">
             {formatTime(reply.createdAt)}
           </span>
-          {reply.editedAt && <span className="text-[11px] text-gray-300">(edited)</span>}
-
-          {!reply.deletedAt && (
-            <div className="ml-auto hidden group-hover:flex items-center gap-0.5">
-              <SimpleDropdown
-                trigger={
-                  <button type="button" className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-                    <DotsThreeIcon size={12} weight="bold" />
-                  </button>
-                }
-              >
-                {isAuthor && (
-                  <DropdownItem icon={<PencilSimpleIcon size={13} />} onClick={() => setEditingId(reply.id)}>Edit</DropdownItem>
-                )}
-                <DropdownItem
-                  icon={<LinkIcon size={13} />}
-                  onClick={() => navigator.clipboard.writeText(`${window.location.href.split("#")[0]}#comment-${reply.id}`)}
-                >
-                  Copy link
-                </DropdownItem>
-                {(isAuthor || isAdmin) && (
-                  <>
-                    <DropdownSeparator />
-                    <DropdownItem icon={<TrashIcon size={13} />} danger onClick={handleDelete}>Delete</DropdownItem>
-                  </>
-                )}
-              </SimpleDropdown>
-            </div>
-          )}
+          {reply.editedAt && <span className="text-[10px] text-muted-foreground/30">edited</span>}
         </div>
 
         {reply.deletedAt ? (
-          <p className="text-[12px] text-gray-300 italic">[Comment deleted]</p>
+          <p className="text-xs text-muted-foreground/35 italic">[Comment deleted]</p>
         ) : editingId === reply.id ? (
           <CommentComposer
             workspaceId={workspaceId}
@@ -913,11 +869,40 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
             onCancel={() => setEditingId(null)}
           />
         ) : (
-          <p className="text-[12px] text-gray-700 leading-5 whitespace-pre-wrap break-words">
+          <p className="text-[13px] text-foreground/80 leading-[1.5] whitespace-pre-wrap break-words">
             {renderContent(reply.content)}
           </p>
         )}
       </div>
+
+      {/* Hover action — floating dot menu */}
+      {!reply.deletedAt && (
+        <div className="absolute top-1.5 right-0 hidden group-hover/reply:flex items-center rounded-[var(--radius-sm)] border border-border/50 bg-card shadow-[var(--shadow-card)] px-0.5 py-0.5">
+          <SimpleDropdown
+            trigger={
+              <button type="button" className="flex size-5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                <DotsThreeIcon size={12} weight="bold" />
+              </button>
+            }
+          >
+            {isAuthor && (
+              <DropdownItem icon={<PencilSimpleIcon size={13} />} onClick={() => setEditingId(reply.id)}>Edit</DropdownItem>
+            )}
+            <DropdownItem
+              icon={<LinkIcon size={13} />}
+              onClick={() => navigator.clipboard.writeText(`${window.location.href.split("#")[0]}#comment-${reply.id}`)}
+            >
+              Copy link
+            </DropdownItem>
+            {(isAuthor || isAdmin) && (
+              <>
+                <DropdownSeparator />
+                <DropdownItem icon={<TrashIcon size={13} />} danger onClick={handleDelete}>Delete</DropdownItem>
+              </>
+            )}
+          </SimpleDropdown>
+        </div>
+      )}
     </div>
   );
 }

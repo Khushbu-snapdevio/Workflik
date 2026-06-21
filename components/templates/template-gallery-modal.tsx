@@ -52,41 +52,42 @@ const CATEGORIES: CategoryDef[] = [
 ];
 
 const CATEGORY_COLORS: Record<string, { from: string; to: string; badge: string; accent: string }> = {
-  productivity: { from: "from-amber-400",  to: "to-orange-500",  badge: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",         accent: "#d97706" },
-  project_mgmt: { from: "from-blue-500",   to: "to-indigo-600",  badge: "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",             accent: "#2563eb" },
-  marketing:    { from: "from-pink-500",   to: "to-rose-600",    badge: "bg-pink-100 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300",             accent: "#ec4899" },
-  engineering:  { from: "from-emerald-500",to: "to-teal-600",    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300", accent: "#059669" },
-  sales:        { from: "from-violet-500", to: "to-purple-600",  badge: "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300",     accent: "#7c3aed" },
+  productivity: { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
+  project_mgmt: { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
+  marketing:    { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
+  engineering:  { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
+  sales:        { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
 };
 
-const DEFAULT_COLOR = { from: "from-slate-400", to: "to-slate-500", badge: "bg-slate-100 text-slate-600", accent: "#64748b" };
+const DEFAULT_COLOR = { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" };
 
 const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
   gray:   { dot: "bg-gray-400",   badge: "bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300"         },
   red:    { dot: "bg-red-500",    badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"             },
-  blue:   { dot: "bg-blue-500",   badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"         },
-  green:  { dot: "bg-green-500",  badge: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"     },
-  orange: { dot: "bg-orange-500", badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300" },
-  purple: { dot: "bg-purple-500", badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
-  yellow: { dot: "bg-yellow-400", badge: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" },
-  pink:   { dot: "bg-pink-500",   badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"         },
+  blue:   { dot: "bg-[#0284C7]",  badge: "bg-primary/10 text-primary"                                              },
+  green:  { dot: "bg-emerald-500",badge: "bg-emerald-50 text-emerald-700"                                           },
+  orange: { dot: "bg-amber-500",  badge: "bg-amber-50 text-amber-700"                                               },
+  purple: { dot: "bg-[#0284C7]",  badge: "bg-primary/10 text-primary"                                              },
+  yellow: { dot: "bg-amber-400",  badge: "bg-amber-50 text-amber-700"                                               },
+  pink:   { dot: "bg-[#0369a1]",  badge: "bg-primary/10 text-primary"                                              },
 };
-const DEFAULT_OPT = { dot: "bg-slate-400", badge: "bg-muted/60 text-muted-foreground" };
+const DEFAULT_OPT = { dot: "bg-muted-foreground/40", badge: "bg-muted/60 text-muted-foreground" };
 
 interface Props {
-  workspaceId:   string;
-  workspaceSlug: string;
-  parentId?:     string | null;
-  onClose:       () => void;
+  workspaceId:      string;
+  workspaceSlug:    string;
+  parentId?:        string | null;
+  initialCategory?: string;
+  onClose:          () => void;
 }
 
-export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onClose }: Props) {
+export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, initialCategory, onClose }: Props) {
   const router = useRouter();
   const [builtIn, setBuiltIn]     = useState<Template[]>([]);
   const [workspace, setWorkspace] = useState<Template[]>([]);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<string>(initialCategory ?? "all");
   const [step, setStep]           = useState<"gallery" | "detail">("gallery");
   const [selected, setSelected]   = useState<Template | null>(null);
   const [applying, setApplying]   = useState(false);
@@ -161,7 +162,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative flex h-[88vh] w-full max-w-[980px] overflow-hidden rounded-2xl border border-border/60 bg-background shadow-[0_32px_64px_rgba(0,0,0,0.25)]">
+      <div className="relative flex h-[88vh] w-full max-w-[980px] overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-background shadow-[0_32px_64px_rgba(0,0,0,0.25)]">
 
         {/* ── GALLERY STEP ── */}
         {step === "gallery" && (
@@ -170,7 +171,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
             <div className="flex w-56 shrink-0 flex-col border-r border-border/60 bg-muted/30">
               <div className="px-5 pb-3 pt-5">
                 <h2 className="text-base font-bold tracking-tight text-foreground">Templates</h2>
-                <p className="mt-0.5 text-[11.5px] text-muted-foreground">Pick a starting point</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Pick a starting point</p>
               </div>
 
               <nav className="flex-1 overflow-y-auto px-2 pb-3">
@@ -184,14 +185,14 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
                       type="button"
                       onClick={() => setActiveTab(cat.key)}
                       className={[
-                        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors",
+                        "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors",
                         isActive
                           ? "bg-primary text-primary-foreground"
                           : "text-foreground/70 hover:bg-muted hover:text-foreground",
                       ].join(" ")}
                     >
                       <CatIcon size={14} weight={isActive ? "fill" : "regular"} className="shrink-0" />
-                      <span className="flex-1 text-[12.5px] font-medium">{cat.label}</span>
+                      <span className="flex-1 text-xs font-medium">{cat.label}</span>
                       {cnt > 0 && (
                         <span className={[
                           "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
@@ -210,7 +211,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
             <div className="flex min-w-0 flex-1 flex-col">
               {/* Search */}
               <div className="border-b border-border/60 px-5 py-3">
-                <div className="flex items-center gap-2.5 rounded-xl border border-border bg-muted/40 px-3.5 py-2.5">
+                <div className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/40 px-3.5 py-2.5">
                   <MagnifyingGlassIcon size={15} className="shrink-0 text-muted-foreground/60" />
                   <input
                     ref={searchRef}
@@ -292,13 +293,13 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     <ArrowLeftIcon size={14} weight="bold" />
                   </button>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-muted-foreground">Templates</p>
-                    <h3 className="truncate text-[13px] font-bold text-foreground">{selected.name}</h3>
+                    <p className="text-xs font-medium text-muted-foreground">Templates</p>
+                    <h3 className="truncate text-sm font-bold text-foreground">{selected.name}</h3>
                   </div>
                 </div>
 
@@ -311,7 +312,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
                   </span>
 
                   {selected.description && (
-                    <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                       {selected.description}
                     </p>
                   )}
@@ -324,7 +325,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
                       <p className="mb-3 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
                         Included in this template
                       </p>
-                      <div className="space-y-1.5 rounded-xl border border-border/50 bg-muted/20 p-3">
+                      <div className="space-y-1.5 rounded-[var(--radius-md)] border border-border/50 bg-muted/20 p-3">
                         {blocks.slice(0, 12).map((b, i) => (
                           <BlockPreview key={i} block={b as { type: string; content?: unknown }} />
                         ))}
@@ -344,7 +345,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
                     type="button"
                     disabled={applying}
                     onClick={() => applyTemplate(selected)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-card)] transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-60"
                   >
                     {applying ? (
                       <>
@@ -367,13 +368,15 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
               {/* Right panel — page preview */}
               <div className="flex flex-1 flex-col overflow-hidden bg-muted/20">
                 <div className="flex flex-1 items-start justify-center overflow-y-auto p-8">
-                  <div className="w-full max-w-[580px] overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+                  <div className="w-full max-w-[580px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-[var(--shadow-raised)]">
                     {/* Gradient cover */}
-                    <div className={`flex h-28 items-center justify-center bg-gradient-to-br ${colors.from} ${colors.to}`}>
+                    <div className={`relative flex h-28 items-center justify-center overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to}`}>
+                      <div className="absolute inset-0 opacity-[0.25]" style={{ backgroundImage: "radial-gradient(circle, #0284C7 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
+                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-primary/10 to-transparent" />
                       {selected.pageSnapshot.icon ? (
-                        <span className="text-5xl drop-shadow">{selected.pageSnapshot.icon}</span>
+                        <span className="relative z-10 text-5xl">{selected.pageSnapshot.icon}</span>
                       ) : (
-                        <CatIcon size={48} weight="duotone" className="text-white/80 drop-shadow" />
+                        <CatIcon size={48} weight="duotone" className="relative z-10 text-primary" />
                       )}
                     </div>
 
@@ -386,7 +389,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
                         const c = blocks[0].content as { text?: { text: string }[] } | null;
                         const txt = c?.text?.map((t) => t.text).join("") ?? "";
                         return txt ? (
-                          <p className="mb-4 text-[12px] text-muted-foreground">{txt}</p>
+                          <p className="mb-4 text-xs text-muted-foreground">{txt}</p>
                         ) : null;
                       })()}
 
@@ -411,7 +414,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, onC
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-lg bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-muted-foreground shadow-[var(--shadow-card)] backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
           style={{ zIndex: 10 }}
         >
           <XIcon size={14} />
@@ -439,33 +442,37 @@ function TemplateCard({
     <button
       type="button"
       onClick={onSelect}
-      className="group flex flex-col overflow-hidden rounded-xl border border-border/60 text-left shadow-sm transition-all duration-150 hover:border-primary/40 hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border/60 bg-card text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:border-primary/30 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
     >
       {/* Color cover */}
-      <div className={`relative flex h-[76px] items-center justify-center bg-gradient-to-br ${colors.from} ${colors.to}`}>
+      <div className={`relative flex h-[80px] items-center justify-center bg-gradient-to-br ${colors.from} ${colors.to} overflow-hidden`}>
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.25]" style={{ backgroundImage: "radial-gradient(circle, #0284C7 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-primary/10 to-transparent" />
         {template.pageSnapshot.icon ? (
-          <span className="text-3xl drop-shadow-sm transition-transform duration-200 group-hover:scale-110">
+          <span className="relative z-10 text-[30px] transition-transform duration-200 group-hover:scale-110">
             {template.pageSnapshot.icon}
           </span>
         ) : (
           <CatIcon
-            size={32}
+            size={30}
             weight="duotone"
-            className="text-white/80 drop-shadow-sm transition-transform duration-200 group-hover:scale-110"
+            className="relative z-10 text-primary transition-transform duration-200 group-hover:scale-110"
           />
         )}
       </div>
 
       {/* Text */}
-      <div className="flex flex-1 flex-col bg-background p-3">
+      <div className="flex flex-1 flex-col p-3">
         <p className="text-[12.5px] font-semibold leading-snug text-foreground">{template.name}</p>
         {template.description && (
-          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground/70">
+          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground/65">
             {template.description}
           </p>
         )}
         <div className="mt-2">
-          <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold ${colors.badge}`}>
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-semibold ${colors.badge}`}>
             <CatIcon size={9} weight="fill" />
             {catDef?.label ?? template.category}
           </span>
@@ -490,7 +497,7 @@ function BlockPreview({ block }: { block: { type: string; content?: unknown } })
   return (
     <div className="flex items-start gap-2">
       <span className="mt-px w-5 shrink-0 text-center text-[9px] font-bold text-muted-foreground/30">{icon}</span>
-      <span className="min-w-0 flex-1 truncate text-[11px] text-foreground/60">
+      <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">
         {text || <span className="italic text-muted-foreground/30">{block.type}</span>}
       </span>
     </div>
@@ -510,16 +517,16 @@ function PageBlockPreview({ block }: { block: { type: string; content?: unknown 
   const classMap: Record<string, string> = {
     h1:        "text-base font-bold text-foreground mt-3 first:mt-0",
     h2:        "text-sm font-bold text-foreground mt-2.5 first:mt-0",
-    h3:        "text-[13px] font-semibold text-foreground mt-2",
-    paragraph: "text-[12px] text-muted-foreground leading-relaxed",
-    bullet:    "text-[12px] text-muted-foreground leading-relaxed pl-3 before:content-['•'] before:mr-2 before:text-muted-foreground/40",
-    numbered:  "text-[12px] text-muted-foreground leading-relaxed pl-3",
-    todo:      "text-[12px] text-muted-foreground leading-relaxed pl-3 line-through opacity-50",
-    quote:     "text-[12px] italic text-muted-foreground border-l-2 border-border pl-3",
-    code:      "text-[11px] font-mono text-foreground bg-muted rounded px-1.5 py-0.5",
+    h3:        "text-sm font-semibold text-foreground mt-2",
+    paragraph: "text-xs text-muted-foreground leading-relaxed",
+    bullet:    "text-xs text-muted-foreground leading-relaxed pl-3 before:content-['•'] before:mr-2 before:text-muted-foreground/40",
+    numbered:  "text-xs text-muted-foreground leading-relaxed pl-3",
+    todo:      "text-xs text-muted-foreground leading-relaxed pl-3 line-through opacity-50",
+    quote:     "text-xs italic text-muted-foreground border-l-2 border-border pl-3",
+    code:      "text-xs font-mono text-foreground bg-muted rounded px-1.5 py-0.5",
   };
 
-  const cls = classMap[block.type] ?? "text-[12px] text-muted-foreground/50";
+  const cls = classMap[block.type] ?? "text-xs text-muted-foreground/50";
 
   return (
     <p className={cls}>
@@ -567,13 +574,13 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
         <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
           Properties ({schema.properties.length})
         </p>
-        <div className="divide-y divide-border/40 rounded-xl border border-border/50 bg-muted/20">
+        <div className="divide-y divide-border/40 rounded-[var(--radius-md)] border border-border/50 bg-muted/20">
           {schema.properties.map((p) => (
             <div key={p.name} className="flex items-center gap-2.5 px-3 py-2">
               <span className="w-5 shrink-0 text-center text-[9px] font-bold text-muted-foreground/40">
                 {PROP_TYPE_ICON[p.type] ?? "·"}
               </span>
-              <span className="flex-1 text-[11.5px] text-foreground/80">{p.name}</span>
+              <span className="flex-1 text-xs text-foreground/80">{p.name}</span>
               {p.options && p.options.length > 0 && (
                 <div className="flex gap-1">
                   {p.options.slice(0, 3).map((o) => (
@@ -627,7 +634,7 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
     <div className="mt-3">
       <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
       {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-border/40">
+      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
         {/* Header */}
         <div className="flex border-b border-border/40 bg-muted/30">
           {visibleProps.map((p) => (
@@ -703,7 +710,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   const tagVal = tagProp ? String(row[tagProp.name] ?? "") : "";
                   const tagOpt = tagProp?.options?.find((o) => o.name === tagVal);
                   return (
-                    <div key={i} className="rounded-lg border border-border/50 bg-background p-2 shadow-sm">
+                    <div key={i} className="rounded-[var(--radius-sm)] border border-border/50 bg-background p-2 shadow-[var(--shadow-card)]">
                       <p className="text-[10.5px] font-medium leading-snug text-foreground">{title}</p>
                       {tagOpt && (
                         <span className={`mt-1 inline-flex rounded px-1 py-0.5 text-[9px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
@@ -713,7 +720,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                     </div>
                   );
                 })}
-                <div className="rounded-lg border border-dashed border-border/30 p-2">
+                <div className="rounded-[var(--radius-sm)] border border-dashed border-border/30 p-2">
                   <span className="text-[9px] text-muted-foreground/25">+ New</span>
                 </div>
               </div>
@@ -741,7 +748,7 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
   return (
     <div className="mt-3">
       <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
-      <div className="overflow-hidden rounded-lg border border-border/40">
+      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
         <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
           <span className="text-[10.5px] font-semibold text-foreground/70">June 2026</span>
           <div className="flex gap-2 text-[9px] text-muted-foreground/30">
@@ -793,7 +800,7 @@ function LoadingSkeleton() {
   return (
     <div className="grid grid-cols-3 gap-3">
       {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-xl border border-border/40">
+        <div key={i} className="overflow-hidden rounded-[var(--radius-md)] border border-border/40">
           <div className="h-[76px] animate-pulse bg-muted/60" />
           <div className="space-y-1.5 bg-background p-3">
             <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
@@ -808,12 +815,12 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 text-center">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-muted/50">
+      <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
         <SquaresFourIcon size={28} weight="duotone" className="text-muted-foreground/40" />
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">No templates yet</p>
-        <p className="mt-1 text-[12px] text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           Templates are added by the WorkFlik team via Orbit Admin.
         </p>
       </div>

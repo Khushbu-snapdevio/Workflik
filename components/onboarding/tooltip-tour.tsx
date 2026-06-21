@@ -154,15 +154,15 @@ export function TooltipTour({ tourCompleted }: Props) {
           className="pointer-events-none"
           style={{
             position:     "fixed",
-            top:          targetRect.top    - 4,
-            left:         targetRect.left   - 4,
-            width:        targetRect.width  + 8,
-            height:       targetRect.height + 8,
-            borderRadius: 10,
-            border:       "2px solid #3b82f6",
-            boxShadow:    "0 0 0 3999px rgba(0,0,0,0.25), 0 0 0 4px rgba(59,130,246,0.18)",
+            top:          targetRect.top    - 5,
+            left:         targetRect.left   - 5,
+            width:        targetRect.width  + 10,
+            height:       targetRect.height + 10,
+            borderRadius: 8,
+            border:       "2px solid var(--color-primary, #0284C7)",
+            boxShadow:    "0 0 0 3999px rgba(0,0,0,0.28), 0 0 0 5px rgba(2,132,199,0.15)",
             zIndex:       9997,
-            transition:   "all 220ms ease",
+            transition:   "top 220ms ease, left 220ms ease, width 220ms ease, height 220ms ease",
           }}
         />
       )}
@@ -190,13 +190,13 @@ export function TooltipTour({ tourCompleted }: Props) {
           transform:  animIn ? "scale(1)" : "scale(0.97)",
           ...tooltipStyle,
         }}
-        className="rounded-2xl border border-[#e8e8e5] bg-white p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+        className="rounded-[var(--radius-lg)] border border-border bg-card p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
       >
         {/* Close */}
         <button
           type="button"
           onClick={completeTour}
-          className="absolute right-3 top-3 flex size-6 items-center justify-center rounded-full text-[#9b9b9b] transition-colors hover:bg-[#f1f1ef] hover:text-[#37352f]"
+          className="absolute right-3 top-3 flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
         >
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-3">
             <path d="M2 2l10 10M12 2L2 12" />
@@ -204,10 +204,10 @@ export function TooltipTour({ tourCompleted }: Props) {
         </button>
 
         <div className="mb-3 text-2xl">{current.icon}</div>
-        <h3 className="mb-1.5 text-[14.5px] font-bold text-[#1a1a1a] leading-snug">
+        <h3 className="mb-1.5 text-[14.5px] font-bold text-foreground leading-snug">
           {current.title}
         </h3>
-        <p className="mb-4 text-[12.5px] leading-relaxed text-[#6b6b6b]">
+        <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
           {current.body}
         </p>
 
@@ -217,7 +217,7 @@ export function TooltipTour({ tourCompleted }: Props) {
             <span
               key={i}
               className={`size-[6px] rounded-full transition-colors duration-200 ${
-                i === step ? "bg-[#2383e2]" : "bg-[#e0e0dc]"
+                i === step ? "bg-primary" : "bg-muted"
               }`}
             />
           ))}
@@ -228,14 +228,14 @@ export function TooltipTour({ tourCompleted }: Props) {
           <button
             type="button"
             onClick={completeTour}
-            className="text-[11.5px] text-[#9b9b9b] transition-colors hover:text-[#37352f]"
+            className="text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
             Skip tour
           </button>
           <button
             type="button"
             onClick={handleNext}
-            className="flex items-center gap-1.5 rounded-lg bg-[#2383e2] px-3.5 py-1.5 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#1a6fc4]"
+            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:bg-[var(--primary-hover)] active:scale-[0.97]"
           >
             {isLast ? "Finish" : "Next"}
             {!isLast && (

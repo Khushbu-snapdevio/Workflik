@@ -82,7 +82,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
   return (
     <div className="relative">
       <button
-        className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-sidebar-accent focus:outline-none"
+        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left transition-colors hover:bg-primary/[0.04] focus:outline-none"
         onClick={() => { setOpen((v) => !v); setShowJoin(false); setJoinError(""); }}
         type="button"
       >
@@ -107,7 +107,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setShowJoin(false); }} />
-          <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-lg border border-border bg-popover shadow-xl">
+          <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover shadow-[var(--shadow-raised)]">
 
             {/* Workspace list */}
             <div className="p-1.5">
@@ -146,7 +146,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
                 <p className="mb-2 text-xs font-semibold text-foreground">Paste invite link</p>
                 <input
                   ref={joinInputRef}
-                  className="mb-1.5 h-9 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="mb-1.5 h-9 w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   onChange={(e) => { setJoinLink(e.target.value); setJoinError(""); }}
                   onKeyDown={(e) => { if (e.key === "Enter") handleJoin(); if (e.key === "Escape") setShowJoin(false); }}
                   placeholder="https://…/invite/token"
@@ -158,14 +158,14 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
                 )}
                 <div className="flex gap-2">
                   <button
-                    className="flex h-8 flex-1 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)]"
+                    className="flex h-8 flex-1 items-center justify-center rounded-[var(--radius-sm)] bg-primary text-xs font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)]"
                     onClick={handleJoin}
                     type="button"
                   >
                     Join workspace
                   </button>
                   <button
-                    className="flex h-8 items-center justify-center rounded-md border border-border px-3 text-xs text-muted-foreground hover:bg-muted"
+                    className="flex h-8 items-center justify-center rounded-[var(--radius-sm)] border border-border px-3 text-xs text-muted-foreground hover:bg-muted"
                     onClick={() => { setShowJoin(false); setJoinLink(""); setJoinError(""); }}
                     type="button"
                   >
@@ -217,11 +217,11 @@ function WorkspaceAvatar({
   }
   if (icon) {
     return (
-      <img alt={name} className="size-6 rounded object-cover" src={icon} />
+      <img alt={name} className="size-6 rounded-[var(--radius-sm)] object-cover" src={icon} />
     );
   }
   return (
-    <span className="grid size-6 shrink-0 place-items-center rounded bg-primary font-bold text-primary-foreground text-xs">
+    <span className="grid size-6 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-primary font-bold text-primary-foreground text-xs">
       {name.charAt(0).toUpperCase()}
     </span>
   );

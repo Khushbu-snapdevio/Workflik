@@ -18,7 +18,7 @@ export function NewWorkspaceForm() {
 
       <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
         {/* Logo mark */}
-        <div className="mb-7 flex size-16 items-center justify-center rounded-2xl bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/30">
+        <div className="mb-7 flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-primary font-black text-primary-foreground text-xl shadow-lg shadow-primary/30">
           WF
         </div>
 
@@ -31,7 +31,7 @@ export function NewWorkspaceForm() {
         </p>
 
         {/* Card */}
-        <div className="w-full rounded-2xl border border-border bg-card shadow-md">
+        <div className="w-full rounded-[var(--radius-lg)] border border-border bg-card shadow-[var(--shadow-card)]">
           <form action={createWorkspaceAction} className="space-y-5 p-7">
 
             {/* Workspace type */}
@@ -43,7 +43,7 @@ export function NewWorkspaceForm() {
                 <button
                   type="button"
                   onClick={() => setKind("personal")}
-                  className={`flex flex-col items-start gap-1.5 rounded-xl border p-3.5 text-left transition-all ${
+                  className={`flex flex-col items-start gap-1.5 rounded-[var(--radius-md)] border p-3.5 text-left transition-all ${
                     kind === "personal"
                       ? "border-primary bg-secondary"
                       : "border-border bg-background hover:border-primary/40 hover:bg-secondary/30"
@@ -53,12 +53,12 @@ export function NewWorkspaceForm() {
                   <p className={`text-xs font-semibold ${kind === "personal" ? "text-primary" : "text-foreground"}`}>
                     Personal
                   </p>
-                  <p className="text-[11px] leading-tight text-muted-foreground">Solo work, private by default</p>
+                  <p className="text-xs leading-tight text-muted-foreground">Solo work, private by default</p>
                 </button>
                 <button
                   type="button"
                   onClick={() => setKind("team")}
-                  className={`flex flex-col items-start gap-1.5 rounded-xl border p-3.5 text-left transition-all ${
+                  className={`flex flex-col items-start gap-1.5 rounded-[var(--radius-md)] border p-3.5 text-left transition-all ${
                     kind === "team"
                       ? "border-primary bg-secondary"
                       : "border-border bg-background hover:border-primary/40 hover:bg-secondary/30"
@@ -68,7 +68,7 @@ export function NewWorkspaceForm() {
                   <p className={`text-xs font-semibold ${kind === "team" ? "text-primary" : "text-foreground"}`}>
                     Teamspace
                   </p>
-                  <p className="text-[11px] leading-tight text-muted-foreground">Shared with your team</p>
+                  <p className="text-xs leading-tight text-muted-foreground">Shared with your team</p>
                 </button>
               </div>
               <input type="hidden" name="kind" value={kind} />

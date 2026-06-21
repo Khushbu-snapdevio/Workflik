@@ -32,9 +32,9 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
   }
 
   return (
-    <div className="flex shrink-0 flex-col gap-1.5 border-b border-border/60 bg-primary/[0.03] px-4 py-2.5 dark:bg-primary/[0.06]">
+    <div className="flex shrink-0 flex-col gap-1.5 border-b border-border px-4 py-2.5 bg-sidebar">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-primary/60">Sort</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Sort</p>
         {atLimit && (
           <span className="text-[10px] text-muted-foreground/50">Max {MAX_SORTS} sort rules</span>
         )}
@@ -49,21 +49,21 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
           <select
             value={sort.propertyId}
             onChange={(e) => update(idx, { propertyId: e.target.value })}
-            className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-[12px] text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20"
           >
             {usable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
 
-          <div className="flex overflow-hidden rounded-lg border border-border">
+          <div className="flex items-center rounded-[var(--radius-sm)] border border-border bg-muted/40 p-0.5">
             {(["asc", "desc"] as const).map((dir) => (
               <button
                 key={dir}
                 onClick={() => update(idx, { direction: dir })}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs transition-colors ${
+                className={`flex items-center gap-1 transition-colors ${
                   sort.direction === dir
-                    ? "bg-primary/10 text-primary dark:bg-primary/20"
-                    : "text-muted-foreground hover:bg-accent"
-                } ${dir === "desc" ? "border-l border-border" : ""}`}
+                    ? "bg-primary text-white rounded-[var(--radius-sm)] px-2.5 py-1 text-[11px] font-semibold"
+                    : "text-muted-foreground px-2.5 py-1 text-[11px] font-medium hover:text-foreground"
+                }`}
               >
                 {dir === "asc" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
                 {dir === "asc" ? "Asc" : "Desc"}
@@ -73,7 +73,7 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
 
           <button
             onClick={() => remove(idx)}
-            className="ml-auto flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground"
+            className="ml-auto flex size-5 items-center justify-center rounded text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500"
           >
             <X size={11} />
           </button>
@@ -84,7 +84,7 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
         onClick={add}
         disabled={atLimit || usable.length === 0}
         title={atLimit ? `Maximum ${MAX_SORTS} sort rules` : undefined}
-        className="w-fit rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-muted-foreground shadow-[var(--shadow-card)] transition-colors hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
       >
         + Add sort
       </button>

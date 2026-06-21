@@ -36,14 +36,14 @@ export function ImpersonateButton({ userId }: { userId: string }) {
       <button
         onClick={handleImpersonate}
         disabled={loading}
-        className="flex items-center gap-1.5 rounded-[8px] bg-[#2383e2] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-[#1a6fc4] disabled:opacity-50">
+        className="flex items-center gap-1.5 rounded-[8px] bg-[#2383e2] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#1a6fc4] disabled:opacity-50">
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
           <circle cx="7" cy="5" r="2.5"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
           <path d="M11 2l2 2-2 2"/>
         </svg>
         {loading ? "Starting…" : "Impersonate"}
       </button>
-      {error && <p className="mt-1 text-[11px] text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -80,14 +80,14 @@ export function BanButton({ userId, banned, onDone }: { userId: string; banned: 
         onClick={handleToggle}
         disabled={loading}
         className={cn(
-          "flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-[12px] font-semibold transition disabled:opacity-50",
+          "flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50",
           banned
-            ? "bg-[#f9f8f7] text-[#37352f] border border-black/[0.07] hover:bg-black/[0.05]"
+            ? "bg-muted/40 text-foreground border border-border hover:bg-black/[0.05]"
             : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
         )}>
         {banned ? "Unban user" : "Ban user"}
       </button>
-      {error && <p className="mt-1 text-[11px] text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -121,14 +121,14 @@ export function RevokeSessionsButton({ userId }: { userId: string }) {
       <button
         onClick={handleRevoke}
         disabled={loading}
-        className="flex items-center gap-1.5 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-1.5 text-[12px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50">
+        className="flex items-center gap-1.5 rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50">
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
           <path d="M7 2v3l2 2"/><circle cx="7" cy="7" r="5"/>
           <path d="M1 1l12 12"/>
         </svg>
         {loading ? "Revoking…" : "Revoke all sessions"}
       </button>
-      {error && <p className="mt-1 text-[11px] text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -165,13 +165,13 @@ export function ForceDeleteWorkspaceButton({ workspaceId, workspaceName }: { wor
       <button
         onClick={handleDelete}
         disabled={loading}
-        className="flex items-center gap-1.5 rounded-[8px] bg-red-600 px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-red-700 disabled:opacity-50">
+        className="flex items-center gap-1.5 rounded-[8px] bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50">
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
           <path d="M2 3.5h10M5.5 3.5V2.5h3v1M4.5 3.5l.5 8M9.5 3.5l-.5 8M7 3.5v8"/>
         </svg>
         {loading ? "Deleting…" : "Force delete workspace"}
       </button>
-      {error && <p className="mt-1 text-[11px] text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }

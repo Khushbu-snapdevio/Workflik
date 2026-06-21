@@ -72,9 +72,9 @@ function SourceIcon({ sourceType, kind, icon, size = 15 }: {
   if (icon && icon.length <= 4) {
     return <span style={{ fontSize: size - 2 }} className="leading-none">{icon}</span>;
   }
-  if (sourceType === "entry")   return <DatabaseIcon   size={size} className="shrink-0 text-purple-500" />;
-  if (sourceType === "comment") return <ChatCircleIcon  size={size} className="shrink-0 text-blue-500"  />;
-  if (kind === "database")      return <DatabaseIcon    size={size} className="shrink-0 text-orange-500" />;
+  if (sourceType === "entry")   return <DatabaseIcon   size={size} className="shrink-0 text-primary" />;
+  if (sourceType === "comment") return <ChatCircleIcon  size={size} className="shrink-0 text-primary"  />;
+  if (kind === "database")      return <DatabaseIcon    size={size} className="shrink-0 text-primary" />;
   return <FileTextIcon size={size} className="shrink-0 text-muted-foreground" />;
 }
 
@@ -115,7 +115,7 @@ function FilterChip<T extends string>({
       <button
         onClick={() => setOpen((p) => !p)}
         className={[
-          "flex items-center gap-1 rounded-full border px-3 py-1 text-[12px] font-medium transition-colors",
+          "flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
           active
             ? "border-primary/40 bg-primary/10 text-primary"
             : "border-border bg-muted/30 text-muted-foreground hover:border-border/80 hover:bg-muted/60 hover:text-foreground",
@@ -128,13 +128,13 @@ function FilterChip<T extends string>({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-xl border border-border bg-popover p-1 shadow-2xl">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-raised)]">
           {options.map((opt) => (
             <button
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false); }}
               className={[
-                "flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-[13px] transition-colors",
+                "flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm transition-colors",
                 opt.value === value
                   ? "bg-primary/10 font-medium text-primary"
                   : "text-foreground hover:bg-muted",
@@ -167,19 +167,19 @@ function ResultRow({
     <button
       onClick={onClick}
       className={[
-        "flex w-full items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors",
+        "flex w-full items-start gap-3 rounded-[var(--radius-sm)] px-4 py-3 text-left transition-colors",
         isActive ? "bg-primary/8 outline-none" : "hover:bg-muted/50",
       ].join(" ")}
     >
       {/* Icon */}
-      <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted/60">
+      <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/60">
         <SourceIcon sourceType={result.sourceType} kind={result.kind} icon={result.icon} />
       </div>
 
       {/* Content */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-[13px] font-semibold text-foreground">
+          <span className="truncate text-sm font-semibold text-foreground">
             {result.title || "Untitled"}
           </span>
           <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -187,7 +187,7 @@ function ResultRow({
           </span>
         </div>
         {result.breadcrumb && (
-          <div className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground/70">
+          <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground/70">
             <CaretRightIcon size={9} className="shrink-0" />
             <span className="truncate">{result.breadcrumb}</span>
           </div>
@@ -195,7 +195,7 @@ function ResultRow({
       </div>
 
       {/* Time */}
-      <span className="mt-0.5 shrink-0 text-[11px] text-muted-foreground/50">
+      <span className="mt-0.5 shrink-0 text-xs text-muted-foreground/50">
         {relativeTime(result.updatedAt)}
       </span>
     </button>
@@ -215,20 +215,20 @@ function RecentRow({
     <button
       onClick={onClick}
       className={[
-        "flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-colors",
+        "flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-4 py-2.5 text-left transition-colors",
         isActive ? "bg-primary/8" : "hover:bg-muted/50",
       ].join(" ")}
     >
-      <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted/60">
+      <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/60">
         {item.page?.icon && item.page.icon.length <= 4
-          ? <span className="text-[13px] leading-none">{item.page.icon}</span>
+          ? <span className="text-sm leading-none">{item.page.icon}</span>
           : <FileTextIcon size={13} className="text-muted-foreground" />
         }
       </div>
-      <span className="flex-1 truncate text-[13px] font-medium text-foreground">
+      <span className="flex-1 truncate text-sm font-medium text-foreground">
         {item.page?.title || "Untitled"}
       </span>
-      <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground/50">
+      <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground/50">
         <ClockIcon size={11} />
         {relativeTime(item.visitedAt)}
       </div>
@@ -396,7 +396,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       />
 
       {/* Dialog */}
-      <div className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+      <div className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background shadow-[var(--shadow-float)]">
 
         {/* Search input */}
         <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
@@ -406,7 +406,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
             value={query}
             onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
             placeholder="Search pages, databases, and more…"
-            className="flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground/50"
+            className="flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/50"
           />
           {loading && (
             <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
@@ -440,7 +440,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
             <button
               onClick={() => setTitleOnly((p) => !p)}
               className={[
-                "rounded-full border px-3 py-1 text-[12px] font-medium transition-colors",
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                 titleOnly
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-border bg-transparent text-muted-foreground hover:text-foreground",
@@ -475,7 +475,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
               ) : (
                 <div className="flex flex-col items-center gap-2 py-10 text-center">
                   <MagnifyingGlassIcon size={28} className="text-muted-foreground/30" />
-                  <p className="text-[13px] text-muted-foreground/60">
+                  <p className="text-sm text-muted-foreground/60">
                     Start typing to search
                   </p>
                 </div>
@@ -487,21 +487,21 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
           {!isQueryEmpty && !loading && results.length === 0 && (
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <MagnifyingGlassIcon size={28} className="text-muted-foreground/30" />
-              <p className="text-[14px] font-medium text-foreground">No results for &ldquo;{query}&rdquo;</p>
-              <p className="text-[12px] text-muted-foreground/60">
+              <p className="text-sm font-medium text-foreground">No results for &ldquo;{query}&rdquo;</p>
+              <p className="text-xs text-muted-foreground/60">
                 Try different keywords or adjust filters
               </p>
               {!reindexDone && (
                 <button
                   onClick={runReindex}
                   disabled={reindexing}
-                  className="mt-1 rounded-lg border border-border bg-muted/40 px-4 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                  className="mt-1 rounded-[var(--radius-sm)] border border-border bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
                 >
                   {reindexing ? "Indexing…" : "Index pages now"}
                 </button>
               )}
               {reindexDone && (
-                <p className="text-[12px] text-green-600 dark:text-green-400">
+                <p className="text-xs text-green-600 dark:text-green-400">
                   Index updated — try searching again
                 </p>
               )}
@@ -520,7 +520,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
                 </div>
               ))}
               {total >= 50 && (
-                <p className="px-4 py-2.5 text-center text-[11px] text-muted-foreground/50">
+                <p className="px-4 py-2.5 text-center text-xs text-muted-foreground/50">
                   Showing top 50 results — refine your search
                 </p>
               )}
@@ -530,7 +530,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
 
         {/* Footer hint */}
         <div className="flex items-center gap-4 border-t border-border/40 bg-muted/20 px-4 py-2">
-          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
             <kbd className="flex size-5 items-center justify-center rounded border border-border bg-background text-[10px]">
               <ArrowUpIcon size={9} />
             </kbd>
@@ -539,17 +539,17 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
             </kbd>
             Navigate
           </span>
-          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
             <kbd className="flex items-center justify-center rounded border border-border bg-background px-1.5 py-0.5 text-[10px]">
               <ArrowBendDownLeftIcon size={9} />
             </kbd>
             Open
           </span>
-          <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
             <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px]">Esc</kbd>
             Close
           </span>
-          <span className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
+          <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground/50">
             <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px]">Ctrl K</kbd>
             Clear
           </span>

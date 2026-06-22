@@ -384,7 +384,7 @@ export function ProfileSection({ user }: Props) {
       <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Danger zone</p>
       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-red-200/60 bg-gradient-to-br from-red-50/40 to-white">
         <div className="flex items-start gap-4 px-5 py-5">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-red-100">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-100">
             <svg viewBox="0 0 20 20" fill="none" stroke="#dc2626" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5">
               <path d="M10 2L2 17h16L10 2z"/><path d="M10 8v4M10 14.5v.5"/>
             </svg>

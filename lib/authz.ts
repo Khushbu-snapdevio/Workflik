@@ -12,7 +12,7 @@ export async function getCurrentSession() {
 export async function requireSession() {
   const session = await getCurrentSession();
   if (!session) {
-    redirect("/login");
+    redirect("/auth/login");
   }
   return session;
 }

@@ -6,7 +6,7 @@ import { apiError, getSession } from "@/lib/workspaces/auth";
 const FILTER_MAP: Record<string, string[]> = {
   mentions:  ["mention"],
   comments:  ["comment", "reply", "resolved", "reopened"],
-  updates:   ["access_granted", "workspace_invite", "guest_accepted", "trash_warning"],
+  updates:   ["access_granted", "workspace_invite", "guest_accepted", "trash_warning", "page_update", "task_assigned"],
 };
 
 export async function GET(req: Request) {
@@ -42,6 +42,7 @@ export async function GET(req: Request) {
         sourceId:       notifications.sourceId,
         senderId:       notifications.senderId,
         senderName:     users.name,
+        senderEmail:    users.email,
         senderImage:    users.image,
         pageTitle:      pages.title,
         pageIcon:       pages.icon,

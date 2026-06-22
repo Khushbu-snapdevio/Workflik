@@ -10,6 +10,7 @@ export interface NotificationItem {
   sourceId:       string | null;
   senderId:       string | null;
   senderName:     string | null;
+  senderEmail:    string | null;
   senderImage:    string | null;
   pageTitle:      string | null;
   pageIcon:       string | null;
@@ -25,7 +26,9 @@ const TYPE_ACTION: Record<string, string> = {
   access_granted:   "granted you access",
   workspace_invite: "added you to workspace",
   guest_accepted:   "accepted your invite",
-  trash_warning:    "page being deleted",
+  trash_warning:    "moved a page to Trash",
+  page_update:      "edited a page",
+  task_assigned:    "assigned you a task",
 };
 
 const TYPE_COLOR: Record<string, string> = {
@@ -38,6 +41,8 @@ const TYPE_COLOR: Record<string, string> = {
   workspace_invite: "#0284C7",
   guest_accepted:   "#0ea5e9",
   trash_warning:    "#ef4444",
+  page_update:      "#7c3aed",
+  task_assigned:    "#059669",
 };
 
 interface Props {
@@ -49,9 +54,15 @@ interface Props {
 
 export function NotificationCard({ notification, workspaceSlug, onMarkRead, onClick }: Props) {
   void workspaceSlug;
-  const who      = notification.senderName ?? "System";
+  const who      = notification.senderName?.trim()
+                || notification.senderEmail?.split("@")[0]?.trim()
+                || "Unknown";
   const action   = TYPE_ACTION[notification.type] ?? "sent you a notification";
-  const initials = who.slice(0, 2).toUpperCase();
+  const words    = who.split(/[\s._\-]+/).filter(Boolean);
+  const initials = (words.length >= 2
+    ? words[0][0]! + words[words.length - 1][0]!
+    : who.slice(0, 2)
+  ).toUpperCase();
   const timeAgo  = relativeTime(notification.createdAt);
   const isSystem = !notification.senderId;
   const isUnread = !notification.isRead;
@@ -82,6 +93,12 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
             </svg>
           </div>
+        ) : notification.senderImage ? (
+          <img
+            src={notification.senderImage}
+            alt={who}
+            className="size-9 rounded-full object-cover ring-2 ring-white shadow-sm select-none"
+          />
         ) : (
           <div
             className="flex size-9 items-center justify-center rounded-full text-[12px] font-bold text-white shadow-sm ring-2 ring-white select-none"

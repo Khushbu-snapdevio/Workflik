@@ -268,6 +268,52 @@ export async function triggerGuestAcceptedNotification(
   });
 }
 
+export async function triggerPageUpdateNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId: string;
+    pageId:      string;
+    editorId:    string;
+    createdBy:   string;
+    pageTitle:   string;
+  }
+): Promise<void> {
+  const { workspaceId, pageId, editorId, createdBy, pageTitle } = params;
+  if (editorId === createdBy) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId:    createdBy,
+    senderId:       editorId,
+    type:           "page_update",
+    pageId,
+    sourceId:       pageId,
+    contentSnippet: pageTitle.slice(0, 100),
+  });
+}
+
+export async function triggerTaskAssignedNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId: string;
+    pageId:      string;
+    assignerId:  string;
+    assigneeId:  string;
+    entryTitle:  string;
+  }
+): Promise<void> {
+  const { workspaceId, pageId, assignerId, assigneeId, entryTitle } = params;
+  if (assignerId === assigneeId) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId:    assigneeId,
+    senderId:       assignerId,
+    type:           "task_assigned",
+    pageId,
+    sourceId:       pageId,
+    contentSnippet: entryTitle.slice(0, 100),
+  });
+}
+
 export async function triggerTrashWarningNotification(
   tx: AnyTx,
   params: {
@@ -286,7 +332,7 @@ export async function triggerTrashWarningNotification(
     await insertAndEnqueue(tx, {
       workspaceId,
       recipientId,
-      senderId:       null,
+      senderId:       deletedBy,
       type:           "trash_warning",
       pageId,
       sourceId:       pageId,

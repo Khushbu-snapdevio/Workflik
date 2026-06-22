@@ -3,7 +3,7 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { XIcon, GearIcon, FlaskIcon } from "@phosphor-icons/react";
+import { XIcon, GearIcon } from "@phosphor-icons/react";
 import { useNotifications } from "@/components/notifications/notification-provider";
 import { NotificationCard, type NotificationItem } from "@/components/notifications/notification-card";
 
@@ -16,7 +16,6 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "updates",  label: "Updates"  },
 ];
 
-const IS_DEV = process.env.NODE_ENV !== "production";
 
 interface Props {
   workspaceId:   string;
@@ -30,7 +29,6 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   const [filter, setFilter]   = useState<FilterKey>("all");
   const [items, setItems]     = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const [shouldRender, setShouldRender] = useState(false);
@@ -86,26 +84,6 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
     }
   }
 
-  async function handleSeedTest() {
-    setSeeding(true);
-    try {
-      await fetch(`/api/notifications/test?workspaceId=${encodeURIComponent(workspaceId)}`, { method: "POST" });
-      fetchNotifications();
-      refreshCount();
-    } catch { /* no-op */ }
-    finally { setSeeding(false); }
-  }
-
-  async function handleClearTest() {
-    setSeeding(true);
-    try {
-      await fetch(`/api/notifications/test?workspaceId=${encodeURIComponent(workspaceId)}`, { method: "DELETE" });
-      setItems([]);
-      refreshCount();
-    } catch { /* no-op */ }
-    finally { setSeeding(false); }
-  }
-
   const unread = items.filter((n) => !n.isRead).length;
 
   if (!mounted || !shouldRender) return null;
@@ -115,7 +93,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
       {/* Backdrop */}
       <div
         className="fixed inset-0"
-        style={{ zIndex: 190, pointerEvents: animIn ? "auto" : "none" }}
+        style={{ zIndex: 599, pointerEvents: animIn ? "auto" : "none" }}
         onClick={closePanel}
       />
 
@@ -124,12 +102,13 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
         className="fixed top-0 right-0 flex h-full flex-col"
         style={{
           width:      460,
-          zIndex:     191,
+          zIndex:     600,
           background: "var(--card)",
           boxShadow:  "-8px 0 40px rgba(15,23,42,0.10), -1px 0 0 var(--border)",
           transform:  animIn ? "translateX(0)" : "translateX(20px)",
           opacity:    animIn ? 1 : 0,
           transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease",
+          willChange: "transform",
         }}
       >
         {/* ── Header ── */}
@@ -209,40 +188,12 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
           </div>
         </div>
 
-        {/* ── DEV bar ── */}
-        {IS_DEV && (
-          <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-4 py-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/60">
-              <FlaskIcon size={11} />
-              Dev only
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={seeding}
-                onClick={handleSeedTest}
-                className="rounded-[var(--radius-sm)] bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white disabled:opacity-40"
-              >
-                {seeding ? "…" : "Seed"}
-              </button>
-              <button
-                type="button"
-                disabled={seeding}
-                onClick={handleClearTest}
-                className="rounded-[var(--radius-sm)] border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* ── Content ── */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {loading ? (
             <LoadingSkeleton />
           ) : items.length === 0 ? (
-            <EmptyState filter={filter} onSeed={handleSeedTest} seeding={seeding} />
+            <EmptyState filter={filter} />
           ) : (
             <div className="divide-y divide-border/50">
               {items.map((n) => (
@@ -279,15 +230,7 @@ function LoadingSkeleton() {
   );
 }
 
-function EmptyState({
-  filter,
-  onSeed,
-  seeding,
-}: {
-  filter: FilterKey;
-  onSeed: () => void;
-  seeding: boolean;
-}) {
+function EmptyState({ filter }: { filter: FilterKey }) {
   return (
     <div className="flex flex-col items-center justify-center gap-5 px-8 py-20">
       <div className="relative flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 ring-1 ring-primary/20">
@@ -301,16 +244,6 @@ function EmptyState({
         <p className="mt-1 text-[12.5px] text-muted-foreground">
           {filter === "all" ? "No notifications yet" : `No ${filter} notifications`}
         </p>
-        {process.env.NODE_ENV !== "production" && (
-          <button
-            type="button"
-            onClick={onSeed}
-            disabled={seeding}
-            className="mt-4 rounded-[var(--radius-sm)] border border-border bg-card px-4 py-1.5 text-[11.5px] font-medium text-muted-foreground shadow-[var(--shadow-card)] transition-colors hover:border-primary/30 hover:bg-primary/[0.03] hover:text-primary disabled:opacity-50"
-          >
-            {seeding ? "Seeding…" : "Seed test notifications"}
-          </button>
-        )}
       </div>
     </div>
   );

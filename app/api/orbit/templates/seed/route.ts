@@ -42,7 +42,7 @@ function dbSnap(title: string, icon: string, tagline: string, schema: DbSchema) 
   };
 }
 
-const BUILT_IN_TEMPLATES: {
+export const BUILT_IN_TEMPLATES: {
   name: string;
   description: string;
   category: "productivity" | "project_mgmt" | "marketing" | "engineering" | "sales";

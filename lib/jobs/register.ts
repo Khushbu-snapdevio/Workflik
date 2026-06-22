@@ -78,4 +78,38 @@ export async function registerHandlers(boss: PgBoss) {
   await boss.schedule(JOB_NAMES.NOTIFICATION_CLEANUP,               "0 5 * * *",     {}); // Daily 05:00 UTC
   await boss.schedule(JOB_NAMES.EXPIRE_INVITATIONS,                 "0 1 * * *",     {}); // Daily 01:00 UTC
   await boss.schedule(JOB_NAMES.NOTIFY_STORAGE_THRESHOLD,           "0 6 * * *",     {}); // Daily 06:00 UTC
+
+  // Seed built-in templates immediately on startup if none exist
+  autoSeedTemplatesOnStartup().catch((err) =>
+    console.error("[startup] template seed failed:", err)
+  );
+}
+
+async function autoSeedTemplatesOnStartup() {
+  const { and, count, eq, isNull } = await import("drizzle-orm");
+  const { db } = await import("@/lib/db");
+  const { templates } = await import("@/lib/db/schema");
+
+  const [{ cnt }] = await db
+    .select({ cnt: count() })
+    .from(templates)
+    .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
+
+  if (Number(cnt) >= 16) return;
+
+  const { BUILT_IN_TEMPLATES } = await import("@/app/api/orbit/templates/seed/route");
+
+  const rows = BUILT_IN_TEMPLATES.map((t) => ({
+    name:         t.name,
+    description:  t.description,
+    category:     t.category,
+    isBuiltIn:    true,
+    status:       "published" as const,
+    workspaceId:  null,
+    createdBy:    null,
+    pageSnapshot: t.pageSnapshot,
+  }));
+
+  await db.insert(templates).values(rows);
+  console.log(`[startup] seeded ${rows.length} built-in templates`);
 }

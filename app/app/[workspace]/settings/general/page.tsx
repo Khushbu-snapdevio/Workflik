@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
@@ -26,7 +26,10 @@ export default async function GeneralSettingsPage({ params }: Props) {
     .select({ role: workspaceMembers.role })
     .from(workspaceMembers)
     .where(
-      eq(workspaceMembers.workspaceId, ws.id),
+      and(
+        eq(workspaceMembers.workspaceId, ws.id),
+        eq(workspaceMembers.userId, session.user.id),
+      ),
     )
     .limit(1);
 

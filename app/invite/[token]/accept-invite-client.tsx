@@ -34,7 +34,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
         return;
       }
       const data = await res.json() as { workspaceSlug?: string };
-      router.replace(data.workspaceSlug ? `/workspaces/join-setup/${data.workspaceSlug}` : "/dashboard");
+      router.replace(data.workspaceSlug ? `/app/workspaces/join-setup/${data.workspaceSlug}` : "/platform/dashboard");
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
             <Button
               className="w-full"
               disabled={loading}
-              onClick={() => router.replace("/dashboard")}
+              onClick={() => router.replace("/platform/dashboard")}
               variant="ghost"
             >
               Decline

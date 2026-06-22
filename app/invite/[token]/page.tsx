@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { AcceptInviteClient } from "./accept-invite-client";
+import { WrongAccountError } from "./wrong-account";
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -52,7 +53,11 @@ export default async function InvitePage({ params }: Props) {
   // Signed-in user's email must match the invite email (if email-specific invite)
   if (member.invitedEmail && member.invitedEmail !== session.user.email) {
     return (
-      <InviteError message={`This invite was sent to ${member.invitedEmail}. Please sign in with that email address.`} />
+      <WrongAccountError
+        invitedEmail={member.invitedEmail}
+        currentEmail={session.user.email}
+        token={token}
+      />
     );
   }
 

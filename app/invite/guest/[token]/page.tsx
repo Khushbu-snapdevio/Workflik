@@ -60,7 +60,7 @@ export default function GuestInvitePage() {
       <div className="w-full max-w-md rounded-[var(--radius-lg)] border border-border bg-card p-8 shadow-[var(--shadow-float)]">
         {/* Logo */}
         <div className="mb-6 flex justify-center">
-          <span className="text-2xl font-black tracking-tight text-foreground font-black tracking-tight">WORKFLIK</span>
+          <span className="text-2xl font-black tracking-tight text-foreground">WORKFLIK</span>
         </div>
 
         {state === "loading" && (

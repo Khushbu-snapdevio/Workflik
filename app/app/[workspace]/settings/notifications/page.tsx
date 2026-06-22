@@ -85,7 +85,7 @@ export default function NotificationSettingsPage() {
   const freqColor = !emailOn ? "bg-muted text-muted-foreground"
     : frequency === "realtime" ? "bg-amber-100 text-amber-700"
     : frequency === "daily"    ? "bg-primary/10 text-primary"
-    :                            "bg-purple-50 text-purple-700";
+    :                            "bg-primary/10 text-primary";
 
   return (
     <div className="mx-auto max-w-[640px] px-10 py-10">

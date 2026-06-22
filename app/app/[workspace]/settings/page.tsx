@@ -1,15 +1,8 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+type Props = { params: Promise<{ workspace: string }> };
 
-export default function SettingsIndexPage() {
-  const router  = useRouter();
-  const params  = useParams<{ workspace: string }>();
-
-  useEffect(() => {
-    router.replace(`/app/${params.workspace}/settings/profile`);
-  }, [params.workspace, router]);
-
-  return null;
+export default async function SettingsIndexPage({ params }: Props) {
+  const { workspace } = await params;
+  redirect(`/app/${workspace}/settings/profile`);
 }

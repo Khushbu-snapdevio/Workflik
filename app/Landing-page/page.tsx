@@ -349,48 +349,74 @@ export default async function HomePage() {
               </div>
             </div>
             {/* App layout */}
-            <div className="flex h-64">
+            <div className="flex h-72">
               {/* Sidebar */}
-              <div className="w-52 shrink-0 border-r border-border bg-muted/20 px-2 py-3">
-                <div className="mb-3 flex items-center gap-2 px-2">
-                  <span className="flex size-5 items-center justify-center rounded bg-primary text-[8px] font-black text-primary-foreground">WF</span>
-                  <span className="text-[11px] font-bold text-foreground">Acme Corp</span>
+              <div className="w-48 shrink-0 border-r border-border bg-sidebar px-2 py-3">
+                <div className="mb-3 flex items-center justify-between px-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex size-5 items-center justify-center rounded bg-primary text-[8px] font-black text-primary-foreground">WF</span>
+                    <span className="text-[11px] font-bold text-foreground">Acme Corp</span>
+                  </div>
                 </div>
+                <p className="mb-1 px-2 text-[8.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Pages</p>
                 <div className="space-y-0.5">
                   {[
-                    { label: "Product Roadmap", active: true },
-                    { label: "Team Wiki",        active: false },
-                    { label: "Sprint Notes",     active: false },
-                    { label: "Design System",    active: false },
-                    { label: "Onboarding Guide", active: false },
+                    { icon: "📋", label: "Product Roadmap", active: true },
+                    { icon: "📚", label: "Team Wiki",        active: false },
+                    { icon: "📝", label: "Sprint Notes",     active: false },
+                    { icon: "🎨", label: "Design System",    active: false },
+                    { icon: "👋", label: "Onboarding Guide", active: false },
                   ].map((item) => (
                     <div
                       key={item.label}
-                      className={`flex items-center gap-2 rounded-[var(--radius-xs)] px-2 py-1.5 ${
-                        item.active ? "bg-primary/10 text-primary" : "text-muted-foreground/70"
+                      className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-1.5 ${
+                        item.active ? "bg-primary/10 text-primary" : "text-muted-foreground/60"
                       }`}
                     >
-                      <span className="size-1 rounded-full bg-current opacity-60" />
+                      <span className="text-[11px] leading-none">{item.icon}</span>
                       <span className="truncate text-[11px] font-medium">{item.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
+
               {/* Editor */}
-              <div className="flex-1 overflow-hidden px-8 py-6">
-                <div className="mb-4 text-xl font-bold text-foreground">Q3 Product Roadmap</div>
-                <div className="space-y-2">
-                  <div className="h-3 w-3/4 rounded bg-muted" />
-                  <div className="h-3 w-full rounded bg-muted" />
-                  <div className="h-3 w-2/3 rounded bg-muted" />
-                  <div className="mt-4 h-3 w-1/2 rounded bg-muted" />
-                  <div className="h-3 w-4/5 rounded bg-muted" />
-                  <div className="h-3 w-3/5 rounded bg-muted" />
-                  <div className="mt-4 flex gap-2">
-                    <div className="h-7 w-20 rounded-[var(--radius-xs)] bg-primary/15" />
-                    <div className="h-7 w-24 rounded-[var(--radius-xs)] bg-emerald-100" />
-                    <div className="h-7 w-16 rounded-[var(--radius-xs)] bg-amber-100" />
+              <div className="flex flex-1 flex-col overflow-hidden">
+                {/* Breadcrumb bar */}
+                <div className="flex items-center gap-1.5 border-b border-border/60 px-6 py-2">
+                  <span className="text-[9.5px] text-muted-foreground/50">Acme Corp</span>
+                  <span className="text-[9.5px] text-muted-foreground/30">/</span>
+                  <span className="text-[9.5px] font-medium text-foreground/70">Product Roadmap</span>
+                </div>
+
+                <div className="flex-1 overflow-hidden px-7 py-5">
+                  {/* Page title */}
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className="text-base leading-none">📋</span>
+                    <span className="text-[15px] font-bold text-foreground">Q3 Product Roadmap</span>
                   </div>
+
+                  {/* Task rows */}
+                  <div className="space-y-1">
+                    {[
+                      { icon: "✅", text: "Ship new editor blocks",  status: "Done",        pill: "bg-emerald-100 text-emerald-700" },
+                      { icon: "🔄", text: "Invite flow redesign",    status: "In Progress", pill: "bg-primary/10 text-primary" },
+                      { icon: "📄", text: "Template gallery v2",     status: "Planned",     pill: "bg-muted/80 text-muted-foreground" },
+                      { icon: "📊", text: "Analytics dashboard",     status: "Planned",     pill: "bg-muted/80 text-muted-foreground" },
+                      { icon: "🔔", text: "Notification digest",     status: "Backlog",     pill: "bg-amber-100 text-amber-700" },
+                    ].map((row) => (
+                      <div key={row.text} className="flex items-center justify-between rounded-[var(--radius-xs)] px-2 py-1.5 transition-colors hover:bg-muted/40">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] leading-none">{row.icon}</span>
+                          <span className="text-[11px] text-foreground/80">{row.text}</span>
+                        </div>
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${row.pill}`}>
+                          {row.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
               </div>
             </div>

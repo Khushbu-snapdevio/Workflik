@@ -6,6 +6,9 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { PaperclipIcon, At, XCircleIcon, ArrowCircleUpIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
+import { MentionNode } from "@/components/editor/extensions/mention-node";
+import { MentionCommands, type MentionSuggestionProps } from "@/components/editor/extensions/mention-extension";
+import { MentionList, type MentionListHandle } from "@/components/editor/mention-list";
 
 interface CommentComposerProps {
   workspaceId:     string;
@@ -18,6 +21,7 @@ interface CommentComposerProps {
 }
 
 export function CommentComposer({
+  workspaceId,
   placeholder = "Add a comment…",
   initialContent,
   mode = "new",
@@ -29,6 +33,12 @@ export function CommentComposer({
   const [attachment, setAttachment]       = useState<{ preview: string; name: string } | null>(null);
   const [attachLoading, setAttachLoading] = useState(false);
   const [editorEmpty, setEditorEmpty]     = useState(true);
+
+  const mentionListRef = useRef<MentionListHandle>(null);
+  const [mentionProps, setMentionProps] = useState<MentionSuggestionProps | null>(null);
+  // Ref so handleKeyDown (inside useEditor) always reads the current value without stale closure
+  const mentionActiveRef = useRef(false);
+  mentionActiveRef.current = !!mentionProps;
 
   useEffect(() => {
     return () => {
@@ -66,6 +76,14 @@ export function CommentComposer({
       }),
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder }),
+      // MentionNode must come before MentionCommands so the node type is
+      // registered before the suggestion plugin tries to insert mention nodes.
+      MentionNode,
+      MentionCommands.configure({
+        workspaceId,
+        onUpdate:  (props) => setMentionProps(props),
+        onKeyDown: (event) => mentionListRef.current?.onKeyDown(event) ?? false,
+      }),
     ],
     content: initialContent ?? "",
     autofocus: autoFocus ? "end" : false,
@@ -88,6 +106,16 @@ export function CommentComposer({
         ].join(" "),
       },
       handleKeyDown(_view, event) {
+        // When the @mention dropdown is open, let it handle navigation keys first.
+        // Return false for Escape so the suggestion plugin can close the dropdown
+        // instead of onCancel() firing.
+        if (mentionActiveRef.current && mentionListRef.current) {
+          if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "Enter") {
+            const handled = mentionListRef.current.onKeyDown(event);
+            if (handled) { event.preventDefault(); return true; }
+          }
+          if (event.key === "Escape") return false;
+        }
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
           handleSubmit();
@@ -150,6 +178,9 @@ export function CommentComposer({
       />
 
       <EditorContent editor={editor} />
+
+      {/* @mention suggestion dropdown */}
+      {mentionProps && <MentionList ref={mentionListRef} suggestionProps={mentionProps} />}
 
       {/* Attachment preview */}
       {(attachment || attachLoading) && (

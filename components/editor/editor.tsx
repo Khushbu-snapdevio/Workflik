@@ -1,6 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import type { Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
@@ -26,6 +27,8 @@ import { ImageBlock, VideoBlock, AudioBlock, FileBlock } from "./extensions/medi
 import {
   LinkedPage, InlineDatabase, TemplateButton, TableOfContents, MathBlock, Columns,
 } from "./extensions/reference-blocks";
+import { BlockIdAttr } from "./extensions/block-id-attr";
+import { MentionNode } from "./extensions/mention-node";
 import { SlashCommands } from "./extensions/slash-commands";
 import type { SlashSuggestionProps } from "./extensions/slash-commands";
 import { blocksToTiptapDoc, tiptapDocToBlocks } from "./serializer";
@@ -87,6 +90,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
 
   // Tracks persisted block IDs — updated after every save so we never re-insert existing rows
   const currentBlocksRef = useRef<DbBlock[]>([]);
+  const editorRef        = useRef<Editor | null>(null);
   const saveTimer        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved        = useRef<string>("");
   const lastVersionAt    = useRef<number>(0);
@@ -141,7 +145,43 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
       if (data.blocks) currentBlocksRef.current = data.blocks;
 
       deletedIds.current = [];
-      lastSaved.current  = docStr;
+
+      // Sync server-assigned blockIds back into TipTap nodes so subsequent saves
+      // can match and UPDATE existing DB rows instead of re-inserting them.
+      // Blocks on StarterKit nodes (paragraph, heading, etc.) lose their blockId
+      // attr on creation because TipTap doesn't know about the attr by default;
+      // the BlockIdAttr extension registers it so TipTap preserves it, and this
+      // code stamps the server UUID onto the node after the first save.
+      const ed = editorRef.current;
+      if (data.blocks && ed && !ed.isDestroyed) {
+        const topLevel = data.blocks
+          .filter((b) => !b.parentBlockId)
+          .sort((a, b) => a.orderIndex - b.orderIndex);
+
+        const tr = ed.state.tr.setMeta("addToHistory", false);
+        let nodeIdx = 0;
+        let mutated = false;
+
+        ed.state.doc.forEach((node: import("@tiptap/pm/model").Node, offset: number) => {
+          const block = topLevel[nodeIdx++];
+          if (block?.id && node.attrs && "blockId" in node.attrs && node.attrs.blockId !== block.id) {
+            tr.setNodeMarkup(offset, undefined, { ...node.attrs, blockId: block.id });
+            mutated = true;
+          }
+        });
+
+        if (mutated) {
+          ed.view.dispatch(tr);
+          // Update lastSaved to the post-sync JSON so the onUpdate triggered by
+          // the dispatch above doesn't schedule a redundant re-save.
+          lastSaved.current = JSON.stringify(ed.getJSON());
+        } else {
+          lastSaved.current = docStr;
+        }
+      } else {
+        lastSaved.current = docStr;
+      }
+
       setSaveState("saved");
     } catch {
       setSaveState(navigator.onLine ? "idle" : "offline");
@@ -185,6 +225,8 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
       CommentHighlight,
       // Slash command menu — uses @tiptap/suggestion so the range is always
       // maintained by the ProseMirror plugin (no manual position tracking).
+      BlockIdAttr,
+      MentionNode,
       SlashCommands.configure({
         onUpdate:              (props) => setSlashProps(props),
         onKeyDown:             (event) => slashMenuRef.current?.onKeyDown(event) ?? false,
@@ -207,6 +249,9 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
       saveTimer.current = setTimeout(() => save(e.getJSON()), 1000);
     },
   }, [initialBlocks]);
+
+  // Keep editorRef current so the save callback can dispatch blockId sync transactions
+  useEffect(() => { editorRef.current = editor; }, [editor]);
 
   // Sync editable flag when props change (e.g. page is locked after load)
   useEffect(() => {

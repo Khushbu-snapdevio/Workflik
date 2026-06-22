@@ -3,6 +3,7 @@
 import {
   BookOpenIcon,
   CaretDoubleRightIcon,
+  CaretDownIcon,
   GearIcon,
   HouseIcon,
   MagnifyingGlassIcon,
@@ -49,18 +50,19 @@ type Props = {
 
 const MIN_WIDTH     = 260;
 const MAX_WIDTH     = 480;
-const DEFAULT_WIDTH = 300;
+const DEFAULT_WIDTH = 280;
 
 export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false }: Props) {
   const pathname = usePathname();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [collapsed, setCollapsed] = useState(false);
-  const [filter, setFilter] = useState("");
+  const [filter] = useState("");
   const [pages, setPages] = useState<PageItem[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [recentlyVisited, setRecentlyVisited] = useState<{ id: string; pageId: string; visitedAt: string }[]>([]);
   const [newMenu, setNewMenu] = useState(false);
+  const [pagesExpanded, setPagesExpanded] = useState(true);
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   const newMenuRef = useRef<HTMLDivElement>(null);
 
@@ -439,16 +441,8 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
 
         {/* Page tree with filter */}
         <div className="flex flex-1 flex-col px-2 py-2">
-          <SectionLabel label="Pages">
-            <input
-              className="min-w-0 flex-1 bg-transparent text-xs text-sidebar-foreground placeholder:text-sidebar-foreground/30 focus:outline-none"
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Filter…"
-              type="text"
-              value={filter}
-            />
-          </SectionLabel>
-          <PageTree
+          <SectionLabel label="Pages" expanded={pagesExpanded} onToggle={() => setPagesExpanded(v => !v)} />
+          {pagesExpanded && <PageTree
             favoritePageIds={favoritePageIds}
             filter={filter}
             loading={pagesLoading}
@@ -457,7 +451,7 @@ export function Sidebar({ workspaceId, workspaceSlug, userEmail, isAdmin = false
             pages={pages}
             workspaceId={workspaceId}
             workspaceSlug={workspaceSlug}
-          />
+          />}
         </div>
 
         <div className="mx-2 border-t border-sidebar-border" />
@@ -545,20 +539,21 @@ function NavButton({
 }) {
   return (
     <Link
-      className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-[13px] font-medium transition-colors ${
+      className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-[13px] font-medium transition-all duration-100 ${
         active
-          ? "bg-primary/[0.08] text-foreground font-semibold"
-          : "text-sidebar-foreground/65 hover:bg-primary/[0.04] hover:text-sidebar-foreground"
+          ? "bg-background text-foreground shadow-[var(--shadow-card)]"
+          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
       }`}
       href={href}
     >
-      <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/80"}`}>{icon}</span>
-      <span className="flex-1">{label}</span>
+      <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-muted-foreground/50 group-hover:text-muted-foreground"}`}>{icon}</span>
+      <span className={`flex-1 ${active ? "font-semibold" : ""}`}>{label}</span>
       {shortcut && (
         <kbd className="shrink-0 rounded bg-sidebar-border/50 px-1 py-0.5 text-[10px] font-medium text-sidebar-foreground/35">
           {shortcut}
         </kbd>
       )}
+      {active && <span className="ml-auto flex size-1.5 shrink-0 rounded-full bg-primary" />}
     </Link>
   );
 }
@@ -578,10 +573,10 @@ function CollapsedNavItem({
     <div className="group relative w-full">
       <Link
         href={href}
-        className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] transition-all ${
+        className={`flex size-9 items-center justify-center rounded-[var(--radius-md)] transition-all duration-100 ${
           active
-            ? "bg-primary/[0.10] text-primary"
-            : "text-sidebar-foreground/50 hover:bg-primary/[0.05] hover:text-sidebar-foreground"
+            ? "bg-background text-primary shadow-[var(--shadow-card)]"
+            : "text-muted-foreground/50 hover:bg-muted/50 hover:text-foreground"
         }`}
       >
         {children}
@@ -600,7 +595,7 @@ function CollapsedSearchItem({ label, children }: { label: string; children: Rea
       <button
         type="button"
         onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-        className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/50 transition-all hover:bg-primary/[0.05] hover:text-sidebar-foreground"
+        className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground/50 transition-all duration-100 hover:bg-muted/50 hover:text-foreground"
       >
         {children}
       </button>
@@ -616,28 +611,30 @@ function SearchNavButton({ icon }: { icon: React.ReactNode }) {
     <button
       type="button"
       onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-[7px] text-[13px] font-medium text-sidebar-foreground/65 transition-colors hover:bg-primary/[0.04] hover:text-sidebar-foreground"
+      className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-[13px] font-medium text-muted-foreground transition-all duration-100 hover:bg-muted/50 hover:text-foreground"
     >
-      <span className="shrink-0 text-sidebar-foreground/40">{icon}</span>
+      <span className="shrink-0 text-muted-foreground/50">{icon}</span>
       <span className="flex-1 text-left">Search</span>
       <kbd className="shrink-0 rounded bg-sidebar-border/50 px-1 py-0.5 text-[10px] font-medium text-sidebar-foreground/35">Ctrl+K</kbd>
     </button>
   );
 }
 
-function SectionLabel({
-  label,
-  children,
-}: {
-  label: string;
-  children?: React.ReactNode;
-}) {
+function SectionLabel({ label, expanded, onToggle }: { label: string; expanded?: boolean; onToggle?: () => void }) {
   return (
-    <div className="mb-0.5 flex items-center gap-2 px-2.5">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
-        {label}
-      </span>
-      {children}
-    </div>
+    <button
+      type="button"
+      onClick={onToggle}
+      className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-[13px] font-medium text-muted-foreground transition-all duration-100 hover:bg-muted/50 hover:text-foreground"
+    >
+      <svg className="size-[15px] shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+      </svg>
+      <span className="flex-1 text-left">{label}</span>
+      <CaretDownIcon
+        size={13}
+        className={`shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:text-muted-foreground ${expanded ? "" : "-rotate-90"}`}
+      />
+    </button>
   );
 }

@@ -237,12 +237,10 @@ export function PageTree({
           className="fixed z-[300] w-64 overflow-hidden rounded-[var(--radius-md)] border border-primary/30 shadow-[var(--shadow-raised)]"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
-          {/* Colored header */}
           <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "linear-gradient(135deg, #0284c7, #0ea5e9)" }}>
             <span className="text-xs font-semibold text-white">Pages</span>
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{tree.length} total</span>
           </div>
-          {/* White body */}
           <div className="max-h-72 overflow-y-auto bg-white py-1">
             {tree.map((node) => (
               <Link
@@ -262,7 +260,6 @@ export function PageTree({
               </Link>
             ))}
           </div>
-          {/* Footer */}
           <div className="border-t border-border bg-white px-3 py-2">
             <Link
               href={`/app/${workspaceSlug}/library`}

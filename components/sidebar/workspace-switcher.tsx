@@ -29,7 +29,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
     fetch("/api/workspaces")
       .then((r) => r.json())
       .then((data) => {
-        setWorkspaces(data as Workspace[]);
+        setWorkspaces(Array.isArray(data) ? data : (data?.workspaces ?? []));
         setLoading(false);
       })
       .catch(() => setLoading(false));

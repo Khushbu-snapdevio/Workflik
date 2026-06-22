@@ -83,7 +83,7 @@ export default async function WorkspacePage({ params }: Props) {
     <div className="flex h-full flex-col overflow-hidden bg-background">
 
       {/* ── Hero topbar ── */}
-      <div className="shrink-0 border-b border-border bg-card backdrop-blur-sm">
+      <div className="shrink-0 border-b border-border bg-card">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-6 px-8 py-4">
           <div className="min-w-0">
             <div className="mb-1.5 flex items-center gap-2">
@@ -96,7 +96,7 @@ export default async function WorkspacePage({ params }: Props) {
                 </svg>
                 {ws.name}
               </span>
-              <span className="text-[11.5px] text-muted-foreground/50">{today}</span>
+              <span className="text-[11.5px] text-muted-foreground">{today}</span>
             </div>
             <h1 className="text-[22px] font-black tracking-tight text-foreground leading-tight">
               <WorkspaceGreeting firstName={firstName} />

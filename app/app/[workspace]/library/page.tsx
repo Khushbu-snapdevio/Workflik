@@ -84,7 +84,7 @@ export default async function LibraryPage({ params }: Props) {
     <div className="flex h-full flex-col overflow-hidden bg-background">
 
       {/* ── Topbar — matches page editor breadcrumb style ── */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card/95 px-3 backdrop-blur-sm">
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
           <Link
             href={`/app/${slug}`}

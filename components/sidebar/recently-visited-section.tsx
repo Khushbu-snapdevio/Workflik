@@ -1,6 +1,6 @@
 "use client";
 
-import { ClockIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, ClockIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -27,6 +27,7 @@ type Props = {
 };
 
 export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props) {
+  const [expanded, setExpanded] = useState(true);
   const [popupOpen, setPopupOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -59,56 +60,61 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
 
   return (
     <div className="px-2 py-2">
-      <div className="mb-1 flex items-center gap-2 px-2">
-        <ClockIcon className="text-sidebar-foreground/50" size={11} />
-        <span className="text-2xs font-semibold uppercase tracking-ui text-sidebar-foreground/50">
-          Recently Visited
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-[13px] font-medium text-muted-foreground transition-all duration-100 hover:bg-muted/50 hover:text-foreground"
+      >
+        <ClockIcon size={15} className="shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground" />
+        <span className="flex-1 text-left">Recently Visited</span>
+        <CaretDownIcon
+          size={13}
+          className={`shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:text-muted-foreground ${expanded ? "" : "-rotate-90"}`}
+        />
+      </button>
 
-      {visible.map((item) => {
-        const page = pagesMap[item.pageId];
-        return (
-          <Link
-            key={item.id}
-            href={`/app/${workspaceSlug}/${page.shortId}`}
-            className="flex min-w-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          >
-            {page.icon ? (
-              <span className="shrink-0 text-sm leading-none">{page.icon}</span>
-            ) : (
-              <svg
-                className="size-3 shrink-0 text-sidebar-foreground/30"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                viewBox="0 0 24 24"
+      {expanded && (
+        <>
+          {visible.map((item) => {
+            const page = pagesMap[item.pageId];
+            return (
+              <Link
+                key={item.id}
+                href={`/app/${workspaceSlug}/${page.shortId}`}
+                className="flex min-w-0 items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-muted-foreground transition-all duration-100 hover:bg-muted/50 hover:text-foreground"
               >
-                <path
-                  d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <polyline points="14 2 14 8 20 8" strokeLinecap="round" strokeLinejoin="round" />
+                {page.icon ? (
+                  <span className="shrink-0 text-sm leading-none">{page.icon}</span>
+                ) : (
+                  <svg
+                    className="size-3 shrink-0 text-muted-foreground/30"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points="14 2 14 8 20 8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+                <span className="min-w-0 truncate">{page.title || "Untitled"}</span>
+              </Link>
+            );
+          })}
+          {hasMore && (
+            <button
+              ref={moreRef}
+              type="button"
+              onClick={openPopup}
+              className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-muted-foreground/40 transition-all duration-100 hover:bg-muted/50 hover:text-muted-foreground"
+            >
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-3">
+                <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
               </svg>
-            )}
-            <span className="min-w-0 truncate">{page.title || "Untitled"}</span>
-          </Link>
-        );
-      })}
-
-      {hasMore && (
-        <button
-          ref={moreRef}
-          type="button"
-          onClick={openPopup}
-          className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
-        >
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-3">
-            <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
-          </svg>
-          {resolved.length - VISIBLE_MAX} more
-        </button>
+              {resolved.length - VISIBLE_MAX} more
+            </button>
+          )}
+        </>
       )}
 
       {/* Popup flyout */}
@@ -118,12 +124,10 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
           className="fixed z-[300] w-64 overflow-hidden rounded-[var(--radius-md)] border border-primary/30 shadow-[var(--shadow-raised)]"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
-          {/* Colored header */}
           <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "linear-gradient(135deg, #0284c7, #0ea5e9)" }}>
             <span className="text-xs font-semibold text-white">Recently Visited</span>
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{resolved.length} total</span>
           </div>
-          {/* White body */}
           <div className="max-h-72 overflow-y-auto bg-white py-1">
             {resolved.map((item) => {
               const page = pagesMap[item.pageId];
@@ -146,7 +150,6 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
               );
             })}
           </div>
-          {/* Footer */}
           <div className="border-t border-border bg-white px-3 py-2">
             <Link
               href={`/app/${workspaceSlug}/library`}

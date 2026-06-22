@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { blocks, comments, pages, pageVersions } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import type { Block } from "@/lib/db/schema";
+import { triggerPageUpdateNotification } from "@/lib/notifications/triggers";
 
 const blockUpsertSchema = z.object({
   id:            z.string().uuid().nullable(),   // null = new block
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
 
     const { pageId, blocks: incoming, deletedIds, snapshotEvery } = parsed.data;
 
-    const [page] = await db.select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, title: pages.title })
+    const [page] = await db.select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, title: pages.title, createdBy: pages.createdBy, lastEditedBy: pages.lastEditedBy })
       .from(pages).where(eq(pages.id, pageId)).limit(1);
     if (!page) return apiError(404, "Page not found");
     if (page.isDeleted) return apiError(400, "Page is in Trash");
@@ -82,6 +83,22 @@ export async function POST(req: Request) {
           }).returning({ id: blocks.id });
           savedBlocks.push({ id: inserted.id, pageId, parentBlockId: b.parentBlockId, type: b.type as "paragraph", content: b.content as Record<string, unknown>, orderIndex: b.orderIndex, schemaVersion: b.schemaVersion });
         }
+      }
+
+      // Track last editor and notify page creator when someone else edits.
+      // Only fires on the first save by a new editor (lastEditedBy throttle prevents spam).
+      await tx.update(pages)
+        .set({ lastEditedBy: session.user.id, updatedAt: new Date() })
+        .where(eq(pages.id, pageId));
+
+      if (page.createdBy && session.user.id !== page.createdBy && session.user.id !== page.lastEditedBy) {
+        await triggerPageUpdateNotification(tx, {
+          workspaceId: page.workspaceId,
+          pageId,
+          editorId:  session.user.id,
+          createdBy: page.createdBy,
+          pageTitle: page.title ?? "Untitled",
+        });
       }
 
       // Write page_version snapshot (one per 10-min window per user — caller decides)

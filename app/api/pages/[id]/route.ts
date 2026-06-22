@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { pageClosure, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
+import { triggerTrashWarningNotification } from "@/lib/notifications/triggers";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -99,7 +100,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, kind: pages.kind })
+      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, kind: pages.kind, createdBy: pages.createdBy, title: pages.title })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
@@ -115,7 +116,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       return Response.json({ success: true, deleted: "permanent" });
     }
 
-    // Soft delete — mark this page and all descendants as deleted
+    // Soft delete — mark this page and all descendants as deleted, then notify
     const descendants = await db
       .select({ descendantId: pageClosure.descendantId })
       .from(pageClosure)
@@ -124,10 +125,24 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const descendantIds = descendants.map((d) => d.descendantId);
     const now = new Date();
 
-    await db
-      .update(pages)
-      .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
-      .where(inArray(pages.id, descendantIds));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(pages)
+        .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
+        .where(inArray(pages.id, descendantIds));
+
+      // Notify page creator (and whoever deleted it, if different) that the page
+      // was moved to Trash and will be permanently deleted after 30 days.
+      if (page.createdBy) {
+        await triggerTrashWarningNotification(tx, {
+          workspaceId: page.workspaceId,
+          pageId:      page.id,
+          deletedBy:   session.user.id,
+          createdBy:   page.createdBy,
+          pageTitle:   page.title ?? "Untitled",
+        });
+      }
+    });
 
     return Response.json({ success: true, deleted: "soft" });
   } catch (err) {

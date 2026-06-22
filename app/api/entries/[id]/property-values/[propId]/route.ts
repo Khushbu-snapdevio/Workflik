@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { databaseProperties, pages, propertyValues, workspaceMembers } from "@/lib/db/schema";
+import { triggerTaskAssignedNotification } from "@/lib/notifications/triggers";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; propId: string }> }) {
   const { id: entryId, propId } = await params;
@@ -33,6 +34,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // Update pages.updated_at + lastEditedBy
   await db.update(pages).set({ updatedAt: new Date(), lastEditedBy: session.user.id }).where(eq(pages.id, entryId));
+
+  // Notify the assigned user when a person property is set
+  if (prop.type === "person" && body.value) {
+    const assigneeIds = Array.isArray(body.value) ? body.value as string[] : [body.value as string];
+    for (const assigneeId of assigneeIds) {
+      if (typeof assigneeId === "string" && assigneeId !== session.user.id) {
+        await db.transaction(async (tx) => {
+          await triggerTaskAssignedNotification(tx, {
+            workspaceId: entry.workspaceId,
+            pageId:      entryId,
+            assignerId:  session.user.id,
+            assigneeId,
+            entryTitle:  entry.title ?? "Untitled",
+          });
+        });
+      }
+    }
+  }
 
   return Response.json(val);
 }

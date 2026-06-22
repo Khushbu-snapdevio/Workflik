@@ -27,7 +27,7 @@ function AuthFormInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, isPending } = useSession();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("hint") ?? "");
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -101,12 +101,26 @@ function AuthFormInner() {
                   onClick={async () => {
                     setGoogleLoading(true);
                     setError(null);
-                    const result = await signIn.social({
-                      provider: "google",
-                      callbackURL: "/platform/post-auth",
-                    });
-                    if (result?.error) {
-                      setError(result.error.message ?? "Google sign-in failed.");
+                    try {
+                      // disableRedirect=true returns the OAuth URL instead of
+                      // auto-redirecting, so we can append prompt=select_account
+                      // to force the Google account picker every time.
+                      const result = await signIn.social({
+                        provider: "google",
+                        callbackURL: "/platform/post-auth",
+                        disableRedirect: true,
+                      });
+                      if (result?.error) {
+                        setError(result.error.message ?? "Google sign-in failed.");
+                        return;
+                      }
+                      const rawUrl = (result?.data as { url?: string } | null)?.url;
+                      if (rawUrl) {
+                        const url = new URL(rawUrl);
+                        url.searchParams.set("prompt", "select_account");
+                        window.location.href = url.toString();
+                      }
+                    } finally {
                       setGoogleLoading(false);
                     }
                   }}

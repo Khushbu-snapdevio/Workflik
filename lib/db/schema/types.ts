@@ -43,6 +43,7 @@ export const guestAccessLevel = pgEnum("guest_access_level", ["can_view", "can_c
 export const notificationType = pgEnum("notification_type", [
   "mention", "comment", "reply", "resolved", "reopened",
   "access_granted", "workspace_invite", "guest_accepted", "trash_warning",
+  "page_update", "task_assigned",
 ]);
 export const emailFrequency = pgEnum("email_frequency", ["realtime", "daily", "weekly", "off"]);
 export const emailOutboxStatus = pgEnum("email_outbox_status", ["queued", "sending", "sent", "failed"]);

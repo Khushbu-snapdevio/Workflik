@@ -50,6 +50,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
   const [inviting,  setInviting] = useState(false);
   const [inviteErr, setInviteErr] = useState("");
   const [busy,      setBusy]     = useState<string | null>(null);
+  const [actionErr, setActionErr] = useState("");
 
   const active  = members.filter(m => m.status === "active");
   const invited = members.filter(m => m.status === "invited");
@@ -69,38 +70,43 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
   }
 
   async function changeRole(userId: string, newRole: "editor"|"viewer") {
-    setBusy(userId);
+    setBusy(userId); setActionErr("");
     try {
       const r = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: newRole }),
       });
       if (r.ok) setMembers(prev => prev.map(m => m.userId === userId ? { ...m, role: newRole } : m));
-    } catch { /* no-op */ }
+      else { const d = await r.json().catch(() => ({})); setActionErr((d as { error?: string }).error ?? "Failed to update role"); }
+    } catch { setActionErr("Network error"); }
     finally { setBusy(null); }
   }
 
   async function remove(userId: string) {
-    setBusy(userId);
+    setBusy(userId); setActionErr("");
     try {
       const r = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, { method: "DELETE" });
       if (r.ok) setMembers(prev => prev.filter(m => m.userId !== userId));
-    } catch { /* no-op */ }
+      else { const d = await r.json().catch(() => ({})); setActionErr((d as { error?: string }).error ?? "Failed to remove member"); }
+    } catch { setActionErr("Network error"); }
     finally { setBusy(null); }
   }
 
   async function cancelInvite(id: string) {
-    setBusy(id);
+    setBusy(id); setActionErr("");
     try {
       const r = await fetch(`/api/workspaces/${workspaceId}/invitations/${id}`, { method: "DELETE" });
       if (r.ok) setMembers(prev => prev.filter(m => m.id !== id));
-    } catch { /* no-op */ }
+      else { const d = await r.json().catch(() => ({})); setActionErr((d as { error?: string }).error ?? "Failed to cancel invite"); }
+    } catch { setActionErr("Network error"); }
     finally { setBusy(null); }
   }
 
   async function resend(id: string) {
-    setBusy(`resend-${id}`);
-    try { await fetch(`/api/workspaces/${workspaceId}/invitations/${id}/resend`, { method: "POST" }); }
-    catch { /* no-op */ }
+    setBusy(`resend-${id}`); setActionErr("");
+    try {
+      const r = await fetch(`/api/workspaces/${workspaceId}/invitations/${id}/resend`, { method: "POST" });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); setActionErr((d as { error?: string }).error ?? "Failed to resend invite"); }
+    } catch { setActionErr("Network error"); }
     finally { setBusy(null); }
   }
 
@@ -165,6 +171,13 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
             )}
           </div>
         </div>
+      )}
+
+      {actionErr && (
+        <p className="mb-4 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-red-50 px-3 py-2 text-xs text-red-600">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-3.5 shrink-0"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5V7"/><circle cx="7" cy="9.5" r=".5" fill="currentColor"/></svg>
+          {actionErr}
+        </p>
       )}
 
       {/* ── Active members ── */}

@@ -44,7 +44,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`relative flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+        className={`relative flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium transition-colors ${
           open
             ? "bg-primary/10 text-primary"
             : "text-muted-foreground hover:bg-accent hover:text-foreground"

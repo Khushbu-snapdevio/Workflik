@@ -158,7 +158,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
                 <span className={[
                   "inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
                   filterLogic === "or"
-                    ? "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
+                    ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
                     : "bg-primary/10 text-primary",
                 ].join(" ")}>
                   {filterLogic}

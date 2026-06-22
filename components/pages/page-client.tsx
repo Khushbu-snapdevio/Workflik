@@ -121,7 +121,7 @@ export function PageClient({
 
       {/* ── Cover ── */}
       {coverUrl && (
-        <div className="group/cover relative h-[240px] w-full shrink-0 overflow-hidden bg-muted">
+        <div className="group/cover relative h-[300px] w-full shrink-0 overflow-hidden bg-muted">
           <div
             className="absolute inset-0 bg-cover bg-center transition-all duration-300"
             style={{

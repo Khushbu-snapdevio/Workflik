@@ -976,6 +976,14 @@ export function TemplatePageClient({
     if (saved !== null) setPageDescription(saved);
   }, [descKey]);
 
+  useEffect(() => {
+    if (editingDescription && descRef.current) {
+      const el = descRef.current;
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [editingDescription]);
+
   function saveDescription(val: string) {
     setPageDescription(val);
     localStorage.setItem(descKey, val);
@@ -1416,7 +1424,7 @@ export function TemplatePageClient({
 
       {/* Cover */}
       {pageCoverUrl && (
-        <div className="group/cover relative h-[180px] w-full shrink-0">
+        <div className="group/cover relative h-[300px] w-full shrink-0">
           {isCoverGradient
             ? <div className="h-full w-full" style={{ background: pageCoverUrl }} />
             // eslint-disable-next-line @next/next/no-img-element
@@ -1543,13 +1551,18 @@ export function TemplatePageClient({
             ref={descRef}
             autoFocus
             defaultValue={pageDescription}
-            rows={2}
+            rows={1}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = el.scrollHeight + "px";
+            }}
             onBlur={(e) => saveDescription(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Escape") saveDescription((e.target as HTMLTextAreaElement).value);
             }}
             placeholder="Add a description…"
-            className="mt-1.5 w-full resize-none bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+            className="mt-1.5 w-full resize-none overflow-hidden bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
           />
         ) : (
           <p

@@ -130,7 +130,7 @@ export function DatabaseToolbar({
   if (selectedCount > 0) {
     return (
       <>
-        <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-primary/5 px-4 backdrop-blur-sm">
+        <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-primary/5 px-4">
           <button
             onClick={onClearSelection}
             className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

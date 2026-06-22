@@ -102,7 +102,7 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
     <div className="flex flex-1 flex-col overflow-hidden">
 
       {/* ── Tabs + search row ── */}
-      <div className="shrink-0 border-b border-border bg-card/60 backdrop-blur-sm">
+      <div className="shrink-0 border-b border-border bg-card">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-8">
           <div className="flex items-center">
             {TABS.map((t) => (

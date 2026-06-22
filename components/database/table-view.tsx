@@ -153,7 +153,7 @@ export function TableView({
       <div style={{ minWidth: totalW, paddingRight: 32 }}>
 
         {/* ═══════════ HEADER ═══════════ */}
-        <div className="sticky top-0 z-20 flex items-stretch db-header-b bg-card border-b border-border/60 backdrop-blur-sm shadow-[0_1px_0_rgba(0,0,0,0.06)]">
+        <div className="sticky top-0 z-20 flex items-stretch db-header-b bg-card border-b border-border/60 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
           {/* Checkbox / select-all */}
           <div
             className="flex shrink-0 items-center justify-center bg-muted/30"

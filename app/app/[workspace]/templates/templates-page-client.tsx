@@ -34,7 +34,7 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Topbar */}
-      <div className="shrink-0 border-b border-border bg-card/95 backdrop-blur-sm">
+      <div className="shrink-0 border-b border-border bg-card">
         <div className="mx-auto flex w-full max-w-[1380px] items-center justify-between px-8 py-3">
           <div>
             <h1 className="text-[18px] font-bold tracking-tight text-foreground">Templates</h1>

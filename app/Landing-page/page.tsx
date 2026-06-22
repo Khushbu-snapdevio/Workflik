@@ -488,7 +488,7 @@ export default async function HomePage() {
           </ScrollReveal>
 
           <div className="relative grid gap-10 sm:grid-cols-4">
-            <div className="absolute left-[12.5%] right-[12.5%] top-5 hidden h-px bg-gradient-to-r from-transparent via-border to-transparent sm:block" />
+            <div className="absolute left-[12.5%] right-[12.5%] top-[22px] hidden h-px bg-border sm:block" />
 
             {STEPS.map((s, i) => (
               <ScrollReveal key={s.step} delay={i * 80} className="flex flex-col items-center text-center">

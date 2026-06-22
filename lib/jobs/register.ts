@@ -21,6 +21,8 @@ export async function registerHandlers(boss: PgBoss) {
     { handleWorkspaceDelete },
     { handleExpireInvitations },
     { handleNotifyStorageThreshold },
+    { handleWorkspaceInviteSend },
+    { handleGuestInviteSend },
   ] = await Promise.all([
     import("@/lib/jobs/handlers/email-send"),
     import("@/lib/jobs/handlers/email-outbox-reap"),
@@ -38,6 +40,8 @@ export async function registerHandlers(boss: PgBoss) {
     import("@/lib/jobs/handlers/delete-workspace"),
     import("@/lib/jobs/handlers/expire-invitations"),
     import("@/lib/jobs/handlers/notify-storage-threshold"),
+    import("@/lib/jobs/handlers/send-workspace-invite"),
+    import("@/lib/jobs/handlers/send-guest-invite"),
   ]);
 
   await Promise.all([
@@ -57,6 +61,8 @@ export async function registerHandlers(boss: PgBoss) {
     boss.work(JOB_NAMES.WORKSPACE_DELETE,                      { includeMetadata: true }, handleWorkspaceDelete),
     boss.work(JOB_NAMES.EXPIRE_INVITATIONS,                    { includeMetadata: true }, handleExpireInvitations),
     boss.work(JOB_NAMES.NOTIFY_STORAGE_THRESHOLD,              { includeMetadata: true }, handleNotifyStorageThreshold),
+    boss.work(JOB_NAMES.WORKSPACE_INVITE_SEND,                 { includeMetadata: true }, handleWorkspaceInviteSend),
+    boss.work(JOB_NAMES.GUEST_INVITE_SEND,                     { includeMetadata: true }, handleGuestInviteSend),
   ]);
 
   // Scheduled cron jobs

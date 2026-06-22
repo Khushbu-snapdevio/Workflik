@@ -16,6 +16,7 @@ export const JOB_NAMES = {
   WORKSPACE_DELETE:               "workspace.delete",
   EXPIRE_INVITATIONS:             "workspace.expire-invitations",
   NOTIFY_STORAGE_THRESHOLD:       "storage.notify-threshold",
+  GUEST_INVITE_SEND:              "guest.invite-send",
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];
@@ -48,6 +49,15 @@ export interface WorkspaceDeletePayload {
   workspaceId: string;
 }
 
+export interface GuestInviteSendPayload {
+  invitationId: string;
+  email:        string;
+  pageTitle:    string;
+  inviterName:  string;
+  inviteToken:  string;
+  accessLevel:  string;
+}
+
 export type JobPayloads = {
   [JOB_NAMES.EMAIL_OUTBOX_REAP]:                    Record<string, never>;
   [JOB_NAMES.EMAIL_SEND]:                           EmailSendPayload;
@@ -66,4 +76,5 @@ export type JobPayloads = {
   [JOB_NAMES.WORKSPACE_DELETE]:                     WorkspaceDeletePayload;
   [JOB_NAMES.EXPIRE_INVITATIONS]:                   Record<string, never>;
   [JOB_NAMES.NOTIFY_STORAGE_THRESHOLD]:             Record<string, never>;
+  [JOB_NAMES.GUEST_INVITE_SEND]:                    GuestInviteSendPayload;
 };

@@ -2,7 +2,9 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
-import { guestInvitations, pages } from "@/lib/db/schema";
+import { guestInvitations, pages, users } from "@/lib/db/schema";
+import { enqueueJob } from "@/lib/jobs/enqueue";
+import { JOB_NAMES } from "@/lib/jobs/job-names";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 import { requirePagePermission } from "@/lib/permissions/resolver";
 
@@ -20,7 +22,7 @@ export async function POST(req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const [page] = await db
-      .select({ workspaceId: pages.workspaceId })
+      .select({ workspaceId: pages.workspaceId, title: pages.title })
       .from(pages)
       .where(eq(pages.id, pageId))
       .limit(1);
@@ -76,7 +78,20 @@ export async function POST(req: Request, { params }: Ctx) {
       })
       .returning();
 
-    // TODO Phase 13: enqueue guest invitation email via pg-boss
+    const [inviter] = await db
+      .select({ name: users.name, email: users.email })
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1);
+
+    await enqueueJob(JOB_NAMES.GUEST_INVITE_SEND, {
+      invitationId: invitation.id,
+      email:        email,
+      pageTitle:    page.title || "Untitled",
+      inviterName:  inviter?.name ?? inviter?.email ?? "A teammate",
+      inviteToken:  invitation.token,
+      accessLevel:  accessLevel,
+    });
 
     return Response.json({ ok: true, invitation });
   } catch (err) {

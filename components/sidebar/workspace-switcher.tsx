@@ -33,7 +33,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (showJoin) {

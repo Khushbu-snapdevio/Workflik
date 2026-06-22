@@ -185,7 +185,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
         <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">Members</p>
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
           {active.map((m, i) => {
-            const display    = m.userName ?? m.userEmail ?? m.invitedEmail ?? "Unknown";
+            const display    = m.userName?.trim() || m.userEmail?.trim() || m.invitedEmail?.trim() || "Unknown";
             const isMe       = m.userId === currentUserId;
             const isAdminRow = m.role === "admin";
             const style      = ROLE_STYLES[m.role] ?? ROLE_STYLES.viewer!;
@@ -193,7 +193,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
               <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < active.length - 1 ? "border-b border-border/40" : ""}`}>
                 {m.userImage
                   ? <img src={m.userImage} alt={display} className="size-9 rounded-full object-cover ring-2 ring-white shadow-[var(--shadow-card)] shrink-0" />
-                  : <div className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-white shadow-[var(--shadow-card)]" style={{ background: avatarColor(display) }}>{display.slice(0,2).toUpperCase()}</div>
+                  : <div className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-2 ring-white shadow-[var(--shadow-card)]" style={{ background: avatarColor(display) }}>{(()=>{const w=display.split(/[\s._@-]+/).filter(Boolean);return(w.length>=2?w[0][0]!+w[w.length-1][0]!:display.slice(0,2)).toUpperCase();})()}</div>
                 }
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

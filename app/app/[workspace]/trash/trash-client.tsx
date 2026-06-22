@@ -101,7 +101,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
     <div className="flex flex-1 flex-col overflow-hidden">
 
       {/* ── Topbar ── */}
-      <div className="shrink-0 border-b border-border bg-card/95 backdrop-blur-sm">
+      <div className="shrink-0 border-b border-border bg-card">
         <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-8 py-3">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-red-50">

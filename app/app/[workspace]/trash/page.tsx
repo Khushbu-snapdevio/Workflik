@@ -55,7 +55,7 @@ export default async function TrashPage({ params }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       {/* Top bar */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-background px-4">
         <nav className="flex items-center gap-0.5 text-xs">
           <Link
             href={`/app/${slug}`}

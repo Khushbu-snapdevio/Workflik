@@ -246,7 +246,7 @@ export function PageActionsMenu({
        <div className="mx-2 my-1 border-t border-border" />
 
        <div className="px-3 pb-0.5 pt-1">
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Export</p>
+        <p className="mb-1 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground">Export</p>
        </div>
        {(["markdown", "html", "pdf"] as const).map((fmt) => (
         <button

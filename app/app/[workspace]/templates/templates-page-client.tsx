@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Search, X, ArrowLeft, ArrowRight,
+  Search, X, ArrowLeft, ArrowRight, ChevronRight,
   LayoutGrid, Zap, BarChart2, Megaphone, Code2, DollarSign,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -151,65 +151,72 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
 
-      {/* ── Page header ────────────────────────────────────────────────────────── */}
-      <div className="shrink-0 border-b border-border bg-background px-6 py-5">
+      {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
+      <div className="flex h-11 shrink-0 items-center border-b border-border/60 bg-card px-3">
         {selected ? (
-          <div className="flex items-center gap-3">
+          <nav className="flex min-w-0 items-center gap-0.5 text-xs">
             <button
               type="button"
               onClick={() => setSelected(null)}
-              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
             >
-              <ArrowLeft size={13} />
-              Templates
+              <LayoutGrid size={13} className="shrink-0" />
+              <span className="font-medium">Templates</span>
             </button>
-            <div className="h-4 w-px bg-border" />
-            <h1 className="text-base font-semibold text-foreground">{selected.name}</h1>
-          </div>
+            <ChevronRight size={12} className="shrink-0 text-muted-foreground/30" />
+            <span className="min-w-0 truncate px-1 font-medium text-foreground">{selected.name}</span>
+          </nav>
         ) : (
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Templates</h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">Pick a starting point for your next page or database.</p>
-          </div>
+          <nav className="flex min-w-0 items-center gap-0.5 text-xs">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground">
+              <LayoutGrid size={13} className="shrink-0" />
+              <span className="font-medium text-foreground">Templates</span>
+            </span>
+            <span className="text-muted-foreground/30">·</span>
+            <span className="truncate px-1 text-muted-foreground/60">Pick a starting point for your next page or database</span>
+          </nav>
         )}
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1">
 
-        {/* ── Category sidebar ── */}
-        <aside className="flex w-56 shrink-0 flex-col border-r border-border px-3 py-4">
-          <p className="mb-2 px-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-            Categories
-          </p>
-          <nav className="flex flex-col gap-px">
-            {CATEGORIES.map(cat => {
-              const cnt      = countForTab(cat.key);
-              const isActive = activeTab === cat.key;
-              const CatIcon  = cat.Icon;
-              return (
-                <button
-                  key={cat.key}
-                  type="button"
-                  onClick={() => handleCategoryClick(cat.key)}
-                  className={[
-                    "flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors duration-150",
-                    isActive
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  ].join(" ")}
-                >
-                  <CatIcon size={13} className={`shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  <span className="flex-1 truncate text-xs font-medium">{cat.label}</span>
-                  {cnt > 0 && (
-                    <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
-                      {cnt}
+        {/* ── Category sidebar — mirrors settings-nav.tsx exactly ── */}
+        <aside className="flex w-[240px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
+          <div className="flex-1 overflow-y-auto px-2.5 py-3">
+            <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/40">
+              Categories
+            </p>
+            <div className="space-y-0.5">
+              {CATEGORIES.map(cat => {
+                const cnt      = countForTab(cat.key);
+                const isActive = activeTab === cat.key;
+                const CatIcon  = cat.Icon;
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => handleCategoryClick(cat.key)}
+                    className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-left text-[13px] font-medium transition-colors duration-150 ${
+                      isActive
+                        ? "bg-primary/[0.08] text-primary"
+                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    }`}
+                  >
+                    <span className={`shrink-0 transition-colors duration-150 ${isActive ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60"}`}>
+                      <CatIcon size={14} />
                     </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+                    <span className={`min-w-0 flex-1 truncate ${isActive ? "font-semibold" : ""}`}>{cat.label}</span>
+                    {cnt > 0 && (
+                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {cnt}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </aside>
 
         {/* ── Main panel ── */}
@@ -256,44 +263,45 @@ function GalleryView({
     <div className="flex min-h-0 flex-1 flex-col">
 
       {/* Search bar */}
-      <div className="shrink-0 px-6 py-4">
-        <div className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-background px-3 py-2">
-          <Search size={14} className="shrink-0 text-muted-foreground/50" />
+      <div className="shrink-0 border-b border-border/60 px-5 py-2.5">
+        <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
+          <Search size={13} className="shrink-0 text-muted-foreground/50" />
           <input
             ref={searchRef}
             type="text"
             value={search}
             onChange={e => onSearch(e.target.value)}
             placeholder="Search templates…"
-            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+            className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
           />
           {search && (
             <button
               type="button"
               onClick={() => onSearch("")}
               aria-label="Clear search"
-              className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              className="flex size-4 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-muted-foreground transition-colors duration-150 hover:bg-muted-foreground/30"
             >
-              <X size={11} />
+              <X size={9} />
             </button>
           )}
         </div>
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-y-auto px-6 pb-8">
+      <div className="flex-1 overflow-y-auto px-5 pb-8 pt-5">
         {loading ? (
           <GallerySkeleton />
         ) : empty ? (
           <EmptyState />
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-7">
             {filteredBuiltIn.length > 0 && (
               <section>
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                  WorkFlik templates
-                </p>
-                <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <p className="text-[11px] font-medium tracking-[0.125px] text-muted-foreground/50">Workflik templates</p>
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">{filteredBuiltIn.length}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredBuiltIn.map(tpl => (
                     <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} />
                   ))}
@@ -302,10 +310,11 @@ function GalleryView({
             )}
             {filteredWorkspace.length > 0 && (
               <section>
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                  Workspace templates
-                </p>
-                <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <p className="text-[11px] font-medium tracking-[0.125px] text-muted-foreground/50">Workspace templates</p>
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">{filteredWorkspace.length}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredWorkspace.map(tpl => (
                     <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} />
                   ))}
@@ -371,7 +380,7 @@ function DetailView({
             <DbSchemaPreview schema={selected.pageSnapshot.database_schema} />
           ) : blocks.length > 0 ? (
             <div className="mt-5">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+              <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
                 Includes
               </p>
               <div className="space-y-1 rounded-[var(--radius-md)] border border-border/60 bg-muted/30 p-3">
@@ -454,15 +463,22 @@ function DetailView({
 const MINI_WIDTHS = ["w-4/5", "w-3/5", "w-3/4", "w-1/2", "w-11/12", "w-2/3", "w-5/6"] as const;
 
 function TemplateCard({ template, onSelect }: { template: Template; onSelect: () => void }) {
+  const catDef  = CATEGORIES.find(c => c.key === template.category);
+  const CatIcon = catDef?.Icon ?? LayoutGrid;
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-card text-left shadow-sm transition-all duration-150 hover:border-primary/30 hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
     >
       <TemplateCardThumbnail template={template} />
-      <div className="border-t border-border/50 px-3.5 py-3">
-        <p className="truncate text-[13px] font-semibold text-foreground">{template.name}</p>
+      <div className="px-3.5 py-3">
+        <div className="flex items-start justify-between gap-2">
+          <p className="truncate text-[13px] font-semibold text-foreground">{template.name}</p>
+          <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <CatIcon size={9} />
+          </span>
+        </div>
         {template.description && (
           <p className="mt-0.5 line-clamp-2 text-[11.5px] leading-relaxed text-muted-foreground/60">
             {template.description}
@@ -483,7 +499,7 @@ function TemplateCardThumbnail({ template }: { template: Template }) {
   const CatIcon = catDef?.Icon ?? LayoutGrid;
 
   return (
-    <div className="relative h-44 overflow-hidden border-b border-border/40 bg-muted/20">
+    <div className="relative h-44 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
       <div className="p-3">
         {/* Icon indicator row */}
         <div className="mb-2.5 flex items-center gap-1.5">
@@ -771,7 +787,7 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
   return (
     <div className="mt-5 space-y-4">
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+        <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -791,7 +807,7 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
         </div>
       </div>
       <div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+        <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
           Properties ({schema.properties.length})
         </p>
         <div className="divide-y divide-border/40 rounded-[var(--radius-md)] border border-border/60 bg-muted/30">

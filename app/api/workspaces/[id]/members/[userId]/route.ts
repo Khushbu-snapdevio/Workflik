@@ -8,6 +8,7 @@ import {
   getSession,
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ id: string; userId: string }> };
 
@@ -57,6 +58,14 @@ export async function PATCH(req: Request, { params }: Ctx) {
       )
       .returning();
 
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "member.role_changed",
+      targetType: "workspace",
+      targetId:   id,
+      metadata:   { targetUserId: userId, previousRole: target.role, newRole: parsed.data.role },
+    });
+
     return Response.json(updated);
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
@@ -105,6 +114,14 @@ export async function DELETE(_req: Request, { params }: Ctx) {
         .update(workspaces)
         .set({ inviteLinkToken: crypto.randomUUID(), updatedAt: new Date() })
         .where(eq(workspaces.id, id));
+    });
+
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "member.removed",
+      targetType: "workspace",
+      targetId:   id,
+      metadata:   { targetUserId: userId, previousRole: target.role },
     });
 
     return new Response(null, { status: 204 });

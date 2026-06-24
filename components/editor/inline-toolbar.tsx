@@ -49,7 +49,7 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
             placeholder="Paste link…"
             className="h-6 w-48 rounded-[var(--radius-sm)] border border-border bg-background px-2 text-xs outline-none"
           />
-          <button type="button" onClick={applyLink} className="text-xs font-semibold text-foreground transition-colors duration-150 hover:text-muted-foreground">
+          <button type="button" onClick={applyLink} className="text-xs font-medium text-foreground transition-colors duration-150 hover:text-muted-foreground">
             Apply
           </button>
         </div>

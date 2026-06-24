@@ -32,7 +32,7 @@ function MediaPicker({
 
  return (
   <div className="my-2 space-y-3 rounded-[var(--radius-md)] border border-border bg-muted/30 p-4">
-   <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+   <p className="text-xs font-semibold tracking-[0.125px] text-muted-foreground">
     {icon} {label}
    </p>
 

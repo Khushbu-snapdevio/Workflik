@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
 import { uniqueSlug } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 export async function createWorkspaceAction(formData: FormData) {
   const session = await requireSession();
@@ -33,6 +34,14 @@ export async function createWorkspaceAction(formData: FormData) {
     });
 
     return ws;
+  });
+
+  await writeAuditLog({
+    actorId:    session.user.id,
+    action:     "workspace.created",
+    targetType: "workspace",
+    targetId:   workspace.id,
+    metadata:   { name: workspace.name, slug: workspace.slug, kind: workspace.kind },
   });
 
   redirect(`/app/workspaces/setup/${workspace.slug}`);

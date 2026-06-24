@@ -4,8 +4,6 @@
 @import "katex/dist/katex.min.css";
 @plugin "@tailwindcss/typography";
 
-@custom-variant dark (&:is(.dark *));
-
 * {
   box-sizing: border-box;
 }
@@ -24,7 +22,7 @@ body {
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
+  --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono);
 
   /* Typography scale */
@@ -143,54 +141,19 @@ body {
   --sidebar-accent-foreground:  #0284C7;
   --sidebar-border:             #E2EDF5;
   --sidebar-ring:               #0284C7;
-}
 
-.dark {
-  --page: #0A1628;
-  --primary-hover:        #38BDF8;
+  /* ── Syntax highlight tokens (light theme) ───────────────────────────── */
+  --syntax-keyword:  var(--primary);
+  --syntax-string:   var(--success);
+  --syntax-number:   color-mix(in srgb, var(--success) 80%, var(--foreground));
+  --syntax-comment:  var(--muted-foreground);
+  --syntax-function: color-mix(in srgb, var(--warning) 85%, var(--foreground));
+  --syntax-type:     color-mix(in srgb, var(--primary) 50%, var(--success));
+  --syntax-variable: color-mix(in srgb, var(--foreground) 90%, var(--primary));
+  --syntax-tag:      var(--destructive);
+  --syntax-meta:     var(--muted-foreground);
 
-  --success:              #10B981;
-  --success-foreground:   #D1FAE5;
-  --success-subtle:       #064E3B;
-  --success-light:        #6EE7B7;
-  --warning:              #F59E0B;
-  --destructive:          #EF4444;
-
-  --shadow-card:   0 1px 3px rgba(0,0,0,0.20), 0 1px 2px rgba(0,0,0,0.14);
-  --shadow-raised: 0 4px 12px rgba(0,0,0,0.28), 0 2px 4px rgba(0,0,0,0.18);
-  --shadow-float:  0 8px 24px rgba(0,0,0,0.36), 0 2px 8px rgba(0,0,0,0.22);
-
-  --background:           #0A1628;
-  --foreground:           #E0F2FE;
-  --card:                 #0F2236;
-  --card-foreground:      #E0F2FE;
-  --popover:              #0F2236;
-  --popover-foreground:   #E0F2FE;
-  --primary:              #38BDF8;
-  --primary-foreground:   #082F49;
-  --secondary:            #0F2236;
-  --secondary-foreground: #BAE6FD;
-  --muted:                #0F2236;
-  --muted-foreground:     #7DD3FC;
-  --accent:               #0F2236;
-  --accent-foreground:    #38BDF8;
-  --border:               #1E3A5F;
-  --input:                #1E3A5F;
-  --ring:                 #38BDF8;
-  --chart-1: #38BDF8;
-  --chart-2: #0EA5E9;
-  --chart-3: #0284C7;
-  --chart-4: #7DD3FC;
-  --chart-5: #0F2236;
-
-  --sidebar:                    #0F2236;
-  --sidebar-foreground:         #E0F2FE;
-  --sidebar-primary:            #38BDF8;
-  --sidebar-primary-foreground: #082F49;
-  --sidebar-accent:             #0A1628;
-  --sidebar-accent-foreground:  #BAE6FD;
-  --sidebar-border:             #1E3A5F;
-  --sidebar-ring:               #38BDF8;
+  color-scheme: light;
 }
 
 @layer base {
@@ -201,6 +164,7 @@ body {
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv05" 1, "cv08" 1, "cv10" 1, "ss01" 1;
   }
   html {
     @apply font-sans;
@@ -219,35 +183,37 @@ body {
   }
   /* ── Typography uniformity ───────────────────────── */
 
-  /* Base — all UI text */
+  /* Base — all UI text uses Inter with lining numerals + localized forms */
   body, button, input, textarea, select {
-    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "lnum" 1, "locl" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
   }
 
-  /* Headings — tighter tracking, consistent weight */
+  /* Headings — Notion scale: tight tracking, 700 weight */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
+    line-height: 1.2;
     letter-spacing: -0.025em;
-    line-height: 1.25;
   }
-  h1 { font-size: 1.875rem; font-weight: 800; letter-spacing: -0.03em; }
-  h2 { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.025em; }
-  h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; }
-  h4 { font-size: 1rem;     font-weight: 600; letter-spacing: -0.015em; }
+  h1 { font-size: 2.5rem;   font-weight: 700; letter-spacing: -0.025em; line-height: 1.1;  }
+  h2 { font-size: 1.625rem; font-weight: 700; letter-spacing: -0.024em; line-height: 1.23; }
+  h3 { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.011em; line-height: 1.27; }
+  h4 { font-size: 1.25rem;  font-weight: 600; letter-spacing: -0.006em; line-height: 1.4;  }
+  h5 { font-size: 1rem;     font-weight: 600; letter-spacing: -0.003em; line-height: 1.4;  }
+  h6 { font-size: 0.875rem; font-weight: 600; letter-spacing: 0;        line-height: 1.4;  }
 
   /* Body / paragraph */
-  p { line-height: 1.65; letter-spacing: -0.005em; }
+  p { line-height: 1.5; letter-spacing: 0; }
 
   /* Small UI labels — sidebar, tabs, breadcrumbs */
   label, caption {
     font-size: 0.75rem;
     font-weight: 500;
-    letter-spacing: -0.005em;
+    letter-spacing: 0;
   }
 
   /* Code & mono */
@@ -279,15 +245,15 @@ body {
     outline-offset: 2px;
     border-radius: 4px;
   }
-  /* Scrollbar — thin, Slate tinted */
+  /* Scrollbar — thin, design-system tinted */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
+    background: var(--border);
     border-radius: 99px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
-  * { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 }
 
 /* ── Button hover effects ────────────────────────────────────────────────── */
@@ -320,22 +286,44 @@ body {
   outline: none;
   box-shadow: none;
   word-break: break-word;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--foreground);
+  font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "lnum" 1, "locl" 1;
 }
 
 /* Headings */
-.ProseMirror h1 { font-size: 2rem;    font-weight: 800; line-height: 1.2;  letter-spacing: -0.03em;  margin: 1.5rem 0 0.5rem; }
-.ProseMirror h2 { font-size: 1.5rem;  font-weight: 700; line-height: 1.25; letter-spacing: -0.025em; margin: 1.25rem 0 0.5rem; }
-.ProseMirror h3 { font-size: 1.2rem;  font-weight: 600; line-height: 1.3;  letter-spacing: -0.02em;  margin: 1rem 0 0.5rem; }
+.ProseMirror h1 { font-size: 2rem;    font-weight: 700; line-height: 1.15; letter-spacing: -0.02em;  margin: 1.75rem 0 0.35rem; color: var(--foreground); }
+.ProseMirror h2 { font-size: 1.5rem;  font-weight: 700; line-height: 1.25; letter-spacing: -0.018em; margin: 1.4rem  0 0.25rem; color: var(--foreground); }
+.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.3;  letter-spacing: -0.01em;  margin: 1.2rem  0 0.2rem;  color: var(--foreground); }
 
 /* Paragraph */
-.ProseMirror p  { margin: 0.25rem 0; line-height: 1.65; }
+.ProseMirror p { margin: 0.15rem 0; line-height: 1.6; }
 
-/* Lists */
-.ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
-.ProseMirror li { margin: 0.2rem 0; line-height: 1.65; }
+/* Bullet list */
+.ProseMirror ul:not([data-type="taskList"]) {
+  list-style: none;
+  padding-left: 1.5rem;
+  margin: 0.35rem 0;
+}
+.ProseMirror ul:not([data-type="taskList"]) > li {
+  position: relative;
+  margin: 0.15rem 0;
+  line-height: 1.6;
+}
+.ProseMirror ul:not([data-type="taskList"]) > li::before {
+  content: "";
+  position: absolute;
+  left: -1.15rem;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.45;
+}
 
-/* Ordered lists — use a shared CSS counter so consecutive sibling <ol> elements
-   (each being one numbered block in our DB model) continue numbering: 1. 2. 3. … */
+/* Ordered lists */
 .ProseMirror { counter-reset: ol-counter; }
 .ProseMirror > :not(ol) { counter-reset: ol-counter; }
 .ProseMirror > ol {
@@ -346,8 +334,8 @@ body {
 .ProseMirror > ol > li {
   counter-increment: ol-counter;
   position: relative;
-  margin: 0.2rem 0;
-  line-height: 1.65;
+  margin: 0.15rem 0;
+  line-height: 1.6;
 }
 .ProseMirror > ol > li::before {
   content: counter(ol-counter) ".";
@@ -356,8 +344,10 @@ body {
   width: 1.5rem;
   text-align: right;
   padding-right: 0.3rem;
-  color: var(--foreground);
+  color: var(--primary);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
 }
 
 /* Task list */
@@ -370,7 +360,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  padding: 0.1rem 0;
+  padding: 0.15rem 0;
   margin: 0;
 }
 .ProseMirror ul[data-type="taskList"] > li > label {
@@ -383,12 +373,38 @@ body {
 }
 .ProseMirror ul[data-type="taskList"] > li > label > span { display: none; }
 .ProseMirror ul[data-type="taskList"] > li > label > input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
   margin: 0;
   cursor: pointer;
   flex-shrink: 0;
-  accent-color: var(--primary);
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  position: relative;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.ProseMirror ul[data-type="taskList"] > li > label > input[type="checkbox"]:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.ProseMirror ul[data-type="taskList"] > li > label > input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.ProseMirror ul[data-type="taskList"] > li > label > input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 7px;
+  border: 2px solid var(--primary-foreground);
+  border-top: none;
+  border-left: none;
+  transform: translate(-50%, -62%) rotate(45deg);
 }
 .ProseMirror ul[data-type="taskList"] > li > div {
   flex: 1;
@@ -396,115 +412,136 @@ body {
 }
 .ProseMirror ul[data-type="taskList"] > li > div > p {
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 0.9375rem;
   color: var(--foreground);
 }
 .ProseMirror ul[data-type="taskList"] > li[data-checked="true"] > div > p {
   text-decoration: line-through;
-  opacity: 0.5;
+  color: var(--muted-foreground);
 }
 
 /* Blockquote */
 .ProseMirror blockquote {
-  border-left: 3px solid var(--border);
-  padding-left: 1rem;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: color-mix(in srgb, var(--primary) 5%, transparent);
+  padding: 0.6rem 1rem;
   margin: 0.75rem 0;
-  color: var(--muted-foreground);
-  font-style: italic;
+  color: var(--foreground);
 }
 
 /* Code inline */
 .ProseMirror code {
   background: var(--muted);
-  border-radius: 0.25rem;
-  padding: 0.1em 0.35em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 0.1em 0.4em;
   font-family: var(--font-mono, monospace);
-  font-size: 0.875em;
+  font-size: 0.85em;
+  color: var(--primary);
 }
 
-/* Code block — VS Code dark style */
+/* Code block — light design system style */
 .ProseMirror pre {
   position: relative;
-  background: #1e1e1e;
-  border-radius: 0.5rem;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   margin: 0.75rem 0;
   overflow: hidden;
 }
-
 .ProseMirror pre code {
   display: block;
   background: none;
   padding: 1rem 1.25rem;
-  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', ui-monospace, monospace;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.875em;
   line-height: 1.7;
-  color: #d4d4d4;
+  color: var(--foreground);
   overflow-x: auto;
   tab-size: 2;
+  border: none;
+  border-radius: 0;
 }
 
-/* Syntax highlight token colors (VS Code dark theme) */
+/* Syntax highlight token colors — use design-system CSS variables */
 .ProseMirror pre .hljs-keyword,
-.ProseMirror pre .hljs-selector-tag  { color: #569cd6; }
+.ProseMirror pre .hljs-selector-tag  { color: var(--syntax-keyword); font-weight: 500; }
 .ProseMirror pre .hljs-string,
-.ProseMirror pre .hljs-attr          { color: #ce9178; }
+.ProseMirror pre .hljs-attr          { color: var(--syntax-string); }
 .ProseMirror pre .hljs-number,
-.ProseMirror pre .hljs-literal       { color: #b5cea8; }
-.ProseMirror pre .hljs-comment       { color: #6a9955; font-style: italic; }
+.ProseMirror pre .hljs-literal       { color: var(--syntax-number); }
+.ProseMirror pre .hljs-comment       { color: var(--syntax-comment); font-style: italic; }
 .ProseMirror pre .hljs-function,
-.ProseMirror pre .hljs-title         { color: #dcdcaa; }
+.ProseMirror pre .hljs-title         { color: var(--syntax-function); }
 .ProseMirror pre .hljs-type,
-.ProseMirror pre .hljs-class         { color: #4ec9b0; }
+.ProseMirror pre .hljs-class         { color: var(--syntax-type); }
 .ProseMirror pre .hljs-variable,
-.ProseMirror pre .hljs-name          { color: #9cdcfe; }
-.ProseMirror pre .hljs-built_in      { color: #4ec9b0; }
-.ProseMirror pre .hljs-punctuation   { color: #d4d4d4; }
-.ProseMirror pre .hljs-operator      { color: #d4d4d4; }
-.ProseMirror pre .hljs-tag           { color: #569cd6; }
-.ProseMirror pre .hljs-meta          { color: #9b9b9b; }
+.ProseMirror pre .hljs-name          { color: var(--syntax-variable); }
+.ProseMirror pre .hljs-built_in      { color: var(--syntax-type); }
+.ProseMirror pre .hljs-punctuation   { color: var(--foreground); }
+.ProseMirror pre .hljs-operator      { color: var(--foreground); }
+.ProseMirror pre .hljs-tag           { color: var(--syntax-tag); }
+.ProseMirror pre .hljs-meta          { color: var(--syntax-meta); }
 
-/* Toggle block — <details>/<summary> with open state in node attrs */
-.ProseMirror details { margin: 0.2rem 0; }
-
+/* Toggle block — Notion-style */
+.ProseMirror details {
+  margin: 1px 0;
+}
 .ProseMirror details > summary {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0;
   list-style: none;
   cursor: pointer;
-  padding: 0.1rem 0.25rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
+  padding: 2px 4px 2px 2px;
+  border-radius: 4px;
+  font-weight: 400;
+  font-size: 0.9375rem;
   user-select: none;
   color: var(--foreground);
-  line-height: 1.6;
+  line-height: 1.5;
+  transition: background 0.08s ease;
 }
 .ProseMirror details > summary::-webkit-details-marker { display: none; }
 .ProseMirror details > summary::marker { display: none; }
 
-/* Rotating arrow via ::before */
+/* Notion-style triangle icon — filled, rotates on open */
 .ProseMirror details > summary::before {
-  content: "▶";
-  font-size: 0.5rem;
-  color: var(--muted-foreground);
-  flex-shrink: 0;
+  content: "";
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.1rem;
-  transition: transform 0.15s ease;
+  align-self: center;
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  background-color: var(--primary);
+  opacity: 1;
+  /* Compact tight-viewBox triangle so mask-size:contain fills the box properly */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 10'%3E%3Cpath fill='black' d='M0 0l6 5-6 5z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 10'%3E%3Cpath fill='black' d='M0 0l6 5-6 5z'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  mask-position: center;
+  transition: transform 0.2s ease, opacity 0.12s ease;
 }
-.ProseMirror details[open] > summary::before { transform: rotate(90deg); }
-.ProseMirror details > summary:hover { background: var(--muted); }
+.ProseMirror details[open] > summary::before {
+  transform: rotate(90deg);
+  opacity: 1;
+}
+.ProseMirror details > summary:hover {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+.ProseMirror details > summary:hover::before { opacity: 0.75; }
 
-/* contenteditable ignores native <details> open/close — CSS enforces it */
 .ProseMirror details:not([open]) > *:not(summary) { display: none; }
-
-/* Indent body content when open */
 .ProseMirror details[open] > *:not(summary) {
-  padding-left: 1.5rem;
-  border-left: 2px solid var(--border);
-  margin-left: 0.35rem;
+  margin-left: 20px;
+  padding-left: 12px;
+  border-left: 1.5px solid color-mix(in srgb, var(--foreground) 12%, transparent);
 }
 
 /* Callout block */
@@ -512,33 +549,44 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  background: var(--accent);
-  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--primary) 6%, var(--card));
+  border-radius: var(--radius-md);
   padding: 0.875rem 1rem;
   margin: 0.5rem 0;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
 }
 .ProseMirror div[data-type="callout"]::before {
   content: attr(icon);
-  font-size: 1.2rem;
-  line-height: 1.65;
+  font-size: 1.1rem;
+  line-height: 1.7;
   flex-shrink: 0;
   min-width: 1.5rem;
 }
 .ProseMirror div[data-type="callout"] p {
   margin: 0;
-  line-height: 1.65;
+  line-height: 1.6;
+  font-size: 0.9375rem;
 }
 
-/* Horizontal rule */
+/* Horizontal rule / Divider */
 .ProseMirror hr {
   border: none;
-  border-top: 1px solid var(--border);
+  height: 2px;
+  background: var(--border);
+  border-radius: 9999px;
   margin: 1.5rem 0;
+  opacity: 1;
 }
 
 /* Links */
-.ProseMirror a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.ProseMirror a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  transition: text-decoration-color 0.15s ease;
+}
+.ProseMirror a:hover { text-decoration-color: var(--primary); }
 
 /* Placeholder */
 .ProseMirror p.is-empty:first-child::before,
@@ -559,7 +607,7 @@ body {
   gap: 0;
   margin: 0.75rem 0;
   border: 1.5px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 /* Each direct child block = one column cell */
@@ -578,7 +626,7 @@ body {
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   background: var(--muted);
   margin: 0.5rem 0;
   color: var(--muted-foreground);
@@ -596,7 +644,7 @@ body {
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   background: var(--muted);
   margin: 0.5rem 0;
   color: var(--muted-foreground);

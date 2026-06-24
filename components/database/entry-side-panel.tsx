@@ -178,7 +178,7 @@ export function EntrySidePanel({
       <div className="px-4 py-4">
        {/* Section label */}
        <div className="mb-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50 px-5 pt-4 pb-2 block">
+        <span className="text-[11px] font-semibold tracking-[0.125px] text-muted-foreground/50 px-5 pt-4 pb-2 block">
          Properties
         </span>
        </div>
@@ -259,7 +259,7 @@ export function EntrySidePanel({
      {/* ── Content / Block editor ── */}
      <div className="px-4 pb-2">
       <div className="mb-2 flex items-center gap-2 px-1">
-       <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/40">
+       <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">
         Content
        </span>
        <div className="h-px flex-1 bg-border/40" />

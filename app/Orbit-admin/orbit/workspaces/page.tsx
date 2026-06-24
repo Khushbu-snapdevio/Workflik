@@ -30,15 +30,14 @@ export default async function OrbitWorkspacesPage() {
  return (
   <div>
    {/* Header */}
-   <div className="mb-8 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-    <div className="h-[3px] bg-primary" />
+   <div className="mb-8 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
     <div className="p-6">
-     <h1 className="text-[26px] font-black tracking-tight text-foreground">Workspaces</h1>
+     <h1 className="text-[26px] font-bold tracking-tight text-foreground">Workspaces</h1>
      <p className="mt-1 text-[13px] text-muted-foreground">All tenant workspaces — inspect members, force delete.</p>
      <div className="mt-4 flex gap-4">
       <div>
-       <span className="text-[22px] font-black text-primary">{allWorkspaces.length}</span>
-       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Total</p>
+       <span className="text-[22px] font-bold text-primary">{allWorkspaces.length}</span>
+       <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60">Total</p>
       </div>
      </div>
     </div>
@@ -51,9 +50,9 @@ export default async function OrbitWorkspacesPage() {
      const letter = (ws.icon && ws.icon.length <= 2 ? ws.icon : ws.name?.slice(0, 1) ?? "W").toUpperCase();
      return (
       <Link key={ws.id} href={`/Orbit-admin/orbit/workspaces/${ws.id}`}
-       className="group flex flex-col gap-3 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card p-5 transition">
+       className="group flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border bg-card p-5 transition hover:shadow-sm">
        <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-[15px] font-black text-white">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-[15px] font-bold text-white">
          {letter}
         </span>
         <div className="min-w-0 flex-1">

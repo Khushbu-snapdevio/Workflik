@@ -7,6 +7,8 @@ import {
  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
  AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface SessionRow {
  id:    string;
@@ -75,7 +77,7 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
  const others = sessions.filter(s => s.token !== currentToken);
 
  return (
-  <div className="mx-auto max-w-[640px] px-8 py-10">
+  <div className="max-w-[780px] px-8 pt-6 pb-10">
 
    {/* ── Header ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -91,7 +93,7 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
    {/* ── Current session ── */}
    {current && (
     <div className="mb-7">
-     <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">Current session</p>
+     <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Current session</p>
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       <SessionCard s={current} isCurrent />
      </div>
@@ -102,17 +104,21 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
    {others.length > 0 && (
     <div className="mb-7">
      <div className="mb-2 flex items-center justify-between">
-      <p className="text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+      <p className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
        Other sessions
-       <span className="ml-2 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10px] font-bold normal-case text-muted-foreground">{others.length}</span>
+       <span className="ml-2 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{others.length}</span>
       </p>
       <AlertDialog>
        <AlertDialogTrigger asChild>
-        <button type="button" disabled={revokingAll}
-         className="flex items-center gap-1.5 text-xs font-semibold text-destructive transition-colors hover:text-destructive/80 disabled:opacity-50">
+        <Button
+         variant="ghost"
+         size="sm"
+         type="button"
+         disabled={revokingAll}
+         className="flex items-center gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 h-auto px-2 py-1">
          <X size={14} />
          {revokingAll ? "Revoking…" : "Revoke all"}
-        </button>
+        </Button>
        </AlertDialogTrigger>
        <AlertDialogContent>
         <AlertDialogHeader>
@@ -188,7 +194,7 @@ function SessionCard({ s, isCurrent, revoking, onRevoke }: {
      <p className="text-sm font-semibold text-foreground">{b}</p>
      {os && <span className="text-sm text-muted-foreground">on {os}</span>}
      {isCurrent && (
-      <span className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-0.5 text-xs font-bold text-muted-foreground">● This device</span>
+      <Badge variant="secondary" className="rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-bold">● This device</Badge>
      )}
     </div>
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
@@ -209,10 +215,14 @@ function SessionCard({ s, isCurrent, revoking, onRevoke }: {
    {!isCurrent && (
     <AlertDialog>
      <AlertDialogTrigger asChild>
-      <button type="button" disabled={revoking}
-       className="shrink-0 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-foreground transition-colors duration-150 hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50">
+      <Button
+       variant="outline"
+       size="sm"
+       type="button"
+       disabled={revoking}
+       className="shrink-0 hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
        {revoking ? "…" : "Revoke"}
-      </button>
+      </Button>
      </AlertDialogTrigger>
      <AlertDialogContent>
       <AlertDialogHeader>

@@ -198,7 +198,7 @@ export function HistoryPageClient({
                       "flex items-center gap-3 border-b border-border/60 px-4 py-2.5",
                       gi > 0 ? "border-t border-border/60" : "",
                     ].join(" ")}>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                      <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
                         {label}
                       </span>
                       <div className="h-px flex-1 bg-border/50" />
@@ -244,7 +244,7 @@ export function HistoryPageClient({
                                 {formatTime(v.createdAt)}
                               </span>
                               {isCurrent && (
-                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.125px] text-primary">
                                   Current
                                 </span>
                               )}

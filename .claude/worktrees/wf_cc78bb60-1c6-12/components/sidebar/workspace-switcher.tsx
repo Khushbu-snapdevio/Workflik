@@ -83,7 +83,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
   return (
     <div className="relative">
       <button
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1 text-left transition-colors hover:bg-primary/[0.04] focus:outline-none"
+        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left transition-colors hover:bg-primary/[0.04] focus:outline-none"
         onClick={() => { setOpen((v) => !v); setShowJoin(false); setJoinError(""); }}
         type="button"
       >
@@ -112,7 +112,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
 
             {/* Workspace list */}
             <div className="p-1.5">
-              <p className="mb-1 px-2 text-2xs font-semibold tracking-[0.125px] text-muted-foreground">
+              <p className="mb-1 px-2 text-2xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Workspaces
               </p>
               {workspaces.map((ws) => {
@@ -128,7 +128,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
                     <span className="flex-1 truncate text-sm font-medium text-popover-foreground">
                       {ws.name}
                     </span>
-                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-2xs font-semibold tracking-[0.125px] text-muted-foreground">
+                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-ui text-muted-foreground">
                       {ws.role}
                     </span>
                     {isActive && (

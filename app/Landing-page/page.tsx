@@ -179,7 +179,7 @@ export default async function HomePage() {
       <header className="sticky top-0 z-50 border-b border-border bg-page">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <a href="#top" className="flex items-center gap-2.5">
-            <Image src="/workflik-logo.png" alt="Workflik" width={160} height={40} className="h-7 w-auto" />
+            <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={160} height={40} className="h-7 w-auto" />
           </a>
 
           <nav className="hidden items-center gap-7 sm:flex">
@@ -273,9 +273,9 @@ export default async function HomePage() {
               {/* Sidebar */}
               <div className="w-44 shrink-0 border-r border-border bg-sidebar px-2 py-3">
                 <div className="mb-3 flex items-center gap-1.5 px-2">
-                  <Image src="/workflik-logo.png" alt="Workflik" width={80} height={20} className="h-4 w-auto" />
+                  <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={80} height={20} className="h-4 w-auto" />
                 </div>
-                <p className="mb-1 px-2 text-[8px] font-semibold uppercase tracking-widest text-muted-foreground/40">Pages</p>
+                <p className="mb-1 px-2 text-[8px] font-semibold tracking-[0.125px] text-muted-foreground/40">Pages</p>
                 <div className="space-y-0.5">
                   {[
                     { icon: "📋", label: "Product Roadmap", active: true },
@@ -353,7 +353,7 @@ export default async function HomePage() {
       <section id="features" className="border-t border-border px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <ScrollReveal className="mb-16">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[var(--tracking-eyebrow)] text-primary">Features</p>
+            <p className="mb-3 text-xs font-semibold tracking-[0.125px] text-primary">Features</p>
             <h2 className="max-w-xl text-3xl font-black tracking-tight text-foreground sm:text-4xl">
               Everything a team needs.<br className="hidden sm:block" /> Nothing it doesn&rsquo;t.
             </h2>
@@ -381,7 +381,7 @@ export default async function HomePage() {
       <section id="how-it-works" className="border-t border-border bg-card px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <ScrollReveal className="mb-16 text-center">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[var(--tracking-eyebrow)] text-primary">Simple by design</p>
+            <p className="mb-3 text-xs font-semibold tracking-[0.125px] text-primary">Simple by design</p>
             <h2 className="mb-4 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Up and running in minutes</h2>
             <p className="mx-auto max-w-md text-base text-muted-foreground">
               No onboarding call needed. No setup wizard. Just sign in and start writing.
@@ -406,7 +406,7 @@ export default async function HomePage() {
       <section className="border-t border-border px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <ScrollReveal className="mb-16 text-center">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[var(--tracking-eyebrow)] text-primary">Loved by teams</p>
+            <p className="mb-3 text-xs font-semibold tracking-[0.125px] text-primary">Loved by teams</p>
             <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">What early users are saying</h2>
           </ScrollReveal>
 
@@ -443,7 +443,7 @@ export default async function HomePage() {
       <section id="for-teams" className="border-t border-border bg-card px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <ScrollReveal className="mb-16 text-center">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[var(--tracking-eyebrow)] text-primary">Who it&apos;s for</p>
+            <p className="mb-3 text-xs font-semibold tracking-[0.125px] text-primary">Who it&apos;s for</p>
             <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">Built for every kind of team</h2>
           </ScrollReveal>
 
@@ -495,7 +495,7 @@ export default async function HomePage() {
             {/* Brand */}
             <div className="lg:col-span-2">
               <div className="mb-4">
-                <Image src="/workflik-logo.png" alt="Workflik" width={160} height={40} className="h-7 w-auto" />
+                <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={160} height={40} className="h-7 w-auto" />
               </div>
               <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
                 The connected workspace for teams who move fast — docs, wikis, and projects in one place.
@@ -516,7 +516,7 @@ export default async function HomePage() {
 
             {/* Product */}
             <div>
-              <h4 className="mb-4 text-xs font-bold uppercase tracking-[var(--tracking-eyebrow)] text-foreground">Product</h4>
+              <h4 className="mb-4 text-xs font-semibold tracking-[0.125px] text-foreground">Product</h4>
               <ul className="space-y-3">
                 {["Pages & Docs", "Templates", "Team workspaces", "Search", "Permissions"].map((l) => (
                   <li key={l}><a href="#features" className="lp-nav-link text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">{l}</a></li>
@@ -526,7 +526,7 @@ export default async function HomePage() {
 
             {/* Company */}
             <div>
-              <h4 className="mb-4 text-xs font-bold uppercase tracking-[var(--tracking-eyebrow)] text-foreground">Legal</h4>
+              <h4 className="mb-4 text-xs font-semibold tracking-[0.125px] text-foreground">Legal</h4>
               <ul className="space-y-3">
                 {[
                   { label: "Privacy Policy",   href: "/privacy" },

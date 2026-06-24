@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { FavoritesSection } from "@/components/sidebar/favorites-section";
 import { PageTree } from "@/components/sidebar/page-tree";
@@ -283,7 +284,7 @@ export function Sidebar({
    style={{ width }}
   >
    {/* Workspace header */}
-   <div className="flex shrink-0 items-center gap-1 border-b border-sidebar-border px-2 py-1.5">
+   <div className="flex h-11 shrink-0 items-center gap-1 border-b border-sidebar-border px-2">
     <div className="min-w-0 flex-1">
      <WorkspaceSwitcher currentSlug={workspaceSlug} />
     </div>
@@ -305,51 +306,50 @@ export function Sidebar({
      </button>
 
      {newMenu && (
-      <div className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover p-1">
-       <NewPageButton
-        workspaceId={workspaceId}
-        workspaceSlug={workspaceSlug}
-        onBeforeCreate={() => setNewMenu(false)}
-        className="group flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
-       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground">
-         <FileText size={13} />
-        </span>
-        <span>
-         <span className="block text-xs font-semibold text-foreground">New Page</span>
-         <span className="block text-xs text-muted-foreground">Docs, notes, wikis</span>
-        </span>
-       </NewPageButton>
+      <div className="absolute right-0 top-full z-50 mt-1.5 w-60 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover shadow-lg">
+       {/* Section: Create */}
+       <div className="px-3 pb-1 pt-2.5">
+        <p className="mb-1 text-[10px] font-medium tracking-[0.125px] text-muted-foreground/50">Create</p>
+        <NewPageButton
+         workspaceId={workspaceId}
+         workspaceSlug={workspaceSlug}
+         onBeforeCreate={() => setNewMenu(false)}
+         className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
+        >
+         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
+          <FileText size={14} />
+         </span>
+         <span>
+          <span className="block text-[13px] font-medium text-foreground">New Page</span>
+          <span className="block text-xs text-muted-foreground">Docs, notes, wikis</span>
+         </span>
+        </NewPageButton>
+       </div>
 
-       <Link
-        href={`/app/${workspaceSlug}/new-database`}
-        onClick={() => setNewMenu(false)}
-        className="group flex items-center gap-3 rounded-[var(--radius-sm)] px-2.5 py-2 transition-colors duration-150 hover:bg-accent"
-       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground">
-         <Database size={13} />
-        </span>
-        <span>
-         <span className="block text-xs font-semibold text-foreground">New Database</span>
-         <span className="block text-xs text-muted-foreground">Tables, boards, calendars</span>
-        </span>
-       </Link>
+       <div className="mx-3 my-1 h-px bg-border/60" />
 
-       <div className="my-1 border-t border-border" />
-
-       <Link
-        href={`/app/${workspaceSlug}/templates`}
-        onClick={() => setNewMenu(false)}
-        className="group flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors duration-150 hover:bg-accent"
-       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground">
-         <LayoutGrid size={13} />
-        </span>
-        <span>
-         <span className="block text-xs font-semibold text-foreground">From Template</span>
-         <span className="block text-xs text-muted-foreground">Start from a template</span>
-        </span>
-       </Link>
+       {/* Section: More */}
+       <div className="px-3 pb-2.5 pt-1">
+        <p className="mb-1 text-[10px] font-medium tracking-[0.125px] text-muted-foreground/50">More</p>
+        <NewDatabaseButton
+         workspaceId={workspaceId}
+         workspaceSlug={workspaceSlug}
+         onBeforeCreate={() => setNewMenu(false)}
+        />
+        <Link
+         href={`/app/${workspaceSlug}/templates`}
+         onClick={() => setNewMenu(false)}
+         className="group mt-0.5 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent"
+        >
+         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-warning/10 text-warning">
+          <LayoutGrid size={14} />
+         </span>
+         <span>
+          <span className="block text-[13px] font-medium text-foreground">From Template</span>
+          <span className="block text-xs text-muted-foreground">Start from a template</span>
+         </span>
+        </Link>
+       </div>
       </div>
      )}
 
@@ -470,33 +470,50 @@ export function Sidebar({
 
    {/* User footer */}
    <div className="relative shrink-0 border-t border-sidebar-border px-2 py-2" ref={userMenuRef}>
+
     {/* User menu dropdown — appears above */}
     {userMenu && (
-     <div className="absolute bottom-[calc(100%+6px)] left-2 right-2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      {/* User info header */}
-      <div className="flex items-center gap-3 border-b border-border/60 bg-muted/40 px-3 py-3">
-       <UserAvatar image={userImage} email={userEmail} className="size-9 text-[14px]" />
-       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold text-foreground">{userEmail.split("@")[0]}</p>
-        <p className="truncate text-[11px] text-muted-foreground">{userEmail}</p>
+     <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover shadow-[0_8px_32px_-6px_rgba(0,0,0,0.18),0_2px_10px_-2px_rgba(0,0,0,0.08)]">
+
+      {/* User info */}
+      <div className="px-3.5 pb-3 pt-3.5">
+       <div className="flex items-center gap-3">
+        <div className="relative shrink-0">
+         <UserAvatar image={userImage} email={userEmail} className="size-10 text-[15px]" />
+         <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-popover bg-success" />
+        </div>
+        <div className="min-w-0 flex-1">
+         <p className="truncate text-[13px] font-semibold leading-tight text-foreground">
+          {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+         </p>
+         <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">{userEmail}</p>
+        </div>
        </div>
       </div>
-      {/* Menu items */}
+
+      <div className="mx-3 h-px bg-border/50" />
+
       <div className="p-1.5">
        <Link
         href={`/app/${workspaceSlug}/settings`}
         onClick={() => setUserMenu(false)}
-        className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-medium text-foreground transition-colors duration-150 hover:bg-accent"
+        className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-accent"
        >
-        <Settings size={14} className="shrink-0 text-muted-foreground" />
-        Settings
+        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 group-hover:bg-primary/10 group-hover:text-primary">
+         <Settings size={13} />
+        </span>
+        <span className="text-[13px] font-medium text-foreground">Settings</span>
        </Link>
-       <div className="my-1 border-t border-border/60" />
-       <SignOutButton
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-medium text-destructive transition-colors duration-150 hover:bg-destructive/10"
-       >
-        <LogOut size={14} className="shrink-0" />
-        Sign out
+      </div>
+
+      <div className="mx-3 h-px bg-border/50" />
+
+      <div className="p-1.5">
+       <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/[0.07]">
+        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
+         <LogOut size={13} />
+        </span>
+        <span className="text-[13px] font-medium text-destructive">Sign out</span>
        </SignOutButton>
       </div>
      </div>
@@ -506,20 +523,20 @@ export function Sidebar({
     <button
      type="button"
      onClick={() => setUserMenu((v) => !v)}
-     className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 transition-colors duration-150 ${userMenu ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"}`}
+     className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"}`}
     >
-     <UserAvatar image={userImage} email={userEmail} className="size-7 text-xs" />
+     <UserAvatar image={userImage} email={userEmail} className="size-8 text-[13px]" />
      <div className="min-w-0 flex-1 text-left">
-      <p className="truncate text-xs font-semibold text-sidebar-foreground">
-       {userEmail.split("@")[0]}
+      <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
+       {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
       </p>
-      <p className="truncate text-[10px] text-sidebar-foreground/60">
+      <p className="truncate text-[11px] text-sidebar-foreground/50">
        {userEmail}
       </p>
      </div>
      <ChevronDown
       size={13}
-      className={`shrink-0 text-sidebar-foreground/40 transition-transform duration-150 ${userMenu ? "rotate-180" : ""}`}
+      className={`shrink-0 text-sidebar-foreground/40 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
      />
     </button>
    </div>
@@ -674,6 +691,58 @@ function SectionLabel({ label, expanded, onToggle }: { label: string; expanded?:
     size={13}
     className={`shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:text-muted-foreground ${expanded ? "" : "-rotate-90"}`}
    />
+  </button>
+ );
+}
+
+function NewDatabaseButton({
+ workspaceId,
+ workspaceSlug,
+ onBeforeCreate,
+}: {
+ workspaceId: string;
+ workspaceSlug: string;
+ onBeforeCreate?: () => void;
+}) {
+ const router = useRouter();
+ const [loading, setLoading] = useState(false);
+
+ async function handleClick() {
+  if (loading) return;
+  onBeforeCreate?.();
+  setLoading(true);
+  try {
+   const res = await fetch(`/api/workspaces/${workspaceId}/databases`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Untitled Database" }),
+   });
+   if (res.ok) {
+    const db = await res.json();
+    window.dispatchEvent(new CustomEvent("pages:refresh"));
+    router.push(`/app/${workspaceSlug}/${db.shortId}`);
+   }
+  } catch {
+   // no-op
+  } finally {
+   setLoading(false);
+  }
+ }
+
+ return (
+  <button
+   type="button"
+   onClick={handleClick}
+   disabled={loading}
+   className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
+  >
+   <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-success/10 text-success">
+    <Database size={14} />
+   </span>
+   <span>
+    <span className="block text-[13px] font-medium text-foreground">New Database</span>
+    <span className="block text-xs text-muted-foreground">Tables, boards, calendars</span>
+   </span>
   </button>
  );
 }

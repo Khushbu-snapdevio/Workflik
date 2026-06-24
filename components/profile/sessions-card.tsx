@@ -54,11 +54,11 @@ export function SessionsCard({ sessions }: { sessions: SessionRow[] }) {
 
      {/* Column headers */}
      <div className="grid grid-cols-[minmax(0,1fr)_140px_152px_152px_80px] gap-3 border-b border-border/40 px-5 py-2">
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">Session</span>
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">IP</span>
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">Created</span>
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">Expires</span>
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground/60">Action</span>
+      <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Session</span>
+      <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">IP</span>
+      <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Created</span>
+      <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Expires</span>
+      <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Action</span>
      </div>
 
      {/* Rows */}

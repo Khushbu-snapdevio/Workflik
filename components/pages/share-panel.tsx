@@ -94,29 +94,58 @@ function SelectField({
  disabled?: boolean;
  className?: string;
 }) {
+ const [open, setOpen] = useState(false);
+ const ref = useRef<HTMLDivElement>(null);
+ const label = options.find((o) => o.value === value)?.label ?? value;
+
+ useEffect(() => {
+  if (!open) return;
+  function handler(e: MouseEvent) {
+   if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+  }
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+ }, [open]);
+
  return (
-  <div className={`relative flex-shrink-0 ${className}`}>
-   <select
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
+  <div ref={ref} className={`relative shrink-0 ${className}`}>
+   <button
+    type="button"
     disabled={disabled}
-    className="w-full appearance-none cursor-pointer rounded-[var(--radius-sm)] border border-border bg-card py-1.5 pl-2.5 pr-7 text-xs text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 hover:border-border/80 transition-colors"
+    onClick={() => setOpen((o) => !o)}
+    className="flex h-8 w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-2.5 text-xs text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
    >
-    {options.map((o) => (
-     <option key={o.value} value={o.value}>{o.label}</option>
-    ))}
-   </select>
-   <ChevronDown
-    size={11}
-    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50"
-   />
+    <span>{label}</span>
+    <ChevronDown size={12} className={`shrink-0 text-muted-foreground/60 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+   </button>
+
+   {open && (
+    <div className="absolute left-0 top-full z-[200] mt-1 min-w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-float)]">
+     {options.map((o) => (
+      <button
+       key={o.value}
+       type="button"
+       onClick={() => { onChange(o.value); setOpen(false); }}
+       className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-xs transition-colors ${
+        o.value === value
+         ? "bg-primary/10 font-medium text-primary"
+         : "text-foreground hover:bg-accent"
+       }`}
+      >
+       {o.value === value && <Check size={12} className="shrink-0 text-primary" />}
+       {o.value !== value && <span className="w-3 shrink-0" />}
+       {o.label}
+      </button>
+     ))}
+    </div>
+   )}
   </div>
  );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
  return (
-  <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+  <p className="mb-2.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
    {children}
   </p>
  );
@@ -397,7 +426,7 @@ export function SharePanel({
              <span className="text-xs text-muted-foreground/60 flex-shrink-0">(you)</span>
             )}
             {isGuest && (
-             <span className="flex-shrink-0 rounded-full border border-primary/20 bg-primary/[0.06] px-1.5 py-px text-[9px] font-semibold text-primary leading-none">
+             <span className="flex-shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary leading-none">
               GUEST
              </span>
             )}
@@ -442,7 +471,7 @@ export function SharePanel({
     <div className="px-5 py-4">
      <div className="flex items-start justify-between gap-3">
       <div className="flex items-start gap-2.5 min-w-0">
-       <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary/10">
+       <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
         <Globe size={14} className="text-primary" />
        </div>
        <div className="min-w-0">
@@ -528,7 +557,7 @@ export function SharePanel({
       {savingPrivate ? (
        <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
       ) : isPrivate ? (
-       <span className="flex-shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
+       <span className="flex-shrink-0 rounded-full border border-[#bae6fd] bg-[#e0f2fe] px-2 py-0.5 text-[10px] font-semibold text-[#0369a1]">
         Private
        </span>
       ) : null}

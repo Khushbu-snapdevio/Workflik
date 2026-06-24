@@ -16,12 +16,12 @@ const CATEGORY_LABELS: Record<string, string> = {
  sales:    "Sales",
 };
 
-const CATEGORY_COLOR: Record<string, { color: string; bg: string }> = {
- productivity: { color: "#0284C7", bg: "#eff6ff" },
- project_mgmt: { color: "#0284C7", bg: "#eff6ff" },
- marketing:  { color: "#0284C7", bg: "#eff6ff" },
- engineering: { color: "#0284C7", bg: "#eff6ff" },
- sales:    { color: "#0284C7", bg: "#eff6ff" },
+const CATEGORY_CLS: Record<string, string> = {
+ productivity: "bg-primary/10 text-primary",
+ project_mgmt: "bg-secondary text-secondary-foreground",
+ marketing:   "bg-destructive/10 text-destructive",
+ engineering:  "bg-success/10 text-success",
+ sales:       "bg-warning/10 text-warning",
 };
 
 export default async function OrbitTemplatesPage() {
@@ -40,24 +40,23 @@ export default async function OrbitTemplatesPage() {
   <div className="space-y-6">
 
    {/* Header */}
-   <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-    <div className="h-[3px] bg-primary" />
+   <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
     <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
      <div>
-      <h1 className="text-[28px] font-black tracking-tight text-foreground">Templates</h1>
+      <h1 className="text-[28px] font-bold tracking-tight text-foreground">Templates</h1>
       <p className="mt-1 text-[13px] text-muted-foreground">Author and publish built-in templates for the user-facing gallery.</p>
      </div>
-     <div className="hidden shrink-0 items-center overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-muted/30 sm:flex">
+     <div className="hidden shrink-0 items-center overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card sm:flex">
       {[
        { label: "Total",   value: list.length },
        { label: "Published", value: published },
        { label: "Drafts",  value: drafts },
       ].map((s, i) => (
        <div key={s.label} className="flex items-center">
-        {i > 0 && <div className="h-8 w-px bg-border/60" />}
+        {i > 0 && <div className="h-8 w-px bg-border" />}
         <div className="px-6 py-4 text-center">
-         <p className="text-[26px] font-black leading-none text-foreground">{s.value}</p>
-         <p className="mt-1 text-[9.5px] font-bold uppercase tracking-widest text-muted-foreground/60">{s.label}</p>
+         <p className="text-[26px] font-bold leading-none text-foreground">{s.value}</p>
+         <p className="mt-1 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60">{s.label}</p>
         </div>
        </div>
       ))}
@@ -79,7 +78,7 @@ export default async function OrbitTemplatesPage() {
 
    {/* Table */}
    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-    <div className="border-b border-border/50 px-5 py-4">
+    <div className="border-b border-border px-5 py-4">
      <h2 className="text-[13.5px] font-bold text-foreground">Built-in templates</h2>
      <p className="text-[11px] text-muted-foreground">Only published templates appear in the user gallery</p>
     </div>
@@ -102,13 +101,13 @@ export default async function OrbitTemplatesPage() {
        <thead>
         <tr className="bg-muted/40">
          {["Template", "Category", "Status", "Updated", "Actions"].map(h => (
-          <th key={h} className="px-5 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">{h}</th>
+          <th key={h} className="px-5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
          ))}
         </tr>
        </thead>
-       <tbody className="divide-y divide-border/40">
+       <tbody className="divide-y divide-border">
         {list.map(tpl => {
-         const catStyle = CATEGORY_COLOR[tpl.category] ?? { color: "#787774", bg: "#f5f4f2" };
+         const catCls = CATEGORY_CLS[tpl.category] ?? "bg-muted text-muted-foreground";
          const isPublished = tpl.status === "published";
          return (
           <tr key={tpl.id} className="group transition-colors hover:bg-accent/40">
@@ -119,16 +118,15 @@ export default async function OrbitTemplatesPage() {
             )}
            </td>
            <td className="px-5 py-3.5">
-            <span className="rounded-full px-2.5 py-0.5 text-[10.5px] font-bold"
-             style={{ color: catStyle.color, background: catStyle.bg }}>
+            <span className={`rounded-full px-2.5 py-0.5 text-[10.5px] font-bold ${catCls}`}>
              {CATEGORY_LABELS[tpl.category] ?? tpl.category}
             </span>
            </td>
            <td className="px-5 py-3.5">
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold ${
-             isPublished ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+             isPublished ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
             }`}>
-             <span className={`size-1.5 rounded-full ${isPublished ? "bg-primary" : "bg-muted-foreground/40"}`} />
+             <span className={`size-1.5 rounded-full ${isPublished ? "bg-success" : "bg-muted-foreground/40"}`} />
              {tpl.status}
             </span>
            </td>

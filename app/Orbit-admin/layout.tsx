@@ -11,7 +11,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-page">
-      <AdminSidebar email={session.user.email} />
+      <AdminSidebar email={session.user.email} image={(session.user as { image?: string | null }).image ?? null} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar — branding only; "Back to workspace" is in the sidebar footer */}

@@ -180,7 +180,7 @@ export function OnboardingUI({ initialName }: Props) {
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" alt="Workflik" width={180} height={45} className="h-10 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-10 w-auto" />
     </div>
 
     {/* Progress bar */}
@@ -196,7 +196,7 @@ export function OnboardingUI({ initialName }: Props) {
     </div>
 
     {/* Step label */}
-    <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+    <p className="mb-3 text-[11px] font-semibold tracking-[0.125px] text-muted-foreground/60">
      {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${progressTotal}`}
     </p>
 

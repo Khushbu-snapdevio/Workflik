@@ -12,6 +12,7 @@ import {
   getWorkspace,
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -148,6 +149,14 @@ export async function POST(req: Request, { params }: Ctx) {
       inviterName:   session.user.name ?? session.user.email,
       workspaceName: workspace.name,
       inviteToken,
+    });
+
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "member.invited",
+      targetType: "workspace",
+      targetId:   id,
+      metadata:   { invitedEmail: email, role, workspaceName: workspace.name },
     });
 
     return Response.json(member, { status: 201 });

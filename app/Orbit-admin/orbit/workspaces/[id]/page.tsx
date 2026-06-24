@@ -8,11 +8,11 @@ import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "Workspace Detail – Orbit Admin" };
 
-function avatarColor(str: string) {
- const colors = ["#0284C7","#0369a1","#0ea5e9","#0891b2","#dc2626","#075985"];
+function avatarCls(str: string) {
+ const cls = ["bg-primary", "bg-destructive", "bg-success", "bg-warning", "bg-muted-foreground", "bg-secondary-foreground"];
  let h = 0;
  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
- return colors[h % colors.length]!;
+ return cls[h % cls.length]!;
 }
 
 function ago(d: Date | null | undefined) {
@@ -46,14 +46,13 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
   .where(eq(workspaceMembers.workspaceId, id));
 
  const activeMembers = members.filter(m => m.status === "active");
- const letter = (ws.icon && ws.icon.length <= 2 ? ws.icon : ws.name?.slice(0, 1) ?? "W").toUpperCase();
 
  return (
   <div>
-   {/* Breadcrumb navigation */}
+   {/* Breadcrumb */}
    <div className="mb-4 flex items-center gap-2">
     <Link href="/Orbit-admin/orbit/workspaces"
-     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-sky-50 hover:text-primary">
+     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3">
       <path d="M7.5 2.5L4 6l3.5 3.5"/>
      </svg>
@@ -64,20 +63,19 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
    </div>
 
    {/* Header */}
-   <div className="mb-6 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-    <div className="h-[3px] bg-primary" />
+   <div className="mb-6 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
     <div className="p-6">
-     <h1 className="text-[26px] font-black tracking-tight text-foreground">{ws.name}</h1>
+     <h1 className="text-[26px] font-bold tracking-tight text-foreground">{ws.name}</h1>
      <p className="mt-1 text-[13px] text-muted-foreground">/{ws.slug}</p>
-     <div className="mt-4 flex flex-wrap gap-4">
+     <div className="mt-4 flex flex-wrap items-center gap-4">
       <div>
-       <p className="text-[16px] font-black text-primary">{activeMembers.length}</p>
-       <p className="text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground/60">Active members</p>
+       <p className="text-[16px] font-bold text-primary">{activeMembers.length}</p>
+       <p className="text-[9.5px] font-semibold tracking-[0.08em] text-muted-foreground/60">Active members</p>
       </div>
-      <div className="w-px border-l border-border/60" />
+      <div className="h-6 w-px bg-border" />
       <div>
-       <p className="text-[16px] font-black text-primary">{members.length}</p>
-       <p className="text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground/60">Total members</p>
+       <p className="text-[16px] font-bold text-primary">{members.length}</p>
+       <p className="text-[9.5px] font-semibold tracking-[0.08em] text-muted-foreground/60">Total members</p>
       </div>
       <div className="ml-auto shrink-0 text-right">
        <p className="text-[10px] text-muted-foreground/60">ID</p>
@@ -92,11 +90,11 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
    <div className="grid gap-5 lg:grid-cols-3">
     {/* Details */}
     <div className="space-y-4">
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-      <div className="border-b border-border/60 px-5 py-3.5">
+     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+      <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-[12.5px] font-bold text-foreground">Workspace details</h2>
       </div>
-      <div className="divide-y divide-black/[0.04] px-5">
+      <div className="divide-y divide-border px-5">
        {[
         { label: "Name",  value: ws.name },
         { label: "Slug",  value: `/${ws.slug}` },
@@ -128,22 +126,22 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
 
     {/* Members */}
     <div className="lg:col-span-2">
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-      <div className="border-b border-border/60 px-5 py-3.5">
+     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+      <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-[12.5px] font-bold text-foreground">Members <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{members.length}</span></h2>
       </div>
       {members.length === 0 ? (
        <p className="px-5 py-10 text-center text-[12px] text-muted-foreground">No members</p>
       ) : (
-       <div className="divide-y divide-black/[0.04]">
+       <div className="divide-y divide-border">
         {members.map(m => {
          const label = m.userName ?? m.userEmail ?? "Unknown";
-         const bg  = avatarColor(m.userId2 ?? m.id);
+         const cls  = avatarCls(m.userId2 ?? m.id);
          return (
           <div key={m.id} className="flex items-center gap-3 px-5 py-3">
            {m.userId2 ? (
-            <Link href={`/Orbit-admin/orbit/users/${m.userId2}`} className="flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white hover:opacity-80"
-             style={{ background: bg }}>
+            <Link href={`/Orbit-admin/orbit/users/${m.userId2}`}
+             className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white hover:opacity-80 ${cls}`}>
              {label.slice(0, 1).toUpperCase()}
             </Link>
            ) : (
@@ -155,11 +153,9 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
            </div>
            <div className="flex shrink-0 flex-col items-end gap-1">
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-             m.role === "admin" ? "bg-primary/10 text-primary" :
-             m.role === "editor" ? "bg-primary/10 text-primary" :
-             "bg-muted/50 text-muted-foreground"
+             m.role === "admin" || m.role === "editor" ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"
             }`}>{m.role}</span>
-            <span className={`text-[9.5px] font-semibold ${m.status === "active" ? "text-emerald-600" : "text-amber-600"}`}>
+            <span className={`text-[9.5px] font-semibold ${m.status === "active" ? "text-success" : "text-warning"}`}>
              {m.status}
             </span>
            </div>

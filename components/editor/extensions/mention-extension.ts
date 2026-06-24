@@ -152,7 +152,7 @@ export const MentionCommands = Extension.create<MentionOptions>({
 });
 
 export function getMentionClass(mentionType: string): string {
-  if (mentionType === "user") return "text-blue-600 font-medium bg-blue-50 rounded px-0.5 not-prose cursor-pointer";
-  if (mentionType === "page") return "text-slate-700 underline decoration-dotted not-prose cursor-pointer";
-  return "text-violet-600 font-medium not-prose cursor-pointer";
+  if (mentionType === "user") return "text-primary font-medium bg-primary/[0.06] rounded px-0.5 not-prose cursor-pointer";
+  if (mentionType === "page") return "text-foreground underline decoration-dotted not-prose cursor-pointer";
+  return "text-accent-foreground font-medium not-prose cursor-pointer";
 }

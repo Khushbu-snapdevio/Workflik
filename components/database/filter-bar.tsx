@@ -116,7 +116,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
   <div className="flex shrink-0 flex-col gap-1.5 border-b border-border px-4 py-2.5 bg-sidebar">
    {/* Header with logic toggle */}
    <div className="flex items-center justify-between">
-    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Filters</p>
+    <p className="text-xs font-semibold tracking-[0.125px] text-muted-foreground/60">Filters</p>
     {filters.length > 1 && (
      <div className="flex items-center gap-1">
       <span className="text-[10px] text-muted-foreground/60">Match</span>
@@ -154,7 +154,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
         <span className="text-muted-foreground">Where</span>
        ) : (
         <span className={[
-         "inline-flex items-center justify-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+         "inline-flex items-center justify-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-bold tracking-[0.125px]",
          filterLogic === "or"
           ? "bg-warning/10 text-warning"
           : "bg-primary/10 text-primary",

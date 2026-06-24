@@ -156,7 +156,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" alt="Workflik" width={180} height={45} className="h-10 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-10 w-auto" />
     </div>
 
     {/* Progress dots */}
@@ -172,7 +172,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
     </div>
 
     {/* Step label */}
-    <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+    <p className="mb-3 text-[11px] font-semibold tracking-[0.125px] text-muted-foreground/60">
      {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${totalSteps}`}
     </p>
 
@@ -211,7 +211,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
           <div className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
            isSelected ? "border-primary bg-primary" : "border-border"
           }`}>
-           {isSelected && <span className="size-[6px] rounded-full bg-white" />}
+           {isSelected && <span className="size-[6px] rounded-full bg-primary-foreground" />}
           </div>
          </button>
         );

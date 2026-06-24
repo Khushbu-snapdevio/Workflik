@@ -120,7 +120,7 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
  return (
   <div>
-   <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+   <div className="px-3 py-1 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground">
     {label}
    </div>
    {children}

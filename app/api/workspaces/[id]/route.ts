@@ -10,6 +10,7 @@ import {
   requireWorkspaceMember,
   slugify,
 } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -84,6 +85,18 @@ export async function PATCH(req: Request, { params }: Ctx) {
       return updated;
     });
 
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "workspace.updated",
+      targetType: "workspace",
+      targetId:   id,
+      metadata:   {
+        ...(name !== undefined && { name }),
+        ...(slug !== undefined && { slug }),
+        ...(defaultPageAccess !== undefined && { defaultPageAccess }),
+      },
+    });
+
     return Response.json(workspace);
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
@@ -98,7 +111,16 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const session = await getSession();
     await requireWorkspaceMember(id, session.user.id, "admin");
 
+    const workspace = await getWorkspace(id);
     await db.delete(workspaces).where(eq(workspaces.id, id));
+
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "workspace.deleted",
+      targetType: "workspace",
+      targetId:   id,
+      metadata:   { name: workspace.name, slug: workspace.slug },
+    });
 
     return new Response(null, { status: 204 });
   } catch (err) {

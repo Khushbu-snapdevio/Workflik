@@ -455,7 +455,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       <div className="py-1">
        {recent.length > 0 ? (
         <>
-         <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+         <p className="px-4 pb-1 pt-3 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/60">
           Recently visited
          </p>
          {recent.map((r, i) => (

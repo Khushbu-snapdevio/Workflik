@@ -37,6 +37,7 @@ export function NewPageButton({
       });
       if (res.ok) {
         const page = await res.json();
+        window.dispatchEvent(new CustomEvent("pages:refresh"));
         router.push(`/app/${workspaceSlug}/${page.shortId}`);
       }
     } catch {

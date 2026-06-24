@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import type { DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,21 +32,19 @@ type PersonVal   = { name?: string };
 // ── Option color classes ──────────────────────────────────────────────────────
 
 const OPTION_COLORS: Record<string, string> = {
- red:    "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
- orange:   "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
- yellow:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
- green:   "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
- blue:    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
- purple:   "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
- pink:    "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
- brown:   "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
- light_gray: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
- gray:    "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
- default:  "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+ gray:   "bg-[#d4d4d8] text-[#3f3f46]",
+ red:    "bg-[#fee2e2] text-[#b91c1c]",
+ orange:  "bg-[#ffedd5] text-[#c2410c]",
+ yellow:  "bg-[#fef9c3] text-[#a16207]",
+ green:   "bg-[#dcfce7] text-[#15803d]",
+ teal:   "bg-[#ccfbf1] text-[#0f766e]",
+ blue:   "bg-[#e0f2fe] text-[#0369a1]",
+ purple:  "bg-[#ede9fe] text-[#6d28d9]",
+ pink:   "bg-[#fce7f3] text-[#be185d]",
 };
 
 function optionCls(color: string): string {
- return OPTION_COLORS[color] ?? OPTION_COLORS.default;
+ return OPTION_COLORS[color] ?? OPTION_COLORS.gray;
 }
 
 // ── Editable scalar cell ──────────────────────────────────────────────────────
@@ -99,7 +98,7 @@ function EditableCell({
     onChange={(e) => setDraft(e.target.value)}
     onBlur={commit}
     onKeyDown={onKey}
-    className="w-full bg-card dark:bg-background border border-primary/60 rounded px-2 py-0.5 text-sm text-foreground outline-none"
+    className="w-full bg-background border border-primary/60 rounded px-2 py-0.5 text-sm text-foreground outline-none"
    />
   );
  }
@@ -367,6 +366,7 @@ function ColumnHeader({
  const [menuOpen, setMenuOpen] = useState(false);
  const [renaming, setRenaming] = useState(false);
  const [draftName, setDraftName] = useState(prop.name);
+ const [confirmDelete, setConfirmDelete] = useState(false);
  const menuRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLInputElement>(null);
 
@@ -393,59 +393,69 @@ function ColumnHeader({
  }
 
  return (
-  <div className="flex items-center justify-between gap-1 w-full">
-   <div className="flex min-w-0 items-center gap-1.5">
-    <Icon size={12} className="shrink-0 text-muted-foreground/60" />
-    <span className="truncate text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-     {prop.name}
-    </span>
-   </div>
+  <>
+   <div className="flex items-center justify-between gap-1 w-full">
+    <div className="flex min-w-0 items-center gap-1.5">
+     <Icon size={12} className="shrink-0 text-muted-foreground/60" />
+     <span className="truncate text-xs font-semibold text-muted-foreground tracking-[0.125px]">
+      {prop.name}
+     </span>
+    </div>
 
-   <div ref={menuRef} className="relative shrink-0">
-    <button
-     onClick={() => setMenuOpen((p) => !p)}
-     className="flex size-5 items-center justify-center rounded text-muted-foreground/40 opacity-0 group-hover/col:opacity-100 hover:bg-accent hover:text-foreground transition-all"
-    >
-     <DotsThreeIcon size={14} />
-    </button>
+    <div ref={menuRef} className="relative shrink-0">
+     <button
+      onClick={() => setMenuOpen((p) => !p)}
+      className="flex size-5 items-center justify-center rounded text-muted-foreground/40 opacity-0 group-hover/col:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+     >
+      <DotsThreeIcon size={14} />
+     </button>
 
-    {menuOpen && (
-     <div className="absolute right-0 top-full z-[500] mt-0.5 w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
-      {renaming ? (
-       <div className="flex items-center gap-2 px-2 py-1.5">
-        <input
-         ref={inputRef}
-         value={draftName}
-         onChange={(e) => setDraftName(e.target.value)}
-         onBlur={commitRename}
-         onKeyDown={(e) => {
-          if (e.key === "Enter") commitRename();
-          if (e.key === "Escape") { setRenaming(false); setMenuOpen(false); }
-         }}
-         className="flex-1 rounded-[var(--radius-sm)] border border-primary/60 bg-background px-2 py-1 text-xs text-foreground outline-none"
-        />
-       </div>
-      ) : (
-       <>
-        <button
-         onClick={() => { setDraftName(prop.name); setRenaming(true); }}
-         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
-        >
-         Rename
-        </button>
-        <div className="my-1 h-px bg-border/40" />
-        <button
-         onClick={() => { onDelete(prop.id); setMenuOpen(false); }}
-         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-        >
-         <TrashIcon size={13} /> Delete property
-        </button>
-       </>
-      )}
-     </div>
-    )}
+     {menuOpen && (
+      <div className="absolute right-0 top-full z-[500] mt-0.5 w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
+       {renaming ? (
+        <div className="flex items-center gap-2 px-2 py-1.5">
+         <input
+          ref={inputRef}
+          value={draftName}
+          onChange={(e) => setDraftName(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(e) => {
+           if (e.key === "Enter") commitRename();
+           if (e.key === "Escape") { setRenaming(false); setMenuOpen(false); }
+          }}
+          className="flex-1 rounded-[var(--radius-sm)] border border-primary/60 bg-background px-2 py-1 text-xs text-foreground outline-none"
+         />
+        </div>
+       ) : (
+        <>
+         <button
+          onClick={() => { setDraftName(prop.name); setRenaming(true); }}
+          className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+         >
+          Rename
+         </button>
+         <div className="my-1 h-px bg-border/40" />
+         <button
+          onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
+          className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+         >
+          <TrashIcon size={13} /> Delete property
+         </button>
+        </>
+       )}
+      </div>
+     )}
+    </div>
    </div>
-  </div>
+   <ConfirmDialog
+    open={confirmDelete}
+    onOpenChange={setConfirmDelete}
+    title="Delete property?"
+    description={`"${prop.name}" and all its data will be permanently removed. This cannot be undone.`}
+    confirmLabel="Delete property"
+    onConfirm={() => { onDelete(prop.id); setConfirmDelete(false); }}
+   />
+  </>
  );
 }
 
@@ -499,7 +509,7 @@ function RowMenu({
      </button>
      <div className="my-1 h-px bg-border/40" />
      <button
-      onClick={() => { onDelete(entryId); setOpen(false); }}
+      onClick={() => { setOpen(false); onDelete(entryId); }}
       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
      >
       <TrashIcon size={13} /> Delete
@@ -742,6 +752,8 @@ export function TemplateTableView({
  onDeleteProperty,
 }: Props) {
  const [showAddProp, setShowAddProp] = useState(false);
+ const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+ const [deletingEntry, setDeletingEntry] = useState(false);
 
  const visibleProps = properties.filter((p) => !p.isHidden);
 
@@ -751,7 +763,8 @@ export function TemplateTableView({
  const handleAdd = useCallback(async () => { await onAddEntry(); }, [onAddEntry]);
 
  return (
-  <div className="relative h-full overflow-auto">
+  <>
+  <div className="relative h-full overflow-auto isolate">
    <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
     <colgroup>
      <col style={{ width: "32px" }} />
@@ -777,7 +790,7 @@ export function TemplateTableView({
 
       {/* Title column */}
       <th className="py-2.5 pl-1 pr-4 text-left">
-       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
+       <span className="text-xs font-semibold tracking-[0.125px] text-muted-foreground">Name</span>
       </th>
 
       {/* Property columns */}
@@ -824,7 +837,7 @@ export function TemplateTableView({
       return (
        <tr
         key={entry.id}
-        className={`group/row border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : "hover:bg-muted/20"}`}
+        className={`group/row border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : !deleteTarget ? "hover:bg-muted/20" : ""}`}
        >
         {/* Checkbox */}
         <td className="w-8 px-2 py-0">
@@ -872,7 +885,7 @@ export function TemplateTableView({
             shortId={entry.shortId}
             workspaceSlug={workspaceSlug}
             onDuplicate={onDuplicateEntry}
-            onDelete={onDeleteEntry}
+            onDelete={(id) => setDeleteTarget(id)}
            />
           </div>
          </div>
@@ -913,5 +926,22 @@ export function TemplateTableView({
    </table>
 
   </div>
+  <ConfirmDialog
+   open={!!deleteTarget}
+   onOpenChange={(o) => !o && setDeleteTarget(null)}
+   title="Delete entry?"
+   description="This entry will be permanently deleted. This cannot be undone."
+   confirmLabel="Delete"
+   confirmLoadingLabel="Deleting…"
+   loading={deletingEntry}
+   onConfirm={async () => {
+    if (!deleteTarget) return;
+    setDeletingEntry(true);
+    await onDeleteEntry(deleteTarget);
+    setDeletingEntry(false);
+    setDeleteTarget(null);
+   }}
+  />
+  </>
  );
 }

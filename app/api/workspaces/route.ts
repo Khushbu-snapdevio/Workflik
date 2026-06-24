@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
 import { getSession, uniqueSlug, apiError, ApiError } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 // GET /api/workspaces — list all workspaces the current user is an active member of
 export async function GET() {
@@ -75,6 +76,14 @@ export async function POST(req: Request) {
       });
 
       return ws;
+    });
+
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "workspace.created",
+      targetType: "workspace",
+      targetId:   workspace.id,
+      metadata:   { name: workspace.name, slug: workspace.slug },
     });
 
     return Response.json(workspace, { status: 201 });

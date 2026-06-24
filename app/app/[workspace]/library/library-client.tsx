@@ -151,10 +151,10 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
 
               {/* Table header */}
               <div className="grid border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Page name</span>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Created by</span>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Last edited</span>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Created</span>
+                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Page name</span>
+                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Created by</span>
+                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Last edited</span>
+                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Created</span>
               </div>
 
               {/* Rows */}

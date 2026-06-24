@@ -43,13 +43,13 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
     <button
      type="button"
      onClick={toggle}
-     className={`relative flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
+     className={`group relative flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 ${
       panelOpen
-       ? "bg-primary/[0.08] text-foreground font-semibold"
-       : "text-sidebar-foreground/65 hover:bg-primary/[0.04] hover:text-sidebar-foreground"
+       ? "bg-sidebar-accent text-sidebar-foreground font-semibold"
+       : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
      }`}
     >
-     <span className={`relative shrink-0 transition-colors ${panelOpen ? "text-primary" : "text-sidebar-foreground/40"}`}>
+     <span className={`relative shrink-0 transition-colors duration-150 ${panelOpen ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"}`}>
       <Bell size={15} />
       {badge && (
        <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white leading-none">

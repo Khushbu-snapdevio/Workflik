@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { enqueueEmail } from "@/lib/email";
 import { magicLinkTemplate } from "@/lib/email/templates/magic-link";
 import { env } from "@/lib/env";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 export const auth = betterAuth({
   advanced: {
@@ -63,6 +64,21 @@ export const auth = betterAuth({
   // Guard: reject any session refresh where the session was created via
   // impersonation and the 2-hour hard TTL has elapsed.
   databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            await writeAuditLog({
+              actorId:    user.id,
+              action:     "user.signup",
+              targetType: "user",
+              targetId:   user.id,
+              metadata:   { email: user.email, name: user.name ?? null },
+            });
+          } catch { /* never fail signup due to audit */ }
+        },
+      },
+    },
     session: {
       update: {
         before: async (session) => {

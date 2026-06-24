@@ -62,17 +62,17 @@ const CATEGORY_COLORS: Record<string, { badge: string }> = {
 const DEFAULT_COLOR = { badge: "bg-muted text-muted-foreground" };
 
 const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
-  gray:   { dot: "bg-muted-foreground/40",  badge: "bg-muted text-muted-foreground"           },
-  red:    { dot: "bg-destructive/50",        badge: "bg-destructive/10 text-destructive"       },
-  orange: { dot: "bg-warning/50",            badge: "bg-warning/10 text-warning"               },
-  yellow: { dot: "bg-warning/40",            badge: "bg-warning/[0.07] text-warning"           },
-  green:  { dot: "bg-success/50",            badge: "bg-success/10 text-success"               },
-  teal:   { dot: "bg-success/40",            badge: "bg-success/[0.07] text-success"           },
-  blue:   { dot: "bg-primary/50",            badge: "bg-primary/10 text-primary"               },
-  purple: { dot: "bg-primary/40",            badge: "bg-primary/[0.07] text-primary/80"        },
-  pink:   { dot: "bg-destructive/40",        badge: "bg-destructive/[0.07] text-destructive/80"},
+  gray:   { dot: "bg-[#71717a]", badge: "bg-[#d4d4d8] text-[#3f3f46]" },
+  red:    { dot: "bg-[#f87171]", badge: "bg-[#fee2e2] text-[#b91c1c]" },
+  orange: { dot: "bg-[#fb923c]", badge: "bg-[#ffedd5] text-[#c2410c]" },
+  yellow: { dot: "bg-[#facc15]", badge: "bg-[#fef9c3] text-[#a16207]" },
+  green:  { dot: "bg-[#4ade80]", badge: "bg-[#dcfce7] text-[#15803d]" },
+  teal:   { dot: "bg-[#2dd4bf]", badge: "bg-[#ccfbf1] text-[#0f766e]" },
+  blue:   { dot: "bg-[#38bdf8]", badge: "bg-[#e0f2fe] text-[#0369a1]" },
+  purple: { dot: "bg-[#a78bfa]", badge: "bg-[#ede9fe] text-[#6d28d9]" },
+  pink:   { dot: "bg-[#f472b6]", badge: "bg-[#fce7f3] text-[#be185d]" },
 };
-const DEFAULT_OPT = { dot: "bg-muted-foreground/40", badge: "bg-muted text-muted-foreground" };
+const DEFAULT_OPT = { dot: "bg-[#71717a]", badge: "bg-[#d4d4d8] text-[#3f3f46]" };
 
 interface Props {
   workspaceId:      string;
@@ -237,7 +237,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                   <div className="space-y-6">
                     {filteredBuiltIn.length > 0 && (
                       <section>
-                        <p className="mb-3 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                        <p className="mb-3 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
                           WorkFlik Templates
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -254,7 +254,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
 
                     {filteredWorkspace.length > 0 && (
                       <section>
-                        <p className="mb-3 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                        <p className="mb-3 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
                           Workspace Templates
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -320,7 +320,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                     <DbSchemaPreview schema={selected.pageSnapshot.database_schema} />
                   ) : blocks.length > 0 ? (
                     <div className="mt-5">
-                      <p className="mb-3 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                      <p className="mb-3 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
                         Included in this template
                       </p>
                       <div className="space-y-1.5 rounded-[var(--radius-md)] border border-border/50 bg-muted/20 p-3">
@@ -552,7 +552,7 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
     <div className="mt-5 space-y-4">
       {/* Views */}
       <div>
-        <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -560,7 +560,7 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
             <span
               key={v.name}
               className={[
-                "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10.5px] font-medium",
+                "inline-flex items-center gap-1 rounded-[var(--radius-sm)] border px-2 py-1 text-[10.5px] font-medium",
                 v.isDefault
                   ? "border-border bg-accent text-foreground font-semibold"
                   : "border-border/40 bg-muted/20 text-muted-foreground",
@@ -574,7 +574,7 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
 
       {/* Properties */}
       <div>
-        <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">
+        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
           Properties ({schema.properties.length})
         </p>
         <div className="divide-y divide-border/40 rounded-[var(--radius-md)] border border-border/50 bg-muted/20">

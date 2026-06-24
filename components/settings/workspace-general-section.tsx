@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AlertCircle, AlertTriangle, Check, ChevronDown, ExternalLink, Link2, Settings, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /* ── Emoji catalogue ──────────────────────────────────────── */
 const EMOJI_CATEGORIES = [
@@ -156,7 +158,7 @@ function fmt(b: number) {
 }
 
 function SectionLabel({ label }: { label: string }) {
- return <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">{label}</p>;
+ return <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">{label}</p>;
 }
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
  return (
@@ -346,7 +348,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
  }
 
  return (
-  <div className="mx-auto max-w-[640px] px-8 py-10">
+  <div className="max-w-[780px] px-8 pt-6 pb-10">
 
    {/* ── Header ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -398,9 +400,9 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
        <p className="mt-0.5 text-xs text-muted-foreground">Shown in the sidebar and all emails.</p>
       </div>
       <div className="relative shrink-0">
-       <input value={name} onChange={e => setName(e.target.value)}
+       <Input value={name} onChange={e => setName(e.target.value)}
         onBlur={() => { const v = nameRef.current.trim(); if (v && v !== workspace.name) patchWs({ name: v }); }}
-        className="w-[220px] rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-primary focus:bg-card" />
+        className="w-[220px] focus-visible:border-primary" />
        {saved === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saved ✓</span>}
       </div>
      </div>
@@ -414,10 +416,10 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
       <div className="shrink-0">
        <div className="flex items-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-muted/30 transition-colors focus-within:border-primary focus-within:bg-card">
         <span className="select-none border-r border-border/50 bg-muted px-2.5 py-2 text-xs font-medium text-muted-foreground">/app/</span>
-        <input value={slug}
+        <Input value={slug}
          onChange={e => { setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,"")); setSlugError(""); }}
          onBlur={() => { const v = slugRef.current.trim(); if (v && v !== workspace.slug) patchWs({ slug: v }); }}
-         className="w-[140px] bg-transparent px-2.5 py-2 text-sm text-foreground outline-none" />
+         className="w-[140px] border-none bg-transparent px-2.5 h-auto" />
        </div>
        {slugError && <p className="mt-1 text-xs text-destructive">{slugError}</p>}
        {saved === "slug" && <p className="mt-1 text-xs text-muted-foreground">Saved ✓</p>}
@@ -451,12 +453,10 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
          <p className="truncate font-mono text-xs text-foreground">{inviteShort}</p>
          <p className="text-xs text-muted-foreground">Anyone with this link can join your workspace</p>
         </div>
-        <button type="button" onClick={copy}
-         className={`shrink-0 rounded-[var(--radius-sm)] px-3.5 py-1.5 text-sm font-semibold transition-all active:scale-[0.97] ${
-          copied ? "bg-success-subtle text-success-foreground" : "bg-primary text-primary-foreground hover:bg-primary/90"
-         }`}>
+        <Button type="button" size="sm" onClick={copy}
+         className={`shrink-0 active:scale-[0.97] ${copied ? "bg-success-subtle text-success-foreground hover:bg-success-subtle" : ""}`}>
          {copied ? "Copied ✓" : "Copy link"}
-        </button>
+        </Button>
        </div>
       </div>
       <CardRow label="Join as" desc="New members via this link will be assigned this role."
@@ -466,14 +466,12 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
       <CardRow label="Manage link" last
        control={
         <div className="flex gap-2">
-         <button type="button" onClick={generateLink} disabled={saving === "inviteLink"}
-          className="rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3.5 py-1.5 text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50 transition-colors">
+         <Button type="button" variant="outline" size="sm" onClick={generateLink} disabled={saving === "inviteLink"}>
           Regenerate
-         </button>
-         <button type="button" onClick={disableLink} disabled={saving === "inviteDisable"}
-          className="rounded-[var(--radius-sm)] border border-destructive/30 bg-card px-3.5 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/[0.06] disabled:opacity-50 transition-colors">
+         </Button>
+         <Button type="button" variant="destructive" size="sm" onClick={disableLink} disabled={saving === "inviteDisable"}>
           Disable
-         </button>
+         </Button>
         </div>
        }
       />
@@ -488,10 +486,9 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
         <p className="text-sm font-medium text-foreground">No active invite link</p>
         <p className="mt-0.5 text-xs text-muted-foreground">Generate a shareable link to invite new members.</p>
        </div>
-       <button type="button" onClick={generateLink} disabled={saving === "inviteLink"}
-        className="shrink-0 rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-all active:scale-[0.97] hover:bg-primary/90">
+       <Button type="button" size="sm" onClick={generateLink} disabled={saving === "inviteLink"} className="shrink-0 active:scale-[0.97]">
         {saving === "inviteLink" ? "Generating…" : "Generate link"}
-       </button>
+       </Button>
       </div>
      </Card>
     )}
@@ -517,7 +514,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
        <p className="text-xs text-muted-foreground">{fmt(QUOTA - bytesUsed)} free</p>
       </div>
      </div>
-     <div className="mt-4 h-[8px] w-full overflow-hidden rounded-full bg-black/[0.06]">
+     <div className="mt-4 h-[8px] w-full overflow-hidden rounded-full bg-border/50">
       <div
        className={`h-full rounded-full transition-all duration-700 ${isAtLim ? "bg-destructive" : isNear ? "bg-warning" : "bg-primary"}`}
        style={{ width: `${Math.max(pct, 1.5)}%` }}
@@ -547,25 +544,22 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
        </div>
       </div>
       {!deleteOpen ? (
-       <button type="button" onClick={() => setDeleteOpen(true)}
-        className="mt-4 rounded-[var(--radius-sm)] border border-destructive/30 bg-card px-4 py-2 text-sm font-medium text-destructive transition-all hover:bg-destructive/[0.06] active:scale-[0.97]">
+       <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteOpen(true)} className="mt-4 active:scale-[0.97]">
         Delete workspace…
-       </button>
+       </Button>
       ) : (
        <div className="mt-4 space-y-3">
         <p className="text-sm text-foreground">
          Type <strong className="font-semibold text-destructive">{workspace.name}</strong> to confirm:
         </p>
-        <input value={deleteName} onChange={e => setDeleteName(e.target.value)} placeholder={workspace.name}
-         className="w-full rounded-[var(--radius-sm)] border border-destructive/40 bg-card px-3 py-2.5 text-sm outline-none focus:border-destructive transition-colors" />
+        <Input value={deleteName} onChange={e => setDeleteName(e.target.value)} placeholder={workspace.name}
+         className="w-full border-destructive/40 focus-visible:border-destructive" />
         {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
         <div className="flex gap-2">
-         <button type="button" onClick={() => { setDeleteOpen(false); setDeleteName(""); setDeleteError(""); }}
-          className="rounded-[var(--radius-sm)] border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors duration-150">Cancel</button>
-         <button type="button" onClick={handleDelete} disabled={deleting || deleteName !== workspace.name}
-          className="rounded-[var(--radius-sm)] bg-destructive px-4 py-2 text-sm font-medium text-white transition-all hover:bg-destructive/90 disabled:opacity-50 active:scale-[0.97]">
+         <Button type="button" variant="outline" size="sm" onClick={() => { setDeleteOpen(false); setDeleteName(""); setDeleteError(""); }}>Cancel</Button>
+         <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting || deleteName !== workspace.name} className="bg-destructive text-white hover:bg-destructive/90 active:scale-[0.97]">
           {deleting ? "Deleting…" : "Delete workspace"}
-         </button>
+         </Button>
         </div>
        </div>
       )}

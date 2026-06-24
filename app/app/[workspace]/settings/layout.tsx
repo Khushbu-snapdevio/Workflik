@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { users, workspaces } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { SettingsNav } from "@/components/settings/settings-nav";
+import { SettingsTopBar } from "@/components/settings/settings-top-bar";
 import { SettingsUserProvider } from "@/components/settings/settings-user-context";
 
 type Props = { children: ReactNode; params: Promise<{ workspace: string }> };
@@ -32,15 +33,16 @@ export default async function SettingsLayout({ children, params }: Props) {
 
   return (
     <SettingsUserProvider initial={{ name: userName, email: userEmail, image: userImage }}>
-      <div className="flex h-full overflow-hidden">
-        <SettingsNav
-          workspaceSlug={ws.slug}
-          workspaceName={ws.name}
-          workspaceIcon={ws.icon}
-          isAdmin={member.role === "admin"}
-        />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
+      <div className="flex h-full flex-col overflow-hidden">
+        <SettingsTopBar workspaceSlug={ws.slug} />
+        <div className="flex flex-1 overflow-hidden">
+          <SettingsNav
+            workspaceSlug={ws.slug}
+            workspaceName={ws.name}
+            workspaceIcon={ws.icon}
+            isAdmin={member.role === "admin"}
+          />
+          <div className="flex-1 overflow-y-auto bg-page">
             <Suspense fallback={<SettingsPageSkeleton />}>
               {children}
             </Suspense>
@@ -53,7 +55,7 @@ export default async function SettingsLayout({ children, params }: Props) {
 
 function SettingsPageSkeleton() {
   return (
-    <div className="mx-auto max-w-[640px] animate-pulse px-10 py-10">
+    <div className="mx-auto max-w-[700px] animate-pulse px-10 py-10">
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">
         <div className="size-12 shrink-0 rounded-[var(--radius-md)] bg-muted" />

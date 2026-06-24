@@ -27,7 +27,7 @@ export function TemplatePublishToggle({ templateId, currentStatus }: Props) {
       onClick={toggle}
       disabled={busy}
       className={[
-        "rounded-md px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+        "rounded-[var(--radius-md)] px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50",
         isPublished
           ? "border border-border text-muted-foreground hover:bg-accent"
           : "bg-success text-white hover:bg-success/90",

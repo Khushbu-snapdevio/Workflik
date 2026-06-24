@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, Check, ChevronDown, Users, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 const ROLE_OPTIONS = [
  { value: "editor", label: "Editor" },
@@ -212,7 +215,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
  }
 
  return (
-  <div className="mx-auto max-w-[640px] px-8 py-10">
+  <div className="max-w-[780px] px-8 pt-6 pb-10">
 
    {/* ── Header ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -242,18 +245,26 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
    {/* ── Invite ── */}
    {isAdmin && (
     <div className="mb-7">
-     <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">Invite people</p>
+     <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Invite people</p>
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card p-4">
       <div className="flex items-center gap-2">
-       <input type="email" value={email} placeholder="colleague@company.com"
+       <Input
+        type="email"
+        value={email}
+        placeholder="colleague@company.com"
         onChange={e => { setEmail(e.target.value); setInviteErr(""); }}
         onKeyDown={e => e.key === "Enter" && invite()}
-        className="flex-1 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary focus:bg-card transition-colors placeholder:text-muted-foreground/50" />
+        className="flex-1 focus-visible:border-primary"
+       />
        <RoleSelect value={role} onChange={setRole} />
-       <button type="button" onClick={invite} disabled={inviting || !email.trim()}
-        className="rounded-[var(--radius-sm)] bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[var(--primary-hover)] disabled:opacity-50 active:scale-[0.97]">
+       <Button
+        type="button"
+        size="sm"
+        onClick={invite}
+        disabled={inviting || !email.trim()}
+        >
         {inviting ? "Sending…" : "Invite"}
-       </button>
+       </Button>
       </div>
       {inviteErr && (
        <p className="mt-2.5 flex items-center gap-1.5 text-xs text-destructive">
@@ -274,7 +285,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
 
    {/* ── Active members ── */}
    <div className="mb-7">
-    <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">Members</p>
+    <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Members</p>
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
      {active.map((m, i) => {
       const display  = m.userName?.trim() || m.userEmail?.trim() || m.invitedEmail?.trim() || "Unknown";
@@ -298,17 +309,24 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
         {isAdmin && !isAdminRow && !isMe ? (
          <RoleSelect value={m.role} onChange={v => changeRole(m.userId!, v)} disabled={busy === m.userId} />
         ) : (
-         <span className={`shrink-0 flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-xs font-semibold capitalize ${style.badge}`}>
+         <Badge variant="secondary" className={`shrink-0 flex items-center gap-1.5 capitalize ${style.badge}`}>
           <span className={`size-1.5 rounded-full ${style.dot}`} />
           {m.role}
-         </span>
+         </Badge>
         )}
         {/* Remove button */}
         {isAdmin && !isAdminRow && m.userId && (
-         <button type="button" onClick={() => setPendingRemove({ userId: m.userId!, name: display })} disabled={busy === m.userId} title="Remove"
-          className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive disabled:opacity-40">
+         <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={() => setPendingRemove({ userId: m.userId!, name: display })}
+          disabled={busy === m.userId}
+          title="Remove"
+          className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
+         >
           <X size={14} />
-         </button>
+         </Button>
         )}
        </div>
       );
@@ -323,7 +341,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
    {invited.length > 0 && (
     <div>
      <div className="mb-2 flex items-center gap-2">
-      <p className="text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/50">Pending invitations</p>
+      <p className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Pending invitations</p>
       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10.5px] font-bold text-muted-foreground">{invited.length}</span>
      </div>
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
@@ -338,17 +356,30 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
           <p className="truncate text-sm font-semibold text-foreground">{addr}</p>
           <p className="text-xs text-muted-foreground">Invited {ago(m.createdAt)}</p>
          </div>
-         <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold capitalize text-muted-foreground">{m.role}</span>
+         <Badge variant="secondary" className="shrink-0 capitalize">
+          {m.role}
+         </Badge>
          {isAdmin && (
           <div className="flex items-center gap-1.5">
-           <button type="button" onClick={() => resend(m.id)} disabled={busy === `resend-${m.id}`}
-            className="rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-50 transition-colors duration-150">
+           <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => resend(m.id)}
+            disabled={busy === `resend-${m.id}`}
+            >
             {busy === `resend-${m.id}` ? "…" : "Resend"}
-           </button>
-           <button type="button" onClick={() => setPendingCancelInvite({ id: m.id, email: addr })} disabled={busy === m.id}
-            className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 hover:bg-destructive/[0.06] hover:text-destructive disabled:opacity-40 transition-colors">
+           </Button>
+           <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setPendingCancelInvite({ id: m.id, email: addr })}
+            disabled={busy === m.id}
+            className="flex size-7 items-center justify-center p-0 bg-transparent text-muted-foreground/40 hover:bg-destructive/[0.06] hover:text-destructive shadow-none border-0"
+           >
             <X size={14} />
-           </button>
+           </Button>
           </div>
          )}
         </div>

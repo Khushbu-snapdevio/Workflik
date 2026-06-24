@@ -1,6 +1,6 @@
 export default function SettingsLoading() {
   return (
-    <div className="mx-auto max-w-[640px] animate-pulse px-10 py-10">
+    <div className="mx-auto max-w-[800px] animate-pulse px-10 py-10">
 
       {/* Header */}
       <div className="mb-8 flex items-center gap-4">

@@ -38,8 +38,8 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
       if (!opt) return null;
       const color = getOptionColor(opt.color);
       return (
-        <span className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
-          <span className={`size-1.5 shrink-0 rounded-full ${color.dot}`} />
+        <span className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+          <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
           {opt.name}
         </span>
       );
@@ -56,8 +56,8 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
           {shown.map((opt) => {
             const color = getOptionColor(opt.color);
             return (
-              <span key={opt.id} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
-                <span className={`size-1.5 shrink-0 rounded-full ${color.dot}`} />
+              <span key={opt.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+                <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
                 {opt.name}
               </span>
             );

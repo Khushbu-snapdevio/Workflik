@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,6 +13,7 @@ import {
  User as UserIcon, Tag as TagIcon,
  Link as LinkIcon, Type as TextTIcon, Hash as NumberCircleOneIcon,
  CheckSquare as CheckSquareIcon, List as ListBulletsIcon,
+ MoreVertical as MoreVerticalIcon, Pencil as PencilIcon, Copy as CopyIcon,
 } from "lucide-react";
 
 const CalendarBlankIcon = CalendarIcon;
@@ -21,6 +23,7 @@ import { TemplateTableView }  from "./views/template-table-view";
 import { TemplateBoardView }  from "./views/template-board-view";
 import { TemplateCalendarView } from "./views/template-calendar-view";
 import { TemplateGalleryView } from "./views/template-gallery-view";
+import { ConfirmDialog }   from "@/components/ui/confirm-dialog";
 import { ShareButton }     from "@/components/pages/share-button";
 import { FavoriteButton }    from "@/components/pages/favorite-button";
 import { PageActionsMenu }   from "@/components/pages/page-actions-menu";
@@ -250,7 +253,7 @@ function CoverPicker({
 
     <div className="p-5">
      {/* File upload */}
-     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upload image</p>
+     <p className="mb-2 text-xs font-semibold tracking-[0.125px] text-muted-foreground">Upload image</p>
      <button
       onClick={() => fileInputRef.current?.click()}
       disabled={uploading}
@@ -272,7 +275,7 @@ function CoverPicker({
      <div className="my-3 border-t border-border/40" />
 
      {/* Gradients */}
-     <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Color & Gradient</p>
+     <p className="mb-2 text-xs font-semibold tracking-[0.125px] text-muted-foreground">Color & Gradient</p>
      <div className="mb-4 grid grid-cols-6 gap-1.5">
       {COVER_GRADIENTS.map((g) => (
        <button
@@ -285,7 +288,7 @@ function CoverPicker({
      </div>
 
      {/* URL */}
-     <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Image URL</p>
+     <p className="mb-1.5 text-xs font-semibold tracking-[0.125px] text-muted-foreground">Image URL</p>
      <div className="flex gap-2">
       <input
        value={url}
@@ -519,19 +522,17 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
 // ── Entry detail panel ────────────────────────────────────────────────────────
 
 const PANEL_OPTION_COLORS: Record<string, string> = {
- red:    "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
- orange:   "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
- yellow:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
- green:   "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
- blue:    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
- purple:   "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
- pink:    "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
- brown:   "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
- light_gray: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
- gray:    "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
- default:  "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+ gray:   "bg-[#d4d4d8] text-[#3f3f46]",
+ red:    "bg-[#fee2e2] text-[#b91c1c]",
+ orange:  "bg-[#ffedd5] text-[#c2410c]",
+ yellow:  "bg-[#fef9c3] text-[#a16207]",
+ green:   "bg-[#dcfce7] text-[#15803d]",
+ teal:   "bg-[#ccfbf1] text-[#0f766e]",
+ blue:   "bg-[#e0f2fe] text-[#0369a1]",
+ purple:  "bg-[#ede9fe] text-[#6d28d9]",
+ pink:   "bg-[#fce7f3] text-[#be185d]",
 };
-function poptionCls(color: string) { return PANEL_OPTION_COLORS[color] ?? PANEL_OPTION_COLORS.default; }
+function poptionCls(color: string) { return PANEL_OPTION_COLORS[color] ?? PANEL_OPTION_COLORS.gray; }
 
 type PPropOption = { id: string; name: string; color: string };
 type PPropConfig = { options?: PPropOption[] };
@@ -811,6 +812,7 @@ function EntryDetailPanel({
  onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
 }) {
  const [title, setTitle] = useState(entry.title || "");
+ const [confirmDelete, setConfirmDelete] = useState(false);
  const valMap      = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
  const visibleProps   = properties.filter((p) => !p.isHidden);
 
@@ -844,7 +846,7 @@ function EntryDetailPanel({
        Open page
       </Link>
       <button
-       onClick={() => { onDelete(entry.id); onClose(); }}
+       onClick={() => setConfirmDelete(true)}
        className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
        title="Delete entry"
       >
@@ -901,6 +903,14 @@ function EntryDetailPanel({
      </div>
     </div>
    </div>
+   <ConfirmDialog
+    open={confirmDelete}
+    onOpenChange={setConfirmDelete}
+    title="Delete entry?"
+    description="This entry will be permanently deleted. This cannot be undone."
+    confirmLabel="Delete"
+    onConfirm={() => { onDelete(entry.id); setConfirmDelete(false); onClose(); }}
+   />
   </>
  );
 }
@@ -1018,8 +1028,17 @@ export function TemplatePageClient({
  const [calYear, setCalYear] = useState(() => new Date().getFullYear());
  const [calMonth, setCalMonth] = useState(() => new Date().getMonth());
 
- const pageTitleRef = useRef<HTMLInputElement>(null);
- const addViewRef  = useRef<HTMLDivElement>(null);
+ const pageTitleRef  = useRef<HTMLInputElement>(null);
+ const addViewRef   = useRef<HTMLDivElement>(null);
+ const viewMenuRef  = useRef<HTMLDivElement>(null);
+
+ const [hoveredViewId,  setHoveredViewId]  = useState<string | null>(null);
+ const [viewMenuTarget, setViewMenuTarget]  = useState<DatabaseView | null>(null);
+ const [viewMenuRect,  setViewMenuRect]  = useState<DOMRect | null>(null);
+ const [deleteViewTarget, setDeleteViewTarget] = useState<DatabaseView | null>(null);
+ const [deletingView,  setDeletingView]  = useState(false);
+ const [renamingViewId, setRenamingViewId]  = useState<string | null>(null);
+ const [renamingViewName, setRenamingViewName] = useState("");
 
  useEffect(() => {
   if (!showAddView) return;
@@ -1029,6 +1048,17 @@ export function TemplatePageClient({
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [showAddView]);
+
+ useEffect(() => {
+  if (!viewMenuTarget) return;
+  function h(e: MouseEvent) {
+   if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+    setViewMenuTarget(null); setViewMenuRect(null);
+   }
+  }
+  document.addEventListener("mousedown", h);
+  return () => document.removeEventListener("mousedown", h);
+ }, [viewMenuTarget]);
 
  // ── Auto-wire calendar property ───────────────────────────────────────────
  // When switching to a calendar view that has no calendarPropertyId, find or
@@ -1320,6 +1350,47 @@ export function TemplatePageClient({
   setActiveViewId(view.id);
  }, [page.id, properties]);
 
+ const deleteView = useCallback(async (viewId: string) => {
+  setDeletingView(true);
+  const remaining = views.filter((v) => v.id !== viewId);
+  setViews(remaining);
+  if (activeViewId === viewId && remaining.length > 0) {
+   setActiveViewId(remaining[0].id);
+   switchView(remaining[0].id);
+  }
+  try {
+   await fetch(`/api/databases/${page.id}/views/${viewId}`, { method: "DELETE" });
+  } finally {
+   setDeletingView(false);
+   setDeleteViewTarget(null);
+  }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [page.id, views, activeViewId]);
+
+ const renameView = useCallback(async (viewId: string, name: string) => {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, name: trimmed } : v));
+  setRenamingViewId(null);
+  await fetch(`/api/databases/${page.id}/views/${viewId}`, {
+   method: "PATCH", headers: { "Content-Type": "application/json" },
+   body: JSON.stringify({ name: trimmed }),
+  });
+ }, [page.id]);
+
+ const duplicateView = useCallback(async (viewId: string) => {
+  const view = views.find((v) => v.id === viewId);
+  if (!view) return;
+  const res = await fetch(`/api/databases/${page.id}/views`, {
+   method: "POST", headers: { "Content-Type": "application/json" },
+   body: JSON.stringify({ name: `${view.name} (copy)`, type: view.type }),
+  });
+  if (!res.ok) return;
+  const newView = await res.json() as DatabaseView;
+  setViews((prev) => [...prev, newView]);
+  setActiveViewId(newView.id);
+ }, [page.id, views]);
+
  const togglePropertyVisibility = useCallback(async (propId: string, hidden: boolean) => {
   setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, isHidden: hidden } : p));
   await fetch(`/api/databases/${page.id}/properties/${propId}`, {
@@ -1363,6 +1434,7 @@ export function TemplatePageClient({
  const activeSortCount  = sortRules.length;
 
  return (
+  <>
   <div className="flex h-full flex-col overflow-hidden bg-background">
 
    {/* Breadcrumbs + actions */}
@@ -1432,7 +1504,7 @@ export function TemplatePageClient({
 
    {/* Cover */}
    {pageCoverUrl && (
-    <div className="group/cover relative h-[300px] w-full shrink-0">
+    <div className="group/cover relative h-[280px] w-full shrink-0">
      {isCoverGradient
       ? <div className="h-full w-full" style={{ background: pageCoverUrl }} />
       // eslint-disable-next-line @next/next/no-img-element
@@ -1585,24 +1657,67 @@ export function TemplatePageClient({
    {/* View tabs + toolbar */}
    <div className="border-b border-border/60">
    <div className="mx-auto flex max-w-[1100px] items-end justify-between px-6">
-    <div className="flex items-end">
+    <div className="flex items-end self-stretch">
      {views.map((view) => {
       const Icon   = VIEW_ICON[view.type] ?? TableIcon;
       const isActive = view.id === activeViewId;
+      const isHovered = hoveredViewId === view.id;
+      const menuOpen = viewMenuTarget?.id === view.id;
       return (
-       <button
+       <div
         key={view.id}
-        onClick={() => switchView(view.id)}
-        className={[
-         "flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-         isActive
-          ? "border-primary text-foreground"
-          : "border-transparent text-muted-foreground hover:text-foreground",
-        ].join(" ")}
+        className="group flex items-stretch relative"
+        onMouseEnter={() => setHoveredViewId(view.id)}
+        onMouseLeave={() => setHoveredViewId(null)}
        >
-        <Icon size={13} />
-        {view.name}
-       </button>
+        {renamingViewId === view.id ? (
+         <div className="flex items-end pb-1.5 px-1">
+          <input
+           autoFocus
+           value={renamingViewName}
+           onChange={(e) => setRenamingViewName(e.target.value)}
+           onBlur={() => renameView(view.id, renamingViewName || view.name)}
+           onKeyDown={(e) => {
+            if (e.key === "Enter") renameView(view.id, renamingViewName || view.name);
+            if (e.key === "Escape") setRenamingViewId(null);
+           }}
+           className="h-7 w-28 rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 text-[13px] focus:outline-none"
+          />
+         </div>
+        ) : (
+         <button
+          onClick={() => switchView(view.id)}
+          className={[
+           "flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+           isActive
+            ? "border-primary text-foreground"
+            : "border-transparent text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+         >
+          <Icon size={13} />
+          {view.name}
+         </button>
+        )}
+
+        {/* ⋮ menu button — shown on hover */}
+        <button
+         onMouseDown={(e) => e.stopPropagation()}
+         onClick={(e) => {
+          e.stopPropagation();
+          if (menuOpen) { setViewMenuTarget(null); setViewMenuRect(null); }
+          else { setViewMenuTarget(view); setViewMenuRect((e.currentTarget as HTMLElement).getBoundingClientRect()); }
+         }}
+         className="flex items-end pb-2 pr-1 pl-0.5"
+         style={{ opacity: isHovered || menuOpen ? 1 : 0, pointerEvents: isHovered || menuOpen ? "auto" : "none" }}
+        >
+         <span className={[
+          "flex size-5 items-center justify-center rounded-[var(--radius-xs)] transition-colors",
+          menuOpen ? "bg-accent text-foreground" : "text-muted-foreground/60 hover:bg-accent hover:text-foreground",
+         ].join(" ")}>
+          <MoreVerticalIcon size={13} />
+         </span>
+        </button>
+       </div>
       );
      })}
 
@@ -1830,5 +1945,56 @@ export function TemplatePageClient({
     </div>
    </div>
   </div>
+
+  {/* ── View context menu portal ── */}
+  {viewMenuTarget && viewMenuRect && typeof document !== "undefined" && createPortal(
+   <div
+    ref={viewMenuRef}
+    style={{ position: "fixed", top: viewMenuRect.bottom + 4, left: viewMenuRect.left, zIndex: 500 }}
+    className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
+   >
+    <button
+     onClick={() => {
+      setRenamingViewId(viewMenuTarget.id);
+      setRenamingViewName(viewMenuTarget.name);
+      setViewMenuTarget(null); setViewMenuRect(null);
+     }}
+     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-foreground transition-colors hover:bg-accent"
+    >
+     <PencilIcon size={13} className="shrink-0 text-muted-foreground" /> Rename
+    </button>
+    <button
+     onClick={() => { duplicateView(viewMenuTarget.id); setViewMenuTarget(null); setViewMenuRect(null); }}
+     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-foreground transition-colors hover:bg-accent"
+    >
+     <CopyIcon size={13} className="shrink-0 text-muted-foreground" /> Duplicate view
+    </button>
+    {views.length > 1 && (
+     <>
+      <div className="my-1 h-px bg-border/60" />
+      <button
+       onClick={() => { setDeleteViewTarget(viewMenuTarget); setViewMenuTarget(null); setViewMenuRect(null); }}
+       className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-destructive transition-colors hover:bg-destructive/[0.08]"
+      >
+       <TrashIcon size={13} className="shrink-0" /> Delete view
+      </button>
+     </>
+    )}
+   </div>,
+   document.body
+  )}
+
+  {/* ── Delete view confirmation ── */}
+  <ConfirmDialog
+   open={!!deleteViewTarget}
+   onOpenChange={(o) => !o && setDeleteViewTarget(null)}
+   title={`Delete "${deleteViewTarget?.name}"?`}
+   description="This view and its configuration will be permanently deleted. Entries in your database will not be affected."
+   confirmLabel="Delete view"
+   confirmLoadingLabel="Deleting…"
+   loading={deletingView}
+   onConfirm={() => { if (deleteViewTarget) deleteView(deleteViewTarget.id); }}
+  />
+  </>
  );
 }

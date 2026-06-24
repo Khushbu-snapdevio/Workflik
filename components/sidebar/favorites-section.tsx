@@ -195,14 +195,16 @@ export function FavoritesSection({
       {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popupRef}
-          className="fixed z-[300] w-64 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+          className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover shadow-[0_8px_24px_-4px_rgba(21,101,192,0.18),0_2px_8px_-2px_rgba(0,0,0,0.1)]"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
-          <div className="flex items-center justify-between border-b border-border bg-muted/40 px-3 py-2.5">
-            <span className="text-xs font-semibold text-foreground">Favorites</span>
-            <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{localFavs.length} total</span>
+          {/* Header */}
+          <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
+            <span className="text-[13px] font-semibold text-white">Favorites</span>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{localFavs.length}</span>
           </div>
-          <div className="max-h-72 overflow-y-auto py-1">
+          {/* List */}
+          <div className="max-h-64 overflow-y-auto py-1">
             {localFavs.map((fav) => {
               const page = pagesMap[fav.pageId];
               return (
@@ -210,26 +212,28 @@ export function FavoritesSection({
                   key={fav.pageId}
                   href={`/app/${workspaceSlug}/${page?.shortId ?? fav.pageId}`}
                   onClick={() => setPopupOpen(false)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                  className="flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
                   {page?.icon ? (
                     <span className="shrink-0 text-sm leading-none">{page.icon}</span>
                   ) : (
-                    <FileText size={14} className="shrink-0 text-muted-foreground/40" />
+                    <FileText size={13} className="shrink-0 text-muted-foreground/40" />
                   )}
                   <span className="min-w-0 truncate">{page?.title || "Untitled"}</span>
                 </Link>
               );
             })}
           </div>
-          <div className="border-t border-border bg-popover px-3 py-2">
+          {/* Footer */}
+          <div className="mx-1 h-px bg-border/60" />
+          <div className="px-3 py-2">
             <Link
               href={`/app/${workspaceSlug}/library`}
               onClick={() => setPopupOpen(false)}
-              className="flex items-center gap-2 text-xs font-medium text-primary transition-colors duration-150 hover:text-foreground"
+              className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
             >
-              <BookOpen size={14} />
-              Open in Library
+              <BookOpen size={13} />
+              Browse in Library
             </Link>
           </div>
         </div>,

@@ -82,12 +82,12 @@ export function GalleryView({
       <div key={group.id ?? "no-group"} className="mb-6">
        <div className="mb-3 flex items-center gap-2.5">
         {group.id && color ? (
-         <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-[12px] font-semibold uppercase tracking-wide ${color.bg} ${color.text}`}>
+         <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-[12px] font-semibold tracking-[0.125px] ${color.bg} ${color.text}`}>
           <span className={`size-1.5 rounded-full ${color.dot}`} />
           {group.label}
          </span>
         ) : (
-         <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+         <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-[12px] font-semibold tracking-[0.125px] text-muted-foreground/60">
           <span className="size-1.5 rounded-full bg-muted-foreground/30" />
           {group.label}
          </span>
@@ -194,6 +194,7 @@ interface GalleryCardProps {
 }
 
 function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, isEditor, onDeleteRequest, onOpenEntry, entryOpenMode }: GalleryCardProps) {
+ const [hovered, setHovered] = useState(false);
  const filledProps = displayProps.filter((prop) => {
   const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
   if (raw == null) return false;
@@ -206,9 +207,14 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
  const isSidePanel = entryOpenMode === "side_panel" && !!onOpenEntry;
 
  return (
-   <div className="group/card relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card transition-colors duration-150">
+   <div
+    className="relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card transition-colors duration-150"
+    onMouseEnter={() => setHovered(true)}
+    onMouseLeave={() => setHovered(false)}
+   >
     {/* Action buttons — top-right, visible on hover */}
-    <div className="absolute right-2 top-2 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
+    <div className="absolute right-2 top-2 z-10 flex items-center gap-1 transition-opacity"
+     style={{ opacity: hovered ? 1 : 0 }}>
      <Link
      href={`/app/${workspaceSlug}/${entry.shortId}`}
      onClick={(e) => e.stopPropagation()}
@@ -219,7 +225,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
     </Link>
     {isEditor && (
      <button
-      onClick={() => onDeleteRequest(entry)}
+      onClick={() => { setHovered(false); onDeleteRequest(entry); }}
       title="Delete entry"
       className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors duration-150 hover:bg-destructive/[0.06] hover:text-destructive"
      >

@@ -107,17 +107,18 @@ export const PROPERTY_REGISTRY: Record<PropertyType, PropertyDefinition> = {
 
 export const PROPERTY_TYPES = Object.values(PROPERTY_REGISTRY);
 
-// ── Select / Multi-select option colors — design system tokens only ───────────
+// ── Select / Multi-select option colors ──────────────────────────────────────
+// Using inline style values so colors apply immediately without Tailwind JIT compilation.
 export const OPTION_COLORS = [
-  { id: "gray",   bg: "bg-muted",           text: "text-muted-foreground", dot: "bg-muted-foreground/40" },
-  { id: "red",    bg: "bg-destructive/10",   text: "text-destructive",      dot: "bg-destructive/50"      },
-  { id: "orange", bg: "bg-warning/10",       text: "text-warning",          dot: "bg-warning/50"          },
-  { id: "yellow", bg: "bg-warning/[0.07]",   text: "text-warning/80",       dot: "bg-warning/40"          },
-  { id: "green",  bg: "bg-success/10",       text: "text-success",          dot: "bg-success/50"          },
-  { id: "teal",   bg: "bg-success/[0.07]",   text: "text-success/80",       dot: "bg-success/40"          },
-  { id: "blue",   bg: "bg-primary/10",       text: "text-primary",          dot: "bg-primary/50"          },
-  { id: "purple", bg: "bg-primary/[0.07]",   text: "text-primary/80",       dot: "bg-primary/40"          },
-  { id: "pink",   bg: "bg-destructive/[0.07]", text: "text-destructive/80", dot: "bg-destructive/40"      },
+  { id: "gray",   bg: "#d4d4d8", text: "#3f3f46", dot: "#71717a" },
+  { id: "red",    bg: "#fecaca", text: "#b91c1c", dot: "#f87171" },
+  { id: "orange", bg: "#fed7aa", text: "#c2410c", dot: "#fb923c" },
+  { id: "yellow", bg: "#fef08a", text: "#a16207", dot: "#facc15" },
+  { id: "green",  bg: "#bbf7d0", text: "#15803d", dot: "#4ade80" },
+  { id: "teal",   bg: "#99f6e4", text: "#0f766e", dot: "#2dd4bf" },
+  { id: "blue",   bg: "#bae6fd", text: "#0369a1", dot: "#38bdf8" },
+  { id: "purple", bg: "#ddd6fe", text: "#6d28d9", dot: "#a78bfa" },
+  { id: "pink",   bg: "#fbcfe8", text: "#be185d", dot: "#f472b6" },
 ] as const;
 
 export type OptionColorId = (typeof OPTION_COLORS)[number]["id"];

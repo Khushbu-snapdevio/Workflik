@@ -8,13 +8,6 @@ import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "User Detail – Orbit Admin" };
 
-function avatarColor(str: string) {
- const colors = ["#0284C7","#0369a1","#0ea5e9","#0891b2","#dc2626","#075985"];
- let h = 0;
- for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
- return colors[h % colors.length]!;
-}
-
 function ago(d: Date | null | undefined) {
  if (!d) return "—";
  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
@@ -49,18 +42,16 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   .orderBy(desc(workspaceMembers.createdAt)),
  ]);
 
- const label  = user.name ?? user.email;
- const bg   = avatarColor(id);
  const isAdmin = user.isPlatformAdmin;
- const now   = new Date();
+ const now    = new Date();
  const activeSessions = userSessions.filter(s => new Date(s.expiresAt) > now);
 
  return (
   <div>
-   {/* Breadcrumb navigation */}
+   {/* Breadcrumb */}
    <div className="mb-4 flex items-center gap-2">
     <Link href="/Orbit-admin/orbit/users"
-     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-sky-50 hover:text-primary">
+     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3">
       <path d="M7.5 2.5L4 6l3.5 3.5"/>
      </svg>
@@ -71,10 +62,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
    </div>
 
    {/* Profile header */}
-   <div className="mb-6 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-    <div className="h-[3px] bg-primary" />
+   <div className="mb-6 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
     <div className="p-6">
-     <h1 className="text-[26px] font-black tracking-tight text-foreground">{user.name ?? "Unnamed"}</h1>
+     <h1 className="text-[26px] font-bold tracking-tight text-foreground">{user.name ?? "Unnamed"}</h1>
      <p className="mt-1 text-[13px] text-muted-foreground">{user.email}</p>
      <div className="mt-3 flex flex-wrap items-center gap-2">
       {isAdmin && (
@@ -84,20 +74,20 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
        <span className="rounded-full bg-destructive/[0.06] px-2 py-0.5 text-[10.5px] font-bold text-destructive">Banned</span>
       )}
      </div>
-     <div className="mt-4 flex flex-wrap gap-4">
+     <div className="mt-4 flex flex-wrap items-center gap-4">
       <div className="flex flex-col">
-       <span className="text-[16px] font-black leading-none text-primary">{userSessions.length}</span>
-       <span className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground/60">Sessions</span>
+       <span className="text-[16px] font-bold leading-none text-primary">{userSessions.length}</span>
+       <span className="mt-0.5 text-[9.5px] font-semibold tracking-[0.08em] text-muted-foreground/60">Sessions</span>
       </div>
-      <div className="w-px border-l border-border/60" />
+      <div className="h-6 w-px bg-border" />
       <div className="flex flex-col">
-       <span className="text-[16px] font-black leading-none text-primary">{activeSessions.length}</span>
-       <span className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground/60">Active</span>
+       <span className="text-[16px] font-bold leading-none text-primary">{activeSessions.length}</span>
+       <span className="mt-0.5 text-[9.5px] font-semibold tracking-[0.08em] text-muted-foreground/60">Active</span>
       </div>
-      <div className="w-px border-l border-border/60" />
+      <div className="h-6 w-px bg-border" />
       <div className="flex flex-col">
-       <span className="text-[16px] font-black leading-none text-primary">{memberships.length}</span>
-       <span className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-muted-foreground/60">Workspaces</span>
+       <span className="text-[16px] font-bold leading-none text-primary">{memberships.length}</span>
+       <span className="mt-0.5 text-[9.5px] font-semibold tracking-[0.08em] text-muted-foreground/60">Workspaces</span>
       </div>
       <div className="ml-auto shrink-0 text-right">
        <p className="text-[10px] text-muted-foreground/60">User ID</p>
@@ -113,11 +103,11 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     {/* Left column: account details + actions */}
     <div className="space-y-4">
      {/* Details card */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-      <div className="border-b border-border/60 px-5 py-3.5">
+     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+      <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-[12.5px] font-bold text-foreground">Account details</h2>
       </div>
-      <div className="divide-y divide-black/[0.04] px-5">
+      <div className="divide-y divide-border px-5">
        {[
         { label: "Email",  value: user.email },
         { label: "Name",  value: user.name ?? "—" },
@@ -135,8 +125,8 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
      </div>
 
      {/* Admin actions */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-      <div className="border-b border-border/60 px-5 py-3.5">
+     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+      <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-[12.5px] font-bold text-foreground">Operator actions</h2>
       </div>
       <div className="space-y-3 p-5">
@@ -144,7 +134,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
        <RevokeSessionsButton userId={id} />
        <BanButton userId={id} banned={!!user.banned} />
       </div>
-      <div className="border-t border-border/40 px-5 pb-4 pt-3">
+      <div className="border-t border-border px-5 pb-4 pt-3">
        <p className="text-[10.5px] leading-relaxed text-muted-foreground/60">
         Impersonation sessions expire after 2 hours. Revoking sessions signs the user out of all devices immediately.
        </p>
@@ -155,20 +145,20 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
     {/* Right column: sessions + workspaces */}
     <div className="space-y-4 lg:col-span-2">
      {/* Sessions */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-      <div className="border-b border-border/60 px-5 py-3.5">
+     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+      <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-[12.5px] font-bold text-foreground">Sessions <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{userSessions.length}</span></h2>
       </div>
       {userSessions.length === 0 ? (
        <p className="px-5 py-8 text-center text-[12px] text-muted-foreground">No sessions found</p>
       ) : (
-       <div className="divide-y divide-black/[0.04]">
+       <div className="divide-y divide-border">
         {userSessions.map(s => {
          const expired = new Date(s.expiresAt) < now;
          const isImpersonation = !!s.impersonatedBy;
          return (
           <div key={s.id} className="flex items-start gap-3 px-5 py-3">
-           <span className={`mt-0.5 size-2 shrink-0 rounded-full ${expired ? "bg-muted-foreground/30" : "bg-primary"}`} />
+           <span className={`mt-0.5 size-2 shrink-0 rounded-full ${expired ? "bg-muted-foreground/30" : "bg-success"}`} />
            <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
              <p className="text-[11.5px] font-semibold text-foreground">
@@ -190,14 +180,14 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
      </div>
 
      {/* Workspace memberships */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-      <div className="border-b border-border/60 px-5 py-3.5">
+     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+      <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-[12.5px] font-bold text-foreground">Workspace memberships <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{memberships.length}</span></h2>
       </div>
       {memberships.length === 0 ? (
        <p className="px-5 py-8 text-center text-[12px] text-muted-foreground">No workspace memberships</p>
       ) : (
-       <div className="divide-y divide-black/[0.04]">
+       <div className="divide-y divide-border">
         {memberships.map(m => (
          <Link key={m.id} href={`/Orbit-admin/orbit/workspaces/${m.workspaceId}`}
           className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-accent/40">
@@ -213,7 +203,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             m.role === "viewer" ? "bg-muted/50 text-muted-foreground" : "bg-primary/10 text-primary"
            }`}>{m.role}</span>
            <span className={`rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold ${
-            m.status === "active" ? "text-primary" : "text-muted-foreground"
+            m.status === "active" ? "text-success" : "text-muted-foreground"
            }`}>{m.status}</span>
           </div>
          </Link>

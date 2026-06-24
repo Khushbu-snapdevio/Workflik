@@ -44,7 +44,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`relative flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium transition-colors ${
+        className={`relative flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${
           open
             ? "bg-primary/10 text-primary"
             : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -78,7 +78,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
             <div className="shrink-0 border-b border-border/40 bg-card">
               <div className="flex items-center justify-between px-4 pt-4 pb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 border border-primary/[0.12]">
+                  <div className="flex size-8 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 border border-primary/[0.12]">
                     <FileTextIcon size={15} className="text-primary" />
                   </div>
                   <div>

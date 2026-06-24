@@ -25,10 +25,10 @@ export const MentionNode = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     const cls =
       node.attrs.mentionType === "user"
-        ? "text-blue-600 font-medium bg-blue-50 rounded px-0.5 not-prose cursor-pointer"
+        ? "text-primary font-medium bg-primary/[0.06] rounded px-0.5 not-prose cursor-pointer"
         : node.attrs.mentionType === "page"
-        ? "text-slate-700 underline decoration-dotted not-prose cursor-pointer"
-        : "text-violet-600 font-medium not-prose cursor-pointer";
+        ? "text-foreground underline decoration-dotted not-prose cursor-pointer"
+        : "text-accent-foreground font-medium not-prose cursor-pointer";
 
     return [
       "span",

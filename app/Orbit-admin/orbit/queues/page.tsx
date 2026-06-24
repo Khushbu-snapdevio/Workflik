@@ -2,14 +2,14 @@ import { getQueueSummary } from "@/lib/jobs/queue-inspection";
 
 export const metadata = { title: "Queues – Orbit Admin" };
 
-const STATE_STYLE: Record<string, { color: string; bg: string; dot: string }> = {
- completed: { color: "#059669", bg: "#f0fdf4", dot: "#059669" },
- active:  { color: "#0284C7", bg: "#eff6ff", dot: "#0284C7" },
- created:  { color: "#0284C7", bg: "#eff6ff", dot: "#0284C7" },
- retry:   { color: "#d97706", bg: "#fffbeb", dot: "#d97706" },
- failed:  { color: "#dc2626", bg: "#fef2f2", dot: "#dc2626" },
- cancelled: { color: "#64748B", bg: "#f8fafc", dot: "#64748B" },
- expired:  { color: "#64748B", bg: "#f8fafc", dot: "#64748B" },
+const STATE_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
+ completed: { bg: "bg-success/10",          text: "text-success",          dot: "bg-success" },
+ active:    { bg: "bg-primary/10",           text: "text-primary",          dot: "bg-primary" },
+ created:   { bg: "bg-primary/10",           text: "text-primary",          dot: "bg-primary" },
+ retry:     { bg: "bg-warning/10",           text: "text-warning",          dot: "bg-warning" },
+ failed:    { bg: "bg-destructive/10",       text: "text-destructive",      dot: "bg-destructive" },
+ cancelled: { bg: "bg-muted",               text: "text-muted-foreground", dot: "bg-muted-foreground/40" },
+ expired:   { bg: "bg-muted",               text: "text-muted-foreground", dot: "bg-muted-foreground/40" },
 };
 
 export default async function OrbitQueuesPage() {
@@ -21,99 +21,94 @@ export default async function OrbitQueuesPage() {
   queueMap.get(row.name)!.push({ state: row.state, count: row.count });
  }
 
- const totalJobs  = queues.reduce((s, r) => s + r.count, 0);
+ const totalJobs   = queues.reduce((s, r) => s + r.count, 0);
  const totalQueues = queueMap.size;
- const failedJobs = queues.filter(r => r.state === "failed").reduce((s, r) => s + r.count, 0);
- const activeJobs = queues.filter(r => r.state === "active").reduce((s, r) => s + r.count, 0);
+ const failedJobs  = queues.filter(r => r.state === "failed").reduce((s, r) => s + r.count, 0);
+ const activeJobs  = queues.filter(r => r.state === "active").reduce((s, r) => s + r.count, 0);
 
  return (
-  <div className="space-y-6">
+  <div className="space-y-6 p-6">
 
-   {/* Header */}
-   <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-    <div className="h-[3px] bg-primary" />
-    <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
-     <div>
-      <h1 className="text-[28px] font-black tracking-tight text-foreground">Queues</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">pg-boss job queues — states, counts, and worker status.</p>
-     </div>
-     <div className="hidden shrink-0 items-center overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-muted/30 sm:flex">
-      {[
-       { label: "Total jobs", value: totalJobs },
-       { label: "Queues",   value: totalQueues },
-       { label: "Active",   value: activeJobs },
-       { label: "Failed",   value: failedJobs },
-      ].map((s, i) => (
-       <div key={s.label} className="flex items-center">
-        {i > 0 && <div className="h-8 w-px bg-border/60" />}
-        <div className="px-6 py-4 text-center">
-         <p className="text-[26px] font-black leading-none text-foreground">{s.value}</p>
-         <p className="mt-1 text-[9.5px] font-bold uppercase tracking-widest text-muted-foreground/60">{s.label}</p>
-        </div>
-       </div>
-      ))}
-     </div>
-    </div>
+   {/* ── Header ── */}
+   <div>
+    <h1 className="text-xl font-bold tracking-tight text-foreground">Queues</h1>
+    <p className="mt-0.5 text-[13px] text-muted-foreground">pg-boss job queues — states, counts, and worker status.</p>
    </div>
 
-   {queues.length === 0 ? (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-muted/20 py-24 text-center">
-     <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-7">
-       <rect x="2" y="3" width="16" height="3.5" rx="1"/><rect x="2" y="8.25" width="16" height="3.5" rx="1"/>
-       <rect x="2" y="13.5" width="16" height="3.5" rx="1"/>
-      </svg>
+   {/* ── Stats row ── */}
+   <div className="grid grid-cols-4 gap-3">
+    {[
+     { label: "Total jobs", value: totalJobs,   accent: false },
+     { label: "Queues",     value: totalQueues, accent: false },
+     { label: "Active",     value: activeJobs,  accent: activeJobs > 0 },
+     { label: "Failed",     value: failedJobs,  accent: failedJobs > 0 },
+    ].map(s => (
+     <div key={s.label} className="rounded-[var(--radius-lg)] border border-border bg-card px-4 py-3.5">
+      <p className={`text-2xl font-bold leading-none ${s.accent ? "text-destructive" : "text-foreground"}`}>{s.value}</p>
+      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60">{s.label}</p>
      </div>
+    ))}
+   </div>
+
+   {/* ── Queue list ── */}
+   {queues.length === 0 ? (
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-muted/20 py-20 text-center">
      <p className="text-[14px] font-semibold text-muted-foreground">No queue data yet</p>
      <p className="mt-1 text-[12px] text-muted-foreground/60">
-      Run{" "}
-      <code className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">pnpm worker</code>
-      {" "}or enqueue an email to populate.
+      Run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">pnpm worker</code> to populate.
      </p>
     </div>
    ) : (
-    <div className="space-y-4">
-     {Array.from(queueMap.entries()).map(([name, rows]) => {
-      const qTotal  = rows.reduce((s, r) => s + r.count, 0);
-      const hasFailed = rows.some(r => r.state === "failed");
-      return (
-       <div key={name} className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-        <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-         <div className="flex items-center gap-3">
-          <div className={`flex size-8 items-center justify-center rounded-[var(--radius-md)] ${hasFailed ? "bg-destructive/[0.06]" : "bg-muted/50"}`}>
-           <svg viewBox="0 0 14 14" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`size-3.5 ${hasFailed ? "stroke-destructive" : "stroke-muted-foreground"}`}>
-            <rect x="1" y="2" width="12" height="2.5" rx="0.75"/><rect x="1" y="5.75" width="12" height="2.5" rx="0.75"/>
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+
+     {/* Table header */}
+     <div className="grid grid-cols-[1fr_auto] items-center border-b border-border/60 bg-muted/30 px-4 py-2.5">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60">Queue name</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60">States</span>
+     </div>
+
+     {/* Rows */}
+     <div className="divide-y divide-border/50">
+      {Array.from(queueMap.entries()).map(([name, rows]) => {
+       const qTotal   = rows.reduce((s, r) => s + r.count, 0);
+       const hasFailed = rows.some(r => r.state === "failed");
+       return (
+        <div key={name} className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-3 hover:bg-muted/20 transition-colors duration-100">
+
+         {/* Left: name + total */}
+         <div className="flex items-center gap-3 min-w-0">
+          <div className={`flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] ${hasFailed ? "bg-destructive/10" : "bg-muted/60"}`}>
+           <svg viewBox="0 0 14 14" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            className={`size-3.5 ${hasFailed ? "stroke-destructive" : "stroke-muted-foreground"}`}>
+            <rect x="1" y="2" width="12" height="2.5" rx="0.75"/>
+            <rect x="1" y="5.75" width="12" height="2.5" rx="0.75"/>
             <rect x="1" y="9.5" width="12" height="2.5" rx="0.75"/>
            </svg>
           </div>
-          <div>
-           <p className="font-mono text-[13px] font-bold text-foreground">{name}</p>
-           <p className="text-[11px] text-muted-foreground">{qTotal} total job{qTotal !== 1 ? "s" : ""}</p>
+          <div className="min-w-0">
+           <p className="truncate font-mono text-[13px] font-semibold text-foreground">{name}</p>
+           <p className="text-[11px] text-muted-foreground/60">{qTotal} job{qTotal !== 1 ? "s" : ""}</p>
           </div>
          </div>
-         {hasFailed && (
-          <span className="rounded-full bg-destructive/[0.06] px-2.5 py-0.5 text-[10.5px] font-bold text-destructive">
-           {rows.find(r => r.state === "failed")?.count ?? 0} failed
-          </span>
-         )}
+
+         {/* Right: state badges */}
+         <div className="flex flex-wrap justify-end gap-1.5">
+          {rows.map(row => {
+           const st = STATE_STYLE[row.state] ?? STATE_STYLE.cancelled!;
+           return (
+            <span key={row.state}
+             className={`inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-transparent px-2.5 py-1 text-xs font-semibold ${st.bg} ${st.text}`}>
+             <span className={`size-1.5 shrink-0 rounded-full ${st.dot}`} />
+             {row.count} {row.state}
+            </span>
+           );
+          })}
+         </div>
+
         </div>
-        <div className="flex flex-wrap gap-3 p-5">
-         {rows.map(row => {
-          const st = STATE_STYLE[row.state] ?? STATE_STYLE.cancelled!;
-          return (
-           <div key={row.state}
-            className="flex items-center gap-2.5 rounded-[var(--radius-lg)] border px-4 py-2.5"
-            style={{ borderColor: `${st.color}30`, background: st.bg }}>
-            <span className="size-2 rounded-full" style={{ background: st.dot }} />
-            <span className="text-[20px] font-black leading-none" style={{ color: st.color }}>{row.count}</span>
-            <span className="text-[11px] font-semibold" style={{ color: st.color }}>{row.state}</span>
-           </div>
-          );
-         })}
-        </div>
-       </div>
-      );
-     })}
+       );
+      })}
+     </div>
     </div>
    )}
   </div>

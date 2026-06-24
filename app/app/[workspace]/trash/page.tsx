@@ -59,7 +59,7 @@ export default async function TrashPage({ params }: Props) {
         <nav className="flex items-center gap-0.5 text-xs">
           <Link
             href={`/app/${slug}`}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>

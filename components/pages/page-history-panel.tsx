@@ -202,7 +202,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
         <div key={label}>
          {/* Date section header */}
          <div className="flex items-center gap-2 px-4 pb-1 pt-2.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/50">{label}</span>
+          <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">{label}</span>
           <div className="h-px flex-1 bg-border/50" />
          </div>
 
@@ -236,7 +236,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
                {timeOnly(v.createdAt)}
               </span>
               {isCur && (
-               <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-primary">
+               <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-[0.125px] text-primary">
                 Current
                </span>
               )}

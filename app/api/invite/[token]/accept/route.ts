@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces } from "@/lib/db/schema";
 import { apiError, ApiError, getSession } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ token: string }> };
 
@@ -64,6 +65,14 @@ export async function POST(_req: Request, { params }: Ctx) {
         inviteToken: null,
       })
       .where(eq(workspaceMembers.id, member.id));
+
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "member.joined",
+      targetType: "workspace",
+      targetId:   member.workspaceId,
+      metadata:   { email: session.user.email, invitedEmail: member.invitedEmail },
+    });
 
     return Response.json({ workspaceSlug: member.workspaceSlug });
   } catch (err) {

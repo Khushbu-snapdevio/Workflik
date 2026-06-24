@@ -146,7 +146,7 @@ export function SaveAsTemplateModal({
       </div>
 
       {error && (
-       <p className="mb-3 rounded-[var(--radius-sm)] bg-destructive/[0.06] px-3 py-2 text-xs text-destructive dark:bg-red-950/20">
+       <p className="mb-3 rounded-[var(--radius-sm)] bg-[#fee2e2] px-3 py-2 text-xs text-[#b91c1c]">
         {error}
        </p>
       )}

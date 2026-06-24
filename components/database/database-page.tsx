@@ -355,7 +355,7 @@ export function DatabasePage({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden bg-background">
+    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden bg-background isolate">
 
       {/* ── Page title / icon (hidden in inline/embedded mode) ── */}
       {!inline && (
@@ -429,8 +429,8 @@ export function DatabasePage({
       )}
 
       {/* ── View content ── */}
-      <div className="min-h-0 flex-1">
-        <div className="h-full w-full">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="min-h-full w-full">
           {!activeView && (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-muted-foreground">No views configured.</p>

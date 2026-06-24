@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { verifications, workspaceMembers } from "@/lib/db/schema";
 import { apiError, ApiError } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,19 @@ export async function GET(req: Request, { params }: Ctx) {
     const targetUserId = verification.identifier.split(":")[2];
     if (!targetUserId) return apiError(400, "Malformed transfer token");
 
+    // Capture current admin before demoting
+    const [currentAdmin] = await db
+      .select({ userId: workspaceMembers.userId })
+      .from(workspaceMembers)
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, id),
+          eq(workspaceMembers.role, "admin"),
+          eq(workspaceMembers.status, "active")
+        )
+      )
+      .limit(1);
+
     await db.transaction(async (tx) => {
       // Demote current admin → editor
       await tx
@@ -67,6 +81,16 @@ export async function GET(req: Request, { params }: Ctx) {
         .delete(verifications)
         .where(eq(verifications.id, verification.id));
     });
+
+    if (currentAdmin?.userId) {
+      await writeAuditLog({
+        actorId:    currentAdmin.userId,
+        action:     "workspace.ownership_transferred",
+        targetType: "workspace",
+        targetId:   id,
+        metadata:   { fromUserId: currentAdmin.userId, toUserId: targetUserId },
+      });
+    }
 
     redirect(`/platform/dashboard?transfer=success`);
   } catch (err) {

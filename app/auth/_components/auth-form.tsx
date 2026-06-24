@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
 import { PRODUCT_NAME } from "@/config/platform";
 import { signIn, useSession } from "@/lib/auth/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function AuthForm() {
   return (
@@ -57,7 +60,7 @@ function AuthFormInner() {
 
         {/* Logo */}
         <Link href="/" className="mb-10 flex flex-col items-center gap-3">
-          <Image src="/workflik-logo.png" alt="Workflik" width={180} height={45} className="h-10 w-auto" />
+          <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-10 w-auto" />
         </Link>
 
         {/* Form area */}
@@ -79,13 +82,15 @@ function AuthFormInner() {
               <p className="mb-6 text-xs text-muted-foreground">
                 Open the link in your email to sign in. The link expires in 10 minutes.
               </p>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="default"
                 onClick={() => setSent(false)}
-                className="h-10 w-full rounded-[var(--radius-md)] border border-border bg-card text-sm font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground"
+                className="w-full"
               >
                 Use a different email
-              </button>
+              </Button>
             </div>
           ) : (
             /* ── Sign-in form ── */
@@ -96,8 +101,10 @@ function AuthFormInner() {
               </div>
 
               {/* Google */}
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="default"
                 disabled={googleLoading}
                 onClick={async () => {
                   setGoogleLoading(true);
@@ -122,7 +129,7 @@ function AuthFormInner() {
                     setGoogleLoading(false);
                   }
                 }}
-                className="flex h-11 w-full items-center justify-center gap-3 rounded-[var(--radius-md)] border border-border bg-muted/40 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-11 w-full items-center justify-center gap-3 bg-muted/40"
               >
                 <svg className="size-[18px] shrink-0" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -131,7 +138,7 @@ function AuthFormInner() {
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
                 {googleLoading ? "Redirecting…" : "Continue with Google"}
-              </button>
+              </Button>
 
               {/* Divider */}
               <div className="my-5 flex items-center gap-3">
@@ -143,10 +150,10 @@ function AuthFormInner() {
               {/* Magic link form */}
               <form onSubmit={onSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-foreground">
+                  <Label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
                     Work email
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     id="email"
                     type="email"
                     autoComplete="email"
@@ -154,7 +161,7 @@ function AuthFormInner() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
-                    className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-3.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full focus-visible:border-primary"
                   />
                 </div>
 
@@ -164,13 +171,14 @@ function AuthFormInner() {
                   </p>
                 )}
 
-                <button
+                <Button
                   type="submit"
+                  size="default"
                   disabled={submitting}
-                  className="h-11 w-full rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full"
                 >
                   {submitting ? "Sending link…" : "Send magic link"}
-                </button>
+                </Button>
               </form>
             </>
           )}

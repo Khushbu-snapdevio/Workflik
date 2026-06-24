@@ -53,7 +53,7 @@ export default async function ProfilePage() {
 
    {/* ── Page header ── */}
    <div className="mb-6">
-    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.125px] text-primary">
      <svg className="size-2.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 12 12">
       <circle cx="6" cy="4" r="2.5"/>
       <path d="M1 11c0-2.76 2.24-5 5-5s5 2.24 5 5"/>

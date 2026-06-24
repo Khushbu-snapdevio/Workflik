@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <header className="border-b border-border bg-page">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/workflik-logo.png" alt="Workflik" width={160} height={40} className="h-7 w-auto" />
+            <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={160} height={40} className="h-7 w-auto" />
           </Link>
           <Link
             href="/auth/login"
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
 
         {/* Page title */}
         <div className="mb-12 border-b border-border pb-8">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Legal</p>
+          <p className="mb-2 text-xs font-semibold tracking-[0.125px] text-muted-foreground">Legal</p>
           <h1 className="mb-3 text-3xl font-black tracking-tight text-foreground">Privacy Policy</h1>
           <p className="text-sm text-muted-foreground">Last updated: {LAST_UPDATED}</p>
         </div>

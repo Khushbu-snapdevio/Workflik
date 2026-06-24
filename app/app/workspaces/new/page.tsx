@@ -2,6 +2,9 @@ import Image from "next/image";
 import { requireSession } from "@/lib/authz";
 import { createWorkspaceAction } from "@/app/actions/workspaces";
 import { PRODUCT_NAME } from "@/config/platform";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const metadata = { title: `Create Workspace — ${PRODUCT_NAME}` };
 
@@ -18,7 +21,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" alt="Workflik" width={160} height={40} className="h-9 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={160} height={40} className="h-9 w-auto" />
     </div>
 
     {/* Heading */}
@@ -37,13 +40,13 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
       <input type="hidden" name="kind" value={isTeam ? "team" : "personal"} />
 
       <div className="space-y-1.5">
-       <label
+       <Label
         htmlFor="name"
-        className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground/60"
+        className="text-sm font-medium text-foreground"
        >
         {isTeam ? "Team name" : "Workspace name"}
-       </label>
-       <input
+       </Label>
+       <Input
         id="name"
         name="name"
         type="text"
@@ -51,19 +54,20 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
         required
         autoFocus
         maxLength={100}
-        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-page px-3.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="w-full focus-visible:border-primary"
        />
       </div>
 
-      <button
+      <Button
        type="submit"
-       className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)]"
+       size="sm"
+       className="mt-5 flex h-11 w-full items-center justify-center gap-2"
       >
        {isTeam ? "Create team workspace" : "Create workspace"}
        <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
         <path d="M5 12h14M12 5l7 7-7 7" />
        </svg>
-      </button>
+      </Button>
      </form>
 
      <div className="border-t border-border px-7 py-4">

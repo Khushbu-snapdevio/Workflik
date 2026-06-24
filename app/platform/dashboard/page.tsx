@@ -42,7 +42,7 @@ export default async function DashboardPage() {
    {/* ── Page header ── */}
    <div className="mb-6">
     <div className="mb-2">
-     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.125px] text-primary">
       <LayoutGrid size={9} />
       Workspace
      </span>
@@ -129,9 +129,9 @@ export default async function DashboardPage() {
 
     {/* Column headers */}
     <div className="grid grid-cols-[1fr_96px_168px] gap-4 border-b border-border/40 px-5 py-2">
-     <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">Subject</span>
-     <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">Status</span>
-     <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/60">Created</span>
+     <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Subject</span>
+     <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Status</span>
+     <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Created</span>
     </div>
 
     {emails.length === 0 ? (

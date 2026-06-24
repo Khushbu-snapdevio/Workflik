@@ -10,7 +10,7 @@ export function OrbitPageHeader({
   return (
     <div className="mb-8 border-b border-border pb-5">
       {eyebrow && (
-        <p className="mb-2 font-bold text-xs text-success uppercase tracking-eyebrow">
+        <p className="mb-2 font-semibold text-xs text-success tracking-[0.125px]">
           {eyebrow}
         </p>
       )}

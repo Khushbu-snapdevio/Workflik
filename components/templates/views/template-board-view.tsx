@@ -5,35 +5,34 @@ import { Plus, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 
 type ColStyle = { header: string; dot: string; badge: string };
 
 const OPTION_STYLES: Record<string, ColStyle> = {
- red:    { header: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900/40",     dot: "bg-red-500",  badge: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"     },
- orange:   { header: "bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-900/40", dot: "bg-orange-500", badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400" },
- yellow:   { header: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-900/40", dot: "bg-yellow-400", badge: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400" },
- green:   { header: "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900/40", dot: "bg-green-500", badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"  },
- blue:    { header: "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900/40",   dot: "bg-blue-500",  badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"    },
- purple:   { header: "bg-purple-50 border-purple-200 dark:bg-purple-950/30 dark:border-purple-900/40", dot: "bg-purple-500", badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400" },
- pink:    { header: "bg-pink-50 border-pink-200 dark:bg-pink-950/30 dark:border-pink-900/40",   dot: "bg-pink-500",  badge: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400"    },
- brown:   { header: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/40", dot: "bg-amber-600", badge: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400"  },
- light_gray: { header: "bg-gray-50 border-border dark:bg-gray-900/20 dark:border-gray-800",    dot: "bg-gray-400",  badge: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"     },
- gray:    { header: "bg-gray-100 border-gray-300 dark:bg-gray-800/30 dark:border-gray-700",    dot: "bg-gray-500",  badge: "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"     },
+ gray:   { header: "bg-[#f4f4f5] border-[#d4d4d8]", dot: "bg-[#71717a]", badge: "bg-[#d4d4d8] text-[#3f3f46]" },
+ red:    { header: "bg-[#fff5f5] border-[#fecaca]", dot: "bg-[#f87171]", badge: "bg-[#fee2e2] text-[#b91c1c]" },
+ orange: { header: "bg-[#fff8f0] border-[#fed7aa]", dot: "bg-[#fb923c]", badge: "bg-[#ffedd5] text-[#c2410c]" },
+ yellow: { header: "bg-[#fffdf0] border-[#fde68a]", dot: "bg-[#facc15]", badge: "bg-[#fef9c3] text-[#a16207]" },
+ green:  { header: "bg-[#f0fdf4] border-[#bbf7d0]", dot: "bg-[#4ade80]", badge: "bg-[#dcfce7] text-[#15803d]" },
+ teal:   { header: "bg-[#f0fdfa] border-[#99f6e4]", dot: "bg-[#2dd4bf]", badge: "bg-[#ccfbf1] text-[#0f766e]" },
+ blue:   { header: "bg-[#f0f9ff] border-[#bae6fd]", dot: "bg-[#38bdf8]", badge: "bg-[#e0f2fe] text-[#0369a1]" },
+ purple: { header: "bg-[#f5f3ff] border-[#ddd6fe]", dot: "bg-[#a78bfa]", badge: "bg-[#ede9fe] text-[#6d28d9]" },
+ pink:   { header: "bg-[#fdf4ff] border-[#f5d0fe]", dot: "bg-[#f472b6]", badge: "bg-[#fce7f3] text-[#be185d]" },
 };
 
 const OPTION_COLORS: Record<string, string> = {
- red:    "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
- orange:   "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
- yellow:   "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
- green:   "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
- blue:    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
- purple:   "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
- pink:    "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
- brown:   "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
- light_gray: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300",
- gray:    "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+ gray:   "bg-[#d4d4d8] text-[#3f3f46]",
+ red:    "bg-[#fee2e2] text-[#b91c1c]",
+ orange: "bg-[#ffedd5] text-[#c2410c]",
+ yellow: "bg-[#fef9c3] text-[#a16207]",
+ green:  "bg-[#dcfce7] text-[#15803d]",
+ teal:   "bg-[#ccfbf1] text-[#0f766e]",
+ blue:   "bg-[#e0f2fe] text-[#0369a1]",
+ purple: "bg-[#ede9fe] text-[#6d28d9]",
+ pink:   "bg-[#fce7f3] text-[#be185d]",
 };
 
 function getStyle(color: string): ColStyle {
@@ -115,7 +114,8 @@ interface Props {
 export function TemplateBoardView({
  entries, properties, activeView, entryValueMap, workspaceSlug, onAddEntry, onDeleteEntry, onClickEntry,
 }: Props) {
- const [addingTo, setAddingTo] = useState<string | null>(null); // column optionId | "none"
+ const [addingTo, setAddingTo] = useState<string | null>(null);
+ const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
  // Try configured groupBy first; fall back to first select property in the database
  const groupProp = properties.find((p) => p.id === activeView.groupByPropertyId)
@@ -173,7 +173,8 @@ export function TemplateBoardView({
  }
 
  return (
-  <div className="flex h-full items-start gap-3 overflow-x-auto p-6">
+  <>
+  <div className="grid items-start gap-3 p-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
    {columns.map((col) => {
     const style   = getStyle(col.color);
     const isAddingHere = addingTo === (col.optionId ?? "none");
@@ -181,7 +182,7 @@ export function TemplateBoardView({
     return (
      <div
       key={col.optionId ?? "none"}
-      className="flex w-[272px] flex-shrink-0 flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden"
+      className="flex flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden"
      >
       {/* Column header */}
       <div className={`flex items-center justify-between border-b px-3 py-2.5 ${style.header}`}>
@@ -201,7 +202,7 @@ export function TemplateBoardView({
       </div>
 
       {/* Cards */}
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
+      <div className="flex flex-col gap-2 p-2.5">
        {col.entries.map((entry) => {
         const valMap = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
 
@@ -261,7 +262,7 @@ export function TemplateBoardView({
             <ExternalLink size={11} />
            </Link>
            <button
-            onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }}
+            onClick={(e) => { e.stopPropagation(); setDeleteTarget(entry.id); }}
             className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
             title="Delete"
            >
@@ -299,5 +300,15 @@ export function TemplateBoardView({
     );
    })}
   </div>
+
+  <ConfirmDialog
+   open={deleteTarget !== null}
+   onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+   title="Delete entry?"
+   description="This entry will be permanently deleted. This cannot be undone."
+   confirmLabel="Delete"
+   onConfirm={() => { if (deleteTarget) { onDeleteEntry(deleteTarget); setDeleteTarget(null); } }}
+  />
+  </>
  );
 }

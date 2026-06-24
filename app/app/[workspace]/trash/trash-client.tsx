@@ -148,10 +148,10 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
               {/* Table header */}
               <div className="grid grid-cols-[1fr_160px_120px_200px] items-center border-b border-border bg-muted/30 px-5 py-2.5">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Page name</span>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Deleted by</span>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Deleted</span>
-                <span className="text-right text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Actions</span>
+                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Page name</span>
+                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Deleted by</span>
+                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Deleted</span>
+                <span className="text-right text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Actions</span>
               </div>
 
               {/* Rows */}

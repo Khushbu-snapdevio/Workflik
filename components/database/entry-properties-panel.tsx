@@ -92,7 +92,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
             >
               {/* Label column */}
               <div className="flex w-[180px] shrink-0 items-center gap-2 pt-1">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background text-xs font-semibold text-muted-foreground">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border/60 bg-background text-xs font-semibold text-muted-foreground">
                   {reg?.icon ?? "·"}
                 </span>
                 <span className="truncate text-sm text-muted-foreground">

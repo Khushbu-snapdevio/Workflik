@@ -183,7 +183,10 @@ export function DatabaseToolbar({
       const ViewIcon = VIEW_ICONS[view.type] ?? Table;
       const isActive = view.id === activeViewId;
       return (
-       <div key={view.id} className="group/tab flex items-stretch">
+       <div
+        key={view.id}
+        className="group flex items-stretch"
+       >
         {editingId === view.id ? (
          <div className="flex items-center px-1">
           <input
@@ -225,10 +228,10 @@ export function DatabaseToolbar({
            else { setContextView(view); setContextRect((e.currentTarget as HTMLElement).getBoundingClientRect()); }
           }}
           className={[
-           "flex h-full w-6 items-center justify-center rounded-[var(--radius-xs)] transition-all duration-150 hover:bg-accent",
+           "flex h-full w-6 items-center justify-center rounded-[var(--radius-xs)] transition-colors duration-150",
            contextView?.id === view.id
             ? "bg-accent text-foreground"
-            : "opacity-0 group-hover/tab:opacity-100 text-muted-foreground/70 hover:text-foreground",
+            : "text-transparent hover:bg-accent hover:text-foreground group-hover:text-muted-foreground/60",
           ].join(" ")}
           title="View options"
          >
@@ -328,7 +331,7 @@ export function DatabaseToolbar({
          onClick={() => onUpdateView(activeView.id, { galleryCardSize: size })}
          title={`${size.charAt(0).toUpperCase() + size.slice(1)} cards`}
          className={[
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold uppercase tracking-wide transition-colors duration-150",
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold tracking-[0.125px] transition-colors duration-150",
           isActive
            ? "bg-primary/10 text-primary"
            : "text-muted-foreground/50 hover:bg-accent hover:text-foreground",
@@ -641,7 +644,7 @@ export function DatabaseToolbar({
      style={{ position: "fixed", top: groupRect.bottom + 6, left: groupRect.left, zIndex: 300 }}
      className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
-     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Group by</p>
+     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">Group by</p>
      <div className="p-1.5 pt-0.5">
       <button
        onClick={() => { onUpdateView(activeView.id, { groupByPropertyId: null }); setGroupRect(null); }}
@@ -702,7 +705,7 @@ export function DatabaseToolbar({
      style={{ position: "fixed", top: dateRect.bottom + 6, left: dateRect.left, zIndex: 300 }}
      className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
-     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Date property</p>
+     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">Date property</p>
      <div className="p-1.5 pt-0.5">
       <button
        onClick={() => { onUpdateView(activeView.id, { calendarPropertyId: null }); setDateRect(null); }}

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUpload } from "@/lib/storage/use-upload";
 import { useSettingsUser } from "./settings-user-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface UserData {
  id:    string;
@@ -120,7 +122,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
    <div className="max-h-[240px] overflow-y-auto py-1">
     {Object.entries(regionGroups).map(([region, tzs]) => (
      <div key={region}>
-      <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">{region}</p>
+      <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">{region}</p>
       {tzs.map(tz => {
        const isActive = tz === value;
        return (
@@ -258,7 +260,7 @@ export function ProfileSection({ user }: Props) {
  const bg      = avatarColor(displayName);
 
  return (
-  <div className="mx-auto max-w-[640px] px-8 py-10">
+  <div className="max-w-[780px] px-8 pt-6 pb-10">
 
    {/* ── Header — matches all other settings pages ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -272,10 +274,10 @@ export function ProfileSection({ user }: Props) {
    </div>
 
    {/* ── Photo ── */}
-   <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Photo</p>
+   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Photo</p>
    <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     <div className="flex items-center gap-5 px-5 py-5">
-     {/* Clickable avatar */}
+     {/* Clickable avatar — kept as raw button (complex UI trigger) */}
      <div
       role="button" tabIndex={0}
       onClick={() => !avatarUploading && fileRef.current?.click()}
@@ -298,25 +300,30 @@ export function ProfileSection({ user }: Props) {
      </div>
 
      <div className="min-w-0 flex-1">
-      <p className="text-base font-semibold text-foreground">{displayName}</p>
-      <p className="mt-0.5 text-sm text-muted-foreground">
-       {avatarUploading ? "Uploading…" : "Click the photo to change it"}
-      </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">JPG, PNG, WebP or GIF · Max 1 MB</p>
-      {avatarError && <p className="mt-1.5 text-xs text-destructive">{avatarError}</p>}
-      {currentImage && !avatarUploading && (
-       <button type="button" onClick={handleRemovePhoto}
-        className="mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive transition-colors hover:text-destructive/80">
-        <X size={12} />
-        Remove photo
-       </button>
-      )}
+      <div className="flex items-center justify-between gap-3">
+       <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{displayName}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+         {avatarUploading ? "Uploading…" : "Click the photo to change it"}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground/60">JPG, PNG, WebP or GIF · Max 1 MB</p>
+        {avatarError && <p className="mt-1.5 text-xs text-destructive">{avatarError}</p>}
+       </div>
+       {currentImage && !avatarUploading && (
+        <Button variant="outline" size="sm"
+         type="button" onClick={handleRemovePhoto}
+         className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/[0.06] hover:border-destructive/50 hover:text-destructive">
+         <X size={12} />
+         Remove photo
+        </Button>
+       )}
+      </div>
      </div>
     </div>
    </div>
 
    {/* ── Identity ── */}
-   <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Identity</p>
+   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Identity</p>
    <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     {/* Name */}
     <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
@@ -325,10 +332,14 @@ export function ProfileSection({ user }: Props) {
       <p className="mt-0.5 text-xs text-muted-foreground">How your name appears to teammates.</p>
      </div>
      <div className="relative shrink-0">
-      <input type="text" value={name} placeholder="Your name"
+      <Input
+       type="text"
+       value={name}
+       placeholder="Your name"
        onChange={e => setName(e.target.value)}
        onBlur={() => { const v = nameRef.current.trim(); if (v && v !== (user.name ?? "")) patch("name", v); }}
-       className="w-[220px] rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary focus:bg-card transition-colors" />
+       className="w-[220px] focus-visible:border-primary"
+      />
       {saving === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saving…</span>}
       {saved === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saved ✓</span>}
      </div>
@@ -338,10 +349,14 @@ export function ProfileSection({ user }: Props) {
     <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
      <p className="text-sm font-medium text-foreground">Job title</p>
      <div className="relative shrink-0">
-      <input type="text" value={jobTitle} placeholder="e.g. Product Designer"
+      <Input
+       type="text"
+       value={jobTitle}
+       placeholder="e.g. Product Designer"
        onChange={e => setJobTitle(e.target.value)}
        onBlur={() => { const v = jobRef.current.trim() || null; if (v !== (user.jobTitle ?? null)) patch("jobTitle", v); }}
-       className="w-[220px] rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary focus:bg-card transition-colors" />
+       className="w-[220px] focus-visible:border-primary"
+      />
       {saving === "jobTitle" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saving…</span>}
       {saved === "jobTitle" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saved ✓</span>}
      </div>
@@ -354,14 +369,19 @@ export function ProfileSection({ user }: Props) {
       <p className="mt-0.5 text-xs text-muted-foreground">Contact support to change your email address.</p>
      </div>
      <div className="shrink-0">
-      <input type="text" value={user.email} readOnly
-       className="w-[220px] cursor-not-allowed rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground outline-none" />
+      <Input
+       type="text"
+       value={user.email}
+       readOnly
+       disabled
+       className="w-[220px] cursor-not-allowed text-muted-foreground"
+      />
      </div>
     </div>
    </div>
 
    {/* ── Language & time ── */}
-   <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Language &amp; time</p>
+   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Language &amp; time</p>
    <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     <div className="flex items-start justify-between gap-4 px-5 py-4">
      <div className="min-w-0 flex-1">
@@ -386,7 +406,7 @@ export function ProfileSection({ user }: Props) {
    </div>
 
    {/* ── Danger zone ── */}
-   <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/40">Danger zone</p>
+   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Danger zone</p>
    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-destructive/20 bg-destructive/[0.03]">
     <div className="flex items-start gap-4 px-5 py-5">
      <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
@@ -400,25 +420,43 @@ export function ProfileSection({ user }: Props) {
        Permanently delete your account and all personal data. This cannot be undone.
       </p>
       {!deleteOpen ? (
-       <button type="button" onClick={() => setDeleteOpen(true)}
-        className="mt-4 rounded-[var(--radius-sm)] border border-destructive/30 bg-card px-4 py-2 text-sm font-medium text-destructive transition-all hover:bg-destructive/[0.06] active:scale-[0.97]">
+       <Button
+        variant="outline"
+        size="sm"
+        type="button"
+        onClick={() => setDeleteOpen(true)}
+        className="mt-4 border-destructive/30 text-destructive hover:bg-destructive/[0.06] hover:text-destructive hover:border-destructive/30">
         Delete account…
-       </button>
+       </Button>
       ) : (
        <div className="mt-4 space-y-3">
         <p className="text-sm text-foreground">Type <strong className="font-semibold text-destructive">{user.email}</strong> to confirm:</p>
-        <input type="email" value={deleteEmail} onChange={e => setDeleteEmail(e.target.value)} placeholder={user.email}
-         className="w-full rounded-[var(--radius-sm)] border border-destructive/30 bg-card px-3 py-2.5 text-sm outline-none focus:border-destructive transition-colors" />
+        <Input
+         type="email"
+         value={deleteEmail}
+         onChange={e => setDeleteEmail(e.target.value)}
+         placeholder={user.email}
+         className="w-full border-destructive/30 focus-visible:border-destructive"
+        />
         {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
         <div className="flex gap-2">
-         <button type="button" onClick={() => { setDeleteOpen(false); setDeleteEmail(""); setDeleteError(""); }}
-          className="rounded-[var(--radius-sm)] border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors duration-150">
+         <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          onClick={() => { setDeleteOpen(false); setDeleteEmail(""); setDeleteError(""); }}
+          >
           Cancel
-         </button>
-         <button type="button" onClick={handleDeleteAccount} disabled={deleting || deleteEmail !== user.email}
-          className="rounded-[var(--radius-sm)] bg-destructive px-4 py-2 text-sm font-medium text-white transition-all hover:bg-destructive/90 disabled:opacity-50 active:scale-[0.97]">
+         </Button>
+         <Button
+          variant="destructive"
+          size="sm"
+          type="button"
+          onClick={handleDeleteAccount}
+          disabled={deleting || deleteEmail !== user.email}
+          >
           {deleting ? "Deleting…" : "Delete account"}
-         </button>
+         </Button>
         </div>
        </div>
       )}

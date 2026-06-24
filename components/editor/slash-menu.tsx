@@ -55,10 +55,22 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
    ? BLOCK_CATEGORIES.map((cat) => ({ ...cat, blocks: getBlocksByCategory(cat.key).filter((d) => items.includes(d)) })).filter((c) => c.blocks.length)
    : null;
 
+  // Flip above the cursor if there's not enough space below
+  const MENU_HEIGHT = 304;
+  const spaceBelow = typeof window !== "undefined" ? window.innerHeight - pos.bottom : 999;
+  const menuTop = spaceBelow < MENU_HEIGHT + 16
+    ? Math.max(8, pos.top - MENU_HEIGHT - 8)
+    : pos.bottom + 8;
+
+  // Keep menu from overflowing right edge
+  const menuLeft = typeof window !== "undefined"
+    ? Math.min(pos.left, window.innerWidth - 296)
+    : pos.left;
+
   return (
    <div
-    className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
-    style={{ left: pos.left, top: pos.bottom + 8 }}
+    className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-float)]"
+    style={{ left: menuLeft, top: menuTop }}
    >
     {query && (
      <div className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
@@ -70,7 +82,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
      {grouped ? (
       grouped.map((cat) => (
        <div key={cat.key}>
-        <p className="px-3 pb-0.5 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        <p className="px-3 pb-0.5 pt-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/60">
          {cat.label}
         </p>
         {cat.blocks.map((def) => (

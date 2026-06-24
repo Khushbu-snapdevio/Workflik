@@ -32,6 +32,7 @@ export function CalendarView({
   const [year, setYear]         = useState(now.getFullYear());
   const [month, setMonth]       = useState(now.getMonth());
   const [hoveredDay, setHoveredDay]   = useState<string | null>(null);
+  const [hoveredChipId, setHoveredChipId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [deletingEntry, setDeletingEntry] = useState(false);
 
@@ -136,7 +137,7 @@ export function CalendarView({
         {DAYS.map((d) => (
           <div
             key={d}
-            className="py-2 text-center text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40"
+            className="py-2 text-center text-[10px] font-semibold uppercase tracking-[0.125px] text-muted-foreground/40"
           >
             {d}
           </div>
@@ -168,7 +169,7 @@ export function CalendarView({
               onMouseEnter={() => setHoveredDay(key)}
               onMouseLeave={() => setHoveredDay(null)}
               className={[
-                "group/cell relative flex min-h-[100px] flex-col border-b border-r border-border/30 p-2 transition-colors",
+                "relative flex min-h-[100px] flex-col border-b border-r border-border/30 p-2 transition-colors",
                 isToday   ? "bg-accent" : "",
                 isHovered && !isToday ? "bg-muted/20" : "",
                 isSunday || isSaturday ? "" : "",
@@ -180,7 +181,7 @@ export function CalendarView({
                   "flex size-[22px] items-center justify-center rounded-[var(--radius-sm)] text-xs font-semibold tabular-nums transition-colors",
                   isToday
                     ? "bg-primary text-primary-foreground"
-                    : "text-foreground/50 group-hover/cell:text-foreground/80",
+                    : isHovered ? "text-foreground/80" : "text-foreground/50",
                 ].join(" ")}>
                   {day}
                 </span>
@@ -205,7 +206,9 @@ export function CalendarView({
                 {dayEntries.slice(0, 3).map((entry, i) => (
                   <div
                     key={entry.id}
-                    className={`group/chip relative flex items-center rounded-[var(--radius-xs)] text-xs font-medium transition-colors ${CHIP_COLORS[i % CHIP_COLORS.length]}`}
+                    className={`relative flex items-center rounded-[var(--radius-xs)] text-xs font-medium transition-colors ${CHIP_COLORS[i % CHIP_COLORS.length]}`}
+                    onMouseEnter={() => setHoveredChipId(entry.id)}
+                    onMouseLeave={() => setHoveredChipId(null)}
                   >
                     {(activeView?.entryOpenMode ?? "side_panel") === "side_panel" && onOpenEntry ? (
                       <button
@@ -234,9 +237,10 @@ export function CalendarView({
                     {/* Delete button — shown on chip hover */}
                     {isEditor && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: entry.id, title: entry.title ?? "" }); }}
+                        onClick={(e) => { e.stopPropagation(); setHoveredChipId(null); setDeleteTarget({ id: entry.id, title: entry.title ?? "" }); }}
                         title="Delete entry"
-                        className="mr-0.5 hidden shrink-0 rounded-[var(--radius-xs)] p-0.5 opacity-50 transition-opacity duration-150 hover:opacity-100 group-hover/chip:flex"
+                        className="mr-0.5 shrink-0 rounded-[var(--radius-xs)] p-0.5 transition-opacity duration-150 hover:opacity-100"
+                        style={{ display: hoveredChipId === entry.id ? "flex" : "none" }}
                       >
                         <X size={9} />
                       </button>

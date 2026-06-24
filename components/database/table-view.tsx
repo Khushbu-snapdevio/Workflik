@@ -58,6 +58,7 @@ export function TableView({
  const [rowMenu, setRowMenu]      = useState<RowMenuState | null>(null);
  const [deleteConfirm, setDeleteConfirm] = useState<{ entryId: string } | null>(null);
  const [deletingEntry, setDeletingEntry] = useState(false);
+ const [hoveredRowId, setHoveredRowId]   = useState<string | null>(null);
  const [colWidths, setColWidths]    = useState<Record<string, number>>({});
  const cellInputRef          = useRef<HTMLInputElement>(null);
 
@@ -152,7 +153,7 @@ export function TableView({
  }
 
  return (
-  <div className="h-full overflow-auto bg-background pb-20">
+  <div className="h-full overflow-auto bg-background pb-20 isolate">
    <div style={{ minWidth: totalW, paddingRight: 32 }}>
 
     {/* ═══════════ HEADER ═══════════ */}
@@ -201,7 +202,7 @@ export function TableView({
       <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
        <TextT size={10} className="text-muted-foreground/60" />
       </span>
-      <span className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</span>
+      <span className="text-[12px] font-semibold text-muted-foreground tracking-[0.125px]">Name</span>
      </div>
 
      {/* Property headers */}
@@ -210,7 +211,7 @@ export function TableView({
       return (
        <div
         key={prop.id}
-        className="group/col relative shrink-0"
+        className="group relative shrink-0"
         style={{ width: colW(prop.id), minWidth: colW(prop.id), height: 34 }}
        >
         {renamingProp === prop.id ? (
@@ -238,13 +239,13 @@ export function TableView({
           <span className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50">
            <Icon size={10} />
           </span>
-          <span className="truncate text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">{prop.name}</span>
+          <span className="truncate text-[12px] font-semibold text-muted-foreground tracking-[0.125px]">{prop.name}</span>
          </button>
         )}
         {/* Resize handle */}
         {isEditor && (
          <div
-          className="absolute right-0 top-0 h-full w-1 cursor-col-resize opacity-0 transition-opacity group-hover/col:opacity-100 hover:bg-primary/40"
+          className="absolute right-0 top-0 h-full w-1 cursor-col-resize opacity-0 transition-opacity group-hover:opacity-100 hover:bg-primary/40"
           onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResize(prop.id, e.clientX, colW(prop.id)); }}
          />
         )}
@@ -280,8 +281,8 @@ export function TableView({
        {group.id && group.color ? (() => {
         const c = getOptionColor(group.color);
         return (
-         <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-semibold ${c.bg} ${c.text}`}>
-          <span className={`size-1.5 rounded-full ${c.dot}`} />
+         <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: c.bg, color: c.text }}>
+          <span className="size-1.5 rounded-full" style={{ backgroundColor: c.dot }} />
           {group.label}
          </span>
         );
@@ -297,13 +298,16 @@ export function TableView({
 
      const rows = group.entries.map((entry, rowIdx) => {
      const isSelected = selectedEntryIds.has(entry.id);
+     const isRowHovered = hoveredRowId === entry.id && !deleteConfirm;
      return (
       <div
        key={entry.id}
        className={[
-        "group/row flex items-stretch db-border-b transition-colors duration-100",
-        isSelected ? "bg-primary/[0.06]" : "hover:bg-muted/40",
+        "flex items-stretch db-border-b transition-colors duration-100",
+        isSelected ? "bg-primary/[0.06]" : !deleteConfirm ? "hover:bg-muted/40" : "",
        ].join(" ")}
+       onMouseEnter={() => { if (!deleteConfirm) setHoveredRowId(entry.id); }}
+       onMouseLeave={() => setHoveredRowId(null)}
       >
        {/* Checkbox / index */}
        <div
@@ -319,17 +323,14 @@ export function TableView({
            className="sr-only"
           />
           {/* Row number — fades out on hover/select */}
-          <span className={`absolute select-none text-xs tabular-nums text-muted-foreground/30 transition-opacity duration-150 ${
-           isSelected ? "opacity-0" : "opacity-100 group-hover/row:opacity-0"
-          }`}>
+          <span className="absolute select-none text-xs tabular-nums text-muted-foreground/30 transition-opacity duration-150"
+           style={{ opacity: isSelected || isRowHovered ? 0 : 1 }}>
            {rowIdx + 1}
           </span>
           {/* Checkbox — fades in on hover/select */}
           <span className={`flex size-[15px] items-center justify-center rounded border transition-colors duration-150 ${
-           isSelected
-            ? "border-primary bg-primary opacity-100"
-            : "border-border/50 bg-background opacity-0 group-hover/row:opacity-100"
-          }`}>
+           isSelected ? "border-primary bg-primary" : "border-border/50 bg-background"
+          }`} style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}>
            {isSelected && <Check size={10} className="text-white" />}
           </span>
          </label>
@@ -340,7 +341,7 @@ export function TableView({
 
        {/* Title cell */}
        <div
-        className="group/title flex shrink-0 items-center gap-2.5 px-3"
+        className="flex shrink-0 items-center gap-2.5 px-3"
         style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: ROW_H, borderRight: "1px solid var(--color-border)" }}
        >
         {entry.icon ? (
@@ -384,7 +385,8 @@ export function TableView({
         )}
 
         {/* Row actions: open full page + more */}
-        <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/title:opacity-100">
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 transition-opacity duration-150"
+         style={{ opacity: isRowHovered ? 1 : 0 }}>
          <Link
           href={`/app/${workspaceSlug}/${entry.shortId}`}
           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
@@ -416,7 +418,7 @@ export function TableView({
          <div
           key={prop.id}
           className={[
-           "group/cell relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
+           "group relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
            isActive
             ? "bg-primary/[0.06] border-l border-primary/30"
             : "hover:bg-muted/40",
@@ -443,7 +445,7 @@ export function TableView({
            <>
             <CellDisplay property={prop} value={rawVal} compact />
             {isEditor && TEXT_TYPES.has(prop.type) && (
-             <span className="pointer-events-none select-none text-sm text-muted-foreground/25 opacity-0 transition-opacity duration-100 group-hover/cell:opacity-100">
+             <span className="pointer-events-none select-none text-sm text-muted-foreground/25 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
               Type…
              </span>
             )}
@@ -506,7 +508,7 @@ export function TableView({
     <RowContextMenu
      menu={rowMenu}
      workspaceSlug={workspaceSlug}
-     onDeleteRequest={() => { setDeleteConfirm({ entryId: rowMenu.entryId }); setRowMenu(null); }}
+     onDeleteRequest={() => { setDeleteConfirm({ entryId: rowMenu.entryId }); setRowMenu(null); setHoveredRowId(null); }}
      onClose={() => setRowMenu(null)}
     />
    )}
@@ -621,32 +623,43 @@ interface PropHeaderMenuProps {
 
 function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onClose }: PropHeaderMenuProps) {
  const ref = useRef<HTMLDivElement>(null);
+ const [confirmDelete, setConfirmDelete] = useState(false);
  useEffect(() => {
-  function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); }
+  function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node) && !confirmDelete) onClose(); }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
- }, [onClose]);
+ }, [onClose, confirmDelete]);
 
  const sortable = prop && ["text", "number", "select", "date", "checkbox"].includes(prop.type);
 
  return createPortal(
-  <div
-   ref={ref}
-   style={{ position: "fixed", top: menu.rect.bottom + 4, left: menu.rect.left, zIndex: 300 }}
-   className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
-  >
-   {sortable && (
-    <>
-     <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
-     <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
-     <div className="my-1 h-px bg-border/60" />
-    </>
-   )}
-   <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
-   <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
-   <div className="my-1 h-px bg-border/60" />
-   <button onClick={() => onDelete(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/[0.06]"><Trash size={13} /> Delete column</button>
-  </div>,
+  <>
+   <div
+    ref={ref}
+    style={{ position: "fixed", top: menu.rect.bottom + 4, left: menu.rect.left, zIndex: 300 }}
+    className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
+   >
+    {sortable && (
+     <>
+      <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
+      <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
+      <div className="my-1 h-px bg-border/60" />
+     </>
+    )}
+    <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
+    <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
+    <div className="my-1 h-px bg-border/60" />
+    <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/[0.06]"><Trash size={13} /> Delete column</button>
+   </div>
+   <ConfirmDialog
+    open={confirmDelete}
+    onOpenChange={(o) => { setConfirmDelete(o); if (!o) onClose(); }}
+    title="Delete column?"
+    description={`"${prop?.name ?? "This column"}" and all its data will be permanently removed. This cannot be undone.`}
+    confirmLabel="Delete column"
+    onConfirm={() => { onDelete(menu.propId); onClose(); }}
+   />
+  </>,
   document.body
  );
 }
@@ -678,7 +691,7 @@ function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPr
    className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
   >
    <div className="border-b border-border px-3 py-2.5">
-    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">New property</p>
+    <p className="mb-1.5 text-xs font-medium tracking-[0.125px] text-muted-foreground/50">New property</p>
     <input
      autoFocus
      value={propName}

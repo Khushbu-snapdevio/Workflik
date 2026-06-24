@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const MONTH_NAMES = [
  "January","February","March","April","May","June",
@@ -36,6 +37,7 @@ export function TemplateCalendarView({
  onAddEntry, onDeleteEntry, onClickEntry,
 }: Props) {
  const today = new Date();
+ const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
  // Fall back to first date property if the view doesn't have one pinned yet
  const calProp = properties.find((p) => p.id === activeView.calendarPropertyId)
@@ -101,6 +103,7 @@ export function TemplateCalendarView({
  const rows = cells.length / 7;
 
  return (
+  <>
   <div className="flex h-full flex-col overflow-hidden">
    {/* ── Header ───────────────────────────────────────────────────────────── */}
    <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-6 py-4">
@@ -123,7 +126,7 @@ export function TemplateCalendarView({
    {/* ── Day-of-week headers ───────────────────────────────────────────────── */}
    <div className="grid shrink-0 grid-cols-7 border-b border-border/40 bg-muted/20">
     {DAY_NAMES.map((d) => (
-     <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+     <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-[0.125px] text-muted-foreground/60">
       {d.slice(0, 3)}
      </div>
     ))}
@@ -186,7 +189,7 @@ export function TemplateCalendarView({
             <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
             <span className="flex-1 truncate">{e.title || "Untitled"}</span>
             <button
-             onClick={(ev) => { ev.stopPropagation(); onDeleteEntry(e.id); }}
+             onClick={(ev) => { ev.stopPropagation(); setDeleteTarget(e.id); }}
              className="flex shrink-0 size-3.5 items-center justify-center rounded opacity-0 group-hover/event:opacity-100 hover:bg-destructive/20 hover:text-destructive transition-all"
             >
              <X size={8} />
@@ -239,7 +242,7 @@ export function TemplateCalendarView({
         {(() => {
          const [ey, em, ed] = morePopup.key.split("-").map(Number);
          return (
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-[11px] font-semibold tracking-[0.125px] text-muted-foreground">
            {MONTH_NAMES[em - 1]} {ed}, {ey}
           </span>
          );
@@ -259,7 +262,7 @@ export function TemplateCalendarView({
            {e.title || "Untitled"}
           </span>
           <button
-           onClick={(ev) => { ev.stopPropagation(); onDeleteEntry(e.id); setMorePopup(null); }}
+           onClick={(ev) => { ev.stopPropagation(); setDeleteTarget(e.id); setMorePopup(null); }}
            className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
           >
            <Trash2 size={11} />
@@ -273,5 +276,15 @@ export function TemplateCalendarView({
     document.body
    )}
   </div>
+
+  <ConfirmDialog
+   open={deleteTarget !== null}
+   onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+   title="Delete entry?"
+   description="This entry will be permanently deleted. This cannot be undone."
+   confirmLabel="Delete"
+   onConfirm={() => { if (deleteTarget) { onDeleteEntry(deleteTarget); setDeleteTarget(null); } }}
+  />
+  </>
  );
 }

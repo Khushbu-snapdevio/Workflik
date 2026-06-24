@@ -20,7 +20,7 @@ export function NewWorkspaceForm() {
    <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
     {/* Logo mark */}
     <div className="mb-7">
-     <Image src="/workflik-logo.png" alt="Workflik" width={180} height={45} className="h-11 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-11 w-auto" />
     </div>
 
     {/* Heading */}
@@ -37,7 +37,7 @@ export function NewWorkspaceForm() {
 
       {/* Workspace type */}
       <div className="space-y-2">
-       <p className="text-xs font-semibold uppercase tracking-ui text-muted-foreground">
+       <p className="text-xs font-medium tracking-[0.125px] text-muted-foreground">
         Workspace type
        </p>
        <div className="grid grid-cols-2 gap-2.5">
@@ -79,7 +79,7 @@ export function NewWorkspaceForm() {
       <div className="space-y-2">
        <label
         htmlFor="name"
-        className="block text-xs font-semibold uppercase tracking-ui text-muted-foreground"
+        className="block text-xs font-medium tracking-[0.125px] text-muted-foreground"
        >
         Workspace name
        </label>

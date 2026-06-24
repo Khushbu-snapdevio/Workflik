@@ -127,7 +127,7 @@ export function BoardView({
  return (
   <>
   <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-   <div className="flex h-full gap-3 overflow-x-auto px-6 py-4">
+   <div className="grid items-start gap-3 px-6 py-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
 
     {/* ── Columns ── */}
     {columns.map((col) => {
@@ -151,7 +151,7 @@ export function BoardView({
        strategy={verticalListSortingStrategy}
       >
        <div
-        className={`flex shrink-0 flex-col rounded-[var(--radius-lg)] border border-border/50 bg-muted/40 transition-[width] duration-200 ${isCollapsed ? "w-12" : "w-[272px]"}`}
+        className={`flex flex-col rounded-[var(--radius-lg)] border border-border/50 bg-muted/40 ${isCollapsed ? "w-12" : ""}`}
         data-col-id={colKey}
        >
         {/* Column header */}
@@ -163,7 +163,7 @@ export function BoardView({
           className="flex h-full flex-col items-center gap-2 py-3"
          >
           {col.id ? (
-           <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-[10px] font-bold ${color.bg} ${color.text}`}>
+           <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-[10px] font-bold" style={{ backgroundColor: color.bg, color: color.text }}>
             {col.entries.length}
            </span>
           ) : (
@@ -183,8 +183,8 @@ export function BoardView({
           <div className="flex items-center justify-between px-3 py-2.5">
            <div className="flex items-center gap-2">
            {col.id ? (
-            <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-[13px] font-semibold ${color.bg} ${color.text}`}>
-             <span className={`size-1.5 rounded-full ${color.dot}`} />
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-[13px] font-semibold" style={{ backgroundColor: color.bg, color: color.text }}>
+             <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
              {col.label}
             </span>
            ) : (
@@ -254,7 +254,7 @@ export function BoardView({
 
     {/* ── Add option column ── */}
     {isEditor && (
-     <div ref={addOptRef} className="w-[272px] shrink-0">
+     <div ref={addOptRef}>
       {!addingOption ? (
        <button
         onClick={() => {
@@ -269,7 +269,7 @@ export function BoardView({
       ) : (
        <div className="rounded-[var(--radius-lg)] border border-border bg-background p-3.5">
         <div className="mb-3 flex items-center justify-between">
-         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">
+         <p className="text-xs font-semibold tracking-[0.125px] text-muted-foreground/50">
           New option
          </p>
          <button
@@ -292,7 +292,7 @@ export function BoardView({
          className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
         />
 
-        <p className="mb-1.5 mt-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
+        <p className="mb-1.5 mt-3 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">
          Colour
         </p>
         <div className="flex flex-wrap gap-2">
@@ -301,8 +301,9 @@ export function BoardView({
            key={c.id}
            onClick={() => setNewOptColor(c.id)}
            title={c.id}
+           style={{ backgroundColor: c.dot }}
            className={[
-            `size-5 rounded-full transition-colors duration-150 ${c.dot}`,
+            "size-5 rounded-full transition-colors duration-150",
             newOptColor === c.id
              ? "scale-110 outline outline-2 outline-foreground/60"
              : "opacity-50 hover:opacity-90",
@@ -340,7 +341,7 @@ export function BoardView({
 
         {options.length > 0 && (
          <div className="mt-3 border-t border-border/50 pt-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
+          <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">
            Existing options
           </p>
           <div className="flex flex-col gap-1">
@@ -349,9 +350,10 @@ export function BoardView({
             return (
              <span
               key={opt.id}
-              className={`inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-semibold ${c.bg} ${c.text}`}
+              className="inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-semibold"
+              style={{ backgroundColor: c.bg, color: c.text }}
              >
-              <span className={`size-1.5 rounded-full ${c.dot}`} />
+              <span className="size-1.5 rounded-full" style={{ backgroundColor: c.dot }} />
               {opt.name}
              </span>
             );
@@ -429,15 +431,20 @@ function SortableCard(props: CardProps) {
 }
 
 function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEditor, onDeleteRequest, onOpenEntry, entryOpenMode }: CardProps) {
+ const [hovered, setHovered] = useState(false);
  const filledProps = cardProps.filter((prop) =>
   hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null)
  );
 
  return (
-  <div className={[
-   "group/card rounded-[var(--radius-md)] border bg-card transition-colors duration-150",
-   dragging ? "border-primary/40 opacity-50" : "border-border/60",
-  ].join(" ")}>
+  <div
+   className={[
+    "rounded-[var(--radius-md)] border bg-card transition-colors duration-150",
+    dragging ? "border-primary/40 opacity-50" : "border-border/60",
+   ].join(" ")}
+   onMouseEnter={() => setHovered(true)}
+   onMouseLeave={() => setHovered(false)}
+  >
    <>
     {entry.coverUrl && (
       <div
@@ -465,7 +472,8 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
        </button>
 
        {/* Action buttons — visible on hover */}
-       <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/card:opacity-100">
+       <div className="flex shrink-0 items-center gap-0.5 transition-opacity"
+        style={{ opacity: hovered ? 1 : 0 }}>
         <Link
          href={`/app/${workspaceSlug}/${entry.shortId}`}
          onClick={(e) => e.stopPropagation()}
@@ -478,7 +486,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
         {isEditor && (
          <button
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onDeleteRequest(entry); }}
+          onClick={(e) => { e.stopPropagation(); setHovered(false); onDeleteRequest(entry); }}
           title="Delete entry"
           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-destructive/10 hover:text-destructive"
          >
@@ -490,17 +498,12 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
 
       {/* Non-empty properties */}
       {filledProps.length > 0 && (
-       <div className="mt-2.5 flex flex-col gap-1.5 border-t border-border/50 pt-2">
+       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2">
         {filledProps.map((prop) => {
          const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
          return (
-          <div key={prop.id} className="flex items-center gap-2">
-           <span className="w-[68px] shrink-0 truncate text-[10px] font-medium text-muted-foreground/50">
-            {prop.name}
-           </span>
-           <div className="min-w-0 flex-1">
-            <CellDisplay property={prop} value={raw} compact />
-           </div>
+          <div key={prop.id} className="min-w-0 shrink-0">
+           <CellDisplay property={prop} value={raw} compact />
           </div>
          );
         })}

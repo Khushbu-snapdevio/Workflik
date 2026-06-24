@@ -6,12 +6,21 @@ import Link from "next/link";
 
 export const metadata = { title: "Audit Trail – Orbit Admin" };
 
-const ACTION_META: Record<string, { label: string; color: string; bg: string; border: string }> = {
- "user.banned":       { label: "User banned",     color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
- "user.unbanned":      { label: "User unbanned",    color: "#059669", bg: "#f0fdf4", border: "#bbf7d0" },
- "user.impersonated":    { label: "User impersonated",  color: "#0284C7", bg: "#eff6ff", border: "#bae6fd" },
- "user.sessions_revoked":  { label: "Sessions revoked",   color: "#0284C7", bg: "#eff6ff", border: "#bae6fd" },
- "workspace.force_deleted": { label: "Workspace force-deleted", color: "#dc2626", bg: "#fef2f2", border: "#fecaca" },
+const ACTION_META: Record<string, { label: string; pill: string }> = {
+ "user.signup":                    { label: "User signed up",          pill: "bg-success/10 text-success border-success/20" },
+ "user.banned":                    { label: "User banned",             pill: "bg-destructive/[0.06] text-destructive border-destructive/20" },
+ "user.unbanned":                  { label: "User unbanned",           pill: "bg-success/10 text-success border-success/20" },
+ "workspace.created":              { label: "Workspace created",       pill: "bg-primary/10 text-primary border-primary/20" },
+ "workspace.updated":              { label: "Workspace updated",       pill: "bg-warning/10 text-warning border-warning/20" },
+ "workspace.deleted":              { label: "Workspace deleted",       pill: "bg-destructive/[0.06] text-destructive border-destructive/20" },
+ "workspace.force_deleted":        { label: "Workspace force-deleted", pill: "bg-destructive/[0.06] text-destructive border-destructive/20" },
+ "workspace.ownership_transferred":{ label: "Ownership transferred",   pill: "bg-primary/10 text-primary border-primary/20" },
+ "member.invited":                 { label: "Member invited",          pill: "bg-primary/10 text-primary border-primary/20" },
+ "member.joined":                  { label: "Member joined",           pill: "bg-success/10 text-success border-success/20" },
+ "member.role_changed":            { label: "Role changed",            pill: "bg-warning/10 text-warning border-warning/20" },
+ "member.removed":                 { label: "Member removed",          pill: "bg-destructive/[0.06] text-destructive border-destructive/20" },
+ "session.impersonated":           { label: "User impersonated",       pill: "bg-primary/10 text-primary border-primary/20" },
+ "session.revoked_all":            { label: "Sessions revoked",        pill: "bg-primary/10 text-primary border-primary/20" },
 };
 
 function ago(d: Date | null | undefined) {
@@ -26,15 +35,15 @@ function ago(d: Date | null | undefined) {
 export default async function OrbitAuditPage() {
  const events = await db
   .select({
-   id:     platformAuditLog.id,
-   action:   platformAuditLog.action,
+   id:         platformAuditLog.id,
+   action:     platformAuditLog.action,
    targetType: platformAuditLog.targetType,
-   targetId:  platformAuditLog.targetId,
-   metadata:  platformAuditLog.metadata,
-   createdAt: platformAuditLog.createdAt,
-   actorName: users.name,
+   targetId:   platformAuditLog.targetId,
+   metadata:   platformAuditLog.metadata,
+   createdAt:  platformAuditLog.createdAt,
+   actorName:  users.name,
    actorEmail: users.email,
-   actorId:  users.id,
+   actorId:    users.id,
   })
   .from(platformAuditLog)
   .leftJoin(users, eq(platformAuditLog.actorId, users.id))
@@ -44,22 +53,21 @@ export default async function OrbitAuditPage() {
  return (
   <div>
    {/* Header */}
-   <div className="mb-8 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-    <div className="h-[3px] bg-primary" />
+   <div className="mb-8 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
     <div className="p-6">
-     <h1 className="text-[26px] font-black tracking-tight text-foreground">Audit Trail</h1>
+     <h1 className="text-2xl font-bold tracking-tight text-foreground">Audit Trail</h1>
      <p className="mt-1 text-[13px] text-muted-foreground">Append-only log of all admin operator actions.</p>
      <div className="mt-4">
-      <span className="text-[22px] font-black text-primary">{events.length}</span>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Events (last 200)</p>
+      <span className="text-xl font-bold text-primary">{events.length}</span>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">Events (last 200)</p>
      </div>
     </div>
    </div>
 
    {events.length === 0 ? (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-border bg-muted/20 py-24">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-muted/20 py-24">
      <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-7">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-7 text-muted-foreground/50">
        <path d="M5 5h10M5 9h10M5 13h6" strokeLinecap="round"/>
       </svg>
      </div>
@@ -67,33 +75,27 @@ export default async function OrbitAuditPage() {
      <p className="mt-1 text-[12px] text-muted-foreground/60">Admin actions will appear here automatically.</p>
     </div>
    ) : (
-    <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-card">
-     {/* Table header */}
-     <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border/60 bg-muted/40 px-5 py-2.5 text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-      <span className="w-32">Action</span>
+    <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
+     <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border bg-muted/40 px-5 py-2.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <span className="w-36">Action</span>
       <span className="pl-4">Details</span>
       <span className="pr-6">Actor</span>
       <span>When</span>
      </div>
-
-     <div className="divide-y divide-border/40">
+     <div className="divide-y divide-border">
       {events.map(ev => {
        const meta = ACTION_META[ev.action];
-       const md  = ev.metadata as Record<string, unknown> | null;
+       const md   = ev.metadata as Record<string, unknown> | null;
        return (
         <div key={ev.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 px-5 py-3.5 transition-colors hover:bg-accent/40">
-         {/* Badge */}
-         <span className="w-32 shrink-0">
-          <span className="inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold"
-           style={{ color: meta?.color ?? "#787774", background: meta?.bg ?? "#f9f8f7", borderColor: meta?.border ?? "#e2e8f0" }}>
+         <span className="w-36 shrink-0">
+          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}>
            {meta?.label ?? ev.action}
           </span>
          </span>
-
-         {/* Details */}
          <div className="min-w-0 pl-4">
           <div className="flex items-center gap-2">
-           <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">{ev.targetType}</span>
+           <span className="text-[10.5px] font-semibold text-muted-foreground">{ev.targetType}</span>
            {ev.targetId && (
             <span className="font-mono text-[10px] text-muted-foreground/60">{ev.targetId.slice(0, 12)}…</span>
            )}
@@ -111,13 +113,11 @@ export default async function OrbitAuditPage() {
           )}
           {ev.targetId && ev.targetType === "workspace" && (
            <Link href={`/Orbit-admin/orbit/workspaces/${ev.targetId}`}
-            className="mt-0.5 text-[10px] font-semibold text-muted-foreground transition hover:underline hover:text-primary">
+            className="mt-0.5 text-[10px] font-semibold text-muted-foreground transition hover:text-primary hover:underline">
             View workspace →
            </Link>
           )}
          </div>
-
-         {/* Actor */}
          <div className="shrink-0 pr-6 text-right">
           {ev.actorEmail ? (
            <Link href={`/Orbit-admin/orbit/users/${ev.actorId}`}
@@ -128,8 +128,6 @@ export default async function OrbitAuditPage() {
            <span className="text-[11px] text-muted-foreground/60">Deleted user</span>
           )}
          </div>
-
-         {/* Time */}
          <div className="shrink-0 text-right">
           <p className="text-[11px] font-medium text-muted-foreground">{ago(ev.createdAt)}</p>
           <p className="text-[9.5px] text-muted-foreground/60">{formatDateTime(ev.createdAt)}</p>

@@ -177,13 +177,13 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
   return (
    <NodeViewWrapper contentEditable={false}>
     <div className="my-2 rounded-[var(--radius-md)] border border-primary/30 bg-primary/[0.03] p-4">
-     <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary/60">
+     <p className="mb-3 text-xs font-semibold tracking-[0.125px] text-primary/60">
       ⚡ Template Button — Edit
      </p>
 
      {/* Label */}
      <div className="mb-3">
-      <label className="mb-1 block text-xs font-semibold text-foreground/70">Button label</label>
+      <label className="mb-1 block text-xs font-medium text-foreground/70">Button label</label>
       <input
        type="text"
        value={draftLabel}
@@ -197,7 +197,7 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
 
      {/* Insert location */}
      <div className="mb-3">
-      <label className="mb-1.5 block text-xs font-semibold text-foreground/70">Insert location</label>
+      <label className="mb-1.5 block text-xs font-medium text-foreground/70">Insert location</label>
       <div className="flex gap-2">
        {([
         { key: "below_button", label: "Below button" },
@@ -222,7 +222,7 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
 
      {/* Template blocks */}
      <div className="mb-3">
-      <label className="mb-1.5 block text-xs font-semibold text-foreground/70">Template content</label>
+      <label className="mb-1.5 block text-xs font-medium text-foreground/70">Template content</label>
       <div className="flex flex-col gap-1.5">
        {draftBlocks.map((b, i) => (
         <div key={i} className="flex items-center gap-2">
@@ -278,7 +278,7 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
        type="button"
        onMouseDown={(e) => e.preventDefault()}
        onClick={saveEdit}
-       className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90"
+       className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
       >
        Save ↵
       </button>
@@ -303,7 +303,7 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
      type="button"
      onMouseDown={(e) => e.preventDefault()}
      onClick={handleClick}
-     className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-accent"
+     className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent"
     >
      <span>⚡</span>
      <span>{label}</span>
@@ -345,7 +345,7 @@ function MathBlockView({ node, updateAttributes, selected }: NodeViewProps) {
   <NodeViewWrapper contentEditable={false}>
    {editing ? (
     <div className="my-2 flex flex-col gap-2 rounded-[var(--radius-sm)] border border-border bg-muted p-3">
-     <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+     <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground">
       ∑ Equation — LaTeX
      </span>
      <div className="flex gap-2">
@@ -611,7 +611,7 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
       <line x1="1" y1="5" x2="15" y2="5"/>
       <line x1="5" y1="5" x2="5" y2="15"/>
      </svg>
-     <span className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-wide">Inline database</span>
+     <span className="text-xs font-semibold text-muted-foreground/50 tracking-[0.125px]">Inline database</span>
      <div className="ml-auto flex items-center gap-0.5">
       {isEditor && (
        <>
@@ -756,6 +756,6 @@ export const Columns = Node.create({
 
  parseHTML() { return [{ tag: "div[data-type='columns']" }]; },
  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, unknown> }) {
-  return ["div", mergeAttributes(HTMLAttributes, { "data-type": "columns" })];
+  return ["div", mergeAttributes(HTMLAttributes, { "data-type": "columns" }), 0];
  },
 });

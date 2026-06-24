@@ -174,8 +174,8 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
         onClick={() => toggle(opt.id)}
         className="flex min-w-0 flex-1 items-center gap-2"
        >
-        <span className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
-         <span className={`size-1.5 shrink-0 rounded-full ${color.dot}`} />
+        <span className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+         <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
          {opt.name}
         </span>
        </button>
@@ -187,7 +187,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
         className="ml-auto hidden size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/40 hover:bg-accent group-hover/opt:flex"
         title="Change color"
        >
-        <span className={`size-3 rounded-full ${color.dot}`} />
+        <span className="size-3 rounded-full" style={{ backgroundColor: color.dot }} />
        </button>
 
        {/* Color palette */}
@@ -197,7 +197,8 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
           <button
            key={c.id}
            onClick={(e) => { e.stopPropagation(); recolorOption(opt.id, c.id); }}
-           className={`size-4 rounded-full ${c.dot} transition-transform duration-150 hover:scale-110 hover:outline hover:outline-2 hover:outline-foreground/60`}
+           className="size-4 rounded-full transition-transform duration-150 hover:scale-110 hover:outline hover:outline-2 hover:outline-foreground/60"
+           style={{ backgroundColor: c.dot }}
            title={c.id}
           />
          ))}

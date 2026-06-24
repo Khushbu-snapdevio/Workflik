@@ -2,6 +2,9 @@
 
 import { Bell, Check, Loader2, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 type Frequency = "realtime" | "daily" | "weekly" | "off";
 
@@ -20,17 +23,6 @@ const EVENTS = [
   { icon: "✉️", label: "Workspace invites", desc: "You're invited to join a workspace"         },
   { icon: "📋", label: "Task assignments", desc: "A task or action item is assigned to you"    },
 ];
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-[26px] w-[46px] shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ${
-        checked ? "bg-primary" : "bg-foreground/12"
-      }`}>
-      <span className={`inline-block size-[18px] rounded-full bg-background ring-1 ring-border/30 transition-transform duration-150 ${checked ? "translate-x-[22px]" : "translate-x-[4px]"}`} />
-    </button>
-  );
-}
 
 export default function NotificationSettingsPage() {
   const [frequency, setFrequency] = useState<Frequency>("daily");
@@ -80,7 +72,7 @@ export default function NotificationSettingsPage() {
   const freqLabel = !emailOn ? "Off" : frequency === "realtime" ? "Instant" : frequency === "daily" ? "Daily" : "Weekly";
 
   return (
-    <div className="mx-auto max-w-[640px] px-10 py-10">
+    <div className="max-w-[780px] px-8 pt-6 pb-10">
 
       {/* ── Page header ── */}
       <div className="flex items-center gap-4">
@@ -95,7 +87,7 @@ export default function NotificationSettingsPage() {
 
       {/* ── Email channel card ── */}
       <div className="mt-8">
-        <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/60">Channel</p>
+        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Channel</p>
         <div className={`overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-150 ${emailOn ? "border-border bg-card" : "border-border bg-muted/20"}`}>
           <div className="flex items-center gap-4 p-5">
             <div className={`flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors ${emailOn ? "bg-primary" : "bg-muted"}`}>
@@ -103,7 +95,7 @@ export default function NotificationSettingsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-[14.5px] font-semibold text-foreground">Email notifications</p>
+                <Label className="text-[14.5px] font-semibold text-foreground">Email notifications</Label>
                 <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-bold ${emailOn ? "bg-muted text-foreground" : "bg-muted text-muted-foreground"}`}>
                   {emailOn ? "Active" : "Paused"}
                 </span>
@@ -112,14 +104,18 @@ export default function NotificationSettingsPage() {
                 {emailOn ? `Receiving ${freqLabel.toLowerCase()} digests` : "All email notifications are paused"}
               </p>
             </div>
-            <Toggle checked={emailOn} onChange={setEmailOn} />
+            <Switch
+              checked={emailOn}
+              onCheckedChange={setEmailOn}
+              aria-label="Toggle email notifications"
+            />
           </div>
         </div>
       </div>
 
       {/* ── Delivery frequency ── */}
       <div className={`mt-7 transition-[opacity] duration-300 ${!emailOn ? "pointer-events-none select-none opacity-40" : ""}`}>
-        <p className="mb-2 text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/60">Delivery frequency</p>
+        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Delivery frequency</p>
         <div className="grid grid-cols-3 gap-3">
           {FREQ_OPTIONS.map(opt => {
             const isActive = frequency === opt.value;
@@ -173,7 +169,7 @@ export default function NotificationSettingsPage() {
       {/* ── What you'll receive ── */}
       <div className="mt-7">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-[10.5px] font-bold uppercase tracking-widest text-muted-foreground/60">What you'll receive</p>
+          <p className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">What you'll receive</p>
           <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{freqLabel}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -201,10 +197,14 @@ export default function NotificationSettingsPage() {
             Saved
           </span>
         )}
-        <button type="button" onClick={save} disabled={saving}
-          className="rounded-[var(--radius-md)] bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:opacity-60">
+        <Button
+          type="button"
+          size="sm"
+          onClick={save}
+          disabled={saving}
+          >
           {saving ? "Saving…" : "Save preferences"}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/pages/page-header";
 import { DatabaseToolbar } from "@/components/database/toolbar";
 import { FilterBar } from "@/components/database/filter-bar";
@@ -9,7 +10,6 @@ import { TableView } from "@/components/database/table-view";
 import { BoardView } from "@/components/database/board-view";
 import { CalendarView } from "@/components/database/calendar-view";
 import { GalleryView } from "@/components/database/gallery-view";
-import { EntrySidePanel } from "@/components/database/entry-side-panel";
 import type {
   DbView, DbProperty, DbEntry, DbPropertyValue,
   FilterRule, SortRule, SharedViewProps,
@@ -32,6 +32,7 @@ export function DatabasePage({
   databaseId, workspaceId, workspaceSlug, isEditor,
   initialTitle, initialIcon, isLocked, isDeleted, pageShortId, inline = false,
 }: DatabasePageProps) {
+  const router = useRouter();
   const [views, setViews]               = useState<DbView[]>([]);
   const [properties, setProperties]     = useState<DbProperty[]>([]);
   const [entries, setEntries]           = useState<DbEntry[]>([]);
@@ -45,12 +46,6 @@ export function DatabasePage({
   const [searchQuery, setSearchQuery]     = useState("");
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
   const searchInputRef                    = useRef<HTMLInputElement>(null);
-
-  // Side panel — store the ID so it stays fresh when entries array updates
-  const [sidePanelEntryId, setSidePanelEntryId] = useState<string | null>(null);
-  const sidePanelEntry = sidePanelEntryId
-    ? (entries.find((e) => e.id === sidePanelEntryId) ?? null)
-    : null;
 
   // ── Derived state ─────────────────────────────────────────────────────────
 
@@ -305,10 +300,8 @@ export function DatabasePage({
   // ── Shared view props ─────────────────────────────────────────────────────
 
   const openEntry = useCallback((entry: DbEntry) => {
-    if ((activeView?.entryOpenMode ?? "side_panel") === "side_panel") {
-      setSidePanelEntryId(entry.id);
-    }
-  }, [activeView?.entryOpenMode]);
+    router.push(`/app/${workspaceSlug}/${entry.shortId}`);
+  }, [router, workspaceSlug]);
 
   const sharedViewProps: SharedViewProps = {
     databaseId,
@@ -450,24 +443,6 @@ export function DatabasePage({
         </div>
       </div>
 
-      {/* ── Entry side panel ── */}
-      {sidePanelEntry && (
-        <EntrySidePanel
-          entry={sidePanelEntry}
-          properties={properties}
-          valueMap={valueMap}
-          workspaceSlug={workspaceSlug}
-          workspaceId={workspaceId}
-          isEditor={isEditor}
-          onClose={() => setSidePanelEntryId(null)}
-          onUpdateTitle={updateTitle}
-          onUpdateValue={updateValue}
-          onDeleteEntry={async (id) => {
-            await deleteEntry(id);
-            setSidePanelEntryId(null);
-          }}
-        />
-      )}
     </div>
   );
 }

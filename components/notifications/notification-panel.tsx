@@ -3,7 +3,7 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { XIcon, GearIcon } from "@phosphor-icons/react";
+import { X, Settings, Bell, Check } from "lucide-react";
 import { useNotifications } from "@/components/notifications/notification-provider";
 import { NotificationCard, type NotificationItem } from "@/components/notifications/notification-card";
 
@@ -99,12 +99,9 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
       {/* Panel */}
       <div
-        className="fixed top-0 right-0 flex h-full flex-col"
+        className="fixed top-0 right-0 flex h-full w-[460px] flex-col border-l border-border bg-card"
         style={{
-          width:      460,
           zIndex:     600,
-          background: "var(--card)",
-          boxShadow:  "-8px 0 40px rgba(15,23,42,0.10), -1px 0 0 var(--border)",
           transform:  animIn ? "translateX(0)" : "translateX(20px)",
           opacity:    animIn ? 1 : 0,
           transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease",
@@ -112,23 +109,21 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
         }}
       >
         {/* ── Header ── */}
-        <div className="shrink-0 border-b border-border bg-gradient-to-r from-sky-50/50 to-transparent px-5 py-3.5">
+        <div className="shrink-0 border-b border-border bg-card px-5 py-3.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10">
-                  <svg className="size-[15px] text-primary" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
-                  </svg>
+                <div className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted">
+                  <Bell size={15} className="text-muted-foreground" />
                 </div>
                 {unread > 0 && (
-                  <span className="absolute -top-1 -right-1 flex size-[16px] items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white leading-none">
+                  <span className="absolute -top-1 -right-1 flex size-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary text-[9px] font-bold text-white leading-none">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
               </div>
               <div>
-                <p className="text-[14px] font-bold text-foreground tracking-tight leading-none">Inbox</p>
+                <p className="text-[14px] font-semibold text-foreground tracking-tight leading-none">Inbox</p>
                 <p className="mt-0.5 text-[10.5px] text-muted-foreground">
                   {unread > 0 ? `${unread} unread notification${unread !== 1 ? "s" : ""}` : "You're all caught up"}
                 </p>
@@ -140,24 +135,25 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="rounded-[var(--radius-sm)] px-2.5 py-1 text-[11.5px] font-medium text-primary/70 transition-colors hover:bg-primary/10 hover:text-primary"
+                  className="rounded-[var(--radius-sm)] px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
                   Mark all read
                 </button>
               )}
               <a
                 href={`/app/${workspaceSlug}/settings/notifications`}
-                title="Notification settings"
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Notification settings"
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
-                <GearIcon size={14} />
+                <Settings size={14} />
               </a>
               <button
                 type="button"
                 onClick={closePanel}
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Close notifications"
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
-                <XIcon size={14} weight="bold" />
+                <X size={14} />
               </button>
             </div>
           </div>
@@ -171,15 +167,15 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 key={key}
                 type="button"
                 onClick={() => setFilter(key)}
-                className={`relative flex-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-[11.5px] font-medium transition-all ${
+                className={`relative flex-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-[11.5px] font-medium transition-colors duration-150 ${
                   filter === key
-                    ? "bg-card text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08),0_0_0_1px_var(--border)]"
+                    ? "bg-card text-foreground border border-border"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {label}
                 {key === "all" && unread > 0 && (
-                  <span className="ml-1 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-white leading-none">
+                  <span className="ml-1 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-[9px] font-bold text-white leading-none">
                     {unread > 99 ? "99+" : unread}
                   </span>
                 )}
@@ -233,14 +229,11 @@ function LoadingSkeleton() {
 function EmptyState({ filter }: { filter: FilterKey }) {
   return (
     <div className="flex flex-col items-center justify-center gap-5 px-8 py-20">
-      <div className="relative flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 ring-1 ring-primary/20">
-        <svg className="size-8 text-primary/60" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
-        </svg>
-        <span className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">✓</span>
+      <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
+        <Bell size={24} className="text-muted-foreground/40" />
       </div>
       <div className="text-center">
-        <p className="text-[14px] font-bold text-foreground">All caught up</p>
+        <p className="text-[14px] font-semibold text-foreground">All caught up</p>
         <p className="mt-1 text-[12.5px] text-muted-foreground">
           {filter === "all" ? "No notifications yet" : `No ${filter} notifications`}
         </p>

@@ -36,18 +36,19 @@ export async function POST(req: Request, { params }: Ctx) {
     const comment = rows[0];
     if (!comment) return apiError(404, "Comment not found");
 
-    // Toggle: add userId if not present, remove if present
+    // One reaction per user: strip this user from every emoji, then add them
+    // to the requested one (unless they already had it — that's a toggle-off).
     const current: Record<string, string[]> = (comment.reactions as Record<string, string[]>) ?? {};
-    const users = current[emoji] ?? [];
-    const updated: Record<string, string[]> = {
-      ...current,
-      [emoji]: users.includes(userId)
-        ? users.filter((u) => u !== userId)
-        : [...users, userId],
-    };
+    const hadThisEmoji = (current[emoji] ?? []).includes(userId);
 
-    // Remove key entirely if no one reacted anymore
-    if (updated[emoji].length === 0) delete updated[emoji];
+    const updated: Record<string, string[]> = {};
+    for (const [e, users] of Object.entries(current)) {
+      const filtered = (users as string[]).filter((u) => u !== userId);
+      if (filtered.length > 0) updated[e] = filtered;
+    }
+    if (!hadThisEmoji) {
+      updated[emoji] = [...(updated[emoji] ?? []), userId];
+    }
 
     const [saved] = await db
       .update(comments)

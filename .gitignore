@@ -24,4 +24,4 @@ db/migrations/meta/
 tsconfig.tsbuildinfo
 
 # Local file uploads (STORAGE_DRIVER=local)
-uploads/
+/uploads/

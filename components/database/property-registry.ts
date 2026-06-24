@@ -107,17 +107,17 @@ export const PROPERTY_REGISTRY: Record<PropertyType, PropertyDefinition> = {
 
 export const PROPERTY_TYPES = Object.values(PROPERTY_REGISTRY);
 
-// ── Select / Multi-select option colors ──────────────────────────────────────
+// ── Select / Multi-select option colors — design system tokens only ───────────
 export const OPTION_COLORS = [
-  { id: "gray",   bg: "bg-gray-100",   text: "text-gray-700",   dot: "bg-gray-400"   },
-  { id: "red",    bg: "bg-red-100",    text: "text-red-700",    dot: "bg-red-400"    },
-  { id: "orange", bg: "bg-orange-100", text: "text-orange-700", dot: "bg-orange-400" },
-  { id: "yellow", bg: "bg-yellow-100", text: "text-yellow-700", dot: "bg-yellow-400" },
-  { id: "green",  bg: "bg-green-100",  text: "text-green-700",  dot: "bg-green-400"  },
-  { id: "teal",   bg: "bg-teal-100",   text: "text-teal-700",   dot: "bg-teal-400"   },
-  { id: "blue",   bg: "bg-blue-100",   text: "text-blue-700",   dot: "bg-blue-400"   },
-  { id: "purple", bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400" },
-  { id: "pink",   bg: "bg-pink-100",   text: "text-pink-700",   dot: "bg-pink-400"   },
+  { id: "gray",   bg: "bg-muted",           text: "text-muted-foreground", dot: "bg-muted-foreground/40" },
+  { id: "red",    bg: "bg-destructive/10",   text: "text-destructive",      dot: "bg-destructive/50"      },
+  { id: "orange", bg: "bg-warning/10",       text: "text-warning",          dot: "bg-warning/50"          },
+  { id: "yellow", bg: "bg-warning/[0.07]",   text: "text-warning/80",       dot: "bg-warning/40"          },
+  { id: "green",  bg: "bg-success/10",       text: "text-success",          dot: "bg-success/50"          },
+  { id: "teal",   bg: "bg-success/[0.07]",   text: "text-success/80",       dot: "bg-success/40"          },
+  { id: "blue",   bg: "bg-primary/10",       text: "text-primary",          dot: "bg-primary/50"          },
+  { id: "purple", bg: "bg-primary/[0.07]",   text: "text-primary/80",       dot: "bg-primary/40"          },
+  { id: "pink",   bg: "bg-destructive/[0.07]", text: "text-destructive/80", dot: "bg-destructive/40"      },
 ] as const;
 
 export type OptionColorId = (typeof OPTION_COLORS)[number]["id"];

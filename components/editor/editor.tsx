@@ -339,7 +339,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
         <div className="absolute -top-7 right-0 text-xs text-muted-foreground/50 select-none">
           {saveState === "saving"  && <span className="animate-pulse">Saving…</span>}
           {saveState === "saved"   && <span>Saved</span>}
-          {saveState === "offline" && <span className="text-amber-500">Offline — changes will sync when reconnected</span>}
+          {saveState === "offline" && <span className="text-warning">Offline — changes will sync when reconnected</span>}
         </div>
       )}
 

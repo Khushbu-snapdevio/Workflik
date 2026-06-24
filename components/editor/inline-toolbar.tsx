@@ -3,9 +3,9 @@
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import {
-  TextBIcon, TextItalicIcon, TextUnderlineIcon, TextStrikethroughIcon,
-  CodeIcon, LinkIcon, PaintBucketIcon, HighlighterIcon, ChatTextIcon,
-} from "@phosphor-icons/react";
+  Bold, Italic, Underline, Strikethrough,
+  Code, Link, Paintbrush, Highlighter, MessageSquare,
+} from "lucide-react";
 import { useState } from "react";
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
   onCommentSelection?:  (anchorStart: number, anchorEnd: number) => void;
 }
 
-const btnBase = "flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
+const btnBase = "flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground";
 const btnActive = "bg-accent text-foreground";
 
 export function InlineToolbar({ editor, onCommentSelection }: Props) {
@@ -33,7 +33,7 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
   return (
     <BubbleMenu
       editor={editor}
-      className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1 shadow-[var(--shadow-float)]"
+      className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1"
     >
       {linkInput ? (
         <div className="flex items-center gap-1 px-1">
@@ -47,9 +47,9 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
               if (e.key === "Escape") { setLinkInput(false); setLinkUrl(""); }
             }}
             placeholder="Paste link…"
-            className="h-6 w-48 rounded border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+            className="h-6 w-48 rounded-[var(--radius-sm)] border border-border bg-background px-2 text-xs outline-none"
           />
-          <button type="button" onClick={applyLink} className="text-xs font-medium text-primary hover:underline">
+          <button type="button" onClick={applyLink} className="text-xs font-semibold text-foreground transition-colors duration-150 hover:text-muted-foreground">
             Apply
           </button>
         </div>
@@ -59,41 +59,41 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={`${btnBase} ${editor.isActive("bold") ? btnActive : ""}`}
-            title="Bold (Ctrl+B)"
+            aria-label="Bold (Ctrl+B)"
           >
-            <TextBIcon size={14} weight="bold" />
+            <Bold size={14} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={`${btnBase} ${editor.isActive("italic") ? btnActive : ""}`}
-            title="Italic (Ctrl+I)"
+            aria-label="Italic (Ctrl+I)"
           >
-            <TextItalicIcon size={14} />
+            <Italic size={14} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={`${btnBase} ${editor.isActive("underline") ? btnActive : ""}`}
-            title="Underline (Ctrl+U)"
+            aria-label="Underline (Ctrl+U)"
           >
-            <TextUnderlineIcon size={14} />
+            <Underline size={14} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleStrike().run()}
             className={`${btnBase} ${editor.isActive("strike") ? btnActive : ""}`}
-            title="Strikethrough"
+            aria-label="Strikethrough"
           >
-            <TextStrikethroughIcon size={14} />
+            <Strikethrough size={14} />
           </button>
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleCode().run()}
             className={`${btnBase} ${editor.isActive("code") ? btnActive : ""}`}
-            title="Inline Code (Ctrl+E)"
+            aria-label="Inline Code (Ctrl+E)"
           >
-            <CodeIcon size={14} />
+            <Code size={14} />
           </button>
 
           <div className="mx-0.5 h-4 w-px bg-border" />
@@ -106,14 +106,14 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
               setLinkInput(true);
             }}
             className={`${btnBase} ${editor.isActive("link") ? btnActive : ""}`}
-            title="Link (Ctrl+K)"
+            aria-label="Link (Ctrl+K)"
           >
-            <LinkIcon size={14} />
+            <Link size={14} />
           </button>
 
           <div className="mx-0.5 h-4 w-px bg-border" />
 
-          {/* Text colour — 6 quick swatches */}
+          {/* Text colour — quick swatches */}
           <ColorPicker
             onSelect={(color) => editor.chain().focus().setColor(color).run()}
             active={editor.isActive("textStyle")}
@@ -123,9 +123,9 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
             type="button"
             onClick={() => editor.chain().focus().toggleHighlight({ color: "#fde047" }).run()}
             className={`${btnBase} ${editor.isActive("highlight") ? btnActive : ""}`}
-            title="Highlight"
+            aria-label="Highlight"
           >
-            <HighlighterIcon size={14} />
+            <Highlighter size={14} />
           </button>
 
           <div className="mx-0.5 h-4 w-px bg-border" />
@@ -133,14 +133,14 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
           {/* Comment on selection */}
           <button
             type="button"
-            title="Comment (Ctrl+Shift+Alt+X)"
+            aria-label="Comment (Ctrl+Shift+Alt+X)"
             className={btnBase}
             onClick={() => {
               const { from, to } = editor.state.selection;
               if (onCommentSelection && from !== to) onCommentSelection(from, to);
             }}
           >
-            <ChatTextIcon size={14} />
+            <MessageSquare size={14} />
           </button>
         </>
       )}
@@ -148,6 +148,7 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
   );
 }
 
+/* Color values are content data stored in the document — editor exception per CLAUDE.md Rule 5 */
 const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#000000"];
 
 function ColorPicker({ onSelect, active }: { onSelect: (c: string) => void; active: boolean }) {
@@ -159,18 +160,19 @@ function ColorPicker({ onSelect, active }: { onSelect: (c: string) => void; acti
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={`${btnBase} ${active ? btnActive : ""}`}
-        title="Text color"
+        aria-label="Text color"
       >
-        <PaintBucketIcon size={14} />
+        <Paintbrush size={14} />
       </button>
       {open && (
-        <div className="absolute left-0 top-8 z-10 flex gap-1 rounded-[var(--radius-sm)] border border-border bg-popover p-1.5 shadow-[var(--shadow-float)]">
+        <div className="absolute left-0 top-8 z-10 flex gap-1 rounded-[var(--radius-sm)] border border-border bg-popover p-1.5">
           {COLORS.map((c) => (
             <button
               key={c}
               type="button"
               onClick={() => { onSelect(c); setOpen(false); }}
-              className="size-4 rounded-full border border-border/40 transition-transform hover:scale-110"
+              aria-label={`Set text color ${c}`}
+              className="size-4 rounded-full border border-border/40 transition-colors duration-150"
               style={{ background: c }}
             />
           ))}

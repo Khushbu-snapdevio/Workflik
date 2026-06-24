@@ -1,54 +1,38 @@
 "use client";
 
+import { BookOpen, Clock, FileText, Grid2X2, Lock, Search, Star, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 type PageRow = {
-  id:           string;
-  shortId:      string;
-  title:        string;
-  icon:         string | null;
-  kind:         string;
-  isPrivate:    boolean;
-  createdAt:    string;
-  updatedAt:    string;
-  creatorName:  string;
-  visitedAt:    string | null;
-  isRecent:     boolean;
-  isFavorited:  boolean;
+  id:          string;
+  shortId:     string;
+  title:       string;
+  icon:        string | null;
+  kind:        string;
+  isPrivate:   boolean;
+  createdAt:   string;
+  updatedAt:   string;
+  creatorName: string;
+  visitedAt:   string | null;
+  isRecent:    boolean;
+  isFavorited: boolean;
 };
 
 type Tab = "all" | "recents" | "favorites" | "private";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "all",       label: "All Pages" },
-  { id: "recents",   label: "Recents"   },
-  { id: "favorites", label: "Favorites" },
-  { id: "private",   label: "Private"   },
+  { id: "all",       label: "All Pages"  },
+  { id: "recents",   label: "Recents"    },
+  { id: "favorites", label: "Favorites"  },
+  { id: "private",   label: "Private"    },
 ];
 
 function TabIcon({ id }: { id: Tab }) {
-  if (id === "all") return (
-    <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-    </svg>
-  );
-  if (id === "recents") return (
-    <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  );
-  if (id === "favorites") return (
-    <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  );
-  return (
-    <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
-    </svg>
-  );
+  if (id === "all")       return <Grid2X2 size={14} className="shrink-0" />;
+  if (id === "recents")   return <Clock size={14} className="shrink-0" />;
+  if (id === "favorites") return <Star size={14} className="shrink-0" />;
+  return <Lock size={14} className="shrink-0" />;
 }
 
 function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
@@ -58,11 +42,7 @@ function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
       <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/>
     </svg>
   );
-  return (
-    <svg className="size-3.5 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-    </svg>
-  );
+  return <FileText size={14} className="text-muted-foreground/40" />;
 }
 
 function timeAgo(iso: string) {
@@ -80,7 +60,7 @@ function timeAgo(iso: string) {
 }
 
 export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; workspaceSlug: string }) {
-  const [tab, setTab]       = useState<Tab>("all");
+  const [tab, setTab]     = useState<Tab>("all");
   const [search, setSearch] = useState("");
 
   const tabCount = (id: Tab) =>
@@ -110,7 +90,7 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className={`relative flex items-center gap-1.5 border-b-2 px-3.5 py-3 text-[12.5px] font-medium whitespace-nowrap transition-colors ${
+                className={`relative flex items-center gap-1.5 border-b-2 px-3.5 py-3 text-[12.5px] font-medium whitespace-nowrap transition-colors duration-150 ${
                   tab === t.id
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -118,8 +98,8 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
               >
                 <TabIcon id={t.id} />
                 {t.label}
-                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                  tab === t.id ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-semibold ${
+                  tab === t.id ? "bg-accent text-foreground" : "bg-muted text-muted-foreground"
                 }`}>
                   {tabCount(t.id)}
                 </span>
@@ -128,10 +108,8 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
           </div>
 
           {/* Search */}
-          <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-            <svg className="size-3.5 shrink-0 text-muted-foreground/50" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+          <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs transition-colors duration-150 focus-within:border-border">
+            <Search size={13} className="shrink-0 text-muted-foreground/50" />
             <input
               className="w-40 bg-transparent text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
               placeholder="Search pages…"
@@ -143,11 +121,9 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                className="text-muted-foreground/40 transition-colors duration-150 hover:text-muted-foreground"
               >
-                <svg className="size-3" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" viewBox="0 0 12 12">
-                  <path d="M2 2l8 8M10 2l-8 8"/>
-                </svg>
+                <X size={12} />
               </button>
             )}
           </div>
@@ -156,27 +132,25 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
 
       {/* ── Content ── */}
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-[1200px] px-8 py-5">
+        <div key={tab} className="mx-auto w-full max-w-[1200px] animate-in fade-in slide-in-from-bottom-1 px-8 py-5 duration-200">
 
           {filtered.length === 0 ? (
-            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card shadow-[var(--shadow-card)]">
+            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
               <div className="flex flex-col items-center py-16 text-center">
-                <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-                  <svg className="size-6 text-muted-foreground/30" fill="none" stroke="currentColor" strokeWidth={1.4} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                  </svg>
+                <div className="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-muted">
+                  <BookOpen size={20} className="text-muted-foreground/40" />
                 </div>
-                <p className="text-[13.5px] font-semibold text-foreground">No pages found</p>
-                <p className="mt-1 text-[12px] text-muted-foreground">
+                <p className="text-sm font-semibold text-foreground">No pages found</p>
+                <p className="mt-1 text-xs text-muted-foreground">
                   {search ? "Try a different search term" : "Create your first page to get started"}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card shadow-[var(--shadow-card)]">
+            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
 
               {/* Table header */}
-              <div className="grid border-b border-border/60 bg-muted/20 px-5 py-2.5" style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}>
+              <div className="grid border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}>
                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Page name</span>
                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Created by</span>
                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Last edited</span>
@@ -189,26 +163,22 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
                   <Link
                     key={page.id}
                     href={`/app/${workspaceSlug}/${page.shortId}`}
-                    className="group/row grid items-center px-5 py-2.5 transition-colors hover:bg-primary/[0.03]"
+                    className="group/row grid items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
                     style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}
                   >
                     {/* Page name */}
                     <div className="flex min-w-0 items-center gap-2.5 pr-4">
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border/60 bg-background shadow-[var(--shadow-card)]">
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background">
                         <PageIcon icon={page.icon} kind={page.kind} />
                       </span>
-                      <span className="min-w-0 truncate text-[13px] font-medium text-foreground transition-colors group-hover/row:text-primary">
+                      <span className="min-w-0 truncate text-[13px] font-medium text-foreground">
                         {page.title || "Untitled"}
                       </span>
                       {page.isPrivate && (
-                        <svg className="size-3 shrink-0 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
-                        </svg>
+                        <Lock size={11} className="shrink-0 text-muted-foreground/40" />
                       )}
                       {page.isFavorited && (
-                        <svg className="size-3 shrink-0 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                        </svg>
+                        <Star size={11} className="shrink-0 text-warning" fill="currentColor" />
                       )}
                     </div>
 

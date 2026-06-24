@@ -1,7 +1,13 @@
 "use client";
 
+import { FileText, Loader2, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type TrashedPage = {
   id:            string;
@@ -14,7 +20,7 @@ type TrashedPage = {
 };
 
 function daysLeft(iso: string) {
-  const deleted = new Date(iso).getTime();
+  const deleted   = new Date(iso).getTime();
   const remaining = 30 - Math.floor((Date.now() - deleted) / 86400000);
   return Math.max(0, remaining);
 }
@@ -34,40 +40,25 @@ function timeAgo(iso: string) {
 
 function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
   if (icon) return <span className="text-base leading-none">{icon}</span>;
-  if (kind === "database") {
-    return (
-      <svg className="size-4 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <line x1="3" y1="9" x2="21" y2="9"/>
-        <line x1="3" y1="15" x2="21" y2="15"/>
-        <line x1="9" y1="9" x2="9" y2="21"/>
-      </svg>
-    );
-  }
-  return (
+  if (kind === "database") return (
     <svg className="size-4 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <line x1="3" y1="9" x2="21" y2="9"/>
+      <line x1="3" y1="15" x2="21" y2="15"/>
+      <line x1="9" y1="9" x2="9" y2="21"/>
     </svg>
   );
+  return <FileText size={16} className="text-muted-foreground/40" />;
 }
 
-const TrashIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"/>
-    <path d="M19 6l-1 14H6L5 6"/>
-    <path d="M10 11v6M14 11v6"/>
-    <path d="M9 6V4h6v2"/>
-  </svg>
-);
-
 export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; workspaceSlug: string }) {
+  void workspaceSlug;
   const router = useRouter();
-  const [search, setSearch]               = useState("");
-  const [restoring, setRestoring]         = useState<string | null>(null);
-  const [deleting, setDeleting]           = useState<string | null>(null);
+  const [search, setSearch]           = useState("");
+  const [restoring, setRestoring]     = useState<string | null>(null);
+  const [deleting, setDeleting]       = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<TrashedPage | null>(null);
-  const [localPages, setLocalPages]       = useState(pages);
+  const [localPages, setLocalPages]   = useState(pages);
 
   const filtered = localPages.filter((p) =>
     !search || (p.title || "Untitled").toLowerCase().includes(search.toLowerCase())
@@ -104,8 +95,8 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
       <div className="shrink-0 border-b border-border bg-card">
         <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-8 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-red-50">
-              <TrashIcon className="size-4 text-red-500" />
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted">
+              <Trash2 size={15} className="text-muted-foreground" />
             </div>
             <div>
               <h1 className="text-[18px] font-bold tracking-tight text-foreground">Trash</h1>
@@ -118,10 +109,8 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
           </div>
 
           {/* Search */}
-          <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background/70 px-3 py-1.5 text-xs transition-colors focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/20">
-            <svg className="size-3.5 shrink-0 text-muted-foreground/60" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+          <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 transition-colors duration-150 focus-within:border-border">
+            <Search size={13} className="shrink-0 text-muted-foreground/60" />
             <input
               className="w-44 bg-transparent text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
               placeholder="Search trash…"
@@ -130,10 +119,8 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
               type="text"
             />
             {search && (
-              <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/50 transition-colors hover:text-foreground">
-                <svg className="size-3" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
+              <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/50 transition-colors duration-150 hover:text-foreground">
+                <X size={12} />
               </button>
             )}
           </div>
@@ -146,36 +133,36 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
 
           {/* Empty state */}
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-muted/20 py-24 text-center">
-              <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-                <TrashIcon className="size-6 text-muted-foreground/30" />
+            <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card py-20 text-center">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-muted">
+                <Trash2 size={20} className="text-muted-foreground/40" />
               </div>
-              <p className="text-[13.5px] font-semibold text-muted-foreground">
+              <p className="text-sm font-semibold text-foreground">
                 {search ? "No pages match" : "Trash is empty"}
               </p>
-              <p className="mt-1 text-[12px] text-muted-foreground/60">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {search ? `No results for "${search}"` : "Deleted pages will appear here for 30 days"}
               </p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card shadow-[var(--shadow-card)]">
+            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
               {/* Table header */}
-              <div className="grid grid-cols-[1fr_160px_120px_200px] items-center border-b border-border/60 bg-muted/40 px-5 py-2.5">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Page name</span>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Deleted by</span>
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Deleted</span>
-                <span className="text-right text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Actions</span>
+              <div className="grid grid-cols-[1fr_160px_120px_200px] items-center border-b border-border bg-muted/30 px-5 py-2.5">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Page name</span>
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Deleted by</span>
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Deleted</span>
+                <span className="text-right text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground/60">Actions</span>
               </div>
 
               {/* Rows */}
-              <div className="divide-y divide-border/50">
+              <div className="divide-y divide-border/40">
                 {filtered.map((page) => {
                   const left   = page.deletedAt ? daysLeft(page.deletedAt) : 30;
                   const urgent = left <= 7;
                   return (
                     <div
                       key={page.id}
-                      className="grid grid-cols-[1fr_160px_120px_200px] items-center px-5 py-3.5 transition-colors hover:bg-accent/40"
+                      className="grid grid-cols-[1fr_160px_120px_200px] items-center px-5 py-3.5 transition-colors duration-150 hover:bg-accent"
                     >
                       {/* Name */}
                       <div className="flex min-w-0 items-center gap-2.5">
@@ -186,7 +173,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           <p className="truncate text-[13px] font-medium text-foreground">
                             {page.title || "Untitled"}
                           </p>
-                          <p className={`text-[11px] ${urgent ? "font-medium text-red-500" : "text-muted-foreground/60"}`}>
+                          <p className={`text-[11px] ${urgent ? "font-medium text-destructive" : "text-muted-foreground/60"}`}>
                             {urgent
                               ? left === 0 ? "Deletes today" : `Deletes in ${left}d`
                               : `Deletes in ${left} days`}
@@ -210,22 +197,16 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           type="button"
                           disabled={restoring === page.id || !!deleting}
                           onClick={() => handleRestore(page)}
-                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-[12px] font-medium text-foreground/70 shadow-[var(--shadow-card)] transition-all hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary disabled:opacity-50 active:scale-[0.97]"
+                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-[12px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-50"
                         >
                           {restoring === page.id ? (
                             <>
-                              <svg className="size-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                              </svg>
+                              <Loader2 size={12} className="animate-spin" />
                               Restoring…
                             </>
                           ) : (
                             <>
-                              <svg className="size-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                                <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/>
-                                <path d="M3 3v5h5"/>
-                              </svg>
+                              <RotateCcw size={12} />
                               Restore
                             </>
                           )}
@@ -235,13 +216,13 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           type="button"
                           disabled={!!restoring || !!deleting}
                           onClick={() => setConfirmDelete(page)}
-                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-red-200/80 bg-card px-3 text-[12px] font-medium text-red-500 shadow-[var(--shadow-card)] transition-all hover:border-red-300 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 active:scale-[0.97]"
+                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-[12px] font-medium text-destructive transition-colors duration-150 hover:border-destructive/40 hover:bg-destructive/5 disabled:opacity-50"
                         >
                           {deleting === page.id ? (
                             "Deleting…"
                           ) : (
                             <>
-                              <TrashIcon className="size-3" />
+                              <Trash2 size={12} />
                               Delete forever
                             </>
                           )}
@@ -256,61 +237,26 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
         </div>
       </div>
 
-      {/* ── Permanent delete confirmation dialog ── */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
-            onClick={() => setConfirmDelete(null)}
-          />
-          <div className="relative w-[380px] overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card shadow-[var(--shadow-float)]">
-            {/* Red accent top */}
-            <div className="h-[3px] bg-gradient-to-r from-red-500 to-red-400/50" />
-            <div className="p-6">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-50">
-                  <TrashIcon className="size-5 text-red-500" />
-                </div>
-                <div>
-                  <h2 className="text-[14px] font-bold text-foreground">Delete forever?</h2>
-                  <p className="text-[12px] text-muted-foreground">This action cannot be undone</p>
-                </div>
-              </div>
-
-              <div className="mb-4 flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border/60 bg-muted/30 px-3.5 py-2.5">
-                <span className="shrink-0 opacity-50">
-                  <PageIcon icon={confirmDelete.icon} kind={confirmDelete.kind} />
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete forever?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDelete && (
+                <span className="flex items-center gap-2 mb-2 p-2.5 rounded-[var(--radius-sm)] border border-border bg-muted/30">
+                  <span className="shrink-0 opacity-50"><PageIcon icon={confirmDelete.icon} kind={confirmDelete.kind} /></span>
+                  <span className="font-medium text-foreground">{confirmDelete.title || "Untitled"}</span>
                 </span>
-                <span className="text-[13px] font-medium text-foreground">
-                  {confirmDelete.title || "Untitled"}
-                </span>
-              </div>
-
-              <p className="mb-5 text-[12.5px] leading-relaxed text-muted-foreground">
-                This page will be permanently deleted and cannot be recovered. All content, comments, and history will be lost.
-              </p>
-
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(null)}
-                  className="rounded-[var(--radius-sm)] border border-border px-4 py-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(confirmDelete)}
-                  className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-red-600 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-red-700 active:scale-[0.97]"
-                >
-                  <TrashIcon className="size-3.5" />
-                  Delete forever
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              )}
+              This page will be permanently deleted and cannot be recovered. All content, comments, and history will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmDelete && handleDelete(confirmDelete)}>Delete forever</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

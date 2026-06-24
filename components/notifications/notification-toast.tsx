@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { XIcon } from "@phosphor-icons/react";
+import { X } from "lucide-react";
 import type { StreamNotification } from "@/lib/notifications/use-notification-stream";
 
 interface Props {
@@ -26,7 +26,6 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Trigger enter animation
     const enter = requestAnimationFrame(() => setVisible(true));
     const timer = setTimeout(() => {
       setVisible(false);
@@ -42,25 +41,16 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
 
   return (
     <div
-      className="fixed bottom-5 right-5 w-[360px] transition-all duration-250"
+      className="fixed bottom-5 right-5 z-[500] w-[360px] transition-[opacity,transform] duration-150"
       style={{
-        zIndex:    500,
         transform: visible ? "translateY(0) scale(1)" : "translateY(12px) scale(0.97)",
         opacity:   visible ? 1 : 0,
       }}
     >
-      <div
-        style={{
-          background:   "var(--card)",
-          border:       "1px solid var(--border)",
-          borderRadius: "var(--radius-lg)",
-          boxShadow:    "var(--shadow-float)",
-          overflow:     "hidden",
-        }}
-      >
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
         {/* Progress bar */}
         <div
-          className="h-[2px] bg-primary"
+          className="h-0.5 bg-primary"
           style={{
             animation:       "toast-shrink 5s linear forwards",
             transformOrigin: "left",
@@ -77,8 +67,7 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
             </div>
           ) : (
             <div
-              className="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white select-none"
-              style={{ background: avatarColor(who) }}
+              className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white select-none ${avatarBgClass(who)}`}
             >
               {initials}
             </div>
@@ -91,31 +80,32 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
               <span className="text-muted-foreground">{label}</span>
             </p>
             {notification.pageTitle && (
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground truncate">
+              <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
                 <span>{notification.pageIcon ?? "📄"}</span>
                 <span className="truncate">{notification.pageTitle}</span>
               </p>
             )}
             {notification.contentSnippet && (
-              <p className="mt-1.5 rounded-[var(--radius-sm)] bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground line-clamp-2">
+              <p className="mt-1.5 line-clamp-2 rounded-[var(--radius-sm)] bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground">
                 {notification.contentSnippet}
               </p>
             )}
           </div>
 
           {/* Actions */}
-          <div className="flex shrink-0 flex-col items-end gap-2 ml-1">
+          <div className="ml-1 flex shrink-0 flex-col items-end gap-2">
             <button
               type="button"
               onClick={onDismiss}
-              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 hover:bg-muted/50 hover:text-muted-foreground transition-colors"
+              aria-label="Dismiss notification"
+              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 transition-colors duration-150 hover:bg-muted/50 hover:text-muted-foreground"
             >
-              <XIcon size={13} weight="bold" />
+              <X size={13} />
             </button>
             <button
               type="button"
               onClick={onView}
-              className="rounded-[var(--radius-sm)] bg-primary px-2.5 py-1 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] transition-colors whitespace-nowrap"
+              className="whitespace-nowrap rounded-[var(--radius-sm)] bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
             >
               View
             </button>
@@ -133,12 +123,19 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
   );
 }
 
-const COLORS = [
-  "#0284C7", "#0369A1", "#0EA5E9", "#0891B2",
-  "#10B981", "#F59E0B", "#EF4444", "#14B8A6", "#F97316",
+const AVATAR_BG_CLASSES = [
+  "bg-primary",
+  "bg-destructive",
+  "bg-success",
+  "bg-warning",
+  "bg-muted-foreground",
+  "bg-primary/70",
+  "bg-destructive/70",
+  "bg-success/70",
+  "bg-warning/70",
 ];
-function avatarColor(name: string) {
+function avatarBgClass(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return COLORS[h % COLORS.length];
+  return AVATAR_BG_CLASSES[h % AVATAR_BG_CLASSES.length]!;
 }

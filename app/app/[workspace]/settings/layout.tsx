@@ -5,7 +5,6 @@ import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { users, workspaces } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
-import { SettingsShell } from "@/components/settings/settings-shell";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { SettingsUserProvider } from "@/components/settings/settings-user-context";
 
@@ -32,8 +31,8 @@ export default async function SettingsLayout({ children, params }: Props) {
   const userImage = currentUser?.image ?? null;
 
   return (
-    <SettingsShell>
-      <SettingsUserProvider initial={{ name: userName, email: userEmail, image: userImage }}>
+    <SettingsUserProvider initial={{ name: userName, email: userEmail, image: userImage }}>
+      <div className="flex h-full overflow-hidden">
         <SettingsNav
           workspaceSlug={ws.slug}
           workspaceName={ws.name}
@@ -47,8 +46,8 @@ export default async function SettingsLayout({ children, params }: Props) {
             </Suspense>
           </div>
         </div>
-      </SettingsUserProvider>
-    </SettingsShell>
+      </div>
+    </SettingsUserProvider>
   );
 }
 

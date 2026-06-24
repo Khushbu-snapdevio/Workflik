@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CaretLeft, CaretRight, Plus, X } from "@phosphor-icons/react";
+import { ChevronLeft, ChevronRight, Plus, X, Calendar } from "lucide-react";
 import type { SharedViewProps } from "@/components/database/types";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const DAYS   = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -16,13 +17,12 @@ function isoToLocalDate(iso: string) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-// Entry chip colour palette — cycles by entry index
+// Entry chip colour palette — design system tokens, cycles by entry index
 const CHIP_COLORS = [
-  "bg-primary/12 text-primary hover:bg-primary/20",
-  "bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-950/40 dark:text-violet-300",
-  "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-950/40 dark:text-blue-300",
-  "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300",
-  "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-950/40 dark:text-amber-300",
+  "bg-primary/10 text-primary hover:bg-primary/15",
+  "bg-success/10 text-success hover:bg-success/15",
+  "bg-warning/10 text-warning hover:bg-warning/15",
+  "bg-muted text-muted-foreground hover:bg-accent",
 ];
 
 export function CalendarView({
@@ -32,8 +32,8 @@ export function CalendarView({
   const [year, setYear]         = useState(now.getFullYear());
   const [month, setMonth]       = useState(now.getMonth());
   const [hoveredDay, setHoveredDay]   = useState<string | null>(null);
-  const [deletingId, setDeletingId]   = useState<string | null>(null);
-  const [confirmId, setConfirmId]     = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState(false);
 
   const calPropId = activeView?.calendarPropertyId;
   const calProp   = properties.find((p) => p.id === calPropId && p.type === "date");
@@ -42,12 +42,7 @@ export function CalendarView({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 text-center px-8">
         <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-          <svg className="size-7 text-muted-foreground/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/>
-            <line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
+          <Calendar size={28} className="text-muted-foreground/40" />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">No date property selected</p>
@@ -95,6 +90,7 @@ export function CalendarView({
   function goToday() { setYear(now.getFullYear()); setMonth(now.getMonth()); }
 
   return (
+    <>
     <div className="flex h-full flex-col overflow-hidden bg-background">
 
       {/* ── Month navigation ── */}
@@ -103,7 +99,7 @@ export function CalendarView({
           onClick={prevMonth}
           className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
-          <CaretLeft size={14} weight="bold" />
+          <ChevronLeft size={14} />
         </button>
 
         <h2 className="min-w-[152px] text-center text-sm font-bold tracking-tight text-foreground">
@@ -114,7 +110,7 @@ export function CalendarView({
           onClick={nextMonth}
           className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
-          <CaretRight size={14} weight="bold" />
+          <ChevronRight size={14} />
         </button>
 
         {!isCurrentMonth && (
@@ -173,15 +169,15 @@ export function CalendarView({
               onMouseLeave={() => setHoveredDay(null)}
               className={[
                 "group/cell relative flex min-h-[100px] flex-col border-b border-r border-border/30 p-2 transition-colors",
-                isToday   ? "bg-primary/[0.04]" : "",
-                isHovered && !isToday ? "bg-muted/30" : "",
-                isSunday || isSaturday ? "bg-muted/[0.03]" : "",
+                isToday   ? "bg-accent" : "",
+                isHovered && !isToday ? "bg-muted/20" : "",
+                isSunday || isSaturday ? "" : "",
               ].filter(Boolean).join(" ")}
             >
               {/* Day number + add button row */}
               <div className="mb-1.5 flex items-center justify-between">
                 <span className={[
-                  "flex size-[22px] items-center justify-center rounded-full text-xs font-semibold tabular-nums transition-colors",
+                  "flex size-[22px] items-center justify-center rounded-[var(--radius-sm)] text-xs font-semibold tabular-nums transition-colors",
                   isToday
                     ? "bg-primary text-primary-foreground"
                     : "text-foreground/50 group-hover/cell:text-foreground/80",
@@ -195,11 +191,11 @@ export function CalendarView({
                     onClick={() => onCreateEntry({ [calPropId!]: { date: key } })}
                     title={`Add entry on ${MONTHS[month]} ${day}`}
                     className={[
-                      "flex size-[18px] items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-all hover:bg-primary/10 hover:text-primary",
+                      "flex size-[18px] items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-accent hover:text-foreground",
                       isHovered ? "opacity-100" : "opacity-0",
                     ].join(" ")}
                   >
-                    <Plus size={11} weight="bold" />
+                    <Plus size={11} />
                   </button>
                 )}
               </div>
@@ -209,7 +205,7 @@ export function CalendarView({
                 {dayEntries.slice(0, 3).map((entry, i) => (
                   <div
                     key={entry.id}
-                    className={`group/chip relative flex items-center rounded-md text-xs font-medium transition-colors ${CHIP_COLORS[i % CHIP_COLORS.length]}`}
+                    className={`group/chip relative flex items-center rounded-[var(--radius-xs)] text-xs font-medium transition-colors ${CHIP_COLORS[i % CHIP_COLORS.length]}`}
                   >
                     {(activeView?.entryOpenMode ?? "side_panel") === "side_panel" && onOpenEntry ? (
                       <button
@@ -236,44 +232,14 @@ export function CalendarView({
                     )}
 
                     {/* Delete button — shown on chip hover */}
-                    {isEditor && confirmId !== entry.id && (
+                    {isEditor && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmId(entry.id); }}
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: entry.id, title: entry.title ?? "" }); }}
                         title="Delete entry"
-                        className="mr-0.5 hidden shrink-0 rounded p-0.5 opacity-50 transition-opacity hover:opacity-100 group-hover/chip:flex"
+                        className="mr-0.5 hidden shrink-0 rounded-[var(--radius-xs)] p-0.5 opacity-50 transition-opacity duration-150 hover:opacity-100 group-hover/chip:flex"
                       >
-                        <X size={9} weight="bold" />
+                        <X size={9} />
                       </button>
-                    )}
-
-                    {/* Confirm pill */}
-                    {confirmId === entry.id && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-between gap-1 rounded-[var(--radius-sm)] bg-destructive/10 px-1.5">
-                        <span className="truncate text-[10px] font-semibold text-destructive">
-                          Delete?
-                        </span>
-                        <div className="flex shrink-0 gap-1">
-                          <button
-                            disabled={deletingId === entry.id}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              setDeletingId(entry.id);
-                              await onDeleteEntry(entry.id);
-                              setDeletingId(null);
-                              setConfirmId(null);
-                            }}
-                            className="rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-bold text-destructive hover:bg-destructive/20 disabled:opacity-50"
-                          >
-                            {deletingId === entry.id ? "…" : "Yes"}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setConfirmId(null); }}
-                            className="rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground hover:bg-muted"
-                          >
-                            No
-                          </button>
-                        </div>
-                      </div>
                     )}
                   </div>
                 ))}
@@ -300,5 +266,23 @@ export function CalendarView({
         })}
       </div>
     </div>
+
+    <ConfirmDialog
+      open={!!deleteTarget}
+      onOpenChange={(o) => !o && setDeleteTarget(null)}
+      title="Delete entry?"
+      description={<><span className="font-medium">&ldquo;{deleteTarget?.title || "Untitled"}&rdquo;</span> and all its content will be permanently deleted. This action cannot be undone.</>}
+      confirmLabel="Delete"
+      confirmLoadingLabel="Deleting…"
+      loading={deletingEntry}
+      onConfirm={async () => {
+        if (!deleteTarget) return;
+        setDeletingEntry(true);
+        await onDeleteEntry(deleteTarget.id);
+        setDeletingEntry(false);
+        setDeleteTarget(null);
+      }}
+    />
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { PaperclipIcon, At, XCircleIcon, ArrowCircleUpIcon, XIcon } from "@phosphor-icons/react";
+import { Paperclip, AtSign, XCircle, ArrowUpCircle, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { MentionNode } from "@/components/editor/extensions/mention-node";
 import { MentionCommands, type MentionSuggestionProps } from "@/components/editor/extensions/mention-extension";
@@ -163,11 +163,11 @@ export function CommentComposer({
   const isEmpty = editorEmpty && !attachment;
 
   const containerCls = mode === "edit"
-    ? "border-primary/40 bg-primary/[0.02] focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.06)]"
-    : "border-border/60 bg-card focus-within:border-primary/40 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.05)]";
+    ? "border-primary/40 bg-primary/[0.02] focus-within:border-primary/60"
+    : "border-border/60 bg-card focus-within:border-primary/40";
 
   return (
-    <div className={`rounded-[var(--radius-sm)] border transition-all ${containerCls}`}>
+    <div className={`rounded-[var(--radius-sm)] border transition-colors duration-150 ${containerCls}`}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -200,16 +200,16 @@ export function CommentComposer({
                 />
               ) : (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] bg-muted border border-border">
-                  <PaperclipIcon size={14} className="text-muted-foreground" />
+                  <Paperclip size={14} className="text-muted-foreground" />
                   <span className="text-xs text-foreground/70 truncate max-w-[200px]">{attachment.name}</span>
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => setAttachment(null)}
-                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-foreground/70 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-[var(--radius-sm)] bg-foreground/70 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
               >
-                <XIcon size={9} weight="bold" />
+                <X size={9} />
               </button>
             </div>
           ) : null}
@@ -222,32 +222,32 @@ export function CommentComposer({
           <button
             type="button"
             title="Attach image or file"
-            className="p-1 rounded text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted transition-colors"
+            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/30 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => fileInputRef.current?.click()}
           >
-            <PaperclipIcon size={13} />
+            <Paperclip size={13} />
           </button>
 
           <button
             type="button"
             title="Mention (@)"
-            className="p-1 rounded text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted transition-colors"
+            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/30 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => {
               editor?.commands.focus("end");
               editor?.commands.insertContent("@");
             }}
           >
-            <At size={13} />
+            <AtSign size={13} />
           </button>
 
           {onCancel && (
             <button
               type="button"
               title="Cancel (Esc)"
-              className="p-1 rounded text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-colors duration-150"
               onClick={onCancel}
             >
-              <XCircleIcon size={13} />
+              <XCircle size={13} />
             </button>
           )}
         </div>
@@ -257,13 +257,13 @@ export function CommentComposer({
           title="Submit (Enter)"
           disabled={isEmpty}
           onClick={handleSubmit}
-          className={`p-1 rounded transition-colors ${
+          className={`p-1 rounded-[var(--radius-sm)] transition-colors duration-150 ${
             isEmpty
               ? "text-muted-foreground/20 cursor-not-allowed"
-              : "text-primary hover:text-primary/80 hover:bg-primary/10"
+              : "text-primary hover:text-primary hover:bg-accent"
           }`}
         >
-          <ArrowCircleUpIcon size={16} weight="fill" />
+          <ArrowUpCircle size={16} />
         </button>
       </div>
     </div>

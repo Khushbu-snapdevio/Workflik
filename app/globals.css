@@ -211,6 +211,12 @@ body {
   select {
     font: inherit;
   }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  select {
+    cursor: pointer;
+  }
   /* ── Typography uniformity ───────────────────────── */
 
   /* Base — all UI text */
@@ -287,54 +293,23 @@ body {
 /* ── Button hover effects ────────────────────────────────────────────────── */
 @layer components {
 
-  /* PRIMARY — smooth expanding ring + inner top highlight + soft glow */
-  button.bg-primary,
-  a.bg-primary {
-    transition: box-shadow 280ms ease, filter 280ms ease !important;
-  }
+  /* PRIMARY */
   button.bg-primary:not(:disabled):hover,
   a.bg-primary:hover {
     filter: brightness(1.06);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 0 0 3px rgba(2, 132, 199, 0.22),
-      0 6px 18px rgba(2, 132, 199, 0.26);
   }
   button.bg-primary:not(:disabled):active,
   a.bg-primary:active {
-    filter: brightness(0.97);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      0 0 0 2px rgba(2, 132, 199, 0.38);
-    transition-duration: 80ms !important;
+    filter: brightness(0.96);
   }
 
-  /* SECONDARY / ghost — smooth sky ring on hover */
-  button.bg-accent:not(:disabled):hover,
-  a.bg-accent:hover {
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.20);
-    transition: box-shadow 280ms ease !important;
-  }
-  button.bg-accent:not(:disabled):active,
-  a.bg-accent:active {
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.35);
-    transition-duration: 80ms !important;
-  }
-
-  /* DESTRUCTIVE — smooth red ring + glow */
+  /* DESTRUCTIVE */
   button.bg-destructive:not(:disabled):hover,
   a.bg-destructive:hover {
     filter: brightness(1.06);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 0 0 3px rgba(239, 68, 68, 0.20),
-      0 6px 18px rgba(239, 68, 68, 0.22);
-    transition: box-shadow 280ms ease, filter 280ms ease !important;
   }
   button.bg-destructive:not(:disabled):active {
-    filter: brightness(0.97);
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.40);
-    transition-duration: 80ms !important;
+    filter: brightness(0.96);
   }
 }
 

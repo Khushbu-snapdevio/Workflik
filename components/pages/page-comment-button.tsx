@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { XIcon, ChatTextIcon, FileTextIcon, ChatDotsIcon } from "@phosphor-icons/react";
+import { X as XIcon, MessageSquare as ChatTextIcon, FileText as FileTextIcon, MessageCircle as ChatDotsIcon } from "lucide-react";
 import { CommentCard } from "@/components/editor/comment-card";
 
 interface Props {
@@ -71,15 +71,15 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
 
           {/* Slide-in panel */}
           <div
-            className="fixed top-3 right-3 bottom-3 flex flex-col bg-background border border-border/50 shadow-[var(--shadow-float)] overflow-hidden"
-            style={{ width: 380, zIndex: 600, borderRadius: "var(--radius-xl)" }}
+            className="fixed top-3 right-3 bottom-3 z-[600] flex w-[380px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border/50 bg-background"
+            style={{}}
           >
             {/* ── Header ── */}
             <div className="shrink-0 border-b border-border/40 bg-card">
               <div className="flex items-center justify-between px-4 pt-4 pb-3.5">
                 <div className="flex items-center gap-2.5">
                   <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 border border-primary/[0.12]">
-                    <FileTextIcon size={15} className="text-primary" weight="duotone" />
+                    <FileTextIcon size={15} className="text-primary" />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
@@ -98,9 +98,9 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                 >
-                  <XIcon size={14} weight="bold" />
+                  <XIcon size={14} />
                 </button>
               </div>
             </div>

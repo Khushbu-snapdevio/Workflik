@@ -1,602 +1,570 @@
 "use client";
 
 import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
+ closestCenter,
+ DndContext,
+ type DragEndEvent,
+ KeyboardSensor,
+ PointerSensor,
+ useSensor,
+ useSensors,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
+ arrayMove,
+ SortableContext,
+ sortableKeyboardCoordinates,
+ useSortable,
+ verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CaretDownIcon, CaretRightIcon, DotsThreeIcon, PlusIcon, StarIcon } from "@phosphor-icons/react";
+import { ChevronDown, ChevronRight, Copy, ExternalLink, FileText, Link2, Monitor, MoreHorizontal, Plus, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NewPageButton } from "@/components/workspace/new-page-button";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const ROOT_VISIBLE_MAX = 4;
 
 type PageItem = {
-  id: string;
-  shortId: string;
-  parentId: string | null;
-  title: string;
-  icon: string | null;
-  orderIndex: number;
-  kind: string;
-  isPrivate: boolean;
+ id: string;
+ shortId: string;
+ parentId: string | null;
+ title: string;
+ icon: string | null;
+ orderIndex: number;
+ kind: string;
+ isPrivate: boolean;
 };
 
 type TreeNode = PageItem & { children: TreeNode[] };
 
 type Props = {
-  pages: PageItem[];
-  filter: string;
-  loading?: boolean;
-  workspaceSlug: string;
-  workspaceId: string;
-  onPagesChange: (pages: PageItem[]) => void;
-  favoritePageIds: Set<string>;
-  onToggleFavorite: (pageId: string, isFav: boolean) => void;
+ pages: PageItem[];
+ filter: string;
+ loading?: boolean;
+ workspaceSlug: string;
+ workspaceId: string;
+ onPagesChange: (pages: PageItem[]) => void;
+ favoritePageIds: Set<string>;
+ onToggleFavorite: (pageId: string, isFav: boolean) => void;
 };
 
 function buildTree(pages: PageItem[]): TreeNode[] {
-  const map = new Map<string, TreeNode>();
-  for (const p of pages) {
-    map.set(p.id, { ...p, children: [] });
-  }
+ const map = new Map<string, TreeNode>();
+ for (const p of pages) {
+  map.set(p.id, { ...p, children: [] });
+ }
 
-  const roots: TreeNode[] = [];
-  for (const node of map.values()) {
-    const parent = node.parentId ? map.get(node.parentId) : undefined;
-    if (parent) {
-      parent.children.push(node);
-    } else {
-      roots.push(node);
-    }
+ const roots: TreeNode[] = [];
+ for (const node of map.values()) {
+  const parent = node.parentId ? map.get(node.parentId) : undefined;
+  if (parent) {
+   parent.children.push(node);
+  } else {
+   roots.push(node);
   }
+ }
 
-  function sort(nodes: TreeNode[]) {
-    nodes.sort((a, b) => a.orderIndex - b.orderIndex);
-    for (const n of nodes) {
-      sort(n.children);
-    }
+ function sort(nodes: TreeNode[]) {
+  nodes.sort((a, b) => a.orderIndex - b.orderIndex);
+  for (const n of nodes) {
+   sort(n.children);
   }
-  sort(roots);
-  return roots;
+ }
+ sort(roots);
+ return roots;
 }
 
 function matchesFilter(node: TreeNode, lower: string): boolean {
-  if (node.title.toLowerCase().includes(lower)) {
-    return true;
-  }
-  return node.children.some((c) => matchesFilter(c, lower));
+ if (node.title.toLowerCase().includes(lower)) {
+  return true;
+ }
+ return node.children.some((c) => matchesFilter(c, lower));
 }
 
 function applyFilter(nodes: TreeNode[], lower: string): TreeNode[] {
-  if (!lower) {
-    return nodes;
+ if (!lower) {
+  return nodes;
+ }
+ return nodes.flatMap((n) => {
+  if (!matchesFilter(n, lower)) {
+   return [];
   }
-  return nodes.flatMap((n) => {
-    if (!matchesFilter(n, lower)) {
-      return [];
-    }
-    return [{ ...n, children: applyFilter(n.children, lower) }];
-  });
+  return [{ ...n, children: applyFilter(n.children, lower) }];
+ });
 }
 
 export function PageTree({
-  pages,
-  filter,
-  loading = false,
-  workspaceSlug,
-  workspaceId,
-  onPagesChange,
-  favoritePageIds,
-  onToggleFavorite,
+ pages,
+ filter,
+ loading = false,
+ workspaceSlug,
+ workspaceId,
+ onPagesChange,
+ favoritePageIds,
+ onToggleFavorite,
 }: Props) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+ const sensors = useSensors(
+  useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+ );
 
-  // All hooks must be declared before any early returns
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLButtonElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
-  const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
+ // All hooks must be declared before any early returns
+ const [moreOpen, setMoreOpen] = useState(false);
+ const moreRef = useRef<HTMLButtonElement>(null);
+ const popupRef = useRef<HTMLDivElement>(null);
+ const [popupPos, setPopupPos] = useState<{ top: number; left: number } | null>(null);
 
-  useEffect(() => {
-    if (!moreOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (moreRef.current?.contains(e.target as Node)) return;
-      if (popupRef.current?.contains(e.target as Node)) return;
-      setMoreOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [moreOpen]);
+ useEffect(() => {
+  if (!moreOpen) return;
+  function handleClick(e: MouseEvent) {
+   if (moreRef.current?.contains(e.target as Node)) return;
+   if (popupRef.current?.contains(e.target as Node)) return;
+   setMoreOpen(false);
+  }
+  document.addEventListener("mousedown", handleClick);
+  return () => document.removeEventListener("mousedown", handleClick);
+ }, [moreOpen]);
 
-  const lower = filter.toLowerCase();
-  const tree = applyFilter(buildTree(pages), lower);
+ const lower = filter.toLowerCase();
+ const tree = applyFilter(buildTree(pages), lower);
 
-  function handleDragEnd(
-    event: DragEndEvent,
-    siblings: TreeNode[],
-    parentId: string | null
-  ) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const oldIdx = siblings.findIndex((n) => n.id === active.id);
-    const newIdx = siblings.findIndex((n) => n.id === over.id);
-    if (oldIdx === -1 || newIdx === -1) {
-      return;
-    }
-
-    const reordered = arrayMove(siblings, oldIdx, newIdx);
-
-    // Optimistically update local state
-    const updated = pages.map((p) => {
-      const idx = reordered.findIndex((r) => r.id === p.id);
-      if (idx !== -1) {
-        return { ...p, orderIndex: idx };
-      }
-      return p;
-    });
-    onPagesChange(updated);
-
-    // Persist the moved page's new position
-    fetch(`/api/pages/${active.id}/move`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ parentId, orderIndex: newIdx }),
-    }).catch(() => {
-      onPagesChange(pages); // revert on error
-    });
+ function handleDragEnd(
+  event: DragEndEvent,
+  siblings: TreeNode[],
+  parentId: string | null
+ ) {
+  const { active, over } = event;
+  if (!over || active.id === over.id) {
+   return;
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-1 px-1 py-2">
-        {[80, 65, 90].map((w) => (
-          <div key={w} className="flex items-center gap-1.5 rounded-md px-1 py-1">
-            <div className="size-3.5 shrink-0 rounded bg-sidebar-foreground/10 animate-pulse" />
-            <div className="h-2.5 rounded bg-sidebar-foreground/10 animate-pulse" style={{ width: `${w}%` }} />
-          </div>
-        ))}
-      </div>
-    );
+  const oldIdx = siblings.findIndex((n) => n.id === active.id);
+  const newIdx = siblings.findIndex((n) => n.id === over.id);
+  if (oldIdx === -1 || newIdx === -1) {
+   return;
   }
 
-  if (tree.length === 0) {
-    return (
-      <p className="px-2 py-4 text-center text-2xs text-sidebar-foreground/40">
-        {filter ? "No pages match" : "No pages yet"}
-      </p>
-    );
-  }
+  const reordered = arrayMove(siblings, oldIdx, newIdx);
 
-  // When a filter is active, show all matches; otherwise cap at ROOT_VISIBLE_MAX
-  const visibleRoots = filter ? tree : tree.slice(0, ROOT_VISIBLE_MAX);
-  const hiddenCount  = filter ? 0 : Math.max(0, tree.length - ROOT_VISIBLE_MAX);
+  // Optimistically update local state
+  const updated = pages.map((p) => {
+   const idx = reordered.findIndex((r) => r.id === p.id);
+   if (idx !== -1) {
+    return { ...p, orderIndex: idx };
+   }
+   return p;
+  });
+  onPagesChange(updated);
 
-  function openMorePopup() {
-    if (moreRef.current) {
-      const r = moreRef.current.getBoundingClientRect();
-      setPopupPos({ top: r.top, left: r.right + 8 });
-    }
-    setMoreOpen((v) => !v);
-  }
+  // Persist the moved page's new position
+  fetch(`/api/pages/${active.id}/move`, {
+   method: "PATCH",
+   headers: { "Content-Type": "application/json" },
+   body: JSON.stringify({ parentId, orderIndex: newIdx }),
+  }).catch(() => {
+   onPagesChange(pages); // revert on error
+  });
+ }
 
+ if (loading) {
   return (
-    <>
-      <Level
-        depth={0}
-        favoritePageIds={favoritePageIds}
-        nodes={visibleRoots}
-        onDragEnd={handleDragEnd}
-        onPagesChange={onPagesChange}
-        onToggleFavorite={onToggleFavorite}
-        pages={pages}
-        parentId={null}
-        sensors={sensors}
-        workspaceId={workspaceId}
-        workspaceSlug={workspaceSlug}
-      />
-
-      {hiddenCount > 0 && (
-        <button
-          ref={moreRef}
-          type="button"
-          onClick={openMorePopup}
-          className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
-        >
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="size-3">
-            <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
-          </svg>
-          {hiddenCount} more
-        </button>
-      )}
-
-      {moreOpen && popupPos && typeof document !== "undefined" && createPortal(
-        <div
-          ref={popupRef}
-          className="fixed z-[300] w-64 overflow-hidden rounded-[var(--radius-md)] border border-primary/30 shadow-[var(--shadow-raised)]"
-          style={{ top: popupPos.top, left: popupPos.left }}
-        >
-          <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "linear-gradient(135deg, #0284c7, #0ea5e9)" }}>
-            <span className="text-xs font-semibold text-white">Pages</span>
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{tree.length} total</span>
-          </div>
-          <div className="max-h-72 overflow-y-auto bg-white py-1">
-            {tree.map((node) => (
-              <Link
-                key={node.id}
-                href={`/app/${workspaceSlug}/${node.shortId}`}
-                onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-primary/[0.07] hover:text-primary"
-              >
-                {node.icon ? (
-                  <span className="shrink-0 text-sm leading-none">{node.icon}</span>
-                ) : (
-                  <svg className="size-3.5 shrink-0 text-foreground/30" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                )}
-                <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
-              </Link>
-            ))}
-          </div>
-          <div className="border-t border-border bg-white px-3 py-2">
-            <Link
-              href={`/app/${workspaceSlug}/library`}
-              onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-2 text-xs font-medium text-primary transition-colors hover:text-[var(--primary-hover)]"
-            >
-              <svg className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-              </svg>
-              Open in Library
-            </Link>
-          </div>
-        </div>,
-        document.body,
-      )}
-    </>
+   <div className="space-y-1 px-1 py-2">
+    {[80, 65, 90].map((w) => (
+     <div key={w} className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-1">
+      <div className="size-3.5 shrink-0 rounded-[var(--radius-xs)] bg-sidebar-foreground/10 animate-pulse" />
+      <div className="h-2.5 rounded bg-sidebar-foreground/10 animate-pulse" style={{ width: `${w}%` }} />
+     </div>
+    ))}
+   </div>
   );
+ }
+
+ if (tree.length === 0) {
+  return (
+   <p className="px-2 py-4 text-center text-2xs text-sidebar-foreground/40">
+    {filter ? "No pages match" : "No pages yet"}
+   </p>
+  );
+ }
+
+ // When a filter is active, show all matches; otherwise cap at ROOT_VISIBLE_MAX
+ const visibleRoots = filter ? tree : tree.slice(0, ROOT_VISIBLE_MAX);
+ const hiddenCount = filter ? 0 : Math.max(0, tree.length - ROOT_VISIBLE_MAX);
+
+ function openMorePopup() {
+  if (moreRef.current) {
+   const r = moreRef.current.getBoundingClientRect();
+   setPopupPos({ top: r.top, left: r.right + 8 });
+  }
+  setMoreOpen((v) => !v);
+ }
+
+ return (
+  <>
+   <Level
+    depth={0}
+    favoritePageIds={favoritePageIds}
+    nodes={visibleRoots}
+    onDragEnd={handleDragEnd}
+    onPagesChange={onPagesChange}
+    onToggleFavorite={onToggleFavorite}
+    pages={pages}
+    parentId={null}
+    sensors={sensors}
+    workspaceId={workspaceId}
+    workspaceSlug={workspaceSlug}
+   />
+
+   {hiddenCount > 0 && (
+    <button
+     ref={moreRef}
+     type="button"
+     onClick={openMorePopup}
+     className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
+    >
+     <MoreHorizontal size={12} />
+     {hiddenCount} more
+    </button>
+   )}
+
+   {moreOpen && popupPos && typeof document !== "undefined" && createPortal(
+    <div
+     ref={popupRef}
+     className="fixed z-[300] w-64 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+     style={{ top: popupPos.top, left: popupPos.left }}
+    >
+     <div className="flex items-center justify-between border-b border-border bg-muted/40 px-3 py-2.5">
+      <span className="text-xs font-semibold text-foreground">Pages</span>
+      <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{tree.length} total</span>
+     </div>
+     <div className="max-h-72 overflow-y-auto py-1">
+      {tree.map((node) => (
+       <Link
+        key={node.id}
+        href={`/app/${workspaceSlug}/${node.shortId}`}
+        onClick={() => setMoreOpen(false)}
+        className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground/80 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+       >
+        {node.icon ? (
+         <span className="shrink-0 text-sm leading-none">{node.icon}</span>
+        ) : (
+         <FileText size={14} className="shrink-0 text-foreground/30" />
+        )}
+        <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
+       </Link>
+      ))}
+     </div>
+     <div className="border-t border-border bg-popover px-3 py-2">
+      <Link
+       href={`/app/${workspaceSlug}/library`}
+       onClick={() => setMoreOpen(false)}
+       className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
+      >
+       <Monitor size={14} />
+       Open in Library
+      </Link>
+     </div>
+    </div>,
+    document.body,
+   )}
+  </>
+ );
 }
 
 function Level({
-  nodes,
-  depth,
-  workspaceSlug,
-  workspaceId,
-  sensors,
-  onDragEnd,
-  onPagesChange,
-  onToggleFavorite,
-  favoritePageIds,
-  pages,
-  parentId,
+ nodes,
+ depth,
+ workspaceSlug,
+ workspaceId,
+ sensors,
+ onDragEnd,
+ onPagesChange,
+ onToggleFavorite,
+ favoritePageIds,
+ pages,
+ parentId,
 }: {
-  nodes: TreeNode[];
-  depth: number;
-  workspaceSlug: string;
-  workspaceId: string;
-  sensors: ReturnType<typeof useSensors>;
-  onDragEnd: (event: DragEndEvent, siblings: TreeNode[], parentId: string | null) => void;
-  onPagesChange: (pages: PageItem[]) => void;
-  onToggleFavorite: (pageId: string, isFav: boolean) => void;
-  favoritePageIds: Set<string>;
-  pages: PageItem[];
-  parentId: string | null;
+ nodes: TreeNode[];
+ depth: number;
+ workspaceSlug: string;
+ workspaceId: string;
+ sensors: ReturnType<typeof useSensors>;
+ onDragEnd: (event: DragEndEvent, siblings: TreeNode[], parentId: string | null) => void;
+ onPagesChange: (pages: PageItem[]) => void;
+ onToggleFavorite: (pageId: string, isFav: boolean) => void;
+ favoritePageIds: Set<string>;
+ pages: PageItem[];
+ parentId: string | null;
 }) {
-  return (
-    <DndContext
-      collisionDetection={closestCenter}
-      onDragEnd={(e) => onDragEnd(e, nodes, parentId)}
-      sensors={sensors}
-    >
-      <SortableContext
-        items={nodes.map((n) => n.id)}
-        strategy={verticalListSortingStrategy}
-      >
-        <div style={{ paddingLeft: depth > 0 ? depth * 12 : 0 }}>
-          {nodes.map((node) => (
-            <PageTreeNode
-              depth={depth}
-              favoritePageIds={favoritePageIds}
-              key={node.id}
-              node={node}
-              onDragEnd={onDragEnd}
-              onPagesChange={onPagesChange}
-              onToggleFavorite={onToggleFavorite}
-              pages={pages}
-              sensors={sensors}
-              workspaceId={workspaceId}
-              workspaceSlug={workspaceSlug}
-            />
-          ))}
-        </div>
-      </SortableContext>
-    </DndContext>
-  );
+ return (
+  <DndContext
+   id={`page-tree-${parentId ?? "root"}`}
+   collisionDetection={closestCenter}
+   onDragEnd={(e) => onDragEnd(e, nodes, parentId)}
+   sensors={sensors}
+  >
+   <SortableContext
+    items={nodes.map((n) => n.id)}
+    strategy={verticalListSortingStrategy}
+   >
+    <div style={{ paddingLeft: depth > 0 ? depth * 12 : 0 }}>
+     {nodes.map((node) => (
+      <PageTreeNode
+       depth={depth}
+       favoritePageIds={favoritePageIds}
+       key={node.id}
+       node={node}
+       onDragEnd={onDragEnd}
+       onPagesChange={onPagesChange}
+       onToggleFavorite={onToggleFavorite}
+       pages={pages}
+       sensors={sensors}
+       workspaceId={workspaceId}
+       workspaceSlug={workspaceSlug}
+      />
+     ))}
+    </div>
+   </SortableContext>
+  </DndContext>
+ );
 }
 
 function PageTreeNode({
-  node,
-  depth,
-  workspaceSlug,
-  workspaceId,
-  sensors,
-  onDragEnd,
-  onPagesChange,
-  onToggleFavorite,
-  favoritePageIds,
-  pages,
+ node,
+ depth,
+ workspaceSlug,
+ workspaceId,
+ sensors,
+ onDragEnd,
+ onPagesChange,
+ onToggleFavorite,
+ favoritePageIds,
+ pages,
 }: {
-  node: TreeNode;
-  depth: number;
-  workspaceSlug: string;
-  workspaceId: string;
-  sensors: ReturnType<typeof useSensors>;
-  onDragEnd: (event: DragEndEvent, siblings: TreeNode[], parentId: string | null) => void;
-  onPagesChange: (pages: PageItem[]) => void;
-  onToggleFavorite: (pageId: string, isFav: boolean) => void;
-  favoritePageIds: Set<string>;
-  pages: PageItem[];
+ node: TreeNode;
+ depth: number;
+ workspaceSlug: string;
+ workspaceId: string;
+ sensors: ReturnType<typeof useSensors>;
+ onDragEnd: (event: DragEndEvent, siblings: TreeNode[], parentId: string | null) => void;
+ onPagesChange: (pages: PageItem[]) => void;
+ onToggleFavorite: (pageId: string, isFav: boolean) => void;
+ favoritePageIds: Set<string>;
+ pages: PageItem[];
 }) {
-  const router = useRouter();
-  const [open, setOpen] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
-  const [confirmTrash, setConfirmTrash] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
+ const router = useRouter();
+ const [open, setOpen] = useState(true);
+ const [menuOpen, setMenuOpen] = useState(false);
+ const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+ const [confirmTrash, setConfirmTrash] = useState(false);
+ const [deleting, setDeleting] = useState(false);
+ const menuRef = useRef<HTMLDivElement>(null);
+ const btnRef = useRef<HTMLButtonElement>(null);
 
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : undefined };
-  const hasChildren = node.children.length > 0;
-  const isFav = favoritePageIds.has(node.id);
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id });
+ const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : undefined };
+ const hasChildren = node.children.length > 0;
+ const isFav = favoritePageIds.has(node.id);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    function onScroll() { setMenuOpen(false); }
-    document.addEventListener("mousedown", onOutside);
-    document.addEventListener("scroll", onScroll, true);
-    return () => {
-      document.removeEventListener("mousedown", onOutside);
-      document.removeEventListener("scroll", onScroll, true);
-    };
-  }, [menuOpen]);
-
-  function handleDelete() {
+ useEffect(() => {
+  if (!menuOpen) return;
+  function onOutside(e: MouseEvent) {
+   if (menuRef.current && !menuRef.current.contains(e.target as Node) && !btnRef.current?.contains(e.target as Node)) {
     setMenuOpen(false);
-    setConfirmTrash(true);
+   }
   }
+  function onScroll() { setMenuOpen(false); }
+  document.addEventListener("mousedown", onOutside);
+  document.addEventListener("scroll", onScroll, true);
+  return () => {
+   document.removeEventListener("mousedown", onOutside);
+   document.removeEventListener("scroll", onScroll, true);
+  };
+ }, [menuOpen]);
 
-  async function confirmDelete() {
-    setDeleting(true);
-    await fetch(`/api/pages/${node.id}`, { method: "DELETE" });
-    setDeleting(false);
-    setConfirmTrash(false);
-    onPagesChange(pages.filter((p) => p.id !== node.id));
+ function handleDelete() {
+  setMenuOpen(false);
+  setConfirmTrash(true);
+ }
 
-    // Navigate away only if currently viewing the deleted page — otherwise the
-    // local onPagesChange update is enough; no full router.refresh() needed.
-    const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(node.shortId);
-    if (onDeletedPage || node.kind === "database") {
-      window.location.replace(`/app/${workspaceSlug}`);
-    }
+ async function confirmDelete() {
+  setDeleting(true);
+  await fetch(`/api/pages/${node.id}`, { method: "DELETE" });
+  setDeleting(false);
+  setConfirmTrash(false);
+  onPagesChange(pages.filter((p) => p.id !== node.id));
+
+  // Navigate away only if currently viewing the deleted page — otherwise the
+  // local onPagesChange update is enough; no full router.refresh() needed.
+  const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(node.shortId);
+  if (onDeletedPage || node.kind === "database") {
+   window.location.replace(`/app/${workspaceSlug}`);
   }
+ }
 
-  async function handleDuplicate() {
-    setMenuOpen(false);
-    const res = await fetch(`/api/pages/${node.id}/duplicate`, { method: "POST" });
-    if (res.ok) {
-      const dup = await res.json();
-      const refetch = await fetch(`/api/workspaces/${workspaceId}/pages/tree`);
-      if (refetch.ok) onPagesChange(await refetch.json());
-      router.push(`/app/${workspaceSlug}/${dup.shortId}`);
-    }
+ async function handleDuplicate() {
+  setMenuOpen(false);
+  const res = await fetch(`/api/pages/${node.id}/duplicate`, { method: "POST" });
+  if (res.ok) {
+   const dup = await res.json();
+   const refetch = await fetch(`/api/workspaces/${workspaceId}/pages/tree`);
+   if (refetch.ok) onPagesChange(await refetch.json());
+   router.push(`/app/${workspaceSlug}/${dup.shortId}`);
   }
+ }
 
-  async function handleCopyLink() {
-    setMenuOpen(false);
-    await navigator.clipboard.writeText(`${window.location.origin}/app/${workspaceSlug}/${node.shortId}`);
-  }
+ async function handleCopyLink() {
+  setMenuOpen(false);
+  await navigator.clipboard.writeText(`${window.location.origin}/app/${workspaceSlug}/${node.shortId}`);
+ }
 
-  const menuItem = "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs text-foreground/80 transition-colors hover:bg-primary/[0.07] hover:text-primary cursor-pointer";
+ const menuItem = "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs text-foreground/80 transition-colors duration-150 hover:bg-accent hover:text-foreground cursor-pointer";
 
-  return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
-        {/* Expand/collapse */}
-        <button
-          className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground"
-          onClick={() => setOpen((v) => !v)}
-          tabIndex={-1}
-          type="button"
-        >
-          {hasChildren ? (open ? <CaretDownIcon size={11} /> : <CaretRightIcon size={11} />) : null}
-        </button>
+ return (
+  <div ref={setNodeRef} style={style} {...attributes}>
+   <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
+    {/* Expand/collapse */}
+    <button
+     className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground"
+     onClick={() => setOpen((v) => !v)}
+     tabIndex={-1}
+     type="button"
+    >
+     {hasChildren ? (open ? <ChevronDown size={11} /> : <ChevronRight size={11} />) : null}
+    </button>
 
-        {/* Page link */}
-        <Link
-          className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground"
-          href={`/app/${workspaceSlug}/${node.shortId}`}
-          {...listeners}
-        >
-          {node.icon ? (
-            <span className="shrink-0 text-sm leading-none">{node.icon}</span>
-          ) : (
-            <svg className="size-3.5 shrink-0 text-sidebar-foreground/30" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
-            </svg>
-          )}
-          <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
-        </Link>
+    {/* Page link */}
+    <Link
+     className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground"
+     href={`/app/${workspaceSlug}/${node.shortId}`}
+     {...listeners}
+    >
+     {node.icon ? (
+      <span className="shrink-0 text-sm leading-none">{node.icon}</span>
+     ) : (
+      <FileText size={14} className="shrink-0 text-sidebar-foreground/30" />
+     )}
+     <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
+    </Link>
 
-        {/* Hover actions */}
-        <div className="flex shrink-0 items-center gap-0.5 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <NewPageButton
-            workspaceId={workspaceId}
-            workspaceSlug={workspaceSlug}
-            parentId={node.id}
-            title="Add subpage"
-            className="flex size-5 items-center justify-center rounded text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-          >
-            <PlusIcon size={12} weight="bold" />
-          </NewPageButton>
-          <button
-            ref={btnRef}
-            className="flex size-5 items-center justify-center rounded text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-            onClick={(e) => {
-              e.stopPropagation();
-              const rect = btnRef.current?.getBoundingClientRect();
-              if (rect) setMenuPos({ x: rect.right + 4, y: rect.top });
-              setMenuOpen((v) => !v);
-            }}
-            tabIndex={-1}
-            title="Options"
-            type="button"
-          >
-            <DotsThreeIcon size={14} weight="bold" />
-          </button>
-        </div>
-
-        {/* Context menu — fixed so it escapes the sidebar's overflow clip */}
-        {menuOpen && (
-          <div
-            ref={menuRef}
-            className="fixed z-[200] min-w-[168px] overflow-hidden rounded-[var(--radius-md)] border border-primary/30 bg-white shadow-[var(--shadow-raised)]"
-            style={{ left: menuPos.x, top: menuPos.y }}
-          >
-            {/* Colored accent bar at top */}
-            <div className="h-[3px]" style={{ background: "linear-gradient(90deg, #0284c7, #0ea5e9, #38bdf8)" }} />
-            <div className="py-1">
-              <button
-                className={menuItem}
-                onClick={() => {
-                  setMenuOpen(false);
-                  onToggleFavorite(node.id, isFav);
-                  window.dispatchEvent(new CustomEvent("workflik:favorites-changed", { detail: { pageId: node.id, isFavorited: !isFav } }));
-                }}
-                type="button"
-              >
-                <StarIcon size={14} weight={isFav ? "fill" : "regular"} className={isFav ? "text-amber-400" : undefined} />
-                {isFav ? "Remove from Favorites" : "Add to Favorites"}
-              </button>
-              <div className="my-1 border-t border-border" />
-              <Link
-                className={menuItem}
-                href={`/app/${workspaceSlug}/${node.shortId}`}
-                onClick={() => setMenuOpen(false)}
-              >
-                <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                Open
-              </Link>
-              <NewPageButton
-                workspaceId={workspaceId}
-                workspaceSlug={workspaceSlug}
-                parentId={node.id}
-                onBeforeCreate={() => setMenuOpen(false)}
-                className={menuItem}
-              >
-                <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add subpage
-              </NewPageButton>
-              <button className={menuItem} onClick={handleDuplicate} type="button">
-                <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Duplicate
-              </button>
-              <button className={menuItem} onClick={handleCopyLink} type="button">
-                <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                Copy link
-              </button>
-              <div className="my-1 border-t border-border" />
-              <button className={`${menuItem} !text-red-500 hover:!bg-red-50 hover:!text-red-600`} onClick={handleDelete} type="button">
-                <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                Move to Trash
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Children */}
-      {hasChildren && open && (
-        <Level
-          depth={depth + 1}
-          favoritePageIds={favoritePageIds}
-          nodes={node.children}
-          onDragEnd={onDragEnd}
-          onPagesChange={onPagesChange}
-          onToggleFavorite={onToggleFavorite}
-          pages={pages}
-          parentId={node.id}
-          sensors={sensors}
-          workspaceId={workspaceId}
-          workspaceSlug={workspaceSlug}
-        />
-      )}
-
-      {/* Move to Trash confirmation dialog */}
-      {confirmTrash && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={() => !deleting && setConfirmTrash(false)} />
-          <div className="relative w-[360px] rounded-[var(--radius-lg)] border border-border bg-popover p-6 shadow-[var(--shadow-float)]">
-            <div className="mb-1 flex items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-red-100">
-                <svg className="size-4 text-red-600" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                </svg>
-              </div>
-              <h2 className="text-sm font-semibold text-foreground">Move to Trash</h2>
-            </div>
-            <p className="mb-5 mt-2 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">&ldquo;{node.title || "Untitled"}&rdquo;</span> will be moved to Trash and permanently deleted after 30 days.
-            </p>
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={() => setConfirmTrash(false)}
-                className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deleting}
-                onClick={confirmDelete}
-                className="rounded-[var(--radius-sm)] bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleting ? "Moving…" : "Move to Trash"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    {/* Hover actions */}
+    <div className="flex shrink-0 items-center gap-0.5 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
+     <NewPageButton
+      workspaceId={workspaceId}
+      workspaceSlug={workspaceSlug}
+      parentId={node.id}
+      title="Add subpage"
+      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+     >
+      <Plus size={12} />
+     </NewPageButton>
+     <button
+      ref={btnRef}
+      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      onClick={(e) => {
+       e.stopPropagation();
+       const rect = btnRef.current?.getBoundingClientRect();
+       if (rect) setMenuPos({ x: rect.right + 4, y: rect.top });
+       setMenuOpen((v) => !v);
+      }}
+      tabIndex={-1}
+      title="Options"
+      type="button"
+     >
+      <MoreHorizontal size={14} />
+     </button>
     </div>
-  );
+
+    {/* Context menu — fixed so it escapes the sidebar's overflow clip */}
+    {menuOpen && (
+     <div
+      ref={menuRef}
+      className="fixed z-[200] min-w-[168px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+      style={{ left: menuPos.x, top: menuPos.y }}
+     >
+      {/* Colored accent bar at top */}
+      <div className="h-[3px] bg-primary" />
+      <div className="py-1">
+       <button
+        className={menuItem}
+        onClick={() => {
+         setMenuOpen(false);
+         onToggleFavorite(node.id, isFav);
+         window.dispatchEvent(new CustomEvent("workflik:favorites-changed", { detail: { pageId: node.id, isFavorited: !isFav } }));
+        }}
+        type="button"
+       >
+        <Star size={14} className={isFav ? "text-warning" : undefined} />
+        {isFav ? "Remove from Favorites" : "Add to Favorites"}
+       </button>
+       <div className="my-1 border-t border-border" />
+       <Link
+        className={menuItem}
+        href={`/app/${workspaceSlug}/${node.shortId}`}
+        onClick={() => setMenuOpen(false)}
+       >
+        <ExternalLink size={14} />
+        Open
+       </Link>
+       <NewPageButton
+        workspaceId={workspaceId}
+        workspaceSlug={workspaceSlug}
+        parentId={node.id}
+        onBeforeCreate={() => setMenuOpen(false)}
+        className={menuItem}
+       >
+        <Plus size={14} />
+        Add subpage
+       </NewPageButton>
+       <button className={menuItem} onClick={handleDuplicate} type="button">
+        <Copy size={14} />
+        Duplicate
+       </button>
+       <button className={menuItem} onClick={handleCopyLink} type="button">
+        <Link2 size={14} />
+        Copy link
+       </button>
+       <div className="my-1 border-t border-border" />
+       <button className={`${menuItem} !text-destructive hover:!bg-destructive/[0.06]`} onClick={handleDelete} type="button">
+        <Trash2 size={14} />
+        Move to Trash
+       </button>
+      </div>
+     </div>
+    )}
+   </div>
+
+   {/* Children */}
+   {hasChildren && open && (
+    <Level
+     depth={depth + 1}
+     favoritePageIds={favoritePageIds}
+     nodes={node.children}
+     onDragEnd={onDragEnd}
+     onPagesChange={onPagesChange}
+     onToggleFavorite={onToggleFavorite}
+     pages={pages}
+     parentId={node.id}
+     sensors={sensors}
+     workspaceId={workspaceId}
+     workspaceSlug={workspaceSlug}
+    />
+   )}
+
+   {/* Move to Trash confirmation dialog */}
+   <ConfirmDialog
+    open={confirmTrash}
+    onOpenChange={setConfirmTrash}
+    title="Move to Trash?"
+    description={<><span className="font-medium text-foreground">&ldquo;{node.title || "Untitled"}&rdquo;</span> will be moved to Trash and permanently deleted after 30 days.</>}
+    confirmLabel="Move to Trash"
+    confirmLoadingLabel="Moving…"
+    loading={deleting}
+    onConfirm={confirmDelete}
+   />
+  </div>
+ );
 }

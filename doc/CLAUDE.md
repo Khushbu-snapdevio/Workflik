@@ -12,7 +12,582 @@ WorkFlik is an opinionated team workspace — "Notion's core, pre-assembled" —
 
 ---
 
+## User Actions & Flows
+
+What users actually do in WorkFlik — with full context, sequence, and how each feature connects. Use this to understand intent when building or reviewing any feature. Nothing should be missing from this section.
+
+---
+
+### Overall User Journey
+
+**First visit (new user):**
+1. Receives a magic-link invite email OR signs in via Google → authenticated
+2. New users go through the 4-screen onboarding wizard (mandatory, cannot be skipped)
+3. Land on their first page inside their new workspace
+4. Optional tooltip tour walks them through the sidebar and editor
+
+**Returning user (daily use):**
+1. Signs in via magic link or Google → lands on last visited page or workspace home
+2. Uses the sidebar to navigate: browse the page tree, search (`Ctrl+K`), check notifications
+3. Creates and edits pages, collaborates via comments, tracks work in databases
+4. Receives in-app and email notifications when mentioned, replied to, or granted access
+
+---
+
+### Authentication
+
+WorkFlik supports two sign-in methods: **magic link (passwordless)** and **Google OAuth**.
+
+#### Magic Link (Passwordless)
+
+1. User visits `/sign-in` → enters email → clicks "Email me a sign-in link"
+2. Response always shows: *"If an account exists with this email, a sign-in link has been sent."* (prevents email enumeration)
+3. User receives a one-time email link valid for **15 minutes**, single-use
+4. Clicks the link →
+   - **New email:** account auto-created, email marked verified, redirected to `/onboarding`
+   - **Existing user:** session created, redirected to last active workspace
+5. Link is immediately invalidated after use
+
+#### Google OAuth
+
+1. User clicks "Sign in with Google" on `/sign-in`
+2. Google OAuth flow completes → user authenticated
+3. Same outcome: new users go to `/onboarding`, existing users go to their workspace
+
+#### Sessions
+
+Sessions use a **7-day sliding window** — TTL resets on each authenticated request, keeping active users logged in.
+
+From **Settings → Sessions** (`/settings/sessions`) a user can:
+- View all active sessions: device type (Desktop/Mobile), browser, approximate location (city/country, IP-based), last active time, "Current session" badge on the active device
+- Revoke any individual session (logs out that device)
+- Revoke all other sessions (emergency log-out everywhere except the current device)
+
+**Sign out:** User menu at the bottom of the sidebar → Sign out.
+
+#### Account Deletion (`/settings/account` → Danger Zone)
+
+- If the user is the sole Admin of any workspace, they must transfer ownership first — app blocks deletion and shows a message
+- Requires typing their email address to confirm
+- What happens to content:
+
+| Content | Outcome |
+|---|---|
+| Pages in shared workspaces | Remain; `created_by` shown as "Former Member" |
+| Comments | Remain visible; author shown as "Former Member" |
+| Private pages | **Permanently deleted** — no one else can access them |
+| Uploaded files on private pages | Deleted from object storage; workspace quota decremented |
+| Workspace memberships | Removed from all workspaces |
+
+---
+
+### Onboarding (new users only — mandatory)
+
+Triggered automatically when a user has no workspace. 4 linear screens, cannot be skipped:
+
+**Screen 1 — Profile**
+User sets display name, uploads avatar (optional), enters role/title. These appear everywhere: comments, member lists, mentions.
+
+**Screen 2 — Workspace**
+- Creates a new workspace: name + icon → becomes the Owner
+- OR joins an existing workspace: pastes an invite link → added as member at the configured role
+
+**Screen 3 — Invite team** *(skippable)*
+Invites teammates by email. Invitees receive magic-link invite emails and go through onboarding themselves.
+
+**Screen 4 — Starting template**
+Picks from built-in templates (Meeting Notes, Project Tracker, Daily Journal, Team Wiki, Blank). Creates the workspace's first page. User lands inside it immediately after.
+
+**Tooltip tour:** Optional guided highlight tour that plays after onboarding.
+- Dismiss individual steps, skip the whole tour, or restart it from the Help menu
+- Contextual hints (one-time callouts) — shown on first encounter with specific features (e.g. first time opening a database) — can each be individually dismissed
+
+**Guest bypass:** A user who is invited as a guest to a specific page (not as a workspace member) skips the onboarding wizard entirely and is taken straight to the shared page they were invited to.
+
+---
+
+### Workspace
+
+**Switching workspaces:** Click the workspace name/icon at the top-left of the sidebar → switcher opens → switch to any joined workspace or create a new one.
+
+**Workspace settings:**
+
+| Action | Who can do it |
+|---|---|
+| Edit workspace name, icon, URL slug | Admin |
+| Set default page access for new pages (Shared / Private) | Admin |
+| View storage usage with per-category breakdown | Admin |
+| Delete workspace (all data erased, requires confirmation) | Admin |
+
+**Member management (Admin only):**
+1. Invite members by email → select role (Editor or Viewer) → invites sent
+2. OR generate a shareable invite link (one link = one role) → anyone with the link joins
+3. View all members, their roles, and join dates in the Members tab
+4. View pending invitations; resend or cancel individual invites
+5. Change a member's role (Editor ↔ Viewer) from their row dropdown
+6. Remove a member → they lose workspace access immediately; the workspace invite link token is **automatically regenerated** so the removed user cannot silently rejoin via the old link
+7. Transfer workspace ownership → triggers email confirmation from the recipient; takes effect only after they accept
+
+---
+
+### Pages
+
+Pages are the core unit. Everything in WorkFlik is a page or lives inside one.
+
+**Creating a page:**
+- Click `+` in the sidebar → new untitled page at the workspace root
+- Hover any existing sidebar page → click `+` that appears → creates a subpage nested under it
+- Type `/page` inside the editor → inserts a linked subpage inline
+- `Ctrl+N` → new page at root
+
+**Personalizing:**
+- Click the emoji area at the top of a page → emoji picker → set icon
+- Click "Add cover" → image picker (upload or preset gallery) → cover set; drag to reposition vertically; click to remove
+- Three-dot menu → Layout → toggle Full Width, Small Text, change font family
+
+**Organizing:**
+- Drag a page in the sidebar → reorders or nests it under another page
+- Three-dot menu → "Move to" → searchable page picker → move to any location
+- Three-dot menu → "Duplicate" → full copy with all content and subpages, placed under the same parent
+- Double-click a page title in the sidebar → rename in place
+
+**Lifecycle:**
+
+| Action | What happens |
+|---|---|
+| Three-dot → "Delete" | Page moves to Trash (soft delete, 30-day recovery window) |
+| Sidebar Trash → "Restore" | Page returns to its original location in the hierarchy |
+| Trash → "Delete forever" | Permanent, irreversible removal of that page |
+| Trash → "Empty Trash" | All trashed pages permanently deleted at once |
+| Three-dot → "Lock page" | Page becomes read-only for all viewers |
+
+**Breadcrumb:** Every page shows a breadcrumb at the top of the editor (Workspace → Parent → … → Current Page). Clicking an ancestor navigates to it. The breadcrumb updates automatically if the page is moved.
+
+**Trash notes:**
+- Pages nearing the 30-day auto-deletion limit show a warning banner when viewed from Trash (within the last 7 days before expiry)
+- "Empty Trash" scope: Admins empty the entire workspace Trash; non-Admins empty only the pages they personally have permission to permanently delete
+
+**Additional page actions:**
+- Three-dot → "Version history" → side panel shows auto-saved snapshots with timestamps → click any to preview → "Restore this version" to roll back
+- Three-dot → "Export" → choose format: Markdown, PDF, or HTML → file downloads
+- Star icon on hover in sidebar → adds to personal Favorites (top of sidebar, visible only to that user; not shared)
+
+---
+
+### Editor
+
+The editor is a block-based canvas. Every piece of content is a block.
+
+**Inserting blocks:**
+- Type `/` on any empty line → slash command menu → search or scroll to pick a type → Enter to insert
+- Markdown shortcuts inline: `##` + space = Heading 2, `-` + space = bullet, `1.` + space = numbered list, ` ``` ` = code block, `>` + space = quote, `---` = divider
+
+**Block types:**
+
+| Category | Blocks available |
+|---|---|
+| Text | Paragraph, Heading 1, Heading 2, Heading 3, Bulleted list, Numbered list, Toggle, Quote, Callout, Divider |
+| Media | Image, Video, Audio, File |
+| Structured | Code (syntax-highlighted), Table, Columns, Equation, Table of Contents |
+| Reference | Linked page, Inline database, Template button |
+
+**Text formatting** (select text → toolbar appears, or keyboard shortcuts):
+
+| Format | Shortcut |
+|---|---|
+| Bold | `Ctrl+B` |
+| Italic | `Ctrl+I` |
+| Underline | `Ctrl+U` |
+| Strikethrough | — |
+| Inline code | `Ctrl+E` |
+| Link | `Ctrl+K` |
+| Text color / Highlight | toolbar only |
+| Comment on selection | toolbar only |
+
+**Block operations** (via `⋮⋮` drag handle that appears on hover):
+- Drag handle → drag to reorder block or nest it inside another
+- Click handle → options: Comment, Duplicate, Move to (another page), Delete, Turn into (change block type), Color
+- Multi-select: click block + Shift+click another → selects a range → bulk operations apply to all
+- `Ctrl+Z` / `Ctrl+Shift+Z` → Undo / Redo (up to 200 steps)
+
+**Mentions and references:**
+- `@username` → mentions that person → they get a notification
+- `@page title` → inserts a live link to a page in the workspace
+- `@date` → inserts a formatted, hoverable date chip
+
+**Nesting:** Blocks can be nested up to **10 levels deep**. The editor enforces this limit — deeper indentation is not allowed.
+
+**Table of Contents block** (`/toc`): Auto-generates a linked outline from all H1/H2/H3 headings on the page. Updates live as headings are added or changed.
+
+**Auto-save:** Saves continuously. Topbar shows "Saving…" → "Saved". If offline, edits queue locally and sync when connection restores.
+
+---
+
+### Databases
+
+A database is a special page where every entry is itself a full page with properties and block content inside it.
+
+**Creating a database:**
+- `/database` in the editor → inline database embedded within a page
+- New page → select "Database" → full-page standalone database
+
+**Views:** A single database can have multiple views, each with its own independent filters, sorts, and grouping.
+
+| View type | Best for |
+|---|---|
+| Table | Spreadsheet-style rows and columns |
+| Board | Kanban-style cards grouped by a Select property |
+| Calendar | Entries positioned on dates using a Date property |
+| Gallery | Card grid with cover images and key properties |
+
+View actions: "+ Add view" → name it → choose type. Rename / Duplicate / Delete any view from the view's three-dot menu.
+
+**Creating entries:**
+
+| View | How to add an entry |
+|---|---|
+| Table | Click "+ New" at the bottom row |
+| Board | Click "+ New" inside a column (status group) |
+| Calendar | Click a date cell → entry created with that date |
+| Gallery | Click "+ New" button |
+
+Click any entry → opens as a side panel (quick edit) or full page, depending on the database's entry-open setting. Three-dot on row/card → Delete → moves entry to Trash.
+
+**Properties** (see full detail in Database Properties section below):
+- Click a column header → edit property name, type, or settings
+- Click `+` at the right edge of column headers (Table view) → add a property
+- Toolbar "Properties" button → show/hide, reorder, resize columns per view
+
+**Filtering:**
+- "Filter" button → add filter rules per property → combine multiple rules with AND / OR logic
+
+**Sorting:**
+- "Sort" button → add up to 5 sort rules → each with a direction → drag to change priority order
+
+**Grouping (Board / Table):**
+- Group entries by a Select property → entries appear in columns by option value
+
+**Board view extras:**
+- Board columns can be hidden (data is preserved) or collapsed to header-only
+- Columns can be reordered by dragging
+
+**Calendar view extras:**
+- The Date property used for positioning entries is configurable per view — if the database has multiple Date properties, each view can use a different one
+
+**Row reorder (Table view):**
+- Drag the row handle to reorder entries — only available when **no sort rule is active**; dragging is disabled while a sort is applied
+
+---
+
+### Database Properties
+
+Properties define the structure of a database — typed columns that every entry in that database has.
+
+**Managing properties:**
+- **Add:** Click `+` in table column headers or "+ Add a property" in entry detail → pick type → name it → configure
+- **Edit:** Click column header → "Edit property" → change name, type, format, or options
+- **Rename:** Click header → rename inline
+- **Change type:** Click header → "Edit property" → change type → existing values converted where possible; destructive conversions (→ Relation, → Person) require explicit confirmation and clear all existing values
+- **Reorder:** Drag the column header (Table view) or the property row in the entry detail panel
+- **Hide/Show:** Toggle visibility per-view from the "Properties" toolbar button; hidden properties still store values — they just aren't shown in that view
+- **Delete:** Removes that property and **all its values across every entry** permanently — requires confirmation
+- Maximum: **50 user-created properties** per database
+
+**Property types:**
+
+| Type | Stores | Notes |
+|---|---|---|
+| Text | Plain text, multi-line | Searchable in global search |
+| Number | Integer or decimal | Format options: plain, USD ($), EUR (€), percentage (%), scientific |
+| Select | One option from a predefined list | Options are color-coded badges; add new options inline |
+| Multi-Select | Multiple options from a list | Multiple colored badges per entry |
+| Date | Date or date range, with optional time | Stored in UTC, displayed in user's local timezone |
+| Checkbox | Boolean (checked / unchecked) | Clickable directly in Table view and Board cards |
+| URL | Web URL | Displays as a clickable link, opens in a new tab |
+| Email | Email address | Displays as a `mailto:` link |
+| Phone | Phone number | Displays as a `tel:` link |
+| Person | One or more workspace members | `@me` resolves to the creating user at the moment of entry creation |
+| Relation | Links to entries in another (or the same) database | Bidirectional — a back-relation property is auto-created in the linked database |
+
+**System properties** (auto-generated, read-only, hidden by default — show per-view from Properties panel):
+- Created Time · Last Edited Time · Created By · Last Edited By
+- Can be used in filters and sorts; do not count toward the 50-property limit
+
+**Default values:** Text, Number, Select, Multi-Select, Date, Checkbox, and Person properties can have a default value that is pre-filled when a new entry is created.
+
+---
+
+### Comments & Mentions
+
+**Three places to add comments:**
+- **Block-level:** Hover a block → comment icon appears → click → write → thread pins to that block
+- **Text-level:** Select text in the editor → formatting toolbar → Comment → comment anchors to that text span
+- **Page-level:** Scroll to the bottom of any page → write in the page-level comments section
+
+**Thread actions:**
+- Reply to a comment thread (one level of nesting only)
+- Edit own comment (pencil icon on hover) — edited comments show an "(edited)" label with the last edit time on hover
+- Delete own comment (three-dot → Delete)
+- Resolve thread (checkmark) → collapses and is marked resolved; can be reopened
+- Copy link to a specific comment thread
+
+**Text-level comment anchor behavior:** If the highlighted text is slightly edited, the anchor adjusts to the nearest match. If the anchored text is entirely deleted, the comment becomes "orphaned" and moves to the page-level comments section with a note indicating the original text was removed.
+
+**Mentions — work in both comments and editor body:**
+- `@username` → notifies that person with a mention notification
+- `@page title` → inserts a live-updated link to that page
+- `@date` → inserts a formatted, hoverable date chip
+
+---
+
+### Notifications
+
+**In-app notification center** (bell icon in sidebar or `Ctrl+Shift+N`):
+
+A user receives notifications for:
+- Being @mentioned in a comment or page content
+- Receiving a reply on a comment thread they are part of
+- Being granted access to a page
+- A page they own approaching its 30-day Trash expiry
+
+Actions in the notification center:
+- Filter by type: All / Mentions / Comments / Updates
+- Click a notification → navigates directly to the source (page, block, or comment)
+- Mark a single notification as read (checkmark on hover)
+- Mark all notifications as read (button at the top)
+- Unread count badge on the bell icon; clears as items are read
+- New notifications also appear as a **real-time toast** in the bottom-right corner (auto-dismisses after 5 seconds); multiple simultaneous notifications are batched into one toast
+- Notifications are delivered in real-time via Server-Sent Events (SSE) while the app is open
+
+**Email notification preferences** (Settings → Notifications):
+
+| Option | Behaviour |
+|---|---|
+| Real-time | One email sent immediately per event |
+| Daily digest | One summary email per day |
+| Weekly digest | One summary email per week; user picks the delivery day (Mon–Sun) |
+| Off | No email notifications at all |
+
+---
+
+### Search
+
+Global search covers all pages, database entries, block content, and comments the user has permission to see.
+
+**Opening:** `Ctrl+K` or the Search icon in the sidebar.
+
+- No query typed → shows recently visited pages
+- Type a query → real-time results: page title, breadcrumb path, content excerpt, last updated timestamp
+
+**Filters available in the search panel:**
+- **Type:** Pages / Database entries / Comments
+- **Location:** All workspace / Shared pages / Private pages / Inside a specific page
+- **Date:** Last 7 days / Last 30 days / Custom date range
+- **Title only toggle:** Matches only page titles — ignores body content
+
+**Sort options:** Default order is relevance (title exact match first, title contains second, content matches third). Can also sort by: Last edited, Created date.
+
+**Author filter:** Filter results by the member who created or last edited the content.
+
+**Keyboard navigation:** `↑` / `↓` to move between results · `Enter` to open · `Esc` to close.
+
+---
+
+### Templates
+
+WorkFlik ships with **16 built-in templates** authored by the WorkFlik team. Workspace members can also create their own custom templates.
+
+**Using a template when creating a page:**
+1. "+ New page" in sidebar → "Browse templates" button appears on the blank page
+2. Template gallery opens → filter by category → preview any template
+3. "Use template" → page content is populated from the template structure
+
+**Custom templates (workspace-scoped, visible to all workspace members — limit: 5 per workspace):**
+1. Build a page with the structure and content to reuse
+2. Three-dot menu → "Save as template" → name it → appears in gallery under the "Workspace" category
+3. Any workspace member can create pages from it
+4. The creator or an Admin can rename, edit, or delete it
+5. Templates can contain **placeholder blocks** — styled with faded, italicised text to guide users on what to fill in
+
+**Template button block** (for repeating in-page patterns like checklists or agendas):
+1. `/template-button` in the editor → inserts a clickable button
+2. Configure: set button label, define the block structure it inserts, choose where (below button or bottom of page)
+3. Any team member clicks the button → the predefined block structure is inserted at that location
+
+---
+
+### File Storage
+
+Files are stored in S3-compatible object storage. The app server never proxies file bytes — uploads go direct from the browser via pre-signed PUT URLs. **Workspace quota: 5 GB.**
+
+**Where users upload files:**
+- **Page cover:** "Add cover" → drag-drop or file picker → cover set; drag to reposition vertically
+- **Page icon:** Click icon area → "Upload image" tab → upload a custom icon image
+- **User avatar:** Settings → Account → upload avatar image
+- **Workspace icon:** Settings → Workspace → upload workspace icon
+- **Editor media blocks:** `/image`, `/video`, `/audio`, `/file` → drag-drop or file picker → uploads to S3 directly, displayed inline
+
+**Quota notes:**
+- User avatars are **user-scoped** and do **not** count toward the workspace quota
+- Workspace icon **does** count toward workspace quota
+- Page covers, page icons, and editor media blocks all count toward workspace quota
+
+**Storage awareness:**
+- Settings → Workspace → Storage: total usage vs. 5 GB quota, bar chart (amber at 90%, red at 100%), per-category breakdown (File blocks, Page covers, Page icons, Workspace icon)
+- At 90% usage: warning banner appears across the workspace
+- At 100%: all new uploads are blocked until storage is freed (existing files remain accessible)
+
+---
+
+### Permissions & Sharing
+
+WorkFlik has a two-layer access system: workspace role (Editor or Viewer) sets the default, and per-page permissions can override it for individual members or guests.
+
+**Share panel** (Share button in page topbar):
+
+**Workspace members:**
+- Add a member to a page → assign access: Full Access / Can Edit / Can Comment / Can View
+- Change an existing member's access level from the dropdown in the Share panel
+- Remove a member's page-level access → they fall back to their workspace-level role
+
+**Public link sharing:**
+- Toggle "Share to web" → generates a public URL
+- Access level for the public link: Can View or Can Comment (never Can Edit)
+- Copy link · Disable (deactivates the URL immediately) · Regenerate (creates a new URL; the old one stops working)
+
+**Guest access (external users, not workspace members):**
+- Enter an external email → select Can View / Can Comment / Can Edit → guest receives an invite email
+- Guests can only see pages they are explicitly invited to — no workspace sidebar access
+- Revoke guest access at any time from the Share panel
+
+**Private pages:**
+- Toggle a page to Private → only explicitly added members can access it; workspace default role no longer applies
+- Private indicator (lock icon) shown in the sidebar for members who have access
+- Private pages are **completely hidden** from the sidebar and search results for all other users — including workspace Admins (no placeholder is shown)
+
+**Guest invite expiry:** Guest invitations expire after **7 days** if not accepted. Expired invites can be resent from the Share panel.
+
+**Permission ceiling rule:** Page-level permissions can restrict but never expand beyond a user's workspace role. An Editor can be downgraded to Can View on a specific page, but a Viewer cannot be upgraded to Can Edit via page permissions.
+
+---
+
+### Settings
+
+**My Account (`/settings/account`) — all users:**
+- Update display name, avatar image, role/title, preferred timezone (IANA; auto-detected from browser on first sign-in) — each field **auto-saves on blur** (no submit button needed)
+- Delete account: must transfer workspace ownership first if sole Admin; type email to confirm; private pages permanently deleted; shared content remains with "Former Member" attribution
+
+**Sessions (`/settings/sessions`) — all users:**
+- View all active sessions: device, browser, approximate location, last active time
+- Revoke any individual session (logs out that device)
+- Revoke all other sessions (stays logged in on current device only)
+
+**Notifications (`/settings/notifications`) — all users:**
+- Set email frequency: Real-time / Daily digest / Weekly digest / Off
+- If Weekly: choose which day of the week to receive the digest
+
+**Workspace — General (`/settings/workspace`) — Admin only:**
+- Change workspace name, icon, and URL slug *(slug change requires confirmation; old slug redirects via 308 for 30 days, then goes dead)*
+- Set default page access for new pages: Shared with workspace or Private
+
+**Workspace — Members (`/settings/workspace/members`) — Admin only:**
+- Invite members by email → choose Editor or Viewer role
+- View all members, their roles, and join dates
+- Change a member's role (Editor ↔ Viewer)
+- Remove a member from the workspace
+- View and manage the invite link: copy, disable, or regenerate
+- View pending invitations: resend or cancel individual invites
+
+**Workspace — Danger Zone — Admin only:**
+- Transfer workspace ownership → recipient confirms via email before it takes effect
+- Delete workspace → all data permanently erased; text confirmation required
+
+---
+
+### Navigation & Sidebar
+
+The sidebar is the persistent navigation hub — always visible, never re-renders during page changes.
+
+**Sidebar sections (top to bottom):**
+1. **Workspace switcher** — workspace name and icon; click to switch workspaces or create a new one
+2. **Quick actions:** Search · New page · Notifications · Settings
+3. **Recently Visited** — last 10 unique pages visited in this workspace (shown below the search button); revisiting a page updates its position, no duplicates
+4. **Favorites** — personal starred pages (not shared with the team); shown only when at least one page is starred; can be reordered via drag-and-drop
+5. **Page tree** — full workspace page hierarchy, expandable and collapsible
+6. **Trash** — soft-deleted pages awaiting permanent deletion or restoration
+
+**Page tree interactions:**
+
+| Interaction | Result |
+|---|---|
+| Click a page | Navigate to it (hard cut, instant, no animation) |
+| Click `▶` arrow | Expand or collapse children |
+| Hover a page | Star icon (Favorites) and `⋯` three-dot menu appear |
+| Right-click a page | Context menu — same options as the three-dot menu |
+| Double-click page title | Rename the page in place |
+| Drag a page | Reorder within the same parent or nest under a different page |
+| Hover page + click `+` | Create a subpage directly under that page |
+| Type in sidebar search bar | Filters the visible tree by title (client-side, instant, case-insensitive) |
+
+**Sidebar filter note:** When filtering the tree by title, a page that matches keeps its full ancestor chain visible — parent pages are shown even if they don't match the query.
+
+**Sidebar layout controls:**
+- `Ctrl+\` → collapse / expand the sidebar
+- Drag the right edge → resize the sidebar (min: 200px, max: 480px)
+- Collapsed sidebar shows a thin icon-only strip; hovering it opens a floating peek panel
+- At ≤ 1024px viewport, sidebar auto-collapses to icon-only mode
+
+**Trash section:**
+- Lists all soft-deleted pages with their deletion timestamps
+- "Restore" → page returns to its original location in the hierarchy
+- "Delete forever" → permanently removes that specific page
+- "Empty Trash" → permanently removes all trashed pages at once
+
+---
+
+### Orbit Admin (Platform Team Only)
+
+Orbit Admin (`/orbit`) is WorkFlik's internal operations dashboard. **Not accessible to any end user, including workspace Admins.** Access requires `is_platform_admin = true` set directly in the database — no UI exists to self-assign this role. Every action taken in Orbit is logged to an append-only audit trail.
+
+**Dashboard (`/orbit`):**
+- Platform-wide metrics: total users, active workspaces (any login in last 30 days), new signups (7d / 30d), current active sessions
+
+**User Management (`/orbit/users`):**
+- List and search all registered users (paginated; filter by name or email)
+- View user detail: profile, linked workspaces, active sessions, account status
+- Ban a user → immediately revokes all sessions; banned user cannot sign in (optional ban reason)
+- Unban a user → restores sign-in access
+- Impersonate a user → opens a marked support session logged in as that user (2-hour hard TTL, logged to audit trail)
+- Revoke all sessions for a user → signs them out of every device
+- View all active sessions for any user with device, IP, and last-active info
+
+**Workspace Management (`/orbit/workspaces`):**
+- List and search all workspaces (paginated; filter by name or ID)
+- View workspace detail: members list, page count, storage usage
+- Force-delete a workspace → permanently removes all data (text confirmation required; irreversible)
+
+**Built-in Template Management (`/orbit/templates`):**
+- List all built-in templates: name, category, status (Draft / Published)
+- Create a new template using the block-based editor
+- Edit template content, name, description, or category
+- Preview a template as users see it in the gallery
+- Publish → sets status to published; template appears in the user-facing gallery
+- Unpublish → sets status to draft; template hidden from users
+- Delete a template permanently (pages already created from it are unaffected)
+
+**Analytics (`/orbit/analytics`):**
+- Aggregated, anonymized platform metrics: signups over time, activation rate, feature usage by workspace, notification open rate, search usage and no-result rate
+
+**Audit Trail (`/orbit/audit`):**
+- Read-only, append-only log of every Orbit Admin action
+- Each entry: timestamp, actor (platform admin), action type (e.g. `user.banned`, `session.impersonated`), target (user or workspace), optional notes
+- Records cannot be deleted or modified
+
+---
+
 ## Commands
+
+
 
 | Command | Purpose |
 |---|---|
@@ -123,11 +698,11 @@ Never use `border-2`, `border-4`, or `border-[Npx]` for standard UI. The only ex
 
 ### 4 — Typography: font variables only, consistent scale
 
-The app font is **Geist** (sans) and **Geist Mono** (mono), loaded via `next/font/google` in `app/layout.tsx` and exposed as CSS variables `--font-sans` / `--font-mono`. Never reference a font family by name in component code — always use the Tailwind utility classes.
+The app font is **Inter** (sans) and **Geist Mono** (mono), loaded via `next/font/google` in `app/layout.tsx` and exposed as CSS variables `--font-sans` / `--font-mono`. Never reference a font family by name in component code — always use the Tailwind utility classes.
 
 ```
 ✅  font-sans   font-mono   (Tailwind classes → var(--font-sans) / var(--font-mono))
-❌  font-['Geist']  fontFamily: 'Geist, ...'  style={{ fontFamily: '...' }}
+❌  font-['Inter']  fontFamily: 'Inter, ...'  style={{ fontFamily: '...' }}
 ```
 
 **Size scale for UI text (use these, not arbitrary sizes):**

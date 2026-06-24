@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TrashIcon } from "@phosphor-icons/react";
+import { Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TemplateEditor } from "./template-editor";
 import type { DbBlock } from "@/components/editor/serializer";
 
@@ -62,6 +63,7 @@ export function TemplateForm({ template }: Props) {
   );
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function handleSave() {
     if (!name.trim()) { setError("Name is required"); return; }
@@ -115,21 +117,25 @@ export function TemplateForm({ template }: Props) {
     router.refresh();
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!template) return;
-    if (!confirm(`Delete "${template.name}"? This cannot be undone.`)) return;
-    await fetch(`/api/orbit/templates/${template.id}`, { method: "DELETE" });
+    setConfirmDelete(true);
+  }
+
+  async function doDelete() {
+    await fetch(`/api/orbit/templates/${template!.id}`, { method: "DELETE" });
     router.push("/Orbit-admin/orbit/templates");
     router.refresh();
   }
 
   return (
+    <>
     <div className="max-w-3xl space-y-6">
       {/* Name + Icon row */}
       <div className="flex gap-3">
         <div className="flex-1">
           <label className="mb-1.5 block text-sm font-semibold text-foreground">
-            Template name <span className="text-red-500">*</span>
+            Template name <span className="text-destructive">*</span>
           </label>
           <input
             type="text"
@@ -180,7 +186,7 @@ export function TemplateForm({ template }: Props) {
                 "rounded-[var(--radius-sm)] border px-3 py-1.5 text-sm font-medium transition-colors",
                 category === cat.key
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:bg-muted",
+                  : "border-border text-muted-foreground hover:bg-accent",
               ].join(" ")}
             >
               {cat.label}
@@ -204,7 +210,7 @@ export function TemplateForm({ template }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-[var(--radius-sm)] bg-red-50 px-4 py-2.5 text-sm text-red-600 dark:bg-red-950/20">
+        <div className="rounded-[var(--radius-sm)] bg-destructive/[0.06] px-4 py-2.5 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -215,9 +221,9 @@ export function TemplateForm({ template }: Props) {
           <button
             type="button"
             onClick={handleDelete}
-            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/[0.06] transition-colors duration-150"
           >
-            <TrashIcon size={14} />
+            <Trash2 size={14} />
             Delete Template
           </button>
         ) : <div />}
@@ -226,7 +232,7 @@ export function TemplateForm({ template }: Props) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="rounded-[var(--radius-sm)] border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            className="rounded-[var(--radius-sm)] border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent"
           >
             Cancel
           </button>
@@ -241,5 +247,14 @@ export function TemplateForm({ template }: Props) {
         </div>
       </div>
     </div>
+
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title="Delete this template?"
+      description={<>&ldquo;{template?.name}&rdquo; will be permanently deleted and cannot be recovered.</>}
+      onConfirm={doDelete}
+    />
+    </>
   );
 }

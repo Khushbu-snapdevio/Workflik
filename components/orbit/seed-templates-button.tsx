@@ -30,7 +30,7 @@ export function SeedTemplatesButton({ currentCount }: { currentCount: number }) 
           type="button"
           onClick={() => seed(true)}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50 dark:border-orange-900/40 dark:bg-orange-950/20 dark:text-orange-400"
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-medium text-warning transition-colors hover:bg-warning/20 disabled:opacity-50"
         >
           {loading ? "Resetting…" : done ? "✓ Done" : "↺ Reset & Re-seed"}
         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { StarIcon } from "@phosphor-icons/react";
+import { Star } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface FavoriteButtonProps {
@@ -54,11 +54,11 @@ export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: Fa
       title={favorited ? "Remove from favorites" : "Add to favorites"}
       className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] transition-colors hover:bg-accent disabled:opacity-50 ${
         favorited
-          ? "text-amber-400 hover:text-amber-500"
+          ? "text-warning hover:text-warning/80"
           : "text-muted-foreground hover:text-foreground"
       }`}
     >
-      <StarIcon size={16} weight={favorited ? "fill" : "regular"} />
+      <Star size={16} />
     </button>
   );
 }

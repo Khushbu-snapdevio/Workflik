@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, TrashIcon, ArrowSquareOutIcon } from "@phosphor-icons/react";
+import { Plus, Trash2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
@@ -25,7 +25,7 @@ export function TemplateGalleryView({
         {entries.map((entry) => (
           <div
             key={entry.id}
-            className="group relative flex flex-col cursor-pointer overflow-hidden rounded-[var(--radius-sm)] border border-border/50 bg-card transition-all hover:border-border hover:shadow-[0_2px_10px_rgba(0,0,0,0.08)]"
+            className="group relative flex flex-col cursor-pointer overflow-hidden rounded-[var(--radius-sm)] border border-border/50 bg-card transition-all hover:border-border"
             onClick={() => onClickEntry(entry.id)}
           >
             {/* Cover area — light primary tint consistent with the app color scheme */}
@@ -43,16 +43,16 @@ export function TemplateGalleryView({
                   href={`/app/${workspaceSlug}/${entry.shortId}`}
                   onClick={(e) => e.stopPropagation()}
                   title="Open page"
-                  className="flex size-[22px] items-center justify-center rounded text-muted-foreground/60 hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex size-[22px] items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
                 >
-                  <ArrowSquareOutIcon size={12} />
+                  <ExternalLink size={12} />
                 </Link>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }}
                   title="Delete"
                   className="flex size-[22px] items-center justify-center rounded text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive transition-colors"
                 >
-                  <TrashIcon size={12} />
+                  <Trash2 size={12} />
                 </button>
               </div>
             </div>
@@ -64,7 +64,7 @@ export function TemplateGalleryView({
           onClick={() => onAddEntry()}
           className="flex h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border/50 text-muted-foreground/40 transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:text-primary/60"
         >
-          <PlusIcon size={18} weight="bold" />
+          <Plus size={18} />
           <span className="text-[13px] font-medium">New page</span>
         </button>
       </div>

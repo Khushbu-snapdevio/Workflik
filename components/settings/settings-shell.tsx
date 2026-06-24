@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
@@ -23,13 +24,13 @@ export function SettingsShell({ children }: Props) {
   return (
     <div
       className={`fixed inset-0 z-[200] flex items-start justify-center transition-all duration-200 ${
-        visible ? "bg-black/50 backdrop-blur-[2px]" : "bg-transparent"
+        visible ? "bg-black/50" : "bg-transparent"
       }`}
       onClick={(e) => { if (e.target === e.currentTarget) close(); }}
     >
       <div
-        className={`relative mt-[40px] flex h-[calc(100vh-60px)] w-full max-w-[1200px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background text-foreground transition-all duration-200 ${
-          visible ? "translate-y-0 opacity-100 shadow-[var(--shadow-float)]" : "translate-y-3 opacity-0 shadow-none"
+        className={`relative mt-10 flex h-[calc(100vh-60px)] w-full max-w-[1200px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background text-foreground transition-all duration-200 ${
+          visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
         }`}
       >
         {/* Close × */}
@@ -37,11 +38,9 @@ export function SettingsShell({ children }: Props) {
           type="button"
           aria-label="Close settings"
           onClick={close}
-          className="absolute right-4 top-4 z-20 flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-all hover:bg-muted/80 hover:text-foreground active:scale-[0.97]"
+          className="absolute right-4 top-4 z-20 flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground active:scale-[0.97]"
         >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="size-3.5">
-            <path d="M2.5 2.5l11 11M13.5 2.5l-11 11"/>
-          </svg>
+          <X size={14} />
         </button>
         {children}
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useHints } from "./hint-provider";
 
 interface Props {
@@ -14,18 +15,16 @@ export function Hint({ hintKey, children, icon = "💡" }: Props) {
   if (isDismissed(hintKey)) return null;
 
   return (
-    <div className="group flex items-start gap-2.5 rounded-[var(--radius-md)] border border-[#e8e8e5] bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
+    <div className="group flex items-start gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">
       <span className="mt-px shrink-0 text-base leading-none">{icon}</span>
       <span className="flex-1 leading-relaxed">{children}</span>
       <button
         type="button"
         onClick={() => dismiss(hintKey)}
         title="Dismiss"
-        className="mt-0.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 flex size-4 items-center justify-center rounded text-muted-foreground/40 hover:text-foreground"
+        className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-foreground"
       >
-        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-[10px]">
-          <path d="M1 1l10 10M11 1L1 11" />
-        </svg>
+        <X size={10} />
       </button>
     </div>
   );

@@ -1,5 +1,7 @@
 "use client";
 
+import { Check, ArrowRight } from "lucide-react";
+
 export interface NotificationItem {
   id:             string;
   type:           string;
@@ -31,18 +33,18 @@ const TYPE_ACTION: Record<string, string> = {
   task_assigned:    "assigned you a task",
 };
 
-const TYPE_COLOR: Record<string, string> = {
-  mention:          "#0284C7",
-  comment:          "#0ea5e9",
-  reply:            "#0369a1",
-  resolved:         "#0891b2",
-  reopened:         "#f59e0b",
-  access_granted:   "#06b6d4",
-  workspace_invite: "#0284C7",
-  guest_accepted:   "#0ea5e9",
-  trash_warning:    "#ef4444",
-  page_update:      "#7c3aed",
-  task_assigned:    "#059669",
+const TYPE_DOT_CLASS: Record<string, string> = {
+  mention:          "bg-primary",
+  comment:          "bg-primary",
+  reply:            "bg-primary",
+  resolved:         "bg-muted-foreground",
+  reopened:         "bg-warning",
+  access_granted:   "bg-success",
+  workspace_invite: "bg-primary",
+  guest_accepted:   "bg-success",
+  trash_warning:    "bg-destructive",
+  page_update:      "bg-muted-foreground",
+  task_assigned:    "bg-success",
 };
 
 interface Props {
@@ -66,7 +68,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
   const timeAgo  = relativeTime(notification.createdAt);
   const isSystem = !notification.senderId;
   const isUnread = !notification.isRead;
-  const dotColor = !isSystem ? TYPE_COLOR[notification.type] : undefined;
+  const dotClass = !isSystem ? TYPE_DOT_CLASS[notification.type] : undefined;
 
   function handleCardClick() {
     if (isUnread) onMarkRead(notification.id);
@@ -76,8 +78,8 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
   return (
     <div
       onClick={handleCardClick}
-      className={`group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors ${
-        isUnread ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-muted/25"
+      className={`group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors duration-150 ${
+        isUnread ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-accent"
       }`}
     >
       {/* Unread left accent */}
@@ -88,29 +90,28 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       {/* Avatar */}
       <div className="relative mt-0.5 shrink-0">
         {isSystem ? (
-          <div className="flex size-9 items-center justify-center rounded-full bg-muted/70 ring-2 ring-border/40">
+          <div className="flex size-9 items-center justify-center rounded-full bg-muted/70 ring-1 ring-border/40">
             <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 text-muted-foreground/60">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
             </svg>
           </div>
         ) : notification.senderImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={notification.senderImage}
             alt={who}
-            className="size-9 rounded-full object-cover ring-2 ring-white shadow-sm select-none"
+            className="size-9 rounded-full object-cover ring-1 ring-border/40 select-none"
           />
         ) : (
           <div
-            className="flex size-9 items-center justify-center rounded-full text-[12px] font-bold text-white shadow-sm ring-2 ring-white select-none"
-            style={{ background: avatarColor(who) }}
+            className={`flex size-9 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border/40 select-none ${avatarBgClass(who)}`}
           >
             {initials}
           </div>
         )}
-        {dotColor && (
+        {dotClass && (
           <span
-            className="absolute -bottom-0.5 -right-0.5 size-[11px] rounded-full border-[2px] border-white shadow-sm"
-            style={{ background: dotColor }}
+            className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-card ${dotClass}`}
           />
         )}
       </div>
@@ -118,7 +119,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       {/* Content */}
       <div className="min-w-0 flex-1 pt-0.5">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[12.5px] leading-snug">
+          <p className="text-xs leading-snug">
             {!isSystem && <span className="font-semibold text-foreground">{who}</span>}
             {!isSystem && " "}
             <span className="text-muted-foreground">{action}</span>
@@ -151,17 +152,15 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       </div>
 
       {/* Hover action buttons */}
-      <div className="absolute right-3 top-3 hidden items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-card p-0.5 shadow-[var(--shadow-raised)] group-hover:flex">
+      <div className="absolute right-3 top-3 hidden items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-card p-0.5 group-hover:flex">
         {isUnread && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
-            title="Mark as read"
-            className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+            aria-label="Mark as read"
+            className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
           >
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-[10px]">
-              <path d="M2 8l4 4 8-8" />
-            </svg>
+            <Check size={10} />
           </button>
         )}
         <button
@@ -171,12 +170,10 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
             if (isUnread) onMarkRead(notification.id);
             onClick(notification);
           }}
-          title="Open page"
-          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+          aria-label="Open page"
+          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
         >
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-[10px]">
-            <path d="M4 8h8M9 5l3 3-3 3" />
-          </svg>
+          <ArrowRight size={10} />
         </button>
       </div>
     </div>
@@ -198,12 +195,18 @@ function relativeTime(iso: string): string {
   } catch { return ""; }
 }
 
-const COLORS = [
-  "#0284C7", "#0369a1", "#0ea5e9", "#0891b2",
-  "#06b6d4", "#075985", "#0e7490", "#1d4ed8", "#2563eb",
+const AVATAR_BG_CLASSES = [
+  "bg-primary",
+  "bg-destructive",
+  "bg-success",
+  "bg-warning",
+  "bg-muted-foreground",
+  "bg-primary/70",
+  "bg-destructive/70",
+  "bg-success/70",
 ];
-function avatarColor(name: string) {
+function avatarBgClass(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return COLORS[h % COLORS.length];
+  return AVATAR_BG_CLASSES[h % AVATAR_BG_CLASSES.length]!;
 }

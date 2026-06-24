@@ -29,8 +29,8 @@ export function TemplatePublishToggle({ templateId, currentStatus }: Props) {
       className={[
         "rounded-md px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50",
         isPublished
-          ? "border border-border text-muted-foreground hover:bg-muted"
-          : "bg-emerald-600 text-white hover:bg-emerald-700",
+          ? "border border-border text-muted-foreground hover:bg-accent"
+          : "bg-success text-white hover:bg-success/90",
       ].join(" ")}
     >
       {busy ? "…" : isPublished ? "Unpublish" : "Publish"}

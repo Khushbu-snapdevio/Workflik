@@ -3,19 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  MagnifyingGlassIcon,
-  XIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  SquaresFourIcon,
-  LightningIcon,
-  ChartBarIcon,
-  MegaphoneSimpleIcon,
-  CodeIcon,
-  CurrencyDollarIcon,
-} from "@phosphor-icons/react";
+  Search,
+  X,
+  ArrowLeft,
+  ArrowRight,
+  LayoutGrid,
+  Zap,
+  BarChart2,
+  Megaphone,
+  Code2,
+  DollarSign,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { Icon } from "@phosphor-icons/react";
 
 type DbProp = { name: string; type: string; options?: { name: string; color: string }[]; multiple?: boolean };
 type DbView = { name: string; type: string; isDefault?: boolean; groupBy?: string };
@@ -39,39 +39,40 @@ type Template = {
 type CategoryDef = {
   key: string;
   label: string;
-  Icon: Icon;
+  Icon: LucideIcon;
 };
 
 const CATEGORIES: CategoryDef[] = [
-  { key: "all",          label: "All Templates",       Icon: SquaresFourIcon      },
-  { key: "productivity", label: "Productivity",         Icon: LightningIcon        },
-  { key: "project_mgmt", label: "Project Management",  Icon: ChartBarIcon         },
-  { key: "marketing",    label: "Marketing & Content",  Icon: MegaphoneSimpleIcon  },
-  { key: "engineering",  label: "Engineering & Docs",   Icon: CodeIcon             },
-  { key: "sales",        label: "Sales & Finance",      Icon: CurrencyDollarIcon   },
+  { key: "all",          label: "All Templates",       Icon: LayoutGrid  },
+  { key: "productivity", label: "Productivity",         Icon: Zap         },
+  { key: "project_mgmt", label: "Project Management",  Icon: BarChart2   },
+  { key: "marketing",    label: "Marketing & Content",  Icon: Megaphone   },
+  { key: "engineering",  label: "Engineering & Docs",   Icon: Code2       },
+  { key: "sales",        label: "Sales & Finance",      Icon: DollarSign  },
 ];
 
-const CATEGORY_COLORS: Record<string, { from: string; to: string; badge: string; accent: string }> = {
-  productivity: { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
-  project_mgmt: { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
-  marketing:    { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
-  engineering:  { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
-  sales:        { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" },
+const CATEGORY_COLORS: Record<string, { badge: string }> = {
+  productivity: { badge: "bg-muted text-muted-foreground" },
+  project_mgmt: { badge: "bg-muted text-muted-foreground" },
+  marketing:    { badge: "bg-muted text-muted-foreground" },
+  engineering:  { badge: "bg-muted text-muted-foreground" },
+  sales:        { badge: "bg-muted text-muted-foreground" },
 };
 
-const DEFAULT_COLOR = { from: "from-primary/[0.05]", to: "to-primary/[0.1]", badge: "bg-primary/10 text-primary", accent: "#0284C7" };
+const DEFAULT_COLOR = { badge: "bg-muted text-muted-foreground" };
 
 const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
-  gray:   { dot: "bg-gray-400",   badge: "bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300"         },
-  red:    { dot: "bg-red-500",    badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"             },
-  blue:   { dot: "bg-[#0284C7]",  badge: "bg-primary/10 text-primary"                                              },
-  green:  { dot: "bg-emerald-500",badge: "bg-emerald-50 text-emerald-700"                                           },
-  orange: { dot: "bg-amber-500",  badge: "bg-amber-50 text-amber-700"                                               },
-  purple: { dot: "bg-[#0284C7]",  badge: "bg-primary/10 text-primary"                                              },
-  yellow: { dot: "bg-amber-400",  badge: "bg-amber-50 text-amber-700"                                               },
-  pink:   { dot: "bg-[#0369a1]",  badge: "bg-primary/10 text-primary"                                              },
+  gray:   { dot: "bg-muted-foreground/40",  badge: "bg-muted text-muted-foreground"           },
+  red:    { dot: "bg-destructive/50",        badge: "bg-destructive/10 text-destructive"       },
+  orange: { dot: "bg-warning/50",            badge: "bg-warning/10 text-warning"               },
+  yellow: { dot: "bg-warning/40",            badge: "bg-warning/[0.07] text-warning"           },
+  green:  { dot: "bg-success/50",            badge: "bg-success/10 text-success"               },
+  teal:   { dot: "bg-success/40",            badge: "bg-success/[0.07] text-success"           },
+  blue:   { dot: "bg-primary/50",            badge: "bg-primary/10 text-primary"               },
+  purple: { dot: "bg-primary/40",            badge: "bg-primary/[0.07] text-primary/80"        },
+  pink:   { dot: "bg-destructive/40",        badge: "bg-destructive/[0.07] text-destructive/80"},
 };
-const DEFAULT_OPT = { dot: "bg-muted-foreground/40", badge: "bg-muted/60 text-muted-foreground" };
+const DEFAULT_OPT = { dot: "bg-muted-foreground/40", badge: "bg-muted text-muted-foreground" };
 
 interface Props {
   workspaceId:      string;
@@ -159,10 +160,10 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
   return createPortal(
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative flex h-[88vh] w-full max-w-[980px] overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-background shadow-[0_32px_64px_rgba(0,0,0,0.25)]">
+      <div className="relative flex h-[88vh] w-full max-w-[980px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
 
         {/* ── GALLERY STEP ── */}
         {step === "gallery" && (
@@ -185,19 +186,16 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                       type="button"
                       onClick={() => setActiveTab(cat.key)}
                       className={[
-                        "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors",
+                        "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors duration-150",
                         isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-foreground/70 hover:bg-muted hover:text-foreground",
+                          ? "bg-accent text-foreground font-medium"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
                       ].join(" ")}
                     >
-                      <CatIcon size={14} weight={isActive ? "fill" : "regular"} className="shrink-0" />
+                      <CatIcon size={14} className={`shrink-0 ${isActive ? "text-primary" : ""}`} />
                       <span className="flex-1 text-xs font-medium">{cat.label}</span>
                       {cnt > 0 && (
-                        <span className={[
-                          "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
-                          isActive ? "bg-white/20 text-white" : "bg-muted-foreground/10 text-muted-foreground",
-                        ].join(" ")}>
+                        <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
                           {cnt}
                         </span>
                       )}
@@ -212,7 +210,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
               {/* Search */}
               <div className="border-b border-border/60 px-5 py-3">
                 <div className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/40 px-3.5 py-2.5">
-                  <MagnifyingGlassIcon size={15} className="shrink-0 text-muted-foreground/60" />
+                  <Search size={15} className="shrink-0 text-muted-foreground/60" />
                   <input
                     ref={searchRef}
                     type="text"
@@ -223,7 +221,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                   />
                   {search && (
                     <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/40 hover:text-muted-foreground">
-                      <XIcon size={13} />
+                      <X size={13} />
                     </button>
                   )}
                 </div>
@@ -279,9 +277,9 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
 
         {/* ── DETAIL STEP ── */}
         {step === "detail" && selected && (() => {
-          const colors   = CATEGORY_COLORS[selected.category] ?? DEFAULT_COLOR;
+          const catColors = CATEGORY_COLORS[selected.category] ?? DEFAULT_COLOR;
           const catDef   = CATEGORIES.find((c) => c.key === selected.category);
-          const CatIcon  = catDef?.Icon ?? SquaresFourIcon;
+          const CatIcon  = catDef?.Icon ?? LayoutGrid;
           const blocks   = selected.pageSnapshot.blocks ?? [];
 
           return (
@@ -293,9 +291,9 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
-                    <ArrowLeftIcon size={14} weight="bold" />
+                    <ArrowLeft size={14} />
                   </button>
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-muted-foreground">Templates</p>
@@ -306,8 +304,8 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                 {/* Info + block list */}
                 <div className="flex-1 overflow-y-auto px-5 py-5">
                   {/* Category + description */}
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${colors.badge}`}>
-                    <CatIcon size={10} weight="fill" />
+                  <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] border border-border px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground`}>
+                    <CatIcon size={10} />
                     {catDef?.label}
                   </span>
 
@@ -345,7 +343,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                     type="button"
                     disabled={applying}
                     onClick={() => applyTemplate(selected)}
-                    className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-card)] transition-all hover:bg-primary/90 active:scale-[0.98] disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:opacity-60"
                   >
                     {applying ? (
                       <>
@@ -355,7 +353,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                     ) : (
                       <>
                         Continue
-                        <ArrowRightIcon size={14} weight="bold" />
+                        <ArrowRight size={14} />
                       </>
                     )}
                   </button>
@@ -368,15 +366,13 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
               {/* Right panel — page preview */}
               <div className="flex flex-1 flex-col overflow-hidden bg-muted/20">
                 <div className="flex flex-1 items-start justify-center overflow-y-auto p-8">
-                  <div className="w-full max-w-[580px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-[var(--shadow-raised)]">
-                    {/* Gradient cover */}
-                    <div className={`relative flex h-28 items-center justify-center overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to}`}>
-                      <div className="absolute inset-0 opacity-[0.25]" style={{ backgroundImage: "radial-gradient(circle, #0284C7 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
-                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-primary/10 to-transparent" />
+                  <div className="w-full max-w-[580px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-background">
+                    {/* Cover */}
+                    <div className="flex h-24 items-center justify-center bg-muted/30">
                       {selected.pageSnapshot.icon ? (
-                        <span className="relative z-10 text-5xl">{selected.pageSnapshot.icon}</span>
+                        <span className="text-4xl">{selected.pageSnapshot.icon}</span>
                       ) : (
-                        <CatIcon size={48} weight="duotone" className="relative z-10 text-primary" />
+                        <CatIcon size={40} className="text-muted-foreground/30" />
                       )}
                     </div>
 
@@ -414,10 +410,9 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-muted-foreground shadow-[var(--shadow-card)] backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-          style={{ zIndex: 10 }}
+          className="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
         >
-          <XIcon size={14} />
+          <X size={14} />
         </button>
       </div>
     </div>,
@@ -436,31 +431,39 @@ function TemplateCard({
 }) {
   const colors  = CATEGORY_COLORS[template.category] ?? DEFAULT_COLOR;
   const catDef  = CATEGORIES.find((c) => c.key === template.category);
-  const CatIcon = catDef?.Icon ?? SquaresFourIcon;
+  const CatIcon = catDef?.Icon ?? LayoutGrid;
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      className="group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border/60 bg-card text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:border-primary/30 hover:-translate-y-1 hover:shadow-[var(--shadow-raised)]"
+      className="group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-card text-left transition-colors duration-150 hover:border-border hover:bg-accent/20"
     >
-      {/* Color cover */}
-      <div className={`relative flex h-[80px] items-center justify-center bg-gradient-to-br ${colors.from} ${colors.to} overflow-hidden`}>
-        {/* Subtle grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.25]" style={{ backgroundImage: "radial-gradient(circle, #0284C7 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-primary/10 to-transparent" />
-        {template.pageSnapshot.icon ? (
-          <span className="relative z-10 text-[30px] transition-transform duration-200 group-hover:scale-110">
-            {template.pageSnapshot.icon}
-          </span>
-        ) : (
-          <CatIcon
-            size={30}
-            weight="duotone"
-            className="relative z-10 text-primary transition-transform duration-200 group-hover:scale-110"
-          />
-        )}
+      {/* Mini document preview */}
+      <div className="relative h-[90px] overflow-hidden border-b border-border/40 bg-muted/20 p-3">
+        <div className="mb-2 flex items-center gap-1.5">
+          {template.pageSnapshot.icon ? (
+            <span className="shrink-0 text-sm leading-none">{template.pageSnapshot.icon}</span>
+          ) : (
+            <div className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
+              <CatIcon size={9} className="text-muted-foreground" />
+            </div>
+          )}
+          <div className="h-1.5 w-16 rounded-[var(--radius-xs)] bg-foreground/15" />
+        </div>
+        <div className="space-y-1">
+          <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-muted-foreground/15" />
+          <div className="h-1 w-3/5 rounded-[var(--radius-xs)] bg-muted-foreground/12" />
+          <div className="h-px bg-border/40 my-0.5" />
+          <div className="flex items-center gap-1">
+            <div className="size-1 rounded-full bg-muted-foreground/25" />
+            <div className="h-1 w-1/2 rounded-[var(--radius-xs)] bg-muted-foreground/12" />
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="size-1 rounded-full bg-muted-foreground/25" />
+            <div className="h-1 w-2/3 rounded-[var(--radius-xs)] bg-muted-foreground/10" />
+          </div>
+        </div>
       </div>
 
       {/* Text */}
@@ -472,8 +475,8 @@ function TemplateCard({
           </p>
         )}
         <div className="mt-2">
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9.5px] font-semibold ${colors.badge}`}>
-            <CatIcon size={9} weight="fill" />
+          <span className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-[9.5px] font-semibold ${colors.badge}`}>
+            <CatIcon size={9} />
             {catDef?.label ?? template.category}
           </span>
         </div>
@@ -559,8 +562,8 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
               className={[
                 "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10.5px] font-medium",
                 v.isDefault
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-border bg-muted/30 text-muted-foreground",
+                  ? "border-border bg-accent text-foreground font-semibold"
+                  : "border-border/40 bg-muted/20 text-muted-foreground",
               ].join(" ")}
             >
               {v.type === "board" ? "⊞" : v.type === "calendar" ? "📅" : "☰"} {v.name}
@@ -613,7 +616,7 @@ function ViewTabs({ views, defaultName }: { views: DbView[]; defaultName: string
           key={v.name}
           className={[
             "shrink-0 rounded px-2 py-0.5 text-[10px] font-medium",
-            v.name === defaultName ? "bg-primary/10 text-primary" : "text-muted-foreground/50",
+            v.name === defaultName ? "bg-accent text-foreground font-semibold" : "text-muted-foreground/50",
           ].join(" ")}
         >
           {v.name}
@@ -653,7 +656,7 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
               return (
                 <div key={pi} className="flex-1 min-w-0 px-2 py-1.5 text-[10px] text-foreground/80">
                   {opt ? (
-                    <span className={`rounded-full px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}>{val}</span>
+                    <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}>{val}</span>
                   ) : val !== undefined ? (
                     <span className="truncate block">{String(val)}</span>
                   ) : (
@@ -710,7 +713,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   const tagVal = tagProp ? String(row[tagProp.name] ?? "") : "";
                   const tagOpt = tagProp?.options?.find((o) => o.name === tagVal);
                   return (
-                    <div key={i} className="rounded-[var(--radius-sm)] border border-border/50 bg-background p-2 shadow-[var(--shadow-card)]">
+                    <div key={i} className="rounded-[var(--radius-sm)] border border-border/50 bg-background p-2">
                       <p className="text-[10.5px] font-medium leading-snug text-foreground">{title}</p>
                       {tagOpt && (
                         <span className={`mt-1 inline-flex rounded px-1 py-0.5 text-[9px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
@@ -720,7 +723,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                     </div>
                   );
                 })}
-                <div className="rounded-[var(--radius-sm)] border border-dashed border-border/30 p-2">
+                <div className="rounded-[var(--radius-sm)] border border-border/30 p-2">
                   <span className="text-[9px] text-muted-foreground/25">+ New</span>
                 </div>
               </div>
@@ -816,7 +819,7 @@ function EmptyState() {
   return (
     <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 text-center">
       <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-        <SquaresFourIcon size={28} weight="duotone" className="text-muted-foreground/40" />
+        <LayoutGrid size={28} className="text-muted-foreground/40" />
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">No templates yet</p>

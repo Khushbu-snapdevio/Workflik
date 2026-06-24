@@ -1,5 +1,6 @@
 "use client";
 
+import { Square, SquareCheck } from "lucide-react";
 import { getOptionColor, formatNumber, formatDate } from "@/components/database/property-registry";
 import type { NumberFormat } from "@/components/database/property-registry";
 import type { DbProperty, SelectOption } from "@/components/database/types";
@@ -37,7 +38,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
       if (!opt) return null;
       const color = getOptionColor(opt.color);
       return (
-        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
+        <span className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${color.bg} ${color.text}`}>
           <span className={`size-1.5 shrink-0 rounded-full ${color.dot}`} />
           {opt.name}
         </span>
@@ -79,14 +80,9 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
       return (
         <span className="flex items-center">
           {checked ? (
-            <svg className="size-4 text-primary" viewBox="0 0 20 20" fill="currentColor">
-              <rect x="2" y="2" width="16" height="16" rx="4" />
-              <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
+            <SquareCheck size={16} className="text-primary" />
           ) : (
-            <svg className="size-4 text-muted-foreground/30" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
-              <rect x="2.5" y="2.5" width="15" height="15" rx="3.5" />
-            </svg>
+            <Square size={16} className="text-muted-foreground/30" />
           )}
         </span>
       );
@@ -146,12 +142,12 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
             return (
               <span
                 key={id}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 pl-0.5 pr-2 py-0.5"
+                className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted pl-0.5 pr-2 py-0.5"
               >
                 <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
                   {initial}
                 </span>
-                <span className="max-w-[80px] truncate text-xs font-medium text-primary">
+                <span className="max-w-[80px] truncate text-xs font-medium text-foreground">
                   {label}
                 </span>
               </span>

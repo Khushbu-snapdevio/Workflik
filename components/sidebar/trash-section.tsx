@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash } from "@phosphor-icons/react";
+import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -18,11 +18,11 @@ export function TrashSection({ workspaceSlug }: Props) {
       className={`flex items-center gap-2.5 px-4 py-1.5 text-xs font-medium transition-colors ${
         isActive
           ? "bg-sidebar-accent text-sidebar-foreground"
-          : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground duration-150"
       }`}
       href={href}
     >
-      <Trash size={14} weight={isActive ? "fill" : "regular"} />
+      <Trash2 size={14} />
       Trash
     </Link>
   );

@@ -1,9 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { PRODUCT_NAME } from "@/config/platform";
 
 const NAV = [
   {
@@ -89,11 +89,8 @@ export function AdminSidebar({ email }: { email: string }) {
       {/* Brand */}
       <div className="px-4 pb-3 pt-4">
         <Link href="/platform/post-auth" className="flex items-center gap-2.5 rounded-[var(--radius-md)] transition hover:opacity-80">
-          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-gradient-to-br from-primary to-sky-400 text-xs font-black text-white shadow-[0_2px_8px_rgba(2,132,199,0.35)]">
-            WF
-          </span>
           <div className="min-w-0">
-            <p className="text-sm font-extrabold leading-none tracking-tight text-foreground">{PRODUCT_NAME}</p>
+            <Image src="/workflik-logo.png" alt="Workflik" width={120} height={30} className="h-[22px] w-auto" />
             <p className="mt-[3px] text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground/50">Orbit Admin</p>
           </div>
         </Link>
@@ -110,9 +107,9 @@ export function AdminSidebar({ email }: { email: string }) {
             const active = exact ? pathname === href : pathname.startsWith(href);
             return (
               <Link key={href} href={href}
-                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-sm font-medium transition-all duration-100 ${
+                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-100 ${
                   active
-                    ? "bg-background text-foreground shadow-[var(--shadow-card)]"
+                    ? "bg-background text-foreground border border-border"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}>
                 <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-muted-foreground/50 group-hover:text-muted-foreground"}`}>
@@ -134,9 +131,9 @@ export function AdminSidebar({ email }: { email: string }) {
             const active = pathname.startsWith(href);
             return (
               <Link key={href} href={href}
-                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-[7px] text-sm font-medium transition-all duration-100 ${
+                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-100 ${
                   active
-                    ? "bg-background text-foreground shadow-[var(--shadow-card)]"
+                    ? "bg-background text-foreground border border-border"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}>
                 <span className={`shrink-0 transition-colors ${active ? "text-primary" : "text-muted-foreground/50 group-hover:text-muted-foreground"}`}>
@@ -161,8 +158,8 @@ export function AdminSidebar({ email }: { email: string }) {
 
         <div className="mx-2.5 my-2 h-px bg-border/50" />
 
-        <div className="group flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 transition-all hover:bg-primary/[0.07] hover:ring-1 hover:ring-primary/20">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary text-[10px] font-bold text-white shadow-sm transition-transform group-hover:scale-105">
+        <div className="group flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 transition-colors duration-150 hover:bg-accent">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary text-[10px] font-semibold text-white">
             {avatarLetter}
           </div>
           <div className="min-w-0 flex-1">
@@ -174,7 +171,7 @@ export function AdminSidebar({ email }: { email: string }) {
             </p>
           </div>
           <SignOutButton
-            className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/30 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+            className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/30 opacity-0 transition-[opacity] group-hover:opacity-100 hover:bg-destructive/[0.06] hover:text-destructive"
             title="Sign out">
             <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
               <path d="M4 6h7M8.5 3.5L11 6l-2.5 2.5"/><path d="M7 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h5"/>

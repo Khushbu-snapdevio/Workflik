@@ -82,7 +82,7 @@ function InlineCardInput({
    <div className="mt-2 flex items-center gap-2">
     <button
      onClick={() => onConfirm(val.trim())}
-     className="rounded-[var(--radius-sm)] bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors"
+     className="rounded-[var(--radius-sm)] bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
     >
      Add card
     </button>
@@ -189,7 +189,7 @@ export function TemplateBoardView({
        <div className="flex items-center gap-2">
         <span className={`size-2 flex-shrink-0 rounded-full ${style.dot}`} />
         <span className="text-sm font-semibold text-foreground">{col.label}</span>
-        <span className="flex min-w-[18px] items-center justify-center rounded-full bg-background/80 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+        <span className="flex min-w-[18px] items-center justify-center rounded-full bg-background/80 px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
          {col.entries.length}
         </span>
        </div>
@@ -213,7 +213,7 @@ export function TemplateBoardView({
           onClick={() => onClickEntry(entry.id)}
          >
           <p className="pr-5 text-sm font-medium leading-snug text-foreground">
-           {entry.title || <span className="text-muted-foreground/40">Untitled</span>}
+           {entry.title || <span className="text-muted-foreground/70">Untitled</span>}
           </p>
 
           {/* Property badges */}
@@ -229,7 +229,7 @@ export function TemplateBoardView({
               const opt = dpConfig.options?.find((o) => o.id === sv.optionId);
               if (!opt) return [];
               return [
-               <span key={dp.id} className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${optionCls(opt.color)}`}>
+               <span key={dp.id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>
                 {opt.name}
                </span>,
               ];
@@ -241,7 +241,7 @@ export function TemplateBoardView({
                .filter(Boolean)
                .slice(0, 2) as PropOption[];
               return opts.map((opt) => (
-               <span key={opt.id} className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${optionCls(opt.color)}`}>
+               <span key={opt.id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>
                 {opt.name}
                </span>
               ));
@@ -282,14 +282,14 @@ export function TemplateBoardView({
        )}
 
        {col.entries.length === 0 && !isAddingHere && (
-        <p className="py-4 text-center text-xs text-muted-foreground/40">No items</p>
+        <p className="py-4 text-center text-xs text-muted-foreground/70">No items</p>
        )}
 
        {/* Add card button at bottom of column */}
        {!isAddingHere && (
         <button
          onClick={() => setAddingTo(col.optionId ?? "none")}
-         className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground/50 hover:bg-muted/30 hover:text-muted-foreground transition-colors"
+         className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/30 hover:text-muted-foreground transition-colors"
         >
          <Plus size={12} />
          Add card

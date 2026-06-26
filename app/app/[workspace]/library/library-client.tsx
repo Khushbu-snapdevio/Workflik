@@ -83,14 +83,14 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
 
       {/* ── Tabs + search row ── */}
       <div className="shrink-0 border-b border-border bg-card">
-        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-8">
+        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
             {TABS.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className={`relative flex items-center gap-1.5 border-b-2 px-3.5 py-3 text-[12.5px] font-medium whitespace-nowrap transition-colors duration-150 ${
+                className={`relative flex items-center gap-1.5 border-b-2 px-3.5 py-3 text-xs font-medium whitespace-nowrap transition-colors duration-150 ${
                   tab === t.id
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -98,7 +98,7 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
               >
                 <TabIcon id={t.id} />
                 {t.label}
-                <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[10px] font-semibold ${
+                <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-semibold ${
                   tab === t.id ? "bg-accent text-foreground" : "bg-muted text-muted-foreground"
                 }`}>
                   {tabCount(t.id)}
@@ -111,7 +111,7 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
           <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs transition-colors duration-150 focus-within:border-border">
             <Search size={13} className="shrink-0 text-muted-foreground/50" />
             <input
-              className="w-40 bg-transparent text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+              className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
               placeholder="Search pages…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -132,7 +132,7 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
 
       {/* ── Content ── */}
       <div className="flex-1 overflow-auto">
-        <div key={tab} className="mx-auto w-full max-w-[1200px] animate-in fade-in slide-in-from-bottom-1 px-8 py-5 duration-200">
+        <div key={tab} className="mx-auto w-full max-w-[1200px] animate-in fade-in slide-in-from-bottom-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 duration-200">
 
           {filtered.length === 0 ? (
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
@@ -151,10 +151,10 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
 
               {/* Table header */}
               <div className="grid border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}>
-                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Page name</span>
-                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Created by</span>
-                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Last edited</span>
-                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Created</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Page name</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Created by</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Last edited</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Created</span>
               </div>
 
               {/* Rows */}
@@ -171,7 +171,7 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
                       <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background">
                         <PageIcon icon={page.icon} kind={page.kind} />
                       </span>
-                      <span className="min-w-0 truncate text-[13px] font-medium text-foreground">
+                      <span className="min-w-0 truncate text-sm font-medium text-foreground">
                         {page.title || "Untitled"}
                       </span>
                       {page.isPrivate && (
@@ -183,20 +183,20 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
                     </div>
 
                     {/* Created by */}
-                    <span className="text-[12px] text-muted-foreground/70 pr-4">{page.creatorName}</span>
+                    <span className="text-xs text-muted-foreground/70 pr-4">{page.creatorName}</span>
 
                     {/* Last edited */}
-                    <span className="text-[12px] text-muted-foreground/70 pr-4">{timeAgo(page.updatedAt)}</span>
+                    <span className="text-xs text-muted-foreground/70 pr-4">{timeAgo(page.updatedAt)}</span>
 
                     {/* Created */}
-                    <span className="text-[12px] text-muted-foreground/70">{timeAgo(page.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground/70">{timeAgo(page.createdAt)}</span>
                   </Link>
                 ))}
               </div>
 
               {/* Footer count */}
               <div className="border-t border-border/40 px-5 py-2">
-                <p className="text-[11px] text-muted-foreground/50">
+                <p className="text-xs text-muted-foreground/50">
                   {filtered.length} page{filtered.length !== 1 ? "s" : ""}
                   {search && ` matching "${search}"`}
                 </p>

@@ -14,14 +14,14 @@ const initialState: ActionState = {};
 function ActionMessage({ state }: { state: ActionState }) {
  if (state.error) {
   return (
-   <p className="rounded-[var(--radius-sm)] bg-destructive/10 p-3 text-[12.5px] text-destructive">
+   <p className="rounded-[var(--radius-sm)] bg-destructive/10 p-3 text-xs text-destructive">
     {state.error}
    </p>
   );
  }
  if (state.success) {
   return (
-   <p className="rounded-[var(--radius-sm)] bg-success/10 p-3 text-[12.5px] text-success">
+   <p className="rounded-[var(--radius-sm)] bg-success/10 p-3 text-xs text-success">
     {state.success}
    </p>
   );
@@ -58,21 +58,21 @@ export function AccountIdentityForms({
         <circle cx="12" cy="7" r="4"/>
        </svg>
       </span>
-      <span className="text-[13px] font-semibold text-foreground">Display Name</span>
+      <span className="text-sm font-semibold text-foreground">Display Name</span>
      </div>
-     <p className="mt-1.5 pl-[34px] text-[12px] leading-relaxed text-muted-foreground">
+     <p className="mt-1.5 pl-[34px] text-xs leading-relaxed text-muted-foreground">
       The name shown in navigation, audit logs, and admin views.
      </p>
     </div>
     <div className="px-5 py-4">
      <form action={nameAction} className="space-y-3">
       <label className="block" htmlFor="name">
-       <span className="mb-1.5 block text-[12.5px] font-semibold text-foreground">Name</span>
+       <span className="mb-1.5 block text-xs font-semibold text-foreground">Name</span>
        <Input defaultValue={name} id="name" maxLength={100} name="name" />
       </label>
       <ActionMessage state={nameState} />
       <button
-       className="inline-flex h-8 items-center rounded-[var(--radius-sm)] bg-primary px-4 text-[12.5px] font-semibold text-primary-foreground transition-all hover:bg-[var(--primary-hover)] active:scale-[0.97] disabled:opacity-60"
+       className="inline-flex h-8 items-center rounded-[var(--radius-sm)] bg-primary px-4 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97] disabled:opacity-60"
        disabled={namePending}
        type="submit"
       >
@@ -92,21 +92,21 @@ export function AccountIdentityForms({
         <polyline points="22,6 12,13 2,6"/>
        </svg>
       </span>
-      <span className="text-[13px] font-semibold text-foreground">Email Address</span>
+      <span className="text-sm font-semibold text-foreground">Email Address</span>
      </div>
-     <p className="mt-1.5 pl-[34px] text-[12px] leading-relaxed text-muted-foreground">
+     <p className="mt-1.5 pl-[34px] text-xs leading-relaxed text-muted-foreground">
       Magic-link authentication uses this email as the account identity.
      </p>
     </div>
     <div className="px-5 py-4">
      <form action={emailAction} className="space-y-3">
       <label className="block" htmlFor="email">
-       <span className="mb-1.5 block text-[12.5px] font-semibold text-foreground">Email</span>
+       <span className="mb-1.5 block text-xs font-semibold text-foreground">Email</span>
        <Input defaultValue={email} id="email" name="email" required type="email" />
       </label>
       <ActionMessage state={emailState} />
       <button
-       className="inline-flex h-8 items-center rounded-[var(--radius-sm)] bg-primary px-4 text-[12.5px] font-semibold text-primary-foreground transition-all hover:bg-[var(--primary-hover)] active:scale-[0.97] disabled:opacity-60"
+       className="inline-flex h-8 items-center rounded-[var(--radius-sm)] bg-primary px-4 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97] disabled:opacity-60"
        disabled={emailPending}
        type="submit"
       >
@@ -134,9 +134,9 @@ export function DeleteAccountForm({ email }: { email: string }) {
        <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
       </svg>
      </span>
-     <span className="text-[13px] font-semibold text-destructive">Delete Account</span>
+     <span className="text-sm font-semibold text-destructive">Delete Account</span>
     </div>
-    <p className="mt-1.5 pl-[34px] text-[12px] leading-relaxed text-muted-foreground">
+    <p className="mt-1.5 pl-[34px] text-xs leading-relaxed text-muted-foreground">
      Permanently delete your user, sessions, and linked auth accounts.
      Audit records remain for operator history.
     </p>
@@ -144,14 +144,14 @@ export function DeleteAccountForm({ email }: { email: string }) {
    <div className="px-5 py-4">
     <form action={action} className="space-y-3">
      <label className="block" htmlFor="confirmEmail">
-      <span className="mb-1.5 block text-[12.5px] font-semibold text-foreground">
+      <span className="mb-1.5 block text-xs font-semibold text-foreground">
        Type your email to confirm
       </span>
       <Input autoComplete="off" id="confirmEmail" name="confirmEmail" placeholder={email} />
      </label>
      <ActionMessage state={state} />
      <button
-      className="inline-flex h-8 items-center rounded-[var(--radius-sm)] bg-destructive px-4 text-[12.5px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-60"
+      className="inline-flex h-8 items-center rounded-[var(--radius-sm)] bg-destructive px-4 text-xs font-semibold text-white transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-60"
       disabled={pending}
       type="submit"
      >

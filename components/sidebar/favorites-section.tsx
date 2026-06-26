@@ -83,7 +83,9 @@ export function FavoritesSection({
   function openPopup() {
     if (moreRef.current) {
       const r = moreRef.current.getBoundingClientRect();
-      setPopupPos({ top: r.top, left: r.right + 8 });
+      const POPUP_MAX_H = 360;
+      const top = Math.max(8, Math.min(r.top, window.innerHeight - POPUP_MAX_H - 8));
+      setPopupPos({ top, left: r.right + 8 });
     }
     setPopupOpen((v) => !v);
   }
@@ -115,22 +117,22 @@ export function FavoritesSection({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
       >
-        <Star size={15} className="shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground" />
+        <Star size={15} className="shrink-0 text-muted-foreground group-hover:text-primary" />
         <span className="flex-1 text-left">Favorites</span>
         {localFavs.length > 0 && (
-          <span className="text-[11px] text-muted-foreground/50">{localFavs.length}</span>
+          <span className="text-xs text-muted-foreground">{localFavs.length}</span>
         )}
         <ChevronDown
           size={13}
-          className={`shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:text-muted-foreground ${expanded ? "" : "-rotate-90"}`}
+          className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-primary ${expanded ? "" : "-rotate-90"}`}
         />
       </button>
 
       {expanded && (
         localFavs.length === 0 ? (
-          <p className="px-2.5 py-1 text-xs text-muted-foreground/40">
+          <p className="px-2.5 py-1 text-xs text-muted-foreground/70">
             Star a page to add it here.
           </p>
         ) : (
@@ -181,7 +183,7 @@ export function FavoritesSection({
                 ref={moreRef}
                 type="button"
                 onClick={openPopup}
-                className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/40 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
+                className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
               >
                 <MoreHorizontal size={12} />
                 {localFavs.length - VISIBLE_MAX} more
@@ -195,13 +197,13 @@ export function FavoritesSection({
       {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popupRef}
-          className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover shadow-[0_8px_24px_-4px_rgba(21,101,192,0.18),0_2px_8px_-2px_rgba(0,0,0,0.1)]"
+          className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
           {/* Header */}
           <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
-            <span className="text-[13px] font-semibold text-white">Favorites</span>
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{localFavs.length}</span>
+            <span className="text-sm font-semibold text-white">Favorites</span>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{localFavs.length}</span>
           </div>
           {/* List */}
           <div className="max-h-64 overflow-y-auto py-1">
@@ -212,12 +214,12 @@ export function FavoritesSection({
                   key={fav.pageId}
                   href={`/app/${workspaceSlug}/${page?.shortId ?? fav.pageId}`}
                   onClick={() => setPopupOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                  className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
                   {page?.icon ? (
                     <span className="shrink-0 text-sm leading-none">{page.icon}</span>
                   ) : (
-                    <FileText size={13} className="shrink-0 text-muted-foreground/40" />
+                    <FileText size={13} className="shrink-0 text-muted-foreground/70" />
                   )}
                   <span className="min-w-0 truncate">{page?.title || "Untitled"}</span>
                 </Link>
@@ -270,17 +272,17 @@ function FavoriteRow({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="group flex items-center rounded-[var(--radius-md)] transition-colors duration-150 hover:bg-sidebar-accent"
+      className="group flex items-center rounded-[var(--radius-md)] transition-colors duration-150 hover:bg-primary/10"
     >
       <Link
-        className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground"
+        className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:text-primary"
         href={`/app/${workspaceSlug}/${shortId}`}
         {...listeners}
       >
         {icon ? (
           <span className="shrink-0 text-sm leading-none">{icon}</span>
         ) : (
-          <FileText size={12} className="shrink-0 text-muted-foreground/30" />
+          <FileText size={12} className="shrink-0 text-muted-foreground/60" />
         )}
         <span className="min-w-0 truncate">{title || "Untitled"}</span>
       </Link>

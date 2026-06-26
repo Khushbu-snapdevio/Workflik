@@ -70,7 +70,7 @@ export function BoardView({
   return (
    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
     <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-     <LayoutGrid size={28} className="text-muted-foreground/40" />
+     <LayoutGrid size={28} className="text-muted-foreground/70" />
     </div>
     <div>
      <p className="text-sm font-semibold text-foreground">No group-by property</p>
@@ -163,11 +163,11 @@ export function BoardView({
           className="flex h-full flex-col items-center gap-2 py-3"
          >
           {col.id ? (
-           <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-[10px] font-bold" style={{ backgroundColor: color.bg, color: color.text }}>
+           <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold" style={{ backgroundColor: color.bg, color: color.text }}>
             {col.entries.length}
            </span>
           ) : (
-           <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-[10px] font-bold text-muted-foreground/60">
+           <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-xs font-bold text-muted-foreground/60">
             {col.entries.length}
            </span>
           )}
@@ -183,24 +183,24 @@ export function BoardView({
           <div className="flex items-center justify-between px-3 py-2.5">
            <div className="flex items-center gap-2">
            {col.id ? (
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-[13px] font-semibold" style={{ backgroundColor: color.bg, color: color.text }}>
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold" style={{ backgroundColor: color.bg, color: color.text }}>
              <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
              {col.label}
             </span>
            ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-[13px] font-semibold text-muted-foreground/70">
+            <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-sm font-semibold text-muted-foreground/70">
              <span className="size-1.5 rounded-full bg-muted-foreground/30" />
              {col.label}
             </span>
            )}
-           <span className="ml-1.5 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+           <span className="ml-1.5 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
             {col.entries.length}
            </span>
            </div>
            <button
             onClick={toggleCollapse}
             title="Collapse column"
-            className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/30 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+            className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
            >
             <PanelLeft size={13} />
            </button>
@@ -227,7 +227,7 @@ export function BoardView({
 
            {col.entries.length === 0 && (
             <div className="flex h-16 items-center justify-center rounded-[var(--radius-md)] border border-border/40 bg-muted/20">
-             <span className="text-[12px] text-muted-foreground/40">Drop cards here</span>
+             <span className="text-xs text-muted-foreground/70">Drop cards here</span>
             </div>
            )}
           </div>
@@ -239,7 +239,7 @@ export function BoardView({
              const dv = col.id ? { [groupPropId!]: { optionId: col.id } } : {};
              onCreateEntry(dv);
             }}
-            className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-[12px] font-medium text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+            className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
            >
             <Plus size={13} />
             Add entry
@@ -261,7 +261,7 @@ export function BoardView({
          setAddingOption(true);
          setTimeout(() => addOptInputRef.current?.focus(), 50);
         }}
-        className="flex h-10 w-full items-center gap-2 rounded-[var(--radius-lg)] border border-border px-3 text-xs text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+        className="flex h-10 w-full items-center gap-2 rounded-[var(--radius-lg)] border border-border px-3 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
        >
         <Plus size={13} />
         Add option to &ldquo;{groupProp.name}&rdquo;
@@ -269,12 +269,12 @@ export function BoardView({
       ) : (
        <div className="rounded-[var(--radius-lg)] border border-border bg-background p-3.5">
         <div className="mb-3 flex items-center justify-between">
-         <p className="text-xs font-semibold tracking-[0.125px] text-muted-foreground/50">
+         <p className="text-xs font-semibold tracking-wide text-muted-foreground">
           New option
          </p>
          <button
           onClick={() => { setAddingOption(false); setNewOptName(""); }}
-          className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+          className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
          >
           <X size={11} />
          </button>
@@ -292,7 +292,7 @@ export function BoardView({
          className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
         />
 
-        <p className="mb-1.5 mt-3 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">
+        <p className="mb-1.5 mt-3 text-xs font-semibold tracking-wide text-muted-foreground/70">
          Colour
         </p>
         <div className="flex flex-wrap gap-2">
@@ -319,7 +319,7 @@ export function BoardView({
            {newOptName.trim()}
           </span>
          ) : (
-          <span className="text-xs text-muted-foreground/30">Preview will appear here</span>
+          <span className="text-xs text-muted-foreground/60">Preview will appear here</span>
          )}
         </div>
 
@@ -341,7 +341,7 @@ export function BoardView({
 
         {options.length > 0 && (
          <div className="mt-3 border-t border-border/50 pt-3">
-          <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">
+          <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground/70">
            Existing options
           </p>
           <div className="flex flex-col gap-1">
@@ -459,7 +459,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
        {entry.icon ? (
         <span className="mt-0.5 shrink-0 text-base leading-none">{entry.icon}</span>
        ) : (
-        <FileText size={12} className="mt-0.5 shrink-0 text-muted-foreground/25" />
+        <FileText size={12} className="mt-0.5 shrink-0 text-muted-foreground/60" />
        )}
        <button
         onPointerDown={(e) => e.stopPropagation()}
@@ -468,7 +468,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
          entryOpenMode === "side_panel" && onOpenEntry ? "cursor-pointer hover:text-muted-foreground" : "cursor-default"
         }`}
        >
-        {entry.title || <span className="font-normal text-muted-foreground/35">Untitled</span>}
+        {entry.title || <span className="font-normal text-muted-foreground/60">Untitled</span>}
        </button>
 
        {/* Action buttons — visible on hover */}
@@ -479,7 +479,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
          onClick={(e) => e.stopPropagation()}
          onPointerDown={(e) => e.stopPropagation()}
          title="Open full page"
-         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
         >
          <ExternalLink size={12} />
         </Link>
@@ -488,7 +488,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setHovered(false); onDeleteRequest(entry); }}
           title="Delete entry"
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-destructive/10 hover:text-destructive"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
          >
           <Trash2 size={12} />
          </button>

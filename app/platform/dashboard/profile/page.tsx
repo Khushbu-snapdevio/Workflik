@@ -53,17 +53,17 @@ export default async function ProfilePage() {
 
    {/* ── Page header ── */}
    <div className="mb-6">
-    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.125px] text-primary">
+    <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-primary">
      <svg className="size-2.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 12 12">
       <circle cx="6" cy="4" r="2.5"/>
       <path d="M1 11c0-2.76 2.24-5 5-5s5 2.24 5 5"/>
      </svg>
      Account
     </span>
-    <h1 className="text-[22px] font-black leading-tight tracking-tight text-foreground">
+    <h1 className="text-2xl font-black leading-tight tracking-tight text-foreground">
      Profile Settings
     </h1>
-    <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
      Manage identity, sessions, account exports, and account deletion.
     </p>
    </div>
@@ -87,15 +87,15 @@ export default async function ProfilePage() {
          <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
        </span>
-       <span className="text-[13px] font-semibold text-foreground">Export Your Data</span>
+       <span className="text-sm font-semibold text-foreground">Export Your Data</span>
       </div>
-      <p className="mt-1.5 pl-[34px] text-[12px] leading-relaxed text-muted-foreground">
+      <p className="mt-1.5 pl-[34px] text-xs leading-relaxed text-muted-foreground">
        Download a JSON archive of your profile, linked auth accounts, and sessions.
       </p>
      </div>
      <div className="px-5 py-4">
       <a
-       className="inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border px-4 text-[12.5px] font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/[0.025] hover:text-primary"
+       className="inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border px-4 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
        download
        href="/api/account/export"
       >

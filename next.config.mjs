@@ -8,6 +8,15 @@ const nextConfig = {
   turbopack: {
     root: resolve(__dirname),
   },
+  async redirects() {
+    return [
+      {
+        source: "/app/:workspace/settings",
+        destination: "/app/:workspace/settings/profile",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

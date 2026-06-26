@@ -156,7 +156,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-10 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
     </div>
 
     {/* Progress dots */}
@@ -172,7 +172,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
     </div>
 
     {/* Step label */}
-    <p className="mb-3 text-[11px] font-semibold tracking-[0.125px] text-muted-foreground/60">
+    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground/60">
      {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${totalSteps}`}
     </p>
 
@@ -197,7 +197,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
           onClick={() => selectOption(opt.value)}
           className={`relative flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-150 ${
            idx > 0 ? "border-t border-border" : ""
-          } ${isSelected ? "bg-primary/[0.05]" : "hover:bg-accent"}`}
+          } ${isSelected ? "bg-primary/5" : "hover:bg-accent"}`}
          >
           {isSelected && (
            <span className="absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary" />
@@ -262,7 +262,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
        <p className="mb-4 text-xs text-destructive">{inviteError}</p>
       )}
 
-      <p className="mb-6 text-xs text-muted-foreground/50">
+      <p className="mb-6 text-xs text-muted-foreground">
        Invites are valid for 7 days. You can invite more teammates from workspace settings at any time.
       </p>
      </>
@@ -273,7 +273,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
      type="button"
      onClick={handleContinue}
      disabled={(!isInviteStep && !selected) || pending}
-     className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+     className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
     >
      {pending
       ? "Setting up…"
@@ -293,7 +293,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
      type="button"
      onClick={handleSkip}
      disabled={pending}
-     className="mt-3 text-xs text-muted-foreground/50 transition-colors duration-150 hover:text-muted-foreground"
+     className="mt-3 text-xs text-muted-foreground transition-colors duration-150 hover:text-muted-foreground"
     >
      {isInviteStep ? "Skip for now" : "Skip this step"}
     </button>

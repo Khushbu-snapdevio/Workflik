@@ -99,7 +99,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
       {/* Panel */}
       <div
-        className="fixed top-0 right-0 flex h-full w-[460px] flex-col border-l border-border bg-card"
+        className="fixed top-0 right-0 flex h-full w-full sm:w-[360px] flex-col border-l border-border bg-card"
         style={{
           zIndex:     600,
           transform:  animIn ? "translateX(0)" : "translateX(20px)",
@@ -117,14 +117,14 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   <Bell size={15} className="text-muted-foreground" />
                 </div>
                 {unread > 0 && (
-                  <span className="absolute -top-1 -right-1 flex size-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary text-[9px] font-bold text-white leading-none">
+                  <span className="absolute -top-1 -right-1 flex size-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary text-xs font-bold text-white leading-none">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-foreground tracking-tight leading-none">Inbox</p>
-                <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+                <p className="text-sm font-semibold text-foreground tracking-tight leading-none">Inbox</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {unread > 0 ? `${unread} unread notification${unread !== 1 ? "s" : ""}` : "You're all caught up"}
                 </p>
               </div>
@@ -135,7 +135,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="rounded-[var(--radius-sm)] px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                  className="rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
                   Mark all read
                 </button>
@@ -143,7 +143,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
               <a
                 href={`/app/${workspaceSlug}/settings/notifications`}
                 aria-label="Notification settings"
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
                 <Settings size={14} />
               </a>
@@ -151,7 +151,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 type="button"
                 onClick={closePanel}
                 aria-label="Close notifications"
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
                 <X size={14} />
               </button>
@@ -167,7 +167,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 key={key}
                 type="button"
                 onClick={() => setFilter(key)}
-                className={`relative flex-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-[11.5px] font-medium transition-colors duration-150 ${
+                className={`relative flex-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs font-medium transition-colors duration-150 ${
                   filter === key
                     ? "bg-card text-foreground border border-border"
                     : "text-muted-foreground hover:text-foreground"
@@ -175,7 +175,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
               >
                 {label}
                 {key === "all" && unread > 0 && (
-                  <span className="ml-1 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-[9px] font-bold text-white leading-none">
+                  <span className="ml-1 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-white leading-none">
                     {unread > 99 ? "99+" : unread}
                   </span>
                 )}
@@ -230,11 +230,11 @@ function EmptyState({ filter }: { filter: FilterKey }) {
   return (
     <div className="flex flex-col items-center justify-center gap-5 px-8 py-20">
       <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
-        <Bell size={24} className="text-muted-foreground/40" />
+        <Bell size={24} className="text-muted-foreground/70" />
       </div>
       <div className="text-center">
-        <p className="text-[14px] font-semibold text-foreground">All caught up</p>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="text-sm font-semibold text-foreground">All caught up</p>
+        <p className="mt-1 text-xs text-muted-foreground">
           {filter === "all" ? "No notifications yet" : `No ${filter} notifications`}
         </p>
       </div>

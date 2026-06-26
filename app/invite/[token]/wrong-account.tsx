@@ -36,28 +36,28 @@ export function WrongAccountError({
     </div>
 
     <div className="mb-6 text-center">
-     <h1 className="mb-2 text-[18px] font-bold text-foreground">Wrong account signed in</h1>
-     <p className="text-[13px] leading-relaxed text-muted-foreground">
+     <h1 className="mb-2 text-lg font-bold text-foreground">Wrong account signed in</h1>
+     <p className="text-sm leading-relaxed text-muted-foreground">
       This invite was sent to{" "}
       <span className="font-semibold text-foreground">{invitedEmail}</span>
       , but you&apos;re currently signed in as{" "}
       <span className="font-semibold text-foreground">{currentEmail}</span>.
      </p>
-     <p className="mt-2 text-[13px] text-muted-foreground">
+     <p className="mt-2 text-sm text-muted-foreground">
       Sign out and sign in with the correct account to accept this invite.
      </p>
     </div>
 
     <div className="flex flex-col gap-2.5">
      <button
-      className="inline-flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)]"
+      className="inline-flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
       onClick={handleSwitch}
       type="button"
      >
       Sign out &amp; continue as {invitedEmail}
      </button>
      <a
-      className="inline-flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] border border-border px-4 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      className="inline-flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       href="/platform/dashboard"
      >
       Go to dashboard

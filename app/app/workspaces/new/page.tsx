@@ -21,7 +21,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={160} height={40} className="h-9 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-9 w-auto" />
     </div>
 
     {/* Heading */}

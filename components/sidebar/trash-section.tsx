@@ -18,7 +18,7 @@ export function TrashSection({ workspaceSlug }: Props) {
       className={`flex items-center gap-2.5 px-4 py-1.5 text-xs font-medium transition-colors ${
         isActive
           ? "bg-sidebar-accent text-sidebar-foreground"
-          : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground duration-150"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground duration-150"
       }`}
       href={href}
     >

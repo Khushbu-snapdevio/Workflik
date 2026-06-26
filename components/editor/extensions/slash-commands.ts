@@ -73,7 +73,32 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
           };
 
           const content = custom[def.type];
-          if (content) editor.chain().deleteRange(range).insertContentAt(range.from, content).focus().run();
+          if (content) {
+            // Single atomic transaction: delete "/" and replace the entire
+            // paragraph node with the new block in one step so no intermediate
+            // state (empty paragraph or orphaned "/") is ever saved to the DB.
+            editor
+              .chain()
+              .focus()
+              .deleteRange(range)
+              .command(({ tr, state }) => {
+                const { $from } = state.selection;
+                try {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const node = state.schema.nodeFromJSON(content as any);
+                  tr.replaceRangeWith(
+                    $from.before($from.depth),
+                    $from.after($from.depth),
+                    node,
+                  );
+                  return true;
+                } catch {
+                  // Fallback: plain insert if schema rejects the node shape.
+                  return false;
+                }
+              })
+              .run();
+          }
         },
 
         render: () => ({

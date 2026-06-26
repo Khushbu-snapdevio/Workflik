@@ -1,7 +1,8 @@
 "use client";
 
-import { Clock, Globe, Info, Monitor, Shield, Smartphone, X } from "lucide-react";
+import { Clock, Globe, Info, LogOut, Monitor, Shield, Smartphone, X } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { signOut } from "@/lib/auth/client";
 
 interface SessionRow {
  id:    string;
@@ -48,9 +50,11 @@ function ago(d: Date) {
 }
 
 export function SessionsSection({ sessions: init, currentToken }: Props) {
- const [sessions,  setSessions]  = useState(init);
- const [revoking,  setRevoking]  = useState<string | null>(null);
- const [revokingAll, setRevokingAll] = useState(false);
+ const router = useRouter();
+ const [sessions,  setSessions]   = useState(init);
+ const [revoking,  setRevoking]   = useState<string | null>(null);
+ const [revokingAll, setRevokingAll]  = useState(false);
+ const [signingOut,  setSigningOut]  = useState(false);
 
  async function revoke(id: string, token: string) {
   setRevoking(id);
@@ -73,11 +77,16 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
   finally { setRevokingAll(false); }
  }
 
+ async function handleSignOut() {
+  setSigningOut(true);
+  await signOut({ fetchOptions: { onSuccess: () => router.push("/login") } });
+ }
+
  const current = sessions.find(s => s.token === currentToken);
  const others = sessions.filter(s => s.token !== currentToken);
 
  return (
-  <div className="max-w-[780px] px-8 pt-6 pb-10">
+  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {/* ── Header ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -85,7 +94,7 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
      <Shield size={22} className="text-primary-foreground" />
     </div>
     <div>
-     <h1 className="text-[22px] font-bold text-foreground">Security & sessions</h1>
+     <h1 className="text-2xl font-bold text-foreground">Security & sessions</h1>
      <p className="text-sm text-muted-foreground">Manage devices signed in to your account.</p>
     </div>
    </div>
@@ -93,9 +102,9 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
    {/* ── Current session ── */}
    {current && (
     <div className="mb-7">
-     <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Current session</p>
+     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Current session</p>
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      <SessionCard s={current} isCurrent />
+      <SessionCard s={current} isCurrent signingOut={signingOut} onSignOut={handleSignOut} />
      </div>
     </div>
    )}
@@ -104,9 +113,9 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
    {others.length > 0 && (
     <div className="mb-7">
      <div className="mb-2 flex items-center justify-between">
-      <p className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+      <p className="text-xs font-semibold tracking-wide text-muted-foreground">
        Other sessions
-       <span className="ml-2 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{others.length}</span>
+       <span className="ml-2 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{others.length}</span>
       </p>
       <AlertDialog>
        <AlertDialogTrigger asChild>
@@ -170,8 +179,13 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
 }
 
 /* ── Session card ─────────────────────────────────────────── */
-function SessionCard({ s, isCurrent, revoking, onRevoke }: {
- s: SessionRow; isCurrent?: boolean; revoking?: boolean; onRevoke?: () => void
+function SessionCard({ s, isCurrent, revoking, onRevoke, signingOut, onSignOut }: {
+ s: SessionRow;
+ isCurrent?: boolean;
+ revoking?: boolean;
+ onRevoke?: () => void;
+ signingOut?: boolean;
+ onSignOut?: () => void;
 }) {
  const b  = browser(s.userAgent);
  const os = osName(s.userAgent);
@@ -211,7 +225,36 @@ function SessionCard({ s, isCurrent, revoking, onRevoke }: {
     </div>
    </div>
 
-   {/* Revoke */}
+   {/* Sign out current device */}
+   {isCurrent && onSignOut && (
+    <AlertDialog>
+     <AlertDialogTrigger asChild>
+      <Button
+       variant="outline"
+       size="sm"
+       type="button"
+       disabled={signingOut}
+       className="shrink-0 flex items-center gap-1.5 hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+       <LogOut size={13} />
+       {signingOut ? "Signing out…" : "Sign out"}
+      </Button>
+     </AlertDialogTrigger>
+     <AlertDialogContent>
+      <AlertDialogHeader>
+       <AlertDialogTitle>Sign out of this device?</AlertDialogTitle>
+       <AlertDialogDescription>
+        You will be signed out of {b}{os ? ` on ${os}` : ""} and redirected to the login page.
+       </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+       <AlertDialogCancel>Cancel</AlertDialogCancel>
+       <AlertDialogAction onClick={onSignOut}>Sign out</AlertDialogAction>
+      </AlertDialogFooter>
+     </AlertDialogContent>
+    </AlertDialog>
+   )}
+
+   {/* Revoke other device */}
    {!isCurrent && (
     <AlertDialog>
      <AlertDialogTrigger asChild>

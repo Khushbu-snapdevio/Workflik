@@ -191,9 +191,12 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
     extensions: [
       StarterKit.configure({ codeBlock: false, link: false, underline: false }),
       Placeholder.configure({
-        placeholder: ({ node }) =>
-          node.type.name === "heading" ? "Heading" : "Start writing, or press / to insert a block…",
-        includeChildren: false,
+        placeholder: ({ node }) => {
+          if (node.type.name === "heading") return "Heading";
+          if (node.type.name === "toggleSummary") return "Toggle";
+          return "Start writing, or press / to insert a block…";
+        },
+        includeChildren: true,
       }),
       TaskList,
       TaskItem.configure({ nested: false }),
@@ -333,7 +336,7 @@ export function PageEditor({ pageId, isLocked, isDeleted, isEditor, isAdmin = fa
   return (
     <div className="relative">
       {saveState !== "idle" && (
-        <div className="absolute -top-7 right-0 text-xs text-muted-foreground/50 select-none">
+        <div className="absolute -top-7 right-0 text-xs text-muted-foreground select-none">
           {saveState === "saving"  && <span className="animate-pulse">Saving…</span>}
           {saveState === "saved"   && <span>Saved</span>}
           {saveState === "offline" && <span className="text-warning">Offline — changes will sync when reconnected</span>}

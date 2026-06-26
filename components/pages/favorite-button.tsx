@@ -52,13 +52,13 @@ export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: Fa
       onClick={toggle}
       disabled={pending}
       title={favorited ? "Remove from favorites" : "Add to favorites"}
-      className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] transition-colors hover:bg-accent disabled:opacity-50 ${
+      className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] transition-colors disabled:opacity-50 ${
         favorited
-          ? "text-warning hover:text-warning/80"
-          : "text-muted-foreground hover:text-foreground"
+          ? "text-warning hover:bg-warning/10"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
       }`}
     >
-      <Star size={16} />
+      <Star size={16} fill={favorited ? "currentColor" : "none"} />
     </button>
   );
 }

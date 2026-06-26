@@ -115,7 +115,7 @@ export function PageClient({
   if (result) saveCover(result.fileUrl);
  }
 
- const contentCls = isFullWidth ? "max-w-full px-12" : "max-w-[780px] px-14";
+ const contentCls = isFullWidth ? "max-w-full px-4 sm:px-8 lg:px-12" : "max-w-[780px] px-4 sm:px-8 lg:px-14";
 
  return (
   <div id="page-scroll-container" className="flex-1 overflow-y-auto">
@@ -255,13 +255,13 @@ export function PageClient({
       }}
       data-placeholder="Untitled"
       className={[
-       "w-full break-words text-[2.6rem] font-black leading-[1.15] tracking-[-0.03em] text-foreground outline-none",
-       "empty:before:content-[attr(data-placeholder)] empty:before:text-foreground/15",
+       "w-full break-words text-[2.6rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
+       "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
        editable ? "cursor-text" : "cursor-default select-text",
       ].join(" ")}
      />
      {saving && (
-      <p className="mt-1.5 text-[11px] text-muted-foreground/40 animate-pulse">Saving…</p>
+      <p className="mt-1.5 text-xs text-muted-foreground/70 animate-pulse">Saving…</p>
      )}
     </div>
 

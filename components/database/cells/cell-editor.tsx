@@ -184,7 +184,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
        {/* Color picker trigger */}
        <button
         onClick={(e) => { e.stopPropagation(); setColorPick(colorPick === opt.id ? null : opt.id); }}
-        className="ml-auto hidden size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/40 hover:bg-accent group-hover/opt:flex"
+        className="ml-auto hidden size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/70 hover:bg-accent group-hover/opt:flex"
         title="Change color"
        >
         <span className="size-3 rounded-full" style={{ backgroundColor: color.dot }} />
@@ -343,7 +343,7 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
        onClick={() => toggle(m.userId)}
        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent"
       >
-       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
         {initials}
        </span>
        <span className="min-w-0 flex-1 text-left">

@@ -230,7 +230,7 @@ export function TooltipTour({ tourCompleted }: Props) {
         <button
           type="button"
           onClick={completeTour}
-          className="absolute right-3 top-3 flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+          className="absolute right-3 top-3 flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
         >
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-3">
             <path d="M2 2l10 10M12 2L2 12" />
@@ -238,7 +238,7 @@ export function TooltipTour({ tourCompleted }: Props) {
         </button>
 
         {/* Icon */}
-        <div className="mb-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-primary/[0.08] text-primary">
+        <div className="mb-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
           <current.Icon />
         </div>
 
@@ -252,21 +252,21 @@ export function TooltipTour({ tourCompleted }: Props) {
 
         {/* Footer */}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium text-muted-foreground/50">
+          <span className="text-xs font-medium text-muted-foreground">
             {step + 1} of {TOUR_STEPS.length}
           </span>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={completeTour}
-              className="text-xs text-muted-foreground/50 transition-colors duration-150 hover:text-muted-foreground"
+              className="text-xs text-muted-foreground transition-colors duration-150 hover:text-muted-foreground"
             >
               Skip
             </button>
             <button
               type="button"
               onClick={handleNext}
-              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)]"
+              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
             >
               {isLast ? "Done" : "Next"}
               {!isLast && (

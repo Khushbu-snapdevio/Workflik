@@ -82,17 +82,17 @@ export function GalleryView({
       <div key={group.id ?? "no-group"} className="mb-6">
        <div className="mb-3 flex items-center gap-2.5">
         {group.id && color ? (
-         <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-[12px] font-semibold tracking-[0.125px] ${color.bg} ${color.text}`}>
+         <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-xs font-semibold tracking-wide ${color.bg} ${color.text}`}>
           <span className={`size-1.5 rounded-full ${color.dot}`} />
           {group.label}
          </span>
         ) : (
-         <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-[12px] font-semibold tracking-[0.125px] text-muted-foreground/60">
+         <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground/60">
           <span className="size-1.5 rounded-full bg-muted-foreground/30" />
           {group.label}
          </span>
         )}
-        <span className="text-xs text-muted-foreground/40">{group.entries.length}</span>
+        <span className="text-xs text-muted-foreground/70">{group.entries.length}</span>
         <div className="h-px flex-1 bg-border/50" />
        </div>
        <div className={`grid gap-4 ${SIZE_GRID[cardSize]}`}>
@@ -102,7 +102,7 @@ export function GalleryView({
           onClick={() => onCreateEntry(group.id ? { [groupPropId!]: { optionId: group.id } } : {})}
           className={[
            "flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
-           "text-muted-foreground/40 transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
+           "text-muted-foreground/70 transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
            "h-24",
           ].join(" ")}
          >
@@ -147,7 +147,7 @@ export function GalleryView({
        onClick={() => onCreateEntry()}
        className={[
         "flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
-        "text-muted-foreground/40 transition-colors hover:border-primary/30 hover:bg-primary/[0.03] hover:text-primary",
+        "text-muted-foreground/70 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
         SIZE_COVER[cardSize],
        ].join(" ")}
       >
@@ -227,7 +227,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
      <button
       onClick={() => { setHovered(false); onDeleteRequest(entry); }}
       title="Delete entry"
-      className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors duration-150 hover:bg-destructive/[0.06] hover:text-destructive"
+      className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors duration-150 hover:bg-destructive/5 hover:text-destructive"
      >
       <Trash2 size={13} />
      </button>
@@ -252,7 +252,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
        {entry.icon ? (
         <span className="text-4xl">{entry.icon}</span>
        ) : (
-        <LayoutGrid size={28} className="text-muted-foreground/15" />
+        <LayoutGrid size={28} className="text-muted-foreground/60" />
        )}
       </div>
      )}
@@ -274,7 +274,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
        {entry.icon ? (
         <span className="text-4xl">{entry.icon}</span>
        ) : (
-        <LayoutGrid size={28} className="text-muted-foreground/15" />
+        <LayoutGrid size={28} className="text-muted-foreground/60" />
        )}
       </div>
      )}
@@ -285,14 +285,14 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
    <div className="flex flex-1 flex-col px-3.5 pt-3 pb-3.5">
     {isSidePanel ? (
      <button onClick={() => onOpenEntry!(entry)} className="text-left">
-      <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
-       {entry.title || <span className="font-normal text-muted-foreground/35">Untitled</span>}
+      <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
+       {entry.title || <span className="font-normal text-muted-foreground/60">Untitled</span>}
       </p>
      </button>
     ) : (
      <Link href={`/app/${workspaceSlug}/${entry.shortId}`}>
-      <p className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
-       {entry.title || <span className="font-normal text-muted-foreground/35">Untitled</span>}
+      <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
+       {entry.title || <span className="font-normal text-muted-foreground/60">Untitled</span>}
       </p>
      </Link>
     )}
@@ -303,7 +303,7 @@ function GalleryCard({ entry, displayProps, valueMap, workspaceSlug, cardSize, i
        const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
        return (
         <div key={prop.id} className="flex items-center gap-1.5 overflow-hidden">
-         <span className="shrink-0 text-[10px] font-medium text-muted-foreground/50">
+         <span className="shrink-0 text-xs font-medium text-muted-foreground">
           {prop.name}
          </span>
          <div className="min-w-0 overflow-hidden">

@@ -79,7 +79,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
     <div
       onClick={handleCardClick}
       className={`group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors duration-150 ${
-        isUnread ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-accent"
+        isUnread ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-accent"
       }`}
     >
       {/* Unread left accent */}
@@ -124,7 +124,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
             {!isSystem && " "}
             <span className="text-muted-foreground">{action}</span>
           </p>
-          <span className="mt-px shrink-0 whitespace-nowrap text-[10.5px] text-muted-foreground/50">
+          <span className="mt-px shrink-0 whitespace-nowrap text-xs text-muted-foreground">
             {timeAgo}
           </span>
         </div>
@@ -132,10 +132,10 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
         {/* Page breadcrumb */}
         {notification.pageTitle && (
           <div className="mt-1 flex items-center gap-1">
-            <span className="text-[11px] opacity-60">
+            <span className="text-xs opacity-60">
               {notification.pageIcon ?? "📄"}
             </span>
-            <span className="truncate text-[11px] font-medium text-muted-foreground/60">
+            <span className="truncate text-xs font-medium text-muted-foreground/60">
               {notification.pageTitle}
             </span>
           </div>
@@ -144,7 +144,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
         {/* Content snippet */}
         {notification.contentSnippet && (
           <div className="mt-1.5 rounded-[var(--radius-sm)] border border-border/50 bg-muted/30 px-2.5 py-1.5">
-            <p className="line-clamp-2 text-[11.5px] leading-relaxed text-muted-foreground">
+            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
               {notification.contentSnippet}
             </p>
           </div>

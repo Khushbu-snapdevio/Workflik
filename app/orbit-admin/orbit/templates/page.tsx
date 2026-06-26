@@ -10,7 +10,7 @@ export const metadata = { title: "Templates – Orbit Admin" };
 
 const CATEGORY_LABELS: Record<string, string> = {
  productivity: "Productivity",
- project_mgmt: "Project Mgmt",
+ project_mgmt: "Project Management",
  marketing:  "Marketing",
  engineering: "Engineering",
  sales:    "Sales",
@@ -43,8 +43,8 @@ export default async function OrbitTemplatesPage() {
    <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
     <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
      <div>
-      <h1 className="text-[28px] font-bold tracking-tight text-foreground">Templates</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">Author and publish built-in templates for the user-facing gallery.</p>
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">Templates</h1>
+      <p className="mt-1 text-sm text-muted-foreground">Author and publish built-in templates for the user-facing gallery.</p>
      </div>
      <div className="hidden shrink-0 items-center overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card sm:flex">
       {[
@@ -55,8 +55,8 @@ export default async function OrbitTemplatesPage() {
        <div key={s.label} className="flex items-center">
         {i > 0 && <div className="h-8 w-px bg-border" />}
         <div className="px-6 py-4 text-center">
-         <p className="text-[26px] font-bold leading-none text-foreground">{s.value}</p>
-         <p className="mt-1 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60">{s.label}</p>
+         <p className="text-3xl font-bold leading-none text-foreground">{s.value}</p>
+         <p className="mt-1 text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground/60">{s.label}</p>
         </div>
        </div>
       ))}
@@ -67,8 +67,8 @@ export default async function OrbitTemplatesPage() {
    {/* Action bar */}
    <div className="flex items-center justify-between">
     <SeedTemplatesButton currentCount={list.length} />
-    <Link href="/Orbit-admin/orbit/templates/new"
-     className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-[12.5px] font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)]">
+    <Link href="/orbit-admin/orbit/templates/new"
+     className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
       <path d="M6 1v10M1 6h10"/>
      </svg>
@@ -80,7 +80,7 @@ export default async function OrbitTemplatesPage() {
    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     <div className="border-b border-border px-5 py-4">
      <h2 className="text-[13.5px] font-bold text-foreground">Built-in templates</h2>
-     <p className="text-[11px] text-muted-foreground">Only published templates appear in the user gallery</p>
+     <p className="text-xs text-muted-foreground">Only published templates appear in the user gallery</p>
     </div>
 
     {list.length === 0 ? (
@@ -91,7 +91,7 @@ export default async function OrbitTemplatesPage() {
        </svg>
       </div>
       <p className="text-[13.5px] font-semibold text-muted-foreground">No templates yet</p>
-      <p className="mt-1 text-[12px] text-muted-foreground/60">
+      <p className="mt-1 text-xs text-muted-foreground/60">
        Click <strong className="text-primary">+ New template</strong> or seed defaults above.
       </p>
      </div>
@@ -101,7 +101,7 @@ export default async function OrbitTemplatesPage() {
        <thead>
         <tr className="bg-muted/40">
          {["Template", "Category", "Status", "Updated", "Actions"].map(h => (
-          <th key={h} className="px-5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
+          <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
          ))}
         </tr>
        </thead>
@@ -112,33 +112,33 @@ export default async function OrbitTemplatesPage() {
          return (
           <tr key={tpl.id} className="group transition-colors hover:bg-accent/40">
            <td className="px-5 py-3.5">
-            <p className="text-[13px] font-semibold text-foreground">{tpl.name}</p>
+            <p className="text-sm font-semibold text-foreground">{tpl.name}</p>
             {tpl.description && (
-             <p className="mt-0.5 max-w-sm truncate text-[11px] text-muted-foreground">{tpl.description}</p>
+             <p className="mt-0.5 max-w-sm truncate text-xs text-muted-foreground">{tpl.description}</p>
             )}
            </td>
            <td className="px-5 py-3.5">
-            <span className={`rounded-full px-2.5 py-0.5 text-[10.5px] font-bold ${catCls}`}>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${catCls}`}>
              {CATEGORY_LABELS[tpl.category] ?? tpl.category}
             </span>
            </td>
            <td className="px-5 py-3.5">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold ${
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
              isPublished ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
             }`}>
              <span className={`size-1.5 rounded-full ${isPublished ? "bg-success" : "bg-muted-foreground/40"}`} />
              {tpl.status}
             </span>
            </td>
-           <td className="px-5 py-3.5 text-[11.5px] text-muted-foreground">
+           <td className="px-5 py-3.5 text-xs text-muted-foreground">
             {tpl.updatedAt
              ? new Date(tpl.updatedAt).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })
              : "—"}
            </td>
            <td className="px-5 py-3.5">
             <div className="flex items-center gap-2">
-             <Link href={`/Orbit-admin/orbit/templates/${tpl.id}/edit`}
-              className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground">
+             <Link href={`/orbit-admin/orbit/templates/${tpl.id}/edit`}
+              className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground">
               Edit
              </Link>
              <TemplatePublishToggle templateId={tpl.id} currentStatus={tpl.status} />

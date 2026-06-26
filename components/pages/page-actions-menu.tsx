@@ -30,7 +30,7 @@ interface PageActionsMenuProps {
 }
 
 const menuItemClass =
- "flex w-full items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent cursor-pointer";
+ "flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent cursor-pointer";
 
 export function PageActionsMenu({
  pageId,
@@ -184,7 +184,7 @@ export function PageActionsMenu({
     type="button"
     onClick={() => (open ? setOpen(false) : openMenu())}
     disabled={loading !== null}
-    className="flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border/70 bg-background px-3 text-xs font-medium text-foreground/70 transition-colors hover:border-border hover:bg-accent hover:text-foreground disabled:opacity-50"
+    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50"
     aria-label="Page actions"
    >
     <DotsThreeIcon size={14} />
@@ -246,7 +246,7 @@ export function PageActionsMenu({
        <div className="mx-2 my-1 border-t border-border" />
 
        <div className="px-3 pb-0.5 pt-1">
-        <p className="mb-1 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground">Export</p>
+        <p className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground">Export</p>
        </div>
        {(["markdown", "html", "pdf"] as const).map((fmt) => (
         <button
@@ -265,7 +265,7 @@ export function PageActionsMenu({
        <button
         type="button"
         onClick={handleDelete}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/[0.06] hover:text-destructive"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 hover:text-destructive"
        >
         <TrashIcon size={14} />
         {pageKind === "database" ? "Delete database" : "Move to Trash"}

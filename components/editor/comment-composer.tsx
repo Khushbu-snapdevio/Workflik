@@ -99,7 +99,7 @@ export function CommentComposer({
           "text-sm text-foreground leading-5 focus:outline-none",
           "min-h-[24px] max-h-[120px] overflow-y-auto px-3 pt-2.5 pb-1",
           "[&_p.is-empty:first-child]:before:content-[attr(data-placeholder)]",
-          "[&_p.is-empty:first-child]:before:text-muted-foreground/40",
+          "[&_p.is-empty:first-child]:before:text-muted-foreground/70",
           "[&_p.is-empty:first-child]:before:pointer-events-none",
           "[&_p.is-empty:first-child]:before:float-left",
           "[&_p.is-empty:first-child]:before:h-0",
@@ -163,7 +163,7 @@ export function CommentComposer({
   const isEmpty = editorEmpty && !attachment;
 
   const containerCls = mode === "edit"
-    ? "border-primary/40 bg-primary/[0.02] focus-within:border-primary/60"
+    ? "border-primary/40 bg-primary/5 focus-within:border-primary/60"
     : "border-border/60 bg-card focus-within:border-primary/40";
 
   return (
@@ -222,7 +222,7 @@ export function CommentComposer({
           <button
             type="button"
             title="Attach image or file"
-            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/30 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
+            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => fileInputRef.current?.click()}
           >
             <Paperclip size={13} />
@@ -231,7 +231,7 @@ export function CommentComposer({
           <button
             type="button"
             title="Mention (@)"
-            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/30 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
+            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => {
               editor?.commands.focus("end");
               editor?.commands.insertContent("@");
@@ -244,7 +244,7 @@ export function CommentComposer({
             <button
               type="button"
               title="Cancel (Esc)"
-              className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 transition-colors duration-150"
+              className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors duration-150"
               onClick={onCancel}
             >
               <XCircle size={13} />
@@ -259,7 +259,7 @@ export function CommentComposer({
           onClick={handleSubmit}
           className={`p-1 rounded-[var(--radius-sm)] transition-colors duration-150 ${
             isEmpty
-              ? "text-muted-foreground/20 cursor-not-allowed"
+              ? "text-muted-foreground/60 cursor-not-allowed"
               : "text-primary hover:text-primary hover:bg-accent"
           }`}
         >

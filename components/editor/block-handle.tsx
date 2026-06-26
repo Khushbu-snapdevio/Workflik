@@ -198,7 +198,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
      setMenuOpen((v) => !v);
     }}
     title="Block options"
-    className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/30 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+    className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
    >
     <GripVertical size={14} />
    </button>

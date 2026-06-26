@@ -148,7 +148,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
        <svg className="mt-px size-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
        </svg>
-       <p className="text-[13px] font-bold text-foreground tracking-tight">Page history</p>
+       <p className="text-sm font-bold text-foreground tracking-tight">Page history</p>
       </div>
       <button
        type="button"
@@ -160,7 +160,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
        </svg>
       </button>
      </div>
-     <p className="mt-0.5 text-[10.5px] leading-snug text-muted-foreground">
+     <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
       Versions are saved automatically. Select a version to preview or restore.
      </p>
     </div>
@@ -185,13 +185,13 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
       /* empty state */
       <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
        <div className="flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-muted/60">
-        <svg className="size-5 text-muted-foreground/25" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+        <svg className="size-5 text-muted-foreground/60" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
        </div>
        <div>
-        <p className="text-[12.5px] font-semibold text-foreground">No earlier versions yet.</p>
-        <p className="mt-0.5 text-[11px] text-muted-foreground">Versions appear here as you edit the page.</p>
+        <p className="text-xs font-semibold text-foreground">No earlier versions yet.</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">Versions appear here as you edit the page.</p>
        </div>
       </div>
 
@@ -202,7 +202,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
         <div key={label}>
          {/* Date section header */}
          <div className="flex items-center gap-2 px-4 pb-1 pt-2.5">
-          <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">{label}</span>
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground">{label}</span>
           <div className="h-px flex-1 bg-border/50" />
          </div>
 
@@ -214,7 +214,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
            <div
             key={v.id}
             className={`group relative flex items-center gap-2.5 px-4 py-2 transition-colors ${
-             isCur ? "bg-primary/[0.04]" : "hover:bg-muted/40"
+             isCur ? "bg-primary/5" : "hover:bg-muted/40"
             }`}
            >
             {/* Current accent bar */}
@@ -232,16 +232,16 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
             {/* Text */}
             <div className="min-w-0 flex-1">
              <div className="flex items-center gap-1.5">
-              <span className="text-[12px] font-semibold text-foreground tabular-nums">
+              <span className="text-xs font-semibold text-foreground tabular-nums">
                {timeOnly(v.createdAt)}
               </span>
               {isCur && (
-               <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[9px] font-bold tracking-[0.125px] text-primary">
+               <span className="inline-flex items-center rounded-[var(--radius-xs)] bg-primary/10 px-2.5 py-1 text-xs font-bold tracking-wide text-primary">
                 Current
                </span>
               )}
              </div>
-             <p className="mt-px truncate text-[10.5px] text-muted-foreground">
+             <p className="mt-px truncate text-xs text-muted-foreground">
               {who}{v.label ? ` · ${v.label}` : ""}
              </p>
             </div>
@@ -251,7 +251,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
              <button
               type="button"
               onClick={() => setConfirmVer(v)}
-              className="shrink-0 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground opacity-0 transition-colors duration-150 group-hover:opacity-100 hover:border-primary/40 hover:bg-primary/[0.04] hover:text-primary"
+              className="shrink-0 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground opacity-0 transition-colors duration-150 group-hover:opacity-100 hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
              >
               Restore
              </button>
@@ -273,19 +273,19 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
       className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
       onClick={() => !restoring && setConfirmVer(null)}
      />
-     <div className="relative w-[380px] rounded-[var(--radius-lg)] border border-border bg-popover p-6">
+     <div className="relative w-[calc(100vw-32px)] max-w-[380px] rounded-[var(--radius-lg)] border border-border bg-popover p-6">
       <div className="mb-3 flex items-center gap-3">
        <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
         <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
        </div>
-       <h2 className="text-[14px] font-semibold text-foreground">Restore this version?</h2>
+       <h2 className="text-sm font-semibold text-foreground">Restore this version?</h2>
       </div>
-      <p className="mb-1 text-[11px] font-semibold text-muted-foreground">
+      <p className="mb-1 text-xs font-semibold text-muted-foreground">
        {dayLabel(confirmVer.createdAt)} · {timeOnly(confirmVer.createdAt)}
       </p>
-      <p className="mb-5 text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
        This will replace the current page with the selected version. You can restore again later.
       </p>
       <div className="flex items-center justify-end gap-2">
@@ -293,7 +293,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
         type="button"
         disabled={restoring}
         onClick={() => setConfirmVer(null)}
-        className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+        className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
        >
         Cancel
        </button>
@@ -301,7 +301,7 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
         type="button"
         disabled={restoring}
         onClick={handleRestore}
-        className="rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
+        className="rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
        >
         {restoring ? "Restoring…" : "Restore"}
        </button>

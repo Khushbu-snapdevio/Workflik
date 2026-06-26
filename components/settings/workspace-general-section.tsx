@@ -77,7 +77,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
    <div className="flex gap-0.5 border-b border-border/50 px-3 pt-2.5">
     {EMOJI_CATEGORIES.map(c => (
      <button key={c.key} type="button" onClick={() => setCat(c.key)}
-      className={`rounded-t-[8px] px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`rounded-t-[var(--radius-md)] px-3 py-1.5 text-xs font-semibold transition-colors ${
        cat === c.key ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
       }`}>
       {c.label}
@@ -89,7 +89,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
    <div className="grid grid-cols-8 gap-0.5 p-3">
     {active.emojis.map(e => (
      <button key={e} type="button" onClick={() => { onChange(e); setOpen(false); }}
-      className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-[19px] transition-all hover:scale-110 active:scale-[0.97] ${
+      className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-lg transition-all hover:scale-110 active:scale-[0.97] ${
        value === e ? "bg-accent" : "hover:bg-accent"
       }`}>
       {e}
@@ -101,16 +101,16 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
    <div className="flex items-center gap-2 border-t border-border/50 px-4 py-2.5">
     {value ? (
      <>
-      <span className="text-[18px]">{value}</span>
+      <span className="text-lg">{value}</span>
       <p className="flex-1 text-xs text-muted-foreground">Selected</p>
       <button type="button" onClick={() => { onChange(""); setOpen(false); }}
-       className="flex items-center gap-1 rounded-[6px] px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
+       className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
        <X size={12} />
        Remove icon
       </button>
      </>
     ) : (
-     <p className="text-xs text-muted-foreground/50">Click an emoji to select it</p>
+     <p className="text-xs text-muted-foreground">Click an emoji to select it</p>
     )}
    </div>
   </div>,
@@ -120,7 +120,7 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
  return (
   <>
    <button ref={btnRef} type="button" onClick={handleOpen} title="Change icon"
-    className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border-2 border-dashed border-border bg-muted/30 text-[26px] leading-none transition-colors duration-150 hover:border-border hover:bg-accent active:scale-[0.97]">
+    className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border-2 border-dashed border-border bg-muted/30 text-3xl leading-none transition-colors duration-150 hover:border-border hover:bg-accent active:scale-[0.97]">
     {value || "📁"}
    </button>
    {panel}
@@ -158,7 +158,7 @@ function fmt(b: number) {
 }
 
 function SectionLabel({ label }: { label: string }) {
- return <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">{label}</p>;
+ return <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">{label}</p>;
 }
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
  return (
@@ -348,7 +348,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
  }
 
  return (
-  <div className="max-w-[780px] px-8 pt-6 pb-10">
+  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {/* ── Header ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -356,7 +356,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
      <Settings size={22} className="text-primary-foreground" />
     </div>
     <div>
-     <h1 className="text-[22px] font-bold text-foreground">General</h1>
+     <h1 className="text-2xl font-bold text-foreground">General</h1>
      <p className="text-sm text-muted-foreground">Manage your workspace name, URL, and settings.</p>
     </div>
    </div>
@@ -367,7 +367,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
     <Card>
      {/* Live preview banner */}
      <div className="flex items-center gap-3.5 border-b border-border/40 bg-muted/20 px-5 py-4">
-      <span className="flex size-10 items-center justify-center rounded-[var(--radius-sm)] bg-card text-[22px]">
+      <span className="flex size-10 items-center justify-center rounded-[var(--radius-sm)] bg-card text-2xl">
        {icon || "📁"}
       </span>
       <div>
@@ -480,7 +480,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
      <Card>
       <div className="flex items-center gap-4 px-5 py-5">
        <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted/50">
-        <Link2 size={20} className="text-muted-foreground/50" />
+        <Link2 size={20} className="text-muted-foreground" />
        </div>
        <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">No active invite link</p>
@@ -500,7 +500,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
     <Card className="p-5">
      <div className="flex items-start justify-between gap-4">
       <div>
-       <p className={`text-[28px] font-bold leading-tight tracking-tight ${isAtLim ? "text-destructive" : isNear ? "text-warning" : "text-foreground"}`}>
+       <p className={`text-3xl font-bold leading-tight tracking-tight ${isAtLim ? "text-destructive" : isNear ? "text-warning" : "text-foreground"}`}>
         {fmt(bytesUsed)}
        </p>
        <p className="mt-0.5 text-xs text-muted-foreground">
@@ -508,7 +508,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
        </p>
       </div>
       <div className="text-right">
-       <p className={`text-[20px] font-bold ${isAtLim ? "text-destructive" : isNear ? "text-warning" : "text-foreground"}`}>
+       <p className={`text-xl font-bold ${isAtLim ? "text-destructive" : isNear ? "text-warning" : "text-foreground"}`}>
         {pct.toFixed(0)}%
        </p>
        <p className="text-xs text-muted-foreground">{fmt(QUOTA - bytesUsed)} free</p>
@@ -532,7 +532,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
    {/* ── DANGER ZONE ── */}
    <div>
     <SectionLabel label="Danger zone" />
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-destructive/20 bg-destructive/[0.03]">
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-destructive/20 bg-destructive/5">
      <div className="px-5 py-5">
       <div className="flex items-start gap-4">
        <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
@@ -557,7 +557,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
         {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
         <div className="flex gap-2">
          <Button type="button" variant="outline" size="sm" onClick={() => { setDeleteOpen(false); setDeleteName(""); setDeleteError(""); }}>Cancel</Button>
-         <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleting || deleteName !== workspace.name} className="bg-destructive text-white hover:bg-destructive/90 active:scale-[0.97]">
+         <Button type="button" size="sm" onClick={handleDelete} disabled={deleting || deleteName !== workspace.name} className="border-transparent bg-destructive text-white hover:bg-destructive/85 active:scale-[0.97] disabled:bg-destructive/40 disabled:text-white/80 disabled:opacity-100 disabled:cursor-not-allowed disabled:pointer-events-none">
           {deleting ? "Deleting…" : "Delete workspace"}
          </Button>
         </div>

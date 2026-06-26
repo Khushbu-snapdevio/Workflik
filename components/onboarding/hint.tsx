@@ -22,7 +22,7 @@ export function Hint({ hintKey, children, icon = "💡" }: Props) {
         type="button"
         onClick={() => dismiss(hintKey)}
         title="Dismiss"
-        className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/40 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-foreground"
+        className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/70 opacity-0 transition-opacity duration-150 group-hover:opacity-100 hover:text-foreground"
       >
         <X size={10} />
       </button>

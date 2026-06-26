@@ -45,12 +45,12 @@ const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
   gray:   { dot: "bg-muted-foreground/40",  badge: "bg-muted text-muted-foreground"           },
   red:    { dot: "bg-destructive/50",        badge: "bg-destructive/10 text-destructive"       },
   orange: { dot: "bg-warning/50",            badge: "bg-warning/10 text-warning"               },
-  yellow: { dot: "bg-warning/40",            badge: "bg-warning/[0.07] text-warning"           },
+  yellow: { dot: "bg-warning/40",            badge: "bg-warning/10 text-warning"           },
   green:  { dot: "bg-success/50",            badge: "bg-success/10 text-success"               },
-  teal:   { dot: "bg-success/40",            badge: "bg-success/[0.07] text-success"           },
+  teal:   { dot: "bg-success/40",            badge: "bg-success/10 text-success"           },
   blue:   { dot: "bg-primary/50",            badge: "bg-primary/10 text-primary"               },
-  purple: { dot: "bg-primary/40",            badge: "bg-primary/[0.07] text-primary/80"        },
-  pink:   { dot: "bg-destructive/40",        badge: "bg-destructive/[0.07] text-destructive/80"},
+  purple: { dot: "bg-primary/40",            badge: "bg-primary/10 text-primary/80"        },
+  pink:   { dot: "bg-destructive/40",        badge: "bg-destructive/10 text-destructive/80"},
 };
 const DEFAULT_OPT = { dot: "bg-muted-foreground/40", badge: "bg-muted text-muted-foreground" };
 
@@ -181,44 +181,6 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1">
 
-        {/* ── Category sidebar — mirrors settings-nav.tsx exactly ── */}
-        <aside className="flex w-[240px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
-          <div className="flex-1 overflow-y-auto px-2.5 py-3">
-            <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/40">
-              Categories
-            </p>
-            <div className="space-y-0.5">
-              {CATEGORIES.map(cat => {
-                const cnt      = countForTab(cat.key);
-                const isActive = activeTab === cat.key;
-                const CatIcon  = cat.Icon;
-                return (
-                  <button
-                    key={cat.key}
-                    type="button"
-                    onClick={() => handleCategoryClick(cat.key)}
-                    className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-left text-[13px] font-medium transition-colors duration-150 ${
-                      isActive
-                        ? "bg-primary/[0.08] text-primary"
-                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                    }`}
-                  >
-                    <span className={`shrink-0 transition-colors duration-150 ${isActive ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60"}`}>
-                      <CatIcon size={14} />
-                    </span>
-                    <span className={`min-w-0 flex-1 truncate ${isActive ? "font-semibold" : ""}`}>{cat.label}</span>
-                    {cnt > 0 && (
-                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                        {cnt}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
-
         {/* ── Main panel ── */}
         {selected ? (
           <DetailView
@@ -237,6 +199,110 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
             filteredWorkspace={filteredWorkspace}
             onSelect={setSelected}
           />
+        )}
+
+        {/* ── Category filter panel — right side ── */}
+        {!selected && (
+          <aside className="flex w-[268px] shrink-0 flex-col border-l border-border/60 bg-sidebar">
+
+            {/* Header — shows active category count */}
+            <div className="border-b border-border/60 px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">
+                Categories
+              </p>
+              <div className="mt-1.5 flex items-end gap-1.5">
+                <span className="text-2xl font-black leading-none text-foreground">
+                  {countForTab(activeTab)}
+                </span>
+                <span className="mb-0.5 text-sm font-medium text-muted-foreground">
+                  {activeTab === "all" ? "templates" : CATEGORIES.find(c => c.key === activeTab)?.label.toLowerCase()}
+                </span>
+              </div>
+            </div>
+
+            {/* Filter items */}
+            <div className="flex-1 overflow-y-auto px-3 py-3">
+
+              {/* "All" — full-width prominent card */}
+              {(() => {
+                const allCat   = CATEGORIES[0]!;
+                const allCnt   = countForTab("all");
+                const allActive = activeTab === "all";
+                return (
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryClick("all")}
+                    className={`group mb-3 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border px-3.5 py-3 text-left transition-all duration-150 ${
+                      allActive
+                        ? "border-primary/25 bg-primary/10 text-primary"
+                        : "border-border/50 bg-card text-foreground hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                    }`}
+                  >
+                    <span className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${
+                      allActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                    }`}>
+                      <allCat.Icon size={15} />
+                    </span>
+                    <span className={`flex-1 text-sm ${allActive ? "font-semibold" : "font-medium"}`}>
+                      All templates
+                    </span>
+                    <span className={`shrink-0 rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-bold tabular-nums transition-colors duration-150 ${
+                      allActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                    }`}>
+                      {allCnt}
+                    </span>
+                  </button>
+                );
+              })()}
+
+              {/* Divider with label */}
+              <div className="mb-2.5 px-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary/60">By type</p>
+              </div>
+
+              {/* Individual categories */}
+              <div className="space-y-1">
+                {CATEGORIES.slice(1).map(cat => {
+                  const cnt      = countForTab(cat.key);
+                  const isActive = activeTab === cat.key;
+                  const CatIcon  = cat.Icon;
+                  return (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => handleCategoryClick(cat.key)}
+                      className={`group flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left transition-all duration-150 ${
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-sidebar-foreground/70 hover:bg-accent hover:text-foreground"
+                      }`}
+                    >
+                      <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
+                        isActive
+                          ? "bg-primary/15 text-primary"
+                          : "bg-muted/70 text-muted-foreground group-hover:bg-accent-foreground/10 group-hover:text-foreground"
+                      }`}>
+                        <CatIcon size={12} />
+                      </span>
+                      <span className={`min-w-0 flex-1 truncate text-sm ${isActive ? "font-semibold" : "font-medium"}`}>
+                        {cat.label}
+                      </span>
+                      {cnt > 0 && (
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums transition-colors duration-150 ${
+                          isActive
+                            ? "bg-primary/15 text-primary"
+                            : "bg-muted text-muted-foreground/60"
+                        }`}>
+                          {cnt}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+            </div>
+          </aside>
         )}
       </div>
     </div>
@@ -263,7 +329,7 @@ function GalleryView({
     <div className="flex min-h-0 flex-1 flex-col">
 
       {/* Search bar */}
-      <div className="shrink-0 border-b border-border/60 px-5 py-2.5">
+      <div className="shrink-0 border-b border-border/60 px-20 py-2.5">
         <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
           <Search size={13} className="shrink-0 text-muted-foreground/50" />
           <input
@@ -272,23 +338,23 @@ function GalleryView({
             value={search}
             onChange={e => onSearch(e.target.value)}
             placeholder="Search templates…"
-            className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
+            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
           />
           {search && (
             <button
               type="button"
               onClick={() => onSearch("")}
               aria-label="Clear search"
-              className="flex size-4 shrink-0 items-center justify-center rounded-full bg-muted-foreground/20 text-muted-foreground transition-colors duration-150 hover:bg-muted-foreground/30"
+              className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary/10 text-primary transition-colors duration-150 hover:bg-primary/20"
             >
-              <X size={9} />
+              <X size={11} />
             </button>
           )}
         </div>
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-y-auto px-5 pb-8 pt-5">
+      <div className="flex-1 overflow-y-auto px-20 pb-10 pt-6">
         {loading ? (
           <GallerySkeleton />
         ) : empty ? (
@@ -297,11 +363,11 @@ function GalleryView({
           <div className="space-y-7">
             {filteredBuiltIn.length > 0 && (
               <section>
-                <div className="mb-3 flex items-center gap-2">
-                  <p className="text-[11px] font-medium tracking-[0.125px] text-muted-foreground/50">Workflik templates</p>
-                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">{filteredBuiltIn.length}</span>
+                <div className="mb-3 flex items-center gap-2.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Workflik templates</p>
+                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">{filteredBuiltIn.length}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                   {filteredBuiltIn.map(tpl => (
                     <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} />
                   ))}
@@ -310,11 +376,11 @@ function GalleryView({
             )}
             {filteredWorkspace.length > 0 && (
               <section>
-                <div className="mb-3 flex items-center gap-2">
-                  <p className="text-[11px] font-medium tracking-[0.125px] text-muted-foreground/50">Workspace templates</p>
-                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">{filteredWorkspace.length}</span>
+                <div className="mb-3 flex items-center gap-2.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Workspace templates</p>
+                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">{filteredWorkspace.length}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
                   {filteredWorkspace.map(tpl => (
                     <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} />
                   ))}
@@ -362,7 +428,7 @@ function DetailView({
 
           {catDef && (
             <div className="mt-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground">
                 <CatIcon size={10} />
                 {catDef.label}
               </span>
@@ -380,7 +446,7 @@ function DetailView({
             <DbSchemaPreview schema={selected.pageSnapshot.database_schema} />
           ) : blocks.length > 0 ? (
             <div className="mt-5">
-              <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+              <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground/50">
                 Includes
               </p>
               <div className="space-y-1 rounded-[var(--radius-md)] border border-border/60 bg-muted/30 p-3">
@@ -388,7 +454,7 @@ function DetailView({
                   <BlockPreview key={i} block={b as { type: string; content?: unknown }} />
                 ))}
                 {blocks.length > 12 && (
-                  <p className="mt-1 text-[10px] text-muted-foreground/40">
+                  <p className="mt-1 text-xs text-muted-foreground/40">
                     +{blocks.length - 12} more blocks
                   </p>
                 )}
@@ -403,7 +469,7 @@ function DetailView({
             type="button"
             disabled={applying}
             onClick={onApply}
-            className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
           >
             {applying ? (
               <>
@@ -417,7 +483,7 @@ function DetailView({
               </>
             )}
           </button>
-          <p className="mt-2 text-center text-[11px] text-muted-foreground/50">
+          <p className="mt-2 text-center text-xs text-muted-foreground/50">
             Creates an independent copy
           </p>
         </div>
@@ -469,18 +535,27 @@ function TemplateCard({ template, onSelect }: { template: Template; onSelect: ()
     <button
       type="button"
       onClick={onSelect}
-      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30"
     >
-      <TemplateCardThumbnail template={template} />
-      <div className="px-3.5 py-3">
+      {/* Thumbnail with hover overlay */}
+      <div className="relative">
+        <TemplateCardThumbnail template={template} />
+        <div className="absolute inset-0 flex items-center justify-center bg-primary/5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <span className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+            Use template
+          </span>
+        </div>
+      </div>
+      {/* Info */}
+      <div className="px-3 py-2">
         <div className="flex items-start justify-between gap-2">
-          <p className="truncate text-[13px] font-semibold text-foreground">{template.name}</p>
-          <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
+          <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
             <CatIcon size={9} />
           </span>
         </div>
         {template.description && (
-          <p className="mt-0.5 line-clamp-2 text-[11.5px] leading-relaxed text-muted-foreground/60">
+          <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-muted-foreground">
             {template.description}
           </p>
         )}
@@ -499,7 +574,7 @@ function TemplateCardThumbnail({ template }: { template: Template }) {
   const CatIcon = catDef?.Icon ?? LayoutGrid;
 
   return (
-    <div className="relative h-44 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
+    <div className="relative h-28 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
       <div className="p-3">
         {/* Icon indicator row */}
         <div className="mb-2.5 flex items-center gap-1.5">
@@ -751,7 +826,7 @@ function BlockPreview({ block }: { block: { type: string; content?: unknown } })
   const text = c?.text?.map(t => t.text).join("") ?? "";
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-px w-5 shrink-0 text-center text-[9px] font-bold text-muted-foreground/30">{icon}</span>
+      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/30">{icon}</span>
       <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">
         {text || <span className="italic text-muted-foreground/30">{block.type}</span>}
       </span>
@@ -787,7 +862,7 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
   return (
     <div className="mt-5 space-y-4">
       <div>
-        <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground/50">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -795,7 +870,7 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
             <span
               key={v.name}
               className={[
-                "inline-flex items-center gap-1 rounded-[var(--radius-xs)] border px-2 py-1 text-[11px] font-medium",
+                "inline-flex items-center gap-1 rounded-[var(--radius-xs)] border px-2 py-1 text-xs font-medium",
                 v.isDefault
                   ? "border-border bg-accent text-foreground font-semibold"
                   : "border-border/40 bg-muted/20 text-muted-foreground",
@@ -807,25 +882,25 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
         </div>
       </div>
       <div>
-        <p className="mb-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground/50">
           Properties ({schema.properties.length})
         </p>
         <div className="divide-y divide-border/40 rounded-[var(--radius-md)] border border-border/60 bg-muted/30">
           {schema.properties.map(p => (
             <div key={p.name} className="flex items-center gap-2.5 px-3 py-2">
-              <span className="w-5 shrink-0 text-center text-[9px] font-bold text-muted-foreground/40">
+              <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/40">
                 {PROP_TYPE_ICON[p.type] ?? "·"}
               </span>
               <span className="flex-1 text-xs text-foreground/80">{p.name}</span>
               {p.options && p.options.length > 0 && (
                 <div className="flex gap-1">
                   {p.options.slice(0, 3).map(o => (
-                    <span key={o.name} className="rounded px-1 py-0.5 text-[9px] font-medium bg-muted text-muted-foreground">
+                    <span key={o.name} className="rounded px-1 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
                       {o.name}
                     </span>
                   ))}
                   {p.options.length > 3 && (
-                    <span className="text-[9px] text-muted-foreground/40">+{p.options.length - 3}</span>
+                    <span className="text-xs text-muted-foreground/40">+{p.options.length - 3}</span>
                   )}
                 </div>
               )}
@@ -846,7 +921,7 @@ function ViewTabs({ views, defaultName }: { views: DbView[]; defaultName: string
         <span
           key={v.name}
           className={[
-            "shrink-0 rounded-[var(--radius-xs)] px-2 py-0.5 text-[10px] font-medium",
+            "shrink-0 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium",
             v.name === defaultName ? "bg-accent text-foreground font-semibold" : "text-muted-foreground/50",
           ].join(" ")}
         >
@@ -882,7 +957,7 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
               const val = row[p.name];
               const opt = p.options?.find(o => o.name === val);
               return (
-                <div key={pi} className="min-w-0 flex-1 px-2 py-1.5 text-[10px] text-foreground/80">
+                <div key={pi} className="min-w-0 flex-1 px-2 py-1.5 text-xs text-foreground/80">
                   {opt ? (
                     <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}>{val}</span>
                   ) : val !== undefined ? (
@@ -896,7 +971,7 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
           </div>
         ))}
         {rows.length === 0 && (
-          <div className="py-3 text-center text-[10px] text-muted-foreground/30">No sample data</div>
+          <div className="py-3 text-center text-xs text-muted-foreground/30">No sample data</div>
         )}
       </div>
     </div>
@@ -923,8 +998,8 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
             <div key={col.name} className="min-w-[130px] shrink-0">
               <div className="mb-2 flex items-center gap-1.5">
                 <span className={`size-2 shrink-0 rounded-full ${clr.dot}`} />
-                <span className="flex-1 truncate text-[10px] font-semibold text-foreground/70">{col.name}</span>
-                {colRows.length > 0 && <span className="text-[9px] text-muted-foreground/30 tabular-nums">{colRows.length}</span>}
+                <span className="flex-1 truncate text-xs font-semibold text-foreground/70">{col.name}</span>
+                {colRows.length > 0 && <span className="text-xs text-muted-foreground/30 tabular-nums">{colRows.length}</span>}
               </div>
               <div className="space-y-1.5">
                 {colRows.map((row, i) => {
@@ -933,9 +1008,9 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   const tagOpt = tagProp?.options?.find(o => o.name === tagVal);
                   return (
                     <div key={i} className="rounded-[var(--radius-sm)] border border-border/50 bg-background p-2">
-                      <p className="text-[10.5px] font-medium leading-snug text-foreground">{title}</p>
+                      <p className="text-xs font-medium leading-snug text-foreground">{title}</p>
                       {tagOpt && (
-                        <span className={`mt-1 inline-flex rounded px-1 py-0.5 text-[9px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
+                        <span className={`mt-1 inline-flex rounded px-1 py-0.5 text-xs font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
                           {tagVal}
                         </span>
                       )}
@@ -943,7 +1018,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   );
                 })}
                 <div className="rounded-[var(--radius-sm)] border border-border/40 p-2">
-                  <span className="text-[9px] text-muted-foreground/25">+ New</span>
+                  <span className="text-xs text-muted-foreground/25">+ New</span>
                 </div>
               </div>
             </div>
@@ -961,8 +1036,8 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
       <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
       <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
         <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
-          <span className="text-[10.5px] font-semibold text-foreground/70">June 2026</span>
-          <div className="flex gap-2 text-[9px] text-muted-foreground/30"><span>‹</span><span>›</span></div>
+          <span className="text-xs font-semibold text-foreground/70">June 2026</span>
+          <div className="flex gap-2 text-xs text-muted-foreground/30"><span>‹</span><span>›</span></div>
         </div>
         <div className="grid grid-cols-7 border-b border-border/40 bg-muted/10">
           {CAL_DAYS.map(d => (
@@ -976,7 +1051,7 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
                 {date > 0 && (
                   <span className={date === 19
                     ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-                    : "text-[9px] text-muted-foreground/40"
+                    : "text-xs text-muted-foreground/40"
                   }>{date}</span>
                 )}
               </div>
@@ -999,10 +1074,10 @@ function DatabasePreview({ schema }: { schema: SchemaForPreview }) {
 
 function GallerySkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-5 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="overflow-hidden rounded-[var(--radius-md)] border border-border">
-          <div className="h-44 animate-pulse bg-muted/60" />
+          <div className="h-28 animate-pulse bg-muted/60" />
           <div className="space-y-2 p-3">
             <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
             <div className="h-2.5 w-full animate-pulse rounded bg-muted/60" />

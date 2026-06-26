@@ -107,11 +107,11 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
    {/* Search */}
    <div className="border-b border-border/60 px-3 py-2.5">
     <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-1.5">
-     <Search size={14} className="shrink-0 text-muted-foreground/50" />
+     <Search size={14} className="shrink-0 text-muted-foreground" />
      <input ref={inputRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search timezone…"
       className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40" />
      {search && (
-      <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/40 hover:text-muted-foreground">
+      <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/70 hover:text-muted-foreground">
        <X size={12} />
       </button>
      )}
@@ -122,7 +122,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
    <div className="max-h-[240px] overflow-y-auto py-1">
     {Object.entries(regionGroups).map(([region, tzs]) => (
      <div key={region}>
-      <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">{region}</p>
+      <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground/70">{region}</p>
       {tzs.map(tz => {
        const isActive = tz === value;
        return (
@@ -139,7 +139,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
       })}
      </div>
     ))}
-    {filtered.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground/40">No timezones found</div>}
+    {filtered.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground/70">No timezones found</div>}
    </div>
   </div>,
   document.body
@@ -260,7 +260,7 @@ export function ProfileSection({ user }: Props) {
  const bg      = avatarColor(displayName);
 
  return (
-  <div className="max-w-[780px] px-8 pt-6 pb-10">
+  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {/* ── Header — matches all other settings pages ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -268,13 +268,13 @@ export function ProfileSection({ user }: Props) {
      <User size={22} className="text-primary-foreground" />
     </div>
     <div>
-     <h1 className="text-[22px] font-bold text-foreground">My profile</h1>
+     <h1 className="text-2xl font-bold text-foreground">My profile</h1>
      <p className="text-sm text-muted-foreground">Manage your name, photo, and personal details.</p>
     </div>
    </div>
 
    {/* ── Photo ── */}
-   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Photo</p>
+   <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Photo</p>
    <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     <div className="flex items-center gap-5 px-5 py-5">
      {/* Clickable avatar — kept as raw button (complex UI trigger) */}
@@ -287,7 +287,7 @@ export function ProfileSection({ user }: Props) {
      >
       {displayImage
        ? <img src={displayImage} alt={displayName} className="size-[72px] rounded-full object-cover ring-1 ring-border/30" />
-       : <div className={`flex size-[72px] items-center justify-center rounded-full text-[22px] font-bold text-white ring-1 ring-border/30 ${bg}`}>{initials}</div>
+       : <div className={`flex size-[72px] items-center justify-center rounded-full text-2xl font-bold text-white ring-1 ring-border/30 ${bg}`}>{initials}</div>
       }
       <div className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/45 transition-opacity ${avatarUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
        {avatarUploading
@@ -312,7 +312,7 @@ export function ProfileSection({ user }: Props) {
        {currentImage && !avatarUploading && (
         <Button variant="outline" size="sm"
          type="button" onClick={handleRemovePhoto}
-         className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/[0.06] hover:border-destructive/50 hover:text-destructive">
+         className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/5 hover:border-destructive/50 hover:text-destructive">
          <X size={12} />
          Remove photo
         </Button>
@@ -323,7 +323,7 @@ export function ProfileSection({ user }: Props) {
    </div>
 
    {/* ── Identity ── */}
-   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Identity</p>
+   <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Identity</p>
    <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     {/* Name */}
     <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
@@ -381,18 +381,14 @@ export function ProfileSection({ user }: Props) {
    </div>
 
    {/* ── Language & time ── */}
-   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Language &amp; time</p>
+   <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Language &amp; time</p>
    <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-    <div className="flex items-start justify-between gap-4 px-5 py-4">
+    <div className="flex items-center justify-between gap-4 px-5 py-4">
      <div className="min-w-0 flex-1">
       <p className="text-sm font-medium text-foreground">Timezone</p>
       <p className="mt-0.5 text-xs text-muted-foreground">Used for digest emails and date/time displays.</p>
      </div>
-     <div className="shrink-0 flex flex-col items-end gap-2">
-      <TimezoneDropdown
-       value={timezone}
-       onChange={tz => { setTimezone(tz); patch("timezone", tz); }}
-      />
+     <div className="shrink-0 flex items-center gap-3">
       {tzTime && (
        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Clock size={12} className="shrink-0" />
@@ -400,14 +396,25 @@ export function ProfileSection({ user }: Props) {
        </p>
       )}
       {saving === "timezone" && <p className="text-xs text-muted-foreground">Saving…</p>}
-      {saved === "timezone" && <p className="text-xs text-muted-foreground">Saved ✓</p>}
+      <TimezoneDropdown
+       value={timezone}
+       onChange={tz => { setTimezone(tz); patch("timezone", tz); }}
+      />
      </div>
     </div>
+    {saved === "timezone" && (
+     <div className="flex items-center justify-end gap-1.5 border-t border-border/50 px-5 py-2">
+      <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-success">
+       <Check size={9} strokeWidth={3} className="text-white" />
+      </span>
+      <p className="text-xs font-medium text-success">Saved successfully</p>
+     </div>
+    )}
    </div>
 
    {/* ── Danger zone ── */}
-   <p className="mb-2 text-[10.5px] font-medium tracking-[0.125px] text-muted-foreground/40">Danger zone</p>
-   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-destructive/20 bg-destructive/[0.03]">
+   <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Danger zone</p>
+   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-destructive/20 bg-destructive/5">
     <div className="flex items-start gap-4 px-5 py-5">
      <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5 text-destructive">
@@ -425,7 +432,7 @@ export function ProfileSection({ user }: Props) {
         size="sm"
         type="button"
         onClick={() => setDeleteOpen(true)}
-        className="mt-4 border-destructive/30 text-destructive hover:bg-destructive/[0.06] hover:text-destructive hover:border-destructive/30">
+        className="mt-4 border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive hover:border-destructive/30">
         Delete account…
        </Button>
       ) : (

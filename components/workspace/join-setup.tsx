@@ -81,13 +81,13 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-10 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
     </div>
 
     {/* Welcome heading (only first step) */}
     {step === 0 && (
      <div className="mb-6 text-center">
-      <p className="mb-1 text-xs font-semibold tracking-[0.125px] text-primary">
+      <p className="mb-1 text-xs font-semibold tracking-wide text-primary">
        You joined
       </p>
       <h2 className="text-2xl font-black tracking-tight text-foreground">
@@ -112,7 +112,7 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
     </div>
 
     {/* Step label */}
-    <p className="mb-2 text-xs font-semibold tracking-[0.125px] text-muted-foreground">
+    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
      Step {step + 1} of {totalSteps}
     </p>
 
@@ -156,7 +156,7 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
      type="button"
      onClick={handleContinue}
      disabled={!selections[step]}
-     className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+     className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
     >
      {isLastStep ? `Open ${workspaceName}` : "Continue"}
      {!isLastStep && (

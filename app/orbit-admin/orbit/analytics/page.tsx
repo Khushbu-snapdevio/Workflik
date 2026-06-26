@@ -53,7 +53,7 @@ function SegBar({ segments }: { segments: { label: string; value: number; cls: s
     {segments.map(s => (
      <div key={s.label} className="flex items-center gap-1.5">
       <span className={`size-2 rounded-full ${s.dot}`} />
-      <span className="text-[10.5px] text-foreground/70">
+      <span className="text-xs text-foreground/70">
        <span className="font-semibold">{s.value}</span>
        <span className="text-muted-foreground"> {s.label}</span>
       </span>
@@ -152,16 +152,16 @@ export default async function OrbitAnalyticsPage() {
     <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
      <div>
       <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">Platform-wide metrics with real-time data and 30-day trends.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Platform-wide metrics with real-time data and 30-day trends.</p>
      </div>
      <div className="hidden shrink-0 items-center divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-muted/30 sm:flex">
       <div className="px-6 py-4 text-center">
        <p className="text-2xl font-bold text-foreground">{activationRate}%</p>
-       <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">Activation</p>
+       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Activation</p>
       </div>
       <div className="px-6 py-4 text-center">
        <p className="text-2xl font-bold text-foreground">{activeSessions!.count}</p>
-       <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">Active sessions</p>
+       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Active sessions</p>
       </div>
      </div>
     </div>
@@ -176,8 +176,8 @@ export default async function OrbitAnalyticsPage() {
         {s.icon}
        </span>
        {s.label === "New users (7d)" && userTrendPct !== null && (
-        <span className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-         userTrend >= 0 ? "bg-success/10 text-success" : "bg-destructive/[0.06] text-destructive"
+        <span className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+         userTrend >= 0 ? "bg-success/10 text-success" : "bg-destructive/5 text-destructive"
         }`}>
          {userTrend >= 0 ? (
           <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-2.5"><path d="M5 8V2M2 5l3-3 3 3"/></svg>
@@ -189,9 +189,9 @@ export default async function OrbitAnalyticsPage() {
        )}
       </div>
       <div>
-       <p className="text-[28px] font-bold leading-none text-primary">{s.value}</p>
-       <p className="mt-1.5 text-[12.5px] font-semibold text-foreground">{s.label}</p>
-       <p className="mt-0.5 text-[11px] text-muted-foreground">{s.sub}</p>
+       <p className="text-3xl font-bold leading-none text-primary">{s.value}</p>
+       <p className="mt-1.5 text-xs font-semibold text-foreground">{s.label}</p>
+       <p className="mt-0.5 text-xs text-muted-foreground">{s.sub}</p>
       </div>
      </div>
     ))}
@@ -225,8 +225,8 @@ export default async function OrbitAnalyticsPage() {
      <div className="mt-3 grid grid-cols-4 gap-2">
       {emailSegments.map(s => (
        <div key={s.label} className="rounded-[var(--radius-md)] bg-muted/50 p-3 text-center">
-        <p className={`text-[17px] font-bold ${s.dot === "bg-success" ? "text-success" : s.dot === "bg-destructive" ? "text-destructive" : "text-primary"}`}>{s.value}</p>
-        <p className="mt-0.5 text-[10px] font-semibold text-muted-foreground">{s.label}</p>
+        <p className={`text-base font-bold ${s.dot === "bg-success" ? "text-success" : s.dot === "bg-destructive" ? "text-destructive" : "text-primary"}`}>{s.value}</p>
+        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{s.label}</p>
        </div>
       ))}
      </div>
@@ -237,8 +237,8 @@ export default async function OrbitAnalyticsPage() {
      <div className="mt-2 space-y-4">
       <div>
        <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-foreground/70">Users → Workspaces</span>
-        <span className="text-[11px] font-bold text-primary">{activationRate}%</span>
+        <span className="text-xs font-semibold text-foreground/70">Users → Workspaces</span>
+        <span className="text-xs font-bold text-primary">{activationRate}%</span>
        </div>
        <div className="h-2.5 overflow-hidden rounded-full bg-muted/50">
         <div className="h-full rounded-full bg-primary" style={{ width: `${activationRate}%` }} />
@@ -251,7 +251,7 @@ export default async function OrbitAnalyticsPage() {
        ].map(r => (
         <div key={r.label} className="rounded-[var(--radius-md)] border border-border bg-muted/30 p-3">
          <p className="text-xl font-bold text-primary">{r.value}</p>
-         <p className="text-[11px] font-medium text-muted-foreground">{r.label}</p>
+         <p className="text-xs font-medium text-muted-foreground">{r.label}</p>
          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/50">
           <div className="h-full rounded-full bg-primary" style={{ width: `${r.pct}%` }} />
          </div>
@@ -260,7 +260,7 @@ export default async function OrbitAnalyticsPage() {
        ))}
       </div>
       {userTrendPct !== null && (
-       <div className={`flex items-center gap-2 rounded-[var(--radius-lg)] p-3 ${userTrend >= 0 ? "bg-success/[0.06]" : "bg-destructive/[0.04]"}`}>
+       <div className={`flex items-center gap-2 rounded-[var(--radius-lg)] p-3 ${userTrend >= 0 ? "bg-success/5" : "bg-destructive/5"}`}>
         <span className={`flex items-center gap-1 text-sm font-bold ${userTrend >= 0 ? "text-success" : "text-destructive"}`}>
          {userTrend >= 0 ? (
           <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3"><path d="M5 8V2M2 5l3-3 3 3"/></svg>
@@ -269,7 +269,7 @@ export default async function OrbitAnalyticsPage() {
          )}
          {Math.abs(userTrendPct)}%
         </span>
-        <span className={`text-[11px] ${userTrend >= 0 ? "text-success/80" : "text-destructive/70"}`}>
+        <span className={`text-xs ${userTrend >= 0 ? "text-success/80" : "text-destructive/70"}`}>
          vs previous 7-day period ({prev7dUsers} signups)
         </span>
        </div>
@@ -293,11 +293,11 @@ function ChartCard({ title, subtitle, value, valueLabel, badge, children }: {
     <div className="flex items-start justify-between gap-3">
      <div>
       <h3 className="text-[13.5px] font-semibold text-foreground">{title}</h3>
-      <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+      <p className="text-xs text-muted-foreground">{subtitle}</p>
      </div>
      <div className="shrink-0 text-right">
       <p className="text-xl font-bold leading-none text-primary">{value}</p>
-      <p className="mt-0.5 text-[10px] text-muted-foreground">{valueLabel}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{valueLabel}</p>
       {badge && <p className="mt-0.5 text-[9.5px] text-muted-foreground/60">{badge}</p>}
      </div>
     </div>

@@ -150,7 +150,7 @@ export function DatabaseToolbar({
      <button
       onClick={() => setShowBulkConfirm(true)}
       disabled={deletingBulk}
-      className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-destructive/30 bg-destructive/[0.06] px-3 py-1.5 text-xs font-semibold text-destructive transition-colors duration-150 hover:bg-destructive/10 disabled:opacity-50"
+      className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-destructive transition-colors duration-150 hover:bg-destructive/10 disabled:opacity-50"
      >
       <Trash size={13} />
       {deletingBulk ? "Deleting…" : `Delete ${selectedCount}`}
@@ -198,7 +198,7 @@ export function DatabaseToolbar({
             if (e.key === "Escape") setEditingId(null);
            }}
            autoFocus
-           className="h-7 rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 text-[13px] focus:outline-none"
+           className="h-7 rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 text-sm focus:outline-none"
            style={{ width: Math.max(80, editingName.length * 8) }}
            onClick={(e) => e.stopPropagation()}
           />
@@ -208,7 +208,7 @@ export function DatabaseToolbar({
           onClick={() => onSwitchView(view.id)}
           onDoubleClick={() => isEditor && (setEditingId(view.id), setEditingName(view.name))}
           className={[
-           "relative flex h-full shrink-0 items-center gap-1.5 px-3.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
+           "relative flex h-full shrink-0 items-center gap-1.5 px-3.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
            isActive
             ? "text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-primary"
             : "text-muted-foreground/70 hover:bg-accent hover:text-foreground",
@@ -252,10 +252,10 @@ export function DatabaseToolbar({
          setAddViewRect((e.currentTarget as HTMLElement).getBoundingClientRect());
         }}
         className={[
-         "flex h-[26px] items-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed px-2.5 text-[12px] font-medium transition-colors duration-150",
+         "flex h-[26px] items-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
          addViewRect
           ? "border-primary bg-primary/10 text-primary"
-          : "border-border/70 text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.05] hover:text-primary",
+          : "border-border/70 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
         ].join(" ")}
        >
         <Plus size={11} className="text-primary/60" />
@@ -286,8 +286,8 @@ export function DatabaseToolbar({
       >
        {activeView.groupByPropertyId
         ? selectProps.find((p) => p.id === activeView.groupByPropertyId)?.name ?? "Group"
-        : <span className="text-muted-foreground/50">None</span>}
-       <ChevronDown size={10} className="shrink-0 text-muted-foreground/50" />
+        : <span className="text-muted-foreground">None</span>}
+       <ChevronDown size={10} className="shrink-0 text-muted-foreground" />
       </button>
      </div>
     )}
@@ -311,8 +311,8 @@ export function DatabaseToolbar({
       >
        {activeView.calendarPropertyId
         ? dateProps.find((p) => p.id === activeView.calendarPropertyId)?.name ?? "Date"
-        : <span className="text-muted-foreground/50">None</span>}
-       <ChevronDown size={10} className="shrink-0 text-muted-foreground/50" />
+        : <span className="text-muted-foreground">None</span>}
+       <ChevronDown size={10} className="shrink-0 text-muted-foreground" />
       </button>
      </div>
     )}
@@ -331,10 +331,10 @@ export function DatabaseToolbar({
          onClick={() => onUpdateView(activeView.id, { galleryCardSize: size })}
          title={`${size.charAt(0).toUpperCase() + size.slice(1)} cards`}
          className={[
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold tracking-[0.125px] transition-colors duration-150",
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold tracking-wide transition-colors duration-150",
           isActive
            ? "bg-primary/10 text-primary"
-           : "text-muted-foreground/50 hover:bg-accent hover:text-foreground",
+           : "text-muted-foreground hover:bg-accent hover:text-foreground",
          ].join(" ")}
         >
          {size[0].toUpperCase()}
@@ -350,7 +350,7 @@ export function DatabaseToolbar({
       <>
        <MagnifyingGlass
         size={13}
-        className="absolute left-2.5 shrink-0 text-muted-foreground/50"
+        className="absolute left-2.5 shrink-0 text-muted-foreground"
        />
        <input
         ref={searchInputRef}
@@ -366,7 +366,7 @@ export function DatabaseToolbar({
        {searchQuery && (
         <button
          onClick={() => { onSearchChange(""); searchInputRef.current?.focus(); }}
-         className="absolute right-2 text-muted-foreground/40 hover:text-muted-foreground"
+         className="absolute right-2 text-muted-foreground/70 hover:text-muted-foreground"
         >
          <X size={12} />
         </button>
@@ -375,7 +375,7 @@ export function DatabaseToolbar({
      ) : (
       <button
        onClick={() => setShowSearch(true)}
-       className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 transition-colors hover:bg-accent hover:text-muted-foreground"
+       className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
        title="Search (⌘K)"
       >
        <MagnifyingGlass size={13} />
@@ -396,7 +396,7 @@ export function DatabaseToolbar({
      <Funnel size={13} />
      {!inline && "Filter"}
      {filterCount > 0 && (
-      <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-[10px] font-bold text-white">
+      <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-white">
        {filterCount}
       </span>
      )}
@@ -414,7 +414,7 @@ export function DatabaseToolbar({
      <SortAscending size={13} />
      {!inline && "Sort"}
      {sortCount > 0 && (
-      <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-[10px] font-bold text-white">
+      <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-white">
        {sortCount}
       </span>
      )}
@@ -440,7 +440,7 @@ export function DatabaseToolbar({
        <SlidersHorizontal size={13} />
        {!inline && "Properties"}
        {hiddenCount > 0 && (
-        <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-[10px] font-bold text-white">
+        <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-white">
          {hiddenCount}
         </span>
        )}
@@ -505,7 +505,7 @@ export function DatabaseToolbar({
 
     {/* ── Entry count ── */}
     {!inline && totalEntries > 0 && (
-     <span className="mr-2 text-xs text-muted-foreground/40 select-none">
+     <span className="mr-2 text-xs text-muted-foreground/70 select-none">
       {totalEntries} {totalEntries === 1 ? "entry" : "entries"}
      </span>
     )}
@@ -514,7 +514,7 @@ export function DatabaseToolbar({
     {isEditor && (
      <button
       onClick={onCreateEntry}
-      className="flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-4 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)]"
+      className="flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-4 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
      >
       <Plus size={14} />
       {!inline && "New"}
@@ -527,13 +527,13 @@ export function DatabaseToolbar({
     <div
      ref={addViewDropRef}
      style={{ position: "fixed", top: addViewRect.bottom + 6, left: addViewRect.left, zIndex: 300 }}
-     className="w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card"
+     className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card"
      onClick={(e) => e.stopPropagation()}
     >
      {/* Header */}
      <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
       <Plus size={13} className="text-primary" />
-      <p className="text-[13px] font-semibold text-foreground">Add a new view</p>
+      <p className="text-sm font-semibold text-foreground">Add a new view</p>
      </div>
 
      {/* View type grid — 4 per row */}
@@ -547,9 +547,9 @@ export function DatabaseToolbar({
          className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-colors duration-150 hover:bg-accent"
         >
          <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border/70 bg-muted/50 transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary/10">
-          <VIcon size={24} className="text-foreground/50 transition-colors duration-150 group-hover:text-primary" />
+          <VIcon size={24} className="text-foreground/70 transition-colors duration-150 group-hover:text-primary" />
          </div>
-         <span className="text-[11px] font-medium leading-tight text-muted-foreground transition-colors duration-150 group-hover:text-primary">
+         <span className="text-xs font-medium leading-tight text-muted-foreground transition-colors duration-150 group-hover:text-primary">
           {VIEW_LABELS[type]}
          </span>
         </button>
@@ -559,7 +559,7 @@ export function DatabaseToolbar({
 
      {/* Footer hint */}
      <div className="border-t border-border/40 px-4 py-2.5">
-      <p className="text-[11px] text-muted-foreground/50">Click a view type to create it</p>
+      <p className="text-xs text-muted-foreground">Click a view type to create it</p>
      </div>
     </div>,
     document.body
@@ -570,17 +570,17 @@ export function DatabaseToolbar({
     <div
      ref={contextDropRef}
      style={{ position: "fixed", top: contextRect.bottom + 4, left: contextRect.left, zIndex: 500 }}
-     className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
+     className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
     >
      <button
       onClick={() => { setEditingId(contextView.id); setEditingName(contextView.name); setContextView(null); setContextRect(null); }}
-      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-foreground transition-colors duration-100 hover:bg-accent"
+      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors duration-100 hover:bg-accent"
      >
       <Pencil size={13} className="shrink-0 text-muted-foreground" /> Rename
      </button>
      <button
       onClick={() => { onDuplicateView(contextView.id); setContextView(null); setContextRect(null); }}
-      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-foreground transition-colors duration-100 hover:bg-accent"
+      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors duration-100 hover:bg-accent"
      >
       <Copy size={13} className="shrink-0 text-muted-foreground" /> Duplicate view
      </button>
@@ -589,7 +589,7 @@ export function DatabaseToolbar({
        <div className="my-1 h-px bg-border/60" />
        <button
         onClick={() => { setDeleteViewTarget(contextView); setContextView(null); setContextRect(null); }}
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-destructive transition-colors duration-100 hover:bg-destructive/[0.08]"
+        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-100 hover:bg-destructive/10"
        >
         <Trash size={13} className="shrink-0" /> Delete view
        </button>
@@ -644,7 +644,7 @@ export function DatabaseToolbar({
      style={{ position: "fixed", top: groupRect.bottom + 6, left: groupRect.left, zIndex: 300 }}
      className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
-     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">Group by</p>
+     <p className="px-3 pb-1 pt-2.5 text-xs font-semibold tracking-wide text-muted-foreground">Group by</p>
      <div className="p-1.5 pt-0.5">
       <button
        onClick={() => { onUpdateView(activeView.id, { groupByPropertyId: null }); setGroupRect(null); }}
@@ -653,7 +653,7 @@ export function DatabaseToolbar({
         !activeView.groupByPropertyId ? "font-semibold text-primary" : "text-muted-foreground",
        ].join(" ")}
       >
-       <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground/50">—</span>
+       <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground">—</span>
        None
       </button>
       {selectProps.map((p) => {
@@ -705,7 +705,7 @@ export function DatabaseToolbar({
      style={{ position: "fixed", top: dateRect.bottom + 6, left: dateRect.left, zIndex: 300 }}
      className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
-     <p className="px-3 pb-1 pt-2.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">Date property</p>
+     <p className="px-3 pb-1 pt-2.5 text-xs font-semibold tracking-wide text-muted-foreground">Date property</p>
      <div className="p-1.5 pt-0.5">
       <button
        onClick={() => { onUpdateView(activeView.id, { calendarPropertyId: null }); setDateRect(null); }}
@@ -714,7 +714,7 @@ export function DatabaseToolbar({
         !activeView.calendarPropertyId ? "font-semibold text-primary" : "text-muted-foreground",
        ].join(" ")}
       >
-       <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground/50">—</span>
+       <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground">—</span>
        None
       </button>
       {dateProps.map((p) => {
@@ -790,7 +790,7 @@ const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
     </div>
     <div className="max-h-56 overflow-y-auto p-1.5">
      {properties.length === 0 && (
-      <p className="px-3 py-3 text-xs text-muted-foreground/50">No properties</p>
+      <p className="px-3 py-3 text-xs text-muted-foreground">No properties</p>
      )}
      {properties.map((prop) => {
       const Icon  = PROP_ICONS_MAP[prop.type] ?? TextT;
@@ -802,13 +802,13 @@ const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
         className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors hover:bg-accent"
        >
         <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border transition-colors ${
-         on ? "border-border/50 bg-muted/30 text-muted-foreground" : "border-border/30 bg-muted/10 text-muted-foreground/30"
+         on ? "border-border/50 bg-muted/30 text-muted-foreground" : "border-border/30 bg-muted/10 text-muted-foreground/60"
         }`}>
          {on ? <Eye size={12} /> : <EyeSlash size={12} />}
         </span>
         <span className="flex min-w-0 flex-1 items-center gap-2">
          <Icon size={12} />
-         <span className={`truncate text-sm font-medium ${on ? "text-foreground" : "text-muted-foreground/40"}`}>
+         <span className={`truncate text-sm font-medium ${on ? "text-foreground" : "text-muted-foreground/70"}`}>
           {prop.name}
          </span>
         </span>
@@ -818,7 +818,7 @@ const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
      })}
     </div>
     <div className="border-t border-border/60 px-3 py-2">
-     <p className="text-xs text-muted-foreground/50">
+     <p className="text-xs text-muted-foreground">
       {selected.size === 0 ? "Showing all properties" : `${selected.size} propert${selected.size === 1 ? "y" : "ies"} selected`}
      </p>
     </div>
@@ -898,7 +898,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
     {/* Property list */}
     <div className="max-h-60 overflow-y-auto p-1.5">
      {properties.length === 0 && !adding && (
-      <p className="px-3 py-3 text-xs text-muted-foreground/50">No properties yet</p>
+      <p className="px-3 py-3 text-xs text-muted-foreground">No properties yet</p>
      )}
      {properties.map((prop) => {
       const Icon  = PROP_ICONS_MAP[prop.type] ?? TextT;
@@ -910,13 +910,13 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
         className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors hover:bg-accent"
        >
         <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border transition-colors ${
-         visible ? "border-border/50 bg-muted/30 text-muted-foreground" : "border-border/30 bg-muted/10 text-muted-foreground/30"
+         visible ? "border-border/50 bg-muted/30 text-muted-foreground" : "border-border/30 bg-muted/10 text-muted-foreground/60"
         }`}>
          {visible ? <Eye size={12} /> : <EyeSlash size={12} />}
         </span>
         <span className="flex min-w-0 flex-1 items-center gap-2">
          <Icon size={12} />
-         <span className={`truncate text-sm font-medium ${visible ? "text-foreground" : "text-muted-foreground/40"}`}>
+         <span className={`truncate text-sm font-medium ${visible ? "text-foreground" : "text-muted-foreground/70"}`}>
           {prop.name}
          </span>
         </span>

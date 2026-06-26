@@ -51,37 +51,37 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
   <div>
    {/* Breadcrumb */}
    <div className="mb-4 flex items-center gap-2">
-    <Link href="/Orbit-admin/orbit/workspaces"
-     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-[11.5px] font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
+    <Link href="/orbit-admin/orbit/workspaces"
+     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3">
       <path d="M7.5 2.5L4 6l3.5 3.5"/>
      </svg>
      Workspaces
     </Link>
-    <span className="select-none text-[13px] font-light text-muted-foreground/30">/</span>
-    <span className="text-[11.5px] font-semibold text-foreground">{ws.name}</span>
+    <span className="select-none text-sm font-light text-muted-foreground/30">/</span>
+    <span className="text-xs font-semibold text-foreground">{ws.name}</span>
    </div>
 
    {/* Header */}
    <div className="mb-6 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
     <div className="p-6">
-     <h1 className="text-[26px] font-bold tracking-tight text-foreground">{ws.name}</h1>
-     <p className="mt-1 text-[13px] text-muted-foreground">/{ws.slug}</p>
+     <h1 className="text-3xl font-bold tracking-tight text-foreground">{ws.name}</h1>
+     <p className="mt-1 text-sm text-muted-foreground">/{ws.slug}</p>
      <div className="mt-4 flex flex-wrap items-center gap-4">
       <div>
-       <p className="text-[16px] font-bold text-primary">{activeMembers.length}</p>
-       <p className="text-[9.5px] font-semibold tracking-[0.08em] text-muted-foreground/60">Active members</p>
+       <p className="text-base font-bold text-primary">{activeMembers.length}</p>
+       <p className="text-[9.5px] font-semibold tracking-wide text-muted-foreground/60">Active members</p>
       </div>
       <div className="h-6 w-px bg-border" />
       <div>
-       <p className="text-[16px] font-bold text-primary">{members.length}</p>
-       <p className="text-[9.5px] font-semibold tracking-[0.08em] text-muted-foreground/60">Total members</p>
+       <p className="text-base font-bold text-primary">{members.length}</p>
+       <p className="text-[9.5px] font-semibold tracking-wide text-muted-foreground/60">Total members</p>
       </div>
       <div className="ml-auto shrink-0 text-right">
-       <p className="text-[10px] text-muted-foreground/60">ID</p>
-       <p className="font-mono text-[11px] text-muted-foreground">{ws.id.slice(0, 16)}…</p>
-       <p className="mt-1 text-[10px] text-muted-foreground/60">Created</p>
-       <p className="text-[11px] text-muted-foreground">{ago(ws.createdAt)}</p>
+       <p className="text-xs text-muted-foreground/60">ID</p>
+       <p className="font-mono text-xs text-muted-foreground">{ws.id.slice(0, 16)}…</p>
+       <p className="mt-1 text-xs text-muted-foreground/60">Created</p>
+       <p className="text-xs text-muted-foreground">{ago(ws.createdAt)}</p>
       </div>
      </div>
     </div>
@@ -92,7 +92,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
     <div className="space-y-4">
      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
       <div className="border-b border-border px-5 py-3.5">
-       <h2 className="text-[12.5px] font-bold text-foreground">Workspace details</h2>
+       <h2 className="text-xs font-bold text-foreground">Workspace details</h2>
       </div>
       <div className="divide-y divide-border px-5">
        {[
@@ -103,8 +103,8 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
         { label: "Created", value: formatDateTime(ws.createdAt) },
        ].map(row => (
         <div key={row.label} className="flex items-baseline justify-between gap-2 py-2.5">
-         <span className="shrink-0 text-[10.5px] font-semibold text-muted-foreground">{row.label}</span>
-         <span className="min-w-0 text-right text-[11.5px] text-foreground">{row.value}</span>
+         <span className="shrink-0 text-xs font-semibold text-muted-foreground">{row.label}</span>
+         <span className="min-w-0 text-right text-xs text-foreground">{row.value}</span>
         </div>
        ))}
       </div>
@@ -112,11 +112,11 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
 
      {/* Danger zone */}
      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-destructive/20 bg-card">
-      <div className="border-b border-destructive/10 bg-destructive/[0.04] px-5 py-3.5">
-       <h2 className="text-[12.5px] font-bold text-destructive">Danger zone</h2>
+      <div className="border-b border-destructive/10 bg-destructive/5 px-5 py-3.5">
+       <h2 className="text-xs font-bold text-destructive">Danger zone</h2>
       </div>
       <div className="p-5">
-       <p className="mb-3 text-[11.5px] leading-relaxed text-muted-foreground">
+       <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
         Force deleting will permanently remove this workspace and all its data. This cannot be undone.
        </p>
        <ForceDeleteWorkspaceButton workspaceId={id} workspaceName={ws.name} />
@@ -128,10 +128,10 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
     <div className="lg:col-span-2">
      <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
       <div className="border-b border-border px-5 py-3.5">
-       <h2 className="text-[12.5px] font-bold text-foreground">Members <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{members.length}</span></h2>
+       <h2 className="text-xs font-bold text-foreground">Members <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-xs font-semibold text-muted-foreground">{members.length}</span></h2>
       </div>
       {members.length === 0 ? (
-       <p className="px-5 py-10 text-center text-[12px] text-muted-foreground">No members</p>
+       <p className="px-5 py-10 text-center text-xs text-muted-foreground">No members</p>
       ) : (
        <div className="divide-y divide-border">
         {members.map(m => {
@@ -140,19 +140,19 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
          return (
           <div key={m.id} className="flex items-center gap-3 px-5 py-3">
            {m.userId2 ? (
-            <Link href={`/Orbit-admin/orbit/users/${m.userId2}`}
-             className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white hover:opacity-80 ${cls}`}>
+            <Link href={`/orbit-admin/orbit/users/${m.userId2}`}
+             className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white hover:opacity-80 ${cls}`}>
              {label.slice(0, 1).toUpperCase()}
             </Link>
            ) : (
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted/50 text-[11px] font-bold text-muted-foreground">?</span>
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted/50 text-xs font-bold text-muted-foreground">?</span>
            )}
            <div className="min-w-0 flex-1">
-            <p className="text-[12.5px] font-semibold text-foreground">{m.userEmail ?? "—"}</p>
-            {m.userName && <p className="text-[11px] text-muted-foreground">{m.userName}</p>}
+            <p className="text-xs font-semibold text-foreground">{m.userEmail ?? "—"}</p>
+            {m.userName && <p className="text-xs text-muted-foreground">{m.userName}</p>}
            </div>
            <div className="flex shrink-0 flex-col items-end gap-1">
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
              m.role === "admin" || m.role === "editor" ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"
             }`}>{m.role}</span>
             <span className={`text-[9.5px] font-semibold ${m.status === "active" ? "text-success" : "text-warning"}`}>

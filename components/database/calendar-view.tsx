@@ -43,7 +43,7 @@ export function CalendarView({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 text-center px-8">
         <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-          <Calendar size={28} className="text-muted-foreground/40" />
+          <Calendar size={28} className="text-muted-foreground/70" />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">No date property selected</p>
@@ -125,7 +125,7 @@ export function CalendarView({
 
         {/* Total entries this month */}
         <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground/60">
-          <span className="tabular-nums font-semibold text-foreground/50">
+          <span className="tabular-nums font-semibold text-foreground/70">
             {[...dateMap.values()].flat().length}
           </span>
           <span>entries this month</span>
@@ -137,7 +137,7 @@ export function CalendarView({
         {DAYS.map((d) => (
           <div
             key={d}
-            className="py-2 text-center text-[10px] font-semibold uppercase tracking-[0.125px] text-muted-foreground/40"
+            className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground/70"
           >
             {d}
           </div>
@@ -181,7 +181,7 @@ export function CalendarView({
                   "flex size-[22px] items-center justify-center rounded-[var(--radius-sm)] text-xs font-semibold tabular-nums transition-colors",
                   isToday
                     ? "bg-primary text-primary-foreground"
-                    : isHovered ? "text-foreground/80" : "text-foreground/50",
+                    : isHovered ? "text-foreground/80" : "text-foreground/70",
                 ].join(" ")}>
                   {day}
                 </span>
@@ -192,7 +192,7 @@ export function CalendarView({
                     onClick={() => onCreateEntry({ [calPropId!]: { date: key } })}
                     title={`Add entry on ${MONTHS[month]} ${day}`}
                     className={[
-                      "flex size-[18px] items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-accent hover:text-foreground",
+                      "flex size-[18px] items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground",
                       isHovered ? "opacity-100" : "opacity-0",
                     ].join(" ")}
                   >
@@ -217,7 +217,7 @@ export function CalendarView({
                         className="flex min-w-0 flex-1 items-center gap-1 px-1.5 py-[3px]"
                       >
                         {entry.icon && (
-                          <span className="shrink-0 text-[10px] leading-none">{entry.icon}</span>
+                          <span className="shrink-0 text-xs leading-none">{entry.icon}</span>
                         )}
                         <span className="truncate">{entry.title || "Untitled"}</span>
                       </button>
@@ -228,7 +228,7 @@ export function CalendarView({
                         className="flex min-w-0 flex-1 items-center gap-1 px-1.5 py-[3px]"
                       >
                         {entry.icon && (
-                          <span className="shrink-0 text-[10px] leading-none">{entry.icon}</span>
+                          <span className="shrink-0 text-xs leading-none">{entry.icon}</span>
                         )}
                         <span className="truncate">{entry.title || "Untitled"}</span>
                       </Link>
@@ -249,7 +249,7 @@ export function CalendarView({
                 ))}
 
                 {dayEntries.length > 3 && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/50">
+                  <span className="px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                     +{dayEntries.length - 3} more
                   </span>
                 )}
@@ -259,7 +259,7 @@ export function CalendarView({
               {isEditor && dayEntries.length === 0 && isHovered && (
                 <button
                   onClick={() => onCreateEntry({ [calPropId!]: { date: key } })}
-                  className="mt-auto flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-[10px] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+                  className="mt-auto flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-xs text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
                 >
                   <Plus size={9} />
                   <span>Add entry</span>

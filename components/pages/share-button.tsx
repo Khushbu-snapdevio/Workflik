@@ -38,7 +38,7 @@ export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
    <button
     type="button"
     onClick={handleClick}
-    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-2.5 py-1.5 text-[12px] font-medium text-foreground/70 transition-all hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary active:scale-[0.97]"
+    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97]"
    >
     <Share2 size={14} />
     Share

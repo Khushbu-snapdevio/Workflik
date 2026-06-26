@@ -32,7 +32,7 @@ export default async function OrbitQueuesPage() {
    {/* ── Header ── */}
    <div>
     <h1 className="text-xl font-bold tracking-tight text-foreground">Queues</h1>
-    <p className="mt-0.5 text-[13px] text-muted-foreground">pg-boss job queues — states, counts, and worker status.</p>
+    <p className="mt-0.5 text-sm text-muted-foreground">pg-boss job queues — states, counts, and worker status.</p>
    </div>
 
    {/* ── Stats row ── */}
@@ -45,7 +45,7 @@ export default async function OrbitQueuesPage() {
     ].map(s => (
      <div key={s.label} className="rounded-[var(--radius-lg)] border border-border bg-card px-4 py-3.5">
       <p className={`text-2xl font-bold leading-none ${s.accent ? "text-destructive" : "text-foreground"}`}>{s.value}</p>
-      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60">{s.label}</p>
+      <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground/60">{s.label}</p>
      </div>
     ))}
    </div>
@@ -53,9 +53,9 @@ export default async function OrbitQueuesPage() {
    {/* ── Queue list ── */}
    {queues.length === 0 ? (
     <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-muted/20 py-20 text-center">
-     <p className="text-[14px] font-semibold text-muted-foreground">No queue data yet</p>
-     <p className="mt-1 text-[12px] text-muted-foreground/60">
-      Run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">pnpm worker</code> to populate.
+     <p className="text-sm font-semibold text-muted-foreground">No queue data yet</p>
+     <p className="mt-1 text-xs text-muted-foreground/60">
+      Run <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">pnpm worker</code> to populate.
      </p>
     </div>
    ) : (
@@ -63,8 +63,8 @@ export default async function OrbitQueuesPage() {
 
      {/* Table header */}
      <div className="grid grid-cols-[1fr_auto] items-center border-b border-border/60 bg-muted/30 px-4 py-2.5">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60">Queue name</span>
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60">States</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Queue name</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">States</span>
      </div>
 
      {/* Rows */}
@@ -86,8 +86,8 @@ export default async function OrbitQueuesPage() {
            </svg>
           </div>
           <div className="min-w-0">
-           <p className="truncate font-mono text-[13px] font-semibold text-foreground">{name}</p>
-           <p className="text-[11px] text-muted-foreground/60">{qTotal} job{qTotal !== 1 ? "s" : ""}</p>
+           <p className="truncate font-mono text-sm font-semibold text-foreground">{name}</p>
+           <p className="text-xs text-muted-foreground/60">{qTotal} job{qTotal !== 1 ? "s" : ""}</p>
           </div>
          </div>
 

@@ -94,7 +94,7 @@ export function EntrySidePanel({
    {/* Panel */}
    <div
     ref={panelRef}
-    className="fixed right-0 top-0 z-50 flex h-full w-[460px] flex-col overflow-hidden bg-card border-l border-border"
+    className="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden bg-card border-l border-border sm:w-[460px]"
     style={{ animation: "sidePanelIn 0.25s cubic-bezier(0.22,1,0.36,1)" }}
    >
 
@@ -112,7 +112,7 @@ export function EntrySidePanel({
       {isEditor && (
        <button
         onClick={() => setConfirmDelete(true)}
-        className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+        className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
         title="Delete entry"
        >
         <Trash size={14} />
@@ -140,7 +140,7 @@ export function EntrySidePanel({
         </span>
        ) : (
         <div className="inline-flex size-12 items-center justify-center rounded-[var(--radius-lg)] border border-border/40 bg-card">
-         <FileText size={20} className="text-muted-foreground/40" />
+         <FileText size={20} className="text-muted-foreground/70" />
         </div>
        )}
       </div>
@@ -157,16 +157,16 @@ export function EntrySidePanel({
           if (e.key === "Escape") { setTitle(entry.title ?? ""); e.currentTarget.blur(); }
          }}
          placeholder="Untitled"
-         className="w-full bg-transparent text-[26px] font-bold leading-tight tracking-tight text-foreground placeholder:text-foreground/20 focus:outline-none"
+         className="w-full bg-transparent text-3xl font-bold leading-tight tracking-tight text-foreground placeholder:text-foreground/20 focus:outline-none"
         />
         <div className="mt-1 flex items-center gap-1.5 opacity-0 transition-opacity group-focus-within/title:opacity-100 group-hover/title:opacity-100">
-         <PencilSimple size={11} className="text-muted-foreground/40" />
-         <span className="text-xs text-muted-foreground/40">Editing title — press Enter to save</span>
+         <PencilSimple size={11} className="text-muted-foreground/70" />
+         <span className="text-xs text-muted-foreground/70">Editing title — press Enter to save</span>
         </div>
        </div>
       ) : (
-       <h2 className="text-[26px] font-bold leading-tight tracking-tight text-foreground">
-        {entry.title || <span className="text-foreground/20">Untitled</span>}
+       <h2 className="text-3xl font-bold leading-tight tracking-tight text-foreground">
+        {entry.title || <span className="text-muted-foreground">Untitled</span>}
        </h2>
       )}
      </div>
@@ -178,7 +178,7 @@ export function EntrySidePanel({
       <div className="px-4 py-4">
        {/* Section label */}
        <div className="mb-2">
-        <span className="text-[11px] font-semibold tracking-[0.125px] text-muted-foreground/50 px-5 pt-4 pb-2 block">
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground px-5 pt-4 pb-2 block">
          Properties
         </span>
        </div>
@@ -201,7 +201,7 @@ export function EntrySidePanel({
            ].join(" ")}
           >
            {/* Property label */}
-           <div className="flex w-[140px] shrink-0 items-center gap-2 px-3.5 py-2.5 text-[12px] font-medium text-muted-foreground">
+           <div className="flex w-[140px] shrink-0 items-center gap-2 px-3.5 py-2.5 text-xs font-medium text-muted-foreground">
             <div className="flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-muted-foreground/60">
              <Icon size={11} />
             </div>
@@ -236,7 +236,7 @@ export function EntrySidePanel({
             ) : hasValue ? (
              <CellDisplay property={prop} value={raw} compact />
             ) : (
-             <span className="text-xs text-muted-foreground/25 opacity-0 transition-opacity group-hover/prop:opacity-100">
+             <span className="text-xs text-muted-foreground/60 opacity-0 transition-opacity group-hover/prop:opacity-100">
               {isEditor ? "Click to add" : "—"}
              </span>
             )}
@@ -249,17 +249,17 @@ export function EntrySidePanel({
      ) : (
       <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
        <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-        <FileText size={20} className="text-muted-foreground/30" />
+        <FileText size={20} className="text-muted-foreground/60" />
        </div>
-       <p className="text-sm font-medium text-muted-foreground/50">No properties yet</p>
-       <p className="text-xs text-muted-foreground/35">Add properties from the table view</p>
+       <p className="text-sm font-medium text-muted-foreground">No properties yet</p>
+       <p className="text-xs text-muted-foreground/60">Add properties from the table view</p>
       </div>
      )}
 
      {/* ── Content / Block editor ── */}
      <div className="px-4 pb-2">
       <div className="mb-2 flex items-center gap-2 px-1">
-       <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/40">
+       <span className="text-xs font-semibold tracking-wide text-muted-foreground/70">
         Content
        </span>
        <div className="h-px flex-1 bg-border/40" />
@@ -284,7 +284,7 @@ export function EntrySidePanel({
     <div className="shrink-0 border-t border-border/60 bg-card px-4 pb-5 pt-3">
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="group inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-[var(--primary-hover)]"
+      className="group inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary/90"
      >
       <FileText size={14} className="text-white" />
       Open full page

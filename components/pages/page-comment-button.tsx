@@ -53,7 +53,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
         <ChatTextIcon size={14} />
         Comments
         {unresolvedCount != null && unresolvedCount > 0 && (
-          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground leading-none">
+          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground leading-none">
             {unresolvedCount}
           </span>
         )}
@@ -71,24 +71,23 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
 
           {/* Slide-in panel */}
           <div
-            className="fixed top-3 right-3 bottom-3 z-[600] flex w-[380px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border/50 bg-background"
-            style={{}}
+            className="fixed top-0 right-0 z-[600] flex h-full w-full max-w-[min(380px,100vw)] flex-col overflow-hidden border-l border-border bg-card"
           >
             {/* ── Header ── */}
             <div className="shrink-0 border-b border-border/40 bg-card">
               <div className="flex items-center justify-between px-4 pt-4 pb-3.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex size-8 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 border border-primary/[0.12]">
+                  <div className="flex size-8 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 border border-primary/10">
                     <FileTextIcon size={15} className="text-primary" />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <p className="text-[13px] font-semibold text-foreground leading-tight">Page Comments</p>
-                      <span className="inline-flex items-center rounded-full bg-primary/[0.08] px-1.5 py-px text-[9px] font-bold text-primary border border-primary/20 leading-none">
+                      <p className="text-sm font-semibold text-foreground leading-tight">Page Comments</p>
+                      <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-px text-xs font-bold text-primary border border-primary/20 leading-none">
                         PAGE
                       </span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground/50 leading-tight mt-0.5">
+                    <p className="text-xs text-muted-foreground leading-tight mt-0.5">
                       {unresolvedCount != null && unresolvedCount > 0
                         ? `${unresolvedCount} open · whole page`
                         : "Whole page · not block-specific"}

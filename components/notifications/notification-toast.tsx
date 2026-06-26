@@ -98,7 +98,7 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
               type="button"
               onClick={onDismiss}
               aria-label="Dismiss notification"
-              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 transition-colors duration-150 hover:bg-muted/50 hover:text-muted-foreground"
+              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-muted/50 hover:text-muted-foreground"
             >
               <X size={13} />
             </button>

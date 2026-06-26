@@ -13,7 +13,7 @@ import {
   workspaces,
 } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRight, FileText, Home } from "lucide-react";
 import { PageClient } from "@/components/pages/page-client";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PageCommentButton } from "@/components/pages/page-comment-button";
@@ -66,7 +66,7 @@ export default async function PageEditorPage({ params }: Props) {
 
   // Breadcrumbs — ancestors root → parent
   const ancestorRows = await db
-    .select({ id: pages.id, shortId: pages.shortId, title: pages.title, depth: pageClosure.depth })
+    .select({ id: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, depth: pageClosure.depth })
     .from(pageClosure)
     .innerJoin(pages, eq(pages.id, pageClosure.ancestorId))
     .where(and(eq(pageClosure.descendantId, page.id), gt(pageClosure.depth, 0)))
@@ -74,7 +74,7 @@ export default async function PageEditorPage({ params }: Props) {
 
   const breadcrumbs = ancestorRows
     .sort((a, b) => b.depth - a.depth)
-    .map((r) => ({ id: r.id, shortId: r.shortId, title: r.title || "Untitled" }));
+    .map((r) => ({ id: r.id, shortId: r.shortId, title: r.title || "Untitled", icon: r.icon }));
 
   const isEditor = member.role === "admin" || member.role === "editor";
   const isAdmin  = member.role === "admin";
@@ -148,7 +148,7 @@ export default async function PageEditorPage({ params }: Props) {
     <>
       {page.isDeleted && <TrashBanner pageId={page.id} workspaceSlug={slug} />}
       {page.isLocked && (
-        <div className="mb-5 flex items-center gap-3 rounded-[var(--radius-md)] border border-warning/30 bg-warning/[0.07] px-4 py-3 text-sm text-warning">
+        <div className="mb-5 flex items-center gap-3 rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
           This page is <strong className="ml-1">locked</strong> — editing is disabled.
         </div>
       )}
@@ -172,19 +172,27 @@ export default async function PageEditorPage({ params }: Props) {
 
           {breadcrumbs.map((crumb) => (
             <span key={crumb.id} className="flex min-w-0 items-center gap-0.5">
-              <ChevronRight size={12} className="shrink-0 text-border" />
+              <ChevronRight size={12} className="shrink-0 text-foreground/30" />
               <a
                 href={`/app/${slug}/${crumb.shortId}`}
-                className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="flex max-w-[120px] items-center gap-1.5 truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
+                {crumb.icon
+                  ? <span className="shrink-0 text-sm leading-none">{crumb.icon}</span>
+                  : <FileText size={12} className="shrink-0" />
+                }
                 {crumb.title || "Untitled"}
               </a>
             </span>
           ))}
 
           <span className="flex min-w-0 items-center gap-0.5">
-            <ChevronRight size={12} className="shrink-0 text-border" />
-            <span className="max-w-[240px] truncate px-2 py-1 text-[12px] font-semibold text-foreground/80">
+            <ChevronRight size={12} className="shrink-0 text-foreground/30" />
+            <span className="flex max-w-[240px] items-center gap-1.5 truncate px-2 py-1 text-xs font-semibold text-foreground/80">
+              {page.icon
+                ? <span className="shrink-0 text-sm leading-none">{page.icon}</span>
+                : <FileText size={12} className="shrink-0 text-muted-foreground" />
+              }
               {page.title || "Untitled"}
             </span>
           </span>

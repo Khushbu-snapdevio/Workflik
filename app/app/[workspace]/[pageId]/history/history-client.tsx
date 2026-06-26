@@ -198,11 +198,11 @@ export function HistoryPageClient({
                       "flex items-center gap-3 border-b border-border/60 px-4 py-2.5",
                       gi > 0 ? "border-t border-border/60" : "",
                     ].join(" ")}>
-                      <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+                      <span className="text-xs font-semibold tracking-wide text-muted-foreground/50">
                         {label}
                       </span>
                       <div className="h-px flex-1 bg-border/50" />
-                      <span className="text-[10px] text-muted-foreground/40 tabular-nums">
+                      <span className="text-xs text-muted-foreground/40 tabular-nums">
                         {items.length} {items.length === 1 ? "version" : "versions"}
                       </span>
                     </div>
@@ -218,7 +218,7 @@ export function HistoryPageClient({
                           key={v.id}
                           className={[
                             "group relative flex items-center gap-3 px-4 py-3 transition-colors duration-150",
-                            isCurrent ? "bg-primary/[0.04]" : "hover:bg-accent",
+                            isCurrent ? "bg-primary/5" : "hover:bg-accent",
                             !isLast ? "border-b border-border/40" : "",
                           ].join(" ")}
                         >
@@ -230,7 +230,7 @@ export function HistoryPageClient({
                           {/* Avatar */}
                           <div
                             className={[
-                              "flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white",
+                              "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white",
                               avatarColor(who),
                             ].join(" ")}
                           >
@@ -244,7 +244,7 @@ export function HistoryPageClient({
                                 {formatTime(v.createdAt)}
                               </span>
                               {isCurrent && (
-                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.125px] text-primary">
+                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold tracking-wide text-primary">
                                   Current
                                 </span>
                               )}
@@ -258,7 +258,7 @@ export function HistoryPageClient({
                           </div>
 
                           {/* Timestamp */}
-                          <span className="shrink-0 text-[11px] text-muted-foreground/40 tabular-nums">
+                          <span className="shrink-0 text-xs text-muted-foreground/40 tabular-nums">
                             {formatAbsolute(v.createdAt)}
                           </span>
 
@@ -267,7 +267,7 @@ export function HistoryPageClient({
                             <button
                               type="button"
                               onClick={() => setConfirmVer(v)}
-                              className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-0 transition-all duration-150 group-hover:opacity-100 hover:border-primary/40 hover:bg-primary/[0.04] hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-0 transition-all duration-150 group-hover:opacity-100 hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             >
                               <RotateCcw size={11} />
                               Restore

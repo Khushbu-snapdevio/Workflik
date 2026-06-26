@@ -6,7 +6,7 @@ import { X, CheckCircle2 } from "lucide-react";
 
 const CATEGORIES = [
  { key: "productivity", label: "Productivity" },
- { key: "project_mgmt", label: "Project Mgmt" },
+ { key: "project_mgmt", label: "Project Management" },
  { key: "marketing",  label: "Marketing" },
  { key: "engineering", label: "Engineering" },
  { key: "sales",    label: "Sales" },
@@ -63,7 +63,7 @@ export function SaveAsTemplateModal({
   <div className="fixed inset-0 z-[400] flex items-center justify-center">
    <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
 
-   <div className="relative w-[440px] rounded-[var(--radius-lg)] border border-border bg-background p-6">
+   <div className="relative w-[calc(100vw-32px)] max-w-[440px] rounded-[var(--radius-lg)] border border-border bg-background p-6">
     {/* Header */}
     <div className="mb-5 flex items-center justify-between">
      <div>

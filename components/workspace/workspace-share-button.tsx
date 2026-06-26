@@ -45,7 +45,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
     ref={btnRef}
     type="button"
     onClick={handleClick}
-    className="inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 text-[13px] font-medium text-foreground/70 transition-all hover:border-primary/30 hover:bg-primary/[0.04] hover:text-primary active:scale-[0.97]"
+    className="inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 text-sm font-medium text-foreground/70 transition-all hover:border-primary/30 hover:bg-primary/5 hover:text-primary active:scale-[0.97]"
    >
     <svg className="size-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -68,7 +68,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
        zIndex: 201,
       }}
      >
-      <div className="w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
        {/* Header */}
        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3.5">
         <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
           </svg>
          </div>
-         <span className="text-[13px] font-semibold text-foreground">Share workspace</span>
+         <span className="text-sm font-semibold text-foreground">Share workspace</span>
         </div>
         <button
          type="button"
@@ -95,12 +95,12 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
        <div className="px-4 py-3.5 space-y-3">
         {/* Workspace name pill */}
         <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border/60 bg-sidebar px-3 py-2.5">
-         <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary/10 text-[13px] font-bold text-primary">
+         <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary/10 text-sm font-bold text-primary">
           {workspaceName[0]?.toUpperCase() ?? "W"}
          </div>
          <div className="min-w-0">
-          <p className="truncate text-[12px] font-semibold text-foreground">{workspaceName}</p>
-          <p className="text-[11px] text-muted-foreground">Workspace</p>
+          <p className="truncate text-xs font-semibold text-foreground">{workspaceName}</p>
+          <p className="text-xs text-muted-foreground">Workspace</p>
          </div>
         </div>
 
@@ -108,7 +108,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
         <button
          type="button"
          onClick={copyLink}
-         className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-2.5 text-left transition-all hover:border-primary/30 hover:bg-primary/[0.03] active:scale-[0.98]"
+         className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-2.5 text-left transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-[0.98]"
         >
          <div className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/60">
           {copied ? (
@@ -122,10 +122,10 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
           )}
          </div>
          <div>
-          <p className="text-[12px] font-semibold text-foreground">
+          <p className="text-xs font-semibold text-foreground">
            {copied ? "Copied!" : "Copy workspace link"}
           </p>
-          <p className="text-[11px] text-muted-foreground">Share this URL with teammates</p>
+          <p className="text-xs text-muted-foreground">Share this URL with teammates</p>
          </div>
         </button>
 
@@ -133,7 +133,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
         <Link
          href={`/app/${workspaceSlug}/settings/members`}
          onClick={close}
-         className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-2.5 transition-all hover:border-primary/30 hover:bg-primary/[0.03] active:scale-[0.98]"
+         className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-2.5 transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-[0.98]"
         >
          <div className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10">
           <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
@@ -143,8 +143,8 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
           </svg>
          </div>
          <div>
-          <p className="text-[12px] font-semibold text-foreground">Invite members</p>
-          <p className="text-[11px] text-muted-foreground">Add teammates to this workspace</p>
+          <p className="text-xs font-semibold text-foreground">Invite members</p>
+          <p className="text-xs text-muted-foreground">Add teammates to this workspace</p>
          </div>
         </Link>
        </div>

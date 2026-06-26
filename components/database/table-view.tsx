@@ -202,7 +202,7 @@ export function TableView({
       <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
        <TextT size={10} className="text-muted-foreground/60" />
       </span>
-      <span className="text-[12px] font-semibold text-muted-foreground tracking-[0.125px]">Name</span>
+      <span className="text-xs font-semibold text-muted-foreground tracking-wide">Name</span>
      </div>
 
      {/* Property headers */}
@@ -239,7 +239,7 @@ export function TableView({
           <span className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50">
            <Icon size={10} />
           </span>
-          <span className="truncate text-[12px] font-semibold text-muted-foreground tracking-[0.125px]">{prop.name}</span>
+          <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">{prop.name}</span>
          </button>
         )}
         {/* Resize handle */}
@@ -262,7 +262,7 @@ export function TableView({
          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
          setAddPropMenu(addPropMenu ? null : { rect });
         }}
-        className="flex size-full items-center justify-center text-muted-foreground/30 transition-colors hover:bg-accent/60 hover:text-muted-foreground"
+        className="flex size-full items-center justify-center text-muted-foreground/60 transition-colors hover:bg-accent/60 hover:text-muted-foreground"
         title="Add property"
        >
         <Plus size={13} />
@@ -292,7 +292,7 @@ export function TableView({
          {group.label}
         </span>
        )}
-       <span className="text-xs text-muted-foreground/40">{group.entries.length}</span>
+       <span className="text-xs text-muted-foreground/70">{group.entries.length}</span>
       </div>
      );
 
@@ -304,7 +304,7 @@ export function TableView({
        key={entry.id}
        className={[
         "flex items-stretch db-border-b transition-colors duration-100",
-        isSelected ? "bg-primary/[0.06]" : !deleteConfirm ? "hover:bg-muted/40" : "",
+        isSelected ? "bg-primary/5" : !deleteConfirm ? "hover:bg-muted/40" : "",
        ].join(" ")}
        onMouseEnter={() => { if (!deleteConfirm) setHoveredRowId(entry.id); }}
        onMouseLeave={() => setHoveredRowId(null)}
@@ -323,7 +323,7 @@ export function TableView({
            className="sr-only"
           />
           {/* Row number — fades out on hover/select */}
-          <span className="absolute select-none text-xs tabular-nums text-muted-foreground/30 transition-opacity duration-150"
+          <span className="absolute select-none text-xs tabular-nums text-muted-foreground/60 transition-opacity duration-150"
            style={{ opacity: isSelected || isRowHovered ? 0 : 1 }}>
            {rowIdx + 1}
           </span>
@@ -335,7 +335,7 @@ export function TableView({
           </span>
          </label>
         ) : (
-         <span className="select-none text-xs tabular-nums text-muted-foreground/30">{rowIdx + 1}</span>
+         <span className="select-none text-xs tabular-nums text-muted-foreground/60">{rowIdx + 1}</span>
         )}
        </div>
 
@@ -348,7 +348,7 @@ export function TableView({
          <span className="shrink-0 text-base leading-none">{entry.icon}</span>
         ) : (
          <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-border/40 bg-muted/20">
-          <FileText size={11} className="text-muted-foreground/30" />
+          <FileText size={11} className="text-muted-foreground/60" />
          </span>
         )}
 
@@ -377,7 +377,7 @@ export function TableView({
            }
           }}
           className={`min-w-0 flex-1 truncate text-sm font-medium cursor-pointer ${
-           entry.title ? "text-foreground" : "text-muted-foreground/30"
+           entry.title ? "text-foreground" : "text-muted-foreground/60"
           }`}
          >
           {entry.title || "Untitled"}
@@ -389,7 +389,7 @@ export function TableView({
          style={{ opacity: isRowHovered ? 1 : 0 }}>
          <Link
           href={`/app/${workspaceSlug}/${entry.shortId}`}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
           title="Open full page"
           onClick={(e) => e.stopPropagation()}
          >
@@ -402,7 +402,7 @@ export function TableView({
             const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
             setRowMenu(rowMenu?.entryId === entry.id ? null : { entryId: entry.id, shortId: entry.shortId, rect });
            }}
-           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
           >
            <DotsThree size={13} />
           </button>
@@ -420,7 +420,7 @@ export function TableView({
           className={[
            "group relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
            isActive
-            ? "bg-primary/[0.06] border-l border-primary/30"
+            ? "bg-primary/5 border-l border-primary/30"
             : "hover:bg-muted/40",
           ].join(" ")}
           style={{ width: colW(prop.id), minWidth: colW(prop.id), height: ROW_H }}
@@ -445,7 +445,7 @@ export function TableView({
            <>
             <CellDisplay property={prop} value={rawVal} compact />
             {isEditor && TEXT_TYPES.has(prop.type) && (
-             <span className="pointer-events-none select-none text-sm text-muted-foreground/25 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+             <span className="pointer-events-none select-none text-sm text-muted-foreground/60 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
               Type…
              </span>
             )}
@@ -467,10 +467,10 @@ export function TableView({
     {entries.length === 0 && (
      <div className="flex flex-col items-center justify-center gap-6 py-24">
       <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
-       <Table2 size={24} className="text-muted-foreground/40" />
+       <Table2 size={24} className="text-muted-foreground/70" />
       </div>
       <div className="text-center">
-       <p className="text-[17px] font-semibold text-foreground">No entries yet</p>
+       <p className="text-base font-semibold text-foreground">No entries yet</p>
        <p className="mt-1.5 text-sm text-muted-foreground/60">
         Add your first entry to start building your database
        </p>
@@ -492,7 +492,7 @@ export function TableView({
      <div>
       <button
        onClick={() => onCreateEntry()}
-       className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-foreground cursor-pointer w-full"
+       className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground cursor-pointer w-full"
       >
        <Plus size={13} />
        <span>New entry</span>
@@ -600,7 +600,7 @@ function RowContextMenu({ menu, workspaceSlug, onDeleteRequest, onClose }: RowCo
    <div className="my-1 h-px bg-border/60" />
    <button
     onClick={onDeleteRequest}
-    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/[0.06]"
+    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"
    >
     <Trash size={13} /> Delete entry
    </button>
@@ -649,7 +649,7 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onClos
     <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
     <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
     <div className="my-1 h-px bg-border/60" />
-    <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/[0.06]"><Trash size={13} /> Delete column</button>
+    <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"><Trash size={13} /> Delete column</button>
    </div>
    <ConfirmDialog
     open={confirmDelete}
@@ -691,7 +691,7 @@ function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPr
    className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
   >
    <div className="border-b border-border px-3 py-2.5">
-    <p className="mb-1.5 text-xs font-medium tracking-[0.125px] text-muted-foreground/50">New property</p>
+    <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground">New property</p>
     <input
      autoFocus
      value={propName}

@@ -122,7 +122,7 @@ function MenubarCheckboxItem({
       data-slot="menubar-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-2.5 rounded-none py-2 pr-3 pl-9.5 text-xs font-medium tracking-[0.125px] outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-9.5 data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex cursor-default items-center gap-2.5 rounded-none py-2 pr-3 pl-9.5 text-xs font-medium tracking-wide outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-9.5 data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       checked={checked}
@@ -152,7 +152,7 @@ function MenubarRadioItem({
       data-slot="menubar-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-2.5 rounded-none py-2 pr-3 pl-9.5 text-xs font-medium tracking-[0.125px] outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "relative flex cursor-default items-center gap-2.5 rounded-none py-2 pr-3 pl-9.5 text-xs font-medium tracking-wide outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-9.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className
       )}
       {...props}
@@ -180,7 +180,7 @@ function MenubarLabel({
       data-slot="menubar-label"
       data-inset={inset}
       className={cn(
-        "px-3.5 py-2 text-xs font-semibold tracking-[0.125px] text-muted-foreground data-inset:pl-9.5",
+        "px-3.5 py-2 text-xs font-semibold tracking-wide text-muted-foreground data-inset:pl-9.5",
         className
       )}
       {...props}
@@ -209,7 +209,7 @@ function MenubarShortcut({
     <span
       data-slot="menubar-shortcut"
       className={cn(
-        "ml-auto text-xs tracking-[0.125px] text-muted-foreground group-focus/menubar-item:text-accent-foreground",
+        "ml-auto text-xs tracking-wide text-muted-foreground group-focus/menubar-item:text-accent-foreground",
         className
       )}
       {...props}
@@ -236,7 +236,7 @@ function MenubarSubTrigger({
       data-slot="menubar-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-default items-center gap-2 rounded-none px-3 py-2 text-xs font-medium tracking-[0.125px] outline-none select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-9.5 data-open:bg-accent data-open:text-accent-foreground [&_svg:not([class*='size-'])]:size-3.5",
+        "flex cursor-default items-center gap-2 rounded-none px-3 py-2 text-xs font-medium tracking-wide outline-none select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-9.5 data-open:bg-accent data-open:text-accent-foreground [&_svg:not([class*='size-'])]:size-3.5",
         className
       )}
       {...props}

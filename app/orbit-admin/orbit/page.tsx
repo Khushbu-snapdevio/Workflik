@@ -25,7 +25,7 @@ function ago(d: Date | null | undefined) {
 
 const ACTION_META: Record<string, { label: string; pill: string; iconCls: string; icon: React.ReactNode }> = {
  "user.banned": {
-  label: "User banned", pill: "bg-destructive/[0.06] text-destructive", iconCls: "bg-destructive/[0.06] text-destructive",
+  label: "User banned", pill: "bg-destructive/5 text-destructive", iconCls: "bg-destructive/5 text-destructive",
   icon: <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5"><circle cx="7" cy="7" r="5.5"/><path d="M3.5 3.5l7 7"/></svg>,
  },
  "user.unbanned": {
@@ -41,7 +41,7 @@ const ACTION_META: Record<string, { label: string; pill: string; iconCls: string
   icon: <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5"><path d="M7 2v4l2 2"/><circle cx="7" cy="7" r="5"/></svg>,
  },
  "workspace.force_deleted": {
-  label: "Workspace deleted", pill: "bg-destructive/[0.06] text-destructive", iconCls: "bg-destructive/[0.06] text-destructive",
+  label: "Workspace deleted", pill: "bg-destructive/5 text-destructive", iconCls: "bg-destructive/5 text-destructive",
   icon: <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5"><path d="M2 4h10M5 4V2.5h4V4M11 4l-.7 7.5a1 1 0 01-1 .9H4.7a1 1 0 01-1-.9L3 4"/></svg>,
  },
 };
@@ -79,7 +79,7 @@ export default async function OrbitOverviewPage() {
     <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
      <div>
       <h1 className="text-2xl font-bold tracking-tight text-foreground">Overview</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">Platform health, recent registrations, and operator actions.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Platform health, recent registrations, and operator actions.</p>
       <div className="mt-4 flex items-center gap-3">
        <div className="flex items-center gap-1.5">
         <span className="relative flex size-2">
@@ -95,15 +95,15 @@ export default async function OrbitOverviewPage() {
      <div className="hidden shrink-0 items-center divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-muted/30 sm:flex">
       <div className="px-6 py-5 text-center">
        <p className="text-3xl font-bold leading-none text-foreground">{totalUsers!.count}</p>
-       <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">Users</p>
+       <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Users</p>
       </div>
       <div className="px-6 py-5 text-center">
        <p className="text-3xl font-bold leading-none text-foreground">{totalWorkspaces!.count}</p>
-       <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">Workspaces</p>
+       <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Workspaces</p>
       </div>
       <div className="px-6 py-5 text-center">
        <p className="text-3xl font-bold leading-none text-foreground">{newUsers7d!.count}</p>
-       <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">New / 7d</p>
+       <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">New / 7d</p>
       </div>
      </div>
     </div>
@@ -113,7 +113,7 @@ export default async function OrbitOverviewPage() {
    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
     {/* Total users */}
     <StatCard
-     href="/Orbit-admin/orbit/users"
+     href="/orbit-admin/orbit/users"
      value={totalUsers!.count}
      label="Total users"
      sub="All registered accounts"
@@ -127,7 +127,7 @@ export default async function OrbitOverviewPage() {
     />
     {/* New 7d */}
     <StatCard
-     href="/Orbit-admin/orbit/users"
+     href="/orbit-admin/orbit/users"
      value={newUsers7d!.count}
      label="New (7 days)"
      sub="Recent signups"
@@ -141,7 +141,7 @@ export default async function OrbitOverviewPage() {
     />
     {/* Workspaces */}
     <StatCard
-     href="/Orbit-admin/orbit/workspaces"
+     href="/orbit-admin/orbit/workspaces"
      value={totalWorkspaces!.count}
      label="Workspaces"
      sub="Active tenants"
@@ -154,7 +154,7 @@ export default async function OrbitOverviewPage() {
     />
     {/* Email */}
     <StatCard
-     href="/Orbit-admin/orbit/email"
+     href="/orbit-admin/orbit/email"
      value={emailCount!.count}
      label="Email queue"
      sub="Transactional outbox"
@@ -170,7 +170,7 @@ export default async function OrbitOverviewPage() {
 
    {/* ── Secondary strip ── */}
    <div className="grid grid-cols-2 gap-4">
-    <Link href="/Orbit-admin/orbit/queues"
+    <Link href="/orbit-admin/orbit/queues"
      className="group flex items-center gap-4 rounded-[var(--radius-xl)] border border-border bg-card p-4 transition-colors hover:bg-accent/30">
      <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-primary">
@@ -186,7 +186,7 @@ export default async function OrbitOverviewPage() {
       <path d="M2 6h8M7 3l3 3-3 3"/>
      </svg>
     </Link>
-    <Link href="/Orbit-admin/orbit/analytics"
+    <Link href="/orbit-admin/orbit/analytics"
      className="group flex items-center gap-4 rounded-[var(--radius-xl)] border border-border bg-card p-4 transition-colors hover:bg-accent/30">
      <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-primary">
@@ -212,7 +212,7 @@ export default async function OrbitOverviewPage() {
        <h2 className="text-[13.5px] font-semibold text-foreground">Recent registrations</h2>
        <p className="text-xs text-muted-foreground">Latest accounts to join</p>
       </div>
-      <Link href="/Orbit-admin/orbit/users"
+      <Link href="/orbit-admin/orbit/users"
        className="flex items-center gap-1 rounded-[var(--radius-md)] bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-accent hover:text-foreground">
        View all
        <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-2.5"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
@@ -223,10 +223,10 @@ export default async function OrbitOverviewPage() {
        const displayName = u.name?.trim() || u.email || "?";
        const avatarChar = displayName[0]!.toUpperCase();
        return (
-        <Link key={u.id} href={`/Orbit-admin/orbit/users/${u.id}`}
+        <Link key={u.id} href={`/orbit-admin/orbit/users/${u.id}`}
          className="group flex items-center gap-3.5 px-5 py-3 transition-colors hover:bg-accent/40">
          <div className="relative shrink-0">
-          <span className={`flex size-8 items-center justify-center rounded-full text-[12px] font-semibold text-white ${avatarBg(u.id)}`}>
+          <span className={`flex size-8 items-center justify-center rounded-full text-xs font-semibold text-white ${avatarBg(u.id)}`}>
            {avatarChar}
           </span>
           {u.banned && (
@@ -234,15 +234,15 @@ export default async function OrbitOverviewPage() {
           )}
          </div>
          <div className="min-w-0 flex-1">
-          <p className="truncate text-[12.5px] font-semibold text-foreground group-hover:text-primary">{u.email}</p>
-          <p className={`truncate text-[11px] ${u.name?.trim() ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
+          <p className="truncate text-xs font-semibold text-foreground group-hover:text-primary">{u.email}</p>
+          <p className={`truncate text-xs ${u.name?.trim() ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
            {u.name?.trim() || u.email?.split("@")[0] || "—"}
           </p>
          </div>
          <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="text-[11px] font-medium text-muted-foreground/60">{ago(u.createdAt)}</span>
+          <span className="text-xs font-medium text-muted-foreground/60">{ago(u.createdAt)}</span>
           {u.isPlatformAdmin && (
-           <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">Admin</span>
+           <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">Admin</span>
           )}
          </div>
         </Link>
@@ -258,7 +258,7 @@ export default async function OrbitOverviewPage() {
        <h2 className="text-[13.5px] font-semibold text-foreground">Audit events</h2>
        <p className="text-xs text-muted-foreground">Recent operator actions</p>
       </div>
-      <Link href="/Orbit-admin/orbit/audit"
+      <Link href="/orbit-admin/orbit/audit"
        className="flex items-center gap-1 rounded-[var(--radius-md)] bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-accent hover:text-foreground">
        View all
        <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-2.5"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
@@ -284,7 +284,7 @@ export default async function OrbitOverviewPage() {
            {meta?.icon ?? <span className="size-3.5 text-muted-foreground/40">·</span>}
           </div>
           <div className="min-w-0 flex-1">
-           <p className="text-[12.5px] font-semibold text-foreground">{meta?.label ?? ev.action}</p>
+           <p className="text-xs font-semibold text-foreground">{meta?.label ?? ev.action}</p>
            <div className="flex items-center gap-1.5">
             <span className={`rounded-full border px-1.5 py-0.5 text-[9.5px] font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}>
              {ev.targetType}
@@ -292,7 +292,7 @@ export default async function OrbitOverviewPage() {
             <span className="font-mono text-[9.5px] text-muted-foreground/60">{ev.targetId?.slice(0, 10) ?? "—"}…</span>
            </div>
           </div>
-          <span className="shrink-0 text-[11px] font-medium text-muted-foreground/60">{ago(ev.createdAt)}</span>
+          <span className="shrink-0 text-xs font-medium text-muted-foreground/60">{ago(ev.createdAt)}</span>
          </div>
         );
        })
@@ -324,8 +324,8 @@ function StatCard({
    </div>
    <div className="mt-4">
     <p className="text-[1.75rem] font-bold leading-none tracking-tight text-primary">{value}</p>
-    <p className="mt-1.5 text-[13px] font-semibold text-foreground">{label}</p>
-    <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p>
+    <p className="mt-1.5 text-sm font-semibold text-foreground">{label}</p>
+    <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
    </div>
   </Link>
  );

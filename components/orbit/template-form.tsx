@@ -113,7 +113,7 @@ export function TemplateForm({ template }: Props) {
       return;
     }
 
-    router.push("/Orbit-admin/orbit/templates");
+    router.push("/orbit-admin/orbit/templates");
     router.refresh();
   }
 
@@ -124,7 +124,7 @@ export function TemplateForm({ template }: Props) {
 
   async function doDelete() {
     await fetch(`/api/orbit/templates/${template!.id}`, { method: "DELETE" });
-    router.push("/Orbit-admin/orbit/templates");
+    router.push("/orbit-admin/orbit/templates");
     router.refresh();
   }
 
@@ -200,7 +200,7 @@ export function TemplateForm({ template }: Props) {
         <label className="mb-2 block text-sm font-semibold text-foreground">
           Template Content
           <span className="ml-2 font-normal text-muted-foreground/60 text-xs">
-            — Write like a normal page. Press <kbd className="rounded border border-border bg-muted px-1 text-[10px]">/</kbd> for blocks.
+            — Write like a normal page. Press <kbd className="rounded border border-border bg-muted px-1 text-xs">/</kbd> for blocks.
           </span>
         </label>
         <TemplateEditor
@@ -210,7 +210,7 @@ export function TemplateForm({ template }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-[var(--radius-sm)] bg-destructive/[0.06] px-4 py-2.5 text-sm text-destructive">
+        <div className="rounded-[var(--radius-sm)] bg-destructive/5 px-4 py-2.5 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -221,7 +221,7 @@ export function TemplateForm({ template }: Props) {
           <button
             type="button"
             onClick={handleDelete}
-            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/[0.06] transition-colors duration-150"
+            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors duration-150"
           >
             <Trash2 size={14} />
             Delete Template

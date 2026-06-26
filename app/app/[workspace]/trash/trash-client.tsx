@@ -93,14 +93,14 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
 
       {/* ── Topbar ── */}
       <div className="shrink-0 border-b border-border bg-card">
-        <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-8 py-3">
+        <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted">
               <Trash2 size={15} className="text-muted-foreground" />
             </div>
             <div>
-              <h1 className="text-[18px] font-bold tracking-tight text-foreground">Trash</h1>
-              <p className="text-[11px] text-muted-foreground">
+              <h1 className="text-lg font-bold tracking-tight text-foreground">Trash</h1>
+              <p className="text-xs text-muted-foreground">
                 {localPages.length > 0
                   ? `${localPages.length} page${localPages.length !== 1 ? "s" : ""} — permanently deleted after 30 days`
                   : "Deleted pages are permanently removed after 30 days"}
@@ -112,7 +112,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
           <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 transition-colors duration-150 focus-within:border-border">
             <Search size={13} className="shrink-0 text-muted-foreground/60" />
             <input
-              className="w-44 bg-transparent text-[12.5px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+              className="w-44 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
               placeholder="Search trash…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -129,7 +129,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
 
       {/* ── Body ── */}
       <div className="flex-1 overflow-auto py-6">
-        <div className="mx-auto w-full max-w-[1100px] px-8">
+        <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 lg:px-8">
 
           {/* Empty state */}
           {filtered.length === 0 ? (
@@ -148,10 +148,10 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
               {/* Table header */}
               <div className="grid grid-cols-[1fr_160px_120px_200px] items-center border-b border-border bg-muted/30 px-5 py-2.5">
-                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Page name</span>
-                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Deleted by</span>
-                <span className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Deleted</span>
-                <span className="text-right text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Actions</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Page name</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Deleted by</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Deleted</span>
+                <span className="text-right text-xs font-semibold tracking-wide text-muted-foreground/60">Actions</span>
               </div>
 
               {/* Rows */}
@@ -170,10 +170,10 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           <PageIcon icon={page.icon} kind={page.kind} />
                         </span>
                         <div className="min-w-0">
-                          <p className="truncate text-[13px] font-medium text-foreground">
+                          <p className="truncate text-sm font-medium text-foreground">
                             {page.title || "Untitled"}
                           </p>
-                          <p className={`text-[11px] ${urgent ? "font-medium text-destructive" : "text-muted-foreground/60"}`}>
+                          <p className={`text-xs ${urgent ? "font-medium text-destructive" : "text-muted-foreground/60"}`}>
                             {urgent
                               ? left === 0 ? "Deletes today" : `Deletes in ${left}d`
                               : `Deletes in ${left} days`}
@@ -182,12 +182,12 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                       </div>
 
                       {/* Deleted by */}
-                      <span className="truncate text-[12px] text-muted-foreground">
+                      <span className="truncate text-xs text-muted-foreground">
                         {page.deletedByName}
                       </span>
 
                       {/* Deleted at */}
-                      <span className="text-[12px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {page.deletedAt ? timeAgo(page.deletedAt) : "—"}
                       </span>
 
@@ -197,7 +197,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           type="button"
                           disabled={restoring === page.id || !!deleting}
                           onClick={() => handleRestore(page)}
-                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-[12px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-50"
+                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-50"
                         >
                           {restoring === page.id ? (
                             <>
@@ -216,7 +216,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           type="button"
                           disabled={!!restoring || !!deleting}
                           onClick={() => setConfirmDelete(page)}
-                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-[12px] font-medium text-destructive transition-colors duration-150 hover:border-destructive/40 hover:bg-destructive/5 disabled:opacity-50"
+                          className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-xs font-medium text-destructive transition-colors duration-150 hover:border-destructive/40 hover:bg-destructive/5 disabled:opacity-50"
                         >
                           {deleting === page.id ? (
                             "Deleting…"

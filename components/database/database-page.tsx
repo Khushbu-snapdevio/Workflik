@@ -331,14 +331,14 @@ export function DatabasePage({
     return (
       <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col">
         <div className="shrink-0">
-          <div className="px-16 pt-10 pb-6">
+          <div className="px-4 pt-6 pb-4 sm:px-8 sm:pt-8 lg:px-16 lg:pt-10 lg:pb-6">
             <div className="mb-3 h-10 w-64 animate-pulse rounded-[var(--radius-md)] bg-muted/50" />
             <div className="h-4 w-40 animate-pulse rounded-[var(--radius-sm)] bg-muted/30" />
           </div>
         </div>
         <div className="h-11 shrink-0 animate-pulse border-y border-border bg-muted/10" />
         <div className="flex-1">
-          <div className="px-16 pt-4">
+          <div className="px-4 pt-3 sm:px-8 lg:px-16 lg:pt-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
@@ -360,7 +360,7 @@ export function DatabasePage({
       {/* ── Page title / icon (hidden in inline/embedded mode) ── */}
       {!inline && (
         <div className="shrink-0 group/page">
-          <div className="px-16 pt-10 pb-3">
+          <div className="px-4 pt-6 pb-2 sm:px-8 sm:pt-8 lg:px-16 lg:pt-10 lg:pb-3">
             <PageHeader
               pageId={databaseId}
               shortId={pageShortId}

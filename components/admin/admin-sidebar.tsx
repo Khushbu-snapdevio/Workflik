@@ -8,7 +8,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 
 const NAV = [
   {
-    href: "/Orbit-admin/orbit", label: "Overview", exact: true,
+    href: "/orbit-admin/orbit", label: "Overview", exact: true,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/>
@@ -17,7 +17,7 @@ const NAV = [
     ),
   },
   {
-    href: "/Orbit-admin/orbit/users", label: "Users", exact: false,
+    href: "/orbit-admin/orbit/users", label: "Users", exact: false,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <circle cx="5" cy="4.5" r="2.5"/><path d="M1 12c0-2.2 1.8-4 4-4s4 1.8 4 4"/>
@@ -26,7 +26,7 @@ const NAV = [
     ),
   },
   {
-    href: "/Orbit-admin/orbit/workspaces", label: "Workspaces", exact: false,
+    href: "/orbit-admin/orbit/workspaces", label: "Workspaces", exact: false,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <path d="M2 5h10M2 9h10M5 1v12M9 1v12"/><rect x="1" y="1" width="12" height="12" rx="2"/>
@@ -34,7 +34,7 @@ const NAV = [
     ),
   },
   {
-    href: "/Orbit-admin/orbit/templates", label: "Templates", exact: false,
+    href: "/orbit-admin/orbit/templates", label: "Templates", exact: false,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <rect x="1" y="1" width="12" height="12" rx="2"/><path d="M1 5h12M5 5v8"/>
@@ -42,7 +42,7 @@ const NAV = [
     ),
   },
   {
-    href: "/Orbit-admin/orbit/analytics", label: "Analytics", exact: false,
+    href: "/orbit-admin/orbit/analytics", label: "Analytics", exact: false,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <path d="M1 11l3.5-3.5 2.5 2.5 4.5-5.5"/>
@@ -50,7 +50,7 @@ const NAV = [
     ),
   },
   {
-    href: "/Orbit-admin/orbit/audit", label: "Audit Trail", exact: false,
+    href: "/orbit-admin/orbit/audit", label: "Audit Trail", exact: false,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <path d="M3.5 3.5h7M3.5 7h7M3.5 10.5h4"/><rect x="1" y="1" width="12" height="12" rx="2"/>
@@ -61,7 +61,7 @@ const NAV = [
 
 const SECONDARY = [
   {
-    href: "/Orbit-admin/orbit/queues", label: "Queues",
+    href: "/orbit-admin/orbit/queues", label: "Queues",
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <rect x="1" y="2" width="12" height="2.5" rx="0.75"/><rect x="1" y="5.75" width="12" height="2.5" rx="0.75"/>
@@ -70,7 +70,7 @@ const SECONDARY = [
     ),
   },
   {
-    href: "/Orbit-admin/orbit/email", label: "Email",
+    href: "/orbit-admin/orbit/email", label: "Email",
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <rect x="1" y="3" width="12" height="8" rx="1.5"/>
@@ -110,25 +110,25 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
   }, []);
 
   return (
-    <aside className="flex h-screen w-[280px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <aside className="flex h-dvh w-[280px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 
       {/* Brand header */}
       <div className="flex h-11 shrink-0 items-center border-b border-sidebar-border px-3">
         <Link
           href="/platform/post-auth"
-          className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-1.5 py-1 transition-colors duration-150 hover:bg-sidebar-accent"
+          className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-1.5 py-1 transition-colors duration-150 hover:bg-primary/10"
         >
           <Image src="/icon-32.png" unoptimized alt="Workflik" width={28} height={28} className="size-7 shrink-0 rounded-[var(--radius-sm)]" />
           <div className="min-w-0">
-            <p className="text-[13px] font-bold leading-tight tracking-tight text-sidebar-foreground">Workflik</p>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40">Orbit Admin</p>
+            <p className="text-sm font-bold leading-tight tracking-tight text-sidebar-foreground">Workflik</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/60">Orbit Admin</p>
           </div>
         </Link>
       </div>
 
       {/* Main nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-2">
-        <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40">Main</p>
+        <p className="mb-1 px-2.5 text-xs font-semibold uppercase tracking-wide text-primary/60">Main</p>
         <div className="space-y-0.5">
           {NAV.map(({ href, label, icon, exact }) => {
             const active = exact ? pathname === href : pathname.startsWith(href);
@@ -136,13 +136,13 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
               <Link
                 key={href}
                 href={href}
-                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 ${
+                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
                   active
-                    ? "bg-sidebar-accent text-sidebar-foreground"
-                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "text-sidebar-foreground/70 hover:bg-primary/10 hover:text-primary"
                 }`}
               >
-                <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"}`}>
+                <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-primary"}`}>
                   {icon}
                 </span>
                 <span className={`flex-1 ${active ? "font-semibold" : ""}`}>{label}</span>
@@ -153,7 +153,7 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
 
         <div className="mx-2 my-3 h-px bg-sidebar-border" />
 
-        <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/40">System</p>
+        <p className="mb-1 px-2.5 text-xs font-semibold uppercase tracking-wide text-primary/60">System</p>
         <div className="space-y-0.5">
           {SECONDARY.map(({ href, label, icon }) => {
             const active = pathname.startsWith(href);
@@ -161,13 +161,13 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
               <Link
                 key={href}
                 href={href}
-                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 ${
+                className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
                   active
-                    ? "bg-sidebar-accent text-sidebar-foreground"
-                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "text-sidebar-foreground/70 hover:bg-primary/10 hover:text-primary"
                 }`}
               >
-                <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"}`}>
+                <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-primary"}`}>
                   {icon}
                 </span>
                 <span className={`flex-1 ${active ? "font-semibold" : ""}`}>{label}</span>
@@ -181,9 +181,9 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
       <div className="shrink-0 border-t border-sidebar-border px-2 py-1.5">
         <Link
           href="/platform/post-auth"
-          className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
         >
-          <span className="shrink-0 text-sidebar-foreground/40 transition-colors duration-150 group-hover:text-sidebar-foreground/70">
+          <span className="shrink-0 text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-primary">
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
               <path d="M9 7H3M5 4L2 7l3 3"/><path d="M6 2h5a.5.5 0 01.5.5v9a.5.5 0 01-.5.5H6"/>
             </svg>
@@ -197,18 +197,18 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
 
         {/* Popup — appears above */}
         {userMenu && (
-          <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover shadow-[0_8px_32px_-6px_rgba(0,0,0,0.18),0_2px_10px_-2px_rgba(0,0,0,0.08)]">
+          <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover">
 
             {/* User info */}
             <div className="px-3.5 pb-3 pt-3.5">
               <div className="flex items-center gap-3">
                 <div className="relative shrink-0">
-                  <UserAvatar image={image} email={email} className="size-10 text-[15px]" />
-                  <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-popover bg-success" />
+                  <UserAvatar image={image} email={email} className="size-10 text-sm" />
+                  <span className="absolute bottom-0 right-0 size-2.5 translate-x-1/2 translate-y-1/2 rounded-full border-2 border-popover bg-success" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold leading-tight text-foreground">{displayName}</p>
-                  <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">{email}</p>
+                  <p className="truncate text-sm font-semibold leading-tight text-foreground">{displayName}</p>
+                  <p className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">{email}</p>
                 </div>
               </div>
             </div>
@@ -227,7 +227,7 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
                     <path d="M9 7H3M5 4L2 7l3 3"/><path d="M6 2h5a.5.5 0 01.5.5v9a.5.5 0 01-.5.5H6"/>
                   </svg>
                 </span>
-                <span className="text-[13px] font-medium text-foreground">Back to workspace</span>
+                <span className="text-sm font-medium text-foreground">Back to workspace</span>
               </Link>
             </div>
 
@@ -235,13 +235,13 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
 
             {/* Sign out */}
             <div className="p-1.5">
-              <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/[0.07]">
+              <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
                 <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
                   <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[13px]">
                     <path d="M5 7h8M9.5 4L12 7l-2.5 3"/><path d="M8 2H3a.5.5 0 00-.5.5v9A.5.5 0 003 12h5"/>
                   </svg>
                 </span>
-                <span className="text-[13px] font-medium text-destructive">Sign out</span>
+                <span className="text-sm font-medium text-destructive">Sign out</span>
               </SignOutButton>
             </div>
           </div>
@@ -251,16 +251,16 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
         <button
           type="button"
           onClick={() => setUserMenu((v) => !v)}
-          className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"}`}
+          className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-primary/10" : "hover:bg-primary/10"}`}
         >
-          <UserAvatar image={image} email={email} className="size-8 text-[13px]" />
+          <UserAvatar image={image} email={email} className="size-8 text-sm" />
           <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-[13px] font-semibold text-sidebar-foreground">{displayName}</p>
-            <p className="truncate text-[11px] text-sidebar-foreground/50">{email}</p>
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">{displayName}</p>
+            <p className="truncate text-xs text-sidebar-foreground/70">{email}</p>
           </div>
           <svg
             viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-            className={`size-[13px] shrink-0 text-sidebar-foreground/40 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
+            className={`size-[13px] shrink-0 text-sidebar-foreground/60 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
           >
             <path d="M2.5 5l4.5 4.5L11.5 5"/>
           </svg>

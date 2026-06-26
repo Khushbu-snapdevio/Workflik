@@ -56,7 +56,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
           {shown.map((opt) => {
             const color = getOptionColor(opt.color);
             return (
-              <span key={opt.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+              <span key={opt.id} className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
                 <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
                 {opt.name}
               </span>
@@ -82,7 +82,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
           {checked ? (
             <SquareCheck size={16} className="text-primary" />
           ) : (
-            <Square size={16} className="text-muted-foreground/30" />
+            <Square size={16} className="text-muted-foreground/60" />
           )}
         </span>
       );
@@ -144,7 +144,7 @@ export function CellDisplay({ property, value, compact }: CellDisplayProps) {
                 key={id}
                 className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted pl-0.5 pr-2 py-0.5"
               >
-                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                   {initial}
                 </span>
                 <span className="max-w-[80px] truncate text-xs font-medium text-foreground">

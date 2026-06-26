@@ -107,7 +107,7 @@ export function TemplateCalendarView({
   <div className="flex h-full flex-col overflow-hidden">
    {/* ── Header ───────────────────────────────────────────────────────────── */}
    <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-6 py-4">
-    <h2 className="text-[18px] font-semibold tracking-tight text-foreground">
+    <h2 className="text-lg font-semibold tracking-tight text-foreground">
      {MONTH_NAMES[month]} {year}
     </h2>
     <div className="flex items-center gap-1">
@@ -126,7 +126,7 @@ export function TemplateCalendarView({
    {/* ── Day-of-week headers ───────────────────────────────────────────────── */}
    <div className="grid shrink-0 grid-cols-7 border-b border-border/40 bg-muted/20">
     {DAY_NAMES.map((d) => (
-     <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-[0.125px] text-muted-foreground/60">
+     <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">
       {d.slice(0, 3)}
      </div>
     ))}
@@ -183,7 +183,7 @@ export function TemplateCalendarView({
           {shown.map((e) => (
            <div
             key={e.id}
-            className="group/event flex items-center gap-1 rounded-[5px] bg-primary/10 px-1.5 py-[3px] text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+            className="group/event flex items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-[3px] text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
             onClick={(ev) => { ev.stopPropagation(); onClickEntry(e.id); }}
            >
             <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
@@ -202,7 +202,7 @@ export function TemplateCalendarView({
            <button
             onMouseEnter={(e) => openPopup(key!, e)}
             onMouseLeave={scheduleClose}
-            className="px-1.5 py-0.5 text-left text-[10px] font-medium text-primary/70 hover:text-primary transition-colors"
+            className="px-1.5 py-0.5 text-left text-xs font-medium text-primary/70 hover:text-primary transition-colors"
            >
             +{extra} more
            </button>
@@ -242,7 +242,7 @@ export function TemplateCalendarView({
         {(() => {
          const [ey, em, ed] = morePopup.key.split("-").map(Number);
          return (
-          <span className="text-[11px] font-semibold tracking-[0.125px] text-muted-foreground">
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground">
            {MONTH_NAMES[em - 1]} {ed}, {ey}
           </span>
          );
@@ -258,7 +258,7 @@ export function TemplateCalendarView({
           onClick={() => { onClickEntry(e.id); setMorePopup(null); }}
          >
           <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
-          <span className="flex-1 truncate text-[13px] font-medium text-foreground">
+          <span className="flex-1 truncate text-sm font-medium text-foreground">
            {e.title || "Untitled"}
           </span>
           <button

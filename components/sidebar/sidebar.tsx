@@ -2,7 +2,7 @@
 
 import {
  BookOpen,
- ChevronsRight,
+ PanelLeft,
  ChevronDown,
  Settings,
  Home,
@@ -74,7 +74,7 @@ export function Sidebar({
 }: Props) {
  const pathname = usePathname();
  const [userImage, setUserImage] = useState<string | null>(initialUserImage);
- const [width, setWidth] = useState(initialSidebarWidth);
+ const [width, setWidth] = useState(Math.max(MIN_WIDTH, initialSidebarWidth || MIN_WIDTH));
  const [collapsed, setCollapsed] = useState(initialSidebarCollapsed);
  const [filter] = useState("");
  const [pages, setPages] = useState<PageItem[]>(initialPages);
@@ -208,7 +208,7 @@ export function Sidebar({
 
  if (collapsed) {
   return (
-   <aside className="flex h-screen w-[64px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+   <aside className="flex h-dvh w-[64px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
 
     {/* Expand button */}
     <div className="flex w-full items-center justify-center border-b border-sidebar-border py-3">
@@ -216,9 +216,9 @@ export function Sidebar({
       onClick={toggleCollapse}
       title="Expand sidebar"
       type="button"
-      className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/50 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
      >
-      <ChevronsRight size={16} />
+      <PanelLeft size={16} />
      </button>
     </div>
 
@@ -240,7 +240,7 @@ export function Sidebar({
       <NewPageButton
        workspaceId={workspaceId}
        workspaceSlug={workspaceSlug}
-       className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-60"
+       className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-60"
       >
        <Plus size={18} />
       </NewPageButton>
@@ -255,9 +255,8 @@ export function Sidebar({
     {/* Footer nav */}
     <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-2 py-3">
      <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><Trash2 size={18} /></CollapsedNavItem>
-     <CollapsedNavItem href={`/app/${workspaceSlug}/settings`} label="Settings"><Settings size={18} /></CollapsedNavItem>
      {isAdmin && (
-      <CollapsedNavItem href="/Orbit-admin/orbit" label="Admin Panel">
+      <CollapsedNavItem href="/orbit-admin/orbit" label="Admin Panel">
        <Shield size={18} />
       </CollapsedNavItem>
      )}
@@ -266,10 +265,10 @@ export function Sidebar({
     {/* User avatar */}
     <div className="flex w-full items-center justify-center border-t border-sidebar-border py-3">
      <div className="group relative">
-      <UserAvatar image={userImage} email={userEmail} className="size-8 text-[13px] transition-opacity duration-150 hover:opacity-80" />
+      <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm transition-opacity duration-150 hover:opacity-80" />
       <div className="pointer-events-none absolute bottom-0 left-full z-50 ml-3 min-w-[160px] whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-3 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
        <p className="text-xs font-semibold text-popover-foreground">{userEmail.split("@")[0]}</p>
-       <p className="mt-0.5 text-[10px] text-muted-foreground">{userEmail}</p>
+       <p className="mt-0.5 text-xs text-muted-foreground">{userEmail}</p>
       </div>
      </div>
     </div>
@@ -280,17 +279,18 @@ export function Sidebar({
  return (
   <aside
    data-tour="sidebar"
-   className="relative flex h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+   className="relative flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
    style={{ width }}
   >
-   {/* Workspace header */}
-   <div className="flex h-11 shrink-0 items-center gap-1 border-b border-sidebar-border px-2">
-    <div className="min-w-0 flex-1">
-     <WorkspaceSwitcher currentSlug={workspaceSlug} />
-    </div>
+   {/* Workspace header + new-menu dropdown — wrapped together so dropdown
+       is positioned relative to this div, NOT inside the scroll body */}
+   <div className="relative shrink-0" ref={newMenuRef}>
+    <div className="flex h-11 items-center gap-1 border-b border-sidebar-border px-2">
+     <div className="min-w-0 flex-1">
+      <WorkspaceSwitcher currentSlug={workspaceSlug} />
+     </div>
 
-    {/* New dropdown */}
-    <div className="relative" ref={newMenuRef}>
+     {/* + button */}
      <button
       data-tour="new-page"
       onClick={() => setNewMenu((v) => !v)}
@@ -299,70 +299,70 @@ export function Sidebar({
       className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] outline-none transition-colors duration-150 ${
        newMenu
         ? "bg-primary text-primary-foreground"
-        : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
       }`}
      >
       <Plus size={14} />
      </button>
 
-     {newMenu && (
-      <div className="absolute right-0 top-full z-50 mt-1.5 w-60 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover shadow-lg">
-       {/* Section: Create */}
-       <div className="px-3 pb-1 pt-2.5">
-        <p className="mb-1 text-[10px] font-medium tracking-[0.125px] text-muted-foreground/50">Create</p>
-        <NewPageButton
-         workspaceId={workspaceId}
-         workspaceSlug={workspaceSlug}
-         onBeforeCreate={() => setNewMenu(false)}
-         className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
-        >
-         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
-          <FileText size={14} />
-         </span>
-         <span>
-          <span className="block text-[13px] font-medium text-foreground">New Page</span>
-          <span className="block text-xs text-muted-foreground">Docs, notes, wikis</span>
-         </span>
-        </NewPageButton>
-       </div>
-
-       <div className="mx-3 my-1 h-px bg-border/60" />
-
-       {/* Section: More */}
-       <div className="px-3 pb-2.5 pt-1">
-        <p className="mb-1 text-[10px] font-medium tracking-[0.125px] text-muted-foreground/50">More</p>
-        <NewDatabaseButton
-         workspaceId={workspaceId}
-         workspaceSlug={workspaceSlug}
-         onBeforeCreate={() => setNewMenu(false)}
-        />
-        <Link
-         href={`/app/${workspaceSlug}/templates`}
-         onClick={() => setNewMenu(false)}
-         className="group mt-0.5 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent"
-        >
-         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-warning/10 text-warning">
-          <LayoutGrid size={14} />
-         </span>
-         <span>
-          <span className="block text-[13px] font-medium text-foreground">From Template</span>
-          <span className="block text-xs text-muted-foreground">Start from a template</span>
-         </span>
-        </Link>
-       </div>
-      </div>
-     )}
-
+     <button
+      className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      onClick={toggleCollapse}
+      title="Collapse sidebar"
+      type="button"
+     >
+      <PanelLeft size={16} />
+     </button>
     </div>
 
-    <button
-     className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/50 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-     onClick={toggleCollapse}
-     title="Collapse sidebar"
-     type="button"
-    >
-     <ChevronsRight className="rotate-180" size={16} />
-    </button>
+    {/* Dropdown — right-aligned below the + button */}
+    {newMenu && (
+     <div className="absolute right-0 top-[48px] z-[200] w-[260px] max-w-[calc(100vw-1rem)] translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
+      {/* Section: Create */}
+      <div className="px-3 pb-1 pt-2">
+       <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground">Create</p>
+       <NewPageButton
+        workspaceId={workspaceId}
+        workspaceSlug={workspaceSlug}
+        onBeforeCreate={() => setNewMenu(false)}
+        className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
+       >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
+         <FileText size={14} />
+        </span>
+        <span>
+         <span className="block text-sm font-medium text-foreground">New Page</span>
+         <span className="block text-xs text-muted-foreground">Docs, notes, wikis</span>
+        </span>
+       </NewPageButton>
+      </div>
+
+      <div className="mx-3 my-1 h-px bg-border/60" />
+
+      {/* Section: More */}
+      <div className="px-3 pb-2.5 pt-1">
+       <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground">More</p>
+       <NewDatabaseButton
+        workspaceId={workspaceId}
+        workspaceSlug={workspaceSlug}
+        onBeforeCreate={() => setNewMenu(false)}
+       />
+       <Link
+        href={`/app/${workspaceSlug}/templates`}
+        onClick={() => setNewMenu(false)}
+        className="group mt-0.5 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent"
+       >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-warning/10 text-warning">
+         <LayoutGrid size={14} />
+        </span>
+        <span>
+         <span className="block text-sm font-medium text-foreground">From Template</span>
+         <span className="block text-xs text-muted-foreground">Start from a template</span>
+        </span>
+       </Link>
+      </div>
+     </div>
+    )}
    </div>
 
    {/* Scrollable body */}
@@ -450,43 +450,37 @@ export function Sidebar({
     </div>
    </div>
 
-   {/* Bottom nav — Settings + Admin */}
-   <div className="shrink-0 border-t border-sidebar-border px-2 py-1.5">
-    <NavButton
-     href={`/app/${workspaceSlug}/settings`}
-     icon={<Settings size={15} />}
-     label="Settings"
-     active={pathname.startsWith(`/app/${workspaceSlug}/settings`)}
-    />
-    {isAdmin && (
+   {/* Bottom nav — Admin only */}
+   {isAdmin && (
+    <div className="shrink-0 border-t border-sidebar-border px-2 py-1.5">
      <NavButton
-      href="/Orbit-admin/orbit"
+      href="/orbit-admin/orbit"
       icon={<Shield size={15} />}
       label="Orbit Admin"
-      active={pathname.startsWith("/Orbit-admin")}
+      active={pathname.startsWith("/orbit-admin")}
      />
-    )}
-   </div>
+    </div>
+   )}
 
    {/* User footer */}
    <div className="relative shrink-0 border-t border-sidebar-border px-2 py-2" ref={userMenuRef}>
 
     {/* User menu dropdown — appears above */}
     {userMenu && (
-     <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover shadow-[0_8px_32px_-6px_rgba(0,0,0,0.18),0_2px_10px_-2px_rgba(0,0,0,0.08)]">
+     <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover">
 
       {/* User info */}
       <div className="px-3.5 pb-3 pt-3.5">
        <div className="flex items-center gap-3">
         <div className="relative shrink-0">
-         <UserAvatar image={userImage} email={userEmail} className="size-10 text-[15px]" />
+         <UserAvatar image={userImage} email={userEmail} className="size-10 text-sm" />
          <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-popover bg-success" />
         </div>
         <div className="min-w-0 flex-1">
-         <p className="truncate text-[13px] font-semibold leading-tight text-foreground">
+         <p className="truncate text-sm font-semibold leading-tight text-foreground">
           {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
          </p>
-         <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground">{userEmail}</p>
+         <p className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">{userEmail}</p>
         </div>
        </div>
       </div>
@@ -502,18 +496,18 @@ export function Sidebar({
         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 group-hover:bg-primary/10 group-hover:text-primary">
          <Settings size={13} />
         </span>
-        <span className="text-[13px] font-medium text-foreground">Settings</span>
+        <span className="text-sm font-medium text-foreground">Settings</span>
        </Link>
       </div>
 
       <div className="mx-3 h-px bg-border/50" />
 
       <div className="p-1.5">
-       <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/[0.07]">
+       <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
          <LogOut size={13} />
         </span>
-        <span className="text-[13px] font-medium text-destructive">Sign out</span>
+        <span className="text-sm font-medium text-destructive">Sign out</span>
        </SignOutButton>
       </div>
      </div>
@@ -523,20 +517,20 @@ export function Sidebar({
     <button
      type="button"
      onClick={() => setUserMenu((v) => !v)}
-     className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-sidebar-accent" : "hover:bg-sidebar-accent"}`}
+     className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-primary/10" : "hover:bg-primary/10"}`}
     >
-     <UserAvatar image={userImage} email={userEmail} className="size-8 text-[13px]" />
+     <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm" />
      <div className="min-w-0 flex-1 text-left">
-      <p className="truncate text-[13px] font-semibold text-sidebar-foreground">
+      <p className="truncate text-sm font-semibold text-sidebar-foreground">
        {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
       </p>
-      <p className="truncate text-[11px] text-sidebar-foreground/50">
+      <p className="truncate text-xs text-sidebar-foreground/70">
        {userEmail}
       </p>
      </div>
      <ChevronDown
       size={13}
-      className={`shrink-0 text-sidebar-foreground/40 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
+      className={`shrink-0 text-sidebar-foreground/60 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
      />
     </button>
    </div>
@@ -568,17 +562,17 @@ function NavButton({
 }) {
  return (
   <Link
-   className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 ${
+   className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
     active
-     ? "bg-sidebar-accent text-sidebar-foreground"
-     : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+     ? "bg-primary/10 text-primary"
+     : "text-sidebar-foreground/60 hover:bg-primary/10 hover:text-primary"
    }`}
    href={href}
   >
-   <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"}`}>{icon}</span>
+   <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-primary"}`}>{icon}</span>
    <span className={`flex-1 ${active ? "font-semibold" : ""}`}>{label}</span>
    {shortcut && (
-    <kbd className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+    <kbd className="shrink-0 rounded bg-muted px-1 py-0.5 text-xs font-medium text-muted-foreground">
      {shortcut}
     </kbd>
    )}
@@ -604,7 +598,7 @@ function CollapsedNavItem({
     className={`flex size-9 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${
      active
       ? "bg-sidebar-accent text-primary"
-      : "text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
     }`}
    >
     {children}
@@ -623,7 +617,7 @@ function CollapsedSearchItem({ label, children }: { label: string; children: Rea
    <button
     type="button"
     onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-    className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+    className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
    >
     {children}
    </button>
@@ -639,11 +633,11 @@ function SearchNavButton({ icon }: { icon: React.ReactNode }) {
   <button
    type="button"
    onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-   className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+   className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
   >
-   <span className="shrink-0 text-sidebar-foreground/40">{icon}</span>
+   <span className="shrink-0 text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-primary">{icon}</span>
    <span className="flex-1 text-left">Search</span>
-   <kbd className="shrink-0 rounded-[var(--radius-xs)] bg-sidebar-accent px-1 py-0.5 text-[10px] font-medium text-sidebar-foreground/50">Ctrl+K</kbd>
+   <kbd className="shrink-0 rounded-[var(--radius-xs)] bg-sidebar-accent px-1 py-0.5 text-xs font-medium text-sidebar-foreground/70">Ctrl+K</kbd>
   </button>
  );
 }
@@ -683,13 +677,13 @@ function SectionLabel({ label, expanded, onToggle }: { label: string; expanded?:
   <button
    type="button"
    onClick={onToggle}
-   className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+   className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
   >
-   <FileText size={15} className="shrink-0 text-sidebar-foreground/40 transition-colors duration-150 group-hover:text-sidebar-foreground/70" />
+   <FileText size={15} className="shrink-0 text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-primary" />
    <span className="flex-1 text-left">{label}</span>
    <ChevronDown
     size={13}
-    className={`shrink-0 text-muted-foreground/40 transition-transform duration-150 group-hover:text-muted-foreground ${expanded ? "" : "-rotate-90"}`}
+    className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-primary ${expanded ? "" : "-rotate-90"}`}
    />
   </button>
  );
@@ -740,7 +734,7 @@ function NewDatabaseButton({
     <Database size={14} />
    </span>
    <span>
-    <span className="block text-[13px] font-medium text-foreground">New Database</span>
+    <span className="block text-sm font-medium text-foreground">New Database</span>
     <span className="block text-xs text-muted-foreground">Tables, boards, calendars</span>
    </span>
   </button>

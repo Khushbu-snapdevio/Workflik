@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { pages, users, workspaces } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
+import { ChevronRight, Home } from "lucide-react";
 import { TrashClient } from "./trash-client";
 
 type Props = { params: Promise<{ workspace: string }> };
@@ -55,21 +56,17 @@ export default async function TrashPage({ params }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       {/* Top bar */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-background px-4">
+      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card px-3">
         <nav className="flex items-center gap-0.5 text-xs">
           <Link
             href={`/app/${slug}`}
-            className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-foreground transition-colors hover:bg-accent"
           >
-            <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
+            <Home size={13} className="shrink-0 text-foreground" />
             <span className="font-medium">{ws.name}</span>
           </Link>
-          <svg className="size-3 shrink-0 text-muted-foreground/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-          <span className="px-2 py-1.5 font-medium text-foreground/80">Trash</span>
+          <ChevronRight size={12} className="shrink-0 text-foreground/40" />
+          <span className="px-2 py-1 font-semibold text-foreground/80">Trash</span>
         </nav>
       </div>
 

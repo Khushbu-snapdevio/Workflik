@@ -215,7 +215,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
  }
 
  return (
-  <div className="max-w-[780px] px-8 pt-6 pb-10">
+  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {/* ── Header ── */}
    <div className="mb-8 flex items-center gap-4">
@@ -223,7 +223,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
      <Users size={22} className="text-primary-foreground" />
     </div>
     <div>
-     <h1 className="text-[22px] font-bold text-foreground">Members</h1>
+     <h1 className="text-2xl font-bold text-foreground">Members</h1>
      <p className="text-sm text-muted-foreground">Manage who has access to this workspace.</p>
     </div>
    </div>
@@ -235,8 +235,8 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
      { label: "Admins",    value: active.filter(m => m.role === "admin").length },
      { label: "Pending",    value: invited.length },
     ].map(stat => (
-     <div key={stat.label} className="rounded-[var(--radius-md)] border border-border/50 bg-muted/40 px-4 py-3">
-      <p className="text-[22px] font-bold leading-tight text-foreground">{stat.value}</p>
+     <div key={stat.label} className="rounded-[var(--radius-md)] border border-border bg-muted px-4 py-3">
+      <p className="text-2xl font-bold leading-tight text-foreground">{stat.value}</p>
       <p className="text-xs text-muted-foreground">{stat.label}</p>
      </div>
     ))}
@@ -245,7 +245,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
    {/* ── Invite ── */}
    {isAdmin && (
     <div className="mb-7">
-     <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Invite people</p>
+     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Invite people</p>
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card p-4">
       <div className="flex items-center gap-2">
        <Input
@@ -277,7 +277,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
    )}
 
    {actionErr && (
-    <p className="mb-4 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/[0.06] px-3 py-2 text-xs text-destructive">
+    <p className="mb-4 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
      <AlertCircle size={14} className="shrink-0" />
      {actionErr}
     </p>
@@ -285,7 +285,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
 
    {/* ── Active members ── */}
    <div className="mb-7">
-    <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Members</p>
+    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Members</p>
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
      {active.map((m, i) => {
       const display  = m.userName?.trim() || m.userEmail?.trim() || m.invitedEmail?.trim() || "Unknown";
@@ -301,7 +301,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
         <div className="flex-1 min-w-0">
          <div className="flex items-center gap-2">
           <p className="text-sm font-semibold text-foreground truncate">{display}</p>
-          {isMe && <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">you</span>}
+          {isMe && <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">you</span>}
          </div>
          {m.userName && m.userEmail && <p className="text-xs text-muted-foreground truncate">{m.userEmail}</p>}
         </div>
@@ -323,7 +323,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
           onClick={() => setPendingRemove({ userId: m.userId!, name: display })}
           disabled={busy === m.userId}
           title="Remove"
-          className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
+          className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
          >
           <X size={14} />
          </Button>
@@ -341,8 +341,8 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
    {invited.length > 0 && (
     <div>
      <div className="mb-2 flex items-center gap-2">
-      <p className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">Pending invitations</p>
-      <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10.5px] font-bold text-muted-foreground">{invited.length}</span>
+      <p className="text-xs font-semibold tracking-wide text-muted-foreground">Pending invitations</p>
+      <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{invited.length}</span>
      </div>
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
       {invited.map((m, i) => {
@@ -376,7 +376,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
             size="sm"
             onClick={() => setPendingCancelInvite({ id: m.id, email: addr })}
             disabled={busy === m.id}
-            className="flex size-7 items-center justify-center p-0 bg-transparent text-muted-foreground/40 hover:bg-destructive/[0.06] hover:text-destructive shadow-none border-0"
+            className="flex size-7 items-center justify-center p-0 bg-transparent text-muted-foreground/70 hover:bg-destructive/5 hover:text-destructive shadow-none border-0"
            >
             <X size={14} />
            </Button>

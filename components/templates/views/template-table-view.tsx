@@ -29,21 +29,21 @@ type EmailVal    = { email?: string };
 type UrlVal     = { url?: string };
 type PersonVal   = { name?: string };
 
-// ── Option color classes ──────────────────────────────────────────────────────
+// ── Option colors (matches property-registry.ts exactly) ─────────────────────
 
-const OPTION_COLORS: Record<string, string> = {
- gray:   "bg-[#d4d4d8] text-[#3f3f46]",
- red:    "bg-[#fee2e2] text-[#b91c1c]",
- orange:  "bg-[#ffedd5] text-[#c2410c]",
- yellow:  "bg-[#fef9c3] text-[#a16207]",
- green:   "bg-[#dcfce7] text-[#15803d]",
- teal:   "bg-[#ccfbf1] text-[#0f766e]",
- blue:   "bg-[#e0f2fe] text-[#0369a1]",
- purple:  "bg-[#ede9fe] text-[#6d28d9]",
- pink:   "bg-[#fce7f3] text-[#be185d]",
+const OPTION_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+ gray:   { bg: "#d4d4d8", text: "#3f3f46", dot: "#71717a" },
+ red:    { bg: "#fecaca", text: "#b91c1c", dot: "#f87171" },
+ orange:  { bg: "#fed7aa", text: "#c2410c", dot: "#fb923c" },
+ yellow:  { bg: "#fef08a", text: "#a16207", dot: "#facc15" },
+ green:   { bg: "#bbf7d0", text: "#15803d", dot: "#4ade80" },
+ teal:   { bg: "#99f6e4", text: "#0f766e", dot: "#2dd4bf" },
+ blue:   { bg: "#bae6fd", text: "#0369a1", dot: "#38bdf8" },
+ purple:  { bg: "#ddd6fe", text: "#6d28d9", dot: "#a78bfa" },
+ pink:   { bg: "#fbcfe8", text: "#be185d", dot: "#f472b6" },
 };
 
-function optionCls(color: string): string {
+function getOptColor(color: string) {
  return OPTION_COLORS[color] ?? OPTION_COLORS.gray;
 }
 
@@ -103,7 +103,10 @@ function EditableCell({
   );
  }
 
- const display = value != null && value !== "" ? String(value) : null;
+ const rawDisplay = value != null && value !== "" ? String(value) : null;
+ const display = type === "date" && rawDisplay
+  ? new Date(rawDisplay + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+  : rawDisplay;
 
  // URL: show as clickable link with an edit pencil on hover
  if (type === "url" && display) {
@@ -138,9 +141,24 @@ function EditableCell({
   >
    {display
     ? <span className="text-foreground">{display}</span>
-    : <span className="text-muted-foreground/30 text-xs">{placeholder}</span>
+    : <span className="text-muted-foreground/60 text-xs">{placeholder}</span>
    }
   </button>
+ );
+}
+
+// ── Option badge (reusable) ────────────────────────────────────────────────────
+
+function OptionBadge({ name, color }: { name: string; color: string }) {
+ const c = getOptColor(color);
+ return (
+  <span
+   className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium whitespace-nowrap"
+   style={{ backgroundColor: c.bg, color: c.text }}
+  >
+   <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: c.dot }} />
+   {name}
+  </span>
  );
 }
 
@@ -173,10 +191,10 @@ function SelectCell({
     className="flex w-full items-center gap-1 rounded px-1 py-0.5 hover:bg-muted/60 transition-colors"
    >
     {current
-     ? <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(current.color)}`}>{current.name}</span>
-     : <span className="text-xs text-muted-foreground/30">Empty</span>
+     ? <OptionBadge name={current.name} color={current.color} />
+     : <span className="text-xs text-muted-foreground/60">Empty</span>
     }
-    <CaretDownIcon size={10} className="ml-auto shrink-0 text-muted-foreground/40" />
+    <CaretDownIcon size={10} className="ml-auto shrink-0 text-muted-foreground/70" />
    </button>
 
    {open && (
@@ -195,7 +213,7 @@ function SelectCell({
        onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors"
       >
-       <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>{opt.name}</span>
+       <OptionBadge name={opt.name} color={opt.color} />
        {opt.id === current?.id && <span className="ml-auto text-primary text-xs font-bold">✓</span>}
       </button>
      ))}
@@ -242,12 +260,10 @@ function MultiSelectCell({
     className="flex w-full min-h-[24px] flex-wrap items-center gap-1 rounded px-1 py-0.5 hover:bg-muted/60 transition-colors"
    >
     {selectedOpts.length > 0
-     ? selectedOpts.map((o) => (
-       <span key={o.id} className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(o.color)}`}>{o.name}</span>
-      ))
-     : <span className="text-xs text-muted-foreground/30">Empty</span>
+     ? selectedOpts.map((o) => <OptionBadge key={o.id} name={o.name} color={o.color} />)
+     : <span className="text-xs text-muted-foreground/60">Empty</span>
     }
-    <CaretDownIcon size={10} className="ml-auto shrink-0 text-muted-foreground/40" />
+    <CaretDownIcon size={10} className="ml-auto shrink-0 text-muted-foreground/70" />
    </button>
 
    {open && (
@@ -260,10 +276,10 @@ function MultiSelectCell({
         onClick={() => toggle(opt.id)}
         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors"
        >
-        <span className={`flex size-3.5 items-center justify-center rounded border text-[9px] font-bold transition-colors ${checked ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+        <span className={`flex size-3.5 items-center justify-center rounded border text-xs font-bold transition-colors ${checked ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
          {checked && "✓"}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>{opt.name}</span>
+        <OptionBadge name={opt.name} color={opt.color} />
        </button>
       );
      })}
@@ -280,7 +296,7 @@ function CheckboxCell({ value, onSave }: { value: CheckboxVal | null | undefined
  return (
   <button
    onClick={() => onSave({ checked: !checked })}
-   className={`flex size-4 shrink-0 items-center justify-center rounded border text-[10px] font-bold transition-colors ${checked ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/60"}`}
+   className={`flex size-4 shrink-0 items-center justify-center rounded border text-xs font-bold transition-colors ${checked ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary/60"}`}
   >
    {checked && "✓"}
   </button>
@@ -324,15 +340,15 @@ function PersonCell({ value, onSave }: { value: PersonVal | null | undefined; on
   >
    {name ? (
     <>
-     <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
+     <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
       {name.charAt(0).toUpperCase()}
      </span>
      <span className="truncate text-sm text-foreground">{name}</span>
     </>
    ) : (
     <>
-     <UserIcon size={12} className="shrink-0 text-muted-foreground/40" />
-     <span className="text-xs text-muted-foreground/30">Empty</span>
+     <UserIcon size={12} className="shrink-0 text-muted-foreground/70" />
+     <span className="text-xs text-muted-foreground/60">Empty</span>
     </>
    )}
   </button>
@@ -397,7 +413,7 @@ function ColumnHeader({
    <div className="flex items-center justify-between gap-1 w-full">
     <div className="flex min-w-0 items-center gap-1.5">
      <Icon size={12} className="shrink-0 text-muted-foreground/60" />
-     <span className="truncate text-xs font-semibold text-muted-foreground tracking-[0.125px]">
+     <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">
       {prop.name}
      </span>
     </div>
@@ -405,7 +421,7 @@ function ColumnHeader({
     <div ref={menuRef} className="relative shrink-0">
      <button
       onClick={() => setMenuOpen((p) => !p)}
-      className="flex size-5 items-center justify-center rounded text-muted-foreground/40 opacity-0 group-hover/col:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+      className="flex size-5 items-center justify-center rounded text-muted-foreground/70 opacity-0 group-hover/col:opacity-100 hover:bg-accent hover:text-foreground transition-all"
      >
       <DotsThreeIcon size={14} />
      </button>
@@ -704,7 +720,7 @@ function CellContent({
    return <EditableCell value={pv?.phone} type="text" placeholder="Empty" onSave={(v) => onSave(v ? { phone: (v as { text: string }).text } : null)} />;
   }
   default:
-   return <span className="px-1 text-xs text-muted-foreground/40">—</span>;
+   return <span className="px-1 text-xs text-muted-foreground/70">—</span>;
  }
 }
 
@@ -782,7 +798,7 @@ export function TemplateTableView({
       <th className="w-8 px-2 py-2.5 text-left">
        <button
         onClick={onToggleSelectAll}
-        className={`flex size-3.5 items-center justify-center rounded border text-[9px] font-bold transition-colors ${allSelected ? "border-primary bg-primary text-primary-foreground" : someSelected ? "border-primary/60 bg-primary/10" : "border-border hover:border-primary/60"}`}
+        className={`flex size-3.5 items-center justify-center rounded border text-xs font-bold transition-colors ${allSelected ? "border-primary bg-primary text-primary-foreground" : someSelected ? "border-primary/60 bg-primary/10" : "border-border hover:border-primary/60"}`}
        >
         {allSelected ? "✓" : someSelected ? "−" : ""}
        </button>
@@ -790,7 +806,7 @@ export function TemplateTableView({
 
       {/* Title column */}
       <th className="py-2.5 pl-1 pr-4 text-left">
-       <span className="text-xs font-semibold tracking-[0.125px] text-muted-foreground">Name</span>
+       <span className="text-xs font-semibold tracking-wide text-muted-foreground">Name</span>
       </th>
 
       {/* Property columns */}
@@ -843,7 +859,7 @@ export function TemplateTableView({
         <td className="w-8 px-2 py-0">
          <button
           onClick={() => onToggleSelect(entry.id)}
-          className={`flex size-3.5 items-center justify-center rounded border text-[9px] font-bold transition-all ${isSelected ? "border-primary bg-primary text-primary-foreground opacity-100" : "border-border opacity-0 group-hover/row:opacity-100 hover:border-primary/60"}`}
+          className={`flex size-3.5 items-center justify-center rounded border text-xs font-bold transition-all ${isSelected ? "border-primary bg-primary text-primary-foreground opacity-100" : "border-border opacity-0 group-hover/row:opacity-100 hover:border-primary/60"}`}
          >
           {isSelected ? "✓" : ""}
          </button>
@@ -866,7 +882,7 @@ export function TemplateTableView({
             >
              {entry.title
               ? <span className="text-foreground">{entry.title}</span>
-              : <span className="text-muted-foreground/30">Untitled</span>
+              : <span className="text-muted-foreground/60">Untitled</span>
              }
             </button>
            )}
@@ -917,7 +933,7 @@ export function TemplateTableView({
        <td colSpan={visibleProps.length + 3} className="py-16 text-center">
         <div className="space-y-1">
          <p className="text-sm font-medium text-muted-foreground">No entries yet</p>
-         <p className="text-xs text-muted-foreground/50">Click &quot;+ New&quot; below to add your first row</p>
+         <p className="text-xs text-muted-foreground">Click &quot;+ New&quot; below to add your first row</p>
         </div>
        </td>
       </tr>

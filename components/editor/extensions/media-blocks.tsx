@@ -32,8 +32,9 @@ function MediaPicker({
 
  return (
   <div className="my-2 space-y-3 rounded-[var(--radius-md)] border border-border bg-muted/30 p-4">
-   <p className="text-xs font-semibold tracking-[0.125px] text-muted-foreground">
-    {icon} {label}
+   <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground">
+    <span className="text-xl leading-none">{icon}</span>
+    {label}
    </p>
 
    <div className="flex gap-2">
@@ -55,7 +56,7 @@ function MediaPicker({
      onMouseDown={(e) => e.preventDefault()}
      disabled={!url.trim()}
      onClick={() => url.trim() && onConfirm(url.trim())}
-     className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors disabled:opacity-40"
+     className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
     >
      Embed ↵
     </button>
@@ -316,7 +317,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
        type="button"
        onMouseDown={(e) => e.preventDefault()}
        onClick={handleDelete}
-       className="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/[0.06]"
+       className="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/5"
       >
        Delete
       </button>
@@ -401,7 +402,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
       >
        {captionDraft}
       </a>
-      <p className="max-w-xs truncate text-xs text-muted-foreground/50">{src}</p>
+      <p className="max-w-xs truncate text-xs text-muted-foreground">{src}</p>
      </div>
     </div>
     <div className="ml-4 flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -409,7 +410,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
       type="button"
       onMouseDown={(e) => e.preventDefault()}
       onClick={handleDelete}
-      className="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/[0.06]"
+      className="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/5"
      >
       Delete
      </button>

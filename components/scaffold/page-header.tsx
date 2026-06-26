@@ -10,7 +10,7 @@ export function PageHeader({
   return (
     <div className="mb-6">
       {eyebrow && (
-        <p className="mb-2 font-semibold text-xs text-success tracking-[0.125px]">
+        <p className="mb-2 font-semibold text-xs text-success tracking-wide">
           {eyebrow}
         </p>
       )}

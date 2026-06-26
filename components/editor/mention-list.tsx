@@ -120,7 +120,7 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
  return (
   <div>
-   <div className="px-3 py-1 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground">
+   <div className="px-3 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
     {label}
    </div>
    {children}
@@ -183,7 +183,7 @@ function UserAvatar({ name, image }: { name: string; image?: string }) {
   );
  }
  return (
-  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-semibold text-white flex-shrink-0 select-none">
+  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-white flex-shrink-0 select-none">
    {name[0]?.toUpperCase()}
   </div>
  );

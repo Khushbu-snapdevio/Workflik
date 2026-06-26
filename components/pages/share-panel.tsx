@@ -120,7 +120,7 @@ function SelectField({
    </button>
 
    {open && (
-    <div className="absolute left-0 top-full z-[200] mt-1 min-w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-[var(--shadow-float)]">
+    <div className="absolute left-0 top-full z-[200] mt-1 min-w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1">
      {options.map((o) => (
       <button
        key={o.value}
@@ -145,7 +145,7 @@ function SelectField({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
  return (
-  <p className="mb-2.5 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+  <p className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
    {children}
   </p>
  );
@@ -426,7 +426,7 @@ export function SharePanel({
              <span className="text-xs text-muted-foreground/60 flex-shrink-0">(you)</span>
             )}
             {isGuest && (
-             <span className="flex-shrink-0 rounded-full border border-primary/20 bg-primary/10 px-1.5 py-px text-[9px] font-semibold text-primary leading-none">
+             <span className="flex-shrink-0 rounded-[var(--radius-xs)] border border-primary/20 bg-primary/10 px-1.5 py-px text-xs font-semibold text-primary leading-none">
               GUEST
              </span>
             )}
@@ -452,7 +452,7 @@ export function SharePanel({
              type="button"
              onClick={() => setPendingRemoveGrant(grant)}
              title="Remove access"
-             className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
+             className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground/60 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
             >
              <X size={12} />
             </button>
@@ -493,14 +493,14 @@ export function SharePanel({
      {isPublicActive && publicLink && (
       <div className="mt-3.5 space-y-2.5">
        <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2.5">
-        <Link2 size={11} className="shrink-0 text-muted-foreground/50" />
+        <Link2 size={11} className="shrink-0 text-muted-foreground" />
         <span className="flex-1 truncate text-xs text-muted-foreground font-mono">
          {publicUrl}
         </span>
         <button
          type="button"
          onClick={copyLink}
-         className="flex-shrink-0 flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground/70 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
+         className="flex-shrink-0 flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground/70 hover:border-primary/30 hover:bg-primary/5 transition-colors"
         >
          {copied
           ? <Check size={11} className="text-primary" />
@@ -532,7 +532,7 @@ export function SharePanel({
       disabled={savingPrivate}
       className={`w-full flex items-center gap-3 rounded-[var(--radius-sm)] border px-3.5 py-3 text-left transition-colors disabled:opacity-60 group ${
        isPrivate
-        ? "border-primary/20 bg-primary/[0.04] hover:bg-primary/[0.07]"
+        ? "border-primary/20 bg-primary/5 hover:bg-primary/10"
         : "border-border bg-muted/20 hover:bg-muted/40"
       }`}
      >
@@ -557,7 +557,7 @@ export function SharePanel({
       {savingPrivate ? (
        <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
       ) : isPrivate ? (
-       <span className="flex-shrink-0 rounded-full border border-[#bae6fd] bg-[#e0f2fe] px-2 py-0.5 text-[10px] font-semibold text-[#0369a1]">
+       <span className="flex-shrink-0 rounded-[var(--radius-xs)] border border-[#bae6fd] bg-[#e0f2fe] px-2 py-0.5 text-xs font-semibold text-[#0369a1]">
         Private
        </span>
       ) : null}

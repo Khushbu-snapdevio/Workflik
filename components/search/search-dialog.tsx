@@ -178,7 +178,7 @@ function ResultRow({
      <span className="truncate text-sm font-semibold text-foreground">
       {result.title || "Untitled"}
      </span>
-     <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+     <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
       {sourceLabel(result.sourceType, result.kind)}
      </span>
     </div>
@@ -191,7 +191,7 @@ function ResultRow({
    </div>
 
    {/* Time */}
-   <span className="mt-0.5 shrink-0 text-xs text-muted-foreground/50">
+   <span className="mt-0.5 shrink-0 text-xs text-muted-foreground">
     {relativeTime(result.updatedAt)}
    </span>
   </button>
@@ -224,7 +224,7 @@ function RecentRow({
    <span className="flex-1 truncate text-sm font-medium text-foreground">
     {item.page?.title || "Untitled"}
    </span>
-   <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground/50">
+   <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
     <ClockIcon size={11} />
     {relativeTime(item.visitedAt)}
    </div>
@@ -455,7 +455,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       <div className="py-1">
        {recent.length > 0 ? (
         <>
-         <p className="px-4 pb-1 pt-3 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/60">
+         <p className="px-4 pb-1 pt-3 text-xs font-semibold tracking-wide text-muted-foreground/60">
           Recently visited
          </p>
          {recent.map((r, i) => (
@@ -470,7 +470,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
         </>
        ) : (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
-         <MagnifyingGlassIcon size={28} className="text-muted-foreground/30" />
+         <MagnifyingGlassIcon size={28} className="text-muted-foreground/60" />
          <p className="text-sm text-muted-foreground/60">
           Start typing to search
          </p>
@@ -482,7 +482,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
      {/* Has query — show results */}
      {!isQueryEmpty && !loading && results.length === 0 && (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
-       <MagnifyingGlassIcon size={28} className="text-muted-foreground/30" />
+       <MagnifyingGlassIcon size={28} className="text-muted-foreground/60" />
        <p className="text-sm font-medium text-foreground">No results for &ldquo;{query}&rdquo;</p>
        <p className="text-xs text-muted-foreground/60">
         Try different keywords or adjust filters
@@ -516,7 +516,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
         </div>
        ))}
        {total >= 50 && (
-        <p className="px-4 py-2.5 text-center text-xs text-muted-foreground/50">
+        <p className="px-4 py-2.5 text-center text-xs text-muted-foreground">
          Showing top 50 results — refine your search
         </p>
        )}
@@ -526,27 +526,27 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
 
     {/* Footer hint */}
     <div className="flex items-center gap-4 border-t border-border/40 bg-muted/20 px-4 py-2">
-     <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-      <kbd className="flex size-5 items-center justify-center rounded border border-border bg-background text-[10px]">
+     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <kbd className="flex size-5 items-center justify-center rounded border border-border bg-background text-xs">
        <ArrowUpIcon size={9} />
       </kbd>
-      <kbd className="flex size-5 items-center justify-center rounded border border-border bg-background text-[10px]">
+      <kbd className="flex size-5 items-center justify-center rounded border border-border bg-background text-xs">
        <ArrowDownIcon size={9} />
       </kbd>
       Navigate
      </span>
-     <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-      <kbd className="flex items-center justify-center rounded border border-border bg-background px-1.5 py-0.5 text-[10px]">
+     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <kbd className="flex items-center justify-center rounded border border-border bg-background px-1.5 py-0.5 text-xs">
        <ArrowBendDownLeftIcon size={9} />
       </kbd>
       Open
      </span>
-     <span className="flex items-center gap-1.5 text-xs text-muted-foreground/50">
-      <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px]">Esc</kbd>
+     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-xs">Esc</kbd>
       Close
      </span>
-     <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground/50">
-      <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px]">Ctrl K</kbd>
+     <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+      <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-xs">Ctrl K</kbd>
       Clear
      </span>
     </div>

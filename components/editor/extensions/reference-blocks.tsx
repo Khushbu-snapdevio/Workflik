@@ -9,6 +9,68 @@ const DatabasePage = dynamic(
 );
 import katex from "katex";
 
+// ── Block type options ────────────────────────────────────────────────────────
+const BLOCK_TYPE_OPTIONS = [
+ { value: "paragraph", label: "Paragraph" },
+ { value: "h1",        label: "Heading 1" },
+ { value: "h2",        label: "Heading 2" },
+ { value: "h3",        label: "Heading 3" },
+ { value: "todo",      label: "To-do" },
+ { value: "bullet",    label: "Bullet" },
+] as const;
+
+function BlockTypeSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+ const [open, setOpen] = useState(false);
+ const ref = useRef<HTMLDivElement>(null);
+ const label = BLOCK_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? "Paragraph";
+
+ useEffect(() => {
+  if (!open) return;
+  function handler(e: MouseEvent) {
+   if (!ref.current?.contains(e.target as Node)) setOpen(false);
+  }
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+ }, [open]);
+
+ return (
+  <div ref={ref} className="relative w-[120px] shrink-0">
+   <button
+    type="button"
+    onClick={() => setOpen((p) => !p)}
+    className={[
+     "flex w-full items-center justify-between rounded-[var(--radius-sm)] border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors",
+     open ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-border/80",
+    ].join(" ")}
+   >
+    <span>{label}</span>
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className={`shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}>
+     <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+   </button>
+   {open && (
+    <div className="absolute left-0 top-[calc(100%+4px)] z-[200] min-w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover py-1">
+     {BLOCK_TYPE_OPTIONS.map((opt) => (
+      <button
+       key={opt.value}
+       type="button"
+       onClick={() => { onChange(opt.value); setOpen(false); }}
+       className={[
+        "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent",
+        opt.value === value ? "bg-accent font-semibold text-foreground" : "text-foreground",
+       ].join(" ")}
+      >
+       {opt.value === value && <span className="text-primary">✓</span>}
+       {opt.value !== value && <span className="w-3" />}
+       {opt.label}
+      </button>
+     ))}
+    </div>
+   )}
+  </div>
+ );
+}
+
 // ── Shared inline-editor row used by LinkedPage and TemplateButton ─────────────
 function InlineEditorRow({
  icon,
@@ -176,8 +238,8 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
  if (editing) {
   return (
    <NodeViewWrapper contentEditable={false}>
-    <div className="my-2 rounded-[var(--radius-md)] border border-primary/30 bg-primary/[0.03] p-4">
-     <p className="mb-3 text-xs font-semibold tracking-[0.125px] text-primary/60">
+    <div className="my-2 rounded-[var(--radius-md)] border border-primary/30 bg-primary/5 p-4">
+     <p className="mb-3 text-xs font-semibold tracking-wide text-primary/60">
       ⚡ Template Button — Edit
      </p>
 
@@ -226,22 +288,14 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
       <div className="flex flex-col gap-1.5">
        {draftBlocks.map((b, i) => (
         <div key={i} className="flex items-center gap-2">
-         <select
+         <BlockTypeSelect
           value={b.type}
-          onChange={(e) => {
+          onChange={(v) => {
            const next = [...draftBlocks];
-           next[i] = { ...next[i], type: e.target.value };
+           next[i] = { ...next[i], type: v };
            setDraftBlocks(next);
           }}
-          className="w-28 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
-         >
-          <option value="paragraph">Paragraph</option>
-          <option value="h1">Heading 1</option>
-          <option value="h2">Heading 2</option>
-          <option value="h3">Heading 3</option>
-          <option value="todo">To-do</option>
-          <option value="bullet">Bullet</option>
-         </select>
+         />
          <input
           type="text"
           value={b.text}
@@ -251,14 +305,16 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
            setDraftBlocks(next);
           }}
           placeholder="Block text…"
-          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
+          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary focus:ring-2 focus:ring-primary/20"
          />
          <button
           type="button"
           onClick={() => setDraftBlocks(draftBlocks.filter((_, j) => j !== i))}
-          className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 hover:bg-destructive/10 hover:text-destructive"
+          className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
          >
-          ✕
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+           <path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
          </button>
         </div>
        ))}
@@ -312,7 +368,7 @@ function TemplateButtonView({ node, updateAttributes, getPos, editor }: NodeView
      type="button"
      onMouseDown={(e) => e.preventDefault()}
      onClick={() => { setDraftLabel(label); setDraftLocation(insertLocation); setDraftBlocks(templateBlocks); setEditing(true); }}
-     className="rounded-[var(--radius-sm)] px-2 py-1 text-[10px] text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground"
+     className="rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground/70 hover:bg-accent hover:text-muted-foreground"
     >
      Edit
     </button>
@@ -345,7 +401,7 @@ function MathBlockView({ node, updateAttributes, selected }: NodeViewProps) {
   <NodeViewWrapper contentEditable={false}>
    {editing ? (
     <div className="my-2 flex flex-col gap-2 rounded-[var(--radius-sm)] border border-border bg-muted p-3">
-     <span className="text-[10px] font-semibold tracking-[0.125px] text-muted-foreground">
+     <span className="text-xs font-semibold tracking-wide text-muted-foreground">
       ∑ Equation — LaTeX
      </span>
      <div className="flex gap-2">
@@ -364,7 +420,7 @@ function MathBlockView({ node, updateAttributes, selected }: NodeViewProps) {
       />
       <button
        type="button"
-       className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors"
+       className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
        onClick={commit}
       >
        Done ↵
@@ -530,7 +586,7 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
        className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
       />
       {searchLoading && (
-       <p className="mt-2 text-xs text-muted-foreground/50">Searching…</p>
+       <p className="mt-2 text-xs text-muted-foreground">Searching…</p>
       )}
       {results.length > 0 && (
        <div className="mt-2 flex flex-col gap-0.5">
@@ -540,7 +596,7 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
           onClick={() => handleLink(r.id, r.shortId)}
           className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm text-foreground hover:bg-accent"
          >
-          <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 text-muted-foreground/50" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.5}>
            <rect x="1" y="1" width="14" height="14" rx="2"/>
            <line x1="1" y1="5" x2="15" y2="5"/>
            <line x1="5" y1="5" x2="5" y2="15"/>
@@ -551,11 +607,11 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
        </div>
       )}
       {!searchLoading && query && results.length === 0 && (
-       <p className="mt-2 text-xs text-muted-foreground/40">No databases found</p>
+       <p className="mt-2 text-xs text-muted-foreground/70">No databases found</p>
       )}
       <button
        onClick={() => { setSearching(false); setQuery(""); setResults([]); }}
-       className="mt-3 text-xs text-muted-foreground/50 hover:text-muted-foreground"
+       className="mt-3 text-xs text-muted-foreground hover:text-muted-foreground"
       >
        ← Back
       </button>
@@ -568,7 +624,7 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
    <NodeViewWrapper contentEditable={false}>
     <div className="my-1 flex items-center gap-3 rounded-[var(--radius-md)] border border-dashed border-border bg-muted/20 p-4">
      <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50">
-      <svg viewBox="0 0 16 16" className="size-4 text-muted-foreground/50" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <svg viewBox="0 0 16 16" className="size-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.5}>
        <rect x="1" y="1" width="14" height="14" rx="2"/>
        <line x1="1" y1="5" x2="15" y2="5"/>
        <line x1="5" y1="5" x2="5" y2="15"/>
@@ -576,7 +632,7 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
      </div>
      <div className="flex-1">
       <p className="text-sm font-medium text-foreground/70">Add a database</p>
-      <p className="text-xs text-muted-foreground/50">Create a new database or embed an existing one</p>
+      <p className="text-xs text-muted-foreground">Create a new database or embed an existing one</p>
      </div>
      {isEditor && (
       <div className="flex items-center gap-2">
@@ -606,19 +662,19 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
    <div className="my-3 overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-background">
     {/* Inline header bar */}
     <div className="flex items-center gap-2 border-b border-border/40 bg-muted/20 px-3 py-2">
-     <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 text-muted-foreground/50" fill="none" stroke="currentColor" strokeWidth={1.5}>
+     <svg viewBox="0 0 16 16" className="size-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.5}>
       <rect x="1" y="1" width="14" height="14" rx="2"/>
       <line x1="1" y1="5" x2="15" y2="5"/>
       <line x1="5" y1="5" x2="5" y2="15"/>
      </svg>
-     <span className="text-xs font-semibold text-muted-foreground/50 tracking-[0.125px]">Inline database</span>
+     <span className="text-xs font-semibold text-muted-foreground tracking-wide">Inline database</span>
      <div className="ml-auto flex items-center gap-0.5">
       {isEditor && (
        <>
         <button
          title="Duplicate block"
          onMouseDown={handleDuplicate}
-         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-accent hover:text-muted-foreground"
+         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
         >
          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.5}>
           <rect x="5" y="5" width="9" height="9" rx="1.5"/>
@@ -628,7 +684,7 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
         <button
          title="Delete block"
          onMouseDown={handleDelete}
-         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/40 transition-colors hover:bg-destructive/10 hover:text-destructive"
+         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
          <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={1.5}>
           <path d="M2 4h12"/>
@@ -642,7 +698,7 @@ function InlineDatabaseView({ node, updateAttributes, extension, deleteNode, get
       {workspaceSlug && shortId && (
        <a
         href={`/app/${workspaceSlug}/${shortId}`}
-        className="ml-1 flex items-center gap-1 rounded-[var(--radius-sm)] px-1.5 py-1 text-xs text-muted-foreground/40 transition-colors hover:bg-accent hover:text-primary"
+        className="ml-1 flex items-center gap-1 rounded-[var(--radius-sm)] px-1.5 py-1 text-xs text-muted-foreground/70 transition-colors hover:bg-accent hover:text-primary"
         onClick={(e) => e.stopPropagation()}
        >
         Open

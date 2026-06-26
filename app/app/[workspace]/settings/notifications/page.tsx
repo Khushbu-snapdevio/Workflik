@@ -72,7 +72,7 @@ export default function NotificationSettingsPage() {
   const freqLabel = !emailOn ? "Off" : frequency === "realtime" ? "Instant" : frequency === "daily" ? "Daily" : "Weekly";
 
   return (
-    <div className="max-w-[780px] px-8 pt-6 pb-10">
+    <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
       {/* ── Page header ── */}
       <div className="flex items-center gap-4">
@@ -80,14 +80,14 @@ export default function NotificationSettingsPage() {
           <Bell size={22} className="text-primary-foreground" />
         </div>
         <div>
-          <h1 className="text-[22px] font-bold text-foreground">Notifications</h1>
+          <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
           <p className="text-sm text-muted-foreground">Control how and when you get notified.</p>
         </div>
       </div>
 
       {/* ── Email channel card ── */}
       <div className="mt-8">
-        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Channel</p>
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Channel</p>
         <div className={`overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-150 ${emailOn ? "border-border bg-card" : "border-border bg-muted/20"}`}>
           <div className="flex items-center gap-4 p-5">
             <div className={`flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors ${emailOn ? "bg-primary" : "bg-muted"}`}>
@@ -115,7 +115,7 @@ export default function NotificationSettingsPage() {
 
       {/* ── Delivery frequency ── */}
       <div className={`mt-7 transition-[opacity] duration-300 ${!emailOn ? "pointer-events-none select-none opacity-40" : ""}`}>
-        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">Delivery frequency</p>
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Delivery frequency</p>
         <div className="grid grid-cols-3 gap-3">
           {FREQ_OPTIONS.map(opt => {
             const isActive = frequency === opt.value;
@@ -126,7 +126,7 @@ export default function NotificationSettingsPage() {
                     ? "border-primary/30 bg-accent"
                     : "border-border bg-card hover:border-border hover:bg-accent"
                 }`}>
-                <div className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-[18px] ${isActive ? "bg-card" : "bg-muted/50"}`}>
+                <div className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-lg ${isActive ? "bg-card" : "bg-muted/50"}`}>
                   {opt.icon}
                 </div>
                 <div className="flex-1">
@@ -169,7 +169,7 @@ export default function NotificationSettingsPage() {
       {/* ── What you'll receive ── */}
       <div className="mt-7">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/60">What you'll receive</p>
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground">What you'll receive</p>
           <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{freqLabel}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -177,7 +177,7 @@ export default function NotificationSettingsPage() {
             <div key={ev.label}
               className={`flex flex-col gap-3 rounded-[var(--radius-md)] border border-border/60 bg-card p-4 transition-colors duration-150 ${!emailOn ? "opacity-40" : ""}`}>
               <div className="flex items-center justify-between">
-                <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50 text-[17px]">{ev.icon}</span>
+                <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50 text-base">{ev.icon}</span>
                 <div className={`h-2 w-2 rounded-full ${emailOn ? "bg-primary" : "bg-muted-foreground/30"}`} />
               </div>
               <div>

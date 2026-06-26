@@ -184,7 +184,7 @@ export function PageTree({
 
  if (tree.length === 0) {
   return (
-   <p className="px-2 py-4 text-center text-2xs text-sidebar-foreground/40">
+   <p className="px-2 py-4 text-center text-2xs text-sidebar-foreground/60">
     {filter ? "No pages match" : "No pages yet"}
    </p>
   );
@@ -197,7 +197,9 @@ export function PageTree({
  function openMorePopup() {
   if (moreRef.current) {
    const r = moreRef.current.getBoundingClientRect();
-   setPopupPos({ top: r.top, left: r.right + 8 });
+   const POPUP_MAX_H = 360;
+   const top = Math.max(8, Math.min(r.top, window.innerHeight - POPUP_MAX_H - 8));
+   setPopupPos({ top, left: r.right + 8 });
   }
   setMoreOpen((v) => !v);
  }
@@ -223,7 +225,7 @@ export function PageTree({
      ref={moreRef}
      type="button"
      onClick={openMorePopup}
-     className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
+     className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:bg-primary/10 hover:text-primary"
     >
      <MoreHorizontal size={12} />
      {hiddenCount} more
@@ -233,13 +235,13 @@ export function PageTree({
    {moreOpen && popupPos && typeof document !== "undefined" && createPortal(
     <div
      ref={popupRef}
-     className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover shadow-[0_8px_24px_-4px_rgba(21,101,192,0.18),0_2px_8px_-2px_rgba(0,0,0,0.1)]"
+     className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
      style={{ top: popupPos.top, left: popupPos.left }}
     >
      {/* Header */}
      <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
-      <span className="text-[13px] font-semibold text-white">Pages</span>
-      <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white">{tree.length}</span>
+      <span className="text-sm font-semibold text-white">Pages</span>
+      <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{tree.length}</span>
      </div>
      {/* List */}
      <div className="max-h-64 overflow-y-auto py-1">
@@ -248,12 +250,12 @@ export function PageTree({
         key={node.id}
         href={`/app/${workspaceSlug}/${node.shortId}`}
         onClick={() => setMoreOpen(false)}
-        className="flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+        className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
        >
         {node.icon ? (
          <span className="shrink-0 text-sm leading-none">{node.icon}</span>
         ) : (
-         <FileText size={13} className="shrink-0 text-muted-foreground/40" />
+         <FileText size={13} className="shrink-0 text-muted-foreground/70" />
         )}
         <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
        </Link>
@@ -429,10 +431,10 @@ function PageTreeNode({
 
  return (
   <div ref={setNodeRef} style={style} {...attributes}>
-   <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
+   <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-primary/10">
     {/* Expand/collapse */}
     <button
-     className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/30 hover:text-sidebar-foreground"
+     className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/50 hover:text-primary"
      onClick={() => setOpen((v) => !v)}
      tabIndex={-1}
      type="button"
@@ -442,14 +444,14 @@ function PageTreeNode({
 
     {/* Page link */}
     <Link
-     className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground"
+     className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 text-xs text-sidebar-foreground/70 hover:text-primary"
      href={`/app/${workspaceSlug}/${node.shortId}`}
      {...listeners}
     >
      {node.icon ? (
       <span className="shrink-0 text-sm leading-none">{node.icon}</span>
      ) : (
-      <FileText size={14} className="shrink-0 text-sidebar-foreground/30" />
+      <FileText size={14} className="shrink-0 text-sidebar-foreground/50" />
      )}
      <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
     </Link>
@@ -461,13 +463,13 @@ function PageTreeNode({
       workspaceSlug={workspaceSlug}
       parentId={node.id}
       title="Add subpage"
-      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-primary"
      >
       <Plus size={12} />
      </NewPageButton>
      <button
       ref={btnRef}
-      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/40 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-primary"
       onClick={(e) => {
        e.stopPropagation();
        const rect = btnRef.current?.getBoundingClientRect();
@@ -532,7 +534,7 @@ function PageTreeNode({
         Copy link
        </button>
        <div className="my-1 border-t border-border" />
-       <button className={`${menuItem} !text-destructive hover:!bg-destructive/[0.06]`} onClick={handleDelete} type="button">
+       <button className={`${menuItem} !text-destructive hover:!bg-destructive/5`} onClick={handleDelete} type="button">
         <Trash2 size={14} />
         Move to Trash
        </button>

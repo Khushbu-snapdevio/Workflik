@@ -75,7 +75,7 @@ export default async function PublicPage({ params }: Props) {
         </a>
         <a
           href="/auth/login"
-          className="rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors"
+          className="rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Sign in to Workflik
         </a>
@@ -134,7 +134,7 @@ function NotPublicScreen() {
       </p>
       <a
         href="/auth/login"
-        className="mt-6 rounded-[var(--radius-sm)] bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-[var(--primary-hover)] transition-colors"
+        className="mt-6 rounded-[var(--radius-sm)] bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
       >
         Sign in to Workflik
       </a>

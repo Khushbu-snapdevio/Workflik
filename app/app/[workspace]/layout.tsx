@@ -2,6 +2,7 @@ import { and, asc, desc, eq, ne, or } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/sidebar/sidebar";
+import { WorkspaceShell } from "@/components/layout/workspace-shell";
 import { SearchProvider } from "@/components/search/search-provider";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { HintProvider } from "@/components/onboarding/hint-provider";
@@ -134,21 +135,24 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     <SearchProvider workspaceSlug={ws.slug} workspaceId={ws.id}>
       <NotificationProvider workspaceId={ws.id} workspaceSlug={ws.slug}>
         <HintProvider dismissed={dismissedHints}>
-          <div className="flex h-screen overflow-hidden bg-page">
-            <Sidebar
-              isAdmin={freshUser?.role === ADMIN_ROLE}
-              userEmail={session.user.email}
-              initialUserImage={freshUser?.image ?? null}
-              workspaceId={ws.id}
-              workspaceSlug={ws.slug}
-              initialPages={initialPages}
-              initialFavorites={initialFavorites}
-              initialRecentlyVisited={recentlyVisitedSerialized}
-              initialSidebarWidth={prefs?.sidebarWidth ?? 280}
-              initialSidebarCollapsed={prefs?.sidebarCollapsed ?? false}
-            />
+          <WorkspaceShell
+            sidebar={
+              <Sidebar
+                isAdmin={freshUser?.role === ADMIN_ROLE}
+                userEmail={session.user.email}
+                initialUserImage={freshUser?.image ?? null}
+                workspaceId={ws.id}
+                workspaceSlug={ws.slug}
+                initialPages={initialPages}
+                initialFavorites={initialFavorites}
+                initialRecentlyVisited={recentlyVisitedSerialized}
+                initialSidebarWidth={prefs?.sidebarWidth || 280}
+                initialSidebarCollapsed={prefs?.sidebarCollapsed ?? false}
+              />
+            }
+          >
             <main className="flex-1 overflow-y-auto">{children}</main>
-          </div>
+          </WorkspaceShell>
           <TooltipTour tourCompleted={freshUser?.tourCompleted ?? true} />
         </HintProvider>
       </NotificationProvider>

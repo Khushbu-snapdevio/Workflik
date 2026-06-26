@@ -39,7 +39,7 @@ export function TrashBanner({ pageId, workspaceSlug }: TrashBannerProps) {
  return (
   <>
    {/* Trash banner */}
-   <div className="mb-5 flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-destructive/30 bg-destructive/[0.06] px-4 py-3 text-sm text-destructive">
+   <div className="mb-5 flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
     <div className="flex items-center gap-2.5">
      <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>

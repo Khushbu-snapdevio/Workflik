@@ -69,7 +69,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
 
   return (
    <div
-    className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover shadow-[var(--shadow-float)]"
+    className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
     style={{ left: menuLeft, top: menuTop }}
    >
     {query && (
@@ -82,7 +82,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
      {grouped ? (
       grouped.map((cat) => (
        <div key={cat.key}>
-        <p className="px-3 pb-0.5 pt-2 text-[10px] font-semibold tracking-[0.125px] text-muted-foreground/60">
+        <p className="px-3 pb-0.5 pt-2 text-xs font-semibold tracking-wide text-muted-foreground/60">
          {cat.label}
         </p>
         {cat.blocks.map((def) => (

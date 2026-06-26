@@ -120,7 +120,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                         <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                       </svg>
                     ) : (
-                      <svg className="size-4 text-muted-foreground/30" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="size-4 text-muted-foreground/60" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
                         <rect x="2.5" y="2.5" width="15" height="15" rx="3.5" />
                       </svg>
                     )}
@@ -160,7 +160,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                     >
                       {val && <CellDisplay property={prop} value={val} />}
                       {!val && (
-                        <span className="text-sm text-muted-foreground/40 opacity-0 transition-opacity group-hover/row:opacity-100">
+                        <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
                           Empty
                         </span>
                       )}
@@ -181,7 +181,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                   >
                     {val && <CellDisplay property={prop} value={val} />}
                     {!val && (
-                      <span className="text-sm text-muted-foreground/40 opacity-0 transition-opacity group-hover/row:opacity-100">
+                      <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
                         Empty
                       </span>
                     )}

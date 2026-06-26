@@ -10,7 +10,7 @@ const STATUS_CLS: Record<string, { pill: string; dot: string }> = {
  sent:    { pill: "bg-success/10 text-success",           dot: "bg-success" },
  queued:  { pill: "bg-primary/10 text-primary",           dot: "bg-primary" },
  sending: { pill: "bg-primary/10 text-primary",           dot: "bg-primary/60" },
- failed:  { pill: "bg-destructive/[0.06] text-destructive", dot: "bg-destructive" },
+ failed:  { pill: "bg-destructive/5 text-destructive", dot: "bg-destructive" },
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -39,7 +39,7 @@ export default async function OrbitEmailPage() {
     <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
      <div>
       <h1 className="text-2xl font-bold tracking-tight text-foreground">Email</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">Transactional outbox — delivery status and retry tracking.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Transactional outbox — delivery status and retry tracking.</p>
      </div>
      <div className="hidden shrink-0 items-center divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-muted/30 sm:flex">
       {statusCounts.map(s => {
@@ -63,9 +63,9 @@ export default async function OrbitEmailPage() {
     <div className="flex items-center justify-between border-b border-border px-5 py-4">
      <div>
       <h2 className="text-[13.5px] font-semibold text-foreground">Outbox</h2>
-      <p className="text-[11px] text-muted-foreground">Latest {total} of all transactional emails</p>
+      <p className="text-xs text-muted-foreground">Latest {total} of all transactional emails</p>
      </div>
-     <span className="rounded-full bg-muted px-3 py-1 text-[11px] font-semibold text-muted-foreground">{total} shown</span>
+     <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">{total} shown</span>
     </div>
 
     {outbox.length === 0 ? (
@@ -75,8 +75,8 @@ export default async function OrbitEmailPage() {
         <rect x="2" y="4" width="16" height="12" rx="2"/><path d="M2 7l8 5 8-5"/>
        </svg>
       </div>
-      <p className="text-[13px] font-semibold text-muted-foreground">No emails yet</p>
-      <p className="mt-0.5 text-[11.5px] text-muted-foreground/60">Emails will appear here when sent.</p>
+      <p className="text-sm font-semibold text-muted-foreground">No emails yet</p>
+      <p className="mt-0.5 text-xs text-muted-foreground/60">Emails will appear here when sent.</p>
      </div>
     ) : (
      <div className="overflow-x-auto">
@@ -84,7 +84,7 @@ export default async function OrbitEmailPage() {
        <thead>
         <tr className="bg-muted/40">
          {["Recipient", "Subject", "Type", "Status", "Attempts", "Sent at"].map(h => (
-          <th key={h} className="px-5 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
+          <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
          ))}
         </tr>
        </thead>
@@ -94,28 +94,28 @@ export default async function OrbitEmailPage() {
          return (
           <tr key={email.id} className="transition-colors hover:bg-accent/40">
            <td className="px-5 py-3.5">
-            <p className="text-[12.5px] font-semibold text-foreground">{email.recipientEmail}</p>
+            <p className="text-xs font-semibold text-foreground">{email.recipientEmail}</p>
            </td>
            <td className="max-w-[260px] px-5 py-3.5">
-            <p className="truncate text-[12px] text-foreground/70">{email.subject}</p>
+            <p className="truncate text-xs text-foreground/70">{email.subject}</p>
            </td>
            <td className="px-5 py-3.5">
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10.5px] font-semibold text-muted-foreground">
+            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
              {TYPE_LABEL[email.type] ?? email.type}
             </span>
            </td>
            <td className="px-5 py-3.5">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold ${cls.pill}`}>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls.pill}`}>
              <span className={`size-1.5 rounded-full ${cls.dot}`} />
              {email.status}
             </span>
            </td>
            <td className="px-5 py-3.5">
-            <span className={`text-[12px] font-semibold ${email.attemptCount > 1 ? "text-warning" : "text-muted-foreground"}`}>
+            <span className={`text-xs font-semibold ${email.attemptCount > 1 ? "text-warning" : "text-muted-foreground"}`}>
              {email.attemptCount}
             </span>
            </td>
-           <td className="px-5 py-3.5 text-[11.5px] text-muted-foreground">
+           <td className="px-5 py-3.5 text-xs text-muted-foreground">
             {formatDateTime(email.createdAt)}
            </td>
           </tr>

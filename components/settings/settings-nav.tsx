@@ -21,13 +21,13 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon: _work
   }
 
   return (
-    <aside className="flex h-full w-[240px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
+    <aside className="hidden h-full w-[240px] shrink-0 flex-col border-r border-border/60 bg-sidebar md:flex">
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto px-2.5 py-3">
 
         {/* Account */}
-        <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/40">
+        <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-primary/60">
           Account
         </p>
         <div className="space-y-0.5">
@@ -39,7 +39,7 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon: _work
         <div className="mx-1 my-3 h-px bg-border/50" />
 
         {/* Workspace */}
-        <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground/40">
+        <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-primary/60">
           Workspace
         </p>
         <div className="space-y-0.5">
@@ -59,14 +59,14 @@ function NavItem({ href, active, icon, label }: { href: string; active: boolean;
   return (
     <Link
       href={href}
-      className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 ${
+      className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
         active
-          ? "bg-primary/[0.08] text-primary"
-          : "text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          ? "bg-primary/10 text-primary"
+          : "text-sidebar-foreground/70 hover:bg-primary/10 hover:text-primary"
       }`}
     >
       <span className={`shrink-0 transition-colors duration-150 ${
-        active ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60"
+        active ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-primary"
       }`}>
         {icon}
       </span>
@@ -77,10 +77,10 @@ function NavItem({ href, active, icon, label }: { href: string; active: boolean;
 
 function LockedItem({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex cursor-not-allowed items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium text-sidebar-foreground/25">
-      <span className="shrink-0">{icon}</span>
+    <div className="flex cursor-not-allowed items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/70">
+      <span className="shrink-0 text-sidebar-foreground/60">{icon}</span>
       <span>{label}</span>
-      <Lock size={11} className="ml-auto opacity-40" />
+      <Lock size={11} className="ml-auto text-muted-foreground/60" />
     </div>
   );
 }

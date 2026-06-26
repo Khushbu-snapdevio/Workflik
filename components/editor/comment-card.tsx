@@ -158,7 +158,7 @@ function renderContent(content: Record<string, unknown> | null): React.ReactNode
    if (attrs?.label) {
     if (attrs.mentionType === "user") {
      parts.push(
-      <span key={key++} className="text-primary font-medium bg-primary/[0.06] rounded-[var(--radius-xs)] px-0.5 mx-px">
+      <span key={key++} className="text-primary font-medium bg-primary/5 rounded-[var(--radius-xs)] px-0.5 mx-px">
        @{attrs.label}
       </span>
      );
@@ -248,7 +248,7 @@ function EmojiPicker({
       key={emoji}
       type="button"
       onClick={() => { onSelect(emoji); onClose(); }}
-      className="text-[18px] rounded-[var(--radius-sm)] hover:bg-accent p-1.5 transition-colors duration-150 leading-none"
+      className="text-lg rounded-[var(--radius-sm)] hover:bg-accent p-1.5 transition-colors duration-150 leading-none"
      >
       {emoji}
      </button>
@@ -454,7 +454,7 @@ export function CommentCard({
       <button
        type="button"
        onClick={() => setShowResolved((v) => !v)}
-       className="inline-flex items-center gap-1 shrink-0 text-[10px] font-medium text-muted-foreground/50 hover:text-foreground transition-colors duration-150"
+       className="inline-flex items-center gap-1 shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-150"
       >
        <CheckIcon size={10} className={showResolved ? "text-primary" : ""} />
        {showResolved ? "Hide resolved" : `${resolvedCount} resolved`}
@@ -471,11 +471,11 @@ export function CommentCard({
     ) : activeVisible.length === 0 ? (
      <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
       <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50 border border-border">
-       <ChatDotsIcon size={24} className="text-muted-foreground/40" />
+       <ChatDotsIcon size={24} className="text-muted-foreground/70" />
       </div>
       <div>
-       <p className="text-[13px] font-semibold text-foreground/50">No page-level comments</p>
-       <p className="mt-1 text-[11px] text-muted-foreground/40 leading-relaxed max-w-[200px]">
+       <p className="text-sm font-semibold text-foreground/70">No page-level comments</p>
+       <p className="mt-1 text-xs text-muted-foreground/70 leading-relaxed max-w-[200px]">
         These comments apply to the whole page, not a specific block.
        </p>
       </div>
@@ -499,7 +499,7 @@ export function CommentCard({
     )}
 
     {orphaned.length > 0 && (
-     <div className="mx-4 mb-4 mt-2 rounded-[var(--radius-md)] border border-warning/30 bg-warning/[0.06] px-4 py-3">
+     <div className="mx-4 mb-4 mt-2 rounded-[var(--radius-md)] border border-warning/30 bg-warning/5 px-4 py-3">
       <p className="text-xs font-semibold text-warning mb-2">⚠ Original content removed</p>
       {orphaned.map((thread) => (
        <div key={thread.id} className="flex items-start gap-2 py-1.5">
@@ -526,14 +526,14 @@ export function CommentCard({
      <div className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
       <CursorTextIcon size={12} className="text-muted-foreground" />
      </div>
-     <span className="text-[12px] font-semibold text-foreground/80">
+     <span className="text-xs font-semibold text-foreground/80">
       {blockId ? "Block comment" : "Page comment"}
      </span>
-     <span className="inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-px text-[9px] font-bold leading-none border bg-muted text-muted-foreground border-border">
+     <span className="inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-px text-xs font-bold leading-none border bg-muted text-muted-foreground border-border">
       {blockId ? "BLOCK" : "PAGE"}
      </span>
      {unresolvedCount > 0 && (
-      <span className="text-[10px] font-semibold text-muted-foreground/50">
+      <span className="text-xs font-semibold text-muted-foreground">
        · {unresolvedCount} open
       </span>
      )}
@@ -541,7 +541,7 @@ export function CommentCard({
       <button
        type="button"
        onClick={() => setShowResolved((v) => !v)}
-       className="text-[10px] text-muted-foreground/50 hover:text-foreground transition-colors duration-150"
+       className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
       >
        {showResolved ? "hide resolved" : `${resolvedCount} resolved`}
       </button>
@@ -550,7 +550,7 @@ export function CommentCard({
     <button
      type="button"
      onClick={onClose}
-     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-colors duration-150"
+     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
     >
      <XIcon size={12} />
     </button>
@@ -566,10 +566,10 @@ export function CommentCard({
     {!loading && activeVisible.length === 0 && (
      <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
       <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50 border border-border mb-2.5">
-       <ChatTextIcon size={20} className="text-muted-foreground/40" />
+       <ChatTextIcon size={20} className="text-muted-foreground/70" />
       </div>
-      <p className="text-[13px] font-medium text-foreground/50">No comments yet</p>
-      <p className="text-xs text-muted-foreground/40 mt-0.5">
+      <p className="text-sm font-medium text-foreground/70">No comments yet</p>
+      <p className="text-xs text-muted-foreground/70 mt-0.5">
        {blockId ? "Comment on this block" : "Start the conversation"}
       </p>
      </div>
@@ -775,21 +775,21 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
     <div className="flex-1 min-w-0 pr-6">
      {/* Name + time row */}
      <div className="flex items-baseline gap-1.5 mb-1">
-      <span className="text-[13px] font-semibold text-foreground leading-tight truncate">
+      <span className="text-sm font-semibold text-foreground leading-tight truncate">
        {thread.author?.name ?? "Former Member"}
       </span>
       {isUnread && <span className="size-1.5 rounded-full bg-primary flex-shrink-0 mb-0.5" title="Unread" />}
-      <span className="text-[11px] text-muted-foreground/50 flex-shrink-0">
+      <span className="text-xs text-muted-foreground flex-shrink-0">
        {formatTime(thread.createdAt)}
       </span>
       {thread.editedAt && !thread.deletedAt && (
-       <span className="text-[10px] text-muted-foreground/30 flex-shrink-0">edited</span>
+       <span className="text-xs text-muted-foreground/60 flex-shrink-0">edited</span>
       )}
      </div>
 
      {/* Content */}
      {thread.deletedAt ? (
-      <p className="text-sm text-muted-foreground/35 italic">[Comment deleted]</p>
+      <p className="text-sm text-muted-foreground/60 italic">[Comment deleted]</p>
      ) : editingId === thread.id ? (
       <CommentComposer
        workspaceId={workspaceId}
@@ -800,7 +800,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
        onCancel={() => setEditingId(null)}
       />
      ) : (
-      <p className="text-[13px] text-foreground/85 leading-[1.5] whitespace-pre-wrap break-words">
+      <p className="text-sm text-foreground/85 leading-[1.5] whitespace-pre-wrap break-words">
        {renderContent(thread.content)}
       </p>
      )}
@@ -823,7 +823,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
           }`}
          >
           {emoji}
-          <span className="text-[10px] font-semibold ml-0.5">{userIds.length}</span>
+          <span className="text-xs font-semibold ml-0.5">{userIds.length}</span>
          </button>
         );
        })}
@@ -911,17 +911,17 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
    <div className="flex-1 min-w-0 pr-7">
     {/* Name + time */}
     <div className="flex items-baseline gap-1.5 mb-0.5">
-     <span className="text-[12px] font-semibold text-foreground truncate">
+     <span className="text-xs font-semibold text-foreground truncate">
       {reply.author?.name ?? "Former Member"}
      </span>
-     <span className="text-[11px] text-muted-foreground/50 flex-shrink-0">
+     <span className="text-xs text-muted-foreground flex-shrink-0">
       {formatTime(reply.createdAt)}
      </span>
-     {reply.editedAt && <span className="text-[10px] text-muted-foreground/30">edited</span>}
+     {reply.editedAt && <span className="text-xs text-muted-foreground/60">edited</span>}
     </div>
 
     {reply.deletedAt ? (
-     <p className="text-xs text-muted-foreground/35 italic">[Comment deleted]</p>
+     <p className="text-xs text-muted-foreground/60 italic">[Comment deleted]</p>
     ) : editingId === reply.id ? (
      <CommentComposer
       workspaceId={workspaceId}
@@ -932,7 +932,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
       onCancel={() => setEditingId(null)}
      />
     ) : (
-     <p className="text-[13px] text-foreground/80 leading-[1.5] whitespace-pre-wrap break-words">
+     <p className="text-sm text-foreground/80 leading-[1.5] whitespace-pre-wrap break-words">
       {renderContent(reply.content)}
      </p>
     )}

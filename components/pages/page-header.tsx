@@ -107,7 +107,7 @@ export function PageHeader({
           <button
             type="button"
             onClick={() => setShowEmojiPicker(true)}
-            className="mb-2 flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground/35 opacity-0 transition-all group-hover/page:opacity-100 hover:text-muted-foreground/60"
+            className="mb-2 flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground/60 opacity-0 transition-all group-hover/page:opacity-100 hover:text-muted-foreground/60"
           >
             <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/>
@@ -137,14 +137,14 @@ export function PageHeader({
         data-placeholder="Untitled"
         className={[
           "w-full break-words text-[2.4rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
-          "empty:before:content-[attr(data-placeholder)] empty:before:text-foreground/20",
+          "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
           editable ? "cursor-text" : "cursor-default select-text",
         ].join(" ")}
       />
 
       {/* Saving indicator */}
       {saving && (
-        <span className="absolute -top-6 right-0 text-xs text-muted-foreground/40 animate-pulse">
+        <span className="absolute -top-6 right-0 text-xs text-muted-foreground/70 animate-pulse">
           Saving…
         </span>
       )}

@@ -195,7 +195,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                       <CatIcon size={14} className={`shrink-0 ${isActive ? "text-primary" : ""}`} />
                       <span className="flex-1 text-xs font-medium">{cat.label}</span>
                       {cnt > 0 && (
-                        <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+                        <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
                           {cnt}
                         </span>
                       )}
@@ -220,7 +220,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                     className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
                   />
                   {search && (
-                    <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/40 hover:text-muted-foreground">
+                    <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/70 hover:text-muted-foreground">
                       <X size={13} />
                     </button>
                   )}
@@ -237,7 +237,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                   <div className="space-y-6">
                     {filteredBuiltIn.length > 0 && (
                       <section>
-                        <p className="mb-3 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+                        <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground">
                           WorkFlik Templates
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -254,7 +254,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
 
                     {filteredWorkspace.length > 0 && (
                       <section>
-                        <p className="mb-3 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+                        <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground">
                           Workspace Templates
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -304,7 +304,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                 {/* Info + block list */}
                 <div className="flex-1 overflow-y-auto px-5 py-5">
                   {/* Category + description */}
-                  <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] border border-border px-2.5 py-1 text-[10.5px] font-medium text-muted-foreground`}>
+                  <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground`}>
                     <CatIcon size={10} />
                     {catDef?.label}
                   </span>
@@ -320,7 +320,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                     <DbSchemaPreview schema={selected.pageSnapshot.database_schema} />
                   ) : blocks.length > 0 ? (
                     <div className="mt-5">
-                      <p className="mb-3 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+                      <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground">
                         Included in this template
                       </p>
                       <div className="space-y-1.5 rounded-[var(--radius-md)] border border-border/50 bg-muted/20 p-3">
@@ -328,7 +328,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                           <BlockPreview key={i} block={b as { type: string; content?: unknown }} />
                         ))}
                         {blocks.length > 12 && (
-                          <p className="text-[10px] text-muted-foreground/40">
+                          <p className="text-xs text-muted-foreground/70">
                             + {blocks.length - 12} more blocks…
                           </p>
                         )}
@@ -343,7 +343,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                     type="button"
                     disabled={applying}
                     onClick={() => applyTemplate(selected)}
-                    className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
                   >
                     {applying ? (
                       <>
@@ -357,7 +357,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                       </>
                     )}
                   </button>
-                  <p className="mt-2 text-center text-[10.5px] text-muted-foreground/50">
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
                     Creates an independent copy of this template
                   </p>
                 </div>
@@ -372,7 +372,7 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                       {selected.pageSnapshot.icon ? (
                         <span className="text-4xl">{selected.pageSnapshot.icon}</span>
                       ) : (
-                        <CatIcon size={40} className="text-muted-foreground/30" />
+                        <CatIcon size={40} className="text-muted-foreground/60" />
                       )}
                     </div>
 
@@ -468,9 +468,9 @@ function TemplateCard({
 
       {/* Text */}
       <div className="flex flex-1 flex-col p-3">
-        <p className="text-[12.5px] font-semibold leading-snug text-foreground">{template.name}</p>
+        <p className="text-xs font-semibold leading-snug text-foreground">{template.name}</p>
         {template.description && (
-          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground/65">
+          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground/65">
             {template.description}
           </p>
         )}
@@ -499,9 +499,9 @@ function BlockPreview({ block }: { block: { type: string; content?: unknown } })
   const text = c?.text?.map((t) => t.text).join("") ?? "";
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-px w-5 shrink-0 text-center text-[9px] font-bold text-muted-foreground/30">{icon}</span>
+      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/60">{icon}</span>
       <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">
-        {text || <span className="italic text-muted-foreground/30">{block.type}</span>}
+        {text || <span className="italic text-muted-foreground/60">{block.type}</span>}
       </span>
     </div>
   );
@@ -522,14 +522,14 @@ function PageBlockPreview({ block }: { block: { type: string; content?: unknown 
     h2:        "text-sm font-bold text-foreground mt-2.5 first:mt-0",
     h3:        "text-sm font-semibold text-foreground mt-2",
     paragraph: "text-xs text-muted-foreground leading-relaxed",
-    bullet:    "text-xs text-muted-foreground leading-relaxed pl-3 before:content-['•'] before:mr-2 before:text-muted-foreground/40",
+    bullet:    "text-xs text-muted-foreground leading-relaxed pl-3 before:content-['•'] before:mr-2 before:text-muted-foreground/70",
     numbered:  "text-xs text-muted-foreground leading-relaxed pl-3",
     todo:      "text-xs text-muted-foreground leading-relaxed pl-3 line-through opacity-50",
     quote:     "text-xs italic text-muted-foreground border-l-2 border-border pl-3",
     code:      "text-xs font-mono text-foreground bg-muted rounded px-1.5 py-0.5",
   };
 
-  const cls = classMap[block.type] ?? "text-xs text-muted-foreground/50";
+  const cls = classMap[block.type] ?? "text-xs text-muted-foreground";
 
   return (
     <p className={cls}>
@@ -552,7 +552,7 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
     <div className="mt-5 space-y-4">
       {/* Views */}
       <div>
-        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -560,7 +560,7 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
             <span
               key={v.name}
               className={[
-                "inline-flex items-center gap-1 rounded-[var(--radius-sm)] border px-2 py-1 text-[10.5px] font-medium",
+                "inline-flex items-center gap-1 rounded-[var(--radius-sm)] border px-2 py-1 text-xs font-medium",
                 v.isDefault
                   ? "border-border bg-accent text-foreground font-semibold"
                   : "border-border/40 bg-muted/20 text-muted-foreground",
@@ -574,25 +574,25 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
 
       {/* Properties */}
       <div>
-        <p className="mb-2 text-[10.5px] font-semibold tracking-[0.125px] text-muted-foreground/50">
+        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
           Properties ({schema.properties.length})
         </p>
         <div className="divide-y divide-border/40 rounded-[var(--radius-md)] border border-border/50 bg-muted/20">
           {schema.properties.map((p) => (
             <div key={p.name} className="flex items-center gap-2.5 px-3 py-2">
-              <span className="w-5 shrink-0 text-center text-[9px] font-bold text-muted-foreground/40">
+              <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/70">
                 {PROP_TYPE_ICON[p.type] ?? "·"}
               </span>
               <span className="flex-1 text-xs text-foreground/80">{p.name}</span>
               {p.options && p.options.length > 0 && (
                 <div className="flex gap-1">
                   {p.options.slice(0, 3).map((o) => (
-                    <span key={o.name} className="rounded px-1 py-0.5 text-[9px] font-medium bg-muted text-muted-foreground">
+                    <span key={o.name} className="rounded px-1 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
                       {o.name}
                     </span>
                   ))}
                   {p.options.length > 3 && (
-                    <span className="text-[9px] text-muted-foreground/40">+{p.options.length - 3}</span>
+                    <span className="text-xs text-muted-foreground/70">+{p.options.length - 3}</span>
                   )}
                 </div>
               )}
@@ -615,8 +615,8 @@ function ViewTabs({ views, defaultName }: { views: DbView[]; defaultName: string
         <span
           key={v.name}
           className={[
-            "shrink-0 rounded px-2 py-0.5 text-[10px] font-medium",
-            v.name === defaultName ? "bg-accent text-foreground font-semibold" : "text-muted-foreground/50",
+            "shrink-0 rounded px-2 py-0.5 text-xs font-medium",
+            v.name === defaultName ? "bg-accent text-foreground font-semibold" : "text-muted-foreground",
           ].join(" ")}
         >
           {v.name}
@@ -654,13 +654,13 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
               const val = row[p.name];
               const opt = p.options?.find((o) => o.name === val);
               return (
-                <div key={pi} className="flex-1 min-w-0 px-2 py-1.5 text-[10px] text-foreground/80">
+                <div key={pi} className="flex-1 min-w-0 px-2 py-1.5 text-xs text-foreground/80">
                   {opt ? (
                     <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}>{val}</span>
                   ) : val !== undefined ? (
                     <span className="truncate block">{String(val)}</span>
                   ) : (
-                    <span className="text-muted-foreground/20">—</span>
+                    <span className="text-muted-foreground/60">—</span>
                   )}
                 </div>
               );
@@ -668,7 +668,7 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
           </div>
         ))}
         {rows.length === 0 && (
-          <div className="py-3 text-center text-[10px] text-muted-foreground/30">
+          <div className="py-3 text-center text-xs text-muted-foreground/60">
             No sample data
           </div>
         )}
@@ -702,9 +702,9 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
             <div key={col.name} className="min-w-[130px] flex-shrink-0">
               <div className="mb-2 flex items-center gap-1.5">
                 <span className={`size-2 shrink-0 rounded-full ${clr.dot}`} />
-                <span className="flex-1 truncate text-[10px] font-semibold text-foreground/70">{col.name}</span>
+                <span className="flex-1 truncate text-xs font-semibold text-foreground/70">{col.name}</span>
                 {colRows.length > 0 && (
-                  <span className="text-[9px] text-muted-foreground/30 tabular-nums">{colRows.length}</span>
+                  <span className="text-xs text-muted-foreground/60 tabular-nums">{colRows.length}</span>
                 )}
               </div>
               <div className="space-y-1.5">
@@ -714,9 +714,9 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   const tagOpt = tagProp?.options?.find((o) => o.name === tagVal);
                   return (
                     <div key={i} className="rounded-[var(--radius-sm)] border border-border/50 bg-background p-2">
-                      <p className="text-[10.5px] font-medium leading-snug text-foreground">{title}</p>
+                      <p className="text-xs font-medium leading-snug text-foreground">{title}</p>
                       {tagOpt && (
-                        <span className={`mt-1 inline-flex rounded px-1 py-0.5 text-[9px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
+                        <span className={`mt-1 inline-flex rounded px-1 py-0.5 text-xs font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
                           {tagVal}
                         </span>
                       )}
@@ -724,7 +724,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   );
                 })}
                 <div className="rounded-[var(--radius-sm)] border border-border/30 p-2">
-                  <span className="text-[9px] text-muted-foreground/25">+ New</span>
+                  <span className="text-xs text-muted-foreground/60">+ New</span>
                 </div>
               </div>
             </div>
@@ -753,15 +753,15 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
       <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
       <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
         <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
-          <span className="text-[10.5px] font-semibold text-foreground/70">June 2026</span>
-          <div className="flex gap-2 text-[9px] text-muted-foreground/30">
+          <span className="text-xs font-semibold text-foreground/70">June 2026</span>
+          <div className="flex gap-2 text-xs text-muted-foreground/60">
             <span>‹</span>
             <span>›</span>
           </div>
         </div>
         <div className="grid grid-cols-7 border-b border-border/40 bg-muted/10">
           {CAL_DAYS.map((d) => (
-            <div key={d} className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground/40">
+            <div key={d} className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground/70">
               {d}
             </div>
           ))}
@@ -774,7 +774,7 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
                   <span className={
                     date === 19
                       ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-                      : "text-[9px] text-muted-foreground/40"
+                      : "text-xs text-muted-foreground/70"
                   }>
                     {date}
                   </span>
@@ -819,7 +819,7 @@ function EmptyState() {
   return (
     <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 text-center">
       <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-        <LayoutGrid size={28} className="text-muted-foreground/40" />
+        <LayoutGrid size={28} className="text-muted-foreground/70" />
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">No templates yet</p>

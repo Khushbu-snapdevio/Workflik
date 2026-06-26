@@ -24,12 +24,12 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
       type="button"
       onClick={toggle}
       className={`relative flex size-9 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
-       panelOpen ? "bg-primary/[0.10] text-primary" : "text-sidebar-foreground/50 hover:bg-primary/[0.05] hover:text-sidebar-foreground"
+       panelOpen ? "bg-primary/10 text-primary" : "text-sidebar-foreground/70 hover:bg-primary/5 hover:text-sidebar-foreground"
       }`}
      >
       <Bell size={18} />
       {badge && (
-       <span className="absolute top-1 right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white leading-none">
+       <span className="absolute top-1 right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-white leading-none">
         {badge}
        </span>
       )}
@@ -43,16 +43,16 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
     <button
      type="button"
      onClick={toggle}
-     className={`group relative flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-[13px] font-medium transition-colors duration-150 ${
+     className={`group relative flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
       panelOpen
        ? "bg-sidebar-accent text-sidebar-foreground font-semibold"
-       : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+       : "text-sidebar-foreground/60 hover:bg-primary/10 hover:text-primary"
      }`}
     >
-     <span className={`relative shrink-0 transition-colors duration-150 ${panelOpen ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"}`}>
+     <span className={`relative shrink-0 transition-colors duration-150 ${panelOpen ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-primary"}`}>
       <Bell size={15} />
       {badge && (
-       <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white leading-none">
+       <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-white leading-none">
         {badge}
        </span>
       )}

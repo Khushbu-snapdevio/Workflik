@@ -180,7 +180,7 @@ export function OnboardingUI({ initialName }: Props) {
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-10 w-auto" />
+     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
     </div>
 
     {/* Progress bar */}
@@ -196,7 +196,7 @@ export function OnboardingUI({ initialName }: Props) {
     </div>
 
     {/* Step label */}
-    <p className="mb-3 text-[11px] font-semibold tracking-[0.125px] text-muted-foreground/60">
+    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground/60">
      {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${progressTotal}`}
     </p>
 
@@ -254,7 +254,7 @@ export function OnboardingUI({ initialName }: Props) {
           onClick={() => selectOption(opt.value)}
           className={`relative flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-150 ${
            idx > 0 ? "border-t border-border" : ""
-          } ${isSelected ? "bg-primary/[0.05]" : "hover:bg-accent"}`}
+          } ${isSelected ? "bg-primary/5" : "hover:bg-accent"}`}
          >
           {isSelected && (
            <span className="absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary" />
@@ -382,7 +382,7 @@ export function OnboardingUI({ initialName }: Props) {
           onClick={() => setTemplateKey(tpl.key)}
           className={`relative flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-150 ${
            idx > 0 ? "border-t border-border" : ""
-          } ${isSelected ? "bg-primary/[0.05]" : "hover:bg-accent"}`}
+          } ${isSelected ? "bg-primary/5" : "hover:bg-accent"}`}
          >
           {isSelected && (
            <span className="absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary" />
@@ -410,7 +410,7 @@ export function OnboardingUI({ initialName }: Props) {
      type="button"
      onClick={handleContinue}
      disabled={!canContinue || pending}
-     className="flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-40"
+     className="flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
     >
      {btnLabel}
      {!pending && !isLast && !isInviteStep && (

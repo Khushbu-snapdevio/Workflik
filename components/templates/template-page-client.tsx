@@ -242,7 +242,7 @@ function CoverPicker({
    <div className="fixed inset-0 z-[590] bg-black/20 backdrop-blur-[2px]" onClick={onClose} />
 
    {/* Modal */}
-   <div className="fixed left-1/2 top-1/2 z-[600] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-popover">
+   <div className="fixed left-1/2 top-1/2 z-[600] w-[calc(100vw-32px)] max-w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-popover">
     {/* Header */}
     <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
      <span className="text-sm font-semibold text-foreground">Page Cover</span>
@@ -253,7 +253,7 @@ function CoverPicker({
 
     <div className="p-5">
      {/* File upload */}
-     <p className="mb-2 text-xs font-semibold tracking-[0.125px] text-muted-foreground">Upload image</p>
+     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Upload image</p>
      <button
       onClick={() => fileInputRef.current?.click()}
       disabled={uploading}
@@ -275,7 +275,7 @@ function CoverPicker({
      <div className="my-3 border-t border-border/40" />
 
      {/* Gradients */}
-     <p className="mb-2 text-xs font-semibold tracking-[0.125px] text-muted-foreground">Color & Gradient</p>
+     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Color & Gradient</p>
      <div className="mb-4 grid grid-cols-6 gap-1.5">
       {COVER_GRADIENTS.map((g) => (
        <button
@@ -288,7 +288,7 @@ function CoverPicker({
      </div>
 
      {/* URL */}
-     <p className="mb-1.5 text-xs font-semibold tracking-[0.125px] text-muted-foreground">Image URL</p>
+     <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground">Image URL</p>
      <div className="flex gap-2">
       <input
        value={url}
@@ -343,7 +343,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
  function remove(id: string) { onChange(filters.filter((f) => f.id !== id)); }
 
  return (
-  <div className="absolute right-0 top-full z-[400] mt-1 w-[380px] rounded-[var(--radius-md)] border border-border bg-popover">
+  <div className="absolute right-0 top-full z-[400] mt-1 w-[calc(100vw-24px)] max-w-[380px] rounded-[var(--radius-md)] border border-border bg-popover">
    <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
     <span className="text-sm font-semibold">Filter</span>
     <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
@@ -508,7 +508,7 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
       onClick={() => onToggle(p.id, !p.isHidden)}
       className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 hover:bg-accent transition-colors"
      >
-      <span className={`flex size-4 items-center justify-center rounded border text-[10px] ${!p.isHidden ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+      <span className={`flex size-4 items-center justify-center rounded border text-xs ${!p.isHidden ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
        {!p.isHidden ? <CheckIcon size={10} /> : ""}
       </span>
       <span className="text-sm text-foreground">{p.name}</span>
@@ -609,8 +609,8 @@ function PanelPropValue({
      className="flex min-h-[22px] w-full items-center text-left"
     >
      {selectedOpt
-      ? <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(selectedOpt.color)}`}>{selectedOpt.name}</span>
-      : <span className="text-xs text-muted-foreground/40">Empty</span>
+      ? <span className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(selectedOpt.color)}`}>{selectedOpt.name}</span>
+      : <span className="text-xs text-muted-foreground/70">Empty</span>
      }
     </button>
     {open && (
@@ -618,7 +618,7 @@ function PanelPropValue({
       {options.map((opt) => (
        <button key={opt.id} onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors">
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+        <span className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
        </button>
       ))}
       {selectedOpt && (
@@ -641,11 +641,11 @@ function PanelPropValue({
    <div className="relative">
     <button onClick={() => setOpen((p) => !p)} className="flex min-h-[22px] w-full flex-wrap items-center gap-1 text-left">
      {selectedIds.length === 0
-      ? <span className="text-xs text-muted-foreground/40">Empty</span>
+      ? <span className="text-xs text-muted-foreground/70">Empty</span>
       : selectedIds.map((id) => {
         const opt = options.find((o) => o.id === id);
         return opt ? (
-         <span key={id} className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+         <span key={id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
         ) : null;
        })
      }
@@ -665,7 +665,7 @@ function PanelPropValue({
          <span className={`flex size-3.5 items-center justify-center rounded border ${isOn ? "border-primary bg-primary" : "border-border"}`}>
           {isOn && <CheckIcon size={9} className="text-primary-foreground" />}
          </span>
-         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+         <span className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
         </button>
        );
       })}
@@ -694,8 +694,8 @@ function PanelPropValue({
    <button onClick={() => { setDraft(name); setEditing(true); }}
     className="flex min-h-[22px] w-full items-center gap-1.5 text-left text-xs hover:text-foreground transition-colors">
     {name
-     ? <><span className="flex size-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">{name[0]?.toUpperCase()}</span><span className="text-foreground">{name}</span></>
-     : <span className="text-muted-foreground/40">Empty</span>
+     ? <><span className="flex size-5 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">{name[0]?.toUpperCase()}</span><span className="text-foreground">{name}</span></>
+     : <span className="text-muted-foreground/70">Empty</span>
     }
    </button>
   );
@@ -720,7 +720,7 @@ function PanelPropValue({
     className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
     {dateStr
      ? <span className="text-foreground">{new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-     : <span className="text-muted-foreground/40">Empty</span>
+     : <span className="text-muted-foreground/70">Empty</span>
     }
    </button>
   );
@@ -744,7 +744,7 @@ function PanelPropValue({
   return (
    <button onClick={() => { setDraft(num != null ? String(num) : ""); setEditing(true); }}
     className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
-    {num != null ? <span className="text-foreground">{num}</span> : <span className="text-muted-foreground/40">Empty</span>}
+    {num != null ? <span className="text-foreground">{num}</span> : <span className="text-muted-foreground/70">Empty</span>}
    </button>
   );
  }
@@ -787,7 +787,7 @@ function PanelPropValue({
  return (
   <button onClick={() => { setDraft(textVal); setEditing(true); }}
    className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
-   {textVal ? <span className="text-foreground">{textVal}</span> : <span className="text-muted-foreground/40">Empty</span>}
+   {textVal ? <span className="text-foreground">{textVal}</span> : <span className="text-muted-foreground/70">Empty</span>}
   </button>
  );
 }
@@ -864,7 +864,7 @@ function EntryDetailPanel({
       onBlur={commitTitle}
       onKeyDown={(e) => { if (e.key === "Enter") commitTitle(); }}
       placeholder="Untitled"
-      className="mb-1 w-full bg-transparent text-[28px] font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/25"
+      className="mb-1 w-full bg-transparent text-3xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/25"
      />
      {/* "View details" link like Notion */}
      <Link
@@ -1450,7 +1450,7 @@ export function TemplatePageClient({
 
      {breadcrumbs.map((crumb) => (
       <span key={crumb.shortId} className="flex min-w-0 items-center gap-0.5">
-       <CaretRightIcon size={11} className="shrink-0 text-border" />
+       <CaretRightIcon size={11} className="shrink-0 text-foreground/30" />
        <Link
         href={`/app/${workspaceSlug}/${crumb.shortId}`}
         className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -1461,7 +1461,7 @@ export function TemplatePageClient({
      ))}
 
      <span className="flex min-w-0 items-center gap-0.5">
-      <CaretRightIcon size={11} className="shrink-0 text-border" />
+      <CaretRightIcon size={11} className="shrink-0 text-foreground/30" />
       <span className="max-w-[240px] truncate px-2 py-1 text-xs font-semibold text-foreground/80">
        {pageTitle || "Untitled"}
       </span>
@@ -1543,7 +1543,7 @@ export function TemplatePageClient({
      <div className="relative mb-2 inline-block">
       <button
        onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-       className="flex size-14 items-center justify-center rounded-[var(--radius-md)] text-[48px] leading-none transition-all hover:bg-muted/50"
+       className="flex size-14 items-center justify-center rounded-[var(--radius-md)] text-5xl leading-none transition-all hover:bg-muted/50"
       >
        {pageIcon}
       </button>
@@ -1562,7 +1562,7 @@ export function TemplatePageClient({
       <div className="relative">
        <button
         onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
        >
         <SmileyStickerIcon size={13} /> Add icon
        </button>
@@ -1577,7 +1577,7 @@ export function TemplatePageClient({
      {pageIcon && (
       <button
        onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
        <SmileyStickerIcon size={13} /> Change icon
       </button>
@@ -1586,7 +1586,7 @@ export function TemplatePageClient({
       <div className="relative">
        <button
         onClick={() => { setShowCoverPicker((p) => !p); setShowIconPicker(false); }}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
        >
         <ImageIcon size={13} /> Add cover
        </button>
@@ -1614,14 +1614,14 @@ export function TemplatePageClient({
        if (e.key === "Enter") savePageTitle((e.target as HTMLInputElement).value);
        if (e.key === "Escape") setEditingPageTitle(false);
       }}
-      className="w-full bg-transparent text-[32px] font-bold tracking-tight text-foreground outline-none"
+      className="w-full bg-transparent text-4xl font-bold tracking-tight text-foreground outline-none"
      />
     ) : (
      <h1
       onClick={() => setEditingPageTitle(true)}
-      className="-mx-1 cursor-text rounded px-1 text-[32px] font-bold tracking-tight text-foreground hover:bg-muted/30 transition-colors"
+      className="-mx-1 cursor-text rounded px-1 text-4xl font-bold tracking-tight text-foreground hover:bg-muted/30 transition-colors"
      >
-      {pageTitle || <span className="text-muted-foreground/30">Untitled</span>}
+      {pageTitle || <span className="text-muted-foreground/60">Untitled</span>}
      </h1>
     )}
 
@@ -1649,7 +1649,7 @@ export function TemplatePageClient({
       onClick={() => setEditingDescription(true)}
       className="-mx-1 mt-1.5 cursor-text rounded px-1 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
      >
-      {pageDescription || <span className="text-muted-foreground/25">Add a description…</span>}
+      {pageDescription || <span className="text-muted-foreground/60">Add a description…</span>}
      </p>
     )}
    </div>
@@ -1681,14 +1681,14 @@ export function TemplatePageClient({
             if (e.key === "Enter") renameView(view.id, renamingViewName || view.name);
             if (e.key === "Escape") setRenamingViewId(null);
            }}
-           className="h-7 w-28 rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 text-[13px] focus:outline-none"
+           className="h-7 w-28 rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 text-sm focus:outline-none"
           />
          </div>
         ) : (
          <button
           onClick={() => switchView(view.id)}
           className={[
-           "flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+           "flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
            isActive
             ? "border-primary text-foreground"
             : "border-transparent text-muted-foreground hover:text-foreground",
@@ -1730,16 +1730,16 @@ export function TemplatePageClient({
         "flex size-[26px] items-center justify-center rounded-[var(--radius-sm)] border transition-all",
         showAddView
          ? "border-primary bg-primary/10 text-primary"
-         : "border-border/50 text-muted-foreground/60 hover:border-primary/40 hover:bg-primary/[0.05] hover:text-primary",
+         : "border-border/50 text-muted-foreground/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
        ].join(" ")}
       >
        <PlusIcon size={14} />
       </button>
       {showAddView && (
-       <div className="absolute left-0 top-full z-[400] mt-1.5 w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card">
+       <div className="absolute left-0 top-full z-[400] mt-1.5 w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card">
         <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
          <PlusIcon size={13} className="text-primary" />
-         <span className="text-[13px] font-semibold text-foreground">Add a new view</span>
+         <span className="text-sm font-semibold text-foreground">Add a new view</span>
         </div>
         <div className="grid grid-cols-4 gap-1.5 p-3">
          {([
@@ -1751,12 +1751,12 @@ export function TemplatePageClient({
           <button
            key={type}
            onClick={() => { addView(label, type); setShowAddView(false); }}
-           className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all hover:bg-primary/[0.06] active:scale-[0.96]"
+           className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all hover:bg-primary/5 active:scale-[0.96]"
           >
            <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border/70 bg-muted/50 transition-all group-hover:border-primary/40 group-hover:bg-primary/10">
-            <Icon size={24} className="text-foreground/50 transition-colors group-hover:text-primary" />
+            <Icon size={24} className="text-foreground/70 transition-colors group-hover:text-primary" />
            </div>
-           <span className="text-[11px] font-medium leading-tight text-muted-foreground transition-colors group-hover:text-primary">
+           <span className="text-xs font-medium leading-tight text-muted-foreground transition-colors group-hover:text-primary">
             {label}
            </span>
           </button>
@@ -1775,7 +1775,7 @@ export function TemplatePageClient({
       >
        <FunnelIcon size={13} />
        Filter
-       {activeFilterCount > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">{activeFilterCount}</span>}
+       {activeFilterCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-white">{activeFilterCount}</span>}
       </button>
       {showFilter && (
        <FilterPanel
@@ -1795,7 +1795,7 @@ export function TemplatePageClient({
       >
        <SortAscendingIcon size={13} />
        Sort
-       {activeSortCount > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">{activeSortCount}</span>}
+       {activeSortCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-white">{activeSortCount}</span>}
       </button>
       {showSort && (
        <SortPanel
@@ -1876,7 +1876,7 @@ export function TemplatePageClient({
    )}
 
    {/* View */}
-   <div className="relative flex-1 overflow-hidden">
+   <div className="relative flex-1 overflow-auto">
     {viewSwitching && (
      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
       <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -1951,7 +1951,7 @@ export function TemplatePageClient({
    <div
     ref={viewMenuRef}
     style={{ position: "fixed", top: viewMenuRect.bottom + 4, left: viewMenuRect.left, zIndex: 500 }}
-    className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
+    className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
    >
     <button
      onClick={() => {
@@ -1959,13 +1959,13 @@ export function TemplatePageClient({
       setRenamingViewName(viewMenuTarget.name);
       setViewMenuTarget(null); setViewMenuRect(null);
      }}
-     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-foreground transition-colors hover:bg-accent"
+     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     >
      <PencilIcon size={13} className="shrink-0 text-muted-foreground" /> Rename
     </button>
     <button
      onClick={() => { duplicateView(viewMenuTarget.id); setViewMenuTarget(null); setViewMenuRect(null); }}
-     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-foreground transition-colors hover:bg-accent"
+     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     >
      <CopyIcon size={13} className="shrink-0 text-muted-foreground" /> Duplicate view
     </button>
@@ -1974,7 +1974,7 @@ export function TemplatePageClient({
       <div className="my-1 h-px bg-border/60" />
       <button
        onClick={() => { setDeleteViewTarget(viewMenuTarget); setViewMenuTarget(null); setViewMenuRect(null); }}
-       className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-[13px] text-destructive transition-colors hover:bg-destructive/[0.08]"
+       className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
       >
        <TrashIcon size={13} className="shrink-0" /> Delete view
       </button>

@@ -42,7 +42,7 @@ export function ImpersonateButton({ userId }: { userId: string }) {
    <button
     onClick={() => setConfirmOpen(true)}
     disabled={loading}
-    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-[var(--primary-hover)] disabled:opacity-50">
+    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-primary/90 disabled:opacity-50">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
      <circle cx="7" cy="5" r="2.5"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
      <path d="M11 2l2 2-2 2"/>
@@ -98,7 +98,7 @@ export function BanButton({ userId, banned, onDone }: { userId: string; banned: 
      "flex items-center gap-1.5 rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-semibold transition-colors duration-150 disabled:opacity-50",
      banned
       ? "bg-muted/40 text-foreground border border-border hover:bg-accent"
-      : "bg-destructive/[0.06] text-destructive border border-destructive/20 hover:bg-destructive/10"
+      : "bg-destructive/5 text-destructive border border-destructive/20 hover:bg-destructive/10"
     )}>
     {banned ? "Unban user" : "Ban user"}
    </button>
@@ -185,7 +185,7 @@ export function ForceDeleteWorkspaceButton({ workspaceId, workspaceName }: { wor
     const j = await res.json().catch(() => ({}));
     throw new Error((j as { error?: string }).error ?? "Failed to delete");
    }
-   router.push("/Orbit-admin/orbit/workspaces");
+   router.push("/orbit-admin/orbit/workspaces");
   } catch (e) {
    setError(e instanceof Error ? e.message : "Unknown error");
    setLoading(false);

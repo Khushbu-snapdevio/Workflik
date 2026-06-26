@@ -60,7 +60,7 @@ function AuthFormInner() {
 
         {/* Logo */}
         <Link href="/" className="mb-10 flex flex-col items-center gap-3">
-          <Image src="/workflik-logo.png" unoptimized alt="Workflik" width={180} height={45} className="h-10 w-auto" />
+          <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
         </Link>
 
         {/* Form area */}
@@ -166,7 +166,7 @@ function AuthFormInner() {
                 </div>
 
                 {error && (
-                  <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/[0.06] px-3.5 py-2.5 text-sm text-destructive">
+                  <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
                     {error}
                   </p>
                 )}

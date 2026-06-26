@@ -81,9 +81,9 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full min-w-0">
       <button
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1 text-left transition-colors hover:bg-primary/[0.04] focus:outline-none"
+        className="flex w-full min-w-0 items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1 text-left transition-colors hover:bg-primary/5 focus:outline-none"
         onClick={() => { setOpen((v) => !v); setShowJoin(false); setJoinError(""); }}
         type="button"
       >
@@ -91,11 +91,11 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
           icon={current?.icon ?? null}
           name={current?.name ?? "…"}
         />
-        <span className="flex-1 truncate text-sm font-semibold text-sidebar-foreground">
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-sidebar-foreground">
           {current?.name ?? "Select workspace"}
         </span>
         <svg
-          className={`size-4 shrink-0 text-sidebar-foreground/40 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`size-4 shrink-0 text-sidebar-foreground/60 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -108,34 +108,37 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setShowJoin(false); }} />
-          <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover shadow-[var(--shadow-raised)]">
+          <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
 
             {/* Workspace list */}
             <div className="p-1.5">
-              <p className="mb-1 px-2 text-2xs font-semibold tracking-[0.125px] text-muted-foreground">
+              <p className="mb-1 px-2 text-2xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Workspaces
               </p>
               {workspaces.map((ws) => {
                 const isActive = ws.slug === currentSlug;
                 return (
                   <button
-                    className={`flex w-full items-center gap-2.5 rounded px-2 py-2 text-left hover:bg-muted ${isActive ? "bg-muted" : ""}`}
+                    className={`flex w-full min-w-0 items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-2 text-left transition-colors duration-100 focus:outline-none hover:bg-muted ${isActive ? "bg-muted" : ""}`}
                     key={ws.id}
                     onClick={() => switchTo(ws.slug)}
                     type="button"
                   >
                     <WorkspaceAvatar icon={ws.icon} name={ws.name} />
-                    <span className="flex-1 truncate text-sm font-medium text-popover-foreground">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-popover-foreground">
                       {ws.name}
                     </span>
-                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-2xs font-semibold tracking-[0.125px] text-muted-foreground">
+                    <span className={`shrink-0 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-2xs font-semibold text-muted-foreground ${isActive ? "bg-background" : "bg-muted"}`}>
                       {ws.role}
                     </span>
-                    {isActive && (
-                      <svg className="size-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
+                    {/* Always reserve the same 14px slot — prevents layout shift when checkmark appears */}
+                    <span className="flex size-3.5 shrink-0 items-center justify-center">
+                      {isActive && (
+                        <svg className="text-primary" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                          <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
                 );
               })}
@@ -221,11 +224,15 @@ function WorkspaceAvatar({
   name: string;
 }) {
   if (icon && !icon.startsWith("http")) {
-    return <span className="text-base leading-none">{icon}</span>;
+    return (
+      <span className="flex size-6 shrink-0 items-center justify-center text-base leading-none">
+        {icon}
+      </span>
+    );
   }
   if (icon) {
     return (
-      <img alt={name} className="size-6 rounded-[var(--radius-sm)] object-cover" src={icon} />
+      <img alt={name} className="size-6 shrink-0 rounded-[var(--radius-sm)] object-cover" src={icon} />
     );
   }
   return (

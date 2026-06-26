@@ -3,7 +3,7 @@ export default function WorkspaceHomeLoading() {
     <div className="flex h-full flex-col overflow-hidden bg-background animate-pulse">
       {/* Topbar skeleton */}
       <div className="shrink-0 border-b border-border bg-card">
-        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-6 px-8 py-4">
+        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-2">
             <div className="h-3 w-24 rounded-[var(--radius-sm)] bg-muted" />
             <div className="h-5 w-48 rounded-[var(--radius-sm)] bg-muted" />
@@ -17,8 +17,8 @@ export default function WorkspaceHomeLoading() {
 
       {/* Body skeleton */}
       <div className="flex-1 overflow-hidden">
-        <div className="mx-auto w-full max-w-[1200px] px-8 py-6">
-          <div className="grid grid-cols-[1fr_256px] gap-5 items-start">
+        <div className="mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_256px] gap-5 items-start">
             {/* Left column */}
             <div className="flex flex-col gap-4">
               <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">

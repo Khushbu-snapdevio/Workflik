@@ -34,12 +34,12 @@ export function TemplateGalleryView({
               onClick={() => onClickEntry(entry.id)}
             >
               {/* Cover area */}
-              <div className="h-[140px] w-full shrink-0 bg-primary/[0.08]" />
+              <div className="h-[140px] w-full shrink-0 bg-primary/10" />
 
               {/* Title + actions row */}
               <div className="flex min-h-[40px] items-center gap-1 px-3 py-2.5">
-                <p className="flex-1 truncate text-[13px] font-medium text-foreground">
-                  {entry.title || <span className="text-muted-foreground/40">Untitled</span>}
+                <p className="flex-1 truncate text-sm font-medium text-foreground">
+                  {entry.title || <span className="text-muted-foreground/70">Untitled</span>}
                 </p>
 
                 {/* Hover actions */}
@@ -67,10 +67,10 @@ export function TemplateGalleryView({
           {/* New page card */}
           <button
             onClick={() => onAddEntry()}
-            className="flex h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border/50 text-muted-foreground/40 transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:text-primary/60"
+            className="flex h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border/50 text-muted-foreground/70 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
           >
             <Plus size={18} />
-            <span className="text-[13px] font-medium">New page</span>
+            <span className="text-sm font-medium">New page</span>
           </button>
         </div>
       </div>

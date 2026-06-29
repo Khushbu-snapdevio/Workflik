@@ -225,7 +225,7 @@ export function PageTree({
      ref={moreRef}
      type="button"
      onClick={openMorePopup}
-     className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:bg-primary/10 hover:text-primary"
+     className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     >
      <MoreHorizontal size={12} />
      {hiddenCount} more
@@ -431,10 +431,10 @@ function PageTreeNode({
 
  return (
   <div ref={setNodeRef} style={style} {...attributes}>
-   <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-primary/10">
+   <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
     {/* Expand/collapse */}
     <button
-     className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/50 hover:text-primary"
+     className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/50 hover:text-sidebar-accent-foreground"
      onClick={() => setOpen((v) => !v)}
      tabIndex={-1}
      type="button"
@@ -444,7 +444,7 @@ function PageTreeNode({
 
     {/* Page link */}
     <Link
-     className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 text-xs text-sidebar-foreground/70 hover:text-primary"
+     className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 text-xs text-sidebar-foreground/70 hover:text-sidebar-accent-foreground"
      href={`/app/${workspaceSlug}/${node.shortId}`}
      {...listeners}
     >
@@ -463,13 +463,13 @@ function PageTreeNode({
       workspaceSlug={workspaceSlug}
       parentId={node.id}
       title="Add subpage"
-      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-primary"
+      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
      >
       <Plus size={12} />
      </NewPageButton>
      <button
       ref={btnRef}
-      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-primary"
+      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
       onClick={(e) => {
        e.stopPropagation();
        const rect = btnRef.current?.getBoundingClientRect();

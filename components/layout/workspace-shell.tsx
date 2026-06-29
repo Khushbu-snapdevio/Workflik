@@ -24,9 +24,11 @@ export function WorkspaceShell({ sidebar, children }: Props) {
         />
       )}
 
-      {/* Sidebar — fixed overlay on mobile, normal flow on desktop */}
+      {/* Sidebar — fixed overlay on mobile, normal flow on desktop.
+          md:relative md:z-[1] creates a stacking context so sidebar dropdowns
+          always paint above the main content area. */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:static md:inset-auto md:z-auto md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:relative md:inset-auto md:z-[1] md:translate-x-0 md:transition-none ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

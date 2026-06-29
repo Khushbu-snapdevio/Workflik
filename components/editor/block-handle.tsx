@@ -3,6 +3,8 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { Slice, Fragment } from "@tiptap/pm/model";
+import { NodeSelection } from "@tiptap/pm/state";
 import { Copy, GripVertical, Trash2, MessageSquare } from "lucide-react";
 
 interface BlockInfo {
@@ -84,10 +86,12 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
  const [block, setBlock]    = useState<BlockInfo | null>(null);
  const [menuOpen, setMenuOpen] = useState(false);
 
- const menuOpenRef = useRef(false);
- const dropdownRef = useRef<HTMLDivElement>(null);
- const triggerRef = useRef<HTMLButtonElement>(null);
- const hideTimer  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+ const menuOpenRef  = useRef(false);
+ const dropdownRef  = useRef<HTMLDivElement>(null);
+ const triggerRef   = useRef<HTMLButtonElement>(null);
+ const hideTimer    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+ // Tracks whether the last interaction was a drag so we don't also open the menu.
+ const wasDragRef   = useRef(false);
 
  useEffect(() => { menuOpenRef.current = menuOpen; }, [menuOpen]);
 
@@ -172,8 +176,57 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
  const commentBlock = useCallback(() => {
   if (!block || !onComment) return;
   setMenuOpen(false);
-  onComment(block.nodePos, block.top); // block.top is absolute viewport Y of block centre
+  onComment(block.nodePos, block.top);
  }, [block, onComment]);
+
+ // ── Drag handlers ─────────────────────────────────────────────────────────
+ const handleDragStart = useCallback((e: React.DragEvent<HTMLButtonElement>) => {
+  if (!block) { e.preventDefault(); return; }
+
+  const view = editor.view;
+  const node = view.state.doc.nodeAt(block.nodePos);
+  if (!node) { e.preventDefault(); return; }
+
+  wasDragRef.current = true;
+
+  // Select the source node so ProseMirror's drop handler knows what to delete.
+  // The drop handler calls tr.deleteSelection() when move=true, so the selection
+  // must point at the block being dragged.
+  const nodeSel = NodeSelection.create(view.state.doc, block.nodePos);
+  view.dispatch(view.state.tr.setSelection(nodeSel).setMeta("addToHistory", false));
+
+  // Re-focus the editor: pressing mousedown on the grip button (rendered in a
+  // portal outside the editor DOM) steals browser focus. ProseMirror's drop
+  // handler only performs the source deletion when editorOwnsSelection() returns
+  // true, which requires view.hasFocus(). Without this the block gets copied
+  // instead of moved.
+  view.dom.focus();
+
+  const slice = new Slice(Fragment.from(node), 0, 0);
+  (view as any).dragging = { slice, move: true };
+
+  e.dataTransfer.effectAllowed = "move";
+
+  // Minimal ghost image so the browser doesn't try to snapshot the portal element.
+  const ghost = document.createElement("div");
+  ghost.style.cssText =
+   "position:absolute;top:-9999px;left:-9999px;" +
+   "background:#fff;border:1px solid #e2e8f0;border-radius:6px;" +
+   "padding:4px 10px;font-size:13px;color:#374151;" +
+   "max-width:260px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;";
+  ghost.textContent = node.textContent.trim().slice(0, 80) || "Block";
+  document.body.appendChild(ghost);
+  e.dataTransfer.setDragImage(ghost, 12, 12);
+  requestAnimationFrame(() => ghost.remove());
+ }, [block, editor]);
+
+ const handleDragEnd = useCallback((e: React.DragEvent<HTMLButtonElement>) => {
+  // If the drag was cancelled (Escape / drop outside editor), clear manually.
+  if (e.dataTransfer.dropEffect === "none") {
+   (editor.view as any).dragging = null;
+  }
+  setTimeout(() => { wasDragRef.current = false; }, 100);
+ }, [editor]);
 
  if (!block || typeof document === "undefined") return null;
 
@@ -189,16 +242,25 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
     alignItems: "center",
    }}
   >
-   {/* ⠿ grip button */}
+   {/* ⠿ grip — drag to reorder, click to open block menu */}
    <button
     ref={triggerRef}
     type="button"
+    draggable
+    onDragStart={handleDragStart}
+    onDragEnd={handleDragEnd}
     onMouseDown={(e) => {
-     e.preventDefault();
+     // Do NOT preventDefault here — it blocks the browser's dragstart sequence.
+     // Editor focus is restored automatically after drag ends.
+     e.stopPropagation();
+    }}
+    onClick={() => {
+     // Ignore click if it was the tail-end of a drag interaction.
+     if (wasDragRef.current) return;
      setMenuOpen((v) => !v);
     }}
-    title="Block options"
-    className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+    title="Drag to reorder · Click for options"
+    className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing"
    >
     <GripVertical size={14} />
    </button>

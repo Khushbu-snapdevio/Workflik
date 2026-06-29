@@ -7,6 +7,7 @@ import {
  MoreHorizontal as DotsThreeIcon, MessageSquare as ChatTextIcon, X as XIcon,
  Mail as EnvelopeIcon, Pencil as PencilSimpleIcon, Link as LinkIcon,
  BellOff as BellSlashIcon, Trash2 as TrashIcon, Type as CursorTextIcon, MessageCircle as ChatDotsIcon,
+ Paperclip,
 } from "lucide-react";
 import { CommentComposer } from "@/components/editor/comment-composer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -131,6 +132,40 @@ function ImageAttachment({ src, alt }: { src: string; alt: string }) {
  );
 }
 
+function FileAttachment({ src, name }: { src: string; name: string }) {
+ function handleClick() {
+  if (src.startsWith("data:")) {
+   fetch(src)
+    .then((r) => r.blob())
+    .then((blob) => {
+     const url = URL.createObjectURL(blob);
+     const a = document.createElement("a");
+     a.href = url;
+     a.target = "_blank";
+     a.rel = "noopener noreferrer";
+     a.click();
+     setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    });
+  } else {
+   window.open(src, "_blank", "noopener,noreferrer");
+  }
+ }
+
+ return (
+  <button
+   type="button"
+   onClick={handleClick}
+   title={`Open ${name}`}
+   className="group mt-1.5 flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted px-3 py-2 transition-colors duration-150 hover:bg-accent"
+  >
+   <Paperclip size={13} className="shrink-0 text-muted-foreground" />
+   <span className="max-w-[180px] truncate text-xs text-foreground/80 group-hover:text-foreground">
+    {name}
+   </span>
+  </button>
+ );
+}
+
 // ---------- Content renderer ----------
 
 function renderContent(content: Record<string, unknown> | null): React.ReactNode {
@@ -146,10 +181,22 @@ function renderContent(content: Record<string, unknown> | null): React.ReactNode
    parts.push(<span key={key++}>{n.text}</span>);
   }
 
+  if (n.type === "file") {
+   const attrs = n.attrs as { src?: string; name?: string } | undefined;
+   if (attrs?.src && attrs?.name) {
+    parts.push(<FileAttachment key={key++} src={attrs.src} name={attrs.name} />);
+   }
+  }
+
   if (n.type === "image") {
    const attrs = n.attrs as { src?: string; alt?: string } | undefined;
    if (attrs?.src) {
-    parts.push(<ImageAttachment key={key++} src={attrs.src} alt={attrs.alt ?? "attachment"} />);
+    const isImage = attrs.src.startsWith("data:image/") || /\.(png|jpe?g|gif|webp|svg|avif)(\?|$)/i.test(attrs.src);
+    if (isImage) {
+     parts.push(<ImageAttachment key={key++} src={attrs.src} alt={attrs.alt ?? "attachment"} />);
+    } else {
+     parts.push(<FileAttachment key={key++} src={attrs.src} name={attrs.alt ?? "attachment"} />);
+    }
    }
   }
 

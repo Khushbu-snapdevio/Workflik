@@ -1502,9 +1502,12 @@ export function TemplatePageClient({
     </div>
    </div>
 
+   {/* Scrollable area: cover + header + sticky toolbar + view */}
+   <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+
    {/* Cover */}
    {pageCoverUrl && (
-    <div className="group/cover relative h-[280px] w-full shrink-0">
+    <div className="group/cover relative h-[280px] w-full">
      {isCoverGradient
       ? <div className="h-full w-full" style={{ background: pageCoverUrl }} />
       // eslint-disable-next-line @next/next/no-img-element
@@ -1654,8 +1657,8 @@ export function TemplatePageClient({
     )}
    </div>
 
-   {/* View tabs + toolbar */}
-   <div className="border-b border-border/60">
+   {/* View tabs + toolbar — sticky so it stays visible as cover/header scroll away */}
+   <div className="sticky top-0 z-20 bg-background border-b border-border/60">
    <div className="mx-auto flex max-w-[1100px] items-end justify-between px-6">
     <div className="flex items-end self-stretch">
      {views.map((view) => {
@@ -1876,13 +1879,13 @@ export function TemplatePageClient({
    )}
 
    {/* View */}
-   <div className="relative flex-1 overflow-auto">
+   <div className={`relative ${activeView?.type === "calendar" ? "h-[calc(100dvh-6rem)]" : ""}`}>
     {viewSwitching && (
      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
       <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
      </div>
     )}
-    <div className="mx-auto h-full w-full max-w-[1100px]">
+    <div className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "calendar" ? "h-full" : ""}`}>
     {activeView?.type === "board" ? (
      <TemplateBoardView
       entries={displayedEntries}
@@ -1908,6 +1911,7 @@ export function TemplatePageClient({
       onAddEntry={addEntry}
       onDeleteEntry={deleteEntry}
       onClickEntry={handleClickEntry}
+      onUpdateEntryDate={(entryId, calPropId, newDate) => updatePropValue(entryId, calPropId, { date: newDate })}
      />
     ) : activeView?.type === "gallery" ? (
      <TemplateGalleryView
@@ -1944,6 +1948,8 @@ export function TemplatePageClient({
     )}
     </div>
    </div>
+
+   </div>{/* end scrollable area */}
   </div>
 
   {/* ── View context menu portal ── */}

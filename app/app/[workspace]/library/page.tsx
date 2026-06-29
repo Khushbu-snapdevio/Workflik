@@ -112,7 +112,7 @@ export default async function LibraryPage({ params }: Props) {
         </div>
       </div>
 
-      <LibraryClient pages={enriched} workspaceSlug={slug} />
+      <LibraryClient pages={enriched} workspaceSlug={slug} workspaceId={ws.id} />
     </div>
   );
 }

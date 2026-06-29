@@ -95,7 +95,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
        <div className="px-4 py-3.5 space-y-3">
         {/* Workspace name pill */}
         <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border/60 bg-sidebar px-3 py-2.5">
-         <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary/10 text-sm font-bold text-primary">
+         <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary text-sm font-bold text-primary-foreground">
           {workspaceName[0]?.toUpperCase() ?? "W"}
          </div>
          <div className="min-w-0">

@@ -17,6 +17,13 @@ function ago(d: Date | null | undefined) {
  return `${Math.floor(s / 86400)}d ago`;
 }
 
+function avatarColor(str: string) {
+ const colors = ["bg-primary","bg-destructive","bg-success","bg-warning","bg-muted-foreground","bg-secondary-foreground"];
+ let h = 0;
+ for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+ return colors[h % colors.length]!;
+}
+
 export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
  const { id } = await params;
 
@@ -26,15 +33,15 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
  const [userSessions, memberships] = await Promise.all([
   db.select().from(sessions).where(eq(sessions.userId, id)).orderBy(desc(sessions.createdAt)).limit(10),
   db.select({
-   id:     workspaceMembers.id,
-   role:    workspaceMembers.role,
-   status:   workspaceMembers.status,
-   joinedAt:  workspaceMembers.joinedAt,
-   createdAt:  workspaceMembers.createdAt,
+   id:          workspaceMembers.id,
+   role:        workspaceMembers.role,
+   status:      workspaceMembers.status,
+   joinedAt:    workspaceMembers.joinedAt,
+   createdAt:   workspaceMembers.createdAt,
    workspaceId: workspaceMembers.workspaceId,
-   wsName:   workspaces.name,
-   wsSlug:   workspaces.slug,
-   wsIcon:   workspaces.icon,
+   wsName:      workspaces.name,
+   wsSlug:      workspaces.slug,
+   wsIcon:      workspaces.icon,
   })
   .from(workspaceMembers)
   .leftJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
@@ -42,82 +49,81 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   .orderBy(desc(workspaceMembers.createdAt)),
  ]);
 
- const isAdmin = user.isPlatformAdmin;
- const now    = new Date();
+ const isAdmin        = user.isPlatformAdmin;
+ const now            = new Date();
  const activeSessions = userSessions.filter(s => new Date(s.expiresAt) > now);
+ const displayName    = user.name?.trim() || user.email || "?";
+ const avatarChar     = displayName[0]!.toUpperCase();
+ const avatarBg       = avatarColor(user.id);
 
  return (
   <div>
    {/* Breadcrumb */}
-   <div className="mb-4 flex items-center gap-2">
+   <div className="mb-5 flex items-center gap-2 text-xs text-muted-foreground">
     <Link href="/orbit-admin/orbit/users"
-     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
+     className="flex items-center gap-1 transition-colors hover:text-foreground">
      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3">
       <path d="M7.5 2.5L4 6l3.5 3.5"/>
      </svg>
      Users
     </Link>
-    <span className="select-none text-sm font-light text-muted-foreground/30">/</span>
-    <span className="text-xs font-semibold text-foreground">{user.name ?? user.email}</span>
+    <span className="text-border">/</span>
+    <span className="font-medium text-foreground">{displayName}</span>
    </div>
 
    {/* Profile header */}
-   <div className="mb-6 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="p-6">
-     <h1 className="text-3xl font-bold tracking-tight text-foreground">{user.name ?? "Unnamed"}</h1>
-     <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
-     <div className="mt-3 flex flex-wrap items-center gap-2">
+   <div className="mb-6 flex items-start gap-4">
+    <span className={`flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${avatarBg}`}>
+     {avatarChar}
+    </span>
+    <div className="min-w-0 flex-1">
+     <div className="flex flex-wrap items-center gap-2">
+      <h1 className="text-xl font-bold tracking-tight text-foreground">{user.name ?? "Unnamed"}</h1>
       {isAdmin && (
-       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">Admin</span>
+       <span className="rounded-[var(--radius-xs)] bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Admin</span>
       )}
       {user.banned && (
-       <span className="rounded-full bg-destructive/5 px-2 py-0.5 text-xs font-bold text-destructive">Banned</span>
+       <span className="rounded-[var(--radius-xs)] bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">Banned</span>
       )}
      </div>
-     <div className="mt-4 flex flex-wrap items-center gap-4">
-      <div className="flex flex-col">
-       <span className="text-base font-bold leading-none text-primary">{userSessions.length}</span>
-       <span className="mt-0.5 text-[9.5px] font-semibold tracking-wide text-muted-foreground/60">Sessions</span>
-      </div>
-      <div className="h-6 w-px bg-border" />
-      <div className="flex flex-col">
-       <span className="text-base font-bold leading-none text-primary">{activeSessions.length}</span>
-       <span className="mt-0.5 text-[9.5px] font-semibold tracking-wide text-muted-foreground/60">Active</span>
-      </div>
-      <div className="h-6 w-px bg-border" />
-      <div className="flex flex-col">
-       <span className="text-base font-bold leading-none text-primary">{memberships.length}</span>
-       <span className="mt-0.5 text-[9.5px] font-semibold tracking-wide text-muted-foreground/60">Workspaces</span>
-      </div>
-      <div className="ml-auto shrink-0 text-right">
-       <p className="text-xs text-muted-foreground/60">User ID</p>
-       <p className="font-mono text-xs text-muted-foreground">{user.id.slice(0, 16)}…</p>
-       <p className="mt-1 text-xs text-muted-foreground/60">Joined</p>
-       <p className="text-xs text-muted-foreground">{ago(user.createdAt)}</p>
-      </div>
+     <p className="mt-0.5 text-sm text-muted-foreground">{user.email}</p>
+     <div className="mt-3 flex flex-wrap items-center gap-2">
+      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+       <strong className="font-bold text-foreground">{userSessions.length}</strong> sessions
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+       <strong className="font-bold text-foreground">{activeSessions.length}</strong> active
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+       <strong className="font-bold text-foreground">{memberships.length}</strong> workspaces
+      </span>
+      <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground/50">
+       {user.id.slice(0, 16)}… · joined {ago(user.createdAt)}
+      </span>
      </div>
     </div>
    </div>
 
-   <div className="grid gap-5 lg:grid-cols-3">
+   <div className="grid gap-4 lg:grid-cols-3">
     {/* Left column: account details + actions */}
     <div className="space-y-4">
+
      {/* Details card */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
-      <div className="border-b border-border px-5 py-3.5">
-       <h2 className="text-xs font-bold text-foreground">Account details</h2>
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="border-b border-border/60 bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Account details</h2>
       </div>
-      <div className="divide-y divide-border px-5">
+      <div className="divide-y divide-border/50 px-5">
        {[
-        { label: "Email",  value: user.email },
-        { label: "Name",  value: user.name ?? "—" },
-        { label: "ID",   value: <span className="font-mono text-xs">{user.id}</span> },
-        { label: "Role",  value: isAdmin ? "Platform admin" : "User" },
-        { label: "Status", value: user.banned ? `Banned${user.bannedReason ? ` — ${user.bannedReason}` : ""}` : "Active" },
+        { label: "Email",   value: user.email },
+        { label: "Name",    value: user.name ?? "—" },
+        { label: "ID",      value: <span className="font-mono text-[11px] break-all">{user.id}</span> },
+        { label: "Role",    value: isAdmin ? "Platform admin" : "User" },
+        { label: "Status",  value: user.banned ? `Banned${user.bannedReason ? ` — ${user.bannedReason}` : ""}` : "Active" },
         { label: "Created", value: formatDateTime(user.createdAt) },
        ].map(row => (
         <div key={row.label} className="flex items-baseline justify-between gap-2 py-2.5">
-         <span className="shrink-0 text-xs font-semibold text-muted-foreground">{row.label}</span>
+         <span className="shrink-0 text-xs font-medium text-muted-foreground">{row.label}</span>
          <span className="min-w-0 text-right text-xs text-foreground">{row.value}</span>
         </div>
        ))}
@@ -125,16 +131,16 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
      </div>
 
      {/* Admin actions */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
-      <div className="border-b border-border px-5 py-3.5">
-       <h2 className="text-xs font-bold text-foreground">Operator actions</h2>
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="border-b border-border/60 bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Operator actions</h2>
       </div>
-      <div className="space-y-3 p-5">
+      <div className="space-y-2.5 p-4">
        <ImpersonateButton userId={id} />
        <RevokeSessionsButton userId={id} />
        <BanButton userId={id} banned={!!user.banned} />
       </div>
-      <div className="border-t border-border px-5 pb-4 pt-3">
+      <div className="border-t border-border/60 bg-muted/10 px-5 pb-4 pt-3">
        <p className="text-xs leading-relaxed text-muted-foreground/60">
         Impersonation sessions expire after 2 hours. Revoking sessions signs the user out of all devices immediately.
        </p>
@@ -144,32 +150,32 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
     {/* Right column: sessions + workspaces */}
     <div className="space-y-4 lg:col-span-2">
+
      {/* Sessions */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
-      <div className="border-b border-border px-5 py-3.5">
-       <h2 className="text-xs font-bold text-foreground">Sessions <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-xs font-semibold text-muted-foreground">{userSessions.length}</span></h2>
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Sessions</h2>
+       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{userSessions.length}</span>
       </div>
       {userSessions.length === 0 ? (
-       <p className="px-5 py-8 text-center text-xs text-muted-foreground">No sessions found</p>
+       <p className="px-5 py-10 text-center text-xs text-muted-foreground">No sessions found</p>
       ) : (
-       <div className="divide-y divide-border">
+       <div className="divide-y divide-border/50">
         {userSessions.map(s => {
          const expired = new Date(s.expiresAt) < now;
          const isImpersonation = !!s.impersonatedBy;
          return (
           <div key={s.id} className="flex items-start gap-3 px-5 py-3">
-           <span className={`mt-0.5 size-2 shrink-0 rounded-full ${expired ? "bg-muted-foreground/30" : "bg-success"}`} />
+           <span className={`mt-1 size-2 shrink-0 rounded-full ${expired ? "bg-muted-foreground/30" : "bg-success"}`} />
            <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-             <p className="text-xs font-semibold text-foreground">
-              {expired ? "Expired" : "Active"}
-             </p>
+             <p className="text-xs font-semibold text-foreground">{expired ? "Expired" : "Active"}</p>
              {isImpersonation && (
-              <span className="rounded-full bg-primary/10 px-1.5 text-[9.5px] font-bold text-primary">Impersonation</span>
+              <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">Impersonation</span>
              )}
             </div>
-            <p className="truncate text-xs text-muted-foreground">{s.userAgent?.slice(0, 60) ?? "—"}</p>
-            <p className="text-xs text-muted-foreground/60">IP: {s.ipAddress ?? "—"} · Expires {ago(s.expiresAt)}</p>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.userAgent?.slice(0, 60) ?? "—"}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground/60">IP: {s.ipAddress ?? "—"} · Expires {ago(s.expiresAt)}</p>
            </div>
            <p className="shrink-0 text-xs text-muted-foreground/60">{ago(s.createdAt)}</p>
           </div>
@@ -180,34 +186,38 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
      </div>
 
      {/* Workspace memberships */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
-      <div className="border-b border-border px-5 py-3.5">
-       <h2 className="text-xs font-bold text-foreground">Workspace memberships <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-xs font-semibold text-muted-foreground">{memberships.length}</span></h2>
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Workspace memberships</h2>
+       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{memberships.length}</span>
       </div>
       {memberships.length === 0 ? (
-       <p className="px-5 py-8 text-center text-xs text-muted-foreground">No workspace memberships</p>
+       <p className="px-5 py-10 text-center text-xs text-muted-foreground">No workspace memberships</p>
       ) : (
-       <div className="divide-y divide-border">
-        {memberships.map(m => (
-         <Link key={m.id} href={`/orbit-admin/orbit/workspaces/${m.workspaceId}`}
-          className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-accent/40">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary text-xs font-bold text-white">
-           {(m.wsIcon ?? m.wsName ?? "W").slice(0, 1)}
-          </span>
-          <div className="min-w-0 flex-1">
-           <p className="text-xs font-semibold text-foreground">{m.wsName ?? "Deleted workspace"}</p>
-           <p className="text-xs text-muted-foreground">{m.wsSlug ?? m.workspaceId}</p>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-1">
-           <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-            m.role === "viewer" ? "bg-muted/50 text-muted-foreground" : "bg-primary/10 text-primary"
-           }`}>{m.role}</span>
-           <span className={`rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold ${
-            m.status === "active" ? "text-success" : "text-muted-foreground"
-           }`}>{m.status}</span>
-          </div>
-         </Link>
-        ))}
+       <div className="divide-y divide-border/50">
+        {memberships.map(m => {
+         const letter = ((m.wsIcon && m.wsIcon.length <= 2 ? m.wsIcon : m.wsName ?? "W")[0] ?? "W").toUpperCase();
+         return (
+          <Link key={m.id} href={`/orbit-admin/orbit/workspaces/${m.workspaceId}`}
+           className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-accent">
+           <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary text-xs font-bold text-white">
+            {letter}
+           </span>
+           <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-foreground">{m.wsName ?? "Deleted workspace"}</p>
+            <p className="text-xs text-muted-foreground/70">/{m.wsSlug ?? m.workspaceId}</p>
+           </div>
+           <div className="flex shrink-0 flex-col items-end gap-1">
+            <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-semibold ${
+             m.role === "viewer" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+            }`}>{m.role}</span>
+            <span className={`text-xs font-semibold ${
+             m.status === "active" ? "text-success" : "text-muted-foreground"
+            }`}>{m.status}</span>
+           </div>
+          </Link>
+         );
+        })}
        </div>
       )}
      </div>

@@ -40,26 +40,22 @@ export default async function OrbitTemplatesPage() {
   <div className="space-y-6">
 
    {/* Header */}
-   <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
-     <div>
-      <h1 className="text-3xl font-bold tracking-tight text-foreground">Templates</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Author and publish built-in templates for the user-facing gallery.</p>
-     </div>
-     <div className="hidden shrink-0 items-center overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card sm:flex">
-      {[
-       { label: "Total",   value: list.length },
-       { label: "Published", value: published },
-       { label: "Drafts",  value: drafts },
-      ].map((s, i) => (
-       <div key={s.label} className="flex items-center">
-        {i > 0 && <div className="h-8 w-px bg-border" />}
-        <div className="px-6 py-4 text-center">
-         <p className="text-3xl font-bold leading-none text-foreground">{s.value}</p>
-         <p className="mt-1 text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground/60">{s.label}</p>
-        </div>
-       </div>
-      ))}
+   <div className="flex items-start justify-between gap-4">
+    <div>
+     <h1 className="text-xl font-bold tracking-tight text-foreground">Templates</h1>
+     <p className="mt-1 text-sm text-muted-foreground">Author and publish built-in templates for the user-facing gallery.</p>
+     <div className="mt-3 flex items-center gap-2">
+      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+       <strong className="font-bold text-foreground">{list.length}</strong> total
+      </span>
+      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
+       <strong className="font-bold">{published}</strong> published
+      </span>
+      {drafts > 0 && (
+       <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+        <strong className="font-bold text-foreground">{drafts}</strong> drafts
+       </span>
+      )}
      </div>
     </div>
    </div>
@@ -78,8 +74,8 @@ export default async function OrbitTemplatesPage() {
 
    {/* Table */}
    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-    <div className="border-b border-border px-5 py-4">
-     <h2 className="text-[13.5px] font-bold text-foreground">Built-in templates</h2>
+    <div className="border-b border-border/60 bg-muted/20 px-5 py-3.5">
+     <h2 className="text-sm font-semibold text-foreground">Built-in templates</h2>
      <p className="text-xs text-muted-foreground">Only published templates appear in the user gallery</p>
     </div>
 
@@ -90,7 +86,7 @@ export default async function OrbitTemplatesPage() {
         <rect x="2" y="2" width="16" height="16" rx="2"/><path d="M2 7h16M7 7v11"/>
        </svg>
       </div>
-      <p className="text-[13.5px] font-semibold text-muted-foreground">No templates yet</p>
+      <p className="text-sm font-semibold text-muted-foreground">No templates yet</p>
       <p className="mt-1 text-xs text-muted-foreground/60">
        Click <strong className="text-primary">+ New template</strong> or seed defaults above.
       </p>
@@ -110,7 +106,7 @@ export default async function OrbitTemplatesPage() {
          const catCls = CATEGORY_CLS[tpl.category] ?? "bg-muted text-muted-foreground";
          const isPublished = tpl.status === "published";
          return (
-          <tr key={tpl.id} className="group transition-colors hover:bg-accent/40">
+          <tr key={tpl.id} className="group transition-colors hover:bg-accent">
            <td className="px-5 py-3.5">
             <p className="text-sm font-semibold text-foreground">{tpl.name}</p>
             {tpl.description && (

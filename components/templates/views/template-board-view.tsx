@@ -3,6 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
+import {
+ DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+ type DragEndEvent, type DragStartEvent, useDroppable,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -97,33 +103,152 @@ function InlineCardInput({
  );
 }
 
+// ── Column drop zone (enables dropping into empty columns) ────────────────────
+
+function ColumnDropZone({ colKey, children }: { colKey: string; children: React.ReactNode }) {
+ const { setNodeRef } = useDroppable({ id: "col-" + colKey });
+ return <div ref={setNodeRef} className="flex flex-col gap-2">{children}</div>;
+}
+
+// ── Sortable card ─────────────────────────────────────────────────────────────
+
+interface CardShellProps {
+ entry:        TemplateEntry;
+ displayProps:    DatabaseProperty[];
+ entryValueMap:   Map<string, Map<string, unknown>>;
+ workspaceSlug:   string;
+ onClickEntry:    (id: string) => void;
+ onDeleteRequest:  (id: string) => void;
+ dragging?:       boolean;
+}
+
+function CardShell({
+ entry, displayProps, entryValueMap, workspaceSlug, onClickEntry, onDeleteRequest, dragging,
+}: CardShellProps) {
+ const valMap = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
+
+ return (
+  <div
+   className={[
+    "group relative rounded-[var(--radius-sm)] border bg-background p-3 transition-all",
+    dragging
+     ? "border-primary/40 opacity-50 shadow-md"
+     : "border-border/50 hover:border-border hover:-translate-y-0.5",
+   ].join(" ")}
+   onClick={() => !dragging && onClickEntry(entry.id)}
+  >
+   <p className="pr-5 text-sm font-medium leading-snug text-foreground">
+    {entry.title || <span className="text-muted-foreground/70">Untitled</span>}
+   </p>
+
+   {/* Property badges */}
+   {displayProps.length > 0 && (
+    <div className="mt-2 flex flex-wrap gap-1">
+     {displayProps.flatMap((dp) => {
+      const dpConfig = (dp.config ?? {}) as PropConfig;
+      const raw   = valMap.get(dp.id);
+      if (!raw) return [];
+
+      if (dp.type === "select") {
+       const sv = raw as SelectVal;
+       const opt = dpConfig.options?.find((o) => o.id === sv.optionId);
+       if (!opt) return [];
+       return [
+        <span key={dp.id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>
+         {opt.name}
+        </span>,
+       ];
+      }
+      if (dp.type === "multi_select") {
+       const msv = raw as MultiSelectVal;
+       const opts = (msv.optionIds ?? [])
+        .map((id) => dpConfig.options?.find((o) => o.id === id))
+        .filter(Boolean)
+        .slice(0, 2) as PropOption[];
+       return opts.map((opt) => (
+        <span key={opt.id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>
+         {opt.name}
+        </span>
+       ));
+      }
+      return [];
+     })}
+    </div>
+   )}
+
+   {/* Card actions */}
+   <div
+    className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex"
+    onClick={(e) => e.stopPropagation()}
+   >
+    <Link
+     href={`/app/${workspaceSlug}/${entry.shortId}`}
+     onPointerDown={(e) => e.stopPropagation()}
+     className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+     title="Open page"
+    >
+     <ExternalLink size={11} />
+    </Link>
+    <button
+     onPointerDown={(e) => e.stopPropagation()}
+     onClick={(e) => { e.stopPropagation(); onDeleteRequest(entry.id); }}
+     className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+     title="Delete"
+    >
+     <Trash2 size={11} />
+    </button>
+   </div>
+  </div>
+ );
+}
+
+function SortableCard(props: CardShellProps) {
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.entry.id });
+ const style: React.CSSProperties = {
+  transform: CSS.Transform.toString(transform),
+  transition,
+  opacity:    isDragging ? 0.4 : 1,
+  touchAction: "none",
+  userSelect:  "none",
+  cursor:    "grab",
+ };
+ return (
+  <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+   <CardShell {...props} />
+  </div>
+ );
+}
+
 // ── Main board view ───────────────────────────────────────────────────────────
 
 interface Props {
- entries:     TemplateEntry[];
- properties:    DatabaseProperty[];
- activeView:    DatabaseView;
- entryValueMap:  Map<string, Map<string, unknown>>;
- workspaceSlug:  string;
- onAddEntry:    (defaultValues?: Record<string, unknown>, title?: string) => void;
- onDeleteEntry:  (entryId: string) => void;
- onClickEntry:   (entryId: string) => void;
- onUpdatePropValue:(entryId: string, propId: string, value: unknown) => void;
+ entries:      TemplateEntry[];
+ properties:     DatabaseProperty[];
+ activeView:     DatabaseView;
+ entryValueMap:   Map<string, Map<string, unknown>>;
+ workspaceSlug:   string;
+ onAddEntry:     (defaultValues?: Record<string, unknown>, title?: string) => void;
+ onDeleteEntry:   (entryId: string) => void;
+ onClickEntry:    (entryId: string) => void;
+ onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
 }
 
 export function TemplateBoardView({
- entries, properties, activeView, entryValueMap, workspaceSlug, onAddEntry, onDeleteEntry, onClickEntry,
+ entries, properties, activeView, entryValueMap, workspaceSlug,
+ onAddEntry, onDeleteEntry, onClickEntry, onUpdatePropValue,
 }: Props) {
- const [addingTo, setAddingTo] = useState<string | null>(null);
- const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+ const [addingTo, setAddingTo]           = useState<string | null>(null);
+ const [deleteTarget, setDeleteTarget]       = useState<string | null>(null);
+ const [draggingId, setDraggingId]         = useState<string | null>(null);
+ const [localOrder, setLocalOrder]         = useState<Map<string, string[]>>(new Map());
 
- // Try configured groupBy first; fall back to first select property in the database
+ const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
  const groupProp = properties.find((p) => p.id === activeView.groupByPropertyId)
   ?? properties.find((p) => p.type === "select");
  const groupConfig = (groupProp?.config ?? {}) as PropConfig;
  const groupOptions = groupConfig.options ?? [];
 
- // Extra display properties (first 2 select/multi-select that aren't groupBy)
  const displayProps = properties
   .filter((p) => p.id !== groupProp?.id && (p.type === "select" || p.type === "multi_select") && !p.isHidden)
   .slice(0, 2);
@@ -146,19 +271,74 @@ export function TemplateBoardView({
   buckets.get(null)!.push(entry);
  }
 
- const columns: Column[] = [
+ const rawColumns: Column[] = [
   ...groupOptions.map((opt) => ({
    optionId: opt.id, label: opt.name, color: opt.color, entries: buckets.get(opt.id) ?? [],
   })),
-  // Always show "No Status" column for unmatched entries
   { optionId: null, label: groupProp ? "No Status" : "All Items", color: "gray", entries: buckets.get(null)! },
  ].filter((col) => {
-  // Always show named option columns (valid targets for adding cards)
   if (col.optionId !== null) return true;
-  // "No Status" / "All Items": show only when it has entries,
-  // or when there are no defined options (single-column fallback mode)
   return col.entries.length > 0 || groupOptions.length === 0;
  });
+
+ // Apply local ordering overrides for within-column reorders
+ const columns = rawColumns.map((col) => {
+  const key = col.optionId ?? "none";
+  const order = localOrder.get(key);
+  if (!order) return col;
+  const map = new Map(col.entries.map((e) => [e.id, e]));
+  const sorted = order.map((id) => map.get(id)).filter(Boolean) as TemplateEntry[];
+  const extra = col.entries.filter((e) => !order.includes(e.id));
+  return { ...col, entries: [...sorted, ...extra] };
+ });
+
+ const draggingEntry = draggingId ? entries.find((e) => e.id === draggingId) : null;
+
+ function onDragStart({ active }: DragStartEvent) {
+  setDraggingId(String(active.id));
+ }
+
+ function onDragEnd({ active, over }: DragEndEvent) {
+  setDraggingId(null);
+  if (!over || active.id === over.id) return;
+
+  const activeId = String(active.id);
+  const overId  = String(over.id);
+
+  const activeCol = columns.find((c) => c.entries.some((e) => e.id === activeId));
+  if (!activeCol) return;
+  const activeKey = activeCol.optionId ?? "none";
+
+  const targetColByDroppable = columns.find((c) => "col-" + (c.optionId ?? "none") === overId);
+  const targetColByCard   = columns.find((c) => c.entries.some((e) => e.id === overId));
+  const targetCol = targetColByDroppable ?? targetColByCard;
+  if (!targetCol) return;
+  const targetKey = targetCol.optionId ?? "none";
+
+  if (activeKey === targetKey) {
+   // Within-column reorder — optimistic local state
+   const currentOrder = activeCol.entries.map((e) => e.id);
+   const oldIdx = currentOrder.indexOf(activeId);
+   const newIdx = targetColByCard ? currentOrder.indexOf(overId) : currentOrder.length - 1;
+   if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+   setLocalOrder((prev) => new Map(prev).set(activeKey, arrayMove(currentOrder, oldIdx, newIdx)));
+  } else {
+   // Cross-column move — persist new group value
+   if (groupProp) {
+    onUpdatePropValue(
+     activeId,
+     groupProp.id,
+     targetCol.optionId ? { optionId: targetCol.optionId } : { optionId: null },
+    );
+   }
+   setLocalOrder((prev) => {
+    const next = new Map(prev);
+    next.delete(activeKey);
+    next.delete(targetKey);
+    return next;
+   });
+  }
+ }
 
  async function handleAddCard(optionId: string | null, title: string) {
   setAddingTo(null);
@@ -174,132 +354,95 @@ export function TemplateBoardView({
 
  return (
   <>
-  <div className="grid items-start gap-3 p-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
-   {columns.map((col) => {
-    const style   = getStyle(col.color);
-    const isAddingHere = addingTo === (col.optionId ?? "none");
+  <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+   <div className="grid items-start gap-3 p-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+    {columns.map((col) => {
+     const style    = getStyle(col.color);
+     const colKey   = col.optionId ?? "none";
+     const isAddingHere = addingTo === colKey;
 
-    return (
-     <div
-      key={col.optionId ?? "none"}
-      className="flex flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden"
-     >
-      {/* Column header */}
-      <div className={`flex items-center justify-between border-b px-3 py-2.5 ${style.header}`}>
-       <div className="flex items-center gap-2">
-        <span className={`size-2 flex-shrink-0 rounded-full ${style.dot}`} />
-        <span className="text-sm font-semibold text-foreground">{col.label}</span>
-        <span className="flex min-w-[18px] items-center justify-center rounded-full bg-background/80 px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
-         {col.entries.length}
-        </span>
-       </div>
-       <button
-        onClick={() => setAddingTo(col.optionId ?? "none")}
-        className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground transition-colors"
-       >
-        <Plus size={13} />
-       </button>
-      </div>
-
-      {/* Cards */}
-      <div className="flex flex-col gap-2 p-2.5">
-       {col.entries.map((entry) => {
-        const valMap = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
-
-        return (
-         <div
-          key={entry.id}
-          className="group relative rounded-[var(--radius-sm)] border border-border/50 bg-background p-3 transition-all hover:border-border hover:-translate-y-0.5 cursor-pointer"
-          onClick={() => onClickEntry(entry.id)}
-         >
-          <p className="pr-5 text-sm font-medium leading-snug text-foreground">
-           {entry.title || <span className="text-muted-foreground/70">Untitled</span>}
-          </p>
-
-          {/* Property badges */}
-          {displayProps.length > 0 && (
-           <div className="mt-2 flex flex-wrap gap-1">
-            {displayProps.flatMap((dp) => {
-             const dpConfig = (dp.config ?? {}) as PropConfig;
-             const raw   = valMap.get(dp.id);
-             if (!raw) return [];
-
-             if (dp.type === "select") {
-              const sv = raw as SelectVal;
-              const opt = dpConfig.options?.find((o) => o.id === sv.optionId);
-              if (!opt) return [];
-              return [
-               <span key={dp.id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>
-                {opt.name}
-               </span>,
-              ];
-             }
-             if (dp.type === "multi_select") {
-              const msv = raw as MultiSelectVal;
-              const opts = (msv.optionIds ?? [])
-               .map((id) => dpConfig.options?.find((o) => o.id === id))
-               .filter(Boolean)
-               .slice(0, 2) as PropOption[];
-              return opts.map((opt) => (
-               <span key={opt.id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium ${optionCls(opt.color)}`}>
-                {opt.name}
-               </span>
-              ));
-             }
-             return [];
-            })}
-           </div>
-          )}
-
-          {/* Card actions */}
-          <div className="absolute right-2 top-2 hidden items-center gap-1 group-hover:flex">
-           <Link
-            href={`/app/${workspaceSlug}/${entry.shortId}`}
-            onClick={(e) => e.stopPropagation()}
-            className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            title="Open page"
-           >
-            <ExternalLink size={11} />
-           </Link>
-           <button
-            onClick={(e) => { e.stopPropagation(); setDeleteTarget(entry.id); }}
-            className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-            title="Delete"
-           >
-            <Trash2 size={11} />
-           </button>
-          </div>
+     return (
+      <SortableContext
+       key={colKey}
+       id={colKey}
+       items={col.entries.map((e) => e.id)}
+       strategy={verticalListSortingStrategy}
+      >
+       <div className="flex flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden">
+        {/* Column header */}
+        <div className={`flex items-center justify-between border-b px-3 py-2.5 ${style.header}`}>
+         <div className="flex items-center gap-2">
+          <span className={`size-2 flex-shrink-0 rounded-full ${style.dot}`} />
+          <span className="text-sm font-semibold text-foreground">{col.label}</span>
+          <span className="flex min-w-[18px] items-center justify-center rounded-full bg-background/80 px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+           {col.entries.length}
+          </span>
          </div>
-        );
-       })}
+         <button
+          onClick={() => setAddingTo(colKey)}
+          className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground transition-colors"
+         >
+          <Plus size={13} />
+         </button>
+        </div>
 
-       {/* Inline add card input */}
-       {isAddingHere && (
-        <InlineCardInput
-         onConfirm={(title) => handleAddCard(col.optionId, title)}
-         onCancel={() => setAddingTo(null)}
-        />
-       )}
+        {/* Cards */}
+        <ColumnDropZone colKey={colKey}>
+         {col.entries.map((entry) => (
+          <SortableCard
+           key={entry.id}
+           entry={entry}
+           displayProps={displayProps}
+           entryValueMap={entryValueMap}
+           workspaceSlug={workspaceSlug}
+           onClickEntry={onClickEntry}
+           onDeleteRequest={setDeleteTarget}
+          />
+         ))}
 
-       {col.entries.length === 0 && !isAddingHere && (
-        <p className="py-4 text-center text-xs text-muted-foreground/70">No items</p>
-       )}
+         {/* Inline add card input */}
+         {isAddingHere && (
+          <InlineCardInput
+           onConfirm={(title) => handleAddCard(col.optionId, title)}
+           onCancel={() => setAddingTo(null)}
+          />
+         )}
 
-       {/* Add card button at bottom of column */}
-       {!isAddingHere && (
-        <button
-         onClick={() => setAddingTo(col.optionId ?? "none")}
-         className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/30 hover:text-muted-foreground transition-colors"
-        >
-         <Plus size={12} />
-         Add card
-        </button>
-       )}
-      </div>
-     </div>
-    );
-   })}
-  </div>
+         {col.entries.length === 0 && !isAddingHere && (
+          <p className="py-4 text-center text-xs text-muted-foreground/70">No items</p>
+         )}
+        </ColumnDropZone>
+
+        {/* Add card button at bottom */}
+        {!isAddingHere && (
+         <button
+          onClick={() => setAddingTo(colKey)}
+          className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-4 py-2 text-xs text-muted-foreground hover:bg-muted/30 hover:text-muted-foreground transition-colors"
+         >
+          <Plus size={12} />
+          Add card
+         </button>
+        )}
+       </div>
+      </SortableContext>
+     );
+    })}
+   </div>
+
+   <DragOverlay>
+    {draggingEntry && (
+     <CardShell
+      entry={draggingEntry}
+      displayProps={displayProps}
+      entryValueMap={entryValueMap}
+      workspaceSlug={workspaceSlug}
+      onClickEntry={() => {}}
+      onDeleteRequest={() => {}}
+      dragging
+     />
+    )}
+   </DragOverlay>
+  </DndContext>
 
   <ConfirmDialog
    open={deleteTarget !== null}

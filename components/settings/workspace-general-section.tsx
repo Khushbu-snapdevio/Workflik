@@ -143,11 +143,11 @@ interface Props { workspace: WorkspaceData; bytesUsed: number; memberCount: numb
 
 const QUOTA = 5 * 1024 * 1024 * 1024;
 const ACCESS = [
- { value: "full",   label: "Full access" },
- { value: "edit",   label: "Can edit" },
- { value: "comment",  label: "Can comment" },
- { value: "view",   label: "View only" },
- { value: "no_access", label: "No access" },
+ { value: "full_access",  label: "Full access" },
+ { value: "can_edit",    label: "Can edit" },
+ { value: "can_comment",  label: "Can comment" },
+ { value: "can_view",    label: "View only" },
+ { value: "private",    label: "Private" },
 ];
 
 function fmt(b: number) {
@@ -266,24 +266,50 @@ function ChevronSelect({ value, options, onChange }: { value: string; options: {
 /* ── Main component ───────────────────────────────────────── */
 export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: Props) {
  const router = useRouter();
- const [name,     setName]     = useState(workspace.name);
- const [slug,     setSlug]     = useState(workspace.slug);
- const [icon,     setIcon]     = useState(workspace.icon ?? "");
- const [access,    setAccess]    = useState(workspace.defaultPageAccess ?? "view");
- const [inviteActive, setInviteActive] = useState(workspace.inviteLinkActive ?? false);
- const [inviteToken, setInviteToken] = useState(workspace.inviteLinkToken ?? "");
- const [inviteRole,  setInviteRole]  = useState(workspace.inviteLinkRole ?? "editor");
- const [saving,    setSaving]    = useState<string | null>(null);
- const [saved,    setSaved]    = useState<string | null>(null);
- const [slugError,  setSlugError]  = useState("");
- const [copied,    setCopied]    = useState(false);
- const [deleteOpen,  setDeleteOpen]  = useState(false);
- const [deleteName,  setDeleteName]  = useState("");
- const [deleting,   setDeleting]   = useState(false);
- const [deleteError, setDeleteError] = useState("");
+ const [name,       setName]       = useState(workspace.name);
+ const [icon,       setIcon]       = useState(workspace.icon ?? "");
+ const [access,      setAccess]      = useState(workspace.defaultPageAccess ?? "shared");
+ const [inviteActive,  setInviteActive]  = useState(workspace.inviteLinkActive ?? false);
+ const [inviteToken,  setInviteToken]  = useState(workspace.inviteLinkToken ?? "");
+ const [inviteRole,   setInviteRole]   = useState(workspace.inviteLinkRole ?? "editor");
+ const [saving,      setSaving]      = useState<string | null>(null);
+ const [saved,      setSaved]      = useState<string | null>(null);
+ const [nameError,    setNameError]    = useState("");
+ const [copied,      setCopied]      = useState(false);
+ const [deleteOpen,   setDeleteOpen]   = useState(false);
+ const [deleteName,   setDeleteName]   = useState("");
+ const [deleting,    setDeleting]    = useState(false);
+ const [deleteError,  setDeleteError]  = useState("");
 
  const nameRef = useRef(name); nameRef.current = name;
- const slugRef = useRef(slug); slugRef.current = slug;
+
+ function toSlug(v: string) {
+  return v.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || workspace.slug;
+ }
+
+ async function saveName() {
+  const trimmed = nameRef.current.trim();
+  if (!trimmed || trimmed === workspace.name) return;
+  const newSlug = toSlug(trimmed);
+  setSaving("name"); setSaved(null); setNameError("");
+  try {
+   const res = await fetch(`/api/workspaces/${workspace.id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: trimmed, slug: newSlug }),
+   });
+   if (res.ok) {
+    setSaved("name"); setTimeout(() => setSaved(null), 2500);
+    if (newSlug !== workspace.slug) {
+     router.replace(`/app/${newSlug}/settings/general`);
+    }
+   } else {
+    const d = await res.json().catch(() => ({}));
+    setNameError(d.error ?? "Failed to save");
+   }
+  } catch { setNameError("Network error"); }
+  finally { setSaving(null); }
+ }
 
  async function patchWs(patch: Record<string, unknown>) {
   const field = Object.keys(patch)[0]!;
@@ -293,12 +319,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
     method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch),
    });
    if (res.ok) {
-    const d = await res.json();
-    if (field === "slug" && d.slug !== workspace.slug) router.replace(`/app/${d.slug}/settings/general`);
-    setSaved(field); setTimeout(() => setSaved(null), 2500); setSlugError("");
-   } else {
-    const d = await res.json().catch(() => ({}));
-    if (field === "slug") setSlugError(d.error ?? "Slug already taken");
+    setSaved(field); setTimeout(() => setSaved(null), 2500);
    }
   } catch { /* no-op */ }
   finally { setSaving(null); }
@@ -400,29 +421,25 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
        <p className="mt-0.5 text-xs text-muted-foreground">Shown in the sidebar and all emails.</p>
       </div>
       <div className="relative shrink-0">
-       <Input value={name} onChange={e => setName(e.target.value)}
-        onBlur={() => { const v = nameRef.current.trim(); if (v && v !== workspace.name) patchWs({ name: v }); }}
+       <Input value={name} onChange={e => { setName(e.target.value); setNameError(""); }}
+        onBlur={saveName}
         className="w-[220px] focus-visible:border-primary" />
        {saved === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saved ✓</span>}
+       {nameError && <span className="absolute -bottom-5 right-0 text-xs text-destructive">{nameError}</span>}
       </div>
      </div>
 
-     {/* Slug row */}
-     <div className={`flex items-center justify-between gap-6 px-5 py-4`}>
+     {/* Slug row — read-only, auto-derived from name */}
+     <div className="flex items-center justify-between gap-6 px-5 py-4">
       <div className="min-w-0 flex-1">
        <p className="text-sm font-medium text-foreground">URL</p>
-       <p className="mt-0.5 text-xs text-muted-foreground">Changing this will redirect existing links.</p>
+       <p className="mt-0.5 text-xs text-muted-foreground">Auto-generated from workspace name.</p>
       </div>
       <div className="shrink-0">
-       <div className="flex items-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-muted/30 transition-colors focus-within:border-primary focus-within:bg-card">
+       <div className="flex items-center overflow-hidden rounded-[var(--radius-sm)] border border-border bg-muted/30">
         <span className="select-none border-r border-border/50 bg-muted px-2.5 py-2 text-xs font-medium text-muted-foreground">/app/</span>
-        <Input value={slug}
-         onChange={e => { setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,"")); setSlugError(""); }}
-         onBlur={() => { const v = slugRef.current.trim(); if (v && v !== workspace.slug) patchWs({ slug: v }); }}
-         className="w-[140px] border-none bg-transparent px-2.5 h-auto" />
+        <span className="px-2.5 py-2 text-xs text-foreground">{workspace.slug}</span>
        </div>
-       {slugError && <p className="mt-1 text-xs text-destructive">{slugError}</p>}
-       {saved === "slug" && <p className="mt-1 text-xs text-muted-foreground">Saved ✓</p>}
       </div>
      </div>
     </Card>

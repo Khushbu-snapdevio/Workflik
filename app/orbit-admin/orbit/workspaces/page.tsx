@@ -30,16 +30,13 @@ export default async function OrbitWorkspacesPage() {
  return (
   <div>
    {/* Header */}
-   <div className="mb-8 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="p-6">
-     <h1 className="text-3xl font-bold tracking-tight text-foreground">Workspaces</h1>
-     <p className="mt-1 text-sm text-muted-foreground">All tenant workspaces — inspect members, force delete.</p>
-     <div className="mt-4 flex gap-4">
-      <div>
-       <span className="text-2xl font-bold text-primary">{allWorkspaces.length}</span>
-       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Total</p>
-      </div>
-     </div>
+   <div className="mb-6">
+    <h1 className="text-xl font-bold tracking-tight text-foreground">Workspaces</h1>
+    <p className="mt-1 text-sm text-muted-foreground">All tenant workspaces — inspect members, force delete.</p>
+    <div className="mt-3">
+     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <strong className="font-bold text-foreground">{allWorkspaces.length}</strong> total
+     </span>
     </div>
    </div>
 
@@ -50,13 +47,13 @@ export default async function OrbitWorkspacesPage() {
      const letter = (ws.icon && ws.icon.length <= 2 ? ws.icon : ws.name?.slice(0, 1) ?? "W").toUpperCase();
      return (
       <Link key={ws.id} href={`/orbit-admin/orbit/workspaces/${ws.id}`}
-       className="group flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border bg-card p-5 transition">
+       className="group flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-card p-5 transition">
        <div className="flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-sm font-bold text-white">
          {letter}
         </span>
         <div className="min-w-0 flex-1">
-         <p className="truncate text-[13.5px] font-bold text-foreground group-hover:text-muted-foreground">{ws.name}</p>
+         <p className="truncate text-sm font-semibold text-foreground">{ws.name}</p>
          <p className="truncate text-xs text-muted-foreground">/{ws.slug}</p>
         </div>
        </div>

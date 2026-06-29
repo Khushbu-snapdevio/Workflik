@@ -117,16 +117,16 @@ export function FavoritesSection({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
+        className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
-        <Star size={15} className="shrink-0 text-muted-foreground group-hover:text-primary" />
+        <Star size={15} className="shrink-0 text-muted-foreground group-hover:text-sidebar-accent-foreground" />
         <span className="flex-1 text-left">Favorites</span>
         {localFavs.length > 0 && (
           <span className="text-xs text-muted-foreground">{localFavs.length}</span>
         )}
         <ChevronDown
           size={13}
-          className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-primary ${expanded ? "" : "-rotate-90"}`}
+          className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
         />
       </button>
 
@@ -183,7 +183,7 @@ export function FavoritesSection({
                 ref={moreRef}
                 type="button"
                 onClick={openPopup}
-                className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
+                className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
                 <MoreHorizontal size={12} />
                 {localFavs.length - VISIBLE_MAX} more
@@ -272,10 +272,10 @@ function FavoriteRow({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="group flex items-center rounded-[var(--radius-md)] transition-colors duration-150 hover:bg-primary/10"
+      className="group flex items-center rounded-[var(--radius-md)] transition-colors duration-150 hover:bg-sidebar-accent"
     >
       <Link
-        className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:text-primary"
+        className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:text-sidebar-accent-foreground"
         href={`/app/${workspaceSlug}/${shortId}`}
         {...listeners}
       >

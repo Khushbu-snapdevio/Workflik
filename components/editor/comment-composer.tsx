@@ -30,7 +30,7 @@ export function CommentComposer({
   autoFocus = false,
 }: CommentComposerProps) {
   const fileInputRef                      = useRef<HTMLInputElement>(null);
-  const [attachment, setAttachment]       = useState<{ preview: string; name: string } | null>(null);
+  const [attachment, setAttachment]       = useState<{ preview: string; name: string; mimeType: string } | null>(null);
   const [attachLoading, setAttachLoading] = useState(false);
   const [editorEmpty, setEditorEmpty]     = useState(true);
 
@@ -55,7 +55,7 @@ export function CommentComposer({
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string;
-      setAttachment({ preview: base64, name: file.name });
+      setAttachment({ preview: base64, name: file.name, mimeType: file.type });
       setAttachLoading(false);
     };
     reader.onerror = () => setAttachLoading(false);
@@ -140,17 +140,21 @@ export function CommentComposer({
     if (rawContent) {
       const doc = rawContent as { type: string; content?: unknown[] };
       if (attachment) {
-        doc.content = [
-          ...(doc.content ?? []),
-          { type: "image", attrs: { src: attachment.preview, alt: attachment.name } },
-        ];
+        const isImage = attachment.mimeType.startsWith("image/");
+        const attachNode = isImage
+          ? { type: "image", attrs: { src: attachment.preview, alt: attachment.name } }
+          : { type: "file", attrs: { src: attachment.preview, name: attachment.name, mimeType: attachment.mimeType } };
+        doc.content = [...(doc.content ?? []), attachNode];
       }
       content = doc as Record<string, unknown>;
     } else {
+      const isImage = attachment?.mimeType.startsWith("image/") ?? false;
       content = {
         type: "doc",
         content: attachment
-          ? [{ type: "image", attrs: { src: attachment.preview, alt: attachment.name } }]
+          ? [isImage
+              ? { type: "image", attrs: { src: attachment.preview, alt: attachment.name } }
+              : { type: "file", attrs: { src: attachment.preview, name: attachment.name, mimeType: attachment.mimeType } }]
           : [],
       };
     }

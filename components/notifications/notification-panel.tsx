@@ -109,40 +109,47 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
         }}
       >
         {/* ── Header ── */}
-        <div className="shrink-0 border-b border-border bg-card px-5 py-3.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted">
-                  <Bell size={15} className="text-muted-foreground" />
-                </div>
+        <div className="shrink-0 border-b border-border bg-card">
+          {/* Top accent bar */}
+          <div className="h-[3px] bg-gradient-to-r from-primary via-primary/60 to-transparent" />
+
+          <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-3.5">
+            {/* Left: title + badge + subtitle */}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <Bell size={14} className="shrink-0 text-primary" />
+                <h2 className="text-[15px] font-bold leading-none tracking-tight text-foreground">
+                  Inbox
+                </h2>
                 {unread > 0 && (
-                  <span className="absolute -top-1 -right-1 flex size-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary text-xs font-bold text-white leading-none">
+                  <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold leading-none text-white">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
               </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground tracking-tight leading-none">Inbox</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {unread > 0 ? `${unread} unread notification${unread !== 1 ? "s" : ""}` : "You're all caught up"}
-                </p>
-              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {unread > 0
+                  ? `${unread} unread notification${unread !== 1 ? "s" : ""}`
+                  : "You're all caught up"}
+              </p>
             </div>
 
-            <div className="flex items-center gap-1">
+            {/* Right: icon actions */}
+            <div className="flex shrink-0 items-center gap-0.5">
               {unread > 0 && (
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                  title="Mark all as read"
+                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
-                  Mark all read
+                  <Check size={14} />
                 </button>
               )}
               <a
                 href={`/app/${workspaceSlug}/settings/notifications`}
                 aria-label="Notification settings"
+                title="Notification settings"
                 className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
                 <Settings size={14} />
@@ -150,7 +157,8 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
               <button
                 type="button"
                 onClick={closePanel}
-                aria-label="Close notifications"
+                aria-label="Close"
+                title="Close"
                 className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
                 <X size={14} />
@@ -159,23 +167,25 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
           </div>
         </div>
 
-        {/* ── Filter tabs — segmented control ── */}
-        <div className="shrink-0 border-b border-border px-4 py-2.5">
-          <div className="flex items-center gap-0.5 rounded-[var(--radius-sm)] bg-muted/60 p-0.5">
+        {/* ── Filter tabs ── */}
+        <div className="shrink-0 border-b border-border px-3 py-2">
+          <div className="flex items-center gap-0.5">
             {FILTERS.map(({ key, label }) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => setFilter(key)}
-                className={`relative flex-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                className={`relative flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-all duration-150 ${
                   filter === key
-                    ? "bg-card text-foreground border border-border"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
                 {label}
                 {key === "all" && unread > 0 && (
-                  <span className="ml-1 inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-white leading-none">
+                  <span className={`inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none ${
+                    filter === key ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                  }`}>
                     {unread > 99 ? "99+" : unread}
                   </span>
                 )}

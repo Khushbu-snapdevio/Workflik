@@ -35,37 +35,32 @@ export default async function OrbitEmailPage() {
   <div className="space-y-6">
 
    {/* Header */}
-   <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
-     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Email</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Transactional outbox — delivery status and retry tracking.</p>
-     </div>
-     <div className="hidden shrink-0 items-center divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-muted/30 sm:flex">
-      {statusCounts.map(s => {
-       const cls = STATUS_CLS[s.status] ?? STATUS_CLS.queued!;
-       return (
-        <div key={s.status} className="px-6 py-4 text-center">
-         <p className="text-2xl font-bold text-foreground">{s.cnt}</p>
-         <div className="mt-0.5 flex items-center justify-center gap-1">
-          <span className={`size-1.5 rounded-full ${cls.dot}`} />
-          <p className="text-[9.5px] font-semibold uppercase tracking-wide text-muted-foreground/60">{s.status}</p>
-         </div>
-        </div>
-       );
-      })}
-     </div>
+   <div className="flex items-start justify-between gap-4">
+    <div>
+     <h1 className="text-xl font-bold tracking-tight text-foreground">Email</h1>
+     <p className="mt-1 text-sm text-muted-foreground">Transactional outbox — delivery status and retry tracking.</p>
+    </div>
+    <div className="hidden shrink-0 items-center gap-2 sm:flex">
+     {statusCounts.map(s => {
+      const cls = STATUS_CLS[s.status] ?? STATUS_CLS.queued!;
+      return (
+       <span key={s.status} className={`inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground`}>
+        <span className={`size-1.5 rounded-full ${cls.dot}`} />
+        <strong className="font-bold text-foreground">{s.cnt}</strong> {s.status}
+       </span>
+      );
+     })}
     </div>
    </div>
 
    {/* Table */}
-   <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="flex items-center justify-between border-b border-border px-5 py-4">
+   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3.5">
      <div>
-      <h2 className="text-[13.5px] font-semibold text-foreground">Outbox</h2>
-      <p className="text-xs text-muted-foreground">Latest {total} of all transactional emails</p>
+      <h2 className="text-sm font-semibold text-foreground">Outbox</h2>
+      <p className="text-xs text-muted-foreground">Latest {total} transactional emails</p>
      </div>
-     <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">{total} shown</span>
+     <span className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{total} shown</span>
     </div>
 
     {outbox.length === 0 ? (
@@ -92,7 +87,7 @@ export default async function OrbitEmailPage() {
         {outbox.map(email => {
          const cls = STATUS_CLS[email.status] ?? STATUS_CLS.queued!;
          return (
-          <tr key={email.id} className="transition-colors hover:bg-accent/40">
+          <tr key={email.id} className="transition-colors hover:bg-accent">
            <td className="px-5 py-3.5">
             <p className="text-xs font-semibold text-foreground">{email.recipientEmail}</p>
            </td>

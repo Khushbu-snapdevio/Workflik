@@ -148,29 +148,25 @@ export default async function OrbitAnalyticsPage() {
   <div className="space-y-6">
 
    {/* Header */}
-   <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
-     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Platform-wide metrics with real-time data and 30-day trends.</p>
-     </div>
-     <div className="hidden shrink-0 items-center divide-x divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-muted/30 sm:flex">
-      <div className="px-6 py-4 text-center">
-       <p className="text-2xl font-bold text-foreground">{activationRate}%</p>
-       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Activation</p>
-      </div>
-      <div className="px-6 py-4 text-center">
-       <p className="text-2xl font-bold text-foreground">{activeSessions!.count}</p>
-       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Active sessions</p>
-      </div>
-     </div>
+   <div className="flex items-start justify-between gap-4">
+    <div>
+     <h1 className="text-xl font-bold tracking-tight text-foreground">Analytics</h1>
+     <p className="mt-1 text-sm text-muted-foreground">Platform-wide metrics with real-time data and 30-day trends.</p>
+    </div>
+    <div className="hidden shrink-0 items-center gap-2 sm:flex">
+     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <strong className="font-bold text-foreground">{activationRate}%</strong> activation
+     </span>
+     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <strong className="font-bold text-foreground">{activeSessions!.count}</strong> active sessions
+     </span>
     </div>
    </div>
 
    {/* KPI row */}
-   <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
     {kpis.map(s => (
-     <div key={s.label} className="flex flex-col gap-4 rounded-[var(--radius-xl)] border border-border bg-card p-5">
+     <div key={s.label} className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-card p-5">
       <div className="flex items-center justify-between">
        <span className="flex size-9 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 text-primary">
         {s.icon}
@@ -189,7 +185,7 @@ export default async function OrbitAnalyticsPage() {
        )}
       </div>
       <div>
-       <p className="text-3xl font-bold leading-none text-primary">{s.value}</p>
+       <p className="text-3xl font-bold leading-none text-foreground">{s.value}</p>
        <p className="mt-1.5 text-xs font-semibold text-foreground">{s.label}</p>
        <p className="mt-0.5 text-xs text-muted-foreground">{s.sub}</p>
       </div>
@@ -250,12 +246,12 @@ export default async function OrbitAnalyticsPage() {
         { label: "30-day signups", value: newUsers30d!.count, pct: totalUsers!.count > 0 ? Math.round((newUsers30d!.count / totalUsers!.count) * 100) : 0 },
        ].map(r => (
         <div key={r.label} className="rounded-[var(--radius-md)] border border-border bg-muted/30 p-3">
-         <p className="text-xl font-bold text-primary">{r.value}</p>
+         <p className="text-xl font-bold text-foreground">{r.value}</p>
          <p className="text-xs font-medium text-muted-foreground">{r.label}</p>
          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/50">
           <div className="h-full rounded-full bg-primary" style={{ width: `${r.pct}%` }} />
          </div>
-         <p className="mt-1 text-[9.5px] text-muted-foreground/60">{r.pct}% of all users</p>
+         <p className="mt-1 text-xs text-muted-foreground/60">{r.pct}% of all users</p>
         </div>
        ))}
       </div>
@@ -288,17 +284,17 @@ function ChartCard({ title, subtitle, value, valueLabel, badge, children }: {
  children: React.ReactNode;
 }) {
  return (
-  <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
+  <div className="rounded-[var(--radius-lg)] border border-border bg-card">
    <div className="p-5">
     <div className="flex items-start justify-between gap-3">
      <div>
-      <h3 className="text-[13.5px] font-semibold text-foreground">{title}</h3>
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       <p className="text-xs text-muted-foreground">{subtitle}</p>
      </div>
      <div className="shrink-0 text-right">
       <p className="text-xl font-bold leading-none text-primary">{value}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{valueLabel}</p>
-      {badge && <p className="mt-0.5 text-[9.5px] text-muted-foreground/60">{badge}</p>}
+      {badge && <p className="mt-0.5 text-xs text-muted-foreground/60">{badge}</p>}
      </div>
     </div>
     <div className="mt-4">{children}</div>
@@ -313,8 +309,8 @@ function DayLabels({ days }: { days: number }) {
  const fmt = (d: Date) => d.toLocaleDateString("en", { month: "short", day: "numeric" });
  return (
   <div className="mt-1.5 flex justify-between">
-   <span className="text-[9.5px] text-muted-foreground/60">{fmt(start)}</span>
-   <span className="text-[9.5px] text-muted-foreground/60">{fmt(now)}</span>
+   <span className="text-xs text-muted-foreground/60">{fmt(start)}</span>
+   <span className="text-xs text-muted-foreground/60">{fmt(now)}</span>
   </div>
  );
 }

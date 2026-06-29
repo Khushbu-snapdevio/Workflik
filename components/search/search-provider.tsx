@@ -16,7 +16,8 @@ export function SearchProvider({ workspaceSlug, workspaceId, children }: SearchP
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setOpen((prev) => !prev);
+        // Only open — when dialog is already open, its own Ctrl+K handler clears the query
+        if (!open) setOpen(true);
       }
     }
     function handleEvent() { setOpen(true); }
@@ -35,7 +36,7 @@ export function SearchProvider({ workspaceSlug, workspaceId, children }: SearchP
         <SearchDialog
           workspaceSlug={workspaceSlug}
           workspaceId={workspaceId}
-          onClose={() => setOpen(false)}
+          onClose={() => { setOpen(false); document.dispatchEvent(new CustomEvent("workflik:search-closed")); }}
         />
       )}
     </>

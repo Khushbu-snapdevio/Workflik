@@ -63,26 +63,31 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
    </div>
 
    {/* Header */}
-   <div className="mb-6 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
+   <div className="mb-6 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     <div className="p-6">
-     <h1 className="text-3xl font-bold tracking-tight text-foreground">{ws.name}</h1>
-     <p className="mt-1 text-sm text-muted-foreground">/{ws.slug}</p>
-     <div className="mt-4 flex flex-wrap items-center gap-4">
+     <div className="flex items-start justify-between gap-4">
       <div>
-       <p className="text-base font-bold text-primary">{activeMembers.length}</p>
-       <p className="text-[9.5px] font-semibold tracking-wide text-muted-foreground/60">Active members</p>
+       <h1 className="text-3xl font-bold tracking-tight text-foreground">{ws.name}</h1>
+       <p className="mt-1 font-mono text-sm text-muted-foreground">/{ws.slug}</p>
       </div>
-      <div className="h-6 w-px bg-border" />
-      <div>
-       <p className="text-base font-bold text-primary">{members.length}</p>
-       <p className="text-[9.5px] font-semibold tracking-wide text-muted-foreground/60">Total members</p>
+      <div className="shrink-0 text-right">
+       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Workspace ID</p>
+       <p className="mt-0.5 font-mono text-xs text-muted-foreground/80 break-all">{ws.id}</p>
       </div>
-      <div className="ml-auto shrink-0 text-right">
-       <p className="text-xs text-muted-foreground/60">ID</p>
-       <p className="font-mono text-xs text-muted-foreground">{ws.id.slice(0, 16)}…</p>
-       <p className="mt-1 text-xs text-muted-foreground/60">Created</p>
-       <p className="text-xs text-muted-foreground">{ago(ws.createdAt)}</p>
-      </div>
+     </div>
+    </div>
+    <div className="flex items-center gap-0 border-t border-border divide-x divide-border">
+     <div className="px-6 py-4">
+      <p className="text-lg font-bold text-primary">{activeMembers.length}</p>
+      <p className="text-xs text-muted-foreground/60">Active members</p>
+     </div>
+     <div className="px-6 py-4">
+      <p className="text-lg font-bold text-primary">{members.length}</p>
+      <p className="text-xs text-muted-foreground/60">Total members</p>
+     </div>
+     <div className="ml-auto px-6 py-4 text-right">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Created</p>
+      <p className="text-xs text-muted-foreground">{formatDateTime(ws.createdAt)}</p>
      </div>
     </div>
    </div>
@@ -90,7 +95,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
    <div className="grid gap-5 lg:grid-cols-3">
     {/* Details */}
     <div className="space-y-4">
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-xs font-bold text-foreground">Workspace details</h2>
       </div>
@@ -99,7 +104,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
         { label: "Name",  value: ws.name },
         { label: "Slug",  value: `/${ws.slug}` },
         { label: "Icon",  value: ws.icon ?? "—" },
-        { label: "ID",   value: <span className="break-all font-mono text-[9.5px]">{ws.id}</span> },
+        { label: "ID",   value: <span className="break-all font-mono text-xs">{ws.id}</span> },
         { label: "Created", value: formatDateTime(ws.createdAt) },
        ].map(row => (
         <div key={row.label} className="flex items-baseline justify-between gap-2 py-2.5">
@@ -126,7 +131,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
 
     {/* Members */}
     <div className="lg:col-span-2">
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-xs font-bold text-foreground">Members <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-xs font-semibold text-muted-foreground">{members.length}</span></h2>
       </div>
@@ -155,7 +160,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
             <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
              m.role === "admin" || m.role === "editor" ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"
             }`}>{m.role}</span>
-            <span className={`text-[9.5px] font-semibold ${m.status === "active" ? "text-success" : "text-warning"}`}>
+            <span className={`text-xs font-semibold ${m.status === "active" ? "text-success" : "text-warning"}`}>
              {m.status}
             </span>
            </div>

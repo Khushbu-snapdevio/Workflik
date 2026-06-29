@@ -7,6 +7,7 @@ import { useUpload } from "@/lib/storage/use-upload";
 import { useSettingsUser } from "./settings-user-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface UserData {
  id:    string;
@@ -177,6 +178,7 @@ export function ProfileSection({ user }: Props) {
  const [deleteEmail,  setDeleteEmail]  = useState("");
  const [deleting,   setDeleting]   = useState(false);
  const [deleteError,  setDeleteError]  = useState("");
+ const [removePhotoConfirm, setRemovePhotoConfirm] = useState(false);
 
  const nameRef = useRef(name); nameRef.current = name;
  const jobRef = useRef(jobTitle); jobRef.current = jobTitle;
@@ -311,7 +313,7 @@ export function ProfileSection({ user }: Props) {
        </div>
        {currentImage && !avatarUploading && (
         <Button variant="outline" size="sm"
-         type="button" onClick={handleRemovePhoto}
+         type="button" onClick={() => setRemovePhotoConfirm(true)}
          className="shrink-0 border-destructive/30 text-destructive hover:bg-destructive/5 hover:border-destructive/50 hover:text-destructive">
          <X size={12} />
          Remove photo
@@ -471,6 +473,14 @@ export function ProfileSection({ user }: Props) {
     </div>
    </div>
 
+   <ConfirmDialog
+    open={removePhotoConfirm}
+    onOpenChange={setRemovePhotoConfirm}
+    title="Remove profile photo?"
+    description="Your profile photo will be removed and replaced with your initials."
+    confirmLabel="Remove photo"
+    onConfirm={handleRemovePhoto}
+   />
   </div>
  );
 }

@@ -490,6 +490,14 @@ body {
 /* Toggle block — Notion-style */
 .ProseMirror details {
   margin: 1px 0;
+  padding: 12px 0 12px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+}
+
+/* Whole block hover — covers summary + all content children */
+.ProseMirror details:hover {
+  background: color-mix(in srgb, #0284C7 8%, transparent);
 }
 
 /* ── Summary row ── */
@@ -497,6 +505,7 @@ body {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 5px;
   list-style: none;
   cursor: pointer;
   padding: 2px 4px 2px 0;
@@ -507,97 +516,89 @@ body {
   line-height: 1.5;
   background: transparent !important;
   outline: none;
+  user-select: none;
 }
 .ProseMirror details > summary::-webkit-details-marker { display: none; }
 .ProseMirror details > summary::marker { display: none; }
-.ProseMirror details > summary:hover,
+
+/* Suppress only browser focus/focus-visible highlight */
 .ProseMirror details > summary:focus,
 .ProseMirror details > summary:focus-visible {
   background: transparent !important;
   outline: none;
 }
 
-/* ── Chevron icon — mask-image (solid filled shape), rendered above hover bg ── */
+/* summary hover — transparent so parent details:hover bg shows through */
+.ProseMirror details > summary:hover {
+  background: transparent !important;
+}
+
+/* ── Solid filled triangle — primary color, Notion style ── */
 .ProseMirror details > summary::before {
   content: "";
   flex-shrink: 0;
   display: inline-block;
-  position: relative;
-  z-index: 1;
-  width: 24px;
-  height: 24px;
+  width: 14px;
+  height: 14px;
   background-color: var(--primary);
-  opacity: 0.75;
-  border-radius: var(--radius-sm);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='currentColor' d='M9 18l6-6-6-6'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='currentColor' d='M9 18l6-6-6-6'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpolygon points='2,1 9,5 2,9' fill='black'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpolygon points='2,1 9,5 2,9' fill='black'/%3E%3C/svg%3E");
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  -webkit-mask-size: 20px 20px;
-  mask-size: 20px 20px;
+  -webkit-mask-size: 10px 10px;
+  mask-size: 10px 10px;
   -webkit-mask-position: center;
   mask-position: center;
-  transition: transform 0.15s ease, opacity 0.12s ease;
+  transition: transform 0.2s ease, opacity 0.15s ease;
 }
 
-/* ── Open — rotate + full opacity ── */
+/* Open — rotate 90° to point down */
 .ProseMirror details[open] > summary::before {
   transform: rotate(90deg);
-  opacity: 1;
+  opacity: 0.65;
 }
 
-/* ── Hover — icon goes full opacity ── */
+/* Hover — triangle gets slightly more visible */
 .ProseMirror details > summary:hover::before {
-  opacity: 1;
+  opacity: 0.8;
 }
 
-/* ── Hover background — absolute square BEHIND the icon (z-index: 0) ── */
-.ProseMirror details > summary::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  transition: background 0.1s ease;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.ProseMirror details > summary:hover::after {
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-}
-
-/* ── "Toggle" placeholder on empty summary — overrides ::after back to inline text ── */
+/* ── Empty summary placeholder — "Toggle" hint text ── */
 .ProseMirror details > summary.is-empty::after {
   content: "Toggle";
-  position: static;
-  transform: none;
-  top: auto;
-  width: auto;
-  height: auto;
-  background: transparent !important;
   color: var(--muted-foreground);
-  opacity: 0.45;
+  opacity: 0.4;
   pointer-events: none;
   font-style: normal;
-  z-index: auto;
 }
 
-/* ── Content area ── */
-.ProseMirror details:not([open]) > *:not(summary) {
+/* ── Content area — smooth open AND close ── */
+.ProseMirror details > *:not(summary) {
   display: none;
-}
-.ProseMirror details[open] > *:not(summary) {
-  margin-left: 1.5rem;
-  padding-left: 0.625rem;
-  border-left: 1.5px solid var(--border);
+  opacity: 0;
+  transform: translateY(-6px);
+  overflow: hidden;
+  transition: opacity 0.22s ease, transform 0.22s ease, display 0.22s;
+  transition-behavior: allow-discrete;
 }
 
-/* ── "Empty toggle" placeholder on the first empty paragraph inside open toggle ── */
+.ProseMirror details[open] > *:not(summary) {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+  margin-left: 1.5rem;
+  padding-left: 0.25rem;
+}
+
+@starting-style {
+  .ProseMirror details[open] > *:not(summary) {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* ── Empty toggle content placeholder ── */
 .ProseMirror details[open] > p.is-empty:first-of-type::before {
   content: "Empty toggle. Click or drop blocks inside." !important;
   color: var(--muted-foreground);
@@ -650,9 +651,8 @@ body {
 }
 .ProseMirror a:hover { text-decoration-color: var(--primary); }
 
-/* Placeholder */
-.ProseMirror p.is-empty:first-child::before,
-.ProseMirror p.is-editor-empty:first-child::before {
+/* Placeholder — show on every empty paragraph, not just the first */
+.ProseMirror p.is-empty::before {
   content: attr(data-placeholder);
   float: left;
   color: var(--muted-foreground);

@@ -285,32 +285,40 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
           return (
             <div className="flex h-full w-full">
               {/* Left panel */}
-              <div className="flex w-[380px] shrink-0 flex-col border-r border-border/60 bg-background">
+              <div className="flex w-[300px] shrink-0 flex-col border-r border-border/60 bg-background">
                 {/* Header */}
-                <div className="flex items-center gap-3 border-b border-border/60 px-5 py-4">
+                <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
                     <ArrowLeft size={14} />
                   </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Templates</p>
+                    <h3 className="truncate text-sm font-bold text-foreground leading-tight">{selected.name}</h3>
+                  </div>
+                </div>
+
+                {/* Icon + name hero */}
+                <div className="flex items-center gap-3 border-b border-border/40 bg-muted/20 px-4 py-4">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-2xl shadow-sm">
+                    {selected.pageSnapshot.icon || <CatIcon size={20} className="text-muted-foreground" />}
+                  </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-muted-foreground">Templates</p>
-                    <h3 className="truncate text-sm font-bold text-foreground">{selected.name}</h3>
+                    <p className="truncate text-sm font-semibold text-foreground">{selected.name}</p>
+                    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-border/50 text-muted-foreground bg-muted/30 mt-0.5">
+                      <CatIcon size={9} />
+                      {catDef?.label}
+                    </span>
                   </div>
                 </div>
 
                 {/* Info + block list */}
-                <div className="flex-1 overflow-y-auto px-5 py-5">
-                  {/* Category + description */}
-                  <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground`}>
-                    <CatIcon size={10} />
-                    {catDef?.label}
-                  </span>
-
+                <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4">
                   {selected.description && (
-                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
                       {selected.description}
                     </p>
                   )}
@@ -319,11 +327,11 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                   {selected.pageSnapshot.database_schema ? (
                     <DbSchemaPreview schema={selected.pageSnapshot.database_schema} />
                   ) : blocks.length > 0 ? (
-                    <div className="mt-5">
-                      <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground">
+                    <div className="mt-4">
+                      <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
                         Included in this template
                       </p>
-                      <div className="space-y-1.5 rounded-[var(--radius-md)] border border-border/50 bg-muted/20 p-3">
+                      <div className="space-y-1 rounded-xl border border-border/50 bg-muted/20 p-3">
                         {blocks.slice(0, 12).map((b, i) => (
                           <BlockPreview key={i} block={b as { type: string; content?: unknown }} />
                         ))}
@@ -337,13 +345,13 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                   ) : null}
                 </div>
 
-                {/* Continue CTA */}
-                <div className="border-t border-border/60 p-5">
+                {/* Use template CTA */}
+                <div className="border-t border-border/60 px-4 py-4">
                   <button
                     type="button"
                     disabled={applying}
                     onClick={() => applyTemplate(selected)}
-                    className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
                   >
                     {applying ? (
                       <>
@@ -352,48 +360,45 @@ export function TemplateGalleryModal({ workspaceId, workspaceSlug, parentId, ini
                       </>
                     ) : (
                       <>
-                        Continue
+                        Use template
                         <ArrowRight size={14} />
                       </>
                     )}
                   </button>
-                  <p className="mt-2 text-center text-xs text-muted-foreground">
-                    Creates an independent copy of this template
+                  <p className="mt-2 text-center text-[11px] text-muted-foreground/60">
+                    Creates an independent copy
                   </p>
                 </div>
               </div>
 
-              {/* Right panel — page preview */}
-              <div className="flex flex-1 flex-col overflow-hidden bg-muted/20">
-                <div className="flex flex-1 items-start justify-center overflow-y-auto p-8">
-                  <div className="w-full max-w-[580px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-background">
-                    {/* Cover */}
-                    <div className="flex h-24 items-center justify-center bg-muted/30">
+              {/* Right panel — page preview fills full height */}
+              <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
+                <div className="flex flex-1 flex-col overflow-hidden p-4">
+                  <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                    {/* Cover strip with overlapping icon */}
+                    <div className="relative flex h-[80px] shrink-0 items-end bg-gradient-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
                       {selected.pageSnapshot.icon ? (
-                        <span className="text-4xl">{selected.pageSnapshot.icon}</span>
+                        <span className="translate-y-[22px] text-[40px] leading-none drop-shadow-sm">
+                          {selected.pageSnapshot.icon}
+                        </span>
                       ) : (
-                        <CatIcon size={40} className="text-muted-foreground/60" />
+                        <CatIcon size={34} className="translate-y-[22px] text-muted-foreground/25" />
                       )}
                     </div>
 
-                    {/* Page content preview */}
-                    <div className="px-6 py-5">
-                      <h1 className="mb-1 text-xl font-bold text-foreground">
+                    {/* Page content — flex stretch for db views, scroll for page blocks */}
+                    <div className={`flex flex-col px-8 pt-10 pb-8 ${selected.pageSnapshot.database_schema ? "min-h-0 flex-1 overflow-hidden" : "flex-1 overflow-y-auto"}`}>
+                      <h1 className="mb-1 shrink-0 text-xl font-bold text-foreground">
                         {selected.pageSnapshot.title || selected.name}
                       </h1>
-                      {blocks[0] && (() => {
-                        const c = blocks[0].content as { text?: { text: string }[] } | null;
-                        const txt = c?.text?.map((t) => t.text).join("") ?? "";
-                        return txt ? (
-                          <p className="mb-4 text-xs text-muted-foreground">{txt}</p>
-                        ) : null;
-                      })()}
-
+                      {selected.description && (
+                        <p className="mb-4 shrink-0 text-sm text-muted-foreground">{selected.description}</p>
+                      )}
                       {selected.pageSnapshot.database_schema ? (
                         <DatabasePreview schema={selected.pageSnapshot.database_schema} />
                       ) : (
                         <div className="space-y-2">
-                          {blocks.slice(1, 14).map((b, i) => (
+                          {blocks.slice(0, 16).map((b, i) => (
                             <PageBlockPreview key={i} block={b as { type: string; content?: unknown }} />
                           ))}
                         </div>
@@ -549,10 +554,10 @@ const PROP_TYPE_ICON: Record<string, string> = {
 
 function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: DbView[] } }) {
   return (
-    <div className="mt-5 space-y-4">
+    <div className="mt-5 space-y-5">
       {/* Views */}
       <div>
-        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
+        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -560,10 +565,10 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
             <span
               key={v.name}
               className={[
-                "inline-flex items-center gap-1 rounded-[var(--radius-sm)] border px-2 py-1 text-xs font-medium",
+                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
                 v.isDefault
-                  ? "border-border bg-accent text-foreground font-semibold"
-                  : "border-border/40 bg-muted/20 text-muted-foreground",
+                  ? "border-primary/20 bg-primary/10 text-primary"
+                  : "border-border/50 bg-muted/30 text-muted-foreground",
               ].join(" ")}
             >
               {v.type === "board" ? "⊞" : v.type === "calendar" ? "📅" : "☰"} {v.name}
@@ -574,25 +579,33 @@ function DbSchemaPreview({ schema }: { schema: { properties: DbProp[]; views: Db
 
       {/* Properties */}
       <div>
-        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
+        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
           Properties ({schema.properties.length})
         </p>
-        <div className="divide-y divide-border/40 rounded-[var(--radius-md)] border border-border/50 bg-muted/20">
-          {schema.properties.map((p) => (
-            <div key={p.name} className="flex items-center gap-2.5 px-3 py-2">
-              <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/70">
+        <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
+          {schema.properties.map((p, i) => (
+            <div
+              key={p.name}
+              className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
+                i < schema.properties.length - 1 ? "border-b border-border/40" : ""
+              }`}
+            >
+              <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/60">
                 {PROP_TYPE_ICON[p.type] ?? "·"}
               </span>
-              <span className="flex-1 text-xs text-foreground/80">{p.name}</span>
+              <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground/80">{p.name}</span>
               {p.options && p.options.length > 0 && (
-                <div className="flex gap-1">
-                  {p.options.slice(0, 3).map((o) => (
-                    <span key={o.name} className="rounded px-1 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
+                <div className="flex shrink-0 items-center gap-1">
+                  {p.options.slice(0, 2).map((o) => (
+                    <span
+                      key={o.name}
+                      className={`max-w-[64px] truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${(OPTION_COLORS[o.color] ?? DEFAULT_OPT).badge}`}
+                    >
                       {o.name}
                     </span>
                   ))}
-                  {p.options.length > 3 && (
-                    <span className="text-xs text-muted-foreground/70">+{p.options.length - 3}</span>
+                  {p.options.length > 2 && (
+                    <span className="text-[10px] text-muted-foreground/60">+{p.options.length - 2}</span>
                   )}
                 </div>
               )}
@@ -690,42 +703,49 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
   const rows        = schema.sample_rows ?? [];
 
   return (
-    <div className="mt-3">
+    <div className="flex min-h-0 flex-1 flex-col">
       <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {columns.map((col) => {
+      {/* Board grid — columns divide the full height */}
+      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border/40 bg-background">
+        {columns.map((col, ci) => {
           const colRows = groupByProp
             ? rows.filter((r) => r[groupByProp.name] === col.name)
             : [];
           const clr = OPTION_COLORS[col.color] ?? DEFAULT_OPT;
           return (
-            <div key={col.name} className="min-w-[130px] flex-shrink-0">
-              <div className="mb-2 flex items-center gap-1.5">
-                <span className={`size-2 shrink-0 rounded-full ${clr.dot}`} />
-                <span className="flex-1 truncate text-xs font-semibold text-foreground/70">{col.name}</span>
+            <div
+              key={col.name}
+              className={`flex min-w-[148px] flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border/30" : ""}`}
+            >
+              {/* Column header */}
+              <div className="flex shrink-0 items-center gap-1.5 border-b border-border/30 bg-muted/30 px-3 py-2.5">
+                <span className={`size-1.5 shrink-0 rounded-full ${clr.dot}`} />
+                <span className="flex-1 truncate text-[11px] font-semibold text-foreground/70">{col.name}</span>
                 {colRows.length > 0 && (
-                  <span className="text-xs text-muted-foreground/60 tabular-nums">{colRows.length}</span>
+                  <span className="tabular-nums text-[10px] text-muted-foreground/40">{colRows.length}</span>
                 )}
               </div>
-              <div className="space-y-1.5">
+              {/* Cards — grow to fill column height */}
+              <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-2">
                 {colRows.map((row, i) => {
                   const title  = titleProp ? String(row[titleProp.name] ?? "") : "";
-                  const tagVal = tagProp ? String(row[tagProp.name] ?? "") : "";
+                  const tagVal = tagProp   ? String(row[tagProp.name]   ?? "") : "";
                   const tagOpt = tagProp?.options?.find((o) => o.name === tagVal);
                   return (
-                    <div key={i} className="rounded-[var(--radius-sm)] border border-border/50 bg-background p-2">
-                      <p className="text-xs font-medium leading-snug text-foreground">{title}</p>
+                    <div key={i} className="shrink-0 rounded-md border border-border/50 bg-card p-2.5 shadow-sm">
+                      <p className="text-[11px] font-medium leading-snug text-foreground">{title}</p>
                       {tagOpt && (
-                        <span className={`mt-1 inline-flex rounded px-1 py-0.5 text-xs font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
+                        <span className={`mt-1.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
                           {tagVal}
                         </span>
                       )}
                     </div>
                   );
                 })}
-                <div className="rounded-[var(--radius-sm)] border border-border/30 p-2">
-                  <span className="text-xs text-muted-foreground/60">+ New</span>
-                </div>
+              </div>
+              {/* + New — pinned to column bottom */}
+              <div className="shrink-0 border-t border-border/20 px-3 py-2">
+                <span className="text-[10px] text-muted-foreground/30">+ New</span>
               </div>
             </div>
           );
@@ -749,40 +769,42 @@ const CAL_WEEKS = [
 function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
   const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
   return (
-    <div className="mt-3">
+    <div className="mt-3 flex min-h-0 flex-1 flex-col">
       <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
-      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
-        <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/40">
+        <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
           <span className="text-xs font-semibold text-foreground/70">June 2026</span>
           <div className="flex gap-2 text-xs text-muted-foreground/60">
             <span>‹</span>
             <span>›</span>
           </div>
         </div>
-        <div className="grid grid-cols-7 border-b border-border/40 bg-muted/10">
+        <div className="grid shrink-0 grid-cols-7 border-b border-border/40 bg-muted/10">
           {CAL_DAYS.map((d) => (
             <div key={d} className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground/70">
               {d}
             </div>
           ))}
         </div>
-        {CAL_WEEKS.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 border-b border-border/20 last:border-0">
-            {week.map((date, di) => (
-              <div key={di} className="h-9 border-r border-border/20 p-1 last:border-0">
-                {date > 0 && (
-                  <span className={
-                    date === 19
-                      ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-                      : "text-xs text-muted-foreground/70"
-                  }>
-                    {date}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {CAL_WEEKS.map((week, wi) => (
+            <div key={wi} className="grid flex-1 grid-cols-7 border-b border-border/20 last:border-0">
+              {week.map((date, di) => (
+                <div key={di} className="border-r border-border/20 p-1 last:border-0">
+                  {date > 0 && (
+                    <span className={
+                      date === 19
+                        ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
+                        : "text-xs text-muted-foreground/70"
+                    }>
+                      {date}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

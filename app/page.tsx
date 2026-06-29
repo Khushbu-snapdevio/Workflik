@@ -102,17 +102,16 @@ export default async function HomePage() {
   if (session) redirect("/platform/post-auth");
 
   return (
-    <div id="top" className="min-h-screen bg-page text-foreground antialiased">
+    <div id="top" className="min-h-screen bg-page pt-14 text-foreground antialiased">
       <SmoothScroll />
 
-      {/* ── Nav ── */}
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-page/80 backdrop-blur-md">
-        <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-          <a href="#top" className="flex items-center gap-2.5">
+      {/* ── Nav ─────────────────────────────────────────── full width */}
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-page/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+          <a href="#top">
             <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-7 w-auto" />
           </a>
-
-          <nav className="hidden items-center gap-7 sm:flex">
+          <nav className="hidden items-center gap-8 sm:flex">
             {[
               { label: "Features",     href: "#features"     },
               { label: "How it works", href: "#how-it-works" },
@@ -123,70 +122,69 @@ export default async function HomePage() {
               </a>
             ))}
           </nav>
-
           <div className="flex items-center gap-3">
-            <Link href="/auth/login" className="hidden h-9 items-center rounded-[var(--radius-sm)] bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 sm:inline-flex">
+            <Link href="/auth/login" className="hidden h-9 items-center rounded-[var(--radius-sm)] bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 sm:inline-flex">
               Try for free
             </Link>
-            {/* Mobile hamburger */}
             <MobileNav />
           </div>
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <section className="px-4 pb-10 pt-12 sm:px-6 sm:pb-16 sm:pt-20">
-        <div className="mx-auto max-w-4xl">
-          <div className="lp-fade-up mb-8 flex justify-center" style={{ animationDelay: "0.05s" }}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1">
-              <span className="size-1.5 rounded-full bg-primary" />
-              <span className="text-xs font-medium text-muted-foreground">Now in early access — free to join</span>
+      {/* ── Hero ────────────────────────────────── NARROW — centered text */}
+      <section className="px-4 pb-14 pt-16 text-center sm:px-6 sm:pb-20 sm:pt-24">
+        <div className="mx-auto max-w-2xl">
+          <div className="lp-fade-up mb-7 flex justify-center" style={{ animationDelay: "0.05s" }}>
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              <span className="text-xs font-semibold text-primary">Now in early access — free to join</span>
             </span>
           </div>
 
-          <h1 className="lp-fade-up mb-6 text-center text-4xl font-black leading-[1.07] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl" style={{ animationDelay: "0.1s" }}>
+          <h1 className="lp-fade-up mb-5 text-4xl font-black leading-[1.07] tracking-tight sm:text-5xl md:text-6xl" style={{ animationDelay: "0.1s" }}>
             Your team&rsquo;s{" "}
-            <span className="text-primary">second brain</span>
-            <br className="hidden sm:block" />
-            {" "}built to move fast.
+            <span className="text-primary">second brain</span>{" "}
+            built to move fast.
           </h1>
 
-          <p className="lp-fade-up mx-auto mb-10 max-w-xl text-center text-base leading-relaxed text-muted-foreground sm:text-lg" style={{ animationDelay: "0.18s" }}>
+          <p className="lp-fade-up mb-9 text-base leading-relaxed text-muted-foreground sm:text-lg" style={{ animationDelay: "0.18s" }}>
             {PRODUCT_NAME} brings your docs, wikis, and projects into one connected workspace — for teams who need clarity at speed.
           </p>
 
-          <div className="lp-fade-up flex flex-wrap items-center justify-center gap-3" style={{ animationDelay: "0.26s" }}>
-            <Link href="/auth/login" className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-primary px-8 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
+          <div className="lp-fade-up flex justify-center" style={{ animationDelay: "0.26s" }}>
+            <Link href="/auth/login" className="inline-flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-primary px-7 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
               Get started free
               <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
             </Link>
-
           </div>
 
-          <p className="lp-fade-in mt-4 text-center text-xs text-muted-foreground/60" style={{ animationDelay: "0.34s" }}>
+          <p className="lp-fade-in mt-4 text-xs text-muted-foreground/50" style={{ animationDelay: "0.34s" }}>
             No credit card required · Set up in under 2 minutes
           </p>
         </div>
 
-        {/* App preview */}
-        <div className="lp-scale-in mx-auto mt-14 max-w-4xl" style={{ animationDelay: "0.4s" }}>
-          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-            <div className="flex items-center gap-3 border-b border-border bg-muted/40 px-4 py-3">
+        {/* App preview — breaks wider than the text */}
+        <div className="lp-scale-in mx-auto mt-14 max-w-5xl" style={{ animationDelay: "0.4s" }}>
+          <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+            <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-4 py-3">
               <div className="flex gap-1.5">
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
               </div>
-              <div className="mx-auto flex h-6 w-56 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
-                <span className="text-xs font-medium text-muted-foreground/60">app.workflik.com/project</span>
+              <div className="mx-auto flex h-6 w-56 items-center justify-center rounded-[var(--radius-xs)] bg-muted/80">
+                <span className="text-xs font-medium text-muted-foreground/60">app.workflik.com/workspace</span>
               </div>
             </div>
-            <div className="flex h-56 sm:h-72">
-              <div className="hidden w-40 shrink-0 border-r border-border bg-sidebar px-2 py-3 sm:block">
+            <div className="flex h-60 sm:h-80">
+              <div className="hidden w-44 shrink-0 border-r border-border bg-sidebar px-2 py-3 sm:block">
                 <div className="mb-3 flex items-center gap-1.5 px-2">
                   <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={80} height={20} className="h-4 w-auto" />
                 </div>
-                <p className="mb-1 px-2 text-[8px] font-semibold tracking-wide text-muted-foreground/40">Pages</p>
+                <p className="mb-1 px-2 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/40">Pages</p>
                 <div className="space-y-0.5">
                   {[
                     { icon: "📋", label: "Product Roadmap", active: true  },
@@ -197,36 +195,36 @@ export default async function HomePage() {
                   ].map((item) => (
                     <div key={item.label} className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-1.5 ${item.active ? "bg-primary/10 text-primary" : "text-muted-foreground/60"}`}>
                       <span className="text-xs leading-none">{item.icon}</span>
-                      <span className="truncate text-xs font-medium">{item.label}</span>
+                      <span className={`truncate text-xs ${item.active ? "font-semibold" : ""}`}>{item.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="flex flex-1 flex-col overflow-hidden">
-                <div className="flex items-center gap-1 border-b border-border/60 px-5 py-2">
+                <div className="flex items-center gap-1 border-b border-border/50 bg-muted/20 px-5 py-2">
                   <span className="text-xs text-muted-foreground/40">Project</span>
                   <span className="text-xs text-muted-foreground/30">/</span>
-                  <span className="text-xs font-medium text-foreground/60">Product Roadmap</span>
+                  <span className="text-xs font-medium text-foreground/70">Product Roadmap</span>
                 </div>
                 <div className="flex-1 px-7 py-5">
                   <div className="mb-4 flex items-center gap-2">
-                    <span className="text-sm">📋</span>
+                    <span className="text-base">📋</span>
                     <span className="text-sm font-bold text-foreground">Q3 Product Roadmap</span>
                   </div>
                   <div className="space-y-1">
                     {[
-                      { icon: "✅", text: "Ship new editor blocks", status: "Done",        pill: "bg-success/10 text-success"          },
-                      { icon: "🔄", text: "Invite flow redesign",   status: "In progress", pill: "bg-primary/10 text-primary"          },
-                      { icon: "📄", text: "Template gallery v2",    status: "Planned",     pill: "bg-muted text-muted-foreground"      },
-                      { icon: "📊", text: "Analytics dashboard",    status: "Planned",     pill: "bg-muted text-muted-foreground"      },
-                      { icon: "🔔", text: "Notification digest",    status: "Backlog",     pill: "bg-warning/10 text-warning"          },
+                      { icon: "✅", text: "Ship new editor blocks", status: "Done",        pill: "bg-success/10 text-success"     },
+                      { icon: "🔄", text: "Invite flow redesign",   status: "In progress", pill: "bg-primary/10 text-primary"     },
+                      { icon: "📄", text: "Template gallery v2",    status: "Planned",     pill: "bg-muted text-muted-foreground" },
+                      { icon: "📊", text: "Analytics dashboard",    status: "Planned",     pill: "bg-muted text-muted-foreground" },
+                      { icon: "🔔", text: "Notification digest",    status: "Backlog",     pill: "bg-warning/10 text-warning"     },
                     ].map((row) => (
                       <div key={row.text} className="flex items-center justify-between rounded-[var(--radius-xs)] px-2 py-1.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs">{row.icon}</span>
                           <span className="text-xs text-foreground/80">{row.text}</span>
                         </div>
-                        <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-semibold ${row.pill}`}>{row.status}</span>
+                        <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-[10px] font-semibold ${row.pill}`}>{row.status}</span>
                       </div>
                     ))}
                   </div>
@@ -237,20 +235,20 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
-      <section className="border-y border-border bg-card px-4 py-8 sm:px-6 sm:py-10">
+      {/* ── Stats ───────────────────────────────────── FULL WIDTH band */}
+      <section className="border-y border-border bg-card">
         <ScrollReveal>
-          <div className="mx-auto max-w-4xl">
-            <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-4 sm:divide-y-0">
               {[
-                { value: "Unlimited", label: "Pages & docs"      },
-                { value: "Real-time", label: "Collaboration"      },
-                { value: "50+",       label: "Starter templates"  },
-                { value: "< 100ms",   label: "Full-text search"   },
+                { value: "Unlimited", label: "Pages & docs"     },
+                { value: "Real-time", label: "Collaboration"     },
+                { value: "50+",       label: "Starter templates" },
+                { value: "< 100ms",   label: "Full-text search"  },
               ].map((stat) => (
-                <div key={stat.label} className="flex flex-col items-center bg-card px-4 py-5 text-center sm:px-6">
-                  <span className="text-xl font-black tracking-tight text-foreground sm:text-2xl">{stat.value}</span>
-                  <span className="mt-1 text-xs font-medium text-muted-foreground">{stat.label}</span>
+                <div key={stat.label} className="flex flex-col items-center px-6 py-10 text-center">
+                  <span className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">{stat.value}</span>
+                  <span className="mt-1.5 text-xs font-medium text-muted-foreground">{stat.label}</span>
                 </div>
               ))}
             </div>
@@ -258,46 +256,67 @@ export default async function HomePage() {
         </ScrollReveal>
       </section>
 
-      {/* ── Features ── */}
-      <section id="features" className="border-t border-border px-4 py-14 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-5xl">
-          <ScrollReveal className="mb-10 sm:mb-16">
-            <p className="mb-3 text-xs font-semibold tracking-wide text-primary">Features</p>
-            <h2 className="max-w-xl text-3xl font-black tracking-tight text-foreground sm:text-4xl">
-              Everything a team needs.<br className="hidden sm:block" /> Nothing it doesn&rsquo;t.
-            </h2>
-          </ScrollReveal>
-          <div className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-16">
-            {FEATURES.map((f, i) => (
-              <ScrollReveal key={f.title} delay={i * 50}>
-                <div className="flex gap-4">
-                  <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
-                    <f.Icon />
+      {/* ── Features ──────────────────────── CONTAINED — asymmetric layout */}
+      <section id="features" className="px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-12 lg:flex-row lg:gap-20">
+
+            {/* Left: sticky heading panel */}
+            <ScrollReveal className="lg:w-64 lg:shrink-0 lg:pt-1">
+              <p className="mb-3 text-xs font-semibold tracking-wide text-primary">Features</p>
+              <h2 className="mb-4 text-3xl font-black leading-tight tracking-tight text-foreground sm:text-4xl">
+                Everything a team needs. Nothing it doesn&rsquo;t.
+              </h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Built for speed, designed for teams — every feature earns its place.
+              </p>
+            </ScrollReveal>
+
+            {/* Right: feature grid */}
+            <div className="flex-1 grid gap-8 sm:grid-cols-2">
+              {FEATURES.map((f, i) => (
+                <ScrollReveal key={f.title} delay={i * 50}>
+                  <div className="flex gap-4">
+                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary">
+                      <f.Icon />
+                    </div>
+                    <div>
+                      <h3 className="mb-1.5 text-sm font-bold text-foreground">{f.title}</h3>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{f.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="mb-1.5 text-base font-semibold text-foreground">{f.title}</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">{f.description}</p>
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
+                </ScrollReveal>
+              ))}
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* ── How it works ── */}
-      <section id="how-it-works" className="border-t border-border bg-card px-4 py-14 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-5xl">
-          <ScrollReveal className="mb-10 text-center sm:mb-16">
+      {/* ── How it works ──────────────────────────── FULL WIDTH bg-card */}
+      <section id="how-it-works" className="border-t border-border bg-card px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <ScrollReveal className="mb-12 text-center sm:mb-14">
             <p className="mb-3 text-xs font-semibold tracking-wide text-primary">Simple by design</p>
-            <h2 className="mb-4 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Up and running in minutes</h2>
-            <p className="mx-auto max-w-md text-base text-muted-foreground">No onboarding call needed. No setup wizard. Just sign in and start writing.</p>
+            <h2 className="mb-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Up and running in minutes</h2>
+            <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">No onboarding call. No setup wizard. Just sign in and start writing.</p>
           </ScrollReveal>
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
               <ScrollReveal key={s.num} delay={i * 70}>
-                <div className="flex flex-col">
-                  <span className="mb-4 text-3xl font-black tracking-tight text-primary/25">{s.num}</span>
+                <div className="flex h-full flex-col rounded-[var(--radius-xl)] border border-border bg-page p-6">
+                  {/* Step badge + arrow row */}
+                  <div className="mb-5 flex items-center justify-between">
+                    <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground">
+                      Step {s.num}
+                    </span>
+                    {i < STEPS.length - 1 && (
+                      <svg className="hidden size-4 text-border lg:block" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 16 16">
+                        <path d="M3 8h10M9 4l4 4-4 4" />
+                      </svg>
+                    )}
+                  </div>
                   <h3 className="mb-2 text-sm font-bold text-foreground">{s.title}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
                 </div>
@@ -307,27 +326,27 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
-      <section className="border-t border-border px-4 py-14 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-6xl">
-          <ScrollReveal className="mb-10 text-center sm:mb-16">
+      {/* ── Testimonials ──────────────────────────── CONTAINED max-w-5xl */}
+      <section className="border-t border-border px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-5xl">
+          <ScrollReveal className="mb-12 text-center sm:mb-16">
             <p className="mb-3 text-xs font-semibold tracking-wide text-primary">Loved by teams</p>
             <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">What early users are saying</h2>
           </ScrollReveal>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
               <ScrollReveal key={t.name} delay={i * 70}>
-                <div className="flex h-full flex-col rounded-[var(--radius-lg)] border border-border bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 sm:p-7">
-                  <div className="mb-5 flex gap-0.5">
+                <div className="flex h-full flex-col rounded-[var(--radius-xl)] border border-border bg-card p-6 sm:p-7">
+                  <div className="mb-4 flex gap-0.5">
                     {Array.from({ length: 5 }).map((_, j) => (
-                      <svg key={j} className="size-3.5 fill-warning text-warning" viewBox="0 0 20 20">
+                      <svg key={j} className="size-3.5 fill-warning" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ))}
                   </div>
-                  <p className="mb-6 flex-1 text-sm leading-relaxed text-foreground">&ldquo;{t.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3 border-t border-border pt-5">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{t.initials}</span>
+                  <p className="mb-6 flex-1 text-sm leading-relaxed text-foreground/90">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="flex items-center gap-3 border-t border-border/60 pt-5">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{t.initials}</span>
                     <div>
                       <p className="text-xs font-bold text-foreground">{t.name}</p>
                       <p className="text-xs text-muted-foreground">{t.role}</p>
@@ -340,17 +359,17 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Use cases ── */}
-      <section id="for-teams" className="border-t border-border bg-card px-4 py-14 sm:px-6 sm:py-24">
+      {/* ── Use cases ─────────────────────────────── FULL WIDTH bg-card */}
+      <section id="for-teams" className="border-t border-border bg-card px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-6xl">
-          <ScrollReveal className="mb-10 text-center sm:mb-16">
+          <ScrollReveal className="mb-12 text-center sm:mb-16">
             <p className="mb-3 text-xs font-semibold tracking-wide text-primary">Who it&apos;s for</p>
             <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">Built for every kind of team</h2>
           </ScrollReveal>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {USE_CASES.map((u, i) => (
               <ScrollReveal key={u.label} delay={i * 60}>
-                <div className="h-full rounded-[var(--radius-lg)] border border-border bg-page p-5 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 sm:p-6">
+                <div className="h-full rounded-[var(--radius-xl)] border border-border bg-page p-5 sm:p-6">
                   <div className="mb-4 flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary">
                     {u.icon}
                   </div>
@@ -363,40 +382,34 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
-      <section className="border-t border-border px-4 py-14 sm:px-6 sm:py-24">
+      {/* ── CTA ─────────────────────────── FULL WIDTH solid primary band */}
+      <section className="bg-primary px-4 py-20 sm:px-6 sm:py-28">
         <ScrollReveal>
-          <div className="mx-auto max-w-2xl overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-primary/5 px-6 py-12 text-center sm:px-10 sm:py-16">
-            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1">
-              <span className="size-1.5 rounded-full bg-primary" />
-              <span className="text-xs font-semibold text-primary">100% free — no credit card needed</span>
-            </span>
-            <h2 className="mb-4 text-2xl font-black tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-white/50">Get started today</p>
+            <h2 className="mb-5 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
               Ready to bring your team together?
             </h2>
-            <p className="mb-8 text-sm leading-relaxed text-muted-foreground sm:mb-10 sm:text-base">
+            <p className="mb-10 text-base leading-relaxed text-white/65">
               Sign up in seconds — no setup, no credit card. Start writing in your first workspace today.
             </p>
             <Link
               href="/auth/login"
-              className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-primary px-8 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+              className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-white px-8 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-white/90"
             >
               Create your workspace
               <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
             </Link>
-            <p className="mt-5 text-xs text-muted-foreground/60">No credit card required · Cancel anytime</p>
+            <p className="mt-5 text-xs text-white/40">No credit card required · Cancel anytime</p>
           </div>
         </ScrollReveal>
       </section>
 
-      {/* ── Footer ── */}
+      {/* ── Footer ───────────────────────────────── full width bg-card */}
       <footer className="border-t border-border bg-card">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
 
-          {/* Top row */}
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8 lg:grid-cols-[2fr_1fr_1fr]">
-
-            {/* Brand */}
             <div>
               <a href="#top">
                 <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-7 w-auto" />
@@ -406,17 +419,16 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Product */}
             <div>
-              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-primary/60">Product</h4>
-              <ul className="space-y-3.5">
+              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Product</h4>
+              <ul className="space-y-3">
                 {[
                   { label: "Features",     href: "#features"     },
                   { label: "How it works", href: "#how-it-works" },
                   { label: "For teams",    href: "#for-teams"    },
                 ].map((l) => (
                   <li key={l.label}>
-                    <a href={l.href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                    <a href={l.href} className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">
                       {l.label}
                     </a>
                   </li>
@@ -424,40 +436,37 @@ export default async function HomePage() {
               </ul>
             </div>
 
-            {/* Legal */}
             <div>
-              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-primary/60">Legal</h4>
-              <ul className="space-y-3.5">
+              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Legal</h4>
+              <ul className="space-y-3">
                 {[
                   { label: "Privacy Policy",   href: "/privacy" },
                   { label: "Terms of Service", href: "/terms"   },
                 ].map((l) => (
                   <li key={l.label}>
-                    <Link href={l.href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                    <Link href={l.href} className="text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground">
                       {l.label}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
-
           </div>
 
-          {/* Bottom bar */}
-          <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:mt-14 sm:flex-row sm:gap-3">
-            <p className="text-xs text-muted-foreground/70">
+          <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-8 sm:mt-14 sm:flex-row">
+            <p className="text-xs text-muted-foreground/60">
               &copy; {new Date().getFullYear()} {PRODUCT_NAME}, Inc. All rights reserved.
             </p>
             <a
               href="#top"
-              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               Back to top
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-3">
                 <path d="M8 12V4M4 8l4-4 4 4"/>
               </svg>
             </a>
-            <p className="text-xs text-muted-foreground/70">
+            <p className="text-xs text-muted-foreground/60">
               Made with care for teams who build great things.
             </p>
           </div>

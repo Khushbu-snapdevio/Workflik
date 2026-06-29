@@ -14,7 +14,7 @@ export const updatedAt = () =>
 
 export const workspaceRole = pgEnum("workspace_role", ["admin", "editor", "viewer"]);
 export const memberStatus = pgEnum("member_status", ["active", "invited", "expired"]);
-export const defaultPageAccess = pgEnum("default_page_access", ["private", "shared"]);
+export const defaultPageAccess = pgEnum("default_page_access", ["private", "can_view", "can_comment", "can_edit", "full_access"]);
 
 export const pageKind = pgEnum("page_kind", ["page", "database", "entry"]);
 export const fontFamily = pgEnum("font_family", ["default", "serif", "mono"]);

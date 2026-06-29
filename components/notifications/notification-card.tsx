@@ -79,7 +79,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
     <div
       onClick={handleCardClick}
       className={`group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors duration-150 ${
-        isUnread ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-accent"
+        isUnread ? "bg-primary/[0.06] hover:bg-primary/[0.13]" : "bg-card hover:bg-accent"
       }`}
     >
       {/* Unread left accent */}

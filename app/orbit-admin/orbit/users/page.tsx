@@ -25,32 +25,31 @@ export default async function OrbitUsersPage() {
  return (
   <div>
    {/* Header */}
-   <div className="mb-8 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="p-6">
-     <h1 className="text-2xl font-bold tracking-tight text-foreground">Users</h1>
-     <p className="mt-1 text-sm text-muted-foreground">All registered accounts — ban, impersonate, revoke sessions.</p>
-     <div className="mt-4 flex items-center gap-6">
-      <div>
-       <p className="text-xl font-bold text-primary">{totalCount!.count}</p>
-       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Total</p>
-      </div>
-      <div className="h-8 w-px bg-border" />
-      <div>
-       <p className="text-xl font-bold text-primary">{adminCount}</p>
-       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Admins</p>
-      </div>
-      <div className="h-8 w-px bg-border" />
-      <div>
-       <p className="text-xl font-bold text-destructive">{bannedCount!.count}</p>
-       <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Banned</p>
-      </div>
+   <div className="mb-6">
+    <div className="flex items-start justify-between gap-4">
+     <div>
+      <h1 className="text-xl font-bold tracking-tight text-foreground">Users</h1>
+      <p className="mt-1 text-sm text-muted-foreground">All registered accounts — ban, impersonate, revoke sessions.</p>
      </div>
+    </div>
+    <div className="mt-3 flex items-center gap-2">
+     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <strong className="font-bold text-foreground">{totalCount!.count}</strong> total
+     </span>
+     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <strong className="font-bold text-foreground">{adminCount}</strong> admin{adminCount !== 1 ? "s" : ""}
+     </span>
+     {bannedCount!.count > 0 && (
+      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive">
+       <strong className="font-bold">{bannedCount!.count}</strong> banned
+      </span>
+     )}
     </div>
    </div>
 
    {/* Table */}
-   <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="border-b border-border px-5 py-3.5">
+   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="border-b border-border/60 bg-muted/20 px-5 py-3">
      <p className="text-xs font-semibold text-muted-foreground">
       {users.length} account{users.length !== 1 ? "s" : ""}
      </p>
@@ -70,7 +69,7 @@ export default async function OrbitUsersPage() {
         const avatarChar  = displayName[0]!.toUpperCase();
         const bg = avatarColor(u.id);
         return (
-         <tr key={u.id} className="group transition-colors hover:bg-accent/40">
+         <tr key={u.id} className="group transition-colors hover:bg-accent">
           <td className="px-5 py-3">
            <Link href={`/orbit-admin/orbit/users/${u.id}`} className="flex items-center gap-3 hover:no-underline">
             <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${bg}`}>

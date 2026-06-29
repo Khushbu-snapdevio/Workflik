@@ -32,7 +32,7 @@ const patchSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   icon: z.string().max(256).nullable().optional(),
   slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, "Slug may only contain lowercase letters, numbers, and hyphens").optional(),
-  defaultPageAccess: z.enum(["private", "shared"]).optional(),
+  defaultPageAccess: z.enum(["private", "can_view", "can_comment", "can_edit", "full_access"]).optional(),
 });
 
 // PATCH /api/workspaces/:id
@@ -66,7 +66,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
           await tx.insert(workspaceSlugRedirects).values({
             workspaceId: id,
             oldSlug:     current.slug,
-          });
+          }).onConflictDoNothing();
         }
       }
 

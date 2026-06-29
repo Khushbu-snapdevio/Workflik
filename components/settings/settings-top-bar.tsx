@@ -121,24 +121,44 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
             )}
           </div>
 
-          {/* Avatar */}
-          <Link
-            href={profileHref}
-            title="Go to profile settings"
-            className="group flex items-center rounded-full transition-opacity hover:opacity-80"
-          >
-            {user.image ? (
-              <img
-                src={user.image}
-                alt={displayName}
-                className="size-7 rounded-full object-cover ring-1 ring-border transition-all group-hover:ring-primary/40"
-              />
-            ) : (
-              <div className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${bg}`}>
-                {initials}
+          {/* Avatar with hover card */}
+          <div className="group relative">
+            <Link
+              href={profileHref}
+              className="flex items-center rounded-full"
+            >
+              {user.image ? (
+                <img
+                  src={user.image}
+                  alt={displayName}
+                  className="size-7 rounded-full object-cover ring-1 ring-border transition-all group-hover:ring-primary/40"
+                />
+              ) : (
+                <div className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${bg}`}>
+                  {initials}
+                </div>
+              )}
+            </Link>
+
+            {/* Hover card */}
+            <div className="pointer-events-none invisible absolute right-0 top-[calc(100%+8px)] z-[200] opacity-0 transition-all duration-150 group-hover:visible group-hover:opacity-100">
+              <div className="min-w-[200px] overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  {user.image ? (
+                    <img src={user.image} alt={displayName} className="size-9 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${bg}`}>
+                      {initials}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
               </div>
-            )}
-          </Link>
+            </div>
+          </div>
         </div>
       </div>
 

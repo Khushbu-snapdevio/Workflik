@@ -53,14 +53,13 @@ export default async function OrbitAuditPage() {
  return (
   <div>
    {/* Header */}
-   <div className="mb-8 rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-    <div className="p-6">
-     <h1 className="text-2xl font-bold tracking-tight text-foreground">Audit Trail</h1>
-     <p className="mt-1 text-sm text-muted-foreground">Append-only log of all admin operator actions.</p>
-     <div className="mt-4">
-      <span className="text-xl font-bold text-primary">{events.length}</span>
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">Events (last 200)</p>
-     </div>
+   <div className="mb-6">
+    <h1 className="text-xl font-bold tracking-tight text-foreground">Audit Trail</h1>
+    <p className="mt-1 text-sm text-muted-foreground">Append-only log of all admin operator actions.</p>
+    <div className="mt-3">
+     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <strong className="font-bold text-foreground">{events.length}</strong> events (last 200)
+     </span>
     </div>
    </div>
 
@@ -75,8 +74,8 @@ export default async function OrbitAuditPage() {
      <p className="mt-1 text-xs text-muted-foreground/60">Admin actions will appear here automatically.</p>
     </div>
    ) : (
-    <div className="rounded-[var(--radius-xl)] border border-border/50 bg-muted/30">
-     <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border bg-muted/40 px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border/60 bg-muted/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
       <span className="w-36">Action</span>
       <span className="pl-4">Details</span>
       <span className="pr-6">Actor</span>
@@ -87,7 +86,7 @@ export default async function OrbitAuditPage() {
        const meta = ACTION_META[ev.action];
        const md   = ev.metadata as Record<string, unknown> | null;
        return (
-        <div key={ev.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 px-5 py-3.5 transition-colors hover:bg-accent/40">
+        <div key={ev.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 px-5 py-3.5 transition-colors hover:bg-accent">
          <span className="w-36 shrink-0">
           <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}>
            {meta?.label ?? ev.action}
@@ -130,7 +129,7 @@ export default async function OrbitAuditPage() {
          </div>
          <div className="shrink-0 text-right">
           <p className="text-xs font-medium text-muted-foreground">{ago(ev.createdAt)}</p>
-          <p className="text-[9.5px] text-muted-foreground/60">{formatDateTime(ev.createdAt)}</p>
+          <p className="text-xs text-muted-foreground/60">{formatDateTime(ev.createdAt)}</p>
          </div>
         </div>
        );

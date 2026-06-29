@@ -7,8 +7,16 @@ import {
  Plus, ExternalLink as ArrowSquareOut, Trash2 as Trash, EyeOff as EyeSlash, Type as TextT, Hash, CircleDashed,
  Tag, Calendar as CalendarBlank, CheckSquare, Link as LinkIcon, Mail as Envelope, Phone,
  User, ArrowLeftRight as ArrowsLeftRight, ArrowUp as SortAscending, ArrowDown as SortDescending, MoreHorizontal as DotsThree,
- Check, FileText, Table2,
+ Check, FileText, Table2, GripVertical,
 } from "lucide-react";
+import {
+ DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+ type DragEndEvent, type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+ SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { PROPERTY_REGISTRY } from "@/components/database/property-registry";
 import { getOptionColor } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
@@ -27,10 +35,12 @@ const PROP_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
 const TEXT_TYPES = new Set(["text", "number", "url", "email", "phone"]);
 const POPUP_TYPES = new Set(["select", "multi_select", "date", "person", "relation"]);
 
+const DRAG_COL_W  = 24;
 const IDX_COL_W   = 48;
 const TITLE_COL_W  = 300;
 const DEFAULT_COL_W = 180;
 const MIN_COL_W   = 80;
+const ROW_H     = 40;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +49,235 @@ interface EditPop    { entryId: string; propId: string; rect: DOMRect }
 interface PropMenuState { propId: string; rect: DOMRect }
 interface AddPropState { rect: DOMRect }
 interface RowMenuState { entryId: string; shortId: string; rect: DOMRect }
+
+// ── SortableTableRow ─────────────────────────────────────────────────────────
+
+interface SortableTableRowProps {
+ entry:       DbEntry;
+ rowIdx:      number;
+ visible:     DbProperty[];
+ activeCell:    ActiveCell | null;
+ editValue:    string;
+ cellInputRef:   React.RefObject<HTMLInputElement | null>;
+ selectedEntryIds: Set<string>;
+ hoveredRowId:   string | null;
+ deleteConfirm:  { entryId: string } | null;
+ isEditor:     boolean;
+ rowMenu:     RowMenuState | null;
+ workspaceSlug:  string;
+ addBtnW:     number;
+ activeView:    SharedViewProps["activeView"];
+ colW:       (id: string) => number;
+ onMouseEnter:   () => void;
+ onMouseLeave:   () => void;
+ onSelectEntry:  (id: string, selected: boolean) => void;
+ onUpdateTitle:  (id: string, title: string) => void;
+ onOpenEntry:   ((entry: DbEntry) => void) | undefined;
+ setActiveCell:  (cell: ActiveCell | null) => void;
+ setEditValue:   (val: string) => void;
+ setRowMenu:    (menu: RowMenuState | null) => void;
+ activateCell:   (entryId: string, propId: string, e: React.MouseEvent) => void;
+ commitText:    (entryId: string, propId: string, val: string) => void;
+ getRaw:      (entryId: string, propId: string) => unknown;
+}
+
+function SortableTableRow({
+ entry, rowIdx, visible, activeCell, editValue, cellInputRef, selectedEntryIds,
+ hoveredRowId, deleteConfirm, isEditor, rowMenu, workspaceSlug, addBtnW, activeView, colW,
+ onMouseEnter, onMouseLeave, onSelectEntry, onUpdateTitle, onOpenEntry,
+ setActiveCell, setEditValue, setRowMenu, activateCell, commitText, getRaw,
+}: SortableTableRowProps) {
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+  useSortable({ id: entry.id });
+
+ const style = {
+  transform: CSS.Transform.toString(transform),
+  transition,
+  opacity: isDragging ? 0.5 : 1,
+ };
+
+ const isSelected  = selectedEntryIds.has(entry.id);
+ const isRowHovered = hoveredRowId === entry.id && !deleteConfirm;
+
+ return (
+  <div
+   ref={setNodeRef}
+   style={style}
+   {...attributes}
+   className={[
+    "flex items-stretch db-border-b transition-colors duration-100",
+    isSelected ? "bg-primary/5" : !deleteConfirm ? "hover:bg-muted/40" : "",
+   ].join(" ")}
+   onMouseEnter={onMouseEnter}
+   onMouseLeave={onMouseLeave}
+  >
+   {/* Drag handle */}
+   <div
+    className="flex shrink-0 items-center justify-center"
+    style={{ width: DRAG_COL_W, minWidth: DRAG_COL_W, height: ROW_H, touchAction: "none", userSelect: "none" }}
+   >
+    {isEditor && (
+     <div
+      {...listeners}
+      className="flex size-5 cursor-grab items-center justify-center rounded text-muted-foreground/0 hover:text-muted-foreground/40 transition-colors active:cursor-grabbing"
+      style={{ opacity: isRowHovered ? 1 : 0, transition: "opacity 150ms" }}
+      title="Drag to reorder"
+     >
+      <GripVertical size={13} />
+     </div>
+    )}
+   </div>
+
+   {/* Checkbox / index */}
+   <div
+    className="flex shrink-0 items-center justify-center"
+    style={{ width: IDX_COL_W, minWidth: IDX_COL_W, height: ROW_H }}
+   >
+    {isEditor ? (
+     <label className="relative flex size-5 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+      <input
+       type="checkbox"
+       checked={isSelected}
+       onChange={(e) => onSelectEntry(entry.id, e.target.checked)}
+       className="sr-only"
+      />
+      {/* Row number — fades out on hover/select */}
+      <span className="absolute select-none text-xs tabular-nums text-muted-foreground/60 transition-opacity duration-150"
+       style={{ opacity: isSelected || isRowHovered ? 0 : 1 }}>
+       {rowIdx + 1}
+      </span>
+      {/* Checkbox — fades in on hover/select */}
+      <span className={`flex size-[15px] items-center justify-center rounded border transition-colors duration-150 ${
+       isSelected ? "border-primary bg-primary" : "border-border/50 bg-background"
+      }`} style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}>
+       {isSelected && <Check size={10} className="text-white" />}
+      </span>
+     </label>
+    ) : (
+     <span className="select-none text-xs tabular-nums text-muted-foreground/60">{rowIdx + 1}</span>
+    )}
+   </div>
+
+   {/* Title cell */}
+   <div
+    className="flex shrink-0 items-center gap-2.5 px-3"
+    style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: ROW_H, borderRight: "1px solid var(--color-border)" }}
+   >
+    {entry.icon ? (
+     <span className="shrink-0 text-base leading-none">{entry.icon}</span>
+    ) : (
+     <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-border/40 bg-muted/20">
+      <FileText size={11} className="text-muted-foreground/60" />
+     </span>
+    )}
+
+    {activeCell?.entryId === entry.id && activeCell.propId === "__title__" ? (
+     <input
+      ref={cellInputRef}
+      value={editValue}
+      onChange={(e) => setEditValue(e.target.value)}
+      onBlur={() => { onUpdateTitle(entry.id, editValue); setActiveCell(null); }}
+      onKeyDown={(e) => {
+       if (e.key === "Enter" || e.key === "Tab") { onUpdateTitle(entry.id, editValue); setActiveCell(null); e.preventDefault(); }
+       if (e.key === "Escape") setActiveCell(null);
+      }}
+      className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground focus:outline-none"
+      placeholder="Untitled"
+     />
+    ) : (
+     <span
+      onClick={() => {
+       const inPanelMode = (activeView?.entryOpenMode ?? "side_panel") === "side_panel";
+       if (inPanelMode && onOpenEntry) {
+        onOpenEntry(entry);
+       } else if (isEditor) {
+        setActiveCell({ entryId: entry.id, propId: "__title__" });
+        setEditValue(entry.title ?? "");
+       }
+      }}
+      className={`min-w-0 flex-1 truncate text-sm font-medium cursor-pointer ${
+       entry.title ? "text-foreground" : "text-muted-foreground/60"
+      }`}
+     >
+      {entry.title || "Untitled"}
+     </span>
+    )}
+
+    {/* Row actions: open full page + more */}
+    <div className="ml-auto flex shrink-0 items-center gap-0.5 transition-opacity duration-150"
+     style={{ opacity: isRowHovered ? 1 : 0 }}>
+     <Link
+      href={`/app/${workspaceSlug}/${entry.shortId}`}
+      className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+      title="Open full page"
+      onClick={(e) => e.stopPropagation()}
+     >
+      <ArrowSquareOut size={12} />
+     </Link>
+     {isEditor && (
+      <button
+       onClick={(e) => {
+        e.stopPropagation();
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setRowMenu(rowMenu?.entryId === entry.id ? null : { entryId: entry.id, shortId: entry.shortId, rect });
+       }}
+       className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+      >
+       <DotsThree size={13} />
+      </button>
+     )}
+    </div>
+   </div>
+
+   {/* Property cells */}
+   {visible.map((prop) => {
+    const rawVal  = getRaw(entry.id, prop.id);
+    const isActive = activeCell?.entryId === entry.id && activeCell.propId === prop.id;
+    return (
+     <div
+      key={prop.id}
+      className={[
+       "group relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
+       isActive
+        ? "bg-primary/5 border-l border-primary/30"
+        : "hover:bg-muted/40",
+      ].join(" ")}
+      style={{ width: colW(prop.id), minWidth: colW(prop.id), height: ROW_H }}
+      onClick={(e) => activateCell(entry.id, prop.id, e)}
+     >
+      {isActive && TEXT_TYPES.has(prop.type) ? (
+       <input
+        ref={cellInputRef}
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={() => commitText(entry.id, prop.id, editValue)}
+        onKeyDown={(e) => {
+         if (e.key === "Enter" || e.key === "Tab") { commitText(entry.id, prop.id, editValue); e.preventDefault(); }
+         if (e.key === "Escape") setActiveCell(null);
+        }}
+        type={prop.type === "number" ? "number" : "text"}
+        className="w-full bg-transparent text-sm text-foreground focus:outline-none"
+       />
+      ) : rawVal ? (
+       <CellDisplay property={prop} value={rawVal} compact />
+      ) : (
+       <>
+        <CellDisplay property={prop} value={rawVal} compact />
+        {isEditor && TEXT_TYPES.has(prop.type) && (
+         <span className="pointer-events-none select-none text-sm text-muted-foreground/60 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
+          Type…
+         </span>
+        )}
+       </>
+      )}
+     </div>
+    );
+   })}
+
+   {isEditor && <div className="shrink-0" style={{ width: addBtnW, height: ROW_H }} />}
+  </div>
+ );
+}
 
 // ── TableView ────────────────────────────────────────────────────────────────
 
@@ -61,6 +300,9 @@ export function TableView({
  const [hoveredRowId, setHoveredRowId]   = useState<string | null>(null);
  const [colWidths, setColWidths]    = useState<Record<string, number>>({});
  const cellInputRef          = useRef<HTMLInputElement>(null);
+ // DnD state: when grouped, keyed by group id; when ungrouped, keyed by "__flat__"
+ const [localEntryOrder, setLocalEntryOrder] = useState<Map<string, string[]>>(new Map());
+ const [draggingId, setDraggingId]      = useState<string | null>(null);
 
  const hiddenIds = new Set((activeView?.hiddenPropertyIds ?? []) as string[]);
  const visible  = properties.filter((p) => !p.isSystem && !hiddenIds.has(p.id));
@@ -130,8 +372,7 @@ export function TableView({
 
  const propsW  = visible.reduce((s, p) => s + colW(p.id), 0);
  const addBtnW  = isEditor ? 52 : 0;
- const totalW  = IDX_COL_W + TITLE_COL_W + propsW + addBtnW;
- const ROW_H   = 40;
+ const totalW  = DRAG_COL_W + IDX_COL_W + TITLE_COL_W + propsW + addBtnW;
 
  // Grouping
  const groupPropId = activeView?.groupByPropertyId;
@@ -152,12 +393,57 @@ export function TableView({
   rowGroups = [...gMap.values()].filter((g) => g.entries.length > 0 || g.id === null);
  }
 
+ // DnD sensors
+ const sensors = useSensors(
+  useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+ );
+
+ // Reset local order when entries change
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ useEffect(() => { setLocalEntryOrder(new Map()); }, [entries.map((e) => e.id).join(",")]);
+
+ const draggingEntry = draggingId ? entries.find((e) => e.id === draggingId) : null;
+
+ function getOrderedEntries(groupKey: string, groupEntries: DbEntry[]): DbEntry[] {
+  const order = localEntryOrder.get(groupKey);
+  if (!order || order.length === 0) return groupEntries;
+  return order.map((id) => groupEntries.find((e) => e.id === id)).filter(Boolean) as DbEntry[];
+ }
+
+ function handleDragStart(event: DragStartEvent) {
+  setDraggingId(String(event.active.id));
+ }
+
+ function handleDragEnd(groupKey: string, groupEntries: DbEntry[], event: DragEndEvent) {
+  const { active, over } = event;
+  setDraggingId(null);
+  if (!over || active.id === over.id) return;
+  const currentOrder = localEntryOrder.get(groupKey);
+  const base = currentOrder && currentOrder.length > 0
+   ? currentOrder
+   : groupEntries.map((e) => e.id);
+  const oldIdx = base.indexOf(String(active.id));
+  const newIdx = base.indexOf(String(over.id));
+  if (oldIdx === -1 || newIdx === -1) return;
+  setLocalEntryOrder((prev) => {
+   const next = new Map(prev);
+   next.set(groupKey, arrayMove(base, oldIdx, newIdx));
+   return next;
+  });
+ }
+
  return (
   <div className="h-full overflow-auto bg-background pb-20 isolate">
    <div style={{ minWidth: totalW, paddingRight: 32 }}>
 
     {/* ═══════════ HEADER ═══════════ */}
     <div className="sticky top-0 z-20 flex items-stretch db-header-b bg-card border-b border-border/60">
+     {/* Drag handle header (empty) */}
+     <div
+      className="shrink-0 bg-muted/30"
+      style={{ width: DRAG_COL_W, minWidth: DRAG_COL_W }}
+     />
+
      {/* Checkbox / select-all */}
      <div
       className="flex shrink-0 items-center justify-center bg-muted/30"
@@ -273,6 +559,9 @@ export function TableView({
 
     {/* ═══════════ ROWS ═══════════ */}
     {(rowGroups ?? [{ id: null, label: "", color: null, entries }] as RowGroup[]).flatMap((group, gIdx) => {
+     const groupKey = group.id ?? "__flat__";
+     const orderedGroupEntries = getOrderedEntries(groupKey, group.entries);
+
      const groupHeader = rowGroups && (
       <div
        key={`gh-${gIdx}`}
@@ -296,171 +585,58 @@ export function TableView({
       </div>
      );
 
-     const rows = group.entries.map((entry, rowIdx) => {
-     const isSelected = selectedEntryIds.has(entry.id);
-     const isRowHovered = hoveredRowId === entry.id && !deleteConfirm;
-     return (
-      <div
-       key={entry.id}
-       className={[
-        "flex items-stretch db-border-b transition-colors duration-100",
-        isSelected ? "bg-primary/5" : !deleteConfirm ? "hover:bg-muted/40" : "",
-       ].join(" ")}
-       onMouseEnter={() => { if (!deleteConfirm) setHoveredRowId(entry.id); }}
-       onMouseLeave={() => setHoveredRowId(null)}
+     const dndRows = (
+      <DndContext
+       key={`dnd-${groupKey}`}
+       sensors={sensors}
+       onDragStart={handleDragStart}
+       onDragEnd={(event) => handleDragEnd(groupKey, group.entries, event)}
       >
-       {/* Checkbox / index */}
-       <div
-        className="flex shrink-0 items-center justify-center"
-        style={{ width: IDX_COL_W, minWidth: IDX_COL_W, height: ROW_H }}
-       >
-        {isEditor ? (
-         <label className="relative flex size-5 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <input
-           type="checkbox"
-           checked={isSelected}
-           onChange={(e) => onSelectEntry(entry.id, e.target.checked)}
-           className="sr-only"
-          />
-          {/* Row number — fades out on hover/select */}
-          <span className="absolute select-none text-xs tabular-nums text-muted-foreground/60 transition-opacity duration-150"
-           style={{ opacity: isSelected || isRowHovered ? 0 : 1 }}>
-           {rowIdx + 1}
-          </span>
-          {/* Checkbox — fades in on hover/select */}
-          <span className={`flex size-[15px] items-center justify-center rounded border transition-colors duration-150 ${
-           isSelected ? "border-primary bg-primary" : "border-border/50 bg-background"
-          }`} style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}>
-           {isSelected && <Check size={10} className="text-white" />}
-          </span>
-         </label>
-        ) : (
-         <span className="select-none text-xs tabular-nums text-muted-foreground/60">{rowIdx + 1}</span>
-        )}
-       </div>
-
-       {/* Title cell */}
-       <div
-        className="flex shrink-0 items-center gap-2.5 px-3"
-        style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: ROW_H, borderRight: "1px solid var(--color-border)" }}
-       >
-        {entry.icon ? (
-         <span className="shrink-0 text-base leading-none">{entry.icon}</span>
-        ) : (
-         <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-border/40 bg-muted/20">
-          <FileText size={11} className="text-muted-foreground/60" />
-         </span>
-        )}
-
-        {activeCell?.entryId === entry.id && activeCell.propId === "__title__" ? (
-         <input
-          ref={cellInputRef}
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={() => { onUpdateTitle(entry.id, editValue); setActiveCell(null); }}
-          onKeyDown={(e) => {
-           if (e.key === "Enter" || e.key === "Tab") { onUpdateTitle(entry.id, editValue); setActiveCell(null); e.preventDefault(); }
-           if (e.key === "Escape") setActiveCell(null);
-          }}
-          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground focus:outline-none"
-          placeholder="Untitled"
+       <SortableContext items={orderedGroupEntries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+        {orderedGroupEntries.map((entry, rowIdx) => (
+         <SortableTableRow
+          key={entry.id}
+          entry={entry}
+          rowIdx={rowIdx}
+          visible={visible}
+          activeCell={activeCell}
+          editValue={editValue}
+          cellInputRef={cellInputRef}
+          selectedEntryIds={selectedEntryIds}
+          hoveredRowId={hoveredRowId}
+          deleteConfirm={deleteConfirm}
+          isEditor={isEditor}
+          rowMenu={rowMenu}
+          workspaceSlug={workspaceSlug}
+          addBtnW={addBtnW}
+          activeView={activeView}
+          colW={colW}
+          onMouseEnter={() => { if (!deleteConfirm) setHoveredRowId(entry.id); }}
+          onMouseLeave={() => setHoveredRowId(null)}
+          onSelectEntry={onSelectEntry}
+          onUpdateTitle={onUpdateTitle}
+          onOpenEntry={onOpenEntry}
+          setActiveCell={setActiveCell}
+          setEditValue={setEditValue}
+          setRowMenu={setRowMenu}
+          activateCell={activateCell}
+          commitText={commitText}
+          getRaw={getRaw}
          />
-        ) : (
-         <span
-          onClick={() => {
-           const inPanelMode = (activeView?.entryOpenMode ?? "side_panel") === "side_panel";
-           if (inPanelMode && onOpenEntry) {
-            onOpenEntry(entry);
-           } else if (isEditor) {
-            setActiveCell({ entryId: entry.id, propId: "__title__" });
-            setEditValue(entry.title ?? "");
-           }
-          }}
-          className={`min-w-0 flex-1 truncate text-sm font-medium cursor-pointer ${
-           entry.title ? "text-foreground" : "text-muted-foreground/60"
-          }`}
-         >
-          {entry.title || "Untitled"}
-         </span>
-        )}
-
-        {/* Row actions: open full page + more */}
-        <div className="ml-auto flex shrink-0 items-center gap-0.5 transition-opacity duration-150"
-         style={{ opacity: isRowHovered ? 1 : 0 }}>
-         <Link
-          href={`/app/${workspaceSlug}/${entry.shortId}`}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
-          title="Open full page"
-          onClick={(e) => e.stopPropagation()}
-         >
-          <ArrowSquareOut size={12} />
-         </Link>
-         {isEditor && (
-          <button
-           onClick={(e) => {
-            e.stopPropagation();
-            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            setRowMenu(rowMenu?.entryId === entry.id ? null : { entryId: entry.id, shortId: entry.shortId, rect });
-           }}
-           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
-          >
-           <DotsThree size={13} />
-          </button>
-         )}
-        </div>
-       </div>
-
-       {/* Property cells */}
-       {visible.map((prop) => {
-        const rawVal  = getRaw(entry.id, prop.id);
-        const isActive = activeCell?.entryId === entry.id && activeCell.propId === prop.id;
-        return (
-         <div
-          key={prop.id}
-          className={[
-           "group relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
-           isActive
-            ? "bg-primary/5 border-l border-primary/30"
-            : "hover:bg-muted/40",
-          ].join(" ")}
-          style={{ width: colW(prop.id), minWidth: colW(prop.id), height: ROW_H }}
-          onClick={(e) => activateCell(entry.id, prop.id, e)}
-         >
-          {isActive && TEXT_TYPES.has(prop.type) ? (
-           <input
-            ref={cellInputRef}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={() => commitText(entry.id, prop.id, editValue)}
-            onKeyDown={(e) => {
-             if (e.key === "Enter" || e.key === "Tab") { commitText(entry.id, prop.id, editValue); e.preventDefault(); }
-             if (e.key === "Escape") setActiveCell(null);
-            }}
-            type={prop.type === "number" ? "number" : "text"}
-            className="w-full bg-transparent text-sm text-foreground focus:outline-none"
-           />
-          ) : rawVal ? (
-           <CellDisplay property={prop} value={rawVal} compact />
-          ) : (
-           <>
-            <CellDisplay property={prop} value={rawVal} compact />
-            {isEditor && TEXT_TYPES.has(prop.type) && (
-             <span className="pointer-events-none select-none text-sm text-muted-foreground/60 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
-              Type…
-             </span>
-            )}
-           </>
-          )}
+        ))}
+       </SortableContext>
+       <DragOverlay>
+        {draggingEntry && (
+         <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 shadow-lg text-sm font-medium text-foreground">
+          <GripVertical size={13} className="text-muted-foreground/40" />
+          {draggingEntry.title || "Untitled"}
          </div>
-        );
-       })}
-
-       {isEditor && <div className="shrink-0" style={{ width: addBtnW, height: ROW_H }} />}
-      </div>
+        )}
+       </DragOverlay>
+      </DndContext>
      );
-     });
 
-     return groupHeader ? [groupHeader, ...rows] : rows;
+     return groupHeader ? [groupHeader, dndRows] : [dndRows];
     })}
 
     {/* ═══════════ EMPTY STATE ═══════════ */}

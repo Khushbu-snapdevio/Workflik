@@ -65,13 +65,13 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
    <button
     type="button"
     onClick={() => setExpanded((v) => !v)}
-    className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
+    className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
    >
-    <Clock size={15} className="shrink-0 text-muted-foreground group-hover:text-primary" />
+    <Clock size={15} className="shrink-0 text-muted-foreground group-hover:text-sidebar-accent-foreground" />
     <span className="flex-1 text-left">Recently Visited</span>
     <ChevronDown
      size={13}
-     className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-primary ${expanded ? "" : "-rotate-90"}`}
+     className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
     />
    </button>
 
@@ -83,7 +83,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
        <Link
         key={item.id}
         href={`/app/${workspaceSlug}/${page.shortId}`}
-        className="flex min-w-0 items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
+        className="flex min-w-0 items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
        >
         {page.icon ? (
          <span className="shrink-0 text-sm leading-none">{page.icon}</span>
@@ -99,7 +99,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
        ref={moreRef}
        type="button"
        onClick={openPopup}
-       className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
+       className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
        <MoreHorizontal size={12} />
        {resolved.length - VISIBLE_MAX} more

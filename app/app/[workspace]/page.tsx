@@ -104,6 +104,7 @@ export default async function WorkspacePage({ params }: Props) {
           <div className="hidden sm:block"><SearchTrigger /></div>
           <div className="hidden h-5 w-px bg-border/60 sm:block" />
           <div className="hidden sm:block"><WorkspaceShareButton workspaceSlug={slug} workspaceName={ws.name ?? ws.id} /></div>
+          <div className="hidden h-5 w-px bg-border/60 sm:block" />
           <NewPageButton
             workspaceId={ws.id}
             workspaceSlug={slug}
@@ -179,7 +180,7 @@ export default async function WorkspacePage({ params }: Props) {
                       <Link
                         key={page.id}
                         href={`/app/${slug}/${page.shortId}`}
-                        className="group flex flex-col gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card p-4 transition-all duration-150 hover:border-primary/20 hover:bg-accent"
+                        className="group flex flex-col gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-border border-l-2 border-l-transparent bg-card p-4 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
                       >
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
                           <PageIcon icon={page.icon} size="lg" />
@@ -360,7 +361,7 @@ export default async function WorkspacePage({ params }: Props) {
                   </div>
                   <Link
                     href={`/app/${slug}/library`}
-                    className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4 transition-all duration-150 hover:border-primary/20 hover:bg-accent"
+                    className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border border-l-2 border-l-transparent bg-card px-5 py-4 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
                   >
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
                       <BookOpen size={18} className="text-muted-foreground/50" />
@@ -439,7 +440,7 @@ export default async function WorkspacePage({ params }: Props) {
                   <NewPageButton
                     workspaceId={ws.id}
                     workspaceSlug={slug}
-                    className="group/qa flex w-full items-center gap-2.5 px-4 py-3 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
+                    className="group/qa flex w-full items-center gap-2.5 border-l-2 border-l-transparent px-4 py-3 text-left transition-all duration-150 hover:border-l-primary hover:bg-primary/5 disabled:opacity-60"
                   >
                     <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
                       <Plus size={13} />
@@ -474,7 +475,7 @@ export default async function WorkspacePage({ params }: Props) {
                     },
                   ] as const).map((action) => (
                     <Link key={action.label} href={action.href}
-                      className="group/qa flex items-center gap-2.5 px-4 py-3 transition-colors duration-150 hover:bg-accent">
+                      className="group/qa flex items-center gap-2.5 border-l-2 border-l-transparent px-4 py-3 transition-all duration-150 hover:border-l-primary hover:bg-primary/5">
                       <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] ${action.iconBg}`}>
                         {action.icon}
                       </span>

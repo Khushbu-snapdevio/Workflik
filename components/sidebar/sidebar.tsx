@@ -206,12 +206,15 @@ export function Sidebar({
 
  const pagesMap = Object.fromEntries(pages.map((p) => [p.id, p]));
 
- if (collapsed) {
-  return (
-   <aside className="flex h-dvh w-[64px] shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-
-    {/* Expand button */}
-    <div className="flex w-full items-center justify-center border-b border-sidebar-border py-3">
+ return (
+  <aside
+   data-tour="sidebar"
+   className="relative flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-in-out"
+   style={{ width: collapsed ? 64 : width }}
+  >
+   {/* ── Header ── collapses to a single centered icon, expands to full bar */}
+   {collapsed ? (
+    <div className="flex h-11 w-full shrink-0 items-center justify-center border-b border-sidebar-border">
      <button
       onClick={toggleCollapse}
       title="Expand sidebar"
@@ -221,152 +224,133 @@ export function Sidebar({
       <PanelLeft size={16} />
      </button>
     </div>
-
-    {/* Primary nav */}
-    <nav className="flex w-full flex-col items-center gap-1 px-2 py-3">
-     <CollapsedNavItem href={`/app/${workspaceSlug}`} label="Home" active={pathname === `/app/${workspaceSlug}`}>
-      <Home size={18} />
-     </CollapsedNavItem>
-     <CollapsedSearchItem label="Search"><Search size={18} /></CollapsedSearchItem>
-     <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} collapsed />
-     <CollapsedNavItem href={`/app/${workspaceSlug}/library`} label="Library" active={pathname.startsWith(`/app/${workspaceSlug}/library`)}>
-      <BookOpen size={18} />
-     </CollapsedNavItem>
-     <CollapsedNavItem href={`/app/${workspaceSlug}/templates`} label="Templates" active={pathname.startsWith(`/app/${workspaceSlug}/templates`)}>
-      <LayoutGrid size={18} />
-     </CollapsedNavItem>
-     <div className="my-1 w-8 border-t border-sidebar-border/70" />
-     <div className="group relative w-full">
-      <NewPageButton
-       workspaceId={workspaceId}
-       workspaceSlug={workspaceSlug}
-       className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-60"
+   ) : (
+    /* Expanded header: workspace switcher + new-menu dropdown */
+    <div className="relative shrink-0" ref={newMenuRef}>
+     <div className="flex h-11 items-center gap-1 border-b border-sidebar-border px-2">
+      <div className="min-w-0 flex-1">
+       <WorkspaceSwitcher currentSlug={workspaceSlug} />
+      </div>
+      <button
+       data-tour="new-page"
+       onClick={() => setNewMenu((v) => !v)}
+       title="Create new…"
+       type="button"
+       className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] outline-none transition-colors duration-150 ${
+        newMenu
+         ? "bg-primary text-primary-foreground"
+         : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+       }`}
       >
-       <Plus size={18} />
-      </NewPageButton>
-      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-       <p className="text-xs font-semibold text-popover-foreground">New Page</p>
-      </div>
+       <Plus size={14} />
+      </button>
+      <button
+       className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+       onClick={toggleCollapse}
+       title="Collapse sidebar"
+       type="button"
+      >
+       <PanelLeft size={16} />
+      </button>
      </div>
-    </nav>
-
-    <div className="flex-1" />
-
-    {/* Footer nav */}
-    <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-2 py-3">
-     <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><Trash2 size={18} /></CollapsedNavItem>
-     {isAdmin && (
-      <CollapsedNavItem href="/orbit-admin/orbit" label="Admin Panel">
-       <Shield size={18} />
-      </CollapsedNavItem>
+     {newMenu && (
+      <div className="absolute right-2 top-[44px] z-[200] w-[240px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
+       <div className="px-3 pb-1 pt-2">
+        <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground">Create</p>
+        <NewPageButton
+         workspaceId={workspaceId}
+         workspaceSlug={workspaceSlug}
+         onBeforeCreate={() => setNewMenu(false)}
+         className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
+        >
+         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
+          <FileText size={14} />
+         </span>
+         <span>
+          <span className="block text-sm font-medium text-foreground">New Page</span>
+          <span className="block text-xs text-muted-foreground">Docs, notes, wikis</span>
+         </span>
+        </NewPageButton>
+       </div>
+       <div className="mx-3 my-1 h-px bg-border/60" />
+       <div className="px-3 pb-2.5 pt-1">
+        <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground">More</p>
+        <NewDatabaseButton
+         workspaceId={workspaceId}
+         workspaceSlug={workspaceSlug}
+         onBeforeCreate={() => setNewMenu(false)}
+        />
+        <Link
+         href={`/app/${workspaceSlug}/templates`}
+         onClick={() => setNewMenu(false)}
+         className="group mt-0.5 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent"
+        >
+         <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-warning/10 text-warning">
+          <LayoutGrid size={14} />
+         </span>
+         <span>
+          <span className="block text-sm font-medium text-foreground">From Template</span>
+          <span className="block text-xs text-muted-foreground">Start from a template</span>
+         </span>
+        </Link>
+       </div>
+      </div>
      )}
-    </nav>
-
-    {/* User avatar */}
-    <div className="flex w-full items-center justify-center border-t border-sidebar-border py-3">
-     <div className="group relative">
-      <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm transition-opacity duration-150 hover:opacity-80" />
-      <div className="pointer-events-none absolute bottom-0 left-full z-50 ml-3 min-w-[160px] whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-3 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-       <p className="text-xs font-semibold text-popover-foreground">{userEmail.split("@")[0]}</p>
-       <p className="mt-0.5 text-xs text-muted-foreground">{userEmail}</p>
-      </div>
-     </div>
     </div>
-   </aside>
-  );
- }
+   )}
 
- return (
-  <aside
-   data-tour="sidebar"
-   className="relative flex h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
-   style={{ width }}
-  >
-   {/* Workspace header + new-menu dropdown — wrapped together so dropdown
-       is positioned relative to this div, NOT inside the scroll body */}
-   <div className="relative shrink-0" ref={newMenuRef}>
-    <div className="flex h-11 items-center gap-1 border-b border-sidebar-border px-2">
-     <div className="min-w-0 flex-1">
-      <WorkspaceSwitcher currentSlug={workspaceSlug} />
-     </div>
-
-     {/* + button */}
-     <button
-      data-tour="new-page"
-      onClick={() => setNewMenu((v) => !v)}
-      title="Create new…"
-      type="button"
-      className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] outline-none transition-colors duration-150 ${
-       newMenu
-        ? "bg-primary text-primary-foreground"
-        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-      }`}
-     >
-      <Plus size={14} />
-     </button>
-
-     <button
-      className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-      onClick={toggleCollapse}
-      title="Collapse sidebar"
-      type="button"
-     >
-      <PanelLeft size={16} />
-     </button>
-    </div>
-
-    {/* Dropdown — right-aligned below the + button */}
-    {newMenu && (
-     <div className="absolute right-0 top-[48px] z-[200] w-[260px] max-w-[calc(100vw-1rem)] translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
-      {/* Section: Create */}
-      <div className="px-3 pb-1 pt-2">
-       <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground">Create</p>
+   {/* ── Collapsed body: icon-only nav ── */}
+   {collapsed && (
+    <>
+     <nav className="flex w-full flex-col items-center gap-1 px-2 py-3">
+      <CollapsedNavItem href={`/app/${workspaceSlug}`} label="Home" active={pathname === `/app/${workspaceSlug}`}>
+       <Home size={18} />
+      </CollapsedNavItem>
+      <CollapsedSearchItem><Search size={18} /></CollapsedSearchItem>
+      <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} collapsed />
+      <CollapsedNavItem href={`/app/${workspaceSlug}/library`} label="Library" active={pathname.startsWith(`/app/${workspaceSlug}/library`)}>
+       <BookOpen size={18} />
+      </CollapsedNavItem>
+      <CollapsedNavItem href={`/app/${workspaceSlug}/templates`} label="Templates" active={pathname.startsWith(`/app/${workspaceSlug}/templates`)}>
+       <LayoutGrid size={18} />
+      </CollapsedNavItem>
+      <div className="my-1 w-8 border-t border-sidebar-border/70" />
+      <div className="group relative w-full">
        <NewPageButton
         workspaceId={workspaceId}
         workspaceSlug={workspaceSlug}
-        onBeforeCreate={() => setNewMenu(false)}
-        className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent disabled:opacity-60"
+        className="flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-60"
        >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
-         <FileText size={14} />
-        </span>
-        <span>
-         <span className="block text-sm font-medium text-foreground">New Page</span>
-         <span className="block text-xs text-muted-foreground">Docs, notes, wikis</span>
-        </span>
+        <Plus size={18} />
        </NewPageButton>
+       <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        <p className="text-xs font-semibold text-popover-foreground">New Page</p>
+       </div>
       </div>
-
-      <div className="mx-3 my-1 h-px bg-border/60" />
-
-      {/* Section: More */}
-      <div className="px-3 pb-2.5 pt-1">
-       <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground">More</p>
-       <NewDatabaseButton
-        workspaceId={workspaceId}
-        workspaceSlug={workspaceSlug}
-        onBeforeCreate={() => setNewMenu(false)}
-       />
-       <Link
-        href={`/app/${workspaceSlug}/templates`}
-        onClick={() => setNewMenu(false)}
-        className="group mt-0.5 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 text-left transition-colors duration-150 hover:bg-accent"
-       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-warning/10 text-warning">
-         <LayoutGrid size={14} />
-        </span>
-        <span>
-         <span className="block text-sm font-medium text-foreground">From Template</span>
-         <span className="block text-xs text-muted-foreground">Start from a template</span>
-        </span>
-       </Link>
+     </nav>
+     <div className="flex-1" />
+     <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-2 py-3">
+      <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><Trash2 size={18} /></CollapsedNavItem>
+      {isAdmin && (
+       <CollapsedNavItem href="/orbit-admin/orbit" label="Admin Panel">
+        <Shield size={18} />
+       </CollapsedNavItem>
+      )}
+     </nav>
+     <div className="flex w-full items-center justify-center border-t border-sidebar-border py-3">
+      <div className="group relative">
+       <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm transition-opacity duration-150 hover:opacity-80" />
+       <div className="pointer-events-none absolute bottom-0 left-full z-50 ml-3 min-w-[160px] whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-3 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        <p className="text-xs font-semibold text-popover-foreground">{userEmail.split("@")[0]}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{userEmail}</p>
+       </div>
       </div>
      </div>
-    )}
-   </div>
+    </>
+   )}
 
-   {/* Scrollable body */}
-   <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+   {/* ── Expanded body: full scrollable tree ── */}
+   {!collapsed && <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
     {/* Quick nav */}
     <nav className="px-2 py-1.5">
      <NavButton
@@ -448,10 +432,10 @@ export function Sidebar({
       active={pathname.startsWith(`/app/${workspaceSlug}/trash`)}
      />
     </div>
-   </div>
+   </div>}
 
-   {/* Bottom nav — Admin only */}
-   {isAdmin && (
+   {/* ── Expanded: admin nav + user footer ── */}
+   {!collapsed && isAdmin && (
     <div className="shrink-0 border-t border-sidebar-border px-2 py-1.5">
      <NavButton
       href="/orbit-admin/orbit"
@@ -462,87 +446,78 @@ export function Sidebar({
     </div>
    )}
 
-   {/* User footer */}
-   <div className="relative shrink-0 border-t border-sidebar-border px-2 py-2" ref={userMenuRef}>
-
-    {/* User menu dropdown — appears above */}
-    {userMenu && (
-     <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover">
-
-      {/* User info */}
-      <div className="px-3.5 pb-3 pt-3.5">
-       <div className="flex items-center gap-3">
-        <div className="relative shrink-0">
-         <UserAvatar image={userImage} email={userEmail} className="size-10 text-sm" />
-         <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-popover bg-success" />
-        </div>
-        <div className="min-w-0 flex-1">
-         <p className="truncate text-sm font-semibold leading-tight text-foreground">
-          {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
-         </p>
-         <p className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">{userEmail}</p>
+   {!collapsed && (
+    <div className="relative shrink-0 border-t border-sidebar-border px-2 py-2" ref={userMenuRef}>
+     {userMenu && (
+      <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover">
+       <div className="px-3.5 pb-3 pt-3.5">
+        <div className="flex items-center gap-3">
+         <div className="relative shrink-0">
+          <UserAvatar image={userImage} email={userEmail} className="size-10 text-sm" />
+          <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-popover bg-success" />
+         </div>
+         <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold leading-tight text-foreground">
+           {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+          </p>
+          <p className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">{userEmail}</p>
+         </div>
         </div>
        </div>
+       <div className="mx-3 h-px bg-border/50" />
+       <div className="p-1.5">
+        <Link
+         href={`/app/${workspaceSlug}/settings`}
+         onClick={() => setUserMenu(false)}
+         className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-accent"
+        >
+         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 group-hover:bg-primary/10 group-hover:text-primary">
+          <Settings size={13} />
+         </span>
+         <span className="text-sm font-medium text-foreground">Settings</span>
+        </Link>
+       </div>
+       <div className="mx-3 h-px bg-border/50" />
+       <div className="p-1.5">
+        <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
+         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
+          <LogOut size={13} />
+         </span>
+         <span className="text-sm font-medium text-destructive">Sign out</span>
+        </SignOutButton>
+       </div>
       </div>
-
-      <div className="mx-3 h-px bg-border/50" />
-
-      <div className="p-1.5">
-       <Link
-        href={`/app/${workspaceSlug}/settings`}
-        onClick={() => setUserMenu(false)}
-        className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-accent"
-       >
-        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 group-hover:bg-primary/10 group-hover:text-primary">
-         <Settings size={13} />
-        </span>
-        <span className="text-sm font-medium text-foreground">Settings</span>
-       </Link>
+     )}
+     <button
+      type="button"
+      onClick={() => setUserMenu((v) => !v)}
+      className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-primary/10" : "hover:bg-primary/10"}`}
+     >
+      <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm" />
+      <div className="min-w-0 flex-1 text-left">
+       <p className="truncate text-sm font-semibold text-sidebar-foreground">
+        {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+       </p>
+       <p className="truncate text-xs text-sidebar-foreground/70">{userEmail}</p>
       </div>
+      <ChevronDown
+       size={13}
+       className={`shrink-0 text-sidebar-foreground/60 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
+      />
+     </button>
+    </div>
+   )}
 
-      <div className="mx-3 h-px bg-border/50" />
-
-      <div className="p-1.5">
-       <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
-        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
-         <LogOut size={13} />
-        </span>
-        <span className="text-sm font-medium text-destructive">Sign out</span>
-       </SignOutButton>
-      </div>
-     </div>
-    )}
-
-    {/* Trigger row */}
+   {/* Resize handle — expanded only */}
+   {!collapsed && (
     <button
+     aria-label="Resize sidebar"
+     className="absolute right-0 top-0 h-full w-1 cursor-col-resize border-0 bg-transparent p-0 transition-colors duration-150 hover:bg-sidebar-accent"
+     onMouseDown={handleResizeStart}
+     tabIndex={-1}
      type="button"
-     onClick={() => setUserMenu((v) => !v)}
-     className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-primary/10" : "hover:bg-primary/10"}`}
-    >
-     <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm" />
-     <div className="min-w-0 flex-1 text-left">
-      <p className="truncate text-sm font-semibold text-sidebar-foreground">
-       {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
-      </p>
-      <p className="truncate text-xs text-sidebar-foreground/70">
-       {userEmail}
-      </p>
-     </div>
-     <ChevronDown
-      size={13}
-      className={`shrink-0 text-sidebar-foreground/60 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
-     />
-    </button>
-   </div>
-
-   {/* Resize handle */}
-   <button
-    aria-label="Resize sidebar"
-    className="absolute right-0 top-0 h-full w-1 cursor-col-resize border-0 bg-transparent p-0 transition-colors duration-150 hover:bg-sidebar-accent"
-    onMouseDown={handleResizeStart}
-    tabIndex={-1}
-    type="button"
-   />
+    />
+   )}
   </aside>
  );
 }
@@ -564,12 +539,12 @@ function NavButton({
   <Link
    className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
     active
-     ? "bg-primary/10 text-primary"
-     : "text-sidebar-foreground/60 hover:bg-primary/10 hover:text-primary"
+     ? "bg-primary/[0.2] text-primary"
+     : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
    }`}
    href={href}
   >
-   <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-primary"}`}>{icon}</span>
+   <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`}>{icon}</span>
    <span className={`flex-1 ${active ? "font-semibold" : ""}`}>{label}</span>
    {shortcut && (
     <kbd className="shrink-0 rounded bg-muted px-1 py-0.5 text-xs font-medium text-muted-foreground">
@@ -595,15 +570,14 @@ function CollapsedNavItem({
   <div className="group relative w-full">
    <Link
     href={href}
-    className={`flex size-9 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${
+    className={`flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
      active
-      ? "bg-sidebar-accent text-primary"
-      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      ? "bg-primary/[0.2] text-primary"
+      : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     }`}
    >
     {children}
    </Link>
-   {/* Tooltip — appears to the right on hover */}
    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
     <p className="text-xs font-semibold text-popover-foreground">{label}</p>
    </div>
@@ -611,31 +585,48 @@ function CollapsedNavItem({
  );
 }
 
-function CollapsedSearchItem({ label, children }: { label: string; children: React.ReactNode }) {
+function CollapsedSearchItem({ children }: { children: React.ReactNode }) {
  return (
   <div className="group relative w-full">
    <button
     type="button"
     onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-    className="flex size-9 items-center justify-center rounded-[var(--radius-md)] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+    className="flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
    >
     {children}
    </button>
    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-    <p className="text-xs font-semibold text-popover-foreground">{label}</p>
+    <p className="text-xs font-semibold text-popover-foreground">Search</p>
    </div>
   </div>
  );
 }
 
 function SearchNavButton({ icon }: { icon: React.ReactNode }) {
+ const [searchOpen, setSearchOpen] = useState(false);
+
+ useEffect(() => {
+  function onOpen() { setSearchOpen(true); }
+  function onClose() { setSearchOpen(false); }
+  document.addEventListener("workflik:open-search", onOpen);
+  document.addEventListener("workflik:search-closed", onClose);
+  return () => {
+   document.removeEventListener("workflik:open-search", onOpen);
+   document.removeEventListener("workflik:search-closed", onClose);
+  };
+ }, []);
+
  return (
   <button
    type="button"
    onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-   className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
+   className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
+    searchOpen
+     ? "bg-primary/[0.2] text-primary font-semibold"
+     : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+   }`}
   >
-   <span className="shrink-0 text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-primary">{icon}</span>
+   <span className={`shrink-0 transition-colors duration-150 ${searchOpen ? "text-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`}>{icon}</span>
    <span className="flex-1 text-left">Search</span>
    <kbd className="shrink-0 rounded-[var(--radius-xs)] bg-sidebar-accent px-1 py-0.5 text-xs font-medium text-sidebar-foreground/70">Ctrl+K</kbd>
   </button>
@@ -677,13 +668,13 @@ function SectionLabel({ label, expanded, onToggle }: { label: string; expanded?:
   <button
    type="button"
    onClick={onToggle}
-   className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
+   className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
   >
-   <FileText size={15} className="shrink-0 text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-primary" />
+   <FileText size={15} className="shrink-0 text-sidebar-foreground/50 transition-colors duration-150 group-hover:text-sidebar-accent-foreground" />
    <span className="flex-1 text-left">{label}</span>
    <ChevronDown
     size={13}
-    className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-primary ${expanded ? "" : "-rotate-90"}`}
+    className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
    />
   </button>
  );

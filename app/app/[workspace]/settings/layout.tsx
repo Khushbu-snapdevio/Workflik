@@ -36,15 +36,15 @@ export default async function SettingsLayout({ children, params }: Props) {
       <div className="flex h-full flex-col overflow-hidden">
         <SettingsTopBar workspaceSlug={ws.slug} workspaceName={ws.name} />
         <div className="flex flex-1 overflow-hidden">
+          <SettingsRightPanel
+            workspaceSlug={ws.slug}
+            isAdmin={member.role === "admin"}
+          />
           <div className="flex-1 overflow-y-auto bg-page">
             <Suspense fallback={<SettingsPageSkeleton />}>
               {children}
             </Suspense>
           </div>
-          <SettingsRightPanel
-            workspaceSlug={ws.slug}
-            isAdmin={member.role === "admin"}
-          />
         </div>
       </div>
     </SettingsUserProvider>

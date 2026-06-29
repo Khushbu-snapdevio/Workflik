@@ -429,8 +429,8 @@ export function DatabasePage({
       )}
 
       {/* ── View content ── */}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="min-h-full w-full">
+      <div className={`min-h-0 flex-1 ${activeView?.type === "calendar" ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden"}`}>
+        <div className={activeView?.type === "calendar" ? "h-full w-full" : "min-h-full w-full"}>
           {!activeView && (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-muted-foreground">No views configured.</p>

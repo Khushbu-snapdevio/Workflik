@@ -40,7 +40,7 @@ export function SettingsRightPanel({ workspaceSlug, isAdmin }: Props) {
   const workspaceSections = visibleSections.filter(s => s.group === "workspace");
 
   return (
-    <aside className="flex w-[268px] shrink-0 flex-col border-l border-border/60 bg-sidebar">
+    <aside className="flex w-[260px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
 
       {/* Header */}
       <div className="border-b border-border/60 px-5 py-4">

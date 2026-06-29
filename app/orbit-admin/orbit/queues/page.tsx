@@ -27,12 +27,12 @@ export default async function OrbitQueuesPage() {
  const activeJobs  = queues.filter(r => r.state === "active").reduce((s, r) => s + r.count, 0);
 
  return (
-  <div className="space-y-6 p-6">
+  <div className="space-y-6">
 
-   {/* ── Header ── */}
+   {/* Header */}
    <div>
     <h1 className="text-xl font-bold tracking-tight text-foreground">Queues</h1>
-    <p className="mt-0.5 text-sm text-muted-foreground">pg-boss job queues — states, counts, and worker status.</p>
+    <p className="mt-1 text-sm text-muted-foreground">pg-boss job queues — states, counts, and worker status.</p>
    </div>
 
    {/* ── Stats row ── */}

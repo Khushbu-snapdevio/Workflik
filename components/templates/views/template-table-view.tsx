@@ -8,8 +8,16 @@ import {
  ExternalLink as ArrowSquareOutIcon, Type as TextTIcon, Hash as NumberCircleOneIcon,
  Calendar as CalendarBlankIcon, CheckSquare as CheckSquareIcon, Link as LinkIcon,
  List as ListBulletsIcon, Tag as TagIcon, ChevronDown as CaretDownIcon,
- Pencil as PencilSimpleIcon, User as UserIcon,
+ Pencil as PencilSimpleIcon, User as UserIcon, GripVertical,
 } from "lucide-react";
+import {
+ DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+ type DragEndEvent, type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+ SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import type { DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
@@ -724,6 +732,132 @@ function CellContent({
  }
 }
 
+// ── Sortable row ──────────────────────────────────────────────────────────────
+
+interface SortableRowProps {
+ entry:       TemplateEntry;
+ visibleProps:   DatabaseProperty[];
+ entryValueMap:  Map<string, Map<string, unknown>>;
+ workspaceSlug:  string;
+ selectedIds:   Set<string>;
+ editingTitleId:  string | null;
+ deleteTarget:   string | null;
+ onToggleSelect:  (id: string) => void;
+ onSaveTitle:   (entryId: string, title: string) => void;
+ onClickEntry:   (entryId: string) => void;
+ onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
+ onSetDeleteTarget: (id: string) => void;
+ onDuplicateEntry:  (id: string) => void;
+}
+
+function SortableRow({
+ entry, visibleProps, entryValueMap, workspaceSlug, selectedIds, editingTitleId,
+ deleteTarget, onToggleSelect, onSaveTitle, onClickEntry, onUpdatePropValue,
+ onSetDeleteTarget, onDuplicateEntry,
+}: SortableRowProps) {
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+  useSortable({ id: entry.id });
+
+ const style = {
+  transform: CSS.Transform.toString(transform),
+  transition,
+  opacity: isDragging ? 0.5 : 1,
+ };
+
+ const isSelected = selectedIds.has(entry.id);
+ const isEditing  = editingTitleId === entry.id;
+ const valMap    = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
+
+ return (
+  <tr
+   ref={setNodeRef}
+   style={style}
+   {...attributes}
+   className={`group/row border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : !deleteTarget ? "hover:bg-muted/20" : ""}`}
+  >
+   {/* Drag handle */}
+   <td className="w-6 px-0.5 py-0" style={{ touchAction: "none", userSelect: "none" }}>
+    <div
+     {...listeners}
+     className="flex size-5 cursor-grab items-center justify-center rounded text-muted-foreground/0 hover:text-muted-foreground/40 transition-colors active:cursor-grabbing group-hover/row:text-muted-foreground/40"
+     title="Drag to reorder"
+    >
+     <GripVertical size={13} />
+    </div>
+   </td>
+
+   {/* Checkbox */}
+   <td className="w-8 px-2 py-0">
+    <button
+     onClick={() => onToggleSelect(entry.id)}
+     className={`flex size-3.5 items-center justify-center rounded border text-xs font-bold transition-all ${isSelected ? "border-primary bg-primary text-primary-foreground opacity-100" : "border-border opacity-0 group-hover/row:opacity-100 hover:border-primary/60"}`}
+    >
+     {isSelected ? "✓" : ""}
+    </button>
+   </td>
+
+   {/* Title */}
+   <td className="py-1.5 pl-1 pr-2">
+    <div className="flex items-center gap-1">
+     <div className="min-w-0 flex-1">
+      {isEditing ? (
+       <InlineTitleInput
+        entryId={entry.id}
+        initialTitle={entry.title}
+        onSave={onSaveTitle}
+       />
+      ) : (
+       <button
+        onClick={() => onClickEntry(entry.id)}
+        className="w-full rounded px-0.5 text-left text-sm font-medium hover:bg-muted/40 transition-colors"
+       >
+        {entry.title
+         ? <span className="text-foreground">{entry.title}</span>
+         : <span className="text-muted-foreground/60">Untitled</span>
+        }
+       </button>
+      )}
+     </div>
+
+     <div className="flex shrink-0 items-center gap-0.5">
+      <a
+       href={`/app/${workspaceSlug}/${entry.shortId}`}
+       className="flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+       title="Open page"
+      >
+       <ArrowSquareOutIcon size={11} />
+      </a>
+      <RowMenu
+       entryId={entry.id}
+       shortId={entry.shortId}
+       workspaceSlug={workspaceSlug}
+       onDuplicate={onDuplicateEntry}
+       onDelete={(id) => onSetDeleteTarget(id)}
+      />
+     </div>
+    </div>
+   </td>
+
+   {/* Property cells */}
+   {visibleProps.map((p) => (
+    <td
+     key={p.id}
+     className="group/cell relative px-1 py-0.5 transition-colors hover:bg-accent/40"
+    >
+     <CellContent
+      prop={p}
+      raw={valMap.get(p.id)}
+      onSave={(v) => onUpdatePropValue(entry.id, p.id, v)}
+     />
+    </td>
+   ))}
+
+   {/* Spacer */}
+   <td />
+  </tr>
+ );
+}
+
 // ── Main table view ───────────────────────────────────────────────────────────
 
 interface Props {
@@ -770,6 +904,8 @@ export function TemplateTableView({
  const [showAddProp, setShowAddProp] = useState(false);
  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
  const [deletingEntry, setDeletingEntry] = useState(false);
+ const [localOrder, setLocalOrder] = useState<string[]>([]);
+ const [draggingId, setDraggingId] = useState<string | null>(null);
 
  const visibleProps = properties.filter((p) => !p.isHidden);
 
@@ -778,11 +914,43 @@ export function TemplateTableView({
 
  const handleAdd = useCallback(async () => { await onAddEntry(); }, [onAddEntry]);
 
+ // Reset local order when the underlying entries list changes
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ useEffect(() => { setLocalOrder([]); }, [entries.map((e) => e.id).join(",")]);
+
+ const orderedEntries = localOrder.length > 0
+  ? localOrder.map((id) => entries.find((e) => e.id === id)).filter(Boolean) as TemplateEntry[]
+  : entries;
+
+ const draggingEntry = draggingId ? entries.find((e) => e.id === draggingId) : null;
+
+ const sensors = useSensors(
+  useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+ );
+
+ function handleDragStart(event: DragStartEvent) {
+  setDraggingId(String(event.active.id));
+ }
+
+ function handleDragEnd(event: DragEndEvent) {
+  const { active, over } = event;
+  setDraggingId(null);
+  if (!over || active.id === over.id) return;
+  const base = localOrder.length > 0 ? localOrder : entries.map((e) => e.id);
+  const oldIdx = base.indexOf(String(active.id));
+  const newIdx = base.indexOf(String(over.id));
+  if (oldIdx === -1 || newIdx === -1) return;
+  setLocalOrder(arrayMove(base, oldIdx, newIdx));
+ }
+
  return (
   <>
   <div className="relative h-full overflow-auto isolate">
+   <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
    <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
     <colgroup>
+     {/* Drag handle col */}
+     <col style={{ width: "24px" }} />
      <col style={{ width: "32px" }} />
      <col style={{ minWidth: "260px", width: "35%" }} />
      {visibleProps.map((p) => (
@@ -794,6 +962,9 @@ export function TemplateTableView({
     {/* Header */}
     <thead className="sticky top-0 z-[200] bg-background/95 backdrop-blur-sm">
      <tr className="border-b border-border/60">
+      {/* Drag handle column header (empty) */}
+      <th className="w-6 px-0.5 py-2.5" />
+
       {/* Select-all */}
       <th className="w-8 px-2 py-2.5 text-left">
        <button
@@ -844,93 +1015,31 @@ export function TemplateTableView({
     </thead>
 
     {/* Body */}
+    <SortableContext items={orderedEntries.map((e) => e.id)} strategy={verticalListSortingStrategy}>
     <tbody>
-     {entries.map((entry) => {
-      const isSelected = selectedIds.has(entry.id);
-      const isEditing = editingTitleId === entry.id;
-      const valMap   = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
-
-      return (
-       <tr
-        key={entry.id}
-        className={`group/row border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : !deleteTarget ? "hover:bg-muted/20" : ""}`}
-       >
-        {/* Checkbox */}
-        <td className="w-8 px-2 py-0">
-         <button
-          onClick={() => onToggleSelect(entry.id)}
-          className={`flex size-3.5 items-center justify-center rounded border text-xs font-bold transition-all ${isSelected ? "border-primary bg-primary text-primary-foreground opacity-100" : "border-border opacity-0 group-hover/row:opacity-100 hover:border-primary/60"}`}
-         >
-          {isSelected ? "✓" : ""}
-         </button>
-        </td>
-
-        {/* Title */}
-        <td className="py-1.5 pl-1 pr-2">
-         <div className="flex items-center gap-1">
-          <div className="min-w-0 flex-1">
-           {isEditing ? (
-            <InlineTitleInput
-             entryId={entry.id}
-             initialTitle={entry.title}
-             onSave={onSaveTitle}
-            />
-           ) : (
-            <button
-             onClick={() => onClickEntry(entry.id)}
-             className="w-full rounded px-0.5 text-left text-sm font-medium hover:bg-muted/40 transition-colors"
-            >
-             {entry.title
-              ? <span className="text-foreground">{entry.title}</span>
-              : <span className="text-muted-foreground/60">Untitled</span>
-             }
-            </button>
-           )}
-          </div>
-
-          <div className="flex shrink-0 items-center gap-0.5">
-           <Link
-            href={`/app/${workspaceSlug}/${entry.shortId}`}
-            className="flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover/row:opacity-100 hover:bg-accent hover:text-foreground transition-all"
-            title="Open page"
-           >
-            <ArrowSquareOutIcon size={11} />
-           </Link>
-           <RowMenu
-            entryId={entry.id}
-            shortId={entry.shortId}
-            workspaceSlug={workspaceSlug}
-            onDuplicate={onDuplicateEntry}
-            onDelete={(id) => setDeleteTarget(id)}
-           />
-          </div>
-         </div>
-        </td>
-
-        {/* Property cells */}
-        {visibleProps.map((p) => (
-         <td
-          key={p.id}
-          className="group/cell relative px-1 py-0.5 transition-colors hover:bg-accent/40"
-         >
-          <CellContent
-           prop={p}
-           raw={valMap.get(p.id)}
-           onSave={(v) => onUpdatePropValue(entry.id, p.id, v)}
-          />
-         </td>
-        ))}
-
-        {/* Spacer */}
-        <td />
-       </tr>
-      );
-     })}
+     {orderedEntries.map((entry) => (
+      <SortableRow
+       key={entry.id}
+       entry={entry}
+       visibleProps={visibleProps}
+       entryValueMap={entryValueMap}
+       workspaceSlug={workspaceSlug}
+       selectedIds={selectedIds}
+       editingTitleId={editingTitleId}
+       deleteTarget={deleteTarget}
+       onToggleSelect={onToggleSelect}
+       onSaveTitle={onSaveTitle}
+       onClickEntry={onClickEntry}
+       onUpdatePropValue={onUpdatePropValue}
+       onSetDeleteTarget={setDeleteTarget}
+       onDuplicateEntry={onDuplicateEntry}
+      />
+     ))}
 
      {/* Empty state */}
      {entries.length === 0 && (
       <tr>
-       <td colSpan={visibleProps.length + 3} className="py-16 text-center">
+       <td colSpan={visibleProps.length + 4} className="py-16 text-center">
         <div className="space-y-1">
          <p className="text-sm font-medium text-muted-foreground">No entries yet</p>
          <p className="text-xs text-muted-foreground">Click &quot;+ New&quot; below to add your first row</p>
@@ -939,8 +1048,19 @@ export function TemplateTableView({
       </tr>
      )}
     </tbody>
+    </SortableContext>
    </table>
 
+   {/* Drag overlay */}
+   <DragOverlay>
+    {draggingEntry && (
+     <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 shadow-lg text-sm font-medium text-foreground">
+      <GripVertical size={13} className="text-muted-foreground/40" />
+      {draggingEntry.title || "Untitled"}
+     </div>
+    )}
+   </DragOverlay>
+   </DndContext>
   </div>
   <ConfirmDialog
    open={!!deleteTarget}

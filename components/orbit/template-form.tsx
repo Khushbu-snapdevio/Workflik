@@ -117,11 +117,6 @@ export function TemplateForm({ template }: Props) {
     router.refresh();
   }
 
-  function handleDelete() {
-    if (!template) return;
-    setConfirmDelete(true);
-  }
-
   async function doDelete() {
     await fetch(`/api/orbit/templates/${template!.id}`, { method: "DELETE" });
     router.push("/orbit-admin/orbit/templates");
@@ -130,120 +125,122 @@ export function TemplateForm({ template }: Props) {
 
   return (
     <>
-    <div className="max-w-3xl space-y-6">
-      {/* Name + Icon row */}
-      <div className="flex gap-3">
-        <div className="flex-1">
-          <label className="mb-1.5 block text-sm font-semibold text-foreground">
-            Template name <span className="text-destructive">*</span>
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Meeting Notes"
-            className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
+    <div className="flex min-h-[600px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+
+      {/* Left sidebar — w-[260px] matching settings sidebar */}
+      <aside className="flex w-[260px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
+        <div className="border-b border-border/60 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Template settings</p>
         </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-semibold text-foreground">
-            Icon <span className="font-normal text-muted-foreground/60 text-xs">(emoji)</span>
-          </label>
-          <input
-            type="text"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            placeholder="📋"
-            className="w-20 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-center text-xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
+
+        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-5">
+
+          {/* Icon + Name */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Icon</label>
+            <input
+              type="text"
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              placeholder="📋"
+              className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-center text-xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+              Name <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Meeting Notes"
+              className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDesc(e.target.value)}
+              placeholder="What is this template for?"
+              rows={3}
+              className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-muted-foreground">Category</label>
+            <div className="flex flex-col gap-1">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setCategory(cat.key)}
+                  className={[
+                    "w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-xs font-medium transition-colors",
+                    category === cat.key
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Description */}
-      <div>
-        <label className="mb-1.5 block text-sm font-semibold text-foreground">
-          Description <span className="font-normal text-muted-foreground/60 text-xs">(optional)</span>
-        </label>
-        <textarea
-          value={description}
-          onChange={(e) => setDesc(e.target.value)}
-          placeholder="What is this template for? Shown in the gallery."
-          rows={2}
-          className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-        />
-      </div>
-
-      {/* Category */}
-      <div>
-        <label className="mb-2 block text-sm font-semibold text-foreground">Category</label>
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.key}
-              type="button"
-              onClick={() => setCategory(cat.key)}
-              className={[
-                "rounded-[var(--radius-sm)] border px-3 py-1.5 text-sm font-medium transition-colors",
-                category === cat.key
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:bg-accent",
-              ].join(" ")}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Content editor */}
-      <div>
-        <label className="mb-2 block text-sm font-semibold text-foreground">
-          Template Content
-          <span className="ml-2 font-normal text-muted-foreground/60 text-xs">
-            — Write like a normal page. Press <kbd className="rounded border border-border bg-muted px-1 text-xs">/</kbd> for blocks.
-          </span>
-        </label>
-        <TemplateEditor
-          initialBlocks={blocks}
-          onChange={setBlocks}
-        />
-      </div>
-
-      {error && (
-        <div className="rounded-[var(--radius-sm)] bg-destructive/5 px-4 py-2.5 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="flex items-center justify-between border-t border-border pt-4">
-        {isEdit ? (
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/5 transition-colors duration-150"
-          >
-            <Trash2 size={14} />
-            Delete Template
-          </button>
-        ) : <div />}
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="rounded-[var(--radius-sm)] border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent"
-          >
-            Cancel
-          </button>
+        {/* Sidebar footer — actions */}
+        <div className="border-t border-border/60 p-4 space-y-2">
+          {error && (
+            <div className="rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              {error}
+            </div>
+          )}
           <button
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="w-full rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Template"}
+            {saving ? "Saving…" : isEdit ? "Save changes" : "Create template"}
           </button>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="w-full rounded-[var(--radius-sm)] border border-border px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            Cancel
+          </button>
+          {isEdit && (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-4 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/5"
+            >
+              <Trash2 size={12} />
+              Delete template
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {/* Right — content editor */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="border-b border-border/60 px-6 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Template content</p>
+          <p className="mt-0.5 text-xs text-muted-foreground/60">
+            Press <kbd className="rounded border border-border bg-muted px-1 text-[10px]">/</kbd> for blocks
+          </p>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <TemplateEditor
+            initialBlocks={blocks}
+            onChange={setBlocks}
+          />
         </div>
       </div>
     </div>

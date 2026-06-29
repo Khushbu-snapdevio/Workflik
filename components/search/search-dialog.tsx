@@ -356,6 +356,13 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     if (active) navigate(active.item as SearchResult | RecentPage);
    } else if (e.key === "Escape") {
     onClose();
+   } else if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+    e.preventDefault();
+    setQuery("");
+    setResults([]);
+    setTotal(0);
+    setActiveIndex(0);
+    inputRef.current?.focus();
    }
   }
   window.addEventListener("keydown", handleKey);

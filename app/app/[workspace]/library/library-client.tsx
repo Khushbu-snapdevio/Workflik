@@ -1,8 +1,10 @@
 "use client";
 
-import { BookOpen, Clock, FileText, Grid2X2, Lock, Search, Star, X } from "lucide-react";
+import { BookOpen, Clock, FileText, Grid2X2, Loader2, Lock, Search, Star, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+
+const PAGE_SIZE = 10;
 
 type PageRow = {
   id:          string;
@@ -59,20 +61,74 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; workspaceSlug: string }) {
-  const [tab, setTab]     = useState<Tab>("all");
-  const [search, setSearch] = useState("");
+export function LibraryClient({
+  pages,
+  workspaceSlug,
+  workspaceId,
+}: {
+  pages: PageRow[];
+  workspaceSlug: string;
+  workspaceId: string;
+}) {
+  const [tab, setTab]       = useState<Tab>("all");
+  const [search, setSearch]   = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore]   = useState(false);
+  const [favs, setFavs]     = useState<Set<string>>(
+    () => new Set(pages.filter((p) => p.isFavorited).map((p) => p.id))
+  );
+
+  function changeTab(next: Tab) {
+    setTab(next);
+    setVisibleCount(PAGE_SIZE);
+  }
+
+  function changeSearch(val: string) {
+    setSearch(val);
+    setVisibleCount(PAGE_SIZE);
+  }
+
+  function loadMore() {
+    setLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((c) => c + PAGE_SIZE);
+      setLoadingMore(false);
+    }, 600);
+  }
+
+  function toggleFavorite(pageId: string) {
+    const isFav = favs.has(pageId);
+    setFavs((prev) => {
+      const next = new Set(prev);
+      isFav ? next.delete(pageId) : next.add(pageId);
+      return next;
+    });
+    if (isFav) {
+      fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" }).catch(() => {
+        setFavs((prev) => { const n = new Set(prev); n.add(pageId); return n; });
+      });
+    } else {
+      fetch("/api/user/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, workspaceId }),
+      }).catch(() => {
+        setFavs((prev) => { const n = new Set(prev); n.delete(pageId); return n; });
+      });
+    }
+    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+  }
 
   const tabCount = (id: Tab) =>
     id === "all"       ? pages.length :
     id === "recents"   ? pages.filter((p) => p.isRecent).length :
-    id === "favorites" ? pages.filter((p) => p.isFavorited).length :
+    id === "favorites" ? pages.filter((p) => favs.has(p.id)).length :
                          pages.filter((p) => p.isPrivate).length;
 
   const filtered = pages
     .filter((p) => {
       if (tab === "recents")   return p.isRecent;
-      if (tab === "favorites") return p.isFavorited;
+      if (tab === "favorites") return favs.has(p.id);
       if (tab === "private")   return p.isPrivate;
       return true;
     })
@@ -89,7 +145,7 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setTab(t.id)}
+                onClick={() => changeTab(t.id)}
                 className={`relative flex items-center gap-1.5 border-b-2 px-3.5 py-3 text-xs font-medium whitespace-nowrap transition-colors duration-150 ${
                   tab === t.id
                     ? "border-primary text-foreground"
@@ -114,13 +170,13 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
               className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
               placeholder="Search pages…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => changeSearch(e.target.value)}
               type="text"
             />
             {search && (
               <button
                 type="button"
-                onClick={() => setSearch("")}
+                onClick={() => changeSearch("")}
                 className="text-muted-foreground/40 transition-colors duration-150 hover:text-muted-foreground"
               >
                 <X size={12} />
@@ -159,47 +215,93 @@ export function LibraryClient({ pages, workspaceSlug }: { pages: PageRow[]; work
 
               {/* Rows */}
               <div className="divide-y divide-border/40">
-                {filtered.map((page) => (
-                  <Link
+                {filtered.slice(0, visibleCount).map((page) => (
+                  <div
                     key={page.id}
-                    href={`/app/${workspaceSlug}/${page.shortId}`}
-                    className="group/row grid items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
+                    className="group/row relative grid items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
                     style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}
                   >
-                    {/* Page name */}
-                    <div className="flex min-w-0 items-center gap-2.5 pr-4">
+                    {/* Full-row navigation link underneath */}
+                    <Link
+                      href={`/app/${workspaceSlug}/${page.shortId}`}
+                      className="absolute inset-0"
+                      aria-label={page.title || "Untitled"}
+                    />
+
+                    {/* Page name cell */}
+                    <div className="relative z-10 flex min-w-0 items-center gap-2.5 pr-4">
                       <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background">
                         <PageIcon icon={page.icon} kind={page.kind} />
                       </span>
-                      <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                         {page.title || "Untitled"}
                       </span>
                       {page.isPrivate && (
                         <Lock size={11} className="shrink-0 text-muted-foreground/40" />
                       )}
-                      {page.isFavorited && (
-                        <Star size={11} className="shrink-0 text-warning" fill="currentColor" />
-                      )}
+
+                      {/* Favorite button with tooltip */}
+                      <div className="group/fav relative shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleFavorite(page.id)}
+                          className={`flex size-6 items-center justify-center rounded transition-all duration-150 ${
+                            favs.has(page.id)
+                              ? "text-warning"
+                              : "text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 hover:text-warning"
+                          }`}
+                        >
+                          <Star size={13} fill={favs.has(page.id) ? "currentColor" : "none"} />
+                        </button>
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/fav:opacity-100">
+                          <p className="text-xs font-semibold text-popover-foreground">
+                            {favs.has(page.id) ? "Remove from favorites" : "Add to favorites"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Created by */}
-                    <span className="text-xs text-muted-foreground/70 pr-4">{page.creatorName}</span>
+                    <span className="relative z-10 pr-4 text-xs text-muted-foreground/70">{page.creatorName}</span>
 
                     {/* Last edited */}
-                    <span className="text-xs text-muted-foreground/70 pr-4">{timeAgo(page.updatedAt)}</span>
+                    <span className="relative z-10 pr-4 text-xs text-muted-foreground/70">{timeAgo(page.updatedAt)}</span>
 
                     {/* Created */}
-                    <span className="text-xs text-muted-foreground/70">{timeAgo(page.createdAt)}</span>
-                  </Link>
+                    <span className="relative z-10 text-xs text-muted-foreground/70">{timeAgo(page.createdAt)}</span>
+                  </div>
                 ))}
               </div>
 
-              {/* Footer count */}
-              <div className="border-t border-border/40 px-5 py-2">
+              {/* Footer: count + load more */}
+              <div className="flex items-center justify-between border-t border-border/40 px-5 py-3">
                 <p className="text-xs text-muted-foreground/50">
-                  {filtered.length} page{filtered.length !== 1 ? "s" : ""}
+                  Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} page{filtered.length !== 1 ? "s" : ""}
                   {search && ` matching "${search}"`}
                 </p>
+
+                {filtered.length > visibleCount && (
+                  <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="flex items-center gap-2 rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60"
+                  >
+                    {loadingMore ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" />
+                        Loading…
+                      </>
+                    ) : (
+                      <>
+                        Load more
+                        <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
+                          +{Math.min(PAGE_SIZE, filtered.length - visibleCount)}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
             </div>

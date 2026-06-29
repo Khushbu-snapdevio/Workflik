@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
- DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+ DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDroppable,
  type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, ExternalLink, LayoutGrid, X, Trash2, FileText, PanelLeft } from "lucide-react";
+import { Plus, ExternalLink, LayoutGrid, X, Trash2, FileText, PanelLeft, GripVertical } from "lucide-react";
 import { OPTION_COLORS, getOptionColor } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import type { SharedViewProps, DbEntry, DbProperty, SelectOption } from "@/components/database/types";
@@ -47,6 +47,7 @@ export function BoardView({
  const [newOptColor, setNewOptColor]  = useState("blue");
  const [deleteTarget, setDeleteTarget] = useState<DbEntry | null>(null);
  const [deletingEntry, setDeletingEntry] = useState(false);
+ const [localEntryOrder, setLocalEntryOrder] = useState<Map<string, string[]>>(new Map());
  const addOptRef            = useRef<HTMLDivElement>(null);
  const addOptInputRef         = useRef<HTMLInputElement>(null);
 
@@ -95,6 +96,19 @@ export function BoardView({
   col.entries.push(entry);
  }
 
+ // Apply local ordering overrides for within-column reordering
+ const orderedColumns = columns.map((col) => {
+  const colKey = col.id ?? "no-group";
+  const localOrder = localEntryOrder.get(colKey);
+  if (!localOrder) return col;
+  const entryMap = new Map(col.entries.map((e) => [e.id, e]));
+  const sorted = localOrder.map((id) => entryMap.get(id)).filter(Boolean) as DbEntry[];
+  // include any entries not in localOrder at the end (safety net)
+  const sortedIds = new Set(localOrder);
+  const extras = col.entries.filter((e) => !sortedIds.has(e.id));
+  return { ...col, entries: [...sorted, ...extras] };
+ });
+
  const configuredCardPropIds = (activeView?.cardDisplayProps as string[] | undefined) ?? [];
  const cardProps = configuredCardPropIds.length > 0
   ? configuredCardPropIds.map((id) => properties.find((p) => p.id === id)).filter(Boolean) as typeof properties
@@ -102,13 +116,44 @@ export function BoardView({
  const draggingEntry = draggingId ? entries.find((e) => e.id === draggingId) : null;
 
  function onDragStart({ active }: DragStartEvent) { setDraggingId(String(active.id)); }
+
  function onDragEnd({ active, over }: DragEndEvent) {
   setDraggingId(null);
   if (!over || active.id === over.id) return;
-  const targetCol = columns.find((c) => (c.id ?? "no-group") === String(over.id))
-   ?? columns.find((c) => c.entries.some((e) => e.id === String(over.id)));
+
+  const activeId = String(active.id);
+  const overId = String(over.id);
+
+  // Find which column the active card belongs to
+  const activeCol = orderedColumns.find((c) => c.entries.some((e) => e.id === activeId));
+  if (!activeCol) return;
+  const activeColKey = activeCol.id ?? "no-group";
+
+  // Determine the target column: droppable id is "col-<key>", or match a card's column
+  const targetColByDroppable = orderedColumns.find((c) => "col-" + (c.id ?? "no-group") === overId);
+  const targetColByCard = orderedColumns.find((c) => c.entries.some((e) => e.id === overId));
+  const targetCol = targetColByDroppable ?? targetColByCard;
   if (!targetCol) return;
-  onUpdateValue(String(active.id), groupPropId!, targetCol.id === null ? { optionId: null } : { optionId: targetCol.id });
+  const targetColKey = targetCol.id ?? "no-group";
+
+  if (activeColKey === targetColKey) {
+   // Within-column reordering
+   const currentOrder = activeCol.entries.map((e) => e.id);
+   const oldIndex = currentOrder.indexOf(activeId);
+   const newIndex = targetColByCard ? currentOrder.indexOf(overId) : currentOrder.length - 1;
+   if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+   const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
+   setLocalEntryOrder((prev) => new Map(prev).set(activeColKey, newOrder));
+  } else {
+   // Cross-column move: call server update and clear local order for both columns
+   onUpdateValue(activeId, groupPropId!, targetCol.id === null ? { optionId: null } : { optionId: targetCol.id });
+   setLocalEntryOrder((prev) => {
+    const next = new Map(prev);
+    next.delete(activeColKey);
+    next.delete(targetColKey);
+    return next;
+   });
+  }
  }
 
  function handleAddOption() {
@@ -130,7 +175,7 @@ export function BoardView({
    <div className="grid items-start gap-3 px-6 py-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
 
     {/* ── Columns ── */}
-    {columns.map((col) => {
+    {orderedColumns.map((col) => {
      const color   = getOptionColor(col.color);
      const colKey  = col.id ?? "no-group";
      const isCollapsed = collapsed.has(colKey);
@@ -150,104 +195,106 @@ export function BoardView({
        items={col.entries.map((e) => e.id)}
        strategy={verticalListSortingStrategy}
       >
-       <div
-        className={`flex flex-col rounded-[var(--radius-lg)] border border-border/50 bg-muted/40 ${isCollapsed ? "w-12" : ""}`}
-        data-col-id={colKey}
-       >
-        {/* Column header */}
-        {isCollapsed ? (
-         /* Collapsed: vertical pill showing label + count */
-         <button
-          onClick={toggleCollapse}
-          title={`Expand ${col.label}`}
-          className="flex h-full flex-col items-center gap-2 py-3"
-         >
-          {col.id ? (
-           <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold" style={{ backgroundColor: color.bg, color: color.text }}>
-            {col.entries.length}
-           </span>
-          ) : (
-           <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-xs font-bold text-muted-foreground/60">
-            {col.entries.length}
-           </span>
-          )}
-          <span
-           className="text-xs font-semibold text-muted-foreground/60"
-           style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
+       <ColumnDropTarget colKey={colKey} isCollapsed={isCollapsed}>
+        <div
+         className={`flex flex-col rounded-[var(--radius-lg)] border border-border/50 bg-muted/40 ${isCollapsed ? "w-12" : ""}`}
+         data-col-id={colKey}
+        >
+         {/* Column header */}
+         {isCollapsed ? (
+          /* Collapsed: vertical pill showing label + count */
+          <button
+           onClick={toggleCollapse}
+           title={`Expand ${col.label}`}
+           className="flex h-full flex-col items-center gap-2 py-3"
           >
-           {col.label}
-          </span>
-         </button>
-        ) : (
-         <>
-          <div className="flex items-center justify-between px-3 py-2.5">
-           <div className="flex items-center gap-2">
            {col.id ? (
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold" style={{ backgroundColor: color.bg, color: color.text }}>
-             <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
-             {col.label}
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold" style={{ backgroundColor: color.bg, color: color.text }}>
+             {col.entries.length}
             </span>
            ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-sm font-semibold text-muted-foreground/70">
-             <span className="size-1.5 rounded-full bg-muted-foreground/30" />
-             {col.label}
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-xs font-bold text-muted-foreground/60">
+             {col.entries.length}
             </span>
            )}
-           <span className="ml-1.5 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
-            {col.entries.length}
+           <span
+            className="text-xs font-semibold text-muted-foreground/60"
+            style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
+           >
+            {col.label}
            </span>
-           </div>
-           <button
-            onClick={toggleCollapse}
-            title="Collapse column"
-            className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
-           >
-            <PanelLeft size={13} />
-           </button>
-          </div>
-
-
-          {/* Cards */}
-          <div className="flex flex-col gap-2 px-2 pb-1">
-           {col.entries.map((entry) => (
-            <SortableCard
-             key={entry.id}
-             entry={entry}
-             cardProps={cardProps}
-             valueMap={valueMap}
-             workspaceSlug={workspaceSlug}
-             isDragging={draggingId === entry.id}
-             isEditor={isEditor}
-             onDeleteEntry={onDeleteEntry}
-             onDeleteRequest={setDeleteTarget}
-             onOpenEntry={onOpenEntry}
-             entryOpenMode={activeView?.entryOpenMode ?? "side_panel"}
-            />
-           ))}
-
-           {col.entries.length === 0 && (
-            <div className="flex h-16 items-center justify-center rounded-[var(--radius-md)] border border-border/40 bg-muted/20">
-             <span className="text-xs text-muted-foreground/70">Drop cards here</span>
+          </button>
+         ) : (
+          <>
+           <div className="flex items-center justify-between px-3 py-2.5">
+            <div className="flex items-center gap-2">
+            {col.id ? (
+             <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold" style={{ backgroundColor: color.bg, color: color.text }}>
+              <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
+              {col.label}
+             </span>
+            ) : (
+             <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-sm font-semibold text-muted-foreground/70">
+              <span className="size-1.5 rounded-full bg-muted-foreground/30" />
+              {col.label}
+             </span>
+            )}
+            <span className="ml-1.5 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+             {col.entries.length}
+            </span>
             </div>
-           )}
-          </div>
+            <button
+             onClick={toggleCollapse}
+             title="Collapse column"
+             className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+            >
+             <PanelLeft size={13} />
+            </button>
+           </div>
 
-          {/* Add entry button */}
-          {isEditor && (
-           <button
-            onClick={() => {
-             const dv = col.id ? { [groupPropId!]: { optionId: col.id } } : {};
-             onCreateEntry(dv);
-            }}
-            className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-           >
-            <Plus size={13} />
-            Add entry
-           </button>
-          )}
-         </>
-        )}
-       </div>
+
+           {/* Cards */}
+           <div className="flex flex-col gap-2 px-2 pb-1">
+            {col.entries.map((entry) => (
+             <SortableCard
+              key={entry.id}
+              entry={entry}
+              cardProps={cardProps}
+              valueMap={valueMap}
+              workspaceSlug={workspaceSlug}
+              isDragging={draggingId === entry.id}
+              isEditor={isEditor}
+              onDeleteEntry={onDeleteEntry}
+              onDeleteRequest={setDeleteTarget}
+              onOpenEntry={onOpenEntry}
+              entryOpenMode={activeView?.entryOpenMode ?? "side_panel"}
+             />
+            ))}
+
+            {col.entries.length === 0 && (
+             <div className="flex h-16 items-center justify-center rounded-[var(--radius-md)] border border-border/40 bg-muted/20">
+              <span className="text-xs text-muted-foreground/70">Drop cards here</span>
+             </div>
+            )}
+           </div>
+
+           {/* Add entry button */}
+           {isEditor && (
+            <button
+             onClick={() => {
+              const dv = col.id ? { [groupPropId!]: { optionId: col.id } } : {};
+              onCreateEntry(dv);
+             }}
+             className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+            >
+             <Plus size={13} />
+             Add entry
+            </button>
+           )}
+          </>
+         )}
+        </div>
+       </ColumnDropTarget>
       </SortableContext>
      );
     })}
@@ -404,6 +451,18 @@ export function BoardView({
  );
 }
 
+// ── ColumnDropTarget ──────────────────────────────────────────────────────────
+// Uses a distinct id ("col-<key>") so it doesn't collide with SortableContext.id.
+
+function ColumnDropTarget({ colKey, isCollapsed, children }: { colKey: string; isCollapsed: boolean; children: React.ReactNode }) {
+ const { setNodeRef } = useDroppable({ id: "col-" + colKey });
+ return (
+  <div ref={setNodeRef} className={isCollapsed ? "w-12" : ""}>
+   {children}
+  </div>
+ );
+}
+
 // ── Card ──────────────────────────────────────────────────────────────────────
 
 interface CardProps {
@@ -422,9 +481,18 @@ interface CardProps {
 
 function SortableCard(props: CardProps) {
  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.entry.id });
- const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+ const style: React.CSSProperties = {
+  transform: CSS.Transform.toString(transform),
+  transition,
+  opacity: isDragging ? 0.4 : 1,
+  touchAction: "none",   // required for PointerSensor to fire reliably
+  userSelect: "none",
+  cursor: "grab",
+ };
  return (
-  <div ref={setNodeRef} style={style} {...attributes} {...listeners} data-no-dnd={props.entryOpenMode === "side_panel" ? "true" : undefined}>
+  // The whole card is the drag handle. Interactive children stop propagation
+  // on pointerDown so clicking buttons/links never accidentally starts a drag.
+  <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
    <CardShell {...props} />
   </div>
  );
@@ -439,7 +507,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
  return (
   <div
    className={[
-    "rounded-[var(--radius-md)] border bg-card transition-colors duration-150",
+    "group rounded-[var(--radius-md)] border bg-card transition-colors duration-150",
     dragging ? "border-primary/40 opacity-50" : "border-border/60",
    ].join(" ")}
    onMouseEnter={() => setHovered(true)}
@@ -456,16 +524,23 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
      <div className="p-3.5">
       {/* Title row */}
       <div className="flex items-start gap-2">
+       {/* Grip icon — visual indicator only; the whole card is the drag handle */}
+       <GripVertical
+        size={13}
+        className="mt-0.5 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-40 text-muted-foreground"
+       />
+
        {entry.icon ? (
         <span className="mt-0.5 shrink-0 text-base leading-none">{entry.icon}</span>
        ) : (
         <FileText size={12} className="mt-0.5 shrink-0 text-muted-foreground/60" />
        )}
        <button
+        style={{ cursor: "pointer" }}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => entryOpenMode === "side_panel" && onOpenEntry ? onOpenEntry(entry) : undefined}
         className={`min-w-0 flex-1 text-left text-sm font-semibold leading-snug text-foreground transition-colors duration-150 ${
-         entryOpenMode === "side_panel" && onOpenEntry ? "cursor-pointer hover:text-muted-foreground" : "cursor-default"
+         entryOpenMode === "side_panel" && onOpenEntry ? "hover:text-muted-foreground" : "cursor-default"
         }`}
        >
         {entry.title || <span className="font-normal text-muted-foreground/60">Untitled</span>}
@@ -479,6 +554,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
          onClick={(e) => e.stopPropagation()}
          onPointerDown={(e) => e.stopPropagation()}
          title="Open full page"
+         style={{ cursor: "pointer" }}
          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
         >
          <ExternalLink size={12} />
@@ -488,6 +564,7 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); setHovered(false); onDeleteRequest(entry); }}
           title="Delete entry"
+          style={{ cursor: "pointer" }}
           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
          >
           <Trash2 size={12} />

@@ -56,6 +56,7 @@ export function ConfirmDialog({
             onClick={(e) => {
               e.preventDefault();
               onConfirm();
+              if (!loading) onOpenChange(false);
             }}
           >
             {loading && confirmLoadingLabel ? confirmLoadingLabel : confirmLabel}

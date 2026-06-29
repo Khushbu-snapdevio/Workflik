@@ -24,6 +24,7 @@ import { NewPageButton } from "@/components/workspace/new-page-button";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PageIcon } from "@/components/pages/page-icon";
 
 const ROOT_VISIBLE_MAX = 4;
 
@@ -253,7 +254,7 @@ export function PageTree({
         className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
        >
         {node.icon ? (
-         <span className="shrink-0 text-sm leading-none">{node.icon}</span>
+         <PageIcon icon={node.icon} size={13} />
         ) : (
          <FileText size={13} className="shrink-0 text-muted-foreground/70" />
         )}
@@ -449,7 +450,7 @@ function PageTreeNode({
      {...listeners}
     >
      {node.icon ? (
-      <span className="shrink-0 text-sm leading-none">{node.icon}</span>
+      <PageIcon icon={node.icon} size={14} />
      ) : (
       <FileText size={14} className="shrink-0 text-sidebar-foreground/50" />
      )}

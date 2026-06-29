@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Search, X, ArrowLeft, ArrowRight, ChevronRight,
-  LayoutGrid, Zap, BarChart2, Megaphone, Code2, DollarSign,
+  LayoutGrid, Zap, BarChart2, Megaphone, Code2, DollarSign, Trash2, AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { PageIcon } from "@/components/pages/page-icon";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -120,6 +122,16 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
   function countForTab(key: string) {
     if (key === "all") return builtIn.length + workspace.length;
     return [...builtIn, ...workspace].filter(t => t.category === key).length;
+  }
+
+  async function deleteTemplate(tpl: Template) {
+    // Optimistic remove
+    setWorkspace(prev => prev.filter(t => t.id !== tpl.id));
+    const res = await fetch(`/api/workspaces/${workspaceId}/templates/${tpl.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      // rollback
+      setWorkspace(prev => [...prev, tpl]);
+    }
   }
 
   async function applyTemplate(tpl: Template) {
@@ -302,6 +314,7 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
             filteredBuiltIn={filteredBuiltIn}
             filteredWorkspace={filteredWorkspace}
             onSelect={setSelected}
+            onDeleteWorkspace={deleteTemplate}
           />
         )}
 
@@ -314,15 +327,16 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
 
 function GalleryView({
   searchRef, search, onSearch, loading,
-  filteredBuiltIn, filteredWorkspace, onSelect,
+  filteredBuiltIn, filteredWorkspace, onSelect, onDeleteWorkspace,
 }: {
-  searchRef:         React.RefObject<HTMLInputElement | null>;
-  search:            string;
-  onSearch:          (v: string) => void;
-  loading:           boolean;
-  filteredBuiltIn:   Template[];
-  filteredWorkspace: Template[];
-  onSelect:          (t: Template) => void;
+  searchRef:           React.RefObject<HTMLInputElement | null>;
+  search:              string;
+  onSearch:            (v: string) => void;
+  loading:             boolean;
+  filteredBuiltIn:     Template[];
+  filteredWorkspace:   Template[];
+  onSelect:            (t: Template) => void;
+  onDeleteWorkspace:   (t: Template) => void;
 }) {
   const empty = filteredBuiltIn.length === 0 && filteredWorkspace.length === 0;
 
@@ -368,7 +382,7 @@ function GalleryView({
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Workflik templates</p>
                   <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">{filteredBuiltIn.length}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredBuiltIn.map(tpl => (
                     <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} />
                   ))}
@@ -381,9 +395,9 @@ function GalleryView({
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Workspace templates</p>
                   <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">{filteredWorkspace.length}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredWorkspace.map(tpl => (
-                    <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} />
+                    <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} onDelete={() => onDeleteWorkspace(tpl)} />
                   ))}
                 </div>
               </section>
@@ -417,9 +431,9 @@ function DetailView({
 
         {/* Hero: icon + name + meta */}
         <div className="shrink-0 border-b border-border/50 bg-muted/20 px-5 py-6">
-          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-border bg-card text-3xl shadow-sm">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-sm">
             {selected.pageSnapshot.icon
-              ? <span className="leading-none">{selected.pageSnapshot.icon}</span>
+              ? <PageIcon icon={selected.pageSnapshot.icon} size={30} />
               : <CatIcon size={26} className="text-muted-foreground/60" />}
           </div>
           <h2 className="text-base font-bold leading-snug text-foreground">{selected.name}</h2>
@@ -488,8 +502,8 @@ function DetailView({
             {/* Cover strip with overlapping icon */}
             <div className="relative flex h-[80px] shrink-0 items-end bg-gradient-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
               {selected.pageSnapshot.icon ? (
-                <span className="translate-y-[22px] text-[40px] leading-none drop-shadow-sm">
-                  {selected.pageSnapshot.icon}
+                <span className="translate-y-[22px] drop-shadow-sm">
+                  <PageIcon icon={selected.pageSnapshot.icon} size={40} />
                 </span>
               ) : (
                 <CatIcon size={34} className="translate-y-[22px] text-muted-foreground/25" />
@@ -525,39 +539,116 @@ function DetailView({
 
 const MINI_WIDTHS = ["w-4/5", "w-3/5", "w-3/4", "w-1/2", "w-11/12", "w-2/3", "w-5/6"] as const;
 
-function TemplateCard({ template, onSelect }: { template: Template; onSelect: () => void }) {
+function TemplateCard({ template, onSelect, onDelete }: { template: Template; onSelect: () => void; onDelete?: () => void }) {
   const catDef  = CATEGORIES.find(c => c.key === template.category);
   const CatIcon = catDef?.Icon ?? LayoutGrid;
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting,   setDeleting]   = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    await onDelete?.();
+    setDeleting(false);
+    setDeleteOpen(false);
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30"
-    >
-      {/* Thumbnail with hover overlay */}
-      <div className="relative">
-        <TemplateCardThumbnail template={template} />
-        <div className="absolute inset-0 flex items-center justify-center bg-primary/5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-          <span className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-            Use template
-          </span>
+    <>
+      <div
+        className="group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 cursor-pointer"
+        onClick={onSelect}
+      >
+        {/* Thumbnail with hover overlay */}
+        <div className="relative">
+          <TemplateCardThumbnail template={template} />
+          <div className="absolute inset-0 flex items-center justify-center bg-primary/5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            <span className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
+              Use template
+            </span>
+          </div>
         </div>
-      </div>
-      {/* Info */}
-      <div className="px-3 py-2">
-        <div className="flex items-start justify-between gap-2">
-          <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
-          <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <CatIcon size={9} />
-          </span>
+
+        {/* Info */}
+        <div className="px-3 py-2">
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
+            <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+              <CatIcon size={9} />
+            </span>
+          </div>
+          {template.description && (
+            <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-muted-foreground">
+              {template.description}
+            </p>
+          )}
         </div>
-        {template.description && (
-          <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-muted-foreground">
-            {template.description}
-          </p>
+
+        {/* Delete button — only for workspace templates */}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); setDeleteOpen(true); }}
+            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            title="Delete template"
+          >
+            <Trash2 size={13} />
+          </button>
         )}
       </div>
-    </button>
+
+      {/* Delete confirmation modal */}
+      {deleteOpen && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setDeleteOpen(false)} />
+          <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6 shadow-xl">
+            {/* Close */}
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Icon + title */}
+            <div className="mb-4 flex items-start gap-3 pr-8">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
+                <AlertTriangle size={20} className="text-destructive" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">Delete template</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold text-foreground">"{template.name}"</span>?
+                  This cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleting}
+                className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete template"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 
@@ -571,12 +662,12 @@ function TemplateCardThumbnail({ template }: { template: Template }) {
   const CatIcon = catDef?.Icon ?? LayoutGrid;
 
   return (
-    <div className="relative h-28 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
+    <div className="relative h-40 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
       <div className="p-3">
         {/* Icon indicator row */}
         <div className="mb-2.5 flex items-center gap-1.5">
           {icon ? (
-            <span className="shrink-0 text-sm leading-none">{icon}</span>
+            <PageIcon icon={icon} size={14} />
           ) : (
             <div className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
               <CatIcon size={9} className="text-muted-foreground" />
@@ -1090,10 +1181,10 @@ function DatabasePreview({ schema }: { schema: SchemaForPreview }) {
 
 function GallerySkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="overflow-hidden rounded-[var(--radius-md)] border border-border">
-          <div className="h-28 animate-pulse bg-muted/60" />
+          <div className="h-40 animate-pulse bg-muted/60" />
           <div className="space-y-2 p-3">
             <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
             <div className="h-2.5 w-full animate-pulse rounded bg-muted/60" />

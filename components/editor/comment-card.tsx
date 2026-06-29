@@ -310,31 +310,55 @@ function EmojiPicker({
 
 function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNode; children: React.ReactNode; onClose?: () => void }) {
  const [open, setOpen] = useState(false);
- const ref = useRef<HTMLDivElement>(null);
+ const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
+ const triggerRef = useRef<HTMLDivElement>(null);
+ const menuRef = useRef<HTMLDivElement>(null);
 
  function close() { setOpen(false); onClose?.(); }
 
  useEffect(() => {
   if (!open) return;
   function handler(e: MouseEvent) {
-   if (ref.current && !ref.current.contains(e.target as Node)) close();
+   if (menuRef.current?.contains(e.target as Node)) return;
+   if (triggerRef.current?.contains(e.target as Node)) return;
+   close();
+  }
+  function preventScroll(e: WheelEvent) {
+   if (menuRef.current?.contains(e.target as Node)) return;
+   e.preventDefault();
   }
   document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
+  window.addEventListener("wheel", preventScroll, { passive: false });
+  return () => {
+   document.removeEventListener("mousedown", handler);
+   window.removeEventListener("wheel", preventScroll);
+  };
  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
+ function handleOpen() {
+  const r = triggerRef.current?.getBoundingClientRect();
+  if (!open && r) setMenuRect(r);
+  setOpen((v) => !v);
+ }
+
  return (
-  <div ref={ref} className="relative">
-   <div className="cursor-pointer" onClick={() => setOpen((v) => !v)}>{trigger}</div>
-   {open && (
-    <div data-comment-exempt className="absolute right-0 top-full mt-1 z-[500] w-[188px] rounded-[var(--radius-sm)] border border-border bg-card py-1">
+  <div className="relative">
+   <div ref={triggerRef} className="cursor-pointer" onClick={handleOpen}>{trigger}</div>
+   {open && menuRect && typeof document !== "undefined" && createPortal(
+    <div
+     ref={menuRef}
+     data-comment-exempt
+     style={{ position: "fixed", top: menuRect.bottom + 4, right: window.innerWidth - menuRect.right, zIndex: 9999 }}
+     className="w-[188px] rounded-[var(--radius-sm)] border border-border bg-card py-1"
+    >
      {/* Pass close fn via context-like prop-drilling trick: clone children with close */}
      {React.Children.map(children, (child) =>
       React.isValidElement(child) && child.type !== React.Fragment
        ? React.cloneElement(child as React.ReactElement<{ _close?: () => void }>, { _close: close })
        : child
      )}
-    </div>
+    </div>,
+    document.body
    )}
   </div>
  );

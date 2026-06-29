@@ -107,7 +107,7 @@ function InlineCardInput({
 
 function ColumnDropZone({ colKey, children }: { colKey: string; children: React.ReactNode }) {
  const { setNodeRef } = useDroppable({ id: "col-" + colKey });
- return <div ref={setNodeRef} className="flex flex-col gap-2">{children}</div>;
+ return <div ref={setNodeRef} className="flex flex-col gap-2 px-2 pt-2">{children}</div>;
 }
 
 // ── Sortable card ─────────────────────────────────────────────────────────────

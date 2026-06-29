@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
  X, Copy, Check, Globe, Lock,
@@ -95,32 +96,55 @@ function SelectField({
  className?: string;
 }) {
  const [open, setOpen] = useState(false);
- const ref = useRef<HTMLDivElement>(null);
+ const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
+ const btnRef = useRef<HTMLButtonElement>(null);
+ const menuRef = useRef<HTMLDivElement>(null);
  const label = options.find((o) => o.value === value)?.label ?? value;
 
  useEffect(() => {
   if (!open) return;
   function handler(e: MouseEvent) {
-   if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+   if (menuRef.current?.contains(e.target as Node)) return;
+   if (btnRef.current?.contains(e.target as Node)) return;
+   setOpen(false);
+  }
+  function preventScroll(e: WheelEvent) {
+   if (menuRef.current?.contains(e.target as Node)) return;
+   e.preventDefault();
   }
   document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
+  window.addEventListener("wheel", preventScroll, { passive: false });
+  return () => {
+   document.removeEventListener("mousedown", handler);
+   window.removeEventListener("wheel", preventScroll);
+  };
  }, [open]);
 
+ function handleOpen() {
+  const r = btnRef.current?.getBoundingClientRect();
+  if (!open && r) setMenuRect(r);
+  setOpen((o) => !o);
+ }
+
  return (
-  <div ref={ref} className={`relative shrink-0 ${className}`}>
+  <div className={`relative shrink-0 ${className}`}>
    <button
+    ref={btnRef}
     type="button"
     disabled={disabled}
-    onClick={() => setOpen((o) => !o)}
+    onClick={handleOpen}
     className="flex h-8 w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-2.5 text-xs text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
    >
     <span>{label}</span>
     <ChevronDown size={12} className={`shrink-0 text-muted-foreground/60 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
    </button>
 
-   {open && (
-    <div className="absolute left-0 top-full z-[200] mt-1 min-w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1">
+   {open && menuRect && typeof document !== "undefined" && createPortal(
+    <div
+     ref={menuRef}
+     style={{ position: "fixed", top: menuRect.bottom + 4, left: menuRect.left, minWidth: menuRect.width, zIndex: 9999 }}
+     className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
+    >
      {options.map((o) => (
       <button
        key={o.value}
@@ -137,7 +161,8 @@ function SelectField({
        {o.label}
       </button>
      ))}
-    </div>
+    </div>,
+    document.body
    )}
   </div>
  );

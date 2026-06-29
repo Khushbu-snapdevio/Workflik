@@ -90,6 +90,7 @@ export async function GET(_req: Request, { params }: Ctx) {
         deletedAt:    comments.deletedAt,
         authorId:     comments.authorId,
         authorName:   users.name,
+        authorEmail:  users.email,
         authorImage:  users.image,
       })
       .from(comments)
@@ -129,7 +130,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       editedAt:     r.editedAt,
       deletedAt:    r.deletedAt,
       author:       r.authorId
-        ? { id: r.authorId, name: r.authorName, image: r.authorImage }
+        ? { id: r.authorId, name: r.authorName, email: r.authorEmail, image: r.authorImage }
         : null,
       replies:      r.replies.map((rep) => ({
         id:         rep.id,
@@ -142,7 +143,7 @@ export async function GET(_req: Request, { params }: Ctx) {
         editedAt:   rep.editedAt,
         deletedAt:  rep.deletedAt,
         author:     rep.authorId
-          ? { id: rep.authorId, name: rep.authorName, image: rep.authorImage }
+          ? { id: rep.authorId, name: rep.authorName, email: rep.authorEmail, image: rep.authorImage }
           : null,
       })),
     }));

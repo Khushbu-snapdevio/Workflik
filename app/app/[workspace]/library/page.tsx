@@ -54,7 +54,7 @@ export default async function LibraryPage({ params }: Props) {
   const userRows = creatorIds.length > 0
     ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, creatorIds))
     : [];
-  const usersMap = Object.fromEntries(userRows.map((u) => [u.id, u.name ?? u.email]));
+  const usersMap = Object.fromEntries(userRows.map((u) => [u.id, u.name || u.email || "Unknown"]));
 
   const recentRows = await db
     .select({ pageId: userRecentlyVisited.pageId, visitedAt: userRecentlyVisited.visitedAt })
@@ -75,7 +75,7 @@ export default async function LibraryPage({ params }: Props) {
     ...p,
     createdAt:   p.createdAt.toISOString(),
     updatedAt:   p.updatedAt.toISOString(),
-    creatorName:  p.createdBy ? (usersMap[p.createdBy] ?? "Unknown") : "—",
+    creatorName:  p.createdBy ? (usersMap[p.createdBy] || "Unknown") : "—",
     visitedAt:   visitedAtMap[p.id] ?? null,
     isRecent:    recentPageIds.has(p.id),
     isFavorited: favPageIds.has(p.id),

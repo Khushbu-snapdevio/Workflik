@@ -258,6 +258,15 @@ body {
   * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 }
 
+/* ── Scrollbar utilities ─────────────────────────────────────────────────── */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Button hover effects ────────────────────────────────────────────────── */
 @layer components {
 

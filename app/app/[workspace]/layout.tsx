@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Sidebar } from "@/components/sidebar/sidebar";
 import { WorkspaceShell } from "@/components/layout/workspace-shell";
 import { SearchProvider } from "@/components/search/search-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { HintProvider } from "@/components/onboarding/hint-provider";
 import { TooltipTour } from "@/components/onboarding/tooltip-tour";
@@ -151,11 +152,28 @@ export default async function WorkspaceLayout({ children, params }: Props) {
               />
             }
           >
-            <main className="flex-1 overflow-y-auto">{children}</main>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
           </WorkspaceShell>
           <TooltipTour tourCompleted={freshUser?.tourCompleted ?? true} />
         </HintProvider>
       </NotificationProvider>
+      <Toaster
+        position="bottom-center"
+        closeButton={false}
+        toastOptions={{
+          style: {
+            background: "#FFFFFF",
+            color: "#0C2340",
+            border: "1px solid #DAEAF5",
+            boxShadow: "0 2px 8px rgba(12,35,64,0.08), 0 8px 24px rgba(12,35,64,0.10)",
+            fontSize: "13px",
+            fontWeight: 500,
+            borderRadius: "8px",
+            padding: "10px 16px",
+            gap: "8px",
+          },
+        }}
+      />
     </SearchProvider>
   );
 }

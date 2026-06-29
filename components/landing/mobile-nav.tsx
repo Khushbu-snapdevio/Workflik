@@ -41,13 +41,20 @@ export function MobileNav() {
                 {label}
               </a>
             ))}
-            <div className="mt-2 border-t border-border pt-3">
+            <div className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
+              <Link
+                href="/auth/login"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center justify-center rounded-[var(--radius-sm)] border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Sign in
+              </Link>
               <Link
                 href="/auth/login"
                 onClick={() => setOpen(false)}
                 className="flex w-full items-center justify-center rounded-[var(--radius-sm)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
               >
-                Get started free
+                Try for free
               </Link>
             </div>
           </nav>

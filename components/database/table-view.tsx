@@ -3,12 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
  Plus, ExternalLink as ArrowSquareOut, Trash2 as Trash, EyeOff as EyeSlash, Type as TextT, Hash, CircleDashed,
  Tag, Calendar as CalendarBlank, CheckSquare, Link as LinkIcon, Mail as Envelope, Phone,
- User, ArrowLeftRight as ArrowsLeftRight, ArrowUp as SortAscending, ArrowDown as SortDescending, MoreHorizontal as DotsThree,
- Check, FileText, Table2, GripVertical,
+ User, ArrowLeftRight as ArrowsLeftRight, ArrowUp as SortAscending, ArrowDown as SortDescending,
+ Check, FileText, Table2, GripVertical, MessageSquare as MessageSquareIcon, Link2 as Link2Icon,
+ Copy as CopyIcon,
 } from "lucide-react";
+import { CellCommentPopover } from "@/components/database/cell-comment-popover";
+import { CellActionOverlay } from "@/components/database/cell-action-overlay";
 import {
  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
  type DragEndEvent, type DragStartEvent,
@@ -35,7 +39,37 @@ const PROP_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
 const TEXT_TYPES = new Set(["text", "number", "url", "email", "phone"]);
 const POPUP_TYPES = new Set(["select", "multi_select", "date", "person", "relation"]);
 
-const DRAG_COL_W  = 24;
+// ── Property text helper (for clipboard copy) ────────────────────────────────
+function getPropertyText(prop: DbProperty, rawVal: unknown): string {
+ if (!rawVal) return "";
+ const v = rawVal as Record<string, unknown>;
+ switch (prop.type) {
+  case "text":   return String(v.text ?? "");
+  case "number": return v.number != null ? String(v.number) : "";
+  case "url":    return String(v.url ?? "");
+  case "email":  return String(v.email ?? "");
+  case "phone":  return String(v.phone ?? "");
+  case "checkbox": return (v as { checked?: boolean }).checked ? "Yes" : "No";
+  case "date": {
+   const d = (v as { date?: string | null }).date;
+   return d ? new Date(d).toLocaleDateString() : "";
+  }
+  case "select": {
+   const optId = (v as { optionId?: string | null }).optionId;
+   if (!optId) return "";
+   const opts = (prop.config?.options ?? []) as SelectOption[];
+   return opts.find((o) => o.id === optId)?.name ?? "";
+  }
+  case "multi_select": {
+   const ids = (v as { optionIds?: string[] }).optionIds ?? [];
+   const opts = (prop.config?.options ?? []) as SelectOption[];
+   return ids.map((id) => opts.find((o) => o.id === id)?.name ?? "").filter(Boolean).join(", ");
+  }
+  default: return "";
+ }
+}
+
+const DRAG_COL_W  = 44;
 const IDX_COL_W   = 48;
 const TITLE_COL_W  = 300;
 const DEFAULT_COL_W = 180;
@@ -57,6 +91,7 @@ interface SortableTableRowProps {
  rowIdx:      number;
  visible:     DbProperty[];
  activeCell:    ActiveCell | null;
+ editPop:     EditPop | null;
  editValue:    string;
  cellInputRef:   React.RefObject<HTMLInputElement | null>;
  selectedEntryIds: Set<string>;
@@ -64,6 +99,7 @@ interface SortableTableRowProps {
  deleteConfirm:  { entryId: string } | null;
  isEditor:     boolean;
  rowMenu:     RowMenuState | null;
+ workspaceId:   string;
  workspaceSlug:  string;
  addBtnW:     number;
  activeView:    SharedViewProps["activeView"];
@@ -82,13 +118,49 @@ interface SortableTableRowProps {
 }
 
 function SortableTableRow({
- entry, rowIdx, visible, activeCell, editValue, cellInputRef, selectedEntryIds,
- hoveredRowId, deleteConfirm, isEditor, rowMenu, workspaceSlug, addBtnW, activeView, colW,
+ entry, rowIdx, visible, activeCell, editPop, editValue, cellInputRef, selectedEntryIds,
+ hoveredRowId, deleteConfirm, isEditor, rowMenu, workspaceId, workspaceSlug, addBtnW, activeView, colW,
  onMouseEnter, onMouseLeave, onSelectEntry, onUpdateTitle, onOpenEntry,
  setActiveCell, setEditValue, setRowMenu, activateCell, commitText, getRaw,
 }: SortableTableRowProps) {
  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
   useSortable({ id: entry.id });
+ const [commentPopRect, setCommentPopRect] = useState<DOMRect | null>(null);
+ const [commentCount, setCommentCount] = useState<number | null>(null);
+ const countFetchedRef = useRef(false);
+ const [copiedPropId, setCopiedPropId] = useState<string | null>(null);
+
+ // Portal-based hover overlay state
+ const [hoveredCell, setHoveredCell] = useState<{
+  propId: string;
+  prop: DbProperty;
+  rawVal: unknown;
+  rect: DOMRect;
+ } | null>(null);
+ const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+ function clearLeaveTimer() {
+  if (leaveTimerRef.current) { clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
+ }
+ function scheduleLeave() {
+  clearLeaveTimer();
+  leaveTimerRef.current = setTimeout(() => setHoveredCell(null), 150);
+ }
+
+ function fetchCommentCount() {
+  if (countFetchedRef.current) return;
+  countFetchedRef.current = true;
+  fetch(`/api/pages/${entry.id}/comments`)
+   .then((r) => (r.ok ? r.json() : null))
+   .then((data) => {
+    if (data) {
+     const n = (data.comments as Array<{ blockId: string | null; deletedAt: string | null }>)
+      .filter((c) => !c.blockId && !c.deletedAt).length;
+     setCommentCount(n);
+    }
+   })
+   .catch(() => {});
+ }
 
  const style = {
   transform: CSS.Transform.toString(transform),
@@ -100,6 +172,7 @@ function SortableTableRow({
  const isRowHovered = hoveredRowId === entry.id && !deleteConfirm;
 
  return (
+  <>
   <div
    ref={setNodeRef}
    style={style}
@@ -111,17 +184,22 @@ function SortableTableRow({
    onMouseEnter={onMouseEnter}
    onMouseLeave={onMouseLeave}
   >
-   {/* Drag handle */}
+   {/* Drag handle + context menu (left column, Notion style) */}
    <div
-    className="flex shrink-0 items-center justify-center"
+    className="flex shrink-0 items-center justify-center gap-0"
     style={{ width: DRAG_COL_W, minWidth: DRAG_COL_W, height: ROW_H, touchAction: "none", userSelect: "none" }}
    >
     {isEditor && (
      <div
       {...listeners}
-      className="flex size-5 cursor-grab items-center justify-center rounded text-muted-foreground/0 hover:text-muted-foreground/40 transition-colors active:cursor-grabbing"
+      onClick={(e) => {
+       e.stopPropagation();
+       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+       setRowMenu(rowMenu?.entryId === entry.id ? null : { entryId: entry.id, shortId: entry.shortId, rect });
+      }}
+      className="flex size-6 cursor-grab items-center justify-center rounded text-muted-foreground/30 hover:bg-accent hover:text-muted-foreground/60 transition-colors active:cursor-grabbing"
       style={{ opacity: isRowHovered ? 1 : 0, transition: "opacity 150ms" }}
-      title="Drag to reorder"
+      title="Drag · Click for actions"
      >
       <GripVertical size={13} />
      </div>
@@ -147,10 +225,14 @@ function SortableTableRow({
        {rowIdx + 1}
       </span>
       {/* Checkbox — fades in on hover/select */}
-      <span className={`flex size-[15px] items-center justify-center rounded border transition-colors duration-150 ${
+      <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
        isSelected ? "border-primary bg-primary" : "border-border/50 bg-background"
       }`} style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}>
-       {isSelected && <Check size={10} className="text-white" />}
+       {isSelected && (
+        <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+         <polyline points="2 6 5 9 10 3"/>
+        </svg>
+       )}
       </span>
      </label>
     ) : (
@@ -203,29 +285,18 @@ function SortableTableRow({
      </span>
     )}
 
-    {/* Row actions: open full page + more */}
-    <div className="ml-auto flex shrink-0 items-center gap-0.5 transition-opacity duration-150"
+    {/* Row quick action: OPEN */}
+    <div className="ml-auto flex shrink-0 items-center transition-opacity duration-150"
      style={{ opacity: isRowHovered ? 1 : 0 }}>
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+      className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground/60 hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
       title="Open full page"
       onClick={(e) => e.stopPropagation()}
      >
-      <ArrowSquareOut size={12} />
+      <FileText size={9} />
+      OPEN
      </Link>
-     {isEditor && (
-      <button
-       onClick={(e) => {
-        e.stopPropagation();
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        setRowMenu(rowMenu?.entryId === entry.id ? null : { entryId: entry.id, shortId: entry.shortId, rect });
-       }}
-       className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
-      >
-       <DotsThree size={13} />
-      </button>
-     )}
     </div>
    </div>
 
@@ -237,13 +308,22 @@ function SortableTableRow({
      <div
       key={prop.id}
       className={[
-       "group relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
+       "relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
        isActive
         ? "bg-primary/5 border-l border-primary/30"
         : "hover:bg-muted/40",
       ].join(" ")}
       style={{ width: colW(prop.id), minWidth: colW(prop.id), height: ROW_H }}
-      onClick={(e) => activateCell(entry.id, prop.id, e)}
+      onClick={(e) => { setHoveredCell(null); activateCell(entry.id, prop.id, e); }}
+      onMouseEnter={(e) => {
+       clearLeaveTimer();
+       if (!isActive && !(editPop?.entryId === entry.id && editPop?.propId === prop.id) && !commentPopRect) {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setHoveredCell({ propId: prop.id, prop, rawVal, rect });
+        fetchCommentCount();
+       }
+      }}
+      onMouseLeave={scheduleLeave}
      >
       {isActive && TEXT_TYPES.has(prop.type) ? (
        <input
@@ -264,9 +344,7 @@ function SortableTableRow({
        <>
         <CellDisplay property={prop} value={rawVal} compact />
         {isEditor && TEXT_TYPES.has(prop.type) && (
-         <span className="pointer-events-none select-none text-sm text-muted-foreground/60 opacity-0 transition-opacity duration-100 group-hover:opacity-100">
-          Type…
-         </span>
+         <span className="pointer-events-none select-none text-sm text-muted-foreground/60">Type…</span>
         )}
        </>
       )}
@@ -276,6 +354,53 @@ function SortableTableRow({
 
    {isEditor && <div className="shrink-0" style={{ width: addBtnW, height: ROW_H }} />}
   </div>
+
+  {/* Portal overlay — rendered to document.body, completely outside table DOM */}
+  {hoveredCell && typeof document !== "undefined" && createPortal(
+   <CellActionOverlay
+    rect={hoveredCell.rect}
+    propType={hoveredCell.prop.type}
+    commentCount={commentCount}
+    copied={copiedPropId === hoveredCell.propId}
+    onClearLeaveTimer={clearLeaveTimer}
+    onScheduleLeave={scheduleLeave}
+    onCommentClick={(btnRect) => {
+     if (!commentPopRect) {
+      clearLeaveTimer();
+      setHoveredCell(null); // dismiss overlay when popover opens
+     }
+     setCommentPopRect(commentPopRect ? null : btnRect);
+    }}
+    onCopyClick={() => {
+     const txt = getPropertyText(hoveredCell.prop, hoveredCell.rawVal);
+     if (!txt) return;
+     const apply = () => { setCopiedPropId(hoveredCell.propId); setTimeout(() => setCopiedPropId(null), 1500); };
+     if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(txt).then(apply).catch(() => {
+       try {
+        const el = document.createElement("textarea");
+        el.value = txt; el.style.cssText = "position:fixed;opacity:0;top:0;left:0;";
+        document.body.appendChild(el); el.select();
+        document.execCommand("copy"); document.body.removeChild(el);
+        apply();
+       } catch {}
+      });
+     }
+    }}
+   />,
+   document.body,
+  )}
+
+  {commentPopRect && (
+   <CellCommentPopover
+    pageId={entry.id}
+    workspaceId={workspaceId}
+    anchorRect={commentPopRect}
+    onClose={() => { setCommentPopRect(null); countFetchedRef.current = false; }}
+    onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+   />
+  )}
+  </>
  );
 }
 
@@ -300,6 +425,8 @@ export function TableView({
  const [hoveredRowId, setHoveredRowId]   = useState<string | null>(null);
  const [colWidths, setColWidths]    = useState<Record<string, number>>({});
  const cellInputRef          = useRef<HTMLInputElement>(null);
+ const scrollHeaderRef        = useRef<HTMLDivElement>(null);
+ const scrollBodyRef          = useRef<HTMLDivElement>(null);
  // DnD state: when grouped, keyed by group id; when ungrouped, keyed by "__flat__"
  const [localEntryOrder, setLocalEntryOrder] = useState<Map<string, string[]>>(new Map());
  const [draggingId, setDraggingId]      = useState<string | null>(null);
@@ -433,11 +560,15 @@ export function TableView({
  }
 
  return (
-  <div className="h-full overflow-auto bg-background pb-20 isolate">
-   <div style={{ minWidth: totalW, paddingRight: 32 }}>
+  <div className="flex h-full flex-col bg-background isolate">
 
-    {/* ═══════════ HEADER ═══════════ */}
-    <div className="sticky top-0 z-20 flex items-stretch db-header-b bg-card border-b border-border/60">
+   {/* ═══════════ HEADER — fixed at top, clipped, synced horizontally ═══════════ */}
+   <div
+    ref={scrollHeaderRef}
+    className="shrink-0 overflow-hidden bg-card db-header-b"
+   >
+    <div style={{ minWidth: totalW, paddingRight: 32 }}>
+    <div className="flex items-stretch">
      {/* Drag handle header (empty) */}
      <div
       className="shrink-0 bg-muted/30"
@@ -468,7 +599,7 @@ export function TableView({
            : "border-border/60 bg-background hover:border-primary/50"
         }`}>
          {allSelected && (
-          <svg viewBox="0 0 12 12" className="size-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+          <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
            <polyline points="2 6 5 9 10 3"/>
           </svg>
          )}
@@ -556,6 +687,20 @@ export function TableView({
       </div>
      )}
     </div>
+    </div>
+   </div>
+
+   {/* ═══════════ SCROLLABLE BODY — fills remaining height, both axes ═══════════ */}
+   <div
+    ref={scrollBodyRef}
+    className="flex-1 overflow-auto pb-20"
+    onScroll={(e) => {
+     if (scrollHeaderRef.current) {
+      scrollHeaderRef.current.scrollLeft = (e.currentTarget as HTMLDivElement).scrollLeft;
+     }
+    }}
+   >
+   <div style={{ minWidth: totalW, paddingRight: 32 }}>
 
     {/* ═══════════ ROWS ═══════════ */}
     {(rowGroups ?? [{ id: null, label: "", color: null, entries }] as RowGroup[]).flatMap((group, gIdx) => {
@@ -600,6 +745,7 @@ export function TableView({
           rowIdx={rowIdx}
           visible={visible}
           activeCell={activeCell}
+          editPop={editPop}
           editValue={editValue}
           cellInputRef={cellInputRef}
           selectedEntryIds={selectedEntryIds}
@@ -607,6 +753,7 @@ export function TableView({
           deleteConfirm={deleteConfirm}
           isEditor={isEditor}
           rowMenu={rowMenu}
+          workspaceId={workspaceId}
           workspaceSlug={workspaceSlug}
           addBtnW={addBtnW}
           activeView={activeView}
@@ -676,6 +823,7 @@ export function TableView({
      </div>
     )}
 
+   </div>
    </div>
 
    {/* ═══════════ PORTALS ═══════════ */}
@@ -771,8 +919,27 @@ function RowContextMenu({ menu, workspaceSlug, onDeleteRequest, onClose }: RowCo
     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     onClick={onClose}
    >
-    <ArrowSquareOut size={13} /> Open full page
+    <ArrowSquareOut size={13} className="shrink-0 text-muted-foreground" /> Open full page
    </Link>
+   <Link
+    href={`/app/${workspaceSlug}/${menu.shortId}`}
+    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+    onClick={onClose}
+   >
+    <MessageSquareIcon size={13} className="shrink-0 text-muted-foreground" /> Comment
+   </Link>
+   <button
+    onClick={() => {
+     if (typeof window !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(`${window.location.origin}/app/${workspaceSlug}/${menu.shortId}`).catch(() => {});
+     }
+     toast.success("Link copied to clipboard", { duration: 2000 });
+     onClose();
+    }}
+    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+   >
+    <Link2Icon size={13} className="shrink-0 text-muted-foreground" /> Copy link
+   </button>
    <div className="my-1 h-px bg-border/60" />
    <button
     onClick={onDeleteRequest}
@@ -817,15 +984,15 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onClos
    >
     {sortable && (
      <>
-      <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
-      <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
+      <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
+      <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
       <div className="my-1 h-px bg-border/60" />
      </>
     )}
-    <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
-    <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
+    <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
+    <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
     <div className="my-1 h-px bg-border/60" />
-    <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"><Trash size={13} /> Delete column</button>
+    <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"><Trash size={13} /> Delete column</button>
    </div>
    <ConfirmDialog
     open={confirmDelete}

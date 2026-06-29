@@ -137,6 +137,18 @@ export function DatabasePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIds]);
 
+  // Lock parent <main> scroll when calendar view is active.
+  useEffect(() => {
+    const mainEl = document.querySelector<HTMLElement>("main");
+    if (!mainEl) return;
+    if (activeView?.type === "calendar") {
+      mainEl.style.setProperty("overflow", "hidden", "important");
+      return () => { mainEl.style.removeProperty("overflow"); };
+    } else {
+      mainEl.style.removeProperty("overflow");
+    }
+  }, [activeView?.type]);
+
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   const updateValue = useCallback(async (entryId: string, propId: string, value: unknown) => {
@@ -429,8 +441,8 @@ export function DatabasePage({
       )}
 
       {/* ── View content ── */}
-      <div className={`min-h-0 flex-1 ${activeView?.type === "calendar" ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden"}`}>
-        <div className={activeView?.type === "calendar" ? "h-full w-full" : "min-h-full w-full"}>
+      <div className={`min-h-0 flex-1 ${activeView?.type === "calendar" ? "overflow-hidden" : activeView?.type === "table" ? "" : "overflow-y-auto overflow-x-hidden"}`}>
+        <div className={activeView?.type === "calendar" || activeView?.type === "table" ? "h-full w-full" : "min-h-full w-full"}>
           {!activeView && (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-muted-foreground">No views configured.</p>

@@ -91,6 +91,16 @@ export function DatabaseToolbar({
  const filterCount = ((activeView?.filters as FilterRule[] | undefined) ?? []).length;
  const sortCount  = ((activeView?.sorts  as SortRule[]  | undefined) ?? []).length;
 
+ function closeAllLocalDropdowns() {
+  setAddViewRect(null);
+  setContextView(null);
+  setContextRect(null);
+  setPropsRect(null);
+  setCardsRect(null);
+  setGroupRect(null);
+  setDateRect(null);
+ }
+
  // Close portals on outside click
  useEffect(() => {
   function h(e: MouseEvent) {
@@ -249,6 +259,9 @@ export function DatabaseToolbar({
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => {
          if (addViewRect) { setAddViewRect(null); return; }
+         closeAllLocalDropdowns();
+         if (showFilterBar) onToggleFilterBar();
+         if (showSortBar) onToggleSortBar();
          setAddViewRect((e.currentTarget as HTMLElement).getBoundingClientRect());
         }}
         className={[
@@ -275,6 +288,9 @@ export function DatabaseToolbar({
        onMouseDown={(e) => e.stopPropagation()}
        onClick={(e) => {
         if (groupRect) { setGroupRect(null); return; }
+        closeAllLocalDropdowns();
+        if (showFilterBar) onToggleFilterBar();
+        if (showSortBar) onToggleSortBar();
         setGroupRect((e.currentTarget as HTMLElement).getBoundingClientRect());
        }}
        className={[
@@ -300,6 +316,9 @@ export function DatabaseToolbar({
        onMouseDown={(e) => e.stopPropagation()}
        onClick={(e) => {
         if (dateRect) { setDateRect(null); return; }
+        closeAllLocalDropdowns();
+        if (showFilterBar) onToggleFilterBar();
+        if (showSortBar) onToggleSortBar();
         setDateRect((e.currentTarget as HTMLElement).getBoundingClientRect());
        }}
        className={[
@@ -385,7 +404,7 @@ export function DatabaseToolbar({
 
     {/* ── Filter / Sort / Properties ── */}
     <button
-     onClick={onToggleFilterBar}
+     onClick={() => { closeAllLocalDropdowns(); onToggleFilterBar(); }}
      className={[
       "flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
       showFilterBar || filterCount > 0
@@ -403,7 +422,7 @@ export function DatabaseToolbar({
     </button>
 
     <button
-     onClick={onToggleSortBar}
+     onClick={() => { closeAllLocalDropdowns(); onToggleSortBar(); }}
      className={[
       "flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
       showSortBar || sortCount > 0
@@ -427,6 +446,9 @@ export function DatabaseToolbar({
        onMouseDown={(e) => e.stopPropagation()}
        onClick={(e) => {
         if (propsRect) { setPropsRect(null); return; }
+        closeAllLocalDropdowns();
+        if (showFilterBar) onToggleFilterBar();
+        if (showSortBar) onToggleSortBar();
         setPropsRect((e.currentTarget as HTMLElement).getBoundingClientRect());
        }}
        className={[
@@ -454,6 +476,9 @@ export function DatabaseToolbar({
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => {
        if (cardsRect) { setCardsRect(null); return; }
+       closeAllLocalDropdowns();
+       if (showFilterBar) onToggleFilterBar();
+       if (showSortBar) onToggleSortBar();
        setCardsRect((e.currentTarget as HTMLElement).getBoundingClientRect());
       }}
       className={[

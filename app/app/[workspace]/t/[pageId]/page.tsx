@@ -87,7 +87,7 @@ export default async function TemplateDatabasePage({ params }: Props) {
     .orderBy(asc(databaseViews.orderIndex));
 
   const entries = await db
-    .select({ id: pages.id, shortId: pages.shortId, title: pages.title, orderIndex: pages.orderIndex })
+    .select({ id: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, orderIndex: pages.orderIndex })
     .from(pages)
     .where(
       and(

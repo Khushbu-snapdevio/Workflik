@@ -35,7 +35,7 @@ const QUESTION_STEPS = [
    { value: "solo",   label: "Just me",     description: "Personal workspace" },
    { value: "small",  label: "Small team",  description: "2–10 people" },
    { value: "medium", label: "Growing team", description: "11–50 people" },
-   { value: "large",  label: "Large org",   description: "50+ people" },
+   { value: "large",  label: "Large organization", description: "50+ people" },
   ],
  },
 ];
@@ -322,7 +322,10 @@ export function OnboardingUI({ initialName }: Props) {
        {invites.map((inv, i) => (
         <div key={i} className={`flex items-center gap-0 ${i > 0 ? "border-t border-border" : ""}`}>
          <input
-          type="email"
+          type="text"
+          inputMode="email"
+          autoComplete="new-password"
+          name={`invite_member_${i}`}
           placeholder={`teammate${i + 1}@company.com`}
           value={inv.email}
           onChange={(e) => updateInviteEmail(i, e.target.value)}

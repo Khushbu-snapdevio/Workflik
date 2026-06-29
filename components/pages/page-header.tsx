@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { EmojiPicker } from "@/components/pages/emoji-picker";
+import { Smile } from "lucide-react";
+import { IconPicker } from "@/components/pages/icon-picker";
+import { PageIcon } from "@/components/pages/page-icon";
 
 interface PageHeaderProps {
   pageId:        string;
@@ -27,7 +29,7 @@ export function PageHeader({
   isEditor,
 }: PageHeaderProps) {
   const [icon, setIcon] = useState<string | null>(initialIcon);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const titleRef = useRef<HTMLDivElement>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,7 +37,6 @@ export function PageHeader({
 
   const editable = isEditor && !isLocked && !isDeleted;
 
-  // Set initial title once — React must never touch contentEditable after mount
   useEffect(() => {
     if (!didMount.current && titleRef.current) {
       titleRef.current.textContent = initialTitle || "";
@@ -61,6 +62,7 @@ export function PageHeader({
 
   const saveIcon = useCallback(async (newIcon: string | null) => {
     setIcon(newIcon);
+    setShowPicker(false);
     await fetch(`/api/pages/${pageId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -86,63 +88,70 @@ export function PageHeader({
   return (
     <div className="relative">
 
-      {/* ── Icon ── */}
-      {icon ? (
-        <button
-          type="button"
-          disabled={!editable}
-          onClick={() => editable && setShowEmojiPicker(true)}
-          className="mb-2 inline-flex size-[42px] items-center justify-center bg-transparent text-[1.875rem] leading-none disabled:cursor-default"
-          style={{ transition: "transform 150ms ease" }}
-          onMouseEnter={e => { if (editable) (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.12)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
-          onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.95)"; }}
-          onMouseUp={e => { if (editable) (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.12)"; }}
-          aria-label="Change icon"
-        >
-          {icon}
-        </button>
-      ) : (
-        editable && (
+      {/* ── Add icon button (only when no icon set) ── */}
+      {editable && !icon && (
+        <div className="relative mb-2">
           <button
             type="button"
-            onClick={() => setShowEmojiPicker(true)}
-            className="mb-2 flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground/60 opacity-0 transition-all group-hover/page:opacity-100 hover:text-muted-foreground/60"
+            onClick={() => setShowPicker(true)}
+            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground/60 opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-muted-foreground"
           >
-            <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-              <line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
-            </svg>
+            <Smile size={13} />
             Add icon
           </button>
-        )
+          {showPicker && (
+            <IconPicker
+              onSelect={(v) => saveIcon(v)}
+              onRemove={() => saveIcon(null)}
+              onClose={() => setShowPicker(false)}
+              pageId={pageId}
+            />
+          )}
+        </div>
       )}
 
-      {showEmojiPicker && (
-        <EmojiPicker
-          onSelect={(e) => { setShowEmojiPicker(false); saveIcon(e); }}
-          onRemove={icon ? () => { setShowEmojiPicker(false); saveIcon(null); } : undefined}
-          onClose={() => setShowEmojiPicker(false)}
-        />
-      )}
+      {/* ── Icon + Title inline (Notion style) ── */}
+      <div className="flex items-start gap-3">
+        {icon && (
+          <div className="relative mt-1 shrink-0">
+            <button
+              type="button"
+              disabled={!editable}
+              onClick={() => editable && setShowPicker((p) => !p)}
+              aria-label="Change icon"
+              className="flex size-14 items-center justify-center rounded-[var(--radius-md)] transition-all hover:bg-muted/50 disabled:cursor-default"
+            >
+              <PageIcon icon={icon} size={52} />
+            </button>
+            {showPicker && (
+              <IconPicker
+                onSelect={(v) => saveIcon(v)}
+                onRemove={() => saveIcon(null)}
+                onClose={() => setShowPicker(false)}
+                pageId={pageId}
+              />
+            )}
+          </div>
+        )}
 
-      {/* ── Title ── */}
-      <div
-        ref={titleRef}
-        contentEditable={editable}
-        suppressContentEditableWarning
-        onInput={onInput}
-        onKeyDown={onKeyDown}
-        onBlur={onBlur}
-        data-placeholder="Untitled"
-        className={[
-          "w-full break-words text-[2.4rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
-          "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
-          editable ? "cursor-text" : "cursor-default select-text",
-        ].join(" ")}
-      />
+        <div className="min-w-0 flex-1">
+          <div
+            ref={titleRef}
+            contentEditable={editable}
+            suppressContentEditableWarning
+            onInput={onInput}
+            onKeyDown={onKeyDown}
+            onBlur={onBlur}
+            data-placeholder="Untitled"
+            className={[
+              "w-full break-words text-[2.4rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
+              "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
+              editable ? "cursor-text" : "cursor-default select-text",
+            ].join(" ")}
+          />
+        </div>
+      </div>
 
-      {/* Saving indicator */}
       {saving && (
         <span className="absolute -top-6 right-0 text-xs text-muted-foreground/70 animate-pulse">
           Saving…

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageIcon, Smile } from "lucide-react";
-import { EmojiPicker } from "@/components/pages/emoji-picker";
+import { IconPicker } from "@/components/pages/icon-picker";
+import { PageIcon } from "@/components/pages/page-icon";
 import { PageEditor } from "@/components/editor/editor";
 import { useUpload } from "@/lib/storage/use-upload";
 import { EntryPropertiesPanel } from "@/components/database/entry-properties-panel";
@@ -47,11 +48,12 @@ export function PageClient({
  currentUserId = "",
  isAdmin = false,
 }: PageClientProps) {
- const [coverUrl, setCoverUrl]  = useState<string | null>(initialCoverUrl);
- const [coverPos]        = useState<number>(initialCoverPosition);
- const [icon, setIcon]      = useState<string | null>(initialIcon);
+ const [coverUrl, setCoverUrl]   = useState<string | null>(initialCoverUrl);
+ const [coverPos]         = useState<number>(initialCoverPosition);
+ const [icon, setIcon]       = useState<string | null>(initialIcon);
  const [showPicker, setShowPicker] = useState(false);
- const [saving, setSaving]    = useState(false);
+ const [saveState, setSaveState]  = useState<"idle" | "saving" | "saved">("idle");
+ const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
  const titleRef  = useRef<HTMLDivElement>(null);
  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -76,7 +78,8 @@ export function PageClient({
 
  const saveTitle = useCallback(async (raw: string) => {
   const title = raw.trim() || "Untitled";
-  setSaving(true);
+  setSaveState("saving");
+  if (savedTimer.current) clearTimeout(savedTimer.current);
   try {
    await fetch(`/api/pages/${pageId}`, {
     method: "PATCH",
@@ -84,8 +87,10 @@ export function PageClient({
     body: JSON.stringify({ title }),
    });
    document.title = `${title} | WORKFLIK`;
-  } finally {
-   setSaving(false);
+   setSaveState("saved");
+   savedTimer.current = setTimeout(() => setSaveState("idle"), 2000);
+  } catch {
+   setSaveState("idle");
   }
  }, [pageId]);
 
@@ -122,7 +127,7 @@ export function PageClient({
 
    {/* ── Cover ── */}
    {coverUrl && (
-    <div className="group/cover relative h-[280px] w-full shrink-0 overflow-hidden bg-muted">
+    <div className="group/cover relative h-[260px] w-full shrink-0 overflow-hidden bg-muted">
      <div
       className="absolute inset-0 bg-cover bg-center transition-[background-position] duration-300"
       style={{
@@ -136,14 +141,14 @@ export function PageClient({
         type="button"
         onClick={() => coverInput.current?.click()}
         disabled={coverUploading}
-        className="rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium transition-colors duration-150 hover:bg-accent disabled:opacity-50"
+        className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-colors duration-150 hover:bg-card disabled:opacity-50"
        >
         {coverUploading ? "Uploading…" : "Change cover"}
        </button>
        <button
         type="button"
         onClick={() => saveCover(null)}
-        className="rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium transition-colors duration-150 hover:bg-accent"
+        className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-colors duration-150 hover:bg-card"
        >
         Remove
        </button>
@@ -161,38 +166,34 @@ export function PageClient({
    />
 
    {/* ── Page content ── */}
-   {/*
-    paddingTop rules:
-     cover + icon → 0 (icon handles its own top via negative margin)
-     cover, no icon → 1rem (content starts just below cover — hover zone is correct)
-     no cover    → 3.5rem
-   */}
    <div
     className={`group/page mx-auto pb-32 ${contentCls}`}
-    style={{ paddingTop: coverUrl ? (icon ? 0 : "1rem") : "3.5rem" }}
+    style={{ paddingTop: coverUrl ? (icon ? 0 : "2rem") : "4rem" }}
    >
 
-    {/* Icon — overlap cover only when icon exists */}
+    {/* Icon — center of icon sits on cover bottom edge, exactly like Notion */}
     {icon && (
      <div
-      style={{ marginTop: coverUrl ? "-2.75rem" : 0 }}
-      className="relative z-10 mb-1"
+      style={{ marginTop: coverUrl ? "-2.5rem" : 0 }}
+      className={`relative mb-2 ${showPicker ? "z-[600]" : "z-10"}`}
      >
       <button
        type="button"
        disabled={!editable}
        onClick={() => editable && setShowPicker(true)}
        aria-label="Change icon"
-       style={{ fontSize: "3rem", width: "4rem", height: "4rem" }}
-       className="flex items-center justify-center rounded-[var(--radius-lg)] leading-none transition-colors duration-150 hover:bg-accent disabled:cursor-default"
+       className="inline-flex cursor-pointer rounded-[var(--radius-sm)] p-1 leading-none outline-none transition-colors duration-150 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] disabled:cursor-default"
       >
-       {icon}
+       <PageIcon icon={icon} size={72} />
       </button>
       {showPicker && (
-       <EmojiPicker
-        onSelect={(e) => { setShowPicker(false); saveIcon(e); }}
+       <IconPicker
+        onSelect={(v) => { setShowPicker(false); saveIcon(v); }}
+        onIconPreview={(v) => saveIcon(v)}
         onRemove={() => { setShowPicker(false); saveIcon(null); }}
         onClose={() => setShowPicker(false)}
+        pageId={pageId}
+        workspaceId={workspaceId}
        />
       )}
      </div>
@@ -200,13 +201,13 @@ export function PageClient({
 
     {/* Page toolbar — Add cover / Add icon */}
     {editable && (!coverUrl || !icon) && (
-     <div className="mb-5 flex items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover/page:opacity-100">
+     <div className={`flex items-center gap-1 transition-opacity duration-150 ${showPicker ? "opacity-100" : "opacity-0 group-hover/page:opacity-100"} ${icon ? "mb-3" : "mb-4"}`}>
       {!coverUrl && (
        <button
         type="button"
         onClick={() => coverInput.current?.click()}
         disabled={coverUploading}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
        >
         <ImageIcon size={13} />
         {coverUploading ? "Uploading…" : "Add cover"}
@@ -217,15 +218,18 @@ export function PageClient({
         <button
          type="button"
          onClick={() => setShowPicker(true)}
-         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
         >
          <Smile size={13} />
          Add icon
         </button>
         {showPicker && (
-         <EmojiPicker
-          onSelect={(e) => { setShowPicker(false); saveIcon(e); }}
+         <IconPicker
+          onSelect={(v) => { setShowPicker(false); saveIcon(v); }}
+          onIconPreview={(v) => saveIcon(v)}
           onClose={() => setShowPicker(false)}
+          pageId={pageId}
+          workspaceId={workspaceId}
          />
         )}
        </div>
@@ -235,8 +239,8 @@ export function PageClient({
 
     {statusBanner}
 
-    {/* Title */}
-    <div className="mt-1">
+    {/* Title + save indicator */}
+    <div className="relative mt-1">
      <div
       ref={titleRef}
       contentEditable={editable}
@@ -255,13 +259,15 @@ export function PageClient({
       }}
       data-placeholder="Untitled"
       className={[
-       "w-full break-words text-[2.6rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
-       "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
+       "w-full break-words text-[2.5rem] font-bold leading-[1.2] tracking-tight text-foreground outline-none",
+       "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/50",
        editable ? "cursor-text" : "cursor-default select-text",
       ].join(" ")}
      />
-     {saving && (
-      <p className="mt-1.5 text-xs text-muted-foreground/70 animate-pulse">Saving…</p>
+     {saveState !== "idle" && (
+      <span className={`absolute -top-5 right-0 text-[11px] transition-opacity duration-300 ${saveState === "saved" ? "text-muted-foreground/50" : "animate-pulse text-muted-foreground/40"}`}>
+       {saveState === "saving" ? "Saving…" : "Saved"}
+      </span>
      )}
     </div>
 

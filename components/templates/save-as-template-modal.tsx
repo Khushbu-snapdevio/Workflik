@@ -60,35 +60,43 @@ export function SaveAsTemplateModal({
  if (typeof document === "undefined") return null;
 
  return createPortal(
-  <div className="fixed inset-0 z-[400] flex items-center justify-center">
+  <div className="fixed inset-0 z-[10000] flex items-center justify-center">
    <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
 
    <div className="relative w-[calc(100vw-32px)] max-w-[440px] rounded-[var(--radius-lg)] border border-border bg-background p-6">
+    {/* Close button — absolute top-right */}
+    <button
+     type="button"
+     onClick={onClose}
+     className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+    >
+     <X size={16} />
+    </button>
+
     {/* Header */}
-    <div className="mb-5 flex items-center justify-between">
-     <div>
-      <h2 className="text-sm font-bold text-foreground">Save as Template</h2>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-       Saved templates are available to all workspace members
-      </p>
-     </div>
-     <button
-      type="button"
-      onClick={onClose}
-      className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground"
-     >
-      <X size={14} />
-     </button>
+    <div className="mb-5 pr-8">
+     <h2 className="text-sm font-bold text-foreground">Save as Template</h2>
+     <p className="mt-0.5 text-xs text-muted-foreground">
+      Saved templates are available to all workspace members
+     </p>
     </div>
 
     {saved ? (
-     <div className="flex flex-col items-center gap-3 py-6">
-      <div className="flex size-12 items-center justify-center rounded-full bg-success/10">
-       <CheckCircle2 size={24} className="text-success" />
+     <div className="flex flex-col items-center py-8 text-center">
+      {/* Animated success ring */}
+      <div className="relative mb-5 flex size-20 items-center justify-center">
+       <div className="absolute inset-0 animate-ping rounded-full bg-success/20" style={{ animationDuration: "1.2s", animationIterationCount: 1 }} />
+       <div className="flex size-20 items-center justify-center rounded-full bg-success/10 ring-8 ring-success/10">
+        <CheckCircle2 size={36} className="text-success" strokeWidth={1.8} />
+       </div>
       </div>
-      <p className="text-sm font-semibold text-foreground">Template saved!</p>
-      <p className="text-xs text-muted-foreground">
-       <span className="font-medium">{name}</span> is now available in the template gallery
+
+      <h3 className="mb-1.5 text-lg font-bold text-foreground">Template saved!</h3>
+      <p className="mb-1 text-sm text-muted-foreground">
+       <span className="font-semibold text-foreground">{name}</span> is now available
+      </p>
+      <p className="text-xs text-muted-foreground/70">
+       All workspace members can use this template
       </p>
      </div>
     ) : (

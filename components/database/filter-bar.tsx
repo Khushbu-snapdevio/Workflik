@@ -73,7 +73,11 @@ function MultiOptionPicker({ options, value, onChange }: {
          className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-foreground hover:bg-accent"
         >
          <div className={`flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border transition-colors duration-150 ${on ? "border-primary bg-primary" : "border-border"}`}>
-          {on && <Check size={9}className="text-white" />}
+          {on && (
+           <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="2 6 5 9 10 3"/>
+           </svg>
+          )}
          </div>
          <span className="truncate">{o.name}</span>
         </button>

@@ -27,7 +27,7 @@ function BlockTypeSelect({ value, onChange }: { value: string; onChange: (v: str
  useEffect(() => {
   if (!open) return;
   function handler(e: MouseEvent) {
-   if (!ref.current?.contains(e.target as Node)) setOpen(false);
+   if (!ref.current?.contains(e.target as globalThis.Node)) setOpen(false);
   }
   document.addEventListener("mousedown", handler);
   return () => document.removeEventListener("mousedown", handler);

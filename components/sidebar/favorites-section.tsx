@@ -21,6 +21,7 @@ import { ChevronDown, Star, FileText, MoreHorizontal, BookOpen } from "lucide-re
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { PageIcon } from "@/components/pages/page-icon";
 
 const VISIBLE_MAX = 3;
 
@@ -217,7 +218,7 @@ export function FavoritesSection({
                   className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
                   {page?.icon ? (
-                    <span className="shrink-0 text-sm leading-none">{page.icon}</span>
+                    <PageIcon icon={page.icon} size={13} />
                   ) : (
                     <FileText size={13} className="shrink-0 text-muted-foreground/70" />
                   )}
@@ -280,7 +281,7 @@ function FavoriteRow({
         {...listeners}
       >
         {icon ? (
-          <span className="shrink-0 text-sm leading-none">{icon}</span>
+          <PageIcon icon={icon} size={13} />
         ) : (
           <FileText size={12} className="shrink-0 text-muted-foreground/60" />
         )}

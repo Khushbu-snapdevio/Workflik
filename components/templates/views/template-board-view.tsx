@@ -213,7 +213,7 @@ function SortableCard(props: CardShellProps) {
   cursor:    "grab",
  };
  return (
-  <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+  <div ref={setNodeRef} style={style} {...attributes} {...listeners} suppressHydrationWarning>
    <CardShell {...props} />
   </div>
  );

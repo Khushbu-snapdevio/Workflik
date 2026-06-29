@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { BookOpen, ChevronRight, Clock, LayoutGrid, Plus, Star, Users } from "lucide-react";
 import Link from "next/link";
+
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
@@ -13,6 +14,7 @@ import {
 } from "@/lib/db/schema";
 import { WorkspaceGreeting } from "@/components/workspace/workspace-greeting";
 import { WorkspaceShareButton } from "@/components/workspace/workspace-share-button";
+import { HomeFavoritesSection } from "@/components/workspace/home-favorites-section";
 import { NewPageButton } from "@/components/workspace/new-page-button";
 import { SearchTrigger } from "@/components/search/search-trigger";
 import { PRODUCT_NAME } from "@/config/platform";
@@ -74,7 +76,7 @@ export default async function WorkspacePage({ params }: Props) {
     db.select({ memberCount: count() }).from(workspaceMembers).where(and(eq(workspaceMembers.workspaceId, ws.id), eq(workspaceMembers.status, "active"))),
     db.select({ pageCount: count() }).from(pages).where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false))),
     db
-      .select({ id: userFavorites.id, shortId: pages.shortId, title: pages.title, icon: pages.icon })
+      .select({ id: userFavorites.id, pageId: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon })
       .from(userFavorites)
       .innerJoin(pages, eq(pages.id, userFavorites.pageId))
       .where(and(eq(userFavorites.userId, session.user.id), eq(userFavorites.workspaceId, ws.id), eq(pages.isDeleted, false)))
@@ -215,30 +217,11 @@ export default async function WorkspacePage({ params }: Props) {
 
               {/* Favorites */}
               {favPages.length > 0 && (
-                <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Star size={14} className="text-warning shrink-0" fill="currentColor" />
-                    <h2 className="text-sm font-semibold text-foreground">Favorites</h2>
-                    <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{favPages.length}</span>
-                  </div>
-                  <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card divide-y divide-border/40">
-                    {favPages.map((page) => (
-                      <Link
-                        key={page.id}
-                        href={`/app/${slug}/${page.shortId}`}
-                        className="group/row flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-accent"
-                      >
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-sm leading-none">
-                          <PageIcon icon={page.icon} />
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                          {page.title || "Untitled"}
-                        </span>
-                        <ChevronRight size={12} className="shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover/row:opacity-100" />
-                      </Link>
-                    ))}
-                  </div>
-                </section>
+                <HomeFavoritesSection
+                  pages={favPages}
+                  workspaceSlug={slug}
+                  workspaceId={ws.id}
+                />
               )}
 
               {/* ── First-time onboarding (pageCount === 0) ── */}

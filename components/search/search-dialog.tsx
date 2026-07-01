@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
  Search as MagnifyingGlassIcon,
@@ -247,6 +248,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  const [results,   setResults]   = useState<SearchResult[]>([]);
  const [recent,   setRecent]   = useState<RecentPage[]>([]);
  const [loading,   setLoading]   = useState(false);
+ const [isPending,  setIsPending]  = useState(false); // debounce queued but not fired yet
  const [total,    setTotal]    = useState(0);
  const [activeIndex, setActiveIndex] = useState(0);
  const [titleOnly,  setTitleOnly]  = useState(false);
@@ -256,9 +258,11 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  const [filterType, setFilterType] = useState<FilterType>("all");
  const [filterDate, setFilterDate] = useState<FilterDate>("any");
 
- const inputRef  = useRef<HTMLInputElement>(null);
- const listRef   = useRef<HTMLDivElement>(null);
- const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+ const inputRef    = useRef<HTMLInputElement>(null);
+ const listRef     = useRef<HTMLDivElement>(null);
+ const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+ const backdropRef  = useRef<HTMLDivElement>(null);
+ const dialogRef   = useRef<HTMLDivElement>(null);
 
  async function runReindex() {
   setReindexing(true);
@@ -290,6 +294,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   if (!q.trim()) {
    setResults([]);
    setTotal(0);
+   setIsPending(false);
    return;
   }
   setLoading(true);
@@ -311,11 +316,21 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    setResults([]);
   } finally {
    setLoading(false);
+   setIsPending(false);
   }
  }, [workspaceId]);
 
  useEffect(() => {
   if (debounceRef.current) clearTimeout(debounceRef.current);
+  if (!query.trim()) {
+   setIsPending(false);
+   setResults([]);
+   setTotal(0);
+   return;
+  }
+  // Mark as pending immediately so we don't flash "No results" before the
+  // debounce fires or the API responds
+  setIsPending(true);
   debounceRef.current = setTimeout(() => {
    runSearch(query, filterType, filterDate, titleOnly);
   }, 200);
@@ -324,6 +339,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
 
  // Items list for keyboard nav
  const isQueryEmpty = !query.trim();
+ const isSearching = !isQueryEmpty && (isPending || loading);
  const items = isQueryEmpty
   ? recent.map((r) => ({ type: "recent" as const, item: r }))
   : results.map((r) => ({ type: "result" as const, item: r }));
@@ -336,8 +352,15 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    shortId = item.page.shortId;
   }
   if (shortId) {
+   // Pre-hide the fixed elements for any intermediate browser paint
+   if (backdropRef.current) backdropRef.current.style.display = "none";
+   if (dialogRef.current) dialogRef.current.style.display = "none";
+   // flushSync forces React to synchronously commit open=false and unmount
+   // the dialog BEFORE router.push() fires. Without this, router.push()
+   // triggers a layout re-render while open is still true, causing the dialog
+   // to briefly re-appear (the visible "blink").
+   flushSync(() => { onClose(); });
    router.push(`/app/${workspaceSlug}/${shortId}`);
-   onClose();
   }
  }
 
@@ -394,12 +417,13 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   <>
    {/* Backdrop */}
    <div
+    ref={backdropRef}
     className="fixed inset-0 z-[800] bg-black/40"
     onClick={onClose}
    />
 
    {/* Dialog */}
-   <div className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
+   <div ref={dialogRef} className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
 
     {/* Search input */}
     <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
@@ -411,10 +435,10 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       placeholder="Search pages, databases, and more…"
       className="flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/50"
      />
-     {loading && (
+     {(loading || isPending) && (
       <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
      )}
-     {query && !loading && (
+     {query && !loading && !isPending && (
       <button
        onClick={() => { setQuery(""); setResults([]); inputRef.current?.focus(); }}
        className="text-muted-foreground transition-colors hover:text-foreground"
@@ -486,8 +510,15 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       </div>
      )}
 
-     {/* Has query — show results */}
-     {!isQueryEmpty && !loading && results.length === 0 && (
+     {/* Has query, search in progress, no previous results to show — spinner */}
+     {isSearching && results.length === 0 && (
+      <div className="flex items-center justify-center py-12">
+       <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
+      </div>
+     )}
+
+     {/* Has query, search done, no results */}
+     {!isQueryEmpty && !isSearching && results.length === 0 && (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
        <MagnifyingGlassIcon size={28} className="text-muted-foreground/60" />
        <p className="text-sm font-medium text-foreground">No results for &ldquo;{query}&rdquo;</p>
@@ -511,6 +542,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       </div>
      )}
 
+     {/* Results — shown even while isSearching so old results stay visible during re-query */}
      {!isQueryEmpty && results.length > 0 && (
       <div className="py-1">
        {results.map((r, i) => (

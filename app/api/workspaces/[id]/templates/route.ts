@@ -1,4 +1,4 @@
-import { and, count, eq, isNull, sql } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, pages, templates } from "@/lib/db/schema";
@@ -124,8 +124,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             eq(templates.workspaceId, workspaceId),
             eq(templates.isBuiltIn, false)
           )
-        )
-        .for("update");
+        );
 
       if (Number(cnt) >= 5) {
         throw new ApiError(400, "Template limit reached. A workspace can have at most 5 custom templates.");

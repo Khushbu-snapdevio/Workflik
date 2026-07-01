@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Trash2, Smile } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TemplateEditor } from "./template-editor";
+import { IconPicker } from "@/components/pages/icon-picker";
+import { PageIcon } from "@/components/pages/page-icon";
 import type { DbBlock } from "@/components/editor/serializer";
 
 const CATEGORIES = [
@@ -61,9 +63,10 @@ export function TemplateForm({ template }: Props) {
   const [blocks, setBlocks]       = useState<DbBlock[]>(
     template ? snapshotToDbBlocks(template.pageSnapshot) : []
   );
-  const [saving, setSaving]       = useState(false);
-  const [error, setError]         = useState<string | null>(null);
+  const [saving, setSaving]             = useState(false);
+  const [error, setError]               = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [emojiOpen, setEmojiOpen]       = useState(false);
 
   async function handleSave() {
     if (!name.trim()) { setError("Name is required"); return; }
@@ -135,16 +138,44 @@ export function TemplateForm({ template }: Props) {
 
         <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-5">
 
-          {/* Icon + Name */}
+          {/* Icon picker */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Icon</label>
-            <input
-              type="text"
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              placeholder="📋"
-              className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-center text-xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
+            <div className="relative">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setEmojiOpen(v => !v)}
+                onKeyDown={(e) => e.key === "Enter" && setEmojiOpen(v => !v)}
+                className="flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 transition-colors hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {icon ? (
+                  <PageIcon icon={icon} size={20} />
+                ) : (
+                  <Smile size={16} className="shrink-0 text-muted-foreground/40" />
+                )}
+                <span className="flex-1 text-left text-xs text-muted-foreground/60">
+                  {icon ? "Click to change" : "Pick an emoji icon"}
+                </span>
+                {icon && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setIcon(""); }}
+                    className="shrink-0 text-[10px] text-muted-foreground/40 hover:text-muted-foreground"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {emojiOpen && (
+                <IconPicker
+                  onSelect={(v) => { setIcon(v); setEmojiOpen(false); }}
+                  onIconPreview={(v) => setIcon(v)}
+                  onRemove={icon ? () => { setIcon(""); setEmojiOpen(false); } : undefined}
+                  onClose={() => setEmojiOpen(false)}
+                />
+              )}
+            </div>
           </div>
 
           <div>

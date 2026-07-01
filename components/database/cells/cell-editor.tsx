@@ -27,9 +27,18 @@ export function CellEditorPopover(props: CellEditorProps) {
 function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClose, onPropertyConfigChange }: CellEditorProps) {
  const ref = useRef<HTMLDivElement>(null);
 
- // Position: prefer below cell, flip up if off-screen
- const top = Math.min(cellRect.bottom + 4, window.innerHeight - 320);
- const left = Math.min(cellRect.left, window.innerWidth - 260);
+ const winH = window.innerHeight;
+ const winW = window.innerWidth;
+ const MARGIN = 8;
+ const spaceBelow = winH - cellRect.bottom - MARGIN;
+ const spaceAbove = cellRect.top - MARGIN;
+ // Prefer below; flip above if significantly more space there
+ const openBelow = spaceBelow >= 180 || spaceBelow >= spaceAbove;
+ const maxH = Math.max(openBelow ? spaceBelow : spaceAbove, 160);
+ const top  = openBelow
+  ? cellRect.bottom + 4
+  : Math.max(MARGIN, cellRect.top - Math.min(maxH, spaceAbove) - 4);
+ const left = Math.min(Math.max(MARGIN, cellRect.left), winW - 260 - MARGIN);
 
  useEffect(() => {
   function handler(e: MouseEvent) {
@@ -55,6 +64,9 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
   maxWidth: 320,
  };
 
+ // Height available for the options list = total space minus search bar (~44px) and padding
+ const optionsMaxH = Math.max(maxH - 52, 80);
+
  return (
   <div ref={ref} style={baseStyle} className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background">
    {(property.type === "select" || property.type === "multi_select") && (
@@ -64,6 +76,7 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
      multi={property.type === "multi_select"}
      onSave={onSave}
      onClose={onClose}
+     optionsMaxH={optionsMaxH}
      onConfigChange={onPropertyConfigChange ? (cfg) => onPropertyConfigChange(property.id, cfg) : undefined}
     />
    )}
@@ -88,10 +101,11 @@ interface SelectEditorProps {
  multi: boolean;
  onSave: (value: unknown) => void;
  onClose: () => void;
+ optionsMaxH?: number;
  onConfigChange?: (config: DbPropertyConfig) => void;
 }
 
-function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange }: SelectEditorProps) {
+function SelectEditor({ property, value, multi, onSave, onClose, optionsMaxH, onConfigChange }: SelectEditorProps) {
  const currentId = multi ? null : ((value as { optionId?: string } | null)?.optionId ?? null);
  const currentIds = multi ? ((value as { optionIds?: string[] } | null)?.optionIds ?? []) : [];
  const [options, setOptions]  = useState<SelectOption[]>((property.config?.options ?? []) as SelectOption[]);
@@ -163,8 +177,8 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange 
     />
    </div>
 
-   {/* Options list */}
-   <div className="max-h-52 overflow-y-auto p-1">
+   {/* Options list — explicit max-height so scroll always activates */}
+   <div className="overflow-y-auto p-1" style={{ maxHeight: optionsMaxH ?? 208 }}>
     {filtered.map((opt) => {
      const color  = getOptionColor(opt.color);
      const selected = multi ? currentIds.includes(opt.id) : currentId === opt.id;

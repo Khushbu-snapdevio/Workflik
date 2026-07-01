@@ -53,7 +53,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
         <ChatTextIcon size={14} />
         Comments
         {unresolvedCount != null && unresolvedCount > 0 && (
-          <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground leading-none">
+          <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold tabular-nums text-primary-foreground">
             {unresolvedCount}
           </span>
         )}

@@ -28,6 +28,8 @@ import { ShareButton }     from "@/components/pages/share-button";
 import { FavoriteButton }    from "@/components/pages/favorite-button";
 import { PageActionsMenu }   from "@/components/pages/page-actions-menu";
 import { PageCommentButton }  from "@/components/pages/page-comment-button";
+import { IconPicker }       from "@/components/pages/icon-picker";
+import { PageIcon }        from "@/components/pages/page-icon";
 
 export type TemplateEntry = { id: string; shortId: string; title: string; orderIndex: number };
 export type TemplateValue = { id: string; entryId: string; propertyId: string; value: unknown };
@@ -145,50 +147,6 @@ const QUICK_EMOJIS = [
  "🏗️","🌱","⚡","🎨","✍️","🖊️","📐","🔎","⏰","🔗","🧲","🏁","🗺️","📮",
 ];
 
-function IconPicker({
- onSelect,
- onClose,
-}: {
- onSelect: (v: string) => void;
- onClose: () => void;
-}) {
- const [q, setQ] = useState("");
-
- const filtered = q.length > 0
-  ? QUICK_EMOJIS.filter((e) => e.includes(q))
-  : QUICK_EMOJIS;
-
- return (
-  <div className="absolute left-0 top-full z-[400] mt-1 w-[300px] rounded-[var(--radius-md)] border border-border bg-popover p-3">
-   <input
-    value={q}
-    onChange={(e) => setQ(e.target.value)}
-    placeholder="Filter emoji…"
-    autoFocus
-    className="mb-2.5 w-full rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-   />
-   <div className="grid max-h-[200px] grid-cols-10 gap-0.5 overflow-y-auto">
-    {filtered.map((e) => (
-     <button
-      key={e}
-      onClick={() => { onSelect(e); onClose(); }}
-      className="flex size-7 items-center justify-center rounded text-lg hover:bg-accent transition-colors"
-     >
-      {e}
-     </button>
-    ))}
-   </div>
-   <div className="mt-2.5 border-t border-border/40 pt-2.5">
-    <button
-     onClick={() => { onSelect(""); onClose(); }}
-     className="w-full rounded-[var(--radius-sm)] py-1 text-xs text-muted-foreground hover:bg-accent transition-colors"
-    >
-     Remove icon
-    </button>
-   </div>
-  </div>
- );
-}
 
 // ── Cover picker ───────────────────────────────────────────────────────────────
 
@@ -1031,6 +989,7 @@ export function TemplatePageClient({
  const pageTitleRef  = useRef<HTMLInputElement>(null);
  const addViewRef   = useRef<HTMLDivElement>(null);
  const viewMenuRef  = useRef<HTMLDivElement>(null);
+ const tableViewRef = useRef<HTMLDivElement>(null);
 
  const [hoveredViewId,  setHoveredViewId]  = useState<string | null>(null);
  const [viewMenuTarget, setViewMenuTarget]  = useState<DatabaseView | null>(null);
@@ -1059,6 +1018,8 @@ export function TemplatePageClient({
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [viewMenuTarget]);
+
+
 
  // ── Auto-wire calendar property ───────────────────────────────────────────
  // When switching to a calendar view that has no calendarPropertyId, find or
@@ -1138,6 +1099,23 @@ export function TemplatePageClient({
   return () => { cancelled = true; };
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [activeView?.id, activeView?.type]);
+
+ // ── Table view: pin the horizontal scrollbar to the viewport bottom ──────
+ useEffect(() => {
+  const el = tableViewRef.current;
+  if (!el) return;
+  if (activeView?.type !== "table") {
+   el.style.minHeight = "";
+   return;
+  }
+  const measure = () => {
+   const rect = el.getBoundingClientRect();
+   el.style.minHeight = `${Math.max(120, window.innerHeight - rect.top)}px`;
+  };
+  measure();
+  window.addEventListener("resize", measure);
+  return () => window.removeEventListener("resize", measure);
+ }, [activeView?.type, pageCoverUrl]);
 
  // ── Value map ──────────────────────────────────────────────────────────────
 
@@ -1435,7 +1413,7 @@ export function TemplatePageClient({
 
  return (
   <>
-  <div className="flex h-full flex-col overflow-hidden bg-background">
+  <div className={"flex h-full flex-col overflow-hidden bg-background"}>
 
    {/* Breadcrumbs + actions */}
    <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card/95 px-3 backdrop-blur-sm">
@@ -1541,26 +1519,9 @@ export function TemplatePageClient({
 
    {/* Page header */}
    <div className="relative mx-auto w-full max-w-[1100px] px-8 pb-2 pt-6">
-    {/* Emoji icon — only visible when set */}
-    {pageIcon && (
-     <div className="relative mb-2 inline-block">
-      <button
-       onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-       className="flex size-14 items-center justify-center rounded-[var(--radius-md)] text-5xl leading-none transition-all hover:bg-muted/50"
-      >
-       {pageIcon}
-      </button>
-      {showIconPicker && (
-       <IconPicker
-        onSelect={(v) => { savePageIcon(v); setShowIconPicker(false); }}
-        onClose={() => setShowIconPicker(false)}
-       />
-      )}
-     </div>
-    )}
 
-    {/* Action buttons — always visible, subtle until hovered */}
-    <div className="mb-3 flex items-center gap-1">
+    {/* Subtle action buttons row (Add icon / Add cover) */}
+    <div className="mb-2 flex items-center gap-1">
      {!pageIcon && (
       <div className="relative">
        <button
@@ -1573,17 +1534,11 @@ export function TemplatePageClient({
         <IconPicker
          onSelect={(v) => { savePageIcon(v); setShowIconPicker(false); }}
          onClose={() => setShowIconPicker(false)}
+         workspaceId={workspaceId}
+         pageId={page.id}
         />
        )}
       </div>
-     )}
-     {pageIcon && (
-      <button
-       onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-      >
-       <SmileyStickerIcon size={13} /> Change icon
-      </button>
      )}
      {!pageCoverUrl && (
       <div className="relative">
@@ -1606,55 +1561,80 @@ export function TemplatePageClient({
      )}
     </div>
 
-    {/* Title */}
-    {editingPageTitle ? (
-     <input
-      ref={pageTitleRef}
-      defaultValue={pageTitle}
-      autoFocus
-      onBlur={(e) => savePageTitle(e.target.value)}
-      onKeyDown={(e) => {
-       if (e.key === "Enter") savePageTitle((e.target as HTMLInputElement).value);
-       if (e.key === "Escape") setEditingPageTitle(false);
-      }}
-      className="w-full bg-transparent text-4xl font-bold tracking-tight text-foreground outline-none"
-     />
-    ) : (
-     <h1
-      onClick={() => setEditingPageTitle(true)}
-      className="-mx-1 cursor-text rounded px-1 text-4xl font-bold tracking-tight text-foreground hover:bg-muted/30 transition-colors"
-     >
-      {pageTitle || <span className="text-muted-foreground/60">Untitled</span>}
-     </h1>
-    )}
+    {/* Icon + Title on same row (Notion style) */}
+    <div className="flex items-start gap-3">
+     {pageIcon && (
+      <div className="relative mt-1 shrink-0">
+       <button
+        onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
+        className="flex size-12 items-center justify-center rounded-[var(--radius-md)] transition-all hover:bg-muted/50"
+       >
+        <PageIcon icon={pageIcon} size={48} />
+       </button>
+       {showIconPicker && (
+        <IconPicker
+         onSelect={(v) => { savePageIcon(v); setShowIconPicker(false); }}
+         onRemove={() => { savePageIcon(""); setShowIconPicker(false); }}
+         onClose={() => setShowIconPicker(false)}
+         workspaceId={workspaceId}
+         pageId={page.id}
+        />
+       )}
+      </div>
+     )}
 
-    {/* Description */}
-    {editingDescription ? (
-     <textarea
-      ref={descRef}
-      autoFocus
-      defaultValue={pageDescription}
-      rows={1}
-      onInput={(e) => {
-       const el = e.currentTarget;
-       el.style.height = "auto";
-       el.style.height = el.scrollHeight + "px";
-      }}
-      onBlur={(e) => saveDescription(e.target.value)}
-      onKeyDown={(e) => {
-       if (e.key === "Escape") saveDescription((e.target as HTMLTextAreaElement).value);
-      }}
-      placeholder="Add a description…"
-      className="mt-1.5 w-full resize-none overflow-hidden bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
-     />
-    ) : (
-     <p
-      onClick={() => setEditingDescription(true)}
-      className="-mx-1 mt-1.5 cursor-text rounded px-1 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
-     >
-      {pageDescription || <span className="text-muted-foreground/60">Add a description…</span>}
-     </p>
-    )}
+     <div className="min-w-0 flex-1">
+      {/* Title */}
+      {editingPageTitle ? (
+       <input
+        ref={pageTitleRef}
+        defaultValue={pageTitle}
+        autoFocus
+        onBlur={(e) => savePageTitle(e.target.value)}
+        onKeyDown={(e) => {
+         if (e.key === "Enter") savePageTitle((e.target as HTMLInputElement).value);
+         if (e.key === "Escape") setEditingPageTitle(false);
+        }}
+        className="w-full bg-transparent text-4xl font-bold tracking-tight text-foreground outline-none"
+       />
+      ) : (
+       <h1
+        onClick={() => setEditingPageTitle(true)}
+        className="-mx-1 cursor-text rounded px-1 text-4xl font-bold tracking-tight text-foreground hover:bg-muted/30 transition-colors"
+       >
+        {pageTitle || <span className="text-muted-foreground/60">Untitled</span>}
+       </h1>
+      )}
+
+      {/* Description */}
+      {editingDescription ? (
+       <textarea
+        ref={descRef}
+        autoFocus
+        defaultValue={pageDescription}
+        rows={1}
+        onInput={(e) => {
+         const el = e.currentTarget;
+         el.style.height = "auto";
+         el.style.height = el.scrollHeight + "px";
+        }}
+        onBlur={(e) => saveDescription(e.target.value)}
+        onKeyDown={(e) => {
+         if (e.key === "Escape") saveDescription((e.target as HTMLTextAreaElement).value);
+        }}
+        placeholder="Add a description…"
+        className="mt-1 w-full resize-none overflow-hidden bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+       />
+      ) : (
+       <p
+        onClick={() => setEditingDescription(true)}
+        className="-mx-1 mt-1 cursor-text rounded px-1 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
+       >
+        {pageDescription || <span className="text-muted-foreground/60">Add a description…</span>}
+       </p>
+      )}
+     </div>
+    </div>
    </div>
 
    {/* View tabs + toolbar — sticky so it stays visible as cover/header scroll away */}
@@ -1879,7 +1859,7 @@ export function TemplatePageClient({
    )}
 
    {/* View */}
-   <div className={`relative ${activeView?.type === "calendar" ? "h-[calc(100dvh-6rem)]" : ""}`}>
+   <div ref={tableViewRef} className={`relative ${activeView?.type === "table" ? "overflow-x-auto" : activeView?.type === "calendar" ? "h-[calc(100dvh-6rem)]" : ""}`}>
     {viewSwitching && (
      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
       <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />

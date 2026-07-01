@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { ChevronRight, FileText, Home } from "lucide-react";
+import { PageIcon } from "@/components/pages/page-icon";
 import { PageClient } from "@/components/pages/page-client";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PageCommentButton } from "@/components/pages/page-comment-button";
@@ -101,7 +102,7 @@ export default async function PageEditorPage({ params }: Props) {
         .where(eq(databaseViews.databaseId, page.id))
         .orderBy(asc(databaseViews.orderIndex)),
       db
-        .select({ id: pages.id, shortId: pages.shortId, title: pages.title, orderIndex: pages.orderIndex })
+        .select({ id: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, orderIndex: pages.orderIndex })
         .from(pages)
         .where(and(eq(pages.databaseId, page.id), eq(pages.kind, "entry"), eq(pages.isDeleted, false)))
         .orderBy(asc(pages.orderIndex)),
@@ -178,7 +179,7 @@ export default async function PageEditorPage({ params }: Props) {
                 className="flex max-w-[120px] items-center gap-1.5 truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
                 {crumb.icon
-                  ? <span className="shrink-0 text-sm leading-none">{crumb.icon}</span>
+                  ? <PageIcon icon={crumb.icon} size={12} />
                   : <FileText size={12} className="shrink-0" />
                 }
                 {crumb.title || "Untitled"}
@@ -190,7 +191,7 @@ export default async function PageEditorPage({ params }: Props) {
             <ChevronRight size={12} className="shrink-0 text-foreground/30" />
             <span className="flex max-w-[240px] items-center gap-1.5 truncate px-2 py-1 text-xs font-semibold text-foreground/80">
               {page.icon
-                ? <span className="shrink-0 text-sm leading-none">{page.icon}</span>
+                ? <PageIcon icon={page.icon} size={12} />
                 : <FileText size={12} className="shrink-0 text-muted-foreground" />
               }
               {page.title || "Untitled"}

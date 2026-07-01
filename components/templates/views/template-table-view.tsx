@@ -773,6 +773,7 @@ function SortableRow({
    ref={setNodeRef}
    style={style}
    {...attributes}
+   suppressHydrationWarning
    className={`group/row border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : !deleteTarget ? "hover:bg-muted/20" : ""}`}
   >
    {/* Drag handle */}
@@ -945,7 +946,7 @@ export function TemplateTableView({
 
  return (
   <>
-  <div className="relative h-full overflow-auto isolate">
+  <div className="relative isolate">
    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
    <table className="w-full border-collapse" style={{ tableLayout: "fixed" }}>
     <colgroup>

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { templates } from "@/lib/db/schema";
 import { TemplatePublishToggle } from "@/components/orbit/template-publish-toggle";
 import { SeedTemplatesButton } from "@/components/orbit/seed-templates-button";
+import { TemplateDeleteButton } from "@/components/orbit/template-delete-button";
 
 export const metadata = { title: "Templates – Orbit Admin" };
 
@@ -138,6 +139,7 @@ export default async function OrbitTemplatesPage() {
               Edit
              </Link>
              <TemplatePublishToggle templateId={tpl.id} currentStatus={tpl.status} />
+             <TemplateDeleteButton templateId={tpl.id} templateName={tpl.name} />
             </div>
            </td>
           </tr>

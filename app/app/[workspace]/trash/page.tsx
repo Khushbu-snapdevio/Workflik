@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
@@ -43,7 +43,7 @@ export default async function TrashPage({ params }: Props) {
   // Fetch names for who deleted each page
   const deleterIds = [...new Set(trashedPages.map((p) => p.deletedBy).filter(Boolean) as string[])];
   const userRows = deleterIds.length > 0
-    ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users)
+    ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, deleterIds))
     : [];
   const usersMap = Object.fromEntries(userRows.map((u) => [u.id, u.name ?? u.email]));
 

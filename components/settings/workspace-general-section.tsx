@@ -198,11 +198,17 @@ function ChevronSelect({ value, options, onChange }: { value: string; options: {
   function handleKey(e: KeyboardEvent) {
    if (e.key === "Escape") setOpen(false);
   }
+  function preventScroll(e: WheelEvent) {
+   if (menuRef.current?.contains(e.target as Node)) return;
+   e.preventDefault();
+  }
   document.addEventListener("mousedown", handleClick);
   document.addEventListener("keydown", handleKey);
+  window.addEventListener("wheel", preventScroll, { passive: false });
   return () => {
    document.removeEventListener("mousedown", handleClick);
    document.removeEventListener("keydown", handleKey);
+   window.removeEventListener("wheel", preventScroll);
   };
  }, [open]);
 

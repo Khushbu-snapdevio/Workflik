@@ -84,6 +84,7 @@ export function Sidebar({
  const [newMenu, setNewMenu] = useState(false);
  const [userMenu, setUserMenu] = useState(false);
  const [pagesExpanded, setPagesExpanded] = useState(true);
+ const [searchOpen, setSearchOpen] = useState(false);
  const newMenuRef = useRef<HTMLDivElement>(null);
  const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -114,6 +115,17 @@ export function Sidebar({
   }
   window.addEventListener("workflik:user-image-changed", h);
   return () => window.removeEventListener("workflik:user-image-changed", h);
+ }, []);
+
+ useEffect(() => {
+  const open = () => setSearchOpen(true);
+  const close = () => setSearchOpen(false);
+  document.addEventListener("workflik:open-search", open);
+  document.addEventListener("workflik:search-closed", close);
+  return () => {
+   document.removeEventListener("workflik:open-search", open);
+   document.removeEventListener("workflik:search-closed", close);
+  };
  }, []);
 
  const fetchFavorites = useCallback(() => {
@@ -219,9 +231,16 @@ export function Sidebar({
       onClick={toggleCollapse}
       title="Expand sidebar"
       type="button"
-      className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      className="group relative flex size-9 items-center justify-center rounded-[var(--radius-sm)] outline-none transition-colors duration-150 hover:bg-sidebar-accent"
      >
-      <PanelLeft size={16} />
+      <span className="absolute inset-0 flex items-center justify-center transition-opacity duration-200 group-hover:opacity-0">
+       <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary text-[11px] font-bold uppercase text-primary-foreground">
+        {workspaceSlug.charAt(0)}
+       </span>
+      </span>
+      <span className="absolute inset-0 flex items-center justify-center text-sidebar-foreground/70 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:text-sidebar-foreground">
+       <PanelLeft size={16} />
+      </span>
      </button>
     </div>
    ) : (
@@ -245,7 +264,7 @@ export function Sidebar({
        <Plus size={14} />
       </button>
       <button
-       className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+       className="relative z-50 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
        onClick={toggleCollapse}
        title="Collapse sidebar"
        type="button"
@@ -303,7 +322,7 @@ export function Sidebar({
    {collapsed && (
     <>
      <nav className="flex w-full flex-col items-center gap-1 px-2 py-3">
-      <CollapsedNavItem href={`/app/${workspaceSlug}`} label="Home" active={pathname === `/app/${workspaceSlug}`}>
+      <CollapsedNavItem href={`/app/${workspaceSlug}`} label="Home" active={pathname === `/app/${workspaceSlug}` && !searchOpen}>
        <Home size={18} />
       </CollapsedNavItem>
       <CollapsedSearchItem><Search size={18} /></CollapsedSearchItem>
@@ -357,7 +376,7 @@ export function Sidebar({
       href={`/app/${workspaceSlug}`}
       icon={<Home size={15} />}
       label="Home"
-      active={pathname === `/app/${workspaceSlug}`}
+      active={pathname === `/app/${workspaceSlug}` && !searchOpen}
      />
      <span data-tour="search"><SearchNavButton icon={<Search size={15} />} /></span>
      <span data-tour="notifications">

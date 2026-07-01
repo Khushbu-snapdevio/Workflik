@@ -3,6 +3,7 @@
 import { ChevronRight, FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 
 type FavPage = {
   id: string;
@@ -13,7 +14,7 @@ type FavPage = {
 };
 
 function PageIcon({ icon }: { icon: string | null }) {
-  if (icon) return <span className="text-sm leading-none">{icon}</span>;
+  if (icon) return <SharedPageIcon icon={icon} size={16} />;
   return <FileText size={14} className="text-muted-foreground/40" />;
 }
 

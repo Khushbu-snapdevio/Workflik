@@ -181,6 +181,10 @@ export function TooltipTour({ tourCompleted }: Props) {
     }
   }
 
+  function handleBack() {
+    if (step > 0) setStep((s) => s - 1);
+  }
+
   if (!mounted || !active) return null;
 
   const current      = TOUR_STEPS[step];
@@ -255,11 +259,23 @@ export function TooltipTour({ tourCompleted }: Props) {
           <span className="text-xs font-medium text-muted-foreground">
             {step + 1} of {TOUR_STEPS.length}
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors duration-150 hover:bg-accent"
+              >
+                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="size-3">
+                  <path d="M12 7H2M6 3L2 7l4 4" />
+                </svg>
+                Back
+              </button>
+            )}
             <button
               type="button"
               onClick={completeTour}
-              className="text-xs text-muted-foreground transition-colors duration-150 hover:text-muted-foreground"
+              className="text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground"
             >
               Skip
             </button>

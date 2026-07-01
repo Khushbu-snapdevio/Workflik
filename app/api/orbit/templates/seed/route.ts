@@ -55,7 +55,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Meeting Notes",
     description: "Capture every meeting, stay on top of every decision.",
     category: "productivity",
-    pageSnapshot: dbSnap("Meeting Notes", "📅", "Capture every meeting, stay on top of every decision.", {
+    pageSnapshot: dbSnap("Meeting Notes", '{"type":"icon","name":"MessageSquare","color":"#3b82f6"}', "Capture every meeting, stay on top of every decision.", {
       properties: [
         { name: "Meeting name", type: "title" },
         { name: "Date", type: "date" },
@@ -83,7 +83,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Tasks Tracker",
     description: "Stay organized with tasks, your way.",
     category: "productivity",
-    pageSnapshot: dbSnap("Tasks Tracker", "✅", "Stay organized with tasks, your way.", {
+    pageSnapshot: dbSnap("Tasks Tracker", '{"type":"icon","name":"Clipboard","color":"#22c55e"}', "Stay organized with tasks, your way.", {
       properties: [
         { name: "Task name", type: "title" },
         { name: "Status", type: "select", options: [
@@ -129,7 +129,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Goals Tracker",
     description: "Align your team's objectives. Track progress seamlessly.",
     category: "productivity",
-    pageSnapshot: dbSnap("Goals Tracker", "🎯", "Align your team's objectives. Track progress seamlessly.", {
+    pageSnapshot: dbSnap("Goals Tracker", '{"type":"icon","name":"Target","color":"#ef4444"}', "Align your team's objectives. Track progress seamlessly.", {
       properties: [
         { name: "Goal name", type: "title" },
         { name: "Owner",     type: "person" },
@@ -169,7 +169,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Brainstorm Session",
     description: "Capture ideas. Prioritize together.",
     category: "productivity",
-    pageSnapshot: dbSnap("Brainstorm Session", "💡", "Capture ideas. Prioritize together.", {
+    pageSnapshot: dbSnap("Brainstorm Session", '{"type":"icon","name":"Lightbulb","color":"#f59e0b"}', "Capture ideas. Prioritize together.", {
       properties: [
         { name: "Idea",        type: "title" },
         { name: "Created by",  type: "created_by" },
@@ -205,7 +205,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Projects",
     description: "Manage and execute projects from start to finish.",
     category: "project_mgmt",
-    pageSnapshot: dbSnap("Projects", "🔵", "Manage and execute projects from start to finish.", {
+    pageSnapshot: dbSnap("Projects", '{"type":"icon","name":"Briefcase","color":"#6366f1"}', "Manage and execute projects from start to finish.", {
       properties: [
         { name: "Project name", type: "title" },
         { name: "Status", type: "select", options: [
@@ -236,7 +236,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Issue Tracking",
     description: "Easily manage issues and feedback to ensure timely resolutions.",
     category: "project_mgmt",
-    pageSnapshot: dbSnap("Issue Tracking", "🔴", "Easily manage issues and feedback to ensure timely resolutions.", {
+    pageSnapshot: dbSnap("Issue Tracking", '{"type":"icon","name":"AlertCircle","color":"#ef4444"}', "Easily manage issues and feedback to ensure timely resolutions.", {
       properties: [
         { name: "Issue name", type: "title" },
         { name: "Status", type: "select", options: [
@@ -272,7 +272,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Feature Requests",
     description: "Track and assign new feature requests.",
     category: "project_mgmt",
-    pageSnapshot: dbSnap("Feature Requests", "🔴", "Track and assign new feature requests.", {
+    pageSnapshot: dbSnap("Feature Requests", '{"type":"icon","name":"Star","color":"#f97316"}', "Track and assign new feature requests.", {
       properties: [
         { name: "Request name", type: "title" },
         { name: "Status", type: "select", options: [
@@ -307,7 +307,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Creative Projects",
     description: "Efficiently organize and manage creative projects.",
     category: "project_mgmt",
-    pageSnapshot: dbSnap("Creative Projects", "🎨", "Efficiently organize and manage creative projects.", {
+    pageSnapshot: dbSnap("Creative Projects", '{"type":"icon","name":"Gem","color":"#ec4899"}', "Efficiently organize and manage creative projects.", {
       properties: [
         { name: "Project name", type: "title" },
         { name: "Status", type: "select", options: [
@@ -345,7 +345,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Campaign Management",
     description: "Plan and track your campaigns.",
     category: "marketing",
-    pageSnapshot: dbSnap("Campaign Management", "🚩", "Plan and track your campaigns.", {
+    pageSnapshot: dbSnap("Campaign Management", '{"type":"icon","name":"Send","color":"#8b5cf6"}', "Plan and track your campaigns.", {
       properties: [
         { name: "Campaign name", type: "title" },
         { name: "Status", type: "select", options: [
@@ -396,7 +396,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Content Calendar",
     description: "Plan and manage your content pipeline.",
     category: "marketing",
-    pageSnapshot: dbSnap("Content Calendar", "📅", "Plan and manage your content pipeline.", {
+    pageSnapshot: dbSnap("Content Calendar", '{"type":"icon","name":"Calendar","color":"#14b8a6"}', "Plan and manage your content pipeline.", {
       properties: [
         { name: "Content title", type: "title" },
         { name: "Status", type: "select", options: [
@@ -436,7 +436,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Social Media Planner",
     description: "Plan and manage your social media content.",
     category: "marketing",
-    pageSnapshot: dbSnap("Social Media Planner", "📅", "Plan and manage your social media content.", {
+    pageSnapshot: dbSnap("Social Media Planner", '{"type":"icon","name":"Share","color":"#3b82f6"}', "Plan and manage your social media content.", {
       properties: [
         { name: "Post title", type: "title" },
         { name: "Status", type: "select", options: [
@@ -469,7 +469,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Event Management",
     description: "Plan and manage your events.",
     category: "marketing",
-    pageSnapshot: dbSnap("Event Management", "🗓️", "Plan and manage your events.", {
+    pageSnapshot: dbSnap("Event Management", '{"type":"icon","name":"Compass","color":"#f97316"}', "Plan and manage your events.", {
       properties: [
         { name: "Event name",  type: "title" },
         { name: "Event date",  type: "date" },
@@ -510,7 +510,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Document Hub",
     description: "Create and collaborate on documents in one place.",
     category: "engineering",
-    pageSnapshot: dbSnap("Document Hub", "📄", "Create and collaborate on documents in one place.", {
+    pageSnapshot: dbSnap("Document Hub", '{"type":"icon","name":"BookOpen","color":"#22c55e"}', "Create and collaborate on documents in one place.", {
       properties: [
         { name: "Doc name",         type: "title"        },
         { name: "Category", type: "select", options: [
@@ -541,7 +541,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Engineering Docs",
     description: "Organize documents for transparent team communication.",
     category: "engineering",
-    pageSnapshot: dbSnap("Engineering Docs", "📄", "Organize documents for transparent team communication.", {
+    pageSnapshot: dbSnap("Engineering Docs", '{"type":"icon","name":"Code","color":"#6b7280"}', "Organize documents for transparent team communication.", {
       properties: [
         { name: "Doc name", type: "title" },
         { name: "Author",   type: "person" },
@@ -578,7 +578,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Pipeline Tracking",
     description: "Track your sales pipeline.",
     category: "sales",
-    pageSnapshot: dbSnap("Pipeline Tracking", "📊", "Track your sales pipeline.", {
+    pageSnapshot: dbSnap("Pipeline Tracking", '{"type":"icon","name":"TrendingUp","color":"#22c55e"}', "Track your sales pipeline.", {
       properties: [
         { name: "Deal name", type: "title" },
         { name: "Deal Stage", type: "select", options: [
@@ -615,7 +615,7 @@ export const BUILT_IN_TEMPLATES: {
     name: "Fundraising Tracker",
     description: "Keep all information about potential investors in one place.",
     category: "sales",
-    pageSnapshot: dbSnap("Fundraising Tracker", "🏦", "Keep all information about potential investors in one place.", {
+    pageSnapshot: dbSnap("Fundraising Tracker", '{"type":"icon","name":"BarChart2","color":"#f59e0b"}', "Keep all information about potential investors in one place.", {
       properties: [
         { name: "Investor name", type: "title" },
         { name: "Status", type: "select", options: [
@@ -681,4 +681,39 @@ export async function POST(req: Request) {
   await db.insert(templates).values(rows);
 
   return Response.json({ message: "Seeded", count: rows.length }, { status: 201 });
+}
+
+// PATCH /api/orbit/templates/seed — update icons for all existing built-in templates
+export async function PATCH(_req: Request) {
+  const session = await requirePlatformAdmin();
+  if (!session) return apiError(403, "Forbidden");
+
+  // Build a name → icon map from the current BUILT_IN_TEMPLATES
+  const iconMap: Record<string, string> = {};
+  for (const t of BUILT_IN_TEMPLATES) {
+    iconMap[t.name] = t.pageSnapshot.icon;
+  }
+
+  // Fetch all built-in templates from DB
+  const existing = await db
+    .select({ id: templates.id, name: templates.name, pageSnapshot: templates.pageSnapshot })
+    .from(templates)
+    .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
+
+  let updated = 0;
+  for (const row of existing) {
+    const newIcon = iconMap[row.name];
+    if (!newIcon) continue;
+
+    const snap = (row.pageSnapshot ?? {}) as Record<string, unknown>;
+    if (snap.icon === newIcon) continue; // already up to date
+
+    await db
+      .update(templates)
+      .set({ pageSnapshot: { ...snap, icon: newIcon } })
+      .where(eq(templates.id, row.id));
+    updated++;
+  }
+
+  return Response.json({ message: "Icons updated", updated });
 }

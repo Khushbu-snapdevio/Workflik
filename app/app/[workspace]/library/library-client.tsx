@@ -1,6 +1,7 @@
 "use client";
 
 import { BookOpen, Clock, FileText, Grid2X2, Loader2, Lock, Search, Star, X } from "lucide-react";
+import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -38,13 +39,13 @@ function TabIcon({ id }: { id: Tab }) {
 }
 
 function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
-  if (icon) return <span className="text-sm leading-none">{icon}</span>;
+  if (icon) return <SharedPageIcon icon={icon} size={14} />;
   if (kind === "database") return (
-    <svg className="size-3.5 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <svg className="size-3.5 shrink-0 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
       <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/>
     </svg>
   );
-  return <FileText size={14} className="text-muted-foreground/40" />;
+  return <FileText size={14} className="shrink-0 text-muted-foreground/40" />;
 }
 
 function timeAgo(iso: string) {
@@ -94,6 +95,10 @@ export function LibraryClient({
       setVisibleCount((c) => c + PAGE_SIZE);
       setLoadingMore(false);
     }, 600);
+  }
+
+  function showLess() {
+    setVisibleCount(PAGE_SIZE);
   }
 
   function toggleFavorite(pageId: string) {
@@ -273,35 +278,52 @@ export function LibraryClient({
                 ))}
               </div>
 
-              {/* Footer: count + load more */}
+              {/* Footer: count + load more / show less */}
               <div className="flex items-center justify-between border-t border-border/40 px-5 py-3">
                 <p className="text-xs text-muted-foreground/50">
                   Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} page{filtered.length !== 1 ? "s" : ""}
                   {search && ` matching "${search}"`}
                 </p>
 
-                {filtered.length > visibleCount && (
-                  <button
-                    type="button"
-                    onClick={loadMore}
-                    disabled={loadingMore}
-                    className="flex items-center gap-2 rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60"
-                  >
-                    {loadingMore ? (
-                      <>
-                        <Loader2 size={12} className="animate-spin" />
-                        Loading…
-                      </>
-                    ) : (
-                      <>
-                        Load more
-                        <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
-                          +{Math.min(PAGE_SIZE, filtered.length - visibleCount)}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {/* Show less — only when showing more than one page of results */}
+                  {visibleCount > PAGE_SIZE && (
+                    <button
+                      type="button"
+                      onClick={showLess}
+                      className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="18 15 12 9 6 15"/>
+                      </svg>
+                      Show less
+                    </button>
+                  )}
+
+                  {/* Load more — only when there are hidden rows */}
+                  {filtered.length > visibleCount && (
+                    <button
+                      type="button"
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="flex items-center gap-2 rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60"
+                    >
+                      {loadingMore ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" />
+                          Loading…
+                        </>
+                      ) : (
+                        <>
+                          Load more
+                          <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
+                            +{Math.min(PAGE_SIZE, filtered.length - visibleCount)}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
             </div>

@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq } from "drizzle-orm";
-import { BookOpen, ChevronRight, Clock, LayoutGrid, Plus, Star, Users } from "lucide-react";
+import { BookOpen, ChevronRight, Clock, FileText, LayoutGrid, Plus, Star, Users } from "lucide-react";
+import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import Link from "next/link";
 
 import { notFound } from "next/navigation";
@@ -43,15 +44,9 @@ function timeAgo(iso: string) {
 }
 
 function PageIcon({ icon, size = "sm" }: { icon: string | null; size?: "sm" | "lg" }) {
-  if (icon) return <span className={size === "lg" ? "text-xl leading-none" : "text-sm leading-none"}>{icon}</span>;
-  return (
-    <svg
-      className={size === "lg" ? "size-5 text-muted-foreground/50" : "size-3.5 text-muted-foreground/40"}
-      fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"
-    >
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-    </svg>
-  );
+  const px = size === "lg" ? 20 : 14;
+  if (icon) return <SharedPageIcon icon={icon} size={px} />;
+  return <FileText size={px} className="shrink-0 text-muted-foreground/40" />;
 }
 
 export default async function WorkspacePage({ params }: Props) {

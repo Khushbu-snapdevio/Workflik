@@ -17,7 +17,7 @@ export function SearchProvider({ workspaceSlug, workspaceId, children }: SearchP
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         // Only open — when dialog is already open, its own Ctrl+K handler clears the query
-        if (!open) setOpen(true);
+        setOpen((prev) => prev ? prev : true);
       }
     }
     function handleEvent() { setOpen(true); }

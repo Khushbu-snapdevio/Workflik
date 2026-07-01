@@ -24,10 +24,12 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
       type="button"
       onClick={toggle}
       className={`relative flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
-       panelOpen ? "bg-primary/[0.2] text-primary" : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+       panelOpen
+        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+        : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       }`}
      >
-      <Bell size={18} />
+      <Bell size={18} className={panelOpen ? "text-primary" : ""} />
       {badge && (
        <span className="absolute top-1 right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-white leading-none">
         {badge}
@@ -44,12 +46,12 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
      onClick={toggle}
      className={`group relative flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
       panelOpen
-       ? "bg-primary/[0.2] text-primary font-semibold"
+       ? "bg-sidebar-accent text-sidebar-accent-foreground"
        : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
      }`}
     >
-     <span className={`relative shrink-0 transition-colors duration-150 ${panelOpen ? "text-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`}>
-      <Bell size={15} />
+     <span className="relative shrink-0 transition-colors duration-150">
+      <Bell size={15} className={panelOpen ? "text-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"} />
       {badge && (
        <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-white leading-none">
         {badge}

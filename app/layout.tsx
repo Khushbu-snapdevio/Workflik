@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import type { ReactNode } from "react";
 import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from "@/config/platform";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,16 @@ export default function RootLayout({
       style={{ colorScheme: "light" }}
       lang="en"
     >
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <Script
+          id="patch-performance-measure"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var o=performance.measure.bind(performance);performance.measure=function(){try{return o.apply(this,arguments)}catch(e){}};})();`,
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

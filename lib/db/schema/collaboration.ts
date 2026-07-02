@@ -20,6 +20,7 @@ import { users } from "./auth";
 import { workspaces } from "./workspace";
 import { pages } from "./pages";
 import { blocks } from "./pages";
+import { databaseProperties } from "./databases";
 
 export const comments = pgTable("comments", {
   id:           uuid("id").primaryKey().defaultRandom(),
@@ -34,6 +35,13 @@ export const comments = pgTable("comments", {
   authorId:     uuid("author_id").references(() => users.id, { onDelete: "set null" }),
   content:      jsonb("content").notNull(),
   reactions:    jsonb("reactions").$type<Record<string, string[]>>().default({}).notNull(),
+  // Database-cell comments: which property the thread was opened from, plus a
+  // frozen snapshot of the property name/value at creation time (mirrors the
+  // quoted-text pattern of block comments — the label doesn't live-update if
+  // the cell value later changes).
+  propertyId:         uuid("property_id").references(() => databaseProperties.id, { onDelete: "set null" }),
+  propertyName:        text("property_name"),
+  propertyValueLabel:  text("property_value_label"),
   createdAt:    timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   editedAt:     timestamp("edited_at", { withTimezone: true }),
   deletedAt:    timestamp("deleted_at", { withTimezone: true }),
@@ -41,6 +49,7 @@ export const comments = pgTable("comments", {
   index("comments_page_idx").on(t.pageId),
   index("comments_block_idx").on(t.blockId),
   index("comments_parent_idx").on(t.parentId),
+  index("comments_property_idx").on(t.propertyId),
 ]);
 
 export const notifications = pgTable("notifications", {

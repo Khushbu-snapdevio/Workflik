@@ -8,6 +8,7 @@ import {
  UserPlus, Link2, ChevronDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -108,17 +109,12 @@ function SelectField({
    if (btnRef.current?.contains(e.target as Node)) return;
    setOpen(false);
   }
-  function preventScroll(e: WheelEvent) {
-   if (menuRef.current?.contains(e.target as Node)) return;
-   e.preventDefault();
-  }
   document.addEventListener("mousedown", handler);
-  window.addEventListener("wheel", preventScroll, { passive: false });
-  return () => {
-   document.removeEventListener("mousedown", handler);
-   window.removeEventListener("wheel", preventScroll);
-  };
+  return () => document.removeEventListener("mousedown", handler);
  }, [open]);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
 
  function handleOpen() {
   const r = btnRef.current?.getBoundingClientRect();

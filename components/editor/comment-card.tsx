@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { CommentComposer } from "@/components/editor/comment-composer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 // ---------- Types ----------
 
@@ -275,6 +276,8 @@ function EmojiPicker({
   return () => document.removeEventListener("mousedown", handler);
  }, [onClose]);
 
+ useScrollLockWhileOpen(true, (target) => !!ref.current?.contains(target));
+
  if (typeof document === "undefined") return null;
 
  // Position below the button, aligned to its right edge, clamped to viewport
@@ -323,17 +326,12 @@ function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNo
    if (triggerRef.current?.contains(e.target as Node)) return;
    close();
   }
-  function preventScroll(e: WheelEvent) {
-   if (menuRef.current?.contains(e.target as Node)) return;
-   e.preventDefault();
-  }
   document.addEventListener("mousedown", handler);
-  window.addEventListener("wheel", preventScroll, { passive: false });
-  return () => {
-   document.removeEventListener("mousedown", handler);
-   window.removeEventListener("wheel", preventScroll);
-  };
+  return () => document.removeEventListener("mousedown", handler);
  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!menuRef.current?.contains(target) || !!triggerRef.current?.contains(target));
 
  function handleOpen() {
   const r = triggerRef.current?.getBoundingClientRect();

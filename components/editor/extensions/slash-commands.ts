@@ -1,14 +1,18 @@
-import { Extension } from "@tiptap/react";
-import Suggestion from "@tiptap/suggestion";
-import type { SuggestionProps } from "@tiptap/suggestion";
 import { PluginKey } from "@tiptap/pm/state";
-import { BLOCK_REGISTRY, searchBlocks, type BlockDefinition } from "../block-registry";
+import { Extension } from "@tiptap/react";
+import type { SuggestionProps } from "@tiptap/suggestion";
+import Suggestion from "@tiptap/suggestion";
+import {
+  BLOCK_REGISTRY,
+  type BlockDefinition,
+  searchBlocks,
+} from "../block-registry";
 
 export type SlashSuggestionProps = SuggestionProps<BlockDefinition>;
 
 export interface SlashCommandsOptions {
-  onUpdate:  (props: SlashSuggestionProps | null) => void;
   onKeyDown: (event: KeyboardEvent) => boolean;
+  onUpdate: (props: SlashSuggestionProps | null) => void;
 }
 
 export const SlashCommands = Extension.create<SlashCommandsOptions>({
@@ -16,7 +20,7 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
 
   addOptions() {
     return {
-      onUpdate:  () => {},
+      onUpdate: () => {},
       onKeyDown: () => false,
     };
   },
@@ -30,9 +34,9 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
       Suggestion<BlockDefinition>({
         pluginKey: new PluginKey("slashCommands"),
         editor: this.editor,
-        char:          "/",
-        startOfLine:   false,
-        allowSpaces:   false,
+        char: "/",
+        startOfLine: false,
+        allowSpaces: false,
 
         // Returns block items filtered by the user's query
         items: ({ query }) =>
@@ -42,34 +46,88 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
         // `range` is plugin-maintained and always points at "/" … cursor.
         command: ({ editor, range, props: def }) => {
           const native: Partial<Record<string, () => boolean>> = {
-            paragraph: () => editor.chain().deleteRange(range).setParagraph().run(),
-            h1:        () => editor.chain().deleteRange(range).setHeading({ level: 1 }).run(),
-            h2:        () => editor.chain().deleteRange(range).setHeading({ level: 2 }).run(),
-            h3:        () => editor.chain().deleteRange(range).setHeading({ level: 3 }).run(),
-            bullet:    () => editor.chain().deleteRange(range).toggleBulletList().run(),
-            numbered:  () => editor.chain().deleteRange(range).toggleOrderedList().run(),
-            todo:      () => editor.chain().deleteRange(range).toggleTaskList().run(),
-            quote:     () => editor.chain().deleteRange(range).setBlockquote().run(),
-            code:      () => editor.chain().deleteRange(range).setCodeBlock().run(),
-            table:     () => editor.chain().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+            paragraph: () =>
+              editor.chain().deleteRange(range).setParagraph().run(),
+            h1: () =>
+              editor.chain().deleteRange(range).setHeading({ level: 1 }).run(),
+            h2: () =>
+              editor.chain().deleteRange(range).setHeading({ level: 2 }).run(),
+            h3: () =>
+              editor.chain().deleteRange(range).setHeading({ level: 3 }).run(),
+            bullet: () =>
+              editor.chain().deleteRange(range).toggleBulletList().run(),
+            numbered: () =>
+              editor.chain().deleteRange(range).toggleOrderedList().run(),
+            todo: () =>
+              editor.chain().deleteRange(range).toggleTaskList().run(),
+            quote: () =>
+              editor.chain().deleteRange(range).setBlockquote().run(),
+            code: () => editor.chain().deleteRange(range).setCodeBlock().run(),
+            table: () =>
+              editor
+                .chain()
+                .deleteRange(range)
+                .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                .run(),
           };
 
-          if (native[def.type]) { native[def.type]!(); return; }
+          if (native[def.type]) {
+            native[def.type]!();
+            return;
+          }
 
           const custom: Partial<Record<string, object>> = {
-            divider:         { type: "horizontalRule" },
-            callout:         { type: "callout",       attrs: { icon: "💡", color: "" }, content: [{ type: "paragraph" }] },
-            toggle:          { type: "toggle", attrs: { open: true }, content: [{ type: "toggleSummary", content: [] }, { type: "paragraph" }] },
-            image:           { type: "imageBlock",     attrs: { src: "", caption: "", width: 720 } },
-            video:           { type: "videoBlock",     attrs: { src: "", caption: "" } },
-            audio:           { type: "audioBlock",     attrs: { src: "", caption: "" } },
-            file:            { type: "fileBlock",      attrs: { src: "", caption: "" } },
-            toc:             { type: "tableOfContents" },
-            equation:        { type: "mathBlock",      attrs: { expression: "" } },
-            columns:         { type: "columns",        attrs: { columnCount: 2 }, content: [{ type: "paragraph" }, { type: "paragraph" }] },
-            linked_page:     { type: "linkedPage",     attrs: { pageId: "" } },
-            database:        { type: "inlineDatabase", attrs: { databaseId: "", defaultViewId: "" } },
-            template_button: { type: "templateButton", attrs: { label: "New Entry", insertLocation: "below_button", templateBlocks: [{ type: "paragraph", text: "" }] } },
+            divider: { type: "horizontalRule" },
+            callout: {
+              type: "callout",
+              attrs: { icon: "💡", color: "" },
+              content: [{ type: "paragraph" }],
+            },
+            toggle: {
+              type: "toggle",
+              attrs: { open: true },
+              content: [
+                { type: "toggleSummary", content: [] },
+                { type: "paragraph" },
+              ],
+            },
+            image: {
+              type: "imageBlock",
+              attrs: { src: "", caption: "", width: 720 },
+            },
+            video: { type: "videoBlock", attrs: { src: "", caption: "" } },
+            audio: { type: "audioBlock", attrs: { src: "", caption: "" } },
+            file: { type: "fileBlock", attrs: { src: "", caption: "" } },
+            pdf: { type: "pdfBlock", attrs: { src: "", caption: "" } },
+            toc: { type: "tableOfContents" },
+            equation: { type: "mathBlock", attrs: { expression: "" } },
+            columns: {
+              type: "columns",
+              attrs: { columnCount: 2 },
+              content: [{ type: "paragraph" }, { type: "paragraph" }],
+            },
+            breadcrumb: { type: "breadcrumbBlock" },
+            synced_block: {
+              type: "syncedBlock",
+              attrs: { sourceBlockId: "" },
+              content: [{ type: "paragraph" }],
+            },
+            linked_page: { type: "linkedPage", attrs: { pageId: "" } },
+            sub_page: { type: "subPageBlock", attrs: { pageId: "" } },
+            database: {
+              type: "inlineDatabase",
+              attrs: { databaseId: "", defaultViewId: "" },
+            },
+            template_button: {
+              type: "templateButton",
+              attrs: {
+                label: "New Entry",
+                insertLocation: "below_button",
+                templateBlocks: [{ type: "paragraph", text: "" }],
+              },
+            },
+            embed: { type: "embedBlock", attrs: { url: "" } },
+            bookmark: { type: "bookmarkBlock", attrs: { url: "" } },
           };
 
           const content = custom[def.type];
@@ -89,7 +147,7 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
                   tr.replaceRangeWith(
                     $from.before($from.depth),
                     $from.after($from.depth),
-                    node,
+                    node
                   );
                   return true;
                 } catch {
@@ -102,9 +160,9 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
         },
 
         render: () => ({
-          onStart:  (props) => opts.onUpdate(props),
+          onStart: (props) => opts.onUpdate(props),
           onUpdate: (props) => opts.onUpdate(props),
-          onExit:   ()     => opts.onUpdate(null),
+          onExit: () => opts.onUpdate(null),
           onKeyDown: ({ event }) => opts.onKeyDown(event),
         }),
       }),

@@ -32,6 +32,13 @@ export const databaseViews = pgTable("database_views", {
   sorts:              jsonb("sorts").notNull().default(sql`'[]'::jsonb`),
   cardDisplayProps:   jsonb("card_display_props").notNull().default(sql`'[]'::jsonb`),
   hiddenPropertyIds:  jsonb("hidden_property_ids").notNull().default(sql`'[]'::jsonb`),
+  boardSettings:      jsonb("board_settings").notNull().default(sql`'{}'::jsonb`),
+  // Per-view overrides (displayAs/wrapContent/width) keyed by property id, and
+  // a per-view column order — both fall back to the property's own global
+  // config/orderIndex when absent, so one view's settings never bleed into
+  // another's (e.g. Board showing Status as a checkbox doesn't affect Table).
+  propertyOverrides:  jsonb("property_overrides").notNull().default(sql`'{}'::jsonb`),
+  propertyOrder:      jsonb("property_order").notNull().default(sql`'[]'::jsonb`),
   galleryCardSize:    galleryCardSize("gallery_card_size"),
   entryOpenMode:      entryOpenMode("entry_open_mode").notNull().default("side_panel"),
   filterLogic:        filterLogicType("filter_logic").notNull().default("and"),

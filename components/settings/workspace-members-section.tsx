@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 const ROLE_OPTIONS = [
  { value: "editor", label: "Editor" },
@@ -42,6 +43,9 @@ function RoleSelect({
    document.removeEventListener("keydown", handleKey);
   };
  }, [open]);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
 
  function handleOpen() {
   if (!open && btnRef.current) {

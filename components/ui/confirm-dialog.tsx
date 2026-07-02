@@ -23,6 +23,9 @@ interface ConfirmDialogProps {
   loading?: boolean;
   onConfirm: () => void;
   onCancel?: () => void;
+  /** Override stacking when this dialog must appear above an already-portaled, high z-index UI (e.g. a popover). */
+  className?: string;
+  overlayClassName?: string;
 }
 
 export function ConfirmDialog({
@@ -36,10 +39,12 @@ export function ConfirmDialog({
   loading = false,
   onConfirm,
   onCancel,
+  className,
+  overlayClassName,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(o) => !loading && onOpenChange(o)}>
-      <AlertDialogContent>
+      <AlertDialogContent className={className} overlayClassName={overlayClassName}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>

@@ -127,7 +127,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const body = await req.json() as { title?: string; defaultValues?: Record<string, unknown> };
 
-  const entry = await db.transaction(async (tx) => {
+  const { entry, insertedValues } = await db.transaction(async (tx) => {
     const newEntry = await createPageWithClosure(tx, {
       workspaceId: dbPage.workspaceId,
       title:       body.title ?? "",
@@ -137,33 +137,52 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       createdBy:   session.user.id,
     });
 
-    // Write default property values if provided
-    if (body.defaultValues) {
-      const props = await tx
-        .select()
-        .from(databaseProperties)
-        .where(eq(databaseProperties.databaseId, databaseId));
+    // Write default property values — always runs (not just when the caller
+    // passed defaultValues), so e.g. a Status property still defaults to
+    // "Not started" for a bare "+ New" click, not only for the calendar's
+    // date-cell creation flow (the only caller that used to pass anything).
+    const props = await tx
+      .select()
+      .from(databaseProperties)
+      .where(eq(databaseProperties.databaseId, databaseId));
 
-      const valuesToInsert = [];
-      for (const prop of props) {
-        const rawDefault = body.defaultValues[prop.id] ?? prop.defaultValue;
-        if (rawDefault == null) continue;
-        // Resolve @me for Person type
-        let resolved = rawDefault;
-        if (prop.type === "person" && resolved === "@me") {
-          resolved = { userIds: [session.user.id] };
-        }
-        valuesToInsert.push({ entryId: newEntry.id, propertyId: prop.id, value: resolved });
+    const valuesToInsert = [];
+    for (const prop of props) {
+      let rawDefault = body.defaultValues?.[prop.id] ?? prop.defaultValue;
+      // Status-style (grouped) select/multi-select properties have no
+      // dedicated "default option" setting anywhere in the UI — fall back
+      // to the first option in the "To-do" group, matching a fresh task's
+      // real starting state ("Not started"). Scoped to grouped properties
+      // only — an ordinary Select/Multi-select (e.g. "Channel") shouldn't
+      // get a value pre-picked just because it happens to be first in the
+      // list; only a genuine Status field has a meaningful "not started yet".
+      const config = prop.config as { options?: { id: string; group?: string }[]; groupedByStatus?: boolean } | null;
+      if (rawDefault == null && config?.groupedByStatus && (prop.type === "select" || prop.type === "multi_select")) {
+        const options = config.options ?? [];
+        const first = options.find((o) => o.group === "todo") ?? options[0];
+        if (first) rawDefault = prop.type === "select" ? { optionId: first.id } : { optionIds: [first.id] };
       }
-      if (valuesToInsert.length) {
-        await tx.insert(propertyValues).values(valuesToInsert);
+      if (rawDefault == null) continue;
+      // Resolve @me for Person type
+      let resolved = rawDefault;
+      if (prop.type === "person" && resolved === "@me") {
+        resolved = { userIds: [session.user.id] };
       }
+      valuesToInsert.push({ entryId: newEntry.id, propertyId: prop.id, value: resolved });
+    }
+    if (valuesToInsert.length) {
+      await tx.insert(propertyValues).values(valuesToInsert);
     }
 
-    return newEntry;
+    return { entry: newEntry, insertedValues: valuesToInsert };
   });
 
-  return Response.json(entry, { status: 201 });
+  // Includes every value actually written (explicit defaultValues, a
+  // property's own configured default, AND the grouped-Status fallback) —
+  // callers must use this instead of echoing back just what they themselves
+  // passed, or a server-computed default (like Status → "Not started")
+  // would be saved but invisible in the UI until the next full refetch.
+  return Response.json({ ...entry, propertyValues: insertedValues }, { status: 201 });
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

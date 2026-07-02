@@ -12,7 +12,7 @@ import { CalendarView } from "@/components/database/calendar-view";
 import { GalleryView } from "@/components/database/gallery-view";
 import type {
   DbView, DbProperty, DbEntry, DbPropertyValue,
-  FilterRule, SortRule, SharedViewProps,
+  FilterRule, SortRule, SharedViewProps, DbPropertyConfig,
 } from "@/components/database/types";
 
 interface DatabasePageProps {
@@ -173,6 +173,15 @@ export function DatabasePage({
     });
   }, []);
 
+  const updateEntryIcon = useCallback(async (entryId: string, icon: string) => {
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, icon } : e));
+    await fetch(`/api/pages/${entryId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ icon }),
+    });
+  }, []);
+
   const createEntry = useCallback(async (defaultValues?: Record<string, unknown>) => {
     const res = await fetch(`/api/databases/${databaseId}/entries`, {
       method: "POST",
@@ -180,19 +189,21 @@ export function DatabasePage({
       body: JSON.stringify({ title: "", defaultValues }),
     });
     if (!res.ok) return;
-    const entry = await res.json() as DbEntry;
+    const { propertyValues: insertedValues, ...entry } = await res.json() as DbEntry & { propertyValues: { entryId: string; propertyId: string; value: unknown }[] };
     setEntries((prev) => [...prev, entry]);
 
-    // Optimistically write defaultValues into rawValues so calendar/board
-    // views show the entry immediately without waiting for a refetch.
-    if (defaultValues && Object.keys(defaultValues).length > 0) {
+    // Mirrors EVERY value the server actually wrote — not just what this
+    // caller happened to pass in — so a server-computed default (e.g. a
+    // grouped Status property falling back to "Not started") shows up
+    // immediately instead of only appearing after the next full refetch.
+    if (insertedValues.length > 0) {
       setRawValues((prev) => [
         ...prev,
-        ...Object.entries(defaultValues).map(([propId, value]) => ({
+        ...insertedValues.map((v) => ({
           id: crypto.randomUUID(),
-          entryId: entry.id,
-          propertyId: propId,
-          value,
+          entryId: v.entryId,
+          propertyId: v.propertyId,
+          value: v.value,
           createdAt: "",
           updatedAt: "",
         } as DbPropertyValue)),
@@ -209,6 +220,17 @@ export function DatabasePage({
     await fetch(`/api/pages/${entryId}`, { method: "DELETE" });
   }, []);
 
+  const duplicateEntry = useCallback(async (entryId: string) => {
+    const res = await fetch(`/api/pages/${entryId}/duplicate`, { method: "POST" });
+    if (!res.ok) return;
+    const dup = await res.json() as DbEntry;
+    setEntries((prev) => [...prev, dup]);
+    const dupValues = rawValues
+      .filter((v) => v.entryId === entryId)
+      .map((v) => ({ ...v, id: crypto.randomUUID(), entryId: dup.id }));
+    if (dupValues.length) setRawValues((prev) => [...prev, ...dupValues]);
+  }, [rawValues]);
+
   const bulkDelete = useCallback(async () => {
     const ids = [...selectedIds];
     setEntries((prev) => prev.filter((e) => !selectedIds.has(e.id)));
@@ -217,11 +239,11 @@ export function DatabasePage({
     await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
   }, [selectedIds]);
 
-  const addProperty = useCallback(async (name: string, type: string) => {
+  const addProperty = useCallback(async (name: string, type: string, config?: DbPropertyConfig) => {
     const res = await fetch(`/api/databases/${databaseId}/properties`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type }),
+      body: JSON.stringify({ name, type, config }),
     });
     if (!res.ok) return;
     const prop = await res.json() as DbProperty;
@@ -333,8 +355,10 @@ export function DatabasePage({
     onDeleteProperty: deleteProperty,
     onUpdateView:     (patch) => activeView ? updateView(activeView.id, patch) : Promise.resolve(),
     onDeleteEntry:    deleteEntry,
+    onDuplicateEntry: duplicateEntry,
     onSelectEntry:    selectEntry,
     onOpenEntry:      openEntry,
+    onUpdateEntryIcon: updateEntryIcon,
   };
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
@@ -406,8 +430,8 @@ export function DatabasePage({
         onUpdateView={updateView}
         showFilterBar={showFilterBar}
         showSortBar={showSortBar}
-        onToggleFilterBar={() => setShowFilterBar((v) => !v)}
-        onToggleSortBar={() => setShowSortBar((v) => !v)}
+        onToggleFilterBar={() => { setShowFilterBar((v) => !v); setShowSortBar(false); }}
+        onToggleSortBar={() => { setShowSortBar((v) => !v); setShowFilterBar(false); }}
         onCreateEntry={() => createEntry()}
         onAddProperty={addProperty}
         searchQuery={searchQuery}

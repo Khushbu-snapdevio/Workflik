@@ -845,3 +845,29 @@ body {
   transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .lp-nav-link:hover::after { width: 100%; }
+
+/* ── Toast colors — tied to the app's own status tokens, not generic ones ─── */
+[data-sonner-toast].cn-toast[data-type="success"] {
+  background: linear-gradient(135deg, var(--success-subtle), color-mix(in srgb, var(--success) 16%, var(--success-subtle)));
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
+  color: var(--success-foreground);
+}
+[data-sonner-toast].cn-toast[data-type="warning"] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--warning) 10%, var(--card)), color-mix(in srgb, var(--warning) 20%, var(--card)));
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  color: color-mix(in srgb, var(--warning) 55%, var(--foreground));
+}
+[data-sonner-toast].cn-toast[data-type="error"] {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--destructive) 8%, var(--card)), color-mix(in srgb, var(--destructive) 18%, var(--card)));
+  border-color: color-mix(in srgb, var(--destructive) 35%, transparent);
+  color: color-mix(in srgb, var(--destructive) 55%, var(--foreground));
+}
+[data-sonner-toast].cn-toast[data-type="info"] {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--primary) 18%, var(--accent)));
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--accent-foreground);
+}
+[data-sonner-toast].cn-toast[data-type] [data-description] {
+  color: inherit;
+  opacity: 0.85;
+}

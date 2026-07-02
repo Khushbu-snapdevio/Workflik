@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 interface CellActionOverlayProps {
   rect: DOMRect;
-  propType: string;
+  canCopy: boolean;
   commentCount: number | null;
   copied: boolean;
   onClearLeaveTimer: () => void;
@@ -16,16 +16,18 @@ interface CellActionOverlayProps {
 }
 
 export function CellActionOverlay({
-  rect, propType, commentCount, copied,
+  rect, canCopy, commentCount, copied,
   onClearLeaveTimer, onScheduleLeave, onCommentClick, onCopyClick,
 }: CellActionOverlayProps) {
   const [tooltip, setTooltip] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
 
+  const mutedIconColor = "color-mix(in srgb, var(--muted-foreground) 70%, transparent)";
+
   const btnBase: React.CSSProperties = {
     display: "flex", alignItems: "center", justifyContent: "center",
     border: "none", cursor: "pointer", background: "transparent",
-    borderRadius: 4, color: "hsl(var(--muted-foreground) / 0.7)",
+    borderRadius: 4, color: mutedIconColor,
   };
 
   function showTooltip(e: React.MouseEvent, label: string) {
@@ -55,7 +57,7 @@ export function CellActionOverlay({
           gap: 2,
           paddingLeft: 32,
           paddingRight: 6,
-          background: "linear-gradient(to left, hsl(var(--muted) / 1) 50%, transparent)",
+          background: "linear-gradient(to left, var(--muted) 50%, transparent)",
           zIndex: 200,
           pointerEvents: "none",
         }}
@@ -75,13 +77,13 @@ export function CellActionOverlay({
               onCommentClick((e.currentTarget as HTMLElement).getBoundingClientRect());
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "hsl(var(--accent))";
-              (e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground))";
+              (e.currentTarget as HTMLElement).style.background = "var(--accent)";
+              (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
               showTooltip(e, "Comment");
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.color = "hsl(var(--muted-foreground) / 0.7)";
+              (e.currentTarget as HTMLElement).style.color = mutedIconColor;
               hideTooltip();
             }}
           >
@@ -91,26 +93,47 @@ export function CellActionOverlay({
             )}
           </button>
 
-          {/* Copy button — date/number only */}
-          {(propType === "date" || propType === "number") && (
+          {/* Copy button — any property type with a copyable value */}
+          {canCopy && (
             <button
               type="button"
-              style={{ ...btnBase, width: 20, height: 20, color: copied ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.7)" }}
+              style={{ ...btnBase, width: 20, height: 20, color: copied ? "var(--primary)" : mutedIconColor }}
               onClick={(e) => {
                 e.stopPropagation();
                 onCopyClick();
-                toast.success("Copied to clipboard", { duration: 2000 });
+                toast.success("Copied to clipboard", {
+                  duration: 2000,
+                  icon: <Check size={16} style={{ color: "var(--primary-foreground)" }} />,
+                  style: {
+                    background: "linear-gradient(135deg, var(--primary), var(--primary-hover))",
+                    color: "var(--primary-foreground)",
+                    border: "none",
+                    // Hug the short message instead of sonner's default
+                    // 356px / full-width-on-mobile toast sizing. The toast is
+                    // absolutely positioned inside sonner's already page-centered
+                    // container, so left/right + auto margins re-center this
+                    // narrower box within it (sonner's own transform is reserved
+                    // for its slide in/out animation, so we can't center via
+                    // translateX here without breaking that).
+                    width: "fit-content",
+                    maxWidth: 240,
+                    left: 0,
+                    right: 0,
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                  },
+                });
               }}
               onMouseEnter={(e) => {
                 if (!copied) {
-                  (e.currentTarget as HTMLElement).style.background = "hsl(var(--accent))";
-                  (e.currentTarget as HTMLElement).style.color = "hsl(var(--foreground))";
+                  (e.currentTarget as HTMLElement).style.background = "var(--accent)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--foreground)";
                 }
                 showTooltip(e, copied ? "Copied!" : "Copy value");
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.background = "transparent";
-                (e.currentTarget as HTMLElement).style.color = copied ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.7)";
+                (e.currentTarget as HTMLElement).style.color = copied ? "var(--primary)" : mutedIconColor;
                 hideTooltip();
               }}
             >
@@ -128,16 +151,17 @@ export function CellActionOverlay({
             top: tooltipPos.top,
             left: tooltipPos.left,
             transform: "translateX(-50%)",
-            background: "#1a1a1a",
-            color: "#fff",
+            background: "var(--popover)",
+            color: "var(--popover-foreground)",
+            border: "1px solid var(--border)",
             fontSize: 11,
             fontWeight: 500,
             padding: "3px 8px",
-            borderRadius: 4,
+            borderRadius: "var(--radius-sm)",
             whiteSpace: "nowrap",
             pointerEvents: "none",
             zIndex: 9999,
-            boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+            boxShadow: "0 2px 8px color-mix(in srgb, var(--foreground) 12%, transparent)",
           }}
         >
           {tooltip}

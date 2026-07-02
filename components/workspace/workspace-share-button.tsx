@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 interface Props {
  workspaceSlug: string;
@@ -14,6 +15,9 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
  const [anchor, setAnchor] = useState<DOMRect | null>(null);
  const [copied, setCopied] = useState(false);
  const btnRef = useRef<HTMLButtonElement>(null);
+ const panelRef = useRef<HTMLDivElement>(null);
+
+ useScrollLockWhileOpen(open, (target) => !!panelRef.current?.contains(target));
 
  function handleClick() {
   const rect = btnRef.current?.getBoundingClientRect() ?? null;
@@ -61,6 +65,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
 
      {/* Popup */}
      <div
+      ref={panelRef}
       style={{
        position: "fixed",
        top: anchor.bottom + 8,

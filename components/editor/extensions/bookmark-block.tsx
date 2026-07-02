@@ -1,0 +1,874 @@
+"use client";
+
+import type { NodeViewProps } from "@tiptap/react";
+import {
+  mergeAttributes,
+  Node,
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+} from "@tiptap/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  Download as DownloadIcon,
+  FileIcon,
+  Maximize2,
+  MessageSquare,
+  Pencil,
+  Trash2,
+  X as XIcon,
+} from "lucide-react";
+import type { LinkPreview } from "@/app/api/link-preview/route";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUpload } from "@/lib/storage/use-upload";
+
+// ── Shared URL picker (unresolved state) — mirrors media-blocks.tsx's
+// MediaPicker visual language (module-private there, so a small copy here
+// rather than exporting/importing across files for one shared bit). ──────────
+function UrlPicker({
+  icon,
+  label,
+  placeholder,
+  loading,
+  error,
+  onConfirm,
+  onCancel,
+}: {
+  icon: string;
+  label: string;
+  placeholder: string;
+  loading: boolean;
+  error: string | null;
+  onConfirm: (url: string) => void;
+  onCancel?: () => void;
+}) {
+  const [url, setUrl] = useState("");
+  return (
+    <div className="my-2 space-y-3 rounded-[var(--radius-md)] border border-border bg-muted/30 p-4">
+      <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground">
+        <span className="text-xl leading-none">{icon}</span>
+        {label}
+      </p>
+      <div className="flex gap-2">
+        <input
+          // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
+          autoFocus
+          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40 disabled:opacity-50"
+          disabled={loading}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && url.trim()) {
+              e.preventDefault();
+              onConfirm(url.trim());
+            }
+            if (e.key === "Escape") {
+              onCancel?.();
+            }
+          }}
+          placeholder={placeholder}
+          type="url"
+          value={url}
+        />
+        <button
+          className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+          disabled={!url.trim() || loading}
+          onClick={() => url.trim() && onConfirm(url.trim())}
+          onMouseDown={(e) => e.preventDefault()}
+          type="button"
+        >
+          {loading ? "Loading…" : "Embed ↵"}
+        </button>
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      {onCancel && (
+        <button
+          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+          onClick={onCancel}
+          onMouseDown={(e) => e.preventDefault()}
+          type="button"
+        >
+          Cancel
+        </button>
+      )}
+    </div>
+  );
+}
+
+function BookmarkCard({
+  preview,
+  onChange,
+  onDelete,
+}: {
+  preview: LinkPreview;
+  onChange?: () => void;
+  onDelete?: () => void;
+}) {
+  return (
+    <div className="group relative my-2">
+      <a
+        className="block"
+        href={preview.url}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <Card className="flex-row overflow-hidden p-0 transition-colors hover:border-primary/40">
+          <div className="min-w-0 flex-1 space-y-1 p-3.5">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {preview.title || preview.url}
+            </p>
+            {preview.description && (
+              <p className="line-clamp-2 text-xs text-muted-foreground">
+                {preview.description}
+              </p>
+            )}
+            <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground/70">
+              {preview.favicon && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt=""
+                  className="size-3.5 shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  src={preview.favicon}
+                />
+              )}
+              <span className="truncate">
+                {preview.siteName || preview.url}
+              </span>
+            </div>
+          </div>
+          {preview.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt=""
+              className="h-full w-32 shrink-0 object-cover"
+              src={preview.image}
+            />
+          )}
+        </Card>
+      </a>
+      {(onChange || onDelete) && (
+        <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+          {onDelete && (
+            <button
+              className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-destructive/80"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onDelete();
+              }}
+              type="button"
+            >
+              Delete
+            </button>
+          )}
+          {onChange && (
+            <button
+              className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-foreground/90"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onChange();
+              }}
+              type="button"
+            >
+              Change
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BookmarkSkeleton() {
+  return (
+    <Card className="my-2 flex-row items-center gap-3 p-3.5">
+      <Skeleton className="size-8 shrink-0 rounded-full" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <Skeleton className="h-3.5 w-2/3" />
+        <Skeleton className="h-3 w-full" />
+      </div>
+    </Card>
+  );
+}
+
+async function fetchPreview(url: string): Promise<LinkPreview> {
+  const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(
+      (json as { error?: string }).error ??
+        "Couldn't load a preview for this link"
+    );
+  }
+  return res.json();
+}
+
+// ── Bookmark ──────────────────────────────────────────────────────────────────
+function BookmarkBlockView({ node, updateAttributes }: NodeViewProps) {
+  const url = (node.attrs.url as string) || "";
+  const [picking, setPicking] = useState(!url);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const preview: LinkPreview | null = url
+    ? {
+        url,
+        title: (node.attrs.title as string) || null,
+        description: (node.attrs.description as string) || null,
+        image: (node.attrs.image as string) || null,
+        favicon: (node.attrs.favicon as string) || null,
+        siteName: (node.attrs.siteName as string) || null,
+      }
+    : null;
+
+  const confirm = useCallback(
+    async (newUrl: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchPreview(newUrl);
+        updateAttributes({
+          url: data.url,
+          title: data.title ?? "",
+          description: data.description ?? "",
+          image: data.image ?? "",
+          favicon: data.favicon ?? "",
+          siteName: data.siteName ?? "",
+        });
+        setPicking(false);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Couldn't load a preview for this link"
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [updateAttributes]
+  );
+
+  function handleDelete() {
+    updateAttributes({
+      url: "",
+      title: "",
+      description: "",
+      image: "",
+      favicon: "",
+      siteName: "",
+    });
+    setPicking(true);
+  }
+
+  if (picking || !preview) {
+    return (
+      <NodeViewWrapper contentEditable={false}>
+        <UrlPicker
+          error={error}
+          icon="🔖"
+          label="Bookmark"
+          loading={loading}
+          onCancel={url ? () => setPicking(false) : undefined}
+          onConfirm={confirm}
+          placeholder="Paste a link…"
+        />
+      </NodeViewWrapper>
+    );
+  }
+
+  return (
+    <NodeViewWrapper contentEditable={false}>
+      <BookmarkCard
+        onChange={() => setPicking(true)}
+        onDelete={handleDelete}
+        preview={preview}
+      />
+    </NodeViewWrapper>
+  );
+}
+
+export const BookmarkBlock = Node.create({
+  name: "bookmarkBlock",
+  group: "block",
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      blockId: { default: null },
+      url: { default: "" },
+      title: { default: "" },
+      description: { default: "" },
+      image: { default: "" },
+      favicon: { default: "" },
+      siteName: { default: "" },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "div[data-type='bookmarkBlock']" }];
+  },
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, unknown> }) {
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { "data-type": "bookmarkBlock" }),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(BookmarkBlockView);
+  },
+});
+
+// ── Embed ─────────────────────────────────────────────────────────────────────
+// v1: pattern-match known providers into a direct iframe embed URL (no oEmbed
+// API round-trip needed for these). Anything unrecognized falls back to the
+// same link-preview card Bookmark uses.
+function getIframeEmbedUrl(rawUrl: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+  const host = u.hostname.replace(/^www\./, "");
+
+  if (host === "youtube.com" || host === "m.youtube.com") {
+    const id = u.searchParams.get("v");
+    if (id) {
+      return `https://www.youtube.com/embed/${id}`;
+    }
+  }
+  if (host === "youtu.be") {
+    const id = u.pathname.slice(1);
+    if (id) {
+      return `https://www.youtube.com/embed/${id}`;
+    }
+  }
+  if (host === "vimeo.com") {
+    const id = u.pathname.split("/").filter(Boolean)[0];
+    if (id) {
+      return `https://player.vimeo.com/video/${id}`;
+    }
+  }
+  if (host === "figma.com" || host === "www.figma.com") {
+    return `https://www.figma.com/embed?embed_host=workflik&url=${encodeURIComponent(rawUrl)}`;
+  }
+  if (host === "loom.com") {
+    const id = u.pathname.split("/").filter(Boolean).pop();
+    if (id) {
+      return `https://www.loom.com/embed/${id}`;
+    }
+  }
+  if (host === "codepen.io") {
+    return rawUrl.replace("/pen/", "/embed/");
+  }
+  return null;
+}
+
+// Same visual convention as MediaActions (media-blocks.tsx) — a hover-only
+// absolute toolbar — extended with Comment/Zoom/Download, which MediaActions
+// itself doesn't need since only Embed currently supports file uploads.
+function EmbedToolbar({
+  onComment,
+  onZoom,
+  download,
+  onChangeDirect,
+  onDelete,
+}: {
+  onComment?: () => void;
+  onZoom?: () => void;
+  download?: { url: string; name: string };
+  onChangeDirect: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      {onComment && (
+        <button
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+          onClick={onComment}
+          onMouseDown={(e) => e.preventDefault()}
+          title="Comment"
+          type="button"
+        >
+          <MessageSquare size={13} />
+        </button>
+      )}
+      {onZoom && (
+        <button
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+          onClick={onZoom}
+          onMouseDown={(e) => e.preventDefault()}
+          title="Expand"
+          type="button"
+        >
+          <Maximize2 size={13} />
+        </button>
+      )}
+      {download && (
+        <a
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+          download={download.name}
+          href={download.url}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.preventDefault()}
+          title="Download"
+        >
+          <DownloadIcon size={13} />
+        </a>
+      )}
+      <button
+        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+        onClick={onChangeDirect}
+        onMouseDown={(e) => e.preventDefault()}
+        title="Change"
+        type="button"
+      >
+        <Pencil size={12} />
+      </button>
+      <button
+        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-destructive/80"
+        onClick={onDelete}
+        onMouseDown={(e) => e.preventDefault()}
+        title="Delete"
+        type="button"
+      >
+        <Trash2 size={12} />
+      </button>
+    </div>
+  );
+}
+
+// Same overlay convention as comment-card.tsx's ImageLightbox, generalized to
+// render either an iframe (PDF/known-provider embeds) or an image (uploaded
+// image files) at a larger size.
+function EmbedLightbox({
+  src,
+  isImage,
+  title,
+  onClose,
+}: {
+  src: string;
+  isImage: boolean;
+  title: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70"
+      onClick={onClose}
+    >
+      <div
+        className="relative h-[90vh] w-[90vw] max-w-5xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {isImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt={title}
+            className="mx-auto h-full max-w-full rounded-[var(--radius-md)] object-contain"
+            src={src}
+          />
+        ) : (
+          <iframe
+            className="size-full rounded-[var(--radius-md)] bg-white"
+            src={src}
+            title={title}
+          />
+        )}
+        <button
+          className="absolute -top-3 -right-3 flex size-7 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-card text-foreground transition-colors duration-150 hover:bg-accent"
+          onClick={onClose}
+          type="button"
+        >
+          <XIcon size={14} />
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+interface EmbedBlockOptions {
+  workspaceId: string;
+  pageId: string;
+  onComment?: (blockId: string, blockY: number) => void;
+}
+
+function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
+  const url = (node.attrs.url as string) || "";
+  const fileName = (node.attrs.fileName as string) || "";
+  const mimeType = (node.attrs.mimeType as string) || "";
+  const blockId = (node.attrs.blockId as string) || "";
+  const { workspaceId, pageId, onComment } = extension.options as EmbedBlockOptions;
+  const { upload, uploading, error: uploadError } = useUpload({
+    kind: "block_media",
+    workspaceId,
+    pageId,
+    blockId,
+  });
+
+  const [picking, setPicking] = useState(!url);
+  const [expanded, setExpanded] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [zooming, setZooming] = useState(false);
+  const changeRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const [preview, setPreview] = useState<LinkPreview | null>(null);
+  const [previewError, setPreviewError] = useState(false);
+  const iframeUrl = url && !mimeType ? getIframeEmbedUrl(url) : null;
+  const isUploadedImage = mimeType.startsWith("image/");
+  const isUploadedPdf = mimeType === "application/pdf";
+
+  useEffect(() => {
+    if (!url || mimeType || iframeUrl) {
+      return; // uploaded file or known provider — no fallback fetch needed
+    }
+    let cancelled = false;
+    setPreviewError(false);
+    fetchPreview(url)
+      .then((data) => {
+        if (!cancelled) {
+          setPreview(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreviewError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url, mimeType, iframeUrl]);
+
+  function confirm(newUrl: string) {
+    updateAttributes({ url: newUrl, fileName: "", mimeType: "" });
+    setPreview(null);
+    setPicking(false);
+    setExpanded(false);
+  }
+
+  const uploadFile = useCallback(
+    async (file: File) => {
+      const result = await upload(file);
+      if (!result) {
+        return;
+      }
+      updateAttributes({
+        url: result.fileUrl,
+        fileName: file.name,
+        mimeType: file.type,
+      });
+      setPreview(null);
+      setPicking(false);
+      setExpanded(false);
+    },
+    [upload, updateAttributes]
+  );
+
+  function onChangeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    uploadFile(file);
+  }
+
+  function handleDelete() {
+    updateAttributes({ url: "", fileName: "", mimeType: "" });
+    setPreview(null);
+    setPicking(true);
+    setExpanded(false);
+  }
+
+  function handleComment() {
+    if (!onComment || !blockId) return;
+    const top = wrapperRef.current?.getBoundingClientRect().top ?? 0;
+    onComment(blockId, top - 20);
+  }
+
+  if (picking || !url) {
+    if (!expanded) {
+      return (
+        <NodeViewWrapper contentEditable={false}>
+          <button
+            className="my-1 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
+            onClick={() => setExpanded(true)}
+            onMouseDown={(e) => e.preventDefault()}
+            type="button"
+          >
+            <span className="text-lg leading-none">🌐</span>
+            Embed anything (PDFs, Google Docs, Google Maps, Spotify…)
+          </button>
+        </NodeViewWrapper>
+      );
+    }
+    return (
+      <NodeViewWrapper contentEditable={false}>
+        <div className="relative my-1 flex flex-col items-center gap-2">
+          <button
+            className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
+            onClick={() => setExpanded(false)}
+            onMouseDown={(e) => e.preventDefault()}
+            type="button"
+          >
+            <span className="text-lg leading-none">🌐</span>
+            Embed anything (PDFs, Google Docs, Google Maps, Spotify…)
+          </button>
+          <div className="w-full max-w-sm rounded-[var(--radius-md)] border border-border bg-popover p-4 shadow-lg">
+            <Tabs defaultValue="link">
+              <TabsList className="w-full" variant="line">
+                <TabsTrigger value="link">Link</TabsTrigger>
+                <TabsTrigger value="upload">Upload</TabsTrigger>
+              </TabsList>
+              <TabsContent className="mt-3 space-y-2" value="link">
+                <input
+                  // biome-ignore lint/a11y/noAutofocus: intentional — tab just opened
+                  autoFocus
+                  className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40"
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && linkUrl.trim()) {
+                      e.preventDefault();
+                      confirm(linkUrl.trim());
+                    }
+                  }}
+                  placeholder="Paste in https://…"
+                  type="url"
+                  value={linkUrl}
+                />
+                <Button
+                  className="w-full"
+                  disabled={!linkUrl.trim()}
+                  onClick={() => linkUrl.trim() && confirm(linkUrl.trim())}
+                  type="button"
+                >
+                  Embed link
+                </Button>
+                <p className="text-center text-xs text-muted-foreground/70">
+                  Works with links of PDFs, Google Drive, Google Maps, CodePen…
+                </p>
+              </TabsContent>
+              <TabsContent className="mt-3" value="upload">
+                <Button
+                  className="w-full"
+                  disabled={uploading}
+                  onClick={() => changeRef.current?.click()}
+                  onMouseDown={(e) => e.preventDefault()}
+                  type="button"
+                >
+                  {uploading ? "Uploading…" : "Choose a file"}
+                </Button>
+              </TabsContent>
+            </Tabs>
+            {uploadError && (
+              <p className="mt-2 text-xs text-destructive">{uploadError}</p>
+            )}
+          </div>
+          <input
+            className="hidden"
+            onChange={onChangeFile}
+            ref={changeRef}
+            type="file"
+          />
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+
+  // Uploaded file — rendered directly (PDF/image inline, anything else as a
+  // simple file card), not round-tripped through the link-preview scraper
+  // (which is for scraping OTHER PEOPLE's webpages, not our own uploads).
+  if (mimeType) {
+    const downloadInfo = { url, name: fileName || "file" };
+    if (isUploadedPdf || isUploadedImage) {
+      return (
+        <NodeViewWrapper contentEditable={false}>
+          <div
+            ref={wrapperRef}
+            className="group relative my-2 overflow-hidden rounded-[var(--radius-md)] border border-border bg-muted/20"
+          >
+            {isUploadedImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={fileName}
+                className="block max-h-[480px] w-full cursor-zoom-in object-contain"
+                onClick={() => setZooming(true)}
+                src={url}
+              />
+            ) : (
+              <iframe
+                className="block w-full"
+                src={url}
+                style={{ height: 480 }}
+                title={fileName || "Embedded PDF"}
+              />
+            )}
+            <EmbedToolbar
+              download={downloadInfo}
+              onChangeDirect={() => changeRef.current?.click()}
+              onComment={onComment && blockId ? handleComment : undefined}
+              onDelete={handleDelete}
+              onZoom={() => setZooming(true)}
+            />
+            <input
+              className="hidden"
+              onChange={onChangeFile}
+              ref={changeRef}
+              type="file"
+            />
+          </div>
+          {zooming && (
+            <EmbedLightbox
+              isImage={isUploadedImage}
+              onClose={() => setZooming(false)}
+              src={url}
+              title={fileName}
+            />
+          )}
+        </NodeViewWrapper>
+      );
+    }
+    // Generic uploaded file (not a PDF or image) — no inline preview to
+    // render, just a compact card with a name and a way to get the file.
+    return (
+      <NodeViewWrapper contentEditable={false}>
+        <div
+          ref={wrapperRef}
+          className="group relative my-2 flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5"
+        >
+          <FileIcon className="shrink-0 text-muted-foreground" size={18} />
+          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+            {fileName || url}
+          </span>
+          <EmbedToolbar
+            download={downloadInfo}
+            onChangeDirect={() => changeRef.current?.click()}
+            onComment={onComment && blockId ? handleComment : undefined}
+            onDelete={handleDelete}
+          />
+          <input
+            className="hidden"
+            onChange={onChangeFile}
+            ref={changeRef}
+            type="file"
+          />
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+
+  if (iframeUrl) {
+    return (
+      <NodeViewWrapper contentEditable={false}>
+        <div
+          ref={wrapperRef}
+          className="group relative my-2 overflow-hidden rounded-[var(--radius-md)] border border-border bg-black"
+        >
+          <iframe
+            allow="autoplay; fullscreen; clipboard-write; encrypted-media; picture-in-picture"
+            className="block w-full"
+            src={iframeUrl}
+            style={{ height: 400 }}
+            title="Embedded content"
+          />
+          <EmbedToolbar
+            onChangeDirect={() => setPicking(true)}
+            onComment={onComment && blockId ? handleComment : undefined}
+            onDelete={handleDelete}
+            onZoom={() => setZooming(true)}
+          />
+        </div>
+        {zooming && (
+          <EmbedLightbox
+            isImage={false}
+            onClose={() => setZooming(false)}
+            src={iframeUrl}
+            title="Embedded content"
+          />
+        )}
+      </NodeViewWrapper>
+    );
+  }
+
+  // Fallback: unrecognized provider — render the same link-preview card Bookmark uses.
+  return (
+    <NodeViewWrapper contentEditable={false}>
+      {previewError ? (
+        <div className="my-2 rounded-[var(--radius-md)] border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+          Couldn&rsquo;t embed this link.{" "}
+          <a
+            className="text-primary hover:underline"
+            href={url}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Open it directly ↗
+          </a>
+        </div>
+      ) : preview ? (
+        <BookmarkCard
+          onChange={() => setPicking(true)}
+          onDelete={handleDelete}
+          preview={preview}
+        />
+      ) : (
+        <BookmarkSkeleton />
+      )}
+    </NodeViewWrapper>
+  );
+}
+
+export const EmbedBlock = Node.create({
+  name: "embedBlock",
+  group: "block",
+  atom: true,
+  draggable: true,
+
+  addOptions() {
+    return {
+      workspaceId: "",
+      pageId: "",
+      onComment: undefined,
+    } as EmbedBlockOptions;
+  },
+
+  addAttributes() {
+    return {
+      blockId: { default: null },
+      url: { default: "" },
+      fileName: { default: "" },
+      mimeType: { default: "" },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: "div[data-type='embedBlock']" }];
+  },
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, unknown> }) {
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { "data-type": "embedBlock" }),
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(EmbedBlockView);
+  },
+});

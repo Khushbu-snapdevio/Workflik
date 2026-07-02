@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 interface Version {
  id:       string;
@@ -111,6 +112,8 @@ export function PageHistoryPanel({ pageId, open, anchorPos, onClose }: Props) {
    document.removeEventListener("mousedown", onDown);
   };
  }, [open, onClose]);
+
+ useScrollLockWhileOpen(open, (target) => !!panelRef.current?.contains(target));
 
  async function handleRestore() {
   if (!confirmVer) return;

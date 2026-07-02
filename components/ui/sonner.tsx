@@ -41,6 +41,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           toast: "cn-toast",
         },
       }}
+      visibleToasts={1}
       {...props}
     />
   )

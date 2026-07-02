@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Calendar, ExternalLink, Link2, Copy, MoreHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Calendar, MoreHorizontal, FileText, MessageSquare } from "lucide-react";
 import {
   DndContext,
   useDraggable,
@@ -17,8 +17,12 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import type { SharedViewProps, DbEntry } from "@/components/database/types";
+import type { SharedViewProps, DbEntry, DbProperty, SelectOption } from "@/components/database/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EntryContextMenu } from "@/components/database/entry-context-menu";
+import { CellCommentPopover } from "@/components/database/cell-comment-popover";
+import { CellDisplay } from "@/components/database/cells/cell-display";
+import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 
 const DAYS   = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -32,169 +36,174 @@ function isoToLocalDate(iso: string) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function fmtRelative(iso: string): string {
-  const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHrs = Math.floor(diffMins / 60);
-  if (diffHrs < 24) return `${diffHrs}h ago`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+// Same rule board-view.tsx uses to decide whether a property has a
+// display-worthy value — kept in sync so calendar cards and board cards
+// agree on what counts as "filled".
+function hasDisplayValue(prop: DbProperty, raw: unknown, displayAs?: "select" | "checkbox"): boolean {
+  const v = raw as Record<string, unknown> | null;
+  switch (prop.type) {
+    case "text":      return !!(v as { text?: string } | null)?.text;
+    case "number":     return (v as { number?: number | null } | null)?.number != null;
+    // Checkbox-display is meaningful even unset (an empty checkbox is still a
+    // real state to show, unlike an empty pill, which has nothing to render).
+    case "select":     return displayAs === "checkbox" || !!(v as { optionId?: string } | null)?.optionId;
+    case "multi_select": return displayAs === "checkbox" || ((v as { optionIds?: string[] } | null)?.optionIds ?? []).length > 0;
+    case "date":      return !!(v as { date?: string } | null)?.date;
+    case "checkbox":    return !!(v as { checked?: boolean } | null)?.checked;
+    case "url":      return !!(v as { url?: string } | null)?.url;
+    case "email":     return !!(v as { email?: string } | null)?.email;
+    case "phone":     return !!(v as { phone?: string } | null)?.phone;
+    case "person":     return ((v as { userIds?: string[] } | null)?.userIds ?? []).length > 0;
+    case "relation":    return ((v as { entryIds?: string[] } | null)?.entryIds ?? []).length > 0;
+    default:        return false;
+  }
 }
 
-// ── Entry context menu (inline portal for database chips) ─────────────────────
-interface ChipMenuProps {
-  entry:         DbEntry;
-  workspaceSlug: string;
-  forcePos:      { x: number; y: number } | null;
-  onClose:       () => void;
-  onDelete:      (entry: DbEntry) => void;
-  onDuplicate?:  (id: string) => void;
-  openMode:      string;
-  onOpenEntry?:  (entry: DbEntry) => void;
+// Toggling a checkbox-display select on a card: unchecking always clears the
+// value; checking picks the first "complete"-group option if the property is
+// grouped (marking it "done", matching what the checkbox visually implies),
+// falling back to the first option at all for an ungrouped select.
+function nextCheckboxSelectValue(prop: DbProperty, raw: unknown): { optionId: string | null } {
+  const optionId = (raw as { optionId?: string | null } | null)?.optionId ?? null;
+  if (optionId) return { optionId: null };
+  const options = (prop.config?.options ?? []) as SelectOption[];
+  const target = options.find((o) => o.group === "complete") ?? options[0];
+  return { optionId: target?.id ?? null };
 }
 
-function ChipContextMenu({ entry, workspaceSlug, forcePos, onClose, onDelete, onDuplicate, openMode, onOpenEntry }: ChipMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
+// Same idea for multi-select: unchecking clears every selected option;
+// checking sets just the first "complete"-group (or first overall) option,
+// same single-value semantic a checkbox implies even for a multi-select field.
+function nextCheckboxMultiSelectValue(prop: DbProperty, raw: unknown): { optionIds: string[] } {
+  const optionIds = (raw as { optionIds?: string[] } | null)?.optionIds ?? [];
+  if (optionIds.length > 0) return { optionIds: [] };
+  const options = (prop.config?.options ?? []) as SelectOption[];
+  const target = options.find((o) => o.group === "complete") ?? options[0];
+  return { optionIds: target ? [target.id] : [] };
+}
 
-  React.useEffect(() => {
-    if (!forcePos) return;
-    function h(e: MouseEvent) {
-      if (!menuRef.current?.contains(e.target as Node)) onClose();
-    }
-    function preventWheel(e: WheelEvent) {
-      if (menuRef.current?.contains(e.target as Node)) return;
-      e.preventDefault();
-    }
-    document.addEventListener("mousedown", h);
-    window.addEventListener("wheel", preventWheel, { passive: false });
-    return () => {
-      document.removeEventListener("mousedown", h);
-      window.removeEventListener("wheel", preventWheel);
-    };
-  }, [forcePos, onClose]);
+// ── MorePopupEntryRow ─────────────────────────────────────────────────────────
+// Simpler, non-draggable row used inside the "+N more" overflow popup — mirrors
+// DraggableChip's icon + comment-badge treatment so entries look consistent
+// whether shown in the grid or the overflow list.
+interface MorePopupEntryRowProps {
+  entry: DbEntry;
+  onClick: () => void;
+  onDelete?: () => void;
+}
 
-  if (!forcePos || typeof document === "undefined") return null;
+function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps) {
+  const [commentCount, setCommentCount] = useState<number | null>(null);
+  const fetchedRef = useRef(false);
 
-  const W = 224;
-  const VW = typeof window !== "undefined" ? window.innerWidth : 800;
-  const VH = typeof window !== "undefined" ? window.innerHeight : 600;
-  const left = Math.max(8, Math.min(forcePos.x, VW - W - 8));
-  const estimatedH = 320;
-  const top = forcePos.y + estimatedH > VH ? Math.max(8, forcePos.y - estimatedH) : forcePos.y + 4;
-  const url = `/app/${workspaceSlug}/${entry.shortId}`;
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    fetch(`/api/pages/${entry.id}/comments`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
+        setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
+      })
+      .catch(() => {});
+  }, [entry.id]);
 
-  return createPortal(
+  return (
     <div
-      ref={menuRef}
-      style={{ position: "fixed", top, left, zIndex: 9999, width: W }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
-      onClick={(e) => e.stopPropagation()}
+      className="group/pe flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
+      onClick={onClick}
     >
-      <div className="p-1">
-        <div className="px-1.5 pb-1 pt-0.5">
-          <input
-            className="w-full rounded-[var(--radius-sm)] bg-muted/60 px-2 py-1 text-xs outline-none placeholder:text-muted-foreground/50"
-            placeholder="Search actions..."
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-        <div className="my-0.5 h-px bg-border/40" />
-
-        <p className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">Page</p>
-
-        {openMode === "side_panel" && onOpenEntry ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); onClose(); onOpenEntry(entry); }}
-            className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
-          >
-            <ExternalLink size={13} className="shrink-0 text-muted-foreground" />
-            Open page
-          </button>
-        ) : (
-          <Link
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onClose()}
-            className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
-          >
-            <ExternalLink size={13} className="shrink-0 text-muted-foreground" />
-            Open page
-          </Link>
-        )}
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (typeof window !== "undefined" && navigator.clipboard)
-              navigator.clipboard.writeText(`${window.location.origin}${url}`).catch(() => {});
-            onClose();
-          }}
-          className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
-        >
-          <Link2 size={13} className="shrink-0 text-muted-foreground" />
-          Copy link
-        </button>
-
-        {onDuplicate && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDuplicate(entry.id); onClose(); }}
-            className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
-          >
-            <span className="flex items-center gap-2.5"><Copy size={13} className="shrink-0 text-muted-foreground" />Duplicate</span>
-            <span className="text-[10px] text-muted-foreground/40">Ctrl+D</span>
-          </button>
-        )}
-
-        <div className="my-0.5 h-px bg-border/40" />
-
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(entry); onClose(); }}
-          className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-        >
-          <span className="flex items-center gap-2.5"><Trash2 size={13} className="shrink-0" />Move to Trash</span>
-          <span className="text-[10px] text-destructive/40">Del</span>
-        </button>
-      </div>
-
-      {entry.updatedAt && (
-        <div className="border-t border-border/40 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground/60">Last edited {fmtRelative(entry.updatedAt)}</p>
-        </div>
+      {entry.icon ? (
+        <span className="shrink-0 text-xs leading-none">{entry.icon}</span>
+      ) : (
+        <FileText size={12} className="shrink-0 text-muted-foreground/60" />
       )}
-    </div>,
-    document.body,
+      <span className="flex-1 truncate text-sm font-medium text-foreground">{entry.title || "Untitled"}</span>
+      {!!commentCount && (
+        <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+          <MessageSquare size={10} />
+          {commentCount}
+        </span>
+      )}
+      {onDelete && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
+        >
+          <Trash2 size={11} />
+        </button>
+      )}
+    </div>
   );
 }
 
 // ── DraggableChip ─────────────────────────────────────────────────────────────
 interface DraggableChipProps {
   entry: DbEntry;
+  databaseId: string;
+  workspaceId: string;
   workspaceSlug: string;
   openMode: string;
   isEditor: boolean;
+  cardProps: DbProperty[];
+  valueMap: Map<string, Map<string, unknown>>;
   onOpenEntry?: (entry: DbEntry) => void;
   onDeleteClick: (entry: DbEntry) => void;
   onDuplicate?: (id: string) => void;
+  onUpdateEntryIcon?: (entryId: string, icon: string) => Promise<void>;
+  onUpdateValue: (entryId: string, propId: string, value: unknown) => Promise<void>;
+  onUpdateProperty: (propId: string, patch: Record<string, unknown>) => Promise<void>;
+  activeView: SharedViewProps["activeView"];
+  onUpdateView: (patch: Record<string, unknown>) => Promise<void>;
 }
 
-function DraggableChip({ entry, workspaceSlug, openMode, isEditor, onOpenEntry, onDeleteClick, onDuplicate }: DraggableChipProps) {
+function DraggableChip({
+  entry, databaseId, workspaceId, workspaceSlug, openMode, isEditor, cardProps, valueMap, onOpenEntry, onDeleteClick, onDuplicate, onUpdateEntryIcon, onUpdateValue, onUpdateProperty,
+  activeView, onUpdateView,
+}: DraggableChipProps) {
+  const filledProps = cardProps.filter((prop) => hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null, resolveDisplayAs(prop, activeView)));
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: entry.id });
   const [rightClickPos, setRightClickPos] = useState<{ x: number; y: number } | null>(null);
   const [showDots, setShowDots] = useState(false);
+  const [commentCount, setCommentCount] = useState<number | null>(null);
+  const [showComment, setShowComment] = useState(false);
+  const fetchedRef = useRef(false);
+  const chipRef = useRef<HTMLDivElement | null>(null);
   const style = transform ? { transform: CSS.Translate.toString(transform) } : {};
+
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    fetch(`/api/pages/${entry.id}/comments`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
+        setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
+      })
+      .catch(() => {});
+  }, [entry.id]);
+
+  const inner = (
+    <>
+      {entry.icon ? (
+        <span className="shrink-0 text-xs leading-none">{entry.icon}</span>
+      ) : (
+        <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+      )}
+      <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">{entry.title || "Untitled"}</span>
+    </>
+  );
 
   return (
     <>
       <div
-        ref={setNodeRef}
+        ref={(el) => { setNodeRef(el); chipRef.current = el; }}
         style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none" }}
         {...attributes}
         {...listeners}
-        className="group/chip relative flex items-center rounded-[var(--radius-xs)] bg-primary/10 text-xs font-medium text-primary transition-colors hover:bg-primary/20 cursor-pointer"
+        className="group/chip relative flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background shadow-sm transition-colors hover:border-border hover:bg-accent/30 cursor-pointer"
         onMouseEnter={() => setShowDots(true)}
         onMouseLeave={() => setShowDots(false)}
         onContextMenu={(e) => {
@@ -203,45 +212,98 @@ function DraggableChip({ entry, workspaceSlug, openMode, isEditor, onOpenEntry, 
           setRightClickPos({ x: e.clientX, y: e.clientY });
         }}
       >
-        {openMode === "side_panel" && onOpenEntry ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenEntry(entry); }}
-            className="flex min-w-0 flex-1 items-center gap-1 px-1.5 py-[3px]"
-          >
-            {entry.icon && <span className="shrink-0 text-xs leading-none">{entry.icon}</span>}
-            <span className="truncate">{entry.title || "Untitled"}</span>
-          </button>
-        ) : (
-          <Link
-            href={`/app/${workspaceSlug}/${entry.shortId}`}
-            className="flex min-w-0 flex-1 items-center gap-1 px-1.5 py-[3px]"
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            {entry.icon && <span className="shrink-0 text-xs leading-none">{entry.icon}</span>}
-            <span className="truncate">{entry.title || "Untitled"}</span>
-          </Link>
-        )}
+        <div className="flex items-center gap-1.5">
+          {openMode === "side_panel" && onOpenEntry ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenEntry(entry); }}
+              className="flex min-w-0 flex-1 items-center gap-1.5 px-1.5 py-1"
+            >
+              {inner}
+            </button>
+          ) : (
+            <Link
+              href={`/app/${workspaceSlug}/${entry.shortId}`}
+              className="flex min-w-0 flex-1 items-center gap-1.5 px-1.5 py-1"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {inner}
+            </Link>
+          )}
 
-        {isEditor && showDots && (
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); setRightClickPos({ x: e.clientX, y: e.clientY }); }}
-            className="mr-0.5 flex shrink-0 items-center justify-center rounded-[var(--radius-xs)] p-0.5 text-primary/70 hover:bg-primary/20 hover:text-primary transition-colors"
-          >
-            <MoreHorizontal size={10} />
-          </button>
+          {!!commentCount && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setShowComment(true); }}
+              className="mr-0.5 flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <MessageSquare size={10} />
+              {commentCount}
+            </button>
+          )}
+
+          {isEditor && showDots && (
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); setRightClickPos({ x: e.clientX, y: e.clientY }); }}
+              className="mr-1 flex shrink-0 items-center justify-center rounded-[var(--radius-xs)] p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <MoreHorizontal size={10} />
+            </button>
+          )}
+        </div>
+
+        {filledProps.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1 px-1.5 pb-1.5">
+            {filledProps.map((prop) => (
+              <div key={prop.id} className="min-w-0 shrink-0">
+                <CellDisplay
+                  property={prop}
+                  value={valueMap.get(entry.id)?.get(prop.id) ?? null}
+                  compact
+                  resolvedDisplayAs={resolveDisplayAs(prop, activeView)}
+                  resolvedWrapContent={resolveWrapContent(prop, activeView)}
+                  onToggleCheckbox={() => {
+                    const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
+                    const next = prop.type === "multi_select" ? nextCheckboxMultiSelectValue(prop, raw) : nextCheckboxSelectValue(prop, raw);
+                    onUpdateValue(entry.id, prop.id, next);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      <ChipContextMenu
-        entry={entry}
+      {showComment && chipRef.current && (
+        <CellCommentPopover
+          pageId={entry.id}
+          workspaceId={workspaceId}
+          anchorRect={chipRef.current.getBoundingClientRect()}
+          onClose={() => setShowComment(false)}
+          onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+        />
+      )}
+
+      <EntryContextMenu
+        entryId={entry.id}
+        entryShortId={entry.shortId}
+        entryIcon={entry.icon ?? null}
+        updatedAt={entry.updatedAt ?? null}
+        databaseId={databaseId}
+        workspaceId={workspaceId}
         workspaceSlug={workspaceSlug}
         forcePos={rightClickPos}
+        entryRect={chipRef.current?.getBoundingClientRect() ?? null}
         onClose={() => setRightClickPos(null)}
-        onDelete={onDeleteClick}
-        onDuplicate={onDuplicate}
-        openMode={openMode}
-        onOpenEntry={onOpenEntry}
+        onIconChange={(icon) => onUpdateEntryIcon?.(entry.id, icon)}
+        onDelete={() => onDeleteClick(entry)}
+        onDuplicate={onDuplicate ? () => onDuplicate(entry.id) : undefined}
+        onOpenEntry={openMode === "side_panel" && onOpenEntry ? () => onOpenEntry(entry) : undefined}
+        onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+        onValueChange={(propId, value) => onUpdateValue(entry.id, propId, value)}
+        onPropertyConfigChange={onUpdateProperty}
+        activeView={activeView}
+        onUpdateView={onUpdateView}
       />
     </>
   );
@@ -259,7 +321,8 @@ function DroppableDateCell({ dateKey, isOver, children, className }: { dateKey: 
 
 // ── CalendarView ──────────────────────────────────────────────────────────────
 export function CalendarView({
-  workspaceSlug, entries, properties, valueMap, activeView, isEditor, onCreateEntry, onDeleteEntry, onOpenEntry, onUpdateValue,
+  databaseId, workspaceId, workspaceSlug, entries, properties, valueMap, activeView, isEditor,
+  onCreateEntry, onDeleteEntry, onDuplicateEntry, onOpenEntry, onUpdateValue, onUpdateEntryIcon, onUpdateProperty, onUpdateView,
 }: SharedViewProps) {
   const now   = new Date();
   const [year, setYear]       = useState(now.getFullYear());
@@ -275,6 +338,11 @@ export function CalendarView({
 
   const calPropId = activeView?.calendarPropertyId;
   const calProp   = properties.find((p) => p.id === calPropId && p.type === "date");
+  // Matches Notion: a card shows only its title by default. The one
+  // exception is Status, and only once the user explicitly turns on "Show on
+  // card" from Status's own Edit Property panel — every other property stays
+  // fully editable via the entry's popup but is never rendered on the card.
+  const cardProps = properties.filter((p) => p.id !== calPropId && !!p.config?.groupedByStatus && !!p.config?.showOnCard);
 
   if (!calProp) {
     return (
@@ -444,11 +512,21 @@ export function CalendarView({
                   <DraggableChip
                     key={entry.id}
                     entry={entry}
+                    databaseId={databaseId}
+                    workspaceId={workspaceId}
                     workspaceSlug={workspaceSlug}
                     openMode={openMode}
                     isEditor={isEditor}
+                    cardProps={cardProps}
+                    valueMap={valueMap}
                     onOpenEntry={onOpenEntry}
                     onDeleteClick={(e) => setDeleteTarget({ id: e.id, title: e.title ?? "" })}
+                    onDuplicate={onDuplicateEntry}
+                    onUpdateEntryIcon={onUpdateEntryIcon}
+                    onUpdateValue={onUpdateValue}
+                    onUpdateProperty={onUpdateProperty}
+                    activeView={activeView}
+                    onUpdateView={onUpdateView}
                   />
                 ))}
                 {extra > 0 && (
@@ -492,22 +570,12 @@ export function CalendarView({
               </div>
               <div className="max-h-[220px] overflow-y-auto p-1">
                 {morePopup.entries.map((entry) => (
-                  <div
+                  <MorePopupEntryRow
                     key={entry.id}
-                    className="group/pe flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
+                    entry={entry}
                     onClick={() => { if (openMode === "side_panel" && onOpenEntry) onOpenEntry(entry); setMorePopup(null); }}
-                  >
-                    {entry.icon && <span className="shrink-0 text-xs">{entry.icon}</span>}
-                    <span className="flex-1 truncate text-sm font-medium text-foreground">{entry.title || "Untitled"}</span>
-                    {isEditor && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: entry.id, title: entry.title ?? "" }); setMorePopup(null); }}
-                        className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    )}
-                  </div>
+                    onDelete={isEditor ? () => { setDeleteTarget({ id: entry.id, title: entry.title ?? "" }); setMorePopup(null); } : undefined}
+                  />
                 ))}
               </div>
             </div>

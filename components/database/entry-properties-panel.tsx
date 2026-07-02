@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PROPERTY_REGISTRY } from "@/components/database/property-registry";
+import { Settings2 } from "lucide-react";
+import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
+import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import type { DbProperty, DbPropertyValue } from "@/components/database/types";
 
 interface EntryPropertiesPanelProps {
@@ -28,6 +31,17 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
 
   // Popover editing (select/multi_select/date/person/relation)
   const [popover, setPopover]       = useState<{ propId: string; rect: DOMRect } | null>(null);
+
+  // Edit-property side panel (select/status only)
+  const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
+
+  // `popover`/`editPropPanel` are one-time DOMRect snapshots of a property row's
+  // trigger, and `getAnchorRect={() => editPropPanel.anchorRect}` below always
+  // returns that same frozen value — so EditPropertySidePanel's own
+  // reposition-on-scroll effect has nothing fresh to reposition to. Lock scroll
+  // while either popover is open instead, so the frozen anchor never goes stale.
+  useScrollLockWhileOpen(!!popover || !!editPropPanel, (target) =>
+   !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]'));
 
   useEffect(() => {
     let cancelled = false;
@@ -72,16 +86,44 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
     setEditingId(null);
   }, [editText, saveValue]);
 
+  const updatePropertyConfig = useCallback(async (propId: string, patch: Record<string, unknown>) => {
+    setProperties((prev) => prev.map((p) => (p.id === propId ? { ...p, ...patch } as DbProperty : p)));
+    await fetch(`/api/databases/${databaseId}/properties/${propId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+  }, [databaseId]);
+
+  const deletePropertyLocal = useCallback(async (propId: string) => {
+    const res = await fetch(`/api/databases/${databaseId}/properties/${propId}`, { method: "DELETE" });
+    if (!res.ok) return;
+    setProperties((prev) => prev.filter((p) => p.id !== propId));
+  }, [databaseId]);
+
+  const duplicatePropertyLocal = useCallback(async (prop: DbProperty) => {
+    const res = await fetch(`/api/databases/${databaseId}/properties`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: `${prop.name} (copy)`, type: prop.type, config: prop.config }),
+    });
+    if (!res.ok) return;
+    const newProp = await res.json() as DbProperty;
+    setProperties((prev) => [...prev, newProp]);
+  }, [databaseId]);
+
   const visibleProps = properties.filter((p) => !p.isSystem && !p.isBackRelation);
   if (loading || !visibleProps.length) return null;
 
   const popoverProp = popover ? properties.find((p) => p.id === popover.propId) ?? null : null;
+  const editPropProp = editPropPanel ? properties.find((p) => p.id === editPropPanel.propId) ?? null : null;
+  const SELECT_TYPES = new Set(["select", "multi_select"]);
 
   return (
     <>
       <div className="mb-5 mt-3 space-y-0.5">
         {visibleProps.map((prop) => {
-          const reg = PROPERTY_REGISTRY[prop.type as keyof typeof PROPERTY_REGISTRY];
+          const TypeIcon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON];
           const val = values.get(prop.id) ?? null;
           const isEditing = editingId === prop.id;
 
@@ -92,12 +134,22 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
             >
               {/* Label column */}
               <div className="flex w-[180px] shrink-0 items-center gap-2 pt-1">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border/60 bg-background text-xs font-semibold text-muted-foreground">
-                  {reg?.icon ?? "·"}
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border/60 bg-background text-muted-foreground">
+                  <TypeIcon size={12} />
                 </span>
-                <span className="truncate text-sm text-muted-foreground">
+                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                   {prop.name}
                 </span>
+                {isEditor && SELECT_TYPES.has(prop.type) && (
+                  <button
+                    type="button"
+                    title="Edit property"
+                    onClick={(e) => setEditPropPanel({ propId: prop.id, anchorRect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
+                  >
+                    <Settings2 size={12} />
+                  </button>
+                )}
               </div>
 
               {/* Value column */}
@@ -203,6 +255,21 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
           workspaceId={workspaceId}
           onSave={(v) => { saveValue(popover.propId, v); setPopover(null); }}
           onClose={() => setPopover(null)}
+          onPropertyConfigChange={(propId, config) => updatePropertyConfig(propId, { config })}
+          onEditProperty={(rect) => setEditPropPanel({ propId: popover.propId, anchorRect: rect })}
+        />
+      )}
+
+      {editPropPanel && editPropProp && (
+        <EditPropertySidePanel
+          key={editPropProp.id}
+          property={editPropProp}
+          getAnchorRect={() => editPropPanel.anchorRect}
+          canDelete={!editPropProp.isSystem}
+          onUpdateProperty={(patch) => updatePropertyConfig(editPropProp.id, patch)}
+          onDeleteProperty={() => deletePropertyLocal(editPropProp.id)}
+          onDuplicateProperty={() => duplicatePropertyLocal(editPropProp)}
+          onClose={() => setEditPropPanel(null)}
         />
       )}
     </>

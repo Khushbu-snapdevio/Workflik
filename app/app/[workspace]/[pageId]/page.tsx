@@ -102,7 +102,7 @@ export default async function PageEditorPage({ params }: Props) {
         .where(eq(databaseViews.databaseId, page.id))
         .orderBy(asc(databaseViews.orderIndex)),
       db
-        .select({ id: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, orderIndex: pages.orderIndex })
+        .select({ id: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, orderIndex: pages.orderIndex, updatedAt: pages.updatedAt })
         .from(pages)
         .where(and(eq(pages.databaseId, page.id), eq(pages.kind, "entry"), eq(pages.isDeleted, false)))
         .orderBy(asc(pages.orderIndex)),
@@ -126,7 +126,7 @@ export default async function PageEditorPage({ params }: Props) {
         }}
         properties={props}
         views={views}
-        entries={entries}
+        entries={entries.map((e) => ({ ...e, updatedAt: e.updatedAt ? new Date(e.updatedAt).toISOString() : null }))}
         values={values}
         workspaceSlug={slug}
         workspaceName={ws.name}

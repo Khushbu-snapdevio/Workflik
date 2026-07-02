@@ -3,40 +3,64 @@
 
 export type InlineNode =
   | { text: string; marks?: string[]; attrs?: Record<string, unknown> }
-  | { type: "mention" | "pageMention" | "dateMention"; attrs: Record<string, unknown> };
+  | {
+      type: "mention" | "pageMention" | "dateMention";
+      attrs: Record<string, unknown>;
+    };
 
 export interface BlockContent {
-  text?:        InlineNode[];
-  level?:       number;
-  checked?:     boolean;
-  language?:    string;
-  code?:        string;
-  lineNumbers?: boolean;
-  expression?:  string;
-  url?:         string;
-  caption?:     string;
-  width?:       number;
-  objectKey?:   string;
-  pageId?:      string;
-  databaseId?:  string;
-  defaultViewId?: string;
+  caption?: string;
+  checked?: boolean;
+  code?: string;
+  color?: string; // for callout bg
   columnCount?: number;
-  label?:       string;
-  icon?:        string;   // for callout
-  color?:       string;   // for callout bg
+  databaseId?: string;
+  defaultViewId?: string;
+  description?: string; // for bookmark
+  expression?: string;
+  favicon?: string; // for bookmark
+  fileName?: string; // for embed (uploaded file)
+  icon?: string; // for callout
+  image?: string; // for bookmark
+  label?: string;
+  language?: string;
+  level?: number;
+  lineNumbers?: boolean;
+  mimeType?: string; // for embed (uploaded file)
+  objectKey?: string;
+  pageId?: string;
+  siteName?: string; // for bookmark
+  sourceBlockId?: string; // for synced_block reference instances
+  text?: InlineNode[];
+  title?: string; // for bookmark
+  url?: string;
+  width?: number;
 }
 
 // TipTap mark → our mark string
-function tiptapMarkToString(mark: { type: string; attrs?: Record<string, unknown> }): string | { type: string; attrs: Record<string, unknown> } {
-  if (mark.type === "link") return { type: "link", attrs: { href: mark.attrs?.href ?? "" } };
+function tiptapMarkToString(mark: {
+  type: string;
+  attrs?: Record<string, unknown>;
+}): string | { type: string; attrs: Record<string, unknown> } {
+  if (mark.type === "link") {
+    return { type: "link", attrs: { href: mark.attrs?.href ?? "" } };
+  }
   return mark.type; // bold, italic, underline, strike, code, highlight, textStyle
 }
 
 // Our mark string → TipTap mark
-function stringToTiptapMark(mark: string | { type: string; attrs: Record<string, unknown> }): Record<string, unknown> {
-  if (typeof mark === "object") return { type: mark.type, attrs: mark.attrs };
-  if (mark === "strikethrough") return { type: "strike" };
-  if (mark === "textColor") return { type: "textStyle" };
+function stringToTiptapMark(
+  mark: string | { type: string; attrs: Record<string, unknown> }
+): Record<string, unknown> {
+  if (typeof mark === "object") {
+    return { type: mark.type, attrs: mark.attrs };
+  }
+  if (mark === "strikethrough") {
+    return { type: "strike" };
+  }
+  if (mark === "textColor") {
+    return { type: "textStyle" };
+  }
   return { type: mark };
 }
 
@@ -48,11 +72,17 @@ function tiptapContentToInline(nodes: TipTapNode[]): InlineNode[] {
       result.push({
         text: n.text ?? "",
         marks: (n.marks ?? []).map((m) => {
-          const s = tiptapMarkToString(m as { type: string; attrs?: Record<string, unknown> });
+          const s = tiptapMarkToString(
+            m as { type: string; attrs?: Record<string, unknown> }
+          );
           return typeof s === "string" ? s : JSON.stringify(s);
         }),
       });
-    } else if (n.type === "mention" || n.type === "pageMention" || n.type === "dateMention") {
+    } else if (
+      n.type === "mention" ||
+      n.type === "pageMention" ||
+      n.type === "dateMention"
+    ) {
       result.push({ type: n.type, attrs: n.attrs ?? {} });
     }
   }
@@ -66,31 +96,48 @@ function inlineToTiptapContent(nodes: InlineNode[]): TipTapNode[] {
       return [{ type: n.type, attrs: n.attrs }];
     }
     // TipTap/ProseMirror does not allow empty text nodes
-    if (!n.text) return [];
+    if (!n.text) {
+      return [];
+    }
     const marks = (n.marks ?? []).map((m) => {
-      try { const p = JSON.parse(m) as string | { type: string; attrs: Record<string, unknown> }; return stringToTiptapMark(p) as { type: string; attrs?: Record<string, unknown> }; } catch { return stringToTiptapMark(m) as { type: string; attrs?: Record<string, unknown> }; }
+      try {
+        const p = JSON.parse(m) as
+          | string
+          | { type: string; attrs: Record<string, unknown> };
+        return stringToTiptapMark(p) as {
+          type: string;
+          attrs?: Record<string, unknown>;
+        };
+      } catch {
+        return stringToTiptapMark(m) as {
+          type: string;
+          attrs?: Record<string, unknown>;
+        };
+      }
     });
     const node: TipTapNode = { type: "text", text: n.text };
-    if (marks.length) node.marks = marks;
+    if (marks.length) {
+      node.marks = marks;
+    }
     return [node];
   });
 }
 
 export interface TipTapNode {
-  type:     string;
-  attrs?:   Record<string, unknown>;
+  attrs?: Record<string, unknown>;
   content?: TipTapNode[];
-  marks?:   { type: string; attrs?: Record<string, unknown> }[];
-  text?:    string;
+  marks?: { type: string; attrs?: Record<string, unknown> }[];
+  text?: string;
+  type: string;
 }
 
 export interface DbBlock {
-  id:            string;
-  type:          string;
-  content:       BlockContent;
-  orderIndex:    number;
+  children?: DbBlock[];
+  content: BlockContent;
+  id: string;
+  orderIndex: number;
   parentBlockId: string | null;
-  children?:     DbBlock[];
+  type: string;
 }
 
 // Convert one DB block → TipTap node
@@ -100,53 +147,110 @@ export function blockToTipTapNode(block: DbBlock): TipTapNode {
 
   switch (block.type) {
     case "paragraph":
-      return { type: "paragraph", attrs: { blockId: id }, content: inlineToTiptapContent(c.text ?? []) };
+      return {
+        type: "paragraph",
+        attrs: { blockId: id },
+        content: inlineToTiptapContent(c.text ?? []),
+      };
 
     case "h1":
-      return { type: "heading", attrs: { level: 1, blockId: id }, content: inlineToTiptapContent(c.text ?? []) };
+      return {
+        type: "heading",
+        attrs: { level: 1, blockId: id },
+        content: inlineToTiptapContent(c.text ?? []),
+      };
     case "h2":
-      return { type: "heading", attrs: { level: 2, blockId: id }, content: inlineToTiptapContent(c.text ?? []) };
+      return {
+        type: "heading",
+        attrs: { level: 2, blockId: id },
+        content: inlineToTiptapContent(c.text ?? []),
+      };
     case "h3":
-      return { type: "heading", attrs: { level: 3, blockId: id }, content: inlineToTiptapContent(c.text ?? []) };
+      return {
+        type: "heading",
+        attrs: { level: 3, blockId: id },
+        content: inlineToTiptapContent(c.text ?? []),
+      };
 
     case "bullet":
       return {
-        type: "bulletList", attrs: { blockId: id },
-        content: [{ type: "listItem", content: [{ type: "paragraph", content: inlineToTiptapContent(c.text ?? []) }] }],
+        type: "bulletList",
+        attrs: { blockId: id },
+        content: [
+          {
+            type: "listItem",
+            content: [
+              {
+                type: "paragraph",
+                content: inlineToTiptapContent(c.text ?? []),
+              },
+            ],
+          },
+        ],
       };
 
     case "numbered":
       return {
-        type: "orderedList", attrs: { blockId: id },
-        content: [{ type: "listItem", content: [{ type: "paragraph", content: inlineToTiptapContent(c.text ?? []) }] }],
+        type: "orderedList",
+        attrs: { blockId: id },
+        content: [
+          {
+            type: "listItem",
+            content: [
+              {
+                type: "paragraph",
+                content: inlineToTiptapContent(c.text ?? []),
+              },
+            ],
+          },
+        ],
       };
 
     case "todo":
       return {
-        type: "taskList", attrs: { blockId: id },
-        content: [{
-          type: "taskItem", attrs: { checked: c.checked ?? false },
-          content: [{ type: "paragraph", content: inlineToTiptapContent(c.text ?? []) }],
-        }],
+        type: "taskList",
+        attrs: { blockId: id },
+        content: [
+          {
+            type: "taskItem",
+            attrs: { checked: c.checked ?? false },
+            content: [
+              {
+                type: "paragraph",
+                content: inlineToTiptapContent(c.text ?? []),
+              },
+            ],
+          },
+        ],
       };
 
     case "quote":
       return {
-        type: "blockquote", attrs: { blockId: id },
-        content: [{ type: "paragraph", content: inlineToTiptapContent(c.text ?? []) }],
+        type: "blockquote",
+        attrs: { blockId: id },
+        content: [
+          { type: "paragraph", content: inlineToTiptapContent(c.text ?? []) },
+        ],
       };
 
     case "callout":
       return {
-        type: "callout", attrs: { blockId: id, icon: c.icon ?? "💡", color: c.color ?? "" },
-        content: [{ type: "paragraph", content: inlineToTiptapContent(c.text ?? []) }],
+        type: "callout",
+        attrs: { blockId: id, icon: c.icon ?? "💡", color: c.color ?? "" },
+        content: [
+          { type: "paragraph", content: inlineToTiptapContent(c.text ?? []) },
+        ],
       };
 
     case "toggle":
       return {
-        type: "toggle", attrs: { blockId: id },
+        type: "toggle",
+        attrs: { blockId: id },
         content: [
-          { type: "toggleSummary", content: inlineToTiptapContent(c.text ?? []) },
+          {
+            type: "toggleSummary",
+            content: inlineToTiptapContent(c.text ?? []),
+          },
           ...(block.children ?? []).map(blockToTipTapNode),
         ],
       };
@@ -156,44 +260,144 @@ export function blockToTipTapNode(block: DbBlock): TipTapNode {
 
     case "code": {
       const codeText = c.code ?? "";
-      return { type: "codeBlock", attrs: { language: c.language ?? "", blockId: id }, content: codeText ? [{ type: "text", text: codeText }] : [] };
+      return {
+        type: "codeBlock",
+        attrs: { language: c.language ?? "", blockId: id },
+        content: codeText ? [{ type: "text", text: codeText }] : [],
+      };
     }
 
     case "equation":
-      return { type: "mathBlock", attrs: { expression: c.expression ?? "", blockId: id } };
+      return {
+        type: "mathBlock",
+        attrs: { expression: c.expression ?? "", blockId: id },
+      };
 
     case "image":
-      return { type: "imageBlock", attrs: { src: c.url ?? "", caption: c.caption ?? "", width: c.width ?? 720, objectKey: c.objectKey ?? "", blockId: id } };
+      return {
+        type: "imageBlock",
+        attrs: {
+          src: c.url ?? "",
+          caption: c.caption ?? "",
+          width: c.width ?? 720,
+          objectKey: c.objectKey ?? "",
+          blockId: id,
+        },
+      };
 
     case "video":
-      return { type: "videoBlock", attrs: { src: c.url ?? "", caption: c.caption ?? "", blockId: id } };
+      return {
+        type: "videoBlock",
+        attrs: { src: c.url ?? "", caption: c.caption ?? "", blockId: id },
+      };
 
     case "audio":
-      return { type: "audioBlock", attrs: { src: c.url ?? "", caption: c.caption ?? "", blockId: id } };
+      return {
+        type: "audioBlock",
+        attrs: { src: c.url ?? "", caption: c.caption ?? "", blockId: id },
+      };
 
     case "file":
-      return { type: "fileBlock", attrs: { src: c.url ?? "", caption: c.caption ?? "", objectKey: c.objectKey ?? "", blockId: id } };
+      return {
+        type: "fileBlock",
+        attrs: {
+          src: c.url ?? "",
+          caption: c.caption ?? "",
+          objectKey: c.objectKey ?? "",
+          blockId: id,
+        },
+      };
+
+    case "pdf":
+      return {
+        type: "pdfBlock",
+        attrs: {
+          src: c.url ?? "",
+          caption: c.caption ?? "",
+          objectKey: c.objectKey ?? "",
+          blockId: id,
+        },
+      };
+
+    case "embed":
+      return {
+        type: "embedBlock",
+        attrs: {
+          url: c.url ?? "",
+          fileName: c.fileName ?? "",
+          mimeType: c.mimeType ?? "",
+          blockId: id,
+        },
+      };
+
+    case "bookmark":
+      return {
+        type: "bookmarkBlock",
+        attrs: {
+          url: c.url ?? "",
+          title: c.title ?? "",
+          description: c.description ?? "",
+          image: c.image ?? "",
+          favicon: c.favicon ?? "",
+          siteName: c.siteName ?? "",
+          blockId: id,
+        },
+      };
 
     case "toc":
       return { type: "tableOfContents", attrs: { blockId: id } };
 
     case "columns":
       return {
-        type: "columns", attrs: { columnCount: c.columnCount ?? 2, blockId: id },
+        type: "columns",
+        attrs: { columnCount: c.columnCount ?? 2, blockId: id },
         content: block.children?.map(blockToTipTapNode) ?? [],
       };
 
     case "linked_page":
-      return { type: "linkedPage", attrs: { pageId: c.pageId ?? "", blockId: id } };
+      return {
+        type: "linkedPage",
+        attrs: { pageId: c.pageId ?? "", blockId: id },
+      };
+
+    case "sub_page":
+      return {
+        type: "subPageBlock",
+        attrs: { pageId: c.pageId ?? "", blockId: id },
+      };
+
+    case "breadcrumb":
+      return { type: "breadcrumbBlock", attrs: { blockId: id } };
+
+    case "synced_block":
+      return {
+        type: "syncedBlock",
+        attrs: { sourceBlockId: c.sourceBlockId ?? "", blockId: id },
+        content: block.children?.map(blockToTipTapNode) ?? [],
+      };
 
     case "database":
-      return { type: "inlineDatabase", attrs: { databaseId: c.databaseId ?? "", defaultViewId: c.defaultViewId ?? "", blockId: id } };
+      return {
+        type: "inlineDatabase",
+        attrs: {
+          databaseId: c.databaseId ?? "",
+          defaultViewId: c.defaultViewId ?? "",
+          blockId: id,
+        },
+      };
 
     case "template_button":
-      return { type: "templateButton", attrs: { label: c.label ?? "Template", blockId: id } };
+      return {
+        type: "templateButton",
+        attrs: { label: c.label ?? "Template", blockId: id },
+      };
 
     case "table":
-      return { type: "table", attrs: { blockId: id }, content: block.children?.map(blockToTipTapNode) ?? [] };
+      return {
+        type: "table",
+        attrs: { blockId: id },
+        content: block.children?.map(blockToTipTapNode) ?? [],
+      };
 
     default:
       return { type: "paragraph", attrs: { blockId: id }, content: [] };
@@ -201,84 +405,218 @@ export function blockToTipTapNode(block: DbBlock): TipTapNode {
 }
 
 // Convert TipTap node → DB block content shape
-export function tiptapNodeToBlockContent(node: TipTapNode): { type: string; content: BlockContent } {
+export function tiptapNodeToBlockContent(node: TipTapNode): {
+  type: string;
+  content: BlockContent;
+} {
   switch (node.type) {
     case "paragraph":
-      return { type: "paragraph", content: { text: tiptapContentToInline(node.content ?? []) } };
+      return {
+        type: "paragraph",
+        content: { text: tiptapContentToInline(node.content ?? []) },
+      };
 
     case "heading": {
       const level = (node.attrs?.level as number) ?? 1;
       const t = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
-      return { type: t, content: { text: tiptapContentToInline(node.content ?? []) } };
+      return {
+        type: t,
+        content: { text: tiptapContentToInline(node.content ?? []) },
+      };
     }
 
     case "bulletList":
     case "listItem": {
       const inner = node.content?.[0];
-      return { type: "bullet", content: { text: tiptapContentToInline(inner?.content ?? []) } };
+      return {
+        type: "bullet",
+        content: { text: tiptapContentToInline(inner?.content ?? []) },
+      };
     }
 
     case "orderedList": {
       const inner = node.content?.[0]?.content?.[0];
-      return { type: "numbered", content: { text: tiptapContentToInline(inner?.content ?? []) } };
+      return {
+        type: "numbered",
+        content: { text: tiptapContentToInline(inner?.content ?? []) },
+      };
     }
 
     case "taskList":
     case "taskItem": {
       const inner = node.content?.[0]?.content?.[0];
-      return { type: "todo", content: { checked: (node.attrs?.checked as boolean) ?? false, text: tiptapContentToInline(inner?.content ?? []) } };
+      return {
+        type: "todo",
+        content: {
+          checked: (node.attrs?.checked as boolean) ?? false,
+          text: tiptapContentToInline(inner?.content ?? []),
+        },
+      };
     }
 
     case "blockquote": {
       const inner = node.content?.[0];
-      return { type: "quote", content: { text: tiptapContentToInline(inner?.content ?? []) } };
+      return {
+        type: "quote",
+        content: { text: tiptapContentToInline(inner?.content ?? []) },
+      };
     }
 
     case "callout": {
       const inner = node.content?.[0];
-      return { type: "callout", content: { icon: (node.attrs?.icon as string) ?? "💡", color: (node.attrs?.color as string) ?? "", text: tiptapContentToInline(inner?.content ?? []) } };
+      return {
+        type: "callout",
+        content: {
+          icon: (node.attrs?.icon as string) ?? "💡",
+          color: (node.attrs?.color as string) ?? "",
+          text: tiptapContentToInline(inner?.content ?? []),
+        },
+      };
     }
 
     case "toggle": {
       const summary = node.content?.[0];
-      return { type: "toggle", content: { text: tiptapContentToInline(summary?.content ?? []) } };
+      return {
+        type: "toggle",
+        content: { text: tiptapContentToInline(summary?.content ?? []) },
+      };
     }
 
     case "horizontalRule":
       return { type: "divider", content: {} };
 
     case "codeBlock":
-      return { type: "code", content: { language: (node.attrs?.language as string) ?? "", code: node.content?.[0]?.text ?? "", lineNumbers: true } };
+      return {
+        type: "code",
+        content: {
+          language: (node.attrs?.language as string) ?? "",
+          code: node.content?.[0]?.text ?? "",
+          lineNumbers: true,
+        },
+      };
 
     case "mathBlock":
-      return { type: "equation", content: { expression: (node.attrs?.expression as string) ?? "" } };
+      return {
+        type: "equation",
+        content: { expression: (node.attrs?.expression as string) ?? "" },
+      };
 
     case "imageBlock":
-      return { type: "image", content: { url: (node.attrs?.src as string) ?? "", caption: (node.attrs?.caption as string) ?? "", width: (node.attrs?.width as number) ?? 720, objectKey: (node.attrs?.objectKey as string) ?? "" } };
+      return {
+        type: "image",
+        content: {
+          url: (node.attrs?.src as string) ?? "",
+          caption: (node.attrs?.caption as string) ?? "",
+          width: (node.attrs?.width as number) ?? 720,
+          objectKey: (node.attrs?.objectKey as string) ?? "",
+        },
+      };
 
     case "videoBlock":
-      return { type: "video", content: { url: (node.attrs?.src as string) ?? "", caption: (node.attrs?.caption as string) ?? "" } };
+      return {
+        type: "video",
+        content: {
+          url: (node.attrs?.src as string) ?? "",
+          caption: (node.attrs?.caption as string) ?? "",
+        },
+      };
 
     case "audioBlock":
-      return { type: "audio", content: { url: (node.attrs?.src as string) ?? "", caption: (node.attrs?.caption as string) ?? "" } };
+      return {
+        type: "audio",
+        content: {
+          url: (node.attrs?.src as string) ?? "",
+          caption: (node.attrs?.caption as string) ?? "",
+        },
+      };
 
     case "fileBlock":
-      return { type: "file", content: { url: (node.attrs?.src as string) ?? "", caption: (node.attrs?.caption as string) ?? "", objectKey: (node.attrs?.objectKey as string) ?? "" } };
+      return {
+        type: "file",
+        content: {
+          url: (node.attrs?.src as string) ?? "",
+          caption: (node.attrs?.caption as string) ?? "",
+          objectKey: (node.attrs?.objectKey as string) ?? "",
+        },
+      };
+
+    case "pdfBlock":
+      return {
+        type: "pdf",
+        content: {
+          url: (node.attrs?.src as string) ?? "",
+          caption: (node.attrs?.caption as string) ?? "",
+          objectKey: (node.attrs?.objectKey as string) ?? "",
+        },
+      };
+
+    case "embedBlock":
+      return {
+        type: "embed",
+        content: {
+          url: (node.attrs?.url as string) ?? "",
+          fileName: (node.attrs?.fileName as string) ?? "",
+          mimeType: (node.attrs?.mimeType as string) ?? "",
+        },
+      };
+
+    case "bookmarkBlock":
+      return {
+        type: "bookmark",
+        content: {
+          url: (node.attrs?.url as string) ?? "",
+          title: (node.attrs?.title as string) ?? "",
+          description: (node.attrs?.description as string) ?? "",
+          image: (node.attrs?.image as string) ?? "",
+          favicon: (node.attrs?.favicon as string) ?? "",
+          siteName: (node.attrs?.siteName as string) ?? "",
+        },
+      };
 
     case "tableOfContents":
       return { type: "toc", content: {} };
 
     case "columns":
-      return { type: "columns", content: { columnCount: (node.attrs?.columnCount as number) ?? 2 } };
+      return {
+        type: "columns",
+        content: { columnCount: (node.attrs?.columnCount as number) ?? 2 },
+      };
 
     case "linkedPage":
-      return { type: "linked_page", content: { pageId: (node.attrs?.pageId as string) ?? "" } };
+      return {
+        type: "linked_page",
+        content: { pageId: (node.attrs?.pageId as string) ?? "" },
+      };
+
+    case "subPageBlock":
+      return {
+        type: "sub_page",
+        content: { pageId: (node.attrs?.pageId as string) ?? "" },
+      };
+
+    case "breadcrumbBlock":
+      return { type: "breadcrumb", content: {} };
+
+    case "syncedBlock":
+      return {
+        type: "synced_block",
+        content: { sourceBlockId: (node.attrs?.sourceBlockId as string) ?? "" },
+      };
 
     case "inlineDatabase":
-      return { type: "database", content: { databaseId: (node.attrs?.databaseId as string) ?? "", defaultViewId: (node.attrs?.defaultViewId as string) ?? "" } };
+      return {
+        type: "database",
+        content: {
+          databaseId: (node.attrs?.databaseId as string) ?? "",
+          defaultViewId: (node.attrs?.defaultViewId as string) ?? "",
+        },
+      };
 
     case "templateButton":
-      return { type: "template_button", content: { label: (node.attrs?.label as string) ?? "Template" } };
+      return {
+        type: "template_button",
+        content: { label: (node.attrs?.label as string) ?? "Template" },
+      };
 
     default:
       return { type: "paragraph", content: { text: [] } };
@@ -289,23 +627,43 @@ export function tiptapNodeToBlockContent(node: TipTapNode): { type: string; cont
 export function tiptapDocToBlocks(
   doc: { content?: TipTapNode[] },
   pageId: string,
-  existingBlocks: DbBlock[],   // to match blockId attrs → existing UUIDs
-): Array<{ id: string | null; pageId: string; parentBlockId: string | null; type: string; content: BlockContent; orderIndex: number; schemaVersion: number }> {
+  existingBlocks: DbBlock[] // to match blockId attrs → existing UUIDs
+): Array<{
+  id: string | null;
+  pageId: string;
+  parentBlockId: string | null;
+  type: string;
+  content: BlockContent;
+  orderIndex: number;
+  schemaVersion: number;
+}> {
   const idMap = new Map(existingBlocks.map((b) => [b.id, b]));
-  const result: Array<{ id: string | null; pageId: string; parentBlockId: string | null; type: string; content: BlockContent; orderIndex: number; schemaVersion: number }> = [];
+  const result: Array<{
+    id: string | null;
+    pageId: string;
+    parentBlockId: string | null;
+    type: string;
+    content: BlockContent;
+    orderIndex: number;
+    schemaVersion: number;
+  }> = [];
 
-  function walk(nodes: TipTapNode[], parentBlockId: string | null, startIndex: number) {
+  function walk(
+    nodes: TipTapNode[],
+    parentBlockId: string | null,
+    startIndex: number
+  ) {
     nodes.forEach((node, i) => {
       const blockId = (node.attrs?.blockId as string) ?? null;
       const { type, content } = tiptapNodeToBlockContent(node);
 
       result.push({
-        id:            blockId && idMap.has(blockId) ? blockId : null,
+        id: blockId && idMap.has(blockId) ? blockId : null,
         pageId,
         parentBlockId,
         type,
         content,
-        orderIndex:    startIndex + i,
+        orderIndex: startIndex + i,
         schemaVersion: 1,
       });
 
@@ -316,6 +674,16 @@ export function tiptapDocToBlocks(
       if (node.type === "columns" && node.content) {
         walk(node.content, blockId, 0);
       }
+      // Synced-block children are only persisted for the source instance
+      // (no sourceBlockId) — reference instances render read-only content
+      // fetched from the source at render time, not stored as their own rows.
+      if (
+        node.type === "syncedBlock" &&
+        !node.attrs?.sourceBlockId &&
+        node.content
+      ) {
+        walk(node.content, blockId, 0);
+      }
     });
   }
 
@@ -324,8 +692,19 @@ export function tiptapDocToBlocks(
 }
 
 // Convert flat DB blocks to TipTap document JSON
-export function blocksToTiptapDoc(blocks: DbBlock[]): { type: "doc"; content: TipTapNode[] } {
-  const roots = blocks.filter((b) => !b.parentBlockId).sort((a, b) => a.orderIndex - b.orderIndex);
+// Resolve the TipTap node array for one level of a block tree, rooted at
+// `rootParentBlockId` (null = top-level page blocks). Shared by
+// blocksToTiptapDoc and the synced-block "read-only reference" resolver
+// (app/api/blocks/[id]/synced-content/route.ts), which needs the same
+// children-of-an-arbitrary-block resolution but rooted at a source block
+// instead of the page root.
+export function blocksToTiptapNodes(
+  blocks: DbBlock[],
+  rootParentBlockId: string | null
+): TipTapNode[] {
+  const roots = blocks
+    .filter((b) => b.parentBlockId === rootParentBlockId)
+    .sort((a, b) => a.orderIndex - b.orderIndex);
   const childMap = new Map<string, DbBlock[]>();
   for (const b of blocks) {
     if (b.parentBlockId) {
@@ -336,9 +715,18 @@ export function blocksToTiptapDoc(blocks: DbBlock[]): { type: "doc"; content: Ti
   }
 
   function buildNode(block: DbBlock): TipTapNode {
-    const children = (childMap.get(block.id) ?? []).sort((a, b) => a.orderIndex - b.orderIndex);
+    const children = (childMap.get(block.id) ?? []).sort(
+      (a, b) => a.orderIndex - b.orderIndex
+    );
     return blockToTipTapNode({ ...block, children });
   }
 
-  return { type: "doc", content: roots.map(buildNode) };
+  return roots.map(buildNode);
+}
+
+export function blocksToTiptapDoc(blocks: DbBlock[]): {
+  type: "doc";
+  content: TipTapNode[];
+} {
+  return { type: "doc", content: blocksToTiptapNodes(blocks, null) };
 }

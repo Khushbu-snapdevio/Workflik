@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PageIcon } from "@/components/pages/page-icon";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 const VISIBLE_MAX = 3;
 
@@ -80,6 +81,9 @@ export function FavoritesSection({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [popupOpen]);
+
+  useScrollLockWhileOpen(popupOpen, (target) =>
+    !!popupRef.current?.contains(target) || !!moreRef.current?.contains(target));
 
   function openPopup() {
     if (moreRef.current) {

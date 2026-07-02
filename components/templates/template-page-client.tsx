@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,7 @@ import {
  User as UserIcon, Tag as TagIcon,
  Link as LinkIcon, Type as TextTIcon, Hash as NumberCircleOneIcon,
  CheckSquare as CheckSquareIcon, List as ListBulletsIcon,
- MoreVertical as MoreVerticalIcon, Pencil as PencilIcon, Copy as CopyIcon,
+ MoreVertical as MoreVerticalIcon, Pencil as PencilIcon, Copy as CopyIcon, Settings2 as GearIcon,
 } from "lucide-react";
 
 const CalendarBlankIcon = CalendarIcon;
@@ -30,8 +30,11 @@ import { PageActionsMenu }   from "@/components/pages/page-actions-menu";
 import { PageCommentButton }  from "@/components/pages/page-comment-button";
 import { IconPicker }       from "@/components/pages/icon-picker";
 import { PageIcon }        from "@/components/pages/page-icon";
+import { getOptionColor, groupOptions } from "@/components/database/property-registry";
+import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
+import type { SelectOption, DbPropertyConfig, DbProperty } from "@/components/database/types";
 
-export type TemplateEntry = { id: string; shortId: string; title: string; orderIndex: number };
+export type TemplateEntry = { id: string; shortId: string; title: string; orderIndex: number; icon?: string | null; updatedAt?: string | null };
 export type TemplateValue = { id: string; entryId: string; propertyId: string; value: unknown };
 export type FilterRule  = { id: string; propertyId: string; operator: string; value: unknown };
 export type SortRule   = { id: string; propertyId: string; direction: "asc" | "desc" };
@@ -479,21 +482,31 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
 
 // ── Entry detail panel ────────────────────────────────────────────────────────
 
-const PANEL_OPTION_COLORS: Record<string, string> = {
- gray:   "bg-[#d4d4d8] text-[#3f3f46]",
- red:    "bg-[#fee2e2] text-[#b91c1c]",
- orange:  "bg-[#ffedd5] text-[#c2410c]",
- yellow:  "bg-[#fef9c3] text-[#a16207]",
- green:   "bg-[#dcfce7] text-[#15803d]",
- teal:   "bg-[#ccfbf1] text-[#0f766e]",
- blue:   "bg-[#e0f2fe] text-[#0369a1]",
- purple:  "bg-[#ede9fe] text-[#6d28d9]",
- pink:   "bg-[#fce7f3] text-[#be185d]",
-};
-function poptionCls(color: string) { return PANEL_OPTION_COLORS[color] ?? PANEL_OPTION_COLORS.gray; }
+// Option/config shapes are the shared, canonical ones (components/database/types.ts)
+// so colors, groups, and display settings render consistently across every view.
+type PPropOption = SelectOption;
+type PPropConfig = DbPropertyConfig;
 
-type PPropOption = { id: string; name: string; color: string };
-type PPropConfig = { options?: PPropOption[] };
+function PPill({ name, color, displayAs, wrap }: { name: string; color: string; displayAs?: "select" | "checkbox"; wrap?: boolean }) {
+ const wrapCls = wrap ? "whitespace-normal break-words" : "truncate";
+ if (displayAs === "checkbox") {
+  return (
+   <span className="flex size-4 items-center justify-center rounded border border-primary bg-primary">
+    <CheckIcon size={10} className="text-primary-foreground" />
+   </span>
+  );
+ }
+ const c = getOptionColor(color);
+ return (
+  <span
+   className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium"
+   style={{ backgroundColor: c.bg, color: c.text }}
+  >
+   <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: c.dot }} />
+   <span className={wrapCls}>{name}</span>
+  </span>
+ );
+}
 
 const PROP_TYPE_ICON: Record<string, React.ElementType> = {
  text:     TextTIcon,
@@ -509,20 +522,35 @@ const PROP_TYPE_ICON: Record<string, React.ElementType> = {
 };
 
 function PanelPropRow({
- prop, value, onSave,
+ prop, value, onSave, onEditProperty,
 }: {
  prop:  DatabaseProperty;
  value: unknown;
  onSave: (v: unknown) => void;
+ onEditProperty?: (propId: string) => void;
 }) {
  const Icon  = PROP_TYPE_ICON[prop.type] ?? TextTIcon;
  const config = (prop.config ?? {}) as PPropConfig;
+ const isSelectType = prop.type === "select" || prop.type === "multi_select";
 
  return (
-  <div className="flex min-h-[32px] items-start gap-0 rounded-[var(--radius-sm)] transition-colors hover:bg-muted/30">
+  <div className="group/proprow flex min-h-[32px] items-start gap-0 rounded-[var(--radius-sm)] transition-colors hover:bg-muted/30">
    <div className="flex w-[160px] shrink-0 items-center gap-2 px-2 py-2">
-    <Icon size={13} className="text-muted-foreground/60" />
-    <span className="truncate text-xs text-muted-foreground">{prop.name}</span>
+    {config.icon
+     ? <PageIcon icon={config.icon} size={13} className="shrink-0" />
+     : <Icon size={13} className="text-muted-foreground/60" />
+    }
+    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{prop.name}</span>
+    {isSelectType && onEditProperty && (
+     <button
+      type="button"
+      title="Edit property"
+      onClick={() => onEditProperty(prop.id)}
+      className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/50 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/proprow:opacity-100"
+     >
+      <GearIcon size={11} />
+     </button>
+    )}
    </div>
    <div className="flex-1 px-2 py-[5px]">
     <PanelPropValue type={prop.type} config={config} value={value} onSave={onSave} />
@@ -542,6 +570,11 @@ function PanelPropValue({
  const [editing, setEditing] = useState(false);
  const [draft,  setDraft]  = useState("");
  const [open,  setOpen]  = useState(false);
+ // No view context on this standalone entry-detail panel (a page can be opened
+ // outside any particular view) — resolves straight to the property's own
+ // global config, same as reading config.displayAs/wrapContent directly.
+ const resolvedDisplayAs  = resolveDisplayAs({ config } as unknown as DbProperty, undefined);
+ const resolvedWrapContent = resolveWrapContent({ config } as unknown as DbProperty, undefined);
 
  // ── Checkbox ─────────────────────────────────────────────────────────────
  if (type === "checkbox") {
@@ -560,6 +593,7 @@ function PanelPropValue({
  if (type === "select") {
   const options   = config.options ?? [];
   const selectedOpt = options.find((o) => o.id === (value as { optionId?: string } | null)?.optionId);
+  const sections   = groupOptions(options, !!config.groupedByStatus);
   return (
    <div className="relative">
     <button
@@ -567,17 +601,26 @@ function PanelPropValue({
      className="flex min-h-[22px] w-full items-center text-left"
     >
      {selectedOpt
-      ? <span className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(selectedOpt.color)}`}>{selectedOpt.name}</span>
+      ? <PPill name={selectedOpt.name} color={selectedOpt.color} displayAs={resolvedDisplayAs} wrap={resolvedWrapContent} />
+      : resolvedDisplayAs === "checkbox"
+      ? <span className="flex size-4 items-center justify-center rounded border border-border bg-background" />
       : <span className="text-xs text-muted-foreground/70">Empty</span>
      }
     </button>
     {open && (
-     <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
-      {options.map((opt) => (
-       <button key={opt.id} onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors">
-        <span className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
-       </button>
+     <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
+      {sections.map((section) => (
+       <div key={section.key}>
+        {section.label && (
+         <p className="mb-0.5 mt-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">{section.label}</p>
+        )}
+        {section.options.map((opt) => (
+         <button key={opt.id} onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
+          className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors">
+          <PPill name={opt.name} color={opt.color} />
+         </button>
+        ))}
+       </div>
       ))}
       {selectedOpt && (
        <button onClick={() => { onSave(null); setOpen(false); }}
@@ -603,7 +646,7 @@ function PanelPropValue({
       : selectedIds.map((id) => {
         const opt = options.find((o) => o.id === id);
         return opt ? (
-         <span key={id} className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+         <PPill key={id} name={opt.name} color={opt.color} displayAs={resolvedDisplayAs} wrap={resolvedWrapContent} />
         ) : null;
        })
      }
@@ -623,7 +666,7 @@ function PanelPropValue({
          <span className={`flex size-3.5 items-center justify-center rounded border ${isOn ? "border-primary bg-primary" : "border-border"}`}>
           {isOn && <CheckIcon size={9} className="text-primary-foreground" />}
          </span>
-         <span className={`inline-flex items-center rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium ${poptionCls(opt.color)}`}>{opt.name}</span>
+         <PPill name={opt.name} color={opt.color} />
         </button>
        );
       })}
@@ -933,6 +976,13 @@ export function TemplatePageClient({
  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
 
+ // The toolbar's "New" button — every "Edit property" popup anchors here, not to
+ // whichever column/cell triggered it, so its position is always the same and predictable.
+ const newButtonRef = useRef<HTMLButtonElement>(null);
+ const getEditPropertyAnchorRect = useCallback((): DOMRect => {
+  return newButtonRef.current?.getBoundingClientRect() ?? new DOMRect(8, 8, 0, 0);
+ }, []);
+
  const handleClickEntry = useCallback((entryId: string) => {
   const entry = entries.find(e => e.id === entryId);
   if (entry) router.push(`/app/${workspaceSlug}/${entry.shortId}`);
@@ -977,6 +1027,17 @@ export function TemplatePageClient({
  const [filterRules,  setFilterRules]  = useState<FilterRule[]>([]);
  const [sortRules,   setSortRules]   = useState<SortRule[]>([]);
 
+ // Only one toolbar popup (Filter / Sort / Properties / Add view / view "⋮" menu)
+ // should ever be open at once — call before opening any of them.
+ function closeAllToolbarPopups() {
+  setShowFilter(false);
+  setShowSort(false);
+  setShowProperties(false);
+  setShowAddView(false);
+  setViewMenuTarget(null);
+  setViewMenuRect(null);
+ }
+
  const initView  = initViews.find((v) => v.id === defaultViewId) ?? initViews[0];
  const [activeViewId, setActiveViewId] = useState(initView?.id ?? "");
  const [viewSwitching, setViewSwitching] = useState(false);
@@ -990,6 +1051,29 @@ export function TemplatePageClient({
  const addViewRef   = useRef<HTMLDivElement>(null);
  const viewMenuRef  = useRef<HTMLDivElement>(null);
  const tableViewRef = useRef<HTMLDivElement>(null);
+ const scrollAreaRef = useRef<HTMLDivElement>(null);
+ const viewToolbarRef = useRef<HTMLDivElement>(null);
+ // Notion-style calendar shell: fills exactly the space below the sticky view-tabs
+ // toolbar down to the bottom of the viewport, so week rows can divide it evenly
+ // (calc(100dvh-Nrem) can't do this accurately since the cover/title/description
+ // above the toolbar are variable height). Re-measured on any size change of either
+ // the scroll container or the toolbar (e.g. its row wraps on a narrow window).
+ const [calendarHeight, setCalendarHeight] = useState<number | null>(null);
+
+ useLayoutEffect(() => {
+  if (activeView?.type !== "calendar") return;
+  const scrollEl = scrollAreaRef.current;
+  const toolbarEl = viewToolbarRef.current;
+  if (!scrollEl || !toolbarEl) return;
+  function measure() {
+   setCalendarHeight(scrollEl!.clientHeight - toolbarEl!.offsetHeight);
+  }
+  measure();
+  const ro = new ResizeObserver(measure);
+  ro.observe(scrollEl);
+  ro.observe(toolbarEl);
+  return () => ro.disconnect();
+ }, [activeView?.type]);
 
  const [hoveredViewId,  setHoveredViewId]  = useState<string | null>(null);
  const [viewMenuTarget, setViewMenuTarget]  = useState<DatabaseView | null>(null);
@@ -1007,6 +1091,19 @@ export function TemplatePageClient({
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [showAddView]);
+
+ // Lock the page's own scroll container while the view menu is open — its
+ // position is a one-time snapshot (position:fixed, not re-measured), so
+ // letting the page scroll underneath would leave it floating over the wrong
+ // spot. Simpler and more robust than continuously repositioning it.
+ useEffect(() => {
+  if (!viewMenuTarget) return;
+  const el = scrollAreaRef.current;
+  if (!el) return;
+  const prevOverflowY = el.style.overflowY;
+  el.style.overflowY = "hidden";
+  return () => { el.style.overflowY = prevOverflowY; };
+ }, [viewMenuTarget]);
 
  useEffect(() => {
   if (!viewMenuTarget) return;
@@ -1166,11 +1263,11 @@ export function TemplatePageClient({
    const res = await fetch(`/api/databases/${page.id}/entries?viewId=${viewId}`);
    if (res.ok) {
     const data = await res.json() as {
-     entries:    { id: string; shortId: string; title: string; orderIndex: number }[];
+     entries:    { id: string; shortId: string; title: string; orderIndex: number; icon: string | null; updatedAt: string | null }[];
      propertyValues: TemplateValue[];
     };
     setEntries(data.entries.map((e) => ({
-     id: e.id, shortId: e.shortId, title: e.title, orderIndex: e.orderIndex,
+     id: e.id, shortId: e.shortId, title: e.title, orderIndex: e.orderIndex, icon: e.icon, updatedAt: e.updatedAt,
     })));
     setValues(data.propertyValues);
    }
@@ -1187,15 +1284,18 @@ export function TemplatePageClient({
    body:  JSON.stringify({ title: t, defaultValues }),
   });
   if (!res.ok) return;
-  const e = await res.json() as { id: string; shortId: string; title: string; orderIndex: number };
+  const e = await res.json() as { id: string; shortId: string; title: string; orderIndex: number; propertyValues: { entryId: string; propertyId: string; value: unknown }[] };
   setEntries((prev) => [...prev, { id: e.id, shortId: e.shortId, title: t, orderIndex: e.orderIndex }]);
-  // Immediately reflect defaultValues in local state so calendar/board show the entry right away
-  if (defaultValues && Object.keys(defaultValues).length > 0) {
-   const newValues = Object.entries(defaultValues).map(([propId, value]) => ({
+  // Mirrors EVERY value the server actually wrote — not just what this caller
+  // passed in — so a server-computed default (e.g. a grouped Status property
+  // falling back to "Not started") shows up immediately, not only after the
+  // next full refetch.
+  if (e.propertyValues.length > 0) {
+   const newValues = e.propertyValues.map((v) => ({
     id:     crypto.randomUUID(),
-    entryId:  e.id,
-    propertyId: propId,
-    value,
+    entryId:  v.entryId,
+    propertyId: v.propertyId,
+    value:   v.value,
    }));
    setValues((prev) => [...prev, ...newValues]);
   }
@@ -1222,6 +1322,14 @@ export function TemplatePageClient({
   });
  }, []);
 
+ const saveEntryIcon = useCallback(async (entryId: string, icon: string) => {
+  setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, icon } : e));
+  await fetch(`/api/pages/${entryId}`, {
+   method: "PATCH", headers: { "Content-Type": "application/json" },
+   body:  JSON.stringify({ icon }),
+  });
+ }, []);
+
  const deleteEntry = useCallback(async (entryId: string) => {
   setEntries((prev) => prev.filter((e) => e.id !== entryId));
   setSelectedIds((prev) => { const n = new Set(prev); n.delete(entryId); return n; });
@@ -1238,8 +1346,8 @@ export function TemplatePageClient({
  const duplicateEntry = useCallback(async (entryId: string) => {
   const res = await fetch(`/api/pages/${entryId}/duplicate`, { method: "POST" });
   if (!res.ok) return;
-  const dup = await res.json() as { id: string; shortId: string; title: string; orderIndex: number };
-  setEntries((prev) => [...prev, { id: dup.id, shortId: dup.shortId, title: dup.title, orderIndex: dup.orderIndex }]);
+  const dup = await res.json() as { id: string; shortId: string; title: string; orderIndex: number; icon: string | null; updatedAt: string | null };
+  setEntries((prev) => [...prev, { id: dup.id, shortId: dup.shortId, title: dup.title, orderIndex: dup.orderIndex, icon: dup.icon, updatedAt: dup.updatedAt }]);
   const dupValues = values
    .filter((v) => v.entryId === entryId)
    .map((v) => ({ ...v, id: crypto.randomUUID(), entryId: dup.id }));
@@ -1274,11 +1382,11 @@ export function TemplatePageClient({
 
  // ── Property actions ───────────────────────────────────────────────────────
 
- const addProperty = useCallback(async (name: string, type: string) => {
-  const config = (type === "select" || type === "multi_select") ? { options: [] } : {};
+ const addProperty = useCallback(async (name: string, type: string, config?: Record<string, unknown>) => {
+  const resolvedConfig = config ?? ((type === "select" || type === "multi_select") ? { options: [] } : {});
   const res = await fetch(`/api/databases/${page.id}/properties`, {
    method: "POST", headers: { "Content-Type": "application/json" },
-   body:  JSON.stringify({ name, type, config }),
+   body:  JSON.stringify({ name, type, config: resolvedConfig }),
   });
   if (!res.ok) return;
   const prop = await res.json() as DatabaseProperty;
@@ -1293,11 +1401,29 @@ export function TemplatePageClient({
   });
  }, [page.id]);
 
+ const updateProperty = useCallback(async (propId: string, patch: Record<string, unknown>) => {
+  setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, ...patch } as DatabaseProperty : p));
+  await fetch(`/api/databases/${page.id}/properties/${propId}`, {
+   method: "PATCH", headers: { "Content-Type": "application/json" },
+   body:  JSON.stringify(patch),
+  });
+ }, [page.id]);
+
  const deleteProperty = useCallback(async (propId: string) => {
   setProperties((prev) => prev.filter((p) => p.id !== propId));
   setValues((prev) => prev.filter((v) => v.propertyId !== propId));
   await fetch(`/api/databases/${page.id}/properties/${propId}`, { method: "DELETE" });
  }, [page.id]);
+
+ const updateView = useCallback(async (patch: Record<string, unknown>) => {
+  if (!activeView) return;
+  const viewId = activeView.id;
+  setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, ...patch } as DatabaseView : v));
+  await fetch(`/api/databases/${page.id}/views/${viewId}`, {
+   method: "PATCH", headers: { "Content-Type": "application/json" },
+   body:  JSON.stringify(patch),
+  });
+ }, [page.id, activeView]);
 
  const addView = useCallback(async (name: string, type: string) => {
   let calendarPropertyId: string | null = null;
@@ -1481,7 +1607,7 @@ export function TemplatePageClient({
    </div>
 
    {/* Scrollable area: cover + header + sticky toolbar + view */}
-   <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+   <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
 
    {/* Cover */}
    {pageCoverUrl && (
@@ -1638,8 +1764,8 @@ export function TemplatePageClient({
    </div>
 
    {/* View tabs + toolbar — sticky so it stays visible as cover/header scroll away */}
-   <div className="sticky top-0 z-20 bg-background border-b border-border/60">
-   <div className="mx-auto flex max-w-[1100px] items-end justify-between px-6">
+   <div ref={viewToolbarRef} className="sticky top-0 z-20 bg-background border-b border-border/60">
+   <div className="mx-auto flex max-w-[1100px] items-end justify-between px-8">
     <div className="flex items-end self-stretch">
      {views.map((view) => {
       const Icon   = VIEW_ICON[view.type] ?? TableIcon;
@@ -1687,8 +1813,13 @@ export function TemplatePageClient({
          onMouseDown={(e) => e.stopPropagation()}
          onClick={(e) => {
           e.stopPropagation();
-          if (menuOpen) { setViewMenuTarget(null); setViewMenuRect(null); }
-          else { setViewMenuTarget(view); setViewMenuRect((e.currentTarget as HTMLElement).getBoundingClientRect()); }
+          if (menuOpen) {
+           setViewMenuTarget(null); setViewMenuRect(null);
+          } else {
+           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+           closeAllToolbarPopups();
+           setViewMenuTarget(view); setViewMenuRect(rect);
+          }
          }}
          className="flex items-end pb-2 pr-1 pl-0.5"
          style={{ opacity: isHovered || menuOpen ? 1 : 0, pointerEvents: isHovered || menuOpen ? "auto" : "none" }}
@@ -1707,7 +1838,7 @@ export function TemplatePageClient({
      {/* Add a view */}
      <div ref={addViewRef} className="relative mb-1 ml-1">
       <button
-       onClick={() => setShowAddView((p) => !p)}
+       onClick={() => { const next = !showAddView; closeAllToolbarPopups(); setShowAddView(next); }}
        title="Add a view"
        className={[
         "flex size-[26px] items-center justify-center rounded-[var(--radius-sm)] border transition-all",
@@ -1753,7 +1884,7 @@ export function TemplatePageClient({
     <div className="mb-1 flex shrink-0 items-center gap-0.5">
      <div className="relative">
       <button
-       onClick={() => { setShowFilter((p) => !p); setShowSort(false); setShowProperties(false); }}
+       onClick={() => { const next = !showFilter; closeAllToolbarPopups(); setShowFilter(next); }}
        className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeFilterCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
       >
        <FunnelIcon size={13} />
@@ -1773,7 +1904,7 @@ export function TemplatePageClient({
 
      <div className="relative">
       <button
-       onClick={() => { setShowSort((p) => !p); setShowFilter(false); setShowProperties(false); }}
+       onClick={() => { const next = !showSort; closeAllToolbarPopups(); setShowSort(next); }}
        className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeSortCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
       >
        <SortAscendingIcon size={13} />
@@ -1793,7 +1924,7 @@ export function TemplatePageClient({
 
      <div className="relative">
       <button
-       onClick={() => { setShowProperties((p) => !p); setShowFilter(false); setShowSort(false); }}
+       onClick={() => { const next = !showProperties; closeAllToolbarPopups(); setShowProperties(next); }}
        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
        <EyeIcon size={13} /> Properties
@@ -1810,6 +1941,8 @@ export function TemplatePageClient({
      <div className="mx-1 h-4 w-px bg-border/60" />
 
      <button
+      ref={newButtonRef}
+      data-new-entry-button
       onClick={() => {
        if (activeView?.type === "calendar") {
         const calPropId = activeView.calendarPropertyId
@@ -1859,7 +1992,11 @@ export function TemplatePageClient({
    )}
 
    {/* View */}
-   <div ref={tableViewRef} className={`relative ${activeView?.type === "table" ? "overflow-x-auto" : activeView?.type === "calendar" ? "h-[calc(100dvh-6rem)]" : ""}`}>
+   <div
+    ref={tableViewRef}
+    className={`relative ${activeView?.type === "table" ? "overflow-x-auto" : ""}`}
+    style={activeView?.type === "calendar" ? { height: calendarHeight ?? "calc(100dvh - 6rem)" } : undefined}
+   >
     {viewSwitching && (
      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
       <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -1872,11 +2009,21 @@ export function TemplatePageClient({
       properties={properties}
       activeView={activeView}
       entryValueMap={entryValueMap}
+      databaseId={page.id}
       workspaceSlug={workspaceSlug}
+      workspaceId={workspaceId}
       onAddEntry={addEntry}
       onDeleteEntry={deleteEntry}
+      onDuplicateEntry={duplicateEntry}
       onClickEntry={handleClickEntry}
+      onSaveTitle={saveTitle}
       onUpdatePropValue={updatePropValue}
+      onUpdateProperty={updateProperty}
+      onUpdateEntryIcon={saveEntryIcon}
+      onUpdateView={updateView}
+      onAddProperty={addProperty}
+      onDeleteProperty={deleteProperty}
+      getEditPropertyAnchorRect={getEditPropertyAnchorRect}
      />
     ) : activeView?.type === "calendar" ? (
      <TemplateCalendarView
@@ -1884,25 +2031,41 @@ export function TemplatePageClient({
       properties={properties}
       activeView={activeView}
       entryValueMap={entryValueMap}
+      databaseId={page.id}
+      workspaceId={workspaceId}
+      workspaceSlug={workspaceSlug}
       year={calYear}
       month={calMonth}
       onYearChange={setCalYear}
       onMonthChange={setCalMonth}
       onAddEntry={addEntry}
       onDeleteEntry={deleteEntry}
+      onDuplicateEntry={duplicateEntry}
+      onUpdateEntryIcon={saveEntryIcon}
       onClickEntry={handleClickEntry}
       onUpdateEntryDate={(entryId, calPropId, newDate) => updatePropValue(entryId, calPropId, { date: newDate })}
+      onUpdatePropValue={updatePropValue}
+      onUpdateProperty={updateProperty}
+      onUpdateView={updateView}
      />
     ) : activeView?.type === "gallery" ? (
      <TemplateGalleryView
       entries={displayedEntries}
+      databaseId={page.id}
       properties={properties}
       activeView={activeView}
       entryValueMap={entryValueMap}
       workspaceSlug={workspaceSlug}
+      workspaceId={workspaceId}
       onAddEntry={addEntry}
       onDeleteEntry={deleteEntry}
+      onDuplicateEntry={duplicateEntry}
       onClickEntry={handleClickEntry}
+      onSaveTitle={saveTitle}
+      onUpdateEntryIcon={saveEntryIcon}
+      onUpdatePropValue={updatePropValue}
+      onUpdateProperty={updateProperty}
+      onUpdateView={updateView}
      />
     ) : (
      <TemplateTableView
@@ -1910,6 +2073,7 @@ export function TemplatePageClient({
       properties={properties}
       entryValueMap={entryValueMap}
       workspaceSlug={workspaceSlug}
+      workspaceId={workspaceId}
       selectedIds={selectedIds}
       editingTitleId={editingTitleId}
       onToggleSelect={toggleSelect}
@@ -1923,7 +2087,11 @@ export function TemplatePageClient({
       onDuplicateEntry={duplicateEntry}
       onAddProperty={addProperty}
       onRenameProperty={renameProperty}
+      onUpdateProperty={updateProperty}
       onDeleteProperty={deleteProperty}
+      getEditPropertyAnchorRect={getEditPropertyAnchorRect}
+      activeView={activeView}
+      onUpdateView={updateView}
      />
     )}
     </div>

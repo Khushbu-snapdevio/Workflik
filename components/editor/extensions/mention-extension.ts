@@ -5,15 +5,20 @@ import { PluginKey } from "@tiptap/pm/state";
 
 export type MentionItem =
   | { mentionType: "user"; id: string; label: string; image?: string | null }
-  | { mentionType: "page"; id: string; label: string; icon?: string | null }
-  | { mentionType: "date"; id: string; label: string };
+  | { mentionType: "page"; id: string; label: string; icon?: string | null; shortId?: string | null }
+  | { mentionType: "date"; id: string; label: string }
+  // Synthetic row shown by "[[" when no result matches the typed name —
+  // selecting it creates a brand-new page (nested under the current one),
+  // matching Notion's "[[New page name" → "Create new page" affordance.
+  | { mentionType: "create_page"; query: string };
 
 export type MentionSuggestionProps = SuggestionProps<MentionItem>;
 
 export interface MentionOptions {
-  workspaceId: string;
-  onUpdate:    (props: MentionSuggestionProps | null) => void;
-  onKeyDown:   (event: KeyboardEvent) => boolean;
+  workspaceId:   string;
+  currentPageId: string;
+  onUpdate:      (props: MentionSuggestionProps | null) => void;
+  onKeyDown:     (event: KeyboardEvent) => boolean;
 }
 
 async function fetchMentionItems(query: string, workspaceId: string): Promise<MentionItem[]> {
@@ -36,27 +41,34 @@ async function fetchMentionItems(query: string, workspaceId: string): Promise<Me
     }
   } catch { /* ignore */ }
 
-  // Pages (use search API from Phase 10)
-  try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&workspace=${workspaceId}&type=page&limit=5`);
-    if (res.ok) {
-      const data = await res.json();
-      const results: Array<{ id?: string; pageId?: string; title?: string; icon?: string | null }> =
-        data.results ?? data.comments ?? [];
-      for (const r of results.slice(0, 5)) {
-        const id = r.pageId ?? r.id;
-        const title = r.title;
-        if (id && title) {
-          items.push({ mentionType: "page", id, label: title, icon: r.icon });
-        }
-      }
-    }
-  } catch { /* ignore */ }
+  // Pages
+  items.push(...(await fetchPageMentionItems(query, workspaceId)));
 
   // Dates (always include)
   items.push(...generateDateItems(q).slice(0, 5));
 
   return items.slice(0, 10);
+}
+
+async function fetchPageMentionItems(query: string, workspaceId: string): Promise<MentionItem[]> {
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&workspaceId=${workspaceId}&type=page&limit=5`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const results: Array<{ id?: string; pageId?: string; title?: string; icon?: string | null; shortId?: string }> =
+      data.results ?? [];
+    const items: MentionItem[] = [];
+    for (const r of results.slice(0, 5)) {
+      const id = r.pageId ?? r.id;
+      const title = r.title;
+      if (id && title) {
+        items.push({ mentionType: "page", id, label: title, icon: r.icon, shortId: r.shortId });
+      }
+    }
+    return items;
+  } catch {
+    return [];
+  }
 }
 
 function generateDateItems(query: string): MentionItem[] {
@@ -100,9 +112,10 @@ export const MentionCommands = Extension.create<MentionOptions>({
 
   addOptions() {
     return {
-      workspaceId: "",
-      onUpdate:    () => {},
-      onKeyDown:   () => false,
+      workspaceId:   "",
+      currentPageId: "",
+      onUpdate:      () => {},
+      onKeyDown:     () => false,
     };
   },
 
@@ -120,6 +133,12 @@ export const MentionCommands = Extension.create<MentionOptions>({
         items: ({ query }) => fetchMentionItems(query, opts.workspaceId),
 
         command: ({ editor, range, props: item }) => {
+          // "@" never fetches a "create_page" row (only "[[" does), but the
+          // shared MentionItem union includes it, so narrow it away here too
+          // for type safety.
+          if (item.mentionType === "create_page") {
+            return;
+          }
           // Delete the "@query" text and insert a mention node
           // Since we're using a plain Extension (not Node extension),
           // we insert styled text as a workaround until a Node type is registered.
@@ -133,6 +152,99 @@ export const MentionCommands = Extension.create<MentionOptions>({
                 mentionType: item.mentionType,
                 id:          item.id,
                 label:       item.label,
+                icon:        item.mentionType === "page" ? item.icon ?? null : null,
+                shortId:     item.mentionType === "page" ? item.shortId ?? null : null,
+              },
+            })
+            .run();
+        },
+
+        render: () => {
+          return {
+            onStart: (props: MentionSuggestionProps) => opts.onUpdate(props),
+            onUpdate: (props: MentionSuggestionProps) => opts.onUpdate(props),
+            onKeyDown: (props: SuggestionKeyDownProps) => opts.onKeyDown(props.event),
+            onExit: () => opts.onUpdate(null),
+          };
+        },
+      }),
+
+      // "[[" — Notion's other page-linking shortcut, alongside "/link to page".
+      // Inserts the same inline page mention as "@page", just scoped to pages only.
+      Suggestion<MentionItem>({
+        pluginKey: new PluginKey("pageLinkCommands"),
+        editor:        this.editor,
+        char:          "[[",
+        startOfLine:   false,
+        allowSpaces:   false,
+
+        items: async ({ query }) => {
+          const pages = await fetchPageMentionItems(query, opts.workspaceId);
+          const q = query.trim();
+          // Notion always offers "Create page" alongside any matches, so you
+          // can make a new page even when a similarly-named one exists.
+          if (q) {
+            pages.push({ mentionType: "create_page", query: q });
+          }
+          return pages;
+        },
+
+        command: ({ editor, range, props: item }) => {
+          if (item.mentionType === "create_page") {
+            const title = item.query;
+            fetch("/api/pages", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                workspaceId: opts.workspaceId,
+                parentId:    opts.currentPageId || null,
+                title,
+              }),
+            })
+              .then((r) => (r.ok ? r.json() : null))
+              .then(
+                (
+                  page: {
+                    id: string;
+                    shortId: string;
+                    icon: string | null;
+                    title: string | null;
+                  } | null
+                ) => {
+                  if (!page) {
+                    return;
+                  }
+                  editor
+                    .chain()
+                    .deleteRange(range)
+                    .insertContent({
+                      type: "mention",
+                      attrs: {
+                        mentionType: "page",
+                        id:          page.id,
+                        label:       page.title || title,
+                        icon:        page.icon,
+                        shortId:     page.shortId,
+                      },
+                    })
+                    .run();
+                  window.dispatchEvent(new CustomEvent("pages:refresh"));
+                }
+              );
+            return;
+          }
+
+          editor
+            .chain()
+            .deleteRange(range)
+            .insertContent({
+              type: "mention",
+              attrs: {
+                mentionType: item.mentionType,
+                id:          item.id,
+                label:       item.label,
+                icon:        item.mentionType === "page" ? item.icon ?? null : null,
+                shortId:     item.mentionType === "page" ? item.shortId ?? null : null,
               },
             })
             .run();

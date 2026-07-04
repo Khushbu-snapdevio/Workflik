@@ -27,6 +27,7 @@ import type { TemplateEntry } from "../template-page-client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellActionOverlay } from "@/components/database/cell-action-overlay";
+import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { getOptionColor, groupOptions, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
@@ -371,6 +372,80 @@ function MultiSelectCell({
     </div>
    )}
   </div>
+ );
+}
+
+// ── Select / Multi-select cell (non-Status) ──────────────────────────────────
+// Regular Select/Multi-select columns use the same proper Notion-style
+// popover as Board/Gallery (search, create-with-colored-badge preview, drag
+// reorder) via CellEditorPopover, instead of the old flat checkmark-list
+// dropdown above — which is kept ONLY for Status (groupedByStatus) so its
+// already-tuned behavior stays untouched.
+function SelectPopoverCell({
+ property, value, options, config, resolvedDisplayAs, resolvedWrapContent,
+ workspaceId, multi, onSave, onEditProperty, onUpdateProperty,
+}: {
+ property: DatabaseProperty;
+ value:  SelectVal | MultiSelectVal | null | undefined;
+ options: PropOption[];
+ config: PropConfig;
+ resolvedDisplayAs?: "select" | "checkbox";
+ resolvedWrapContent?: boolean;
+ workspaceId: string;
+ multi:  boolean;
+ onSave: (v: unknown) => void;
+ onEditProperty: (rect: DOMRect) => void;
+ onUpdateProperty: (propId: string, patch: Record<string, unknown>) => void;
+}) {
+ const [rect, setRect] = useState<DOMRect | null>(null);
+ const displayAs   = resolvedDisplayAs ?? config.displayAs;
+ const wrapContent  = resolvedWrapContent ?? config.wrapContent;
+
+ const selectedIds = multi ? (value as MultiSelectVal | null)?.optionIds ?? [] : [];
+ const selectedOpts = multi ? options.filter((o) => selectedIds.includes(o.id)) : [];
+ const currentOpt  = !multi ? options.find((o) => o.id === (value as SelectVal | null)?.optionId) : undefined;
+
+ return (
+  <>
+   <button
+    type="button"
+    onClick={(e) => setRect((e.currentTarget as HTMLElement).getBoundingClientRect())}
+    className={
+     multi
+      ? "flex min-h-[24px] w-full flex-wrap items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-muted/60"
+      : "flex w-full items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-muted/60"
+    }
+   >
+    {multi ? (
+     selectedOpts.length > 0 ? (
+      selectedOpts.map((o) => (
+       <OptionBadge key={o.id} name={o.name} color={o.color} displayAs={displayAs} wrap={wrapContent} />
+      ))
+     ) : (
+      <span className="text-xs text-muted-foreground/60">Empty</span>
+     )
+    ) : currentOpt ? (
+     <OptionBadge name={currentOpt.name} color={currentOpt.color} displayAs={displayAs} wrap={wrapContent} />
+    ) : displayAs === "checkbox" ? (
+     <span className="flex size-4 shrink-0 items-center justify-center rounded border border-border" />
+    ) : (
+     <span className="text-xs text-muted-foreground/60">Empty</span>
+    )}
+   </button>
+
+   {rect && (
+    <CellEditorPopover
+     property={property as unknown as DbProperty}
+     value={value ?? null}
+     cellRect={rect}
+     workspaceId={workspaceId}
+     onSave={onSave}
+     onClose={() => setRect(null)}
+     onPropertyConfigChange={(propId, cfg) => onUpdateProperty(propId, { config: cfg })}
+     onEditProperty={(r) => { onEditProperty(r); setRect(null); }}
+    />
+   )}
+  </>
  );
 }
 
@@ -740,18 +815,24 @@ function InlineTitleInput({
 // ── Cell renderer ─────────────────────────────────────────────────────────────
 
 function CellContent({
- prop, raw, activeView, onSave, onEditProperty,
+ prop, raw, activeView, workspaceId, onSave, onEditProperty, onUpdateProperty,
 }: {
  prop:  DatabaseProperty;
  raw:  unknown;
  activeView?: DatabaseView | null;
+ workspaceId: string;
  onSave: (v: unknown) => void;
  onEditProperty: (propId: string, rect: DOMRect) => void;
+ onUpdateProperty: (propId: string, patch: Record<string, unknown>) => void;
 }) {
  const config = (prop.config ?? {}) as PropConfig;
  const options = config.options ?? [];
  const resolvedDisplayAs  = resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined);
  const resolvedWrapContent = resolveWrapContent(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined);
+ // Status keeps its own already-tuned flat dropdown untouched; every other
+ // Select/Multi-select gets the proper Notion-style popover (search,
+ // create-with-colored-badge, drag reorder) via CellEditorPopover.
+ const isStatus = !!config.groupedByStatus;
 
  switch (prop.type) {
   case "text": {
@@ -775,9 +856,43 @@ function CellContent({
    return <EditableCell value={uv?.url} type="url" placeholder="Empty" onSave={onSave} />;
   }
   case "select":
-   return <SelectCell value={raw as SelectVal | null} options={options} config={config} resolvedDisplayAs={resolvedDisplayAs} resolvedWrapContent={resolvedWrapContent} onSave={onSave} onEditProperty={(rect) => onEditProperty(prop.id, rect)} />;
+   if (isStatus) {
+    return <SelectCell value={raw as SelectVal | null} options={options} config={config} resolvedDisplayAs={resolvedDisplayAs} resolvedWrapContent={resolvedWrapContent} onSave={onSave} onEditProperty={(rect) => onEditProperty(prop.id, rect)} />;
+   }
+   return (
+    <SelectPopoverCell
+     property={prop}
+     value={raw as SelectVal | null}
+     options={options}
+     config={config}
+     resolvedDisplayAs={resolvedDisplayAs}
+     resolvedWrapContent={resolvedWrapContent}
+     workspaceId={workspaceId}
+     multi={false}
+     onSave={onSave}
+     onEditProperty={(rect) => onEditProperty(prop.id, rect)}
+     onUpdateProperty={onUpdateProperty}
+    />
+   );
   case "multi_select":
-   return <MultiSelectCell value={raw as MultiSelectVal | null} options={options} config={config} resolvedDisplayAs={resolvedDisplayAs} resolvedWrapContent={resolvedWrapContent} onSave={onSave} onEditProperty={(rect) => onEditProperty(prop.id, rect)} />;
+   if (isStatus) {
+    return <MultiSelectCell value={raw as MultiSelectVal | null} options={options} config={config} resolvedDisplayAs={resolvedDisplayAs} resolvedWrapContent={resolvedWrapContent} onSave={onSave} onEditProperty={(rect) => onEditProperty(prop.id, rect)} />;
+   }
+   return (
+    <SelectPopoverCell
+     property={prop}
+     value={raw as MultiSelectVal | null}
+     options={options}
+     config={config}
+     resolvedDisplayAs={resolvedDisplayAs}
+     resolvedWrapContent={resolvedWrapContent}
+     workspaceId={workspaceId}
+     multi
+     onSave={onSave}
+     onEditProperty={(rect) => onEditProperty(prop.id, rect)}
+     onUpdateProperty={onUpdateProperty}
+    />
+   );
   case "checkbox":
    return (
     <div className="flex items-center px-1">
@@ -814,12 +929,13 @@ interface SortableRowProps {
  onSetDeleteTarget: (id: string) => void;
  onDuplicateEntry:  (id: string) => void;
  onEditProperty:   (propId: string, rect: DOMRect) => void;
+ onUpdateProperty:  (propId: string, patch: Record<string, unknown>) => void;
 }
 
 function SortableRow({
  entry, visibleProps, entryValueMap, workspaceSlug, workspaceId, selectedIds, editingTitleId,
  deleteTarget, activeView, onToggleSelect, onSaveTitle, onClickEntry, onUpdatePropValue,
- onSetDeleteTarget, onDuplicateEntry, onEditProperty,
+ onSetDeleteTarget, onDuplicateEntry, onEditProperty, onUpdateProperty,
 }: SortableRowProps) {
  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
   useSortable({ id: entry.id });
@@ -1025,8 +1141,10 @@ function SortableRow({
       prop={p}
       raw={valMap.get(p.id)}
       activeView={activeView}
+      workspaceId={workspaceId}
       onSave={(v) => onUpdatePropValue(entry.id, p.id, v)}
       onEditProperty={onEditProperty}
+      onUpdateProperty={onUpdateProperty}
      />
     </td>
    ))}
@@ -1288,6 +1406,7 @@ export function TemplateTableView({
        onSetDeleteTarget={setDeleteTarget}
        onDuplicateEntry={onDuplicateEntry}
        onEditProperty={(propId) => setEditPropPanel({ propId })}
+       onUpdateProperty={onUpdateProperty}
       />
      ))}
 

@@ -33,9 +33,9 @@ export function GuestInviteEmail({
         You&apos;ve been invited to a page
       </Text>
       <Text style={emailStyles.paragraph}>
-        <strong style={{ color: "#171717" }}>{inviterName}</strong> has invited
+        <strong style={{ color: "#0C2340" }}>{inviterName}</strong> has invited
         you to {accessLabel}{" "}
-        <strong style={{ color: "#171717" }}>{pageTitle}</strong> on {productName}.
+        <strong style={{ color: "#0C2340" }}>{pageTitle}</strong> on {productName}.
       </Text>
       <Section style={{ margin: "24px 0" }}>
         <Button href={acceptUrl} style={emailStyles.button}>

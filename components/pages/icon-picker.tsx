@@ -236,12 +236,16 @@ export interface IconPickerProps {
   onClose: () => void;
   workspaceId?: string;
   pageId?: string;
+  /** Which upload-quota bucket an uploaded image counts against — defaults to
+   *  "page_icon" (this picker's original, only use case); pass "workspace_icon"
+   *  when reusing this same picker for a workspace's own icon instead of a page's. */
+  uploadKind?: "page_icon" | "workspace_icon";
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function IconPicker({
-  onSelect, onIconPreview, onRemove, onClose, workspaceId, pageId,
+  onSelect, onIconPreview, onRemove, onClose, workspaceId, pageId, uploadKind = "page_icon",
 }: IconPickerProps) {
   const [tab, setTab] = useState<"emoji" | "icons" | "upload">("emoji");
   const [emojiSearch, setEmojiSearch] = useState("");
@@ -270,7 +274,7 @@ export function IconPicker({
   useScrollLockWhileOpen(showSkinTones, (target) =>
     !!skinToneMenuRef.current?.contains(target) || !!skinToneBtnRef.current?.contains(target));
 
-  const { upload, uploading, error: uploadError } = useUpload({ kind: "page_icon", workspaceId, pageId });
+  const { upload, uploading, error: uploadError } = useUpload({ kind: uploadKind, workspaceId, pageId });
 
   useEffect(() => {
     setRecentEmojis(getRecent());

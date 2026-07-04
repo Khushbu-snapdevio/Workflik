@@ -17,17 +17,25 @@ const FREQ_OPTIONS: { value: Frequency; icon: string; label: string; desc: strin
   { value: "weekly",  icon: "📆", label: "Weekly digest", desc: "One email per week"      },
 ];
 
-const EVENTS = [
-  { icon: "💬", label: "Mentions",        desc: "Someone @mentions you in a comment or page"   },
-  { icon: "📝", label: "Page updates",    desc: "Pages you follow are edited or published"     },
-  { icon: "✉️", label: "Workspace invites", desc: "You're invited to join a workspace"         },
-  { icon: "📋", label: "Task assignments", desc: "A task or action item is assigned to you"    },
+type EventKey = "notifyMentions" | "notifyPageUpdates" | "notifyWorkspaceInvites" | "notifyTaskAssignments";
+
+const EVENTS: { key: EventKey; icon: string; label: string; desc: string }[] = [
+  { key: "notifyMentions",         icon: "💬", label: "Mentions",          desc: "Someone @mentions you in a comment or page" },
+  { key: "notifyPageUpdates",      icon: "📝", label: "Page updates",      desc: "Pages you follow are edited or published"   },
+  { key: "notifyWorkspaceInvites", icon: "✉️", label: "Workspace invites", desc: "You're invited to join a workspace"         },
+  { key: "notifyTaskAssignments",  icon: "📋", label: "Task assignments",  desc: "A task or action item is assigned to you"   },
 ];
 
 export default function NotificationSettingsPage() {
   const [frequency, setFrequency] = useState<Frequency>("daily");
   const [weeklyDay, setWeeklyDay] = useState(1);
   const [emailOn,   setEmailOn]   = useState(true);
+  const [events,    setEvents]    = useState<Record<EventKey, boolean>>({
+    notifyMentions:         true,
+    notifyPageUpdates:      true,
+    notifyWorkspaceInvites: true,
+    notifyTaskAssignments:  true,
+  });
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
@@ -41,6 +49,12 @@ export default function NotificationSettingsPage() {
         setEmailOn(freq !== "off");
         setFrequency(freq === "off" ? "daily" : freq);
         setWeeklyDay(d.weeklyDigestDay ?? 1);
+        setEvents({
+          notifyMentions:         d.notifyMentions         ?? true,
+          notifyPageUpdates:      d.notifyPageUpdates      ?? true,
+          notifyWorkspaceInvites: d.notifyWorkspaceInvites ?? true,
+          notifyTaskAssignments:  d.notifyTaskAssignments  ?? true,
+        });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -51,7 +65,7 @@ export default function NotificationSettingsPage() {
     try {
       await fetch("/api/user/notification-preferences", {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emailFrequency: emailOn ? frequency : "off", weeklyDigestDay: weeklyDay }),
+        body: JSON.stringify({ emailFrequency: emailOn ? frequency : "off", weeklyDigestDay: weeklyDay, ...events }),
       });
       setSaved(true); setTimeout(() => setSaved(false), 3000);
     } catch { /* no-op */ }
@@ -174,11 +188,16 @@ export default function NotificationSettingsPage() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           {EVENTS.map(ev => (
-            <div key={ev.label}
+            <div key={ev.key}
               className={`flex flex-col gap-3 rounded-[var(--radius-md)] border border-border/60 bg-card p-4 transition-colors duration-150 ${!emailOn ? "opacity-40" : ""}`}>
               <div className="flex items-center justify-between">
                 <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50 text-base">{ev.icon}</span>
-                <div className={`h-2 w-2 rounded-full ${emailOn ? "bg-primary" : "bg-muted-foreground/30"}`} />
+                <Switch
+                  checked={events[ev.key]}
+                  disabled={!emailOn}
+                  onCheckedChange={(checked) => setEvents(prev => ({ ...prev, [ev.key]: checked }))}
+                  aria-label={`Toggle ${ev.label.toLowerCase()} notifications`}
+                />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">{ev.label}</p>

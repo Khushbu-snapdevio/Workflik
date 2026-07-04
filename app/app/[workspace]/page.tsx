@@ -83,6 +83,12 @@ export default async function WorkspacePage({ params }: Props) {
   const favPages    = favRaw;
   const firstName   = session.user.name?.split(" ")[0] ?? session.user.email.split("@")[0];
   const today       = new Date().toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" });
+  const onboardingStepsDone = (pageCount >= 1 ? 1 : 0) + (memberCount > 1 ? 1 : 0);
+  // Show the ghost "New page" tile whenever there's room left in a 4-wide
+  // row — paired with the auto-fit grid below, tiles always stretch to fill
+  // the full row edge-to-edge (no dead space), and a lone recent page never
+  // balloons to fill the whole row alone since the ghost tile joins it.
+  const showNewPageGhostTile = recentPages.length < 4;
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -172,12 +178,15 @@ export default async function WorkspacePage({ params }: Props) {
                       View all <ChevronRight size={12} />
                     </Link>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
+                  <div
+                    className="grid gap-3"
+                    style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
+                  >
                     {recentPages.map((page) => (
                       <Link
                         key={page.id}
                         href={`/app/${slug}/${page.shortId}`}
-                        className="group flex flex-col gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-border border-l-2 border-l-transparent bg-card p-4 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
+                        className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-border border-l-2 border-l-transparent bg-card p-4 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
                       >
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
                           <PageIcon icon={page.icon} size="lg" />
@@ -190,6 +199,21 @@ export default async function WorkspacePage({ params }: Props) {
                         </div>
                       </Link>
                     ))}
+                    {/* Ghost "new page" tile — the row always divides evenly
+                        between real cards + this tile, so it never leaves
+                        dead space when there are only 1-3 recent pages. */}
+                    {showNewPageGhostTile && (
+                      <NewPageButton
+                        workspaceId={ws.id}
+                        workspaceSlug={slug}
+                        className="group flex min-w-0 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-border p-4 text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
+                      >
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
+                          <Plus size={16} />
+                        </span>
+                        <span className="text-xs font-medium">New page</span>
+                      </NewPageButton>
+                    )}
                   </div>
                 </section>
               )}
@@ -219,8 +243,13 @@ export default async function WorkspacePage({ params }: Props) {
                 />
               )}
 
-              {/* ── First-time onboarding (pageCount === 0) ── */}
-              {pageCount === 0 && (
+              {/* ── First-time onboarding ──
+                   Every fresh workspace starts with one auto-created default
+                   page (blank or from the onboarding template choice), so
+                   gating this on pageCount === 0 hid it immediately for every
+                   new user. Gate on <= 1 instead, and reflect step 1 as done
+                   once that default page exists. */}
+              {pageCount <= 1 && (
                 <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
 
                   {/* Welcome header */}
@@ -237,8 +266,14 @@ export default async function WorkspacePage({ params }: Props) {
                         <p className="mt-0.5 text-xs text-muted-foreground">Complete these steps to set up your workspace.</p>
                       </div>
                       <span className="shrink-0 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
-                        {memberCount > 1 ? "2" : "0"} / 3 done
+                        {onboardingStepsDone} / 3 done
                       </span>
+                    </div>
+                    <div className="relative mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted/70">
+                      <div
+                        className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
+                        style={{ width: `${(onboardingStepsDone / 3) * 100}%` }}
+                      />
                     </div>
                   </div>
 
@@ -246,21 +281,29 @@ export default async function WorkspacePage({ params }: Props) {
                   <div className="divide-y divide-border/40">
 
                     {/* Step 1 — Create first page */}
-                    <div className="flex items-center gap-4 px-6 py-4 hover:bg-accent/30 transition-colors duration-150">
+                    <div className={`flex items-center gap-4 px-6 py-4 transition-colors duration-150 ${pageCount >= 1 ? "opacity-50" : "hover:bg-accent/30"}`}>
                       <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-                        <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        {pageCount >= 1 ? (
+                          <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                        ) : (
+                          <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground">Create your first page</p>
+                        <p className={`text-sm font-semibold ${pageCount >= 1 ? "text-muted-foreground line-through" : "text-foreground"}`}>Create your first page</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">Start with a blank page, a database, or a template.</p>
                       </div>
-                      <NewPageButton
-                        workspaceId={ws.id}
-                        workspaceSlug={slug}
-                        className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-70"
-                      >
-                        <Plus size={12} strokeWidth={2.5} /> New page
-                      </NewPageButton>
+                      {pageCount >= 1 ? (
+                        <span className="shrink-0 rounded-[var(--radius-xs)] bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Done</span>
+                      ) : (
+                        <NewPageButton
+                          workspaceId={ws.id}
+                          workspaceSlug={slug}
+                          className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-70"
+                        >
+                          <Plus size={12} strokeWidth={2.5} /> New page
+                        </NewPageButton>
+                      )}
                     </div>
 
                     {/* Step 2 — Templates */}

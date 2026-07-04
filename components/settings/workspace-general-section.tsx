@@ -3,119 +3,56 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { AlertCircle, AlertTriangle, Check, ChevronDown, ExternalLink, Link2, Settings, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ExternalLink, Link2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { IconPicker } from "@/components/pages/icon-picker";
+import { PageIcon } from "@/components/pages/page-icon";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
-/* ── Emoji catalogue ──────────────────────────────────────── */
-const EMOJI_CATEGORIES = [
- {
-  key: "work", label: "Work",
-  emojis: ["💼","📁","📂","🗂️","🏢","📊","📈","📋","📌","📍","🔑","📎","🖇️","✂️","🗃️","🗄️","📝","✏️","🖊️","📐"],
- },
- {
-  key: "objects", label: "Objects",
-  emojis: ["⚡","🚀","💡","💎","🔬","🔭","📡","🖥️","⚙️","🛠️","🔒","🛡️","🎯","✅","🔥","🌐","🏗️","🧩","💫","🔮"],
- },
- {
-  key: "nature", label: "Nature",
-  emojis: ["🌟","⭐","🌈","🦄","🐬","🦅","🌺","🌻","🌴","🍀","🌊","🌙","☀️","🐘","🦁","🌿","🌸","🦋","🐺","🦊"],
- },
- {
-  key: "fun", label: "Fun",
-  emojis: ["🏆","🎁","🎨","🎭","🎬","🎮","🎲","🎸","⚽","🏀","🧸","🎪","🎵","🎉","🎊","🌮","☕","🍕","🦸","🧠"],
- },
-] as const;
-
-function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+/* ── Icon picker — same Notion-style picker used for page/database icons
+   (search, emoji categories, lucide icons, image upload) instead of a
+   separate, more limited emoji-only grid just for the workspace icon. ── */
+function WorkspaceIconPicker({
+ value, workspaceId, onChange,
+}: {
+ value: string; workspaceId: string; onChange: (v: string) => void;
+}) {
  const [open,  setOpen]  = useState(false);
- const [cat,   setCat]  = useState<string>("work");
- const [pos,   setPos]  = useState<{ top: number; right: number } | null>(null);
+ const [pos,   setPos]  = useState<{ top: number; left: number } | null>(null);
  const [mounted, setMounted] = useState(false);
- const btnRef  = useRef<HTMLButtonElement>(null);
- const panelRef = useRef<HTMLDivElement>(null);
+ const btnRef = useRef<HTMLButtonElement>(null);
 
  useEffect(() => { setMounted(true); }, []);
-
- useEffect(() => {
-  if (!open) return;
-  function handler(e: MouseEvent) {
-   const t = e.target as Node;
-   if (btnRef.current?.contains(t) || panelRef.current?.contains(t)) return;
-   setOpen(false);
-  }
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
- }, [open]);
-
- useScrollLockWhileOpen(open, (target) =>
-  !!panelRef.current?.contains(target) || !!btnRef.current?.contains(target));
 
  function handleOpen() {
   if (!open && btnRef.current) {
    const rect = btnRef.current.getBoundingClientRect();
-   setPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+   // IconPicker is a fixed w-[352px] panel positioned "absolute left-0" —
+   // anchor via `left` (not `right`) and clamp to the viewport, matching the
+   // pattern used elsewhere (entry-context-menu.tsx). A `right`-anchored
+   // wrapper collapses to zero width here (its only child is absolutely
+   // positioned), which pulls "left-0" to the button's right edge instead
+   // of flush against it — pushing the whole panel off-screen.
+   const PANEL_WIDTH = 352;
+   const PANEL_HEIGHT = 400;
+   const left = Math.max(8, Math.min(rect.right - PANEL_WIDTH, window.innerWidth - PANEL_WIDTH - 8));
+   const top = Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - PANEL_HEIGHT));
+   setPos({ top, left });
   }
   setOpen(o => !o);
  }
 
- const active = EMOJI_CATEGORIES.find(c => c.key === cat) ?? EMOJI_CATEGORIES[0]!;
-
  const panel = mounted && open && pos ? createPortal(
-  <div
-   ref={panelRef}
-   style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 9999 }}
-   className="w-[310px] overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card"
-  >
-   {/* Header */}
-   <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
-    <p className="text-sm font-semibold text-foreground">Choose an icon</p>
-    <button type="button" onClick={() => setOpen(false)}
-     className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground">
-     <X size={12} />
-    </button>
-   </div>
-
-   {/* Category tabs */}
-   <div className="flex gap-0.5 border-b border-border/50 px-3 pt-2.5">
-    {EMOJI_CATEGORIES.map(c => (
-     <button key={c.key} type="button" onClick={() => setCat(c.key)}
-      className={`rounded-t-[var(--radius-md)] px-3 py-1.5 text-xs font-semibold transition-colors ${
-       cat === c.key ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"
-      }`}>
-      {c.label}
-     </button>
-    ))}
-   </div>
-
-   {/* Emoji grid */}
-   <div className="grid grid-cols-8 gap-0.5 p-3">
-    {active.emojis.map(e => (
-     <button key={e} type="button" onClick={() => { onChange(e); setOpen(false); }}
-      className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-lg transition-all hover:scale-110 active:scale-[0.97] ${
-       value === e ? "bg-accent" : "hover:bg-accent"
-      }`}>
-      {e}
-     </button>
-    ))}
-   </div>
-
-   {/* Footer */}
-   <div className="flex items-center gap-2 border-t border-border/50 px-4 py-2.5">
-    {value ? (
-     <>
-      <span className="text-lg">{value}</span>
-      <p className="flex-1 text-xs text-muted-foreground">Selected</p>
-      <button type="button" onClick={() => { onChange(""); setOpen(false); }}
-       className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
-       <X size={12} />
-       Remove icon
-      </button>
-     </>
-    ) : (
-     <p className="text-xs text-muted-foreground">Click an emoji to select it</p>
-    )}
+  <div style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}>
+   <div className="relative">
+    <IconPicker
+     workspaceId={workspaceId}
+     uploadKind="workspace_icon"
+     onSelect={(v) => { onChange(v); setOpen(false); }}
+     onRemove={value ? () => { onChange(""); setOpen(false); } : undefined}
+     onClose={() => setOpen(false)}
+    />
    </div>
   </div>,
   document.body
@@ -124,8 +61,8 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
  return (
   <>
    <button ref={btnRef} type="button" onClick={handleOpen} title="Change icon"
-    className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border-2 border-dashed border-border bg-muted/30 text-3xl leading-none transition-colors duration-150 hover:border-border hover:bg-accent active:scale-[0.97]">
-    {value || "📁"}
+    className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border-2 border-dashed border-border bg-muted/30 transition-colors duration-150 hover:border-border hover:bg-accent active:scale-[0.97]">
+    {value ? <PageIcon icon={value} size={28} /> : <span className="text-3xl leading-none">📁</span>}
    </button>
    {panel}
   </>
@@ -143,9 +80,8 @@ interface WorkspaceData {
  inviteLinkActive: boolean | null;
  inviteLinkRole:  string | null;
 }
-interface Props { workspace: WorkspaceData; bytesUsed: number; memberCount: number }
+interface Props { workspace: WorkspaceData }
 
-const QUOTA = 5 * 1024 * 1024 * 1024;
 const ACCESS = [
  { value: "full_access",  label: "Full access" },
  { value: "can_edit",    label: "Can edit" },
@@ -153,13 +89,6 @@ const ACCESS = [
  { value: "can_view",    label: "View only" },
  { value: "private",    label: "Private" },
 ];
-
-function fmt(b: number) {
- if (b === 0) return "0 B";
- const gb = b / 1073741824; if (gb >= 1) return `${gb.toFixed(2).replace(/\.?0+$/, "")} GB`;
- const mb = b / 1048576;  if (mb >= 1) return `${mb.toFixed(1)} MB`;
- return `${(b / 1024).toFixed(0)} KB`;
-}
 
 function SectionLabel({ label }: { label: string }) {
  return <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">{label}</p>;
@@ -271,7 +200,7 @@ function ChevronSelect({ value, options, onChange }: { value: string; options: {
 }
 
 /* ── Main component ───────────────────────────────────────── */
-export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: Props) {
+export function WorkspaceGeneralSection({ workspace }: Props) {
  const router = useRouter();
  const [name,       setName]       = useState(workspace.name);
  const [icon,       setIcon]       = useState(workspace.icon ?? "");
@@ -362,9 +291,6 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
 
  function changeIcon(v: string) { setIcon(v); patchWs({ icon: v || null }); }
 
- const pct    = Math.min((bytesUsed / QUOTA) * 100, 100);
- const isNear  = pct >= 90;
- const isAtLim  = pct >= 100;
  const origin  = typeof window !== "undefined" ? window.location.origin : "";
  const inviteUrl = inviteToken ? `${origin}/invite/${inviteToken}` : "";
  const inviteShort = inviteUrl.replace(/^https?:\/\//, "");
@@ -396,7 +322,7 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
      {/* Live preview banner */}
      <div className="flex items-center gap-3.5 border-b border-border/40 bg-muted/20 px-5 py-4">
       <span className="flex size-10 items-center justify-center rounded-[var(--radius-sm)] bg-card text-2xl">
-       {icon || "📁"}
+       {icon ? <PageIcon icon={icon} size={22} /> : "📁"}
       </span>
       <div>
        <p className="text-[14.5px] font-semibold text-foreground">{name || "Workspace name"}</p>
@@ -405,20 +331,15 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
       <div className="ml-auto rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Preview</div>
      </div>
 
-     {/* Icon row — picker + remove link inline */}
+     {/* Icon row — removing happens inside the picker itself (its own
+         "Remove" footer button, same as page/database icons), so there's no
+         separate, disconnected remove control floating in this row. */}
      <div className={`flex items-center justify-between gap-6 px-5 py-4 border-b border-border/40`}>
       <div className="min-w-0 flex-1">
        <p className="text-sm font-medium text-foreground">Icon</p>
-       <p className="mt-0.5 text-xs text-muted-foreground">Click to choose an emoji for your workspace.</p>
-       {icon && (
-        <button type="button" onClick={() => changeIcon("")}
-         className="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive transition-colors hover:text-destructive">
-         <X size={12} />
-         Remove icon
-        </button>
-       )}
+       <p className="mt-0.5 text-xs text-muted-foreground">Click to choose an icon for your workspace.</p>
       </div>
-      <EmojiPicker value={icon} onChange={changeIcon} />
+      <WorkspaceIconPicker value={icon} workspaceId={workspace.id} onChange={changeIcon} />
      </div>
 
      {/* Name row */}
@@ -516,41 +437,6 @@ export function WorkspaceGeneralSection({ workspace, bytesUsed, memberCount }: P
       </div>
      </Card>
     )}
-   </div>
-
-   {/* ── STORAGE ── */}
-   <div className="mb-7">
-    <SectionLabel label="Storage" />
-    <Card className="p-5">
-     <div className="flex items-start justify-between gap-4">
-      <div>
-       <p className={`text-3xl font-bold leading-tight tracking-tight ${isAtLim ? "text-destructive" : isNear ? "text-warning" : "text-foreground"}`}>
-        {fmt(bytesUsed)}
-       </p>
-       <p className="mt-0.5 text-xs text-muted-foreground">
-        used of {fmt(QUOTA)} · {memberCount} member{memberCount !== 1 ? "s" : ""}
-       </p>
-      </div>
-      <div className="text-right">
-       <p className={`text-xl font-bold ${isAtLim ? "text-destructive" : isNear ? "text-warning" : "text-foreground"}`}>
-        {pct.toFixed(0)}%
-       </p>
-       <p className="text-xs text-muted-foreground">{fmt(QUOTA - bytesUsed)} free</p>
-      </div>
-     </div>
-     <div className="mt-4 h-[8px] w-full overflow-hidden rounded-full bg-border/50">
-      <div
-       className={`h-full rounded-full transition-all duration-700 ${isAtLim ? "bg-destructive" : isNear ? "bg-warning" : "bg-primary"}`}
-       style={{ width: `${Math.max(pct, 1.5)}%` }}
-      />
-     </div>
-     {(isNear || isAtLim) && (
-      <div className={`mt-3 flex items-center gap-2 text-xs font-medium ${isAtLim ? "text-destructive" : "text-warning"}`}>
-       <AlertCircle size={14} className="shrink-0" />
-       {isAtLim ? "Storage limit reached — new uploads are blocked." : "Storage is almost full."}
-      </div>
-     )}
-    </Card>
    </div>
 
    {/* ── DANGER ZONE ── */}

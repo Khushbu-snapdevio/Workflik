@@ -212,6 +212,7 @@ export default async function PageEditorPage({ params }: Props) {
             workspaceId={ws.id}
             currentUserId={session.user.id}
             isAdmin={isAdmin}
+            mode="scroll"
           />
           <FavoriteButton
             pageId={page.id}

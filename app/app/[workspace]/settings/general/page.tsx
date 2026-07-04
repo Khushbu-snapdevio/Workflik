@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
+import { workspaceMembers, workspaces } from "@/lib/db/schema";
 import { WorkspaceGeneralSection } from "@/components/settings/workspace-general-section";
 
 export const metadata: Metadata = { title: "General — Settings" };
@@ -35,17 +35,6 @@ export default async function GeneralSettingsPage({ params }: Props) {
 
   if (!member || member.role !== "admin") notFound();
 
-  const [usage] = await db
-    .select({ bytesUsed: workspaceStorageUsage.bytesUsed })
-    .from(workspaceStorageUsage)
-    .where(eq(workspaceStorageUsage.workspaceId, ws.id))
-    .limit(1);
-
-  const memberCount = await db.$count(
-    workspaceMembers,
-    eq(workspaceMembers.workspaceId, ws.id),
-  );
-
   return (
     <WorkspaceGeneralSection
       workspace={{
@@ -58,8 +47,6 @@ export default async function GeneralSettingsPage({ params }: Props) {
         inviteLinkActive: ws.inviteLinkActive,
         inviteLinkRole:   ws.inviteLinkRole,
       }}
-      bytesUsed={Number(usage?.bytesUsed ?? 0)}
-      memberCount={memberCount}
     />
   );
 }

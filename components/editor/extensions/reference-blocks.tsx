@@ -5,6 +5,7 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
+import { FileText } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextLink from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,6 +17,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { PageIcon } from "@/components/pages/page-icon";
 
 const DatabasePage = dynamic(
   () =>
@@ -122,116 +124,219 @@ function BlockTypeSelect({
   );
 }
 
-// ── Shared inline-editor row used by LinkedPage and TemplateButton ─────────────
-function InlineEditorRow({
-  icon,
-  iconClass,
-  value,
-  onChange,
-  placeholder,
-  confirmLabel,
-  onConfirm,
-  onCancel,
-}: {
-  icon: string;
-  iconClass?: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="my-1 flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5">
-      <span className={iconClass ?? "text-muted-foreground"}>{icon}</span>
-      <input
-        // biome-ignore lint/a11y/noAutofocus: intentional — inline editor just opened
-        autoFocus
-        className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            onConfirm();
-          }
-          if (e.key === "Escape") {
-            onCancel();
-          }
-        }}
-        placeholder={placeholder}
-        type="text"
-        value={value}
-      />
-      <button
-        className="rounded px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground"
-        onClick={onConfirm}
-        onMouseDown={(e) => e.preventDefault()}
-        type="button"
-      >
-        {confirmLabel} ↵
-      </button>
-      <button
-        className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
-        onClick={onCancel}
-        onMouseDown={(e) => e.preventDefault()}
-        type="button"
-      >
-        ✕
-      </button>
-    </div>
-  );
+// ── Linked Page ────────────────────────────────────────────────────────────────
+// Matches Notion's "Link to page": search-as-you-type over the workspace's
+// pages, pick one, and it renders as a small icon+title card that navigates
+// to the target — no raw pageId/URL ever shown to the user.
+
+interface LinkedPageOptions {
+  workspaceId: string;
+  workspaceSlug: string;
 }
 
-// ── Linked Page ────────────────────────────────────────────────────────────────
-function LinkedPageView({ node, updateAttributes }: NodeViewProps) {
+interface PageSearchResult {
+  pageId: string;
+  title: string;
+  icon: string | null;
+  breadcrumb: string;
+}
+
+function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
   const pageId = (node.attrs.pageId as string) || "";
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(pageId);
+  const { workspaceId, workspaceSlug } = extension.options as LinkedPageOptions;
 
-  const confirm = useCallback(() => {
-    updateAttributes({ pageId: draft.trim() });
-    setEditing(false);
-  }, [draft, updateAttributes]);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PageSearchResult[]>([]);
+  const [isRecent, setIsRecent] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [resolved, setResolved] = useState<{
+    title: string;
+    icon: string | null;
+    shortId: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(!!pageId);
 
-  const cancel = useCallback(() => {
-    setDraft(pageId);
-    setEditing(false);
+  // Resolve the linked pageId to its live title/icon/shortId for display.
+  useEffect(() => {
+    if (!pageId) {
+      setResolved(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/pages/${pageId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(
+        (
+          page: { title: string | null; icon: string | null; shortId: string } | null
+        ) => {
+          if (cancelled || !page) {
+            return;
+          }
+          setResolved({
+            title: page.title || "Untitled",
+            icon: page.icon,
+            shortId: page.shortId,
+          });
+        }
+      )
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [pageId]);
 
-  if (editing) {
+  // Live search-as-you-type while not yet linked — falls back to recently
+  // visited pages when the search box is empty, same as Notion's picker.
+  useEffect(() => {
+    if (pageId || !workspaceId) {
+      return;
+    }
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      const url = query.trim()
+        ? `/api/search?q=${encodeURIComponent(query)}&workspaceId=${workspaceId}&type=page&limit=8`
+        : `/api/user/recently-visited?workspaceId=${workspaceId}`;
+
+      fetch(url)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) {
+            return;
+          }
+          if (query.trim()) {
+            setIsRecent(false);
+            setResults(
+              (data.results ?? []).map((r: PageSearchResult) => ({
+                pageId: r.pageId,
+                title: r.title,
+                icon: r.icon,
+                breadcrumb: r.breadcrumb,
+              }))
+            );
+          } else {
+            setIsRecent(true);
+            type RecentRow = { pageId: string; page: { title: string | null; icon: string | null } };
+            setResults(
+              (data as RecentRow[]).map((r) => ({
+                pageId: r.pageId,
+                title: r.page.title || "Untitled",
+                icon: r.page.icon,
+                breadcrumb: "",
+              }))
+            );
+          }
+          setSelectedIndex(0);
+        })
+        .catch(() => {});
+    }, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [query, pageId, workspaceId]);
+
+  function selectPage(result: PageSearchResult) {
+    updateAttributes({ pageId: result.pageId });
+  }
+
+  if (!pageId) {
     return (
       <NodeViewWrapper contentEditable={false}>
-        <InlineEditorRow
-          confirmLabel="Link"
-          icon="↗"
-          iconClass="font-semibold text-primary"
-          onCancel={cancel}
-          onChange={setDraft}
-          onConfirm={confirm}
-          placeholder="Paste a page link or type a page name…"
-          value={draft}
-        />
+        <div className="relative my-1">
+          <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5">
+            <span className="font-semibold text-primary">↗</span>
+            <input
+              // biome-ignore lint/a11y/noAutofocus: intentional — block was just inserted
+              autoFocus
+              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setSelectedIndex((i) => Math.min(results.length - 1, i + 1));
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setSelectedIndex((i) => Math.max(0, i - 1));
+                }
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const picked = results[selectedIndex];
+                  if (picked) {
+                    selectPage(picked);
+                  }
+                }
+              }}
+              placeholder="Search for a page…"
+              type="text"
+              value={query}
+            />
+          </div>
+          {results.length > 0 && (
+            <div className="absolute left-0 top-[calc(100%+4px)] z-[200] max-h-64 w-full min-w-[260px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover py-1 shadow-lg">
+              <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+                {isRecent ? "Recent" : "Pages"}
+              </p>
+              {results.map((r, i) => (
+                <button
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
+                    i === selectedIndex ? "bg-accent" : "hover:bg-accent"
+                  }`}
+                  key={r.pageId}
+                  onClick={() => selectPage(r)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() => setSelectedIndex(i)}
+                  type="button"
+                >
+                  <span className="w-5 shrink-0 text-center text-base">{r.icon || "📄"}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-foreground">{r.title}</span>
+                    {r.breadcrumb && (
+                      <span className="block truncate text-xs text-muted-foreground">{r.breadcrumb}</span>
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {query.trim() && results.length === 0 && (
+            <div className="absolute left-0 top-[calc(100%+4px)] z-[200] w-full rounded-[var(--radius-md)] border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
+              No matching pages
+            </div>
+          )}
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+
+  if (loading || !resolved) {
+    return (
+      <NodeViewWrapper contentEditable={false}>
+        <div className="my-0.5 flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5">
+          <div className="size-[18px] animate-pulse rounded bg-muted/50" />
+          <div className="h-4 w-32 animate-pulse rounded bg-muted/40" />
+        </div>
       </NodeViewWrapper>
     );
   }
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <button
-        className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1 text-sm font-medium transition-colors hover:bg-accent"
-        onClick={() => {
-          setDraft(pageId);
-          setEditing(true);
-        }}
-        onMouseDown={(e) => e.preventDefault()}
-        type="button"
+      <a
+        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-foreground transition-colors hover:bg-accent"
+        href={`/app/${workspaceSlug}/${resolved.shortId}`}
+        onClick={(e) => e.stopPropagation()}
       >
-        <span className="text-primary">↗</span>
-        <span className={pageId ? "text-foreground" : "text-muted-foreground"}>
-          {pageId || "Link to Page"}
+        <span className="text-base leading-none">{resolved.icon || "📄"}</span>
+        <span className="text-sm font-medium underline decoration-border underline-offset-2 transition-colors group-hover:decoration-foreground/40">
+          {resolved.title}
         </span>
-      </button>
+      </a>
     </NodeViewWrapper>
   );
 }
@@ -599,11 +704,15 @@ export const MathBlock = Node.create({
 
 // ── Stub blocks — visible placeholder cards via CSS ───────────────────────────
 
-export const LinkedPage = Node.create({
+export const LinkedPage = Node.create<LinkedPageOptions>({
   name: "linkedPage",
   group: "block",
   atom: true,
   draggable: true,
+
+  addOptions() {
+    return { workspaceId: "", workspaceSlug: "" };
+  },
 
   addAttributes() {
     return {
@@ -628,8 +737,8 @@ export const LinkedPage = Node.create({
 });
 
 // ── Sub-page ───────────────────────────────────────────────────────────────────
-// Unlike LinkedPage (references an existing page by a free-typed id), this
-// block CREATES a brand-new child page under the current one, then embeds a
+// Unlike LinkedPage (references an existing page via search), this block
+// CREATES a brand-new child page under the current one, then embeds a
 // resolved icon+title card that navigates to it — matches Notion's "Page"
 // block (distinct from "Link to Page").
 
@@ -655,6 +764,15 @@ function SubPageBlockView({
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const creatingRef = useRef(false);
+  // Captured once on first render: was this block just inserted with no page
+  // yet? If so, Notion lets you type the new page's name right here the
+  // instant it's created, instead of forcing a trip into the page itself
+  // just to set a title.
+  const [isNew] = useState(() => !pageId);
+  const [renaming, setRenaming] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const renameStartedRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Notion creates the child page the instant the block is inserted —
   // there's no separate "name it, then click Create" step.
@@ -718,12 +836,75 @@ function SubPageBlockView({
     };
   }, [pageId]);
 
+  // Once the freshly-created page resolves, drop straight into rename mode —
+  // only once, and only for a block that had no pageId at initial mount.
+  useEffect(() => {
+    if (isNew && resolved && !renameStartedRef.current) {
+      renameStartedRef.current = true;
+      setTitleDraft("");
+      setRenaming(true);
+    }
+  }, [isNew, resolved]);
+
+  useEffect(() => {
+    if (renaming) {
+      inputRef.current?.focus();
+    }
+  }, [renaming]);
+
+  function commitTitle() {
+    const title = titleDraft.trim();
+    setRenaming(false);
+    if (!title || !pageId) {
+      return;
+    }
+    setResolved((r) => (r ? { ...r, title } : r));
+    fetch(`/api/pages/${pageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    }).then(() => {
+      window.dispatchEvent(new CustomEvent("pages:refresh"));
+    });
+  }
+
   if (!pageId || loading || !resolved) {
     return (
       <NodeViewWrapper contentEditable={false}>
         <div className="my-0.5 flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5">
           <div className="size-[18px] animate-pulse rounded bg-muted/50" />
           <div className="h-4 w-32 animate-pulse rounded bg-muted/40" />
+        </div>
+      </NodeViewWrapper>
+    );
+  }
+
+  if (renaming) {
+    return (
+      <NodeViewWrapper contentEditable={false}>
+        <div className="my-0.5 flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5">
+          {resolved.icon ? (
+            <PageIcon icon={resolved.icon} size={18} />
+          ) : (
+            <FileText className="shrink-0 text-muted-foreground/60" size={18} />
+          )}
+          <input
+            className="min-w-40 border-b border-primary/40 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/40"
+            onBlur={commitTitle}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitTitle();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                setRenaming(false);
+              }
+            }}
+            placeholder="Untitled"
+            ref={inputRef}
+            value={titleDraft}
+          />
         </div>
       </NodeViewWrapper>
     );
@@ -736,9 +917,11 @@ function SubPageBlockView({
         href={`/app/${workspaceSlug}/${resolved.shortId}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="text-base leading-none">
-          {resolved.icon || "📄"}
-        </span>
+        {resolved.icon ? (
+          <PageIcon icon={resolved.icon} size={18} />
+        ) : (
+          <FileText className="shrink-0 text-muted-foreground/60" size={18} />
+        )}
         <span className="text-sm font-medium underline decoration-border underline-offset-2 transition-colors group-hover:decoration-foreground/40">
           {resolved.title}
         </span>
@@ -1157,10 +1340,80 @@ export const TemplateButton = Node.create({
   },
 });
 
+// ── Table of contents ─────────────────────────────────────────────────────────
+// Stateless — nothing is persisted besides blockId. Derived entirely from the
+// current document's heading nodes, re-scanned on every editor update so it
+// stays in sync as headings are added/removed/renamed, matching Notion.
+interface TocHeading {
+  pos: number;
+  level: number;
+  text: string;
+}
+
+function TableOfContentsView({ editor }: NodeViewProps) {
+  const [headings, setHeadings] = useState<TocHeading[]>([]);
+
+  useEffect(() => {
+    function scan() {
+      const items: TocHeading[] = [];
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === "heading") {
+          items.push({
+            pos,
+            level: (node.attrs.level as number) ?? 1,
+            text: node.textContent.trim() || "Untitled",
+          });
+        }
+      });
+      setHeadings(items);
+    }
+    scan();
+    editor.on("update", scan);
+    return () => {
+      editor.off("update", scan);
+    };
+  }, [editor]);
+
+  function handleClick(pos: number) {
+    const dom = editor.view.nodeDOM(pos);
+    if (dom instanceof HTMLElement) {
+      dom.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  return (
+    <NodeViewWrapper contentEditable={false}>
+      <div className="my-1">
+        {headings.length === 0 ? (
+          <p className="text-sm italic text-muted-foreground/60">
+            Table of contents — headings you add on this page will show up here.
+          </p>
+        ) : (
+          <div className="flex flex-col">
+            {headings.map((h, i) => (
+              <button
+                className="w-full truncate rounded-[var(--radius-xs)] py-0.5 text-left text-sm text-muted-foreground transition-colors hover:text-primary hover:underline"
+                key={i}
+                onClick={() => handleClick(h.pos)}
+                onMouseDown={(e) => e.preventDefault()}
+                style={{ paddingLeft: `${(h.level - 1) * 20}px` }}
+                type="button"
+              >
+                {h.text}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </NodeViewWrapper>
+  );
+}
+
 export const TableOfContents = Node.create({
   name: "tableOfContents",
   group: "block",
   atom: true,
+  draggable: true,
 
   addAttributes() {
     return { blockId: { default: null } };
@@ -1171,6 +1424,10 @@ export const TableOfContents = Node.create({
   },
   renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, unknown> }) {
     return ["div", mergeAttributes(HTMLAttributes, { "data-type": "toc" })];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(TableOfContentsView);
   },
 });
 
@@ -1240,7 +1497,7 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
                         className="flex items-center gap-1"
                         href={`/app/${workspaceSlug}`}
                       >
-                        {workspace.icon && <span>{workspace.icon}</span>}
+                        {workspace.icon && <PageIcon icon={workspace.icon} size={14} />}
                         {workspace.name}
                       </NextLink>
                     </BreadcrumbLink>

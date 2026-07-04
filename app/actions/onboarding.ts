@@ -1,14 +1,14 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { pages, users, workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
+import { templates, users, workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
+import { createBlankPage, createPageFromSnapshot, type PageSnapshot } from "@/lib/templates/instantiate";
 import { uniqueSlug } from "@/lib/workspaces/auth";
-import { createId } from "@paralleldrive/cuid2";
 
 export type InviteEntry = { email: string; role: "editor" | "viewer" };
 
@@ -22,12 +22,15 @@ interface OnboardingData {
   templateKey:   string;
 }
 
-// Pages created for each template key (title + icon pairs)
-const TEMPLATE_PAGES: Record<string, Array<{ title: string; icon: string }>> = {
-  "getting-started":  [{ title: "Getting Started",  icon: "👋" }],
-  "project-tracker":  [{ title: "Project Overview", icon: "📋" }, { title: "My Tasks", icon: "✅" }],
-  "meeting-notes":    [{ title: "Meeting Notes",    icon: "📝" }],
-  "personal-journal": [{ title: "My Journal",       icon: "📓" }],
+// Maps an onboarding template choice to the built-in template it forks —
+// same pageSnapshot (blocks + content) a user would get picking it from the
+// template gallery later. "blank" (and any unmapped key) falls through to a
+// single empty page, same as Notion's "Start blank".
+const ONBOARDING_TEMPLATE_NAMES: Record<string, string> = {
+  "getting-started":  "Getting Started",
+  "project-tracker":  "Project Tracker",
+  "meeting-notes":    "Meeting Notes",
+  "personal-journal": "Daily Journal",
 };
 
 export async function completeOnboardingAction(data: OnboardingData) {
@@ -63,20 +66,34 @@ export async function completeOnboardingAction(data: OnboardingData) {
       joinedAt:    new Date(),
     });
 
-    // Create template pages
-    const templateDef = TEMPLATE_PAGES[data.templateKey];
-    if (templateDef) {
-      for (let i = 0; i < templateDef.length; i++) {
-        const { title, icon } = templateDef[i];
-        await tx.insert(pages).values({
-          workspaceId: ws.id,
-          shortId:     createId().slice(0, 10),
-          title,
-          icon,
-          orderIndex:  i,
-          createdBy:   session.user.id,
-        });
-      }
+    // Create the default page — a real fork of the chosen built-in template
+    // (same pre-built blocks as the template gallery), or one empty page for
+    // "blank", so the workspace never opens to nothing.
+    const templateName = ONBOARDING_TEMPLATE_NAMES[data.templateKey];
+    const [tpl] = templateName
+      ? await tx
+          .select()
+          .from(templates)
+          .where(and(eq(templates.isBuiltIn, true), eq(templates.name, templateName)))
+          .limit(1)
+      : [];
+
+    if (tpl) {
+      await createPageFromSnapshot(tx, {
+        snapshot:      tpl.pageSnapshot as PageSnapshot,
+        fallbackTitle: tpl.name,
+        workspaceId:   ws.id,
+        parentId:      null,
+        orderIndex:    0,
+        userId:        session.user.id,
+      });
+    } else {
+      await createBlankPage(tx, {
+        workspaceId: ws.id,
+        parentId:    null,
+        orderIndex:  0,
+        userId:      session.user.id,
+      });
     }
 
     return ws;

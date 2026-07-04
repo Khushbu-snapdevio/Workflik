@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -150,6 +151,10 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
   }
  }
 
+ function handleBack() {
+  setStep((s) => Math.max(0, s - 1));
+ }
+
  return (
   <div className="flex min-h-screen flex-col items-center justify-center bg-page px-4 py-16">
    <div className="flex w-full max-w-md flex-col items-center">
@@ -269,25 +274,38 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
     )}
 
     {/* Actions */}
-    <button
-     type="button"
-     onClick={handleContinue}
-     disabled={(!isInviteStep && !selected) || pending}
-     className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-     {pending
-      ? "Setting up…"
-      : isInviteStep
-      ? "Send invites & continue"
-      : isLastStep
-      ? `Open ${workspaceName}`
-      : "Continue"}
-     {!pending && !isLastStep && !isInviteStep && (
-      <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
-       <path d="M5 12h14M12 5l7 7-7 7" />
-      </svg>
+    <div className="flex w-full items-center gap-2">
+     {step > 0 && (
+      <button
+       type="button"
+       onClick={handleBack}
+       disabled={pending}
+       aria-label="Back"
+       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-border text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+      >
+       <ArrowLeft size={16} />
+      </button>
      )}
-    </button>
+     <button
+      type="button"
+      onClick={handleContinue}
+      disabled={(!isInviteStep && !selected) || pending}
+      className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+     >
+      {pending
+       ? "Setting up…"
+       : isInviteStep
+       ? "Send invites & continue"
+       : isLastStep
+       ? `Open ${workspaceName}`
+       : "Continue"}
+      {!pending && !isLastStep && !isInviteStep && (
+       <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+       </svg>
+      )}
+     </button>
+    </div>
 
     <button
      type="button"

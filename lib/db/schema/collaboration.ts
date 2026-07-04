@@ -71,12 +71,18 @@ export const notifications = pgTable("notifications", {
 ]);
 
 export const notificationPreferences = pgTable("notification_preferences", {
-  id:              uuid("id").primaryKey().defaultRandom(),
-  userId:          uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
-  emailFrequency:  emailFrequency("email_frequency").notNull().default("daily"),
-  weeklyDigestDay: integer("weekly_digest_day").notNull().default(1),
-  createdAt:       timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt:       updatedAt(),
+  id:                     uuid("id").primaryKey().defaultRandom(),
+  userId:                 uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  emailFrequency:         emailFrequency("email_frequency").notNull().default("daily"),
+  weeklyDigestDay:        integer("weekly_digest_day").notNull().default(1),
+  // Per-category opt-outs — gate which notification types generate emails
+  // (realtime sends and digests); in-app notifications are unaffected.
+  notifyMentions:         boolean("notify_mentions").notNull().default(true),
+  notifyPageUpdates:      boolean("notify_page_updates").notNull().default(true),
+  notifyWorkspaceInvites: boolean("notify_workspace_invites").notNull().default(true),
+  notifyTaskAssignments:  boolean("notify_task_assignments").notNull().default(true),
+  createdAt:              timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:              updatedAt(),
 });
 
 export const emailOutbox = pgTable("email_outbox", {

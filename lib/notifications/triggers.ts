@@ -12,14 +12,31 @@ function snippet(content: Record<string, unknown>, max = 100): string {
   return text.length > max ? text.slice(0, max - 1) + "…" : text;
 }
 
-async function getEmailPreference(tx: AnyTx, userId: string): Promise<string> {
+// Notification types that the "What you'll receive" settings can individually
+// opt out of. Types not in this map (comment, reply, resolved, reopened,
+// access_granted, guest_accepted, trash_warning) always email when realtime.
+const CATEGORY_PREF_FIELD: Partial<Record<typeof notifications.$inferInsert["type"], string>> = {
+  mention:          "notifyMentions",
+  page_update:      "notifyPageUpdates",
+  workspace_invite: "notifyWorkspaceInvites",
+  task_assigned:    "notifyTaskAssignments",
+};
+
+async function getEmailPreference(
+  tx: AnyTx,
+  userId: string,
+  type: typeof notifications.$inferInsert["type"]
+): Promise<{ frequency: string; categoryEnabled: boolean }> {
   const { notificationPreferences } = await import("@/lib/db/schema");
   const [pref] = await tx
-    .select({ emailFrequency: notificationPreferences.emailFrequency })
+    .select()
     .from(notificationPreferences)
     .where(eq(notificationPreferences.userId, userId))
     .limit(1);
-  return pref?.emailFrequency ?? "daily";
+
+  const field = CATEGORY_PREF_FIELD[type];
+  const categoryEnabled = field ? (pref?.[field as keyof typeof pref] ?? true) : true;
+  return { frequency: pref?.emailFrequency ?? "daily", categoryEnabled };
 }
 
 async function insertAndEnqueue(
@@ -39,8 +56,8 @@ async function insertAndEnqueue(
     .values(row)
     .returning({ id: notifications.id });
 
-  const freq = await getEmailPreference(tx, row.recipientId);
-  if (freq === "realtime") {
+  const { frequency, categoryEnabled } = await getEmailPreference(tx, row.recipientId, row.type);
+  if (frequency === "realtime" && categoryEnabled) {
     await enqueueJob(JOB_NAMES.NOTIFICATION_EMAIL_SEND, {
       notificationId: inserted.id,
       recipientId:    row.recipientId,

@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import {
  forwardRef,
  useEffect,
@@ -56,6 +57,7 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
   const people = typedItems.filter((i) => i.mentionType === "user");
   const pageItems = typedItems.filter((i) => i.mentionType === "page");
   const dates = typedItems.filter((i) => i.mentionType === "date");
+  const createItems = typedItems.filter((i) => i.mentionType === "create_page");
 
   return (
    <div
@@ -112,6 +114,17 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
       })}
      </Section>
     )}
+    {createItems.map((item) => {
+     const idx = typedItems.indexOf(item);
+     return (
+      <MentionRow
+       key="create_page"
+       item={item}
+       isSelected={selectedIndex === idx}
+       onClick={() => selectItem(item)}
+      />
+     );
+    })}
    </div>
   );
  }
@@ -166,6 +179,14 @@ function MentionRow({
     <>
      <span className="w-5 text-center text-muted-foreground">📅</span>
      <span className="text-foreground">{item.label}</span>
+    </>
+   )}
+   {item.mentionType === "create_page" && (
+    <>
+     <Plus className="w-5 shrink-0 text-muted-foreground" size={14} />
+     <span className="truncate text-foreground">
+      Create page <span className="font-medium">&ldquo;{item.query}&rdquo;</span>
+     </span>
     </>
    )}
   </button>

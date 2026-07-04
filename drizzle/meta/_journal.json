@@ -50,6 +50,13 @@
       "when": 1783080961522,
       "tag": "0006_spooky_jack_power",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783142828212,
+      "tag": "0007_foamy_mentor",
+      "breakpoints": true
     }
   ]
 }

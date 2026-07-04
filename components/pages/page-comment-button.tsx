@@ -10,9 +10,13 @@ interface Props {
   workspaceId:   string;
   currentUserId: string;
   isAdmin:       boolean;
+  /** "scroll" jumps to the page-bottom comments section (matches Notion's
+   *  document pages); "drawer" (default) keeps the slide-in side panel,
+   *  still used on database pages where there's no natural "bottom". */
+  mode?: "scroll" | "drawer";
 }
 
-export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin }: Props) {
+export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin, mode = "drawer" }: Props) {
   const [open, setOpen]                       = useState(false);
   const [unresolvedCount, setUnresolvedCount] = useState<number | null>(null);
   const [mounted, setMounted]                 = useState(false);
@@ -43,7 +47,15 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
       {/* Trigger button */}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (mode === "scroll") {
+            document
+              .getElementById("page-comments-section")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+          }
+          setOpen((v) => !v);
+        }}
         className={`relative flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${
           open
             ? "bg-primary/10 text-primary"
@@ -60,7 +72,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
       </button>
 
       {/* Panel portal */}
-      {mounted && open && createPortal(
+      {mode === "drawer" && mounted && open && createPortal(
         <>
           {/* Invisible backdrop */}
           <div

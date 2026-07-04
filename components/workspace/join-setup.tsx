@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -68,6 +69,10 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
   } else {
    setStep((s) => s + 1);
   }
+ }
+
+ function handleBack() {
+  setStep((s) => Math.max(0, s - 1));
  }
 
  return (
@@ -152,19 +157,31 @@ export function JoinSetup({ workspaceName, workspaceSlug }: Props) {
     </div>
 
     {/* Actions */}
-    <button
-     type="button"
-     onClick={handleContinue}
-     disabled={!selections[step]}
-     className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-     {isLastStep ? `Open ${workspaceName}` : "Continue"}
-     {!isLastStep && (
-      <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
-       <path d="M5 12h14M12 5l7 7-7 7" />
-      </svg>
+    <div className="flex w-full items-center gap-2">
+     {step > 0 && (
+      <button
+       type="button"
+       onClick={handleBack}
+       aria-label="Back"
+       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+       <ArrowLeft size={16} />
+      </button>
      )}
-    </button>
+     <button
+      type="button"
+      onClick={handleContinue}
+      disabled={!selections[step]}
+      className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+     >
+      {isLastStep ? `Open ${workspaceName}` : "Continue"}
+      {!isLastStep && (
+       <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+       </svg>
+      )}
+     </button>
+    </div>
 
     <button
      type="button"

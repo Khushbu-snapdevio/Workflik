@@ -7,7 +7,7 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -534,7 +534,7 @@ interface PdfBlockOptions {
 function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   const src = (node.attrs.src as string) || "";
   const caption = (node.attrs.caption as string) || "";
-  const blockId = (node.attrs.blockId as string) || "";
+  const blockId = (node.attrs.blockId as string | null) || undefined;
   const { workspaceId, pageId } = extension.options as PdfBlockOptions;
   const { upload, uploading, error } = useUpload({
     kind: "block_media",
@@ -549,6 +549,20 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   const defaultName = src.split("/").pop() || "PDF";
   const [captionDraft, setCaptionDraft] = useState(caption || defaultName);
   const changeRef = useRef<HTMLInputElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+    function handleOutside(e: MouseEvent) {
+      if (!popupRef.current?.contains(e.target as globalThis.Node)) {
+        setExpanded(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [expanded]);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -614,7 +628,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
     }
     return (
       <NodeViewWrapper contentEditable={false}>
-        <div className="relative my-1 flex flex-col items-center gap-2">
+        <div className="relative my-1 flex flex-col items-center gap-2" ref={popupRef}>
           <button
             className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
             onClick={() => setExpanded(false)}

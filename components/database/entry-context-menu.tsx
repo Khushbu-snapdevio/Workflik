@@ -509,10 +509,11 @@ function PropertyFlyout({
     // Only a genuine Status property (a grouped select) gets the "Edit
     // property" footer link out to the full side panel — every other
     // select/multi-select (Channel, Priority, Tags, ...) is fully editable
-    // in place instead (create/rename/delete/reorder/recolor, all inline),
-    // so it never needs to leave this popup at all. Calendar/Gallery-only
-    // by construction — this file is the entry menu those two views share;
-    // Table/Board have their own separate menu components, untouched.
+    // in place instead (search, create-with-colored-badge, rename, delete,
+    // reorder, recolor, all inline via hideSearch={isStatus}), so it never
+    // needs to leave this popup at all. This file is the shared entry menu
+    // for Board/Calendar/Gallery — Table has its own separate cell popover
+    // (template-table-view.tsx's SelectPopoverCell) with the same rule.
     const isStatus = !!editor.prop.config?.groupedByStatus;
     return (
       <CellEditorPopover
@@ -520,7 +521,7 @@ function PropertyFlyout({
         value={values.get(editor.prop.id) ?? null}
         cellRect={new DOMRect(entryPos.x, entryPos.y, 0, 0)}
         workspaceId={workspaceId}
-        hideSearch
+        hideSearch={isStatus}
         onSave={(v) => save(editor.prop.id, v)}
         onClose={() => {
           if (suppressCloseRef.current) { suppressCloseRef.current = false; return; }

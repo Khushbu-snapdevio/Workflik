@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { PageIcon } from "@/components/pages/page-icon";
 
 type Workspace = {
   id: string;
@@ -223,16 +224,11 @@ function WorkspaceAvatar({
   icon: string | null;
   name: string;
 }) {
-  if (icon && !icon.startsWith("http")) {
-    return (
-      <span className="flex size-6 shrink-0 items-center justify-center text-base leading-none">
-        {icon}
-      </span>
-    );
-  }
   if (icon) {
     return (
-      <img alt={name} className="size-6 shrink-0 rounded-[var(--radius-sm)] object-cover" src={icon} />
+      <span className="flex size-6 shrink-0 items-center justify-center">
+        <PageIcon icon={icon} size={20} className="rounded-[var(--radius-sm)] object-cover" />
+      </span>
     );
   }
   return (

@@ -7,6 +7,7 @@ import { PageIcon } from "@/components/pages/page-icon";
 import { PageEditor } from "@/components/editor/editor";
 import { useUpload } from "@/lib/storage/use-upload";
 import { EntryPropertiesPanel } from "@/components/database/entry-properties-panel";
+import { PageCommentsSection } from "@/components/pages/page-comments-section";
 
 interface PageClientProps {
  pageId:        string;
@@ -296,6 +297,13 @@ export function PageClient({
       isAdmin={isAdmin}
      />
     </div>
+
+    <PageCommentsSection
+     currentUserId={currentUserId}
+     isAdmin={isAdmin}
+     pageId={pageId}
+     workspaceId={workspaceId}
+    />
 
    </div>
   </div>

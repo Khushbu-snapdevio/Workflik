@@ -1,8 +1,11 @@
 import { and, eq } from "drizzle-orm";
+import { createElement } from "react";
 import type { Job } from "pg-boss";
 import { db } from "@/lib/db";
 import { notifications, notificationPreferences, pages, users } from "@/lib/db/schema";
 import { enqueueEmail } from "@/lib/email";
+import { NotificationEmail } from "@/lib/email/components/notification";
+import { renderEmailTemplate } from "@/lib/email/renderer";
 import { env } from "@/lib/env";
 import type { NotificationEmailSendPayload } from "@/lib/jobs/job-names";
 
@@ -61,20 +64,18 @@ export async function handleNotificationEmailSend(jobs: Job<NotificationEmailSen
     const senderLabel = notif.senderName ?? "Someone";
     const action      = TYPE_LABELS[notif.type] ?? "sent you a notification";
     const pageLabel   = notif.pageTitle ? ` on "${notif.pageTitle}"` : "";
-    const snippet     = notif.contentSnippet ? `\n\n"${notif.contentSnippet}"` : "";
     const appUrl      = env.NEXT_PUBLIC_APP_URL ?? "https://app.workflik.com";
 
     const subject = `${senderLabel} ${action}${pageLabel}`;
-    const html = `<!DOCTYPE html>
-<html><body style="font-family:sans-serif;color:#111;max-width:560px;margin:40px auto;padding:0 20px">
-  <h2 style="font-size:18px;font-weight:700;margin-bottom:8px">${subject}</h2>
-  ${notif.contentSnippet ? `<p style="color:#555;font-style:italic;border-left:3px solid #e5e7eb;padding-left:12px">${notif.contentSnippet}</p>` : ""}
-  <p style="margin-top:24px">
-    <a href="${appUrl}" style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">View notification →</a>
-  </p>
-  <hr style="margin-top:32px;border:none;border-top:1px solid #e5e7eb" />
-  <p style="font-size:12px;color:#9ca3af">You're receiving this because you have real-time email notifications enabled.</p>
-</body></html>`;
+    const html = await renderEmailTemplate(
+      createElement(NotificationEmail, {
+        subject,
+        snippet: notif.contentSnippet,
+        actionUrl: appUrl,
+        footerNote:
+          "You're receiving this because you have real-time email notifications enabled.",
+      })
+    );
 
     await enqueueEmail({
       to:      recipient.email,

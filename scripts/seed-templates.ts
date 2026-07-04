@@ -53,6 +53,32 @@ const TEMPLATES: {
   icon: string;
   blocks: BlockDef[];
 }[] = [
+  // ── Onboarding ────────────────────────────────────────────────────────────────
+  {
+    name: "Getting Started", description: "A quick tour of the basics — the default page for new workspaces.", category: "productivity", icon: "👋",
+    blocks: [
+      { type: "callout",   text: "This page is yours to edit, move, or delete — nothing here is permanent.", icon: "👋" },
+      { type: "divider" },
+      { type: "h2",        text: "✏️ Write anything" },
+      { type: "todo",      text: "Type \"/\" anywhere to insert a heading, image, table, and more" },
+      { type: "todo",      text: "Highlight text to add bold, italics, or a comment" },
+      { type: "todo",      text: "Drag a block by its handle to reorder it" },
+      { type: "h2",        text: "📄 Organize your work" },
+      { type: "todo",      text: "Click \"+\" in the sidebar to create a new page" },
+      { type: "todo",      text: "Nest pages inside each other to build a hierarchy" },
+      { type: "todo",      text: "Use a database for tasks, projects, or anything you track in rows" },
+      { type: "h2",        text: "👥 Bring your team in" },
+      { type: "todo",      text: "Invite teammates from workspace settings" },
+      { type: "todo",      text: "@mention someone to notify them" },
+      { type: "todo",      text: "Leave a comment on any block to start a discussion" },
+      { type: "h2",        text: "🚀 Move faster" },
+      { type: "todo",      text: "Browse the template gallery for ready-made pages" },
+      { type: "todo",      text: "Star pages you visit often for quick access" },
+      { type: "divider" },
+      { type: "paragraph", text: "Ready? Delete this page or keep it around as a reference." },
+    ],
+  },
+
   // ── Personal ─────────────────────────────────────────────────────────────────
   {
     name: "Daily Journal", description: "Date-stamped entries with mood, highlights, and reflection prompts.", category: "productivity", icon: "📔",
@@ -590,7 +616,7 @@ async function main() {
   console.log("Deleting existing built-in templates…");
   await db.delete(templates).where(eq(templates.isBuiltIn, true));
 
-  console.log("Seeding 18 built-in templates…");
+  console.log("Seeding 19 built-in templates…");
 
   const rows = TEMPLATES.map((t) => ({
     name:         t.name,

@@ -303,7 +303,7 @@ export function PageEditor({
         AudioBlock,
         FileBlock,
         PdfBlock.configure({ workspaceId, pageId }),
-        LinkedPage,
+        LinkedPage.configure({ workspaceId, workspaceSlug }),
         SubPageBlock.configure({
           workspaceId,
           workspaceSlug,
@@ -326,7 +326,7 @@ export function PageEditor({
         // Slash command menu — uses @tiptap/suggestion so the range is always
         // maintained by the ProseMirror plugin (no manual position tracking).
         BlockIdAttr,
-        MentionNode,
+        MentionNode.configure({ workspaceSlug }),
         SlashCommands.configure({
           onUpdate: (props) => setSlashProps(props),
           onKeyDown: (event) => slashMenuRef.current?.onKeyDown(event) ?? false,
@@ -336,6 +336,7 @@ export function PageEditor({
           ? [
               MentionCommands.configure({
                 workspaceId,
+                currentPageId: pageId,
                 onUpdate: (props) => setMentionProps(props),
                 onKeyDown: (event) =>
                   mentionListRef.current?.onKeyDown(event) ?? false,

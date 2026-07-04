@@ -1,42 +1,69 @@
 import { Node, mergeAttributes } from "@tiptap/react";
 
+interface MentionNodeOptions {
+  workspaceSlug: string;
+}
+
 // Inline atom node that stores @mention data (user / page / date).
 // Required so TipTap serializes the node to JSON correctly; without this
 // the schema drops unknown nodes silently and notifications never fire.
-export const MentionNode = Node.create({
+export const MentionNode = Node.create<MentionNodeOptions>({
   name:       "mention",
   group:      "inline",
   inline:     true,
   selectable: false,
   atom:       true,
 
+  addOptions() {
+    return { workspaceSlug: "" };
+  },
+
   addAttributes() {
     return {
       mentionType: { default: "user" },
       id:          { default: null },
       label:       { default: null },
+      // Only used by mentionType "page" — the target page's icon + shortId,
+      // so an inline page link (via "@" or "[[") previews and navigates the
+      // same way as the "Link to page" block card.
+      icon:        { default: null },
+      shortId:     { default: null },
     };
   },
 
   parseHTML() {
-    return [{ tag: "span[data-mention-type]" }];
+    return [{ tag: "[data-mention-type]" }];
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    const cls =
-      node.attrs.mentionType === "user"
-        ? "text-primary font-medium bg-primary/[0.06] rounded px-0.5 not-prose cursor-pointer"
-        : node.attrs.mentionType === "page"
-        ? "text-foreground underline decoration-dotted not-prose cursor-pointer"
-        : "text-accent-foreground font-medium not-prose cursor-pointer";
+    const { mentionType, label, icon, shortId } = node.attrs;
 
-    return [
-      "span",
-      mergeAttributes(
-        { "data-mention-type": node.attrs.mentionType, contenteditable: "false", class: cls },
-        HTMLAttributes,
-      ),
-      `@${node.attrs.label ?? ""}`,
-    ];
+    const cls =
+      mentionType === "user"
+        ? "text-primary font-medium bg-primary/[0.06] rounded px-0.5 not-prose cursor-pointer"
+        : mentionType === "page"
+        ? "text-foreground underline decoration-dotted not-prose cursor-pointer"
+        : "text-accent-foreground font-medium bg-accent-foreground/[0.06] rounded px-0.5 not-prose cursor-pointer";
+
+    // Only "user" mentions get the "@" prefix — pages show their icon
+    // instead, dates read as plain text, matching Notion's conventions.
+    const text =
+      mentionType === "user" ? `@${label ?? ""}`
+      : mentionType === "page" ? `${icon ?? "📄"} ${label ?? ""}`
+      : `📅 ${label ?? ""}`;
+
+    const attrs = mergeAttributes(
+      { "data-mention-type": mentionType, contenteditable: "false", class: cls },
+      HTMLAttributes,
+    );
+
+    // Real <a href> so clicking a page mention navigates like the "Link to
+    // page" card — contenteditable="false" already lifts it out of the
+    // editable flow, same trick the resolved block-level cards rely on.
+    if (mentionType === "page" && shortId && this.options.workspaceSlug) {
+      return ["a", { ...attrs, href: `/app/${this.options.workspaceSlug}/${shortId}` }, text];
+    }
+
+    return ["span", attrs, text];
   },
 });

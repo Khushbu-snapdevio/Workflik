@@ -35,9 +35,9 @@ export function useUpload(opts: UseUploadOptions) {
             kind: opts.kind,
             mimeType: file.type,
             fileSizeBytes: file.size,
-            workspaceId: opts.workspaceId,
-            pageId: opts.pageId,
-            blockId: opts.blockId,
+            workspaceId: opts.workspaceId || undefined,
+            pageId: opts.pageId || undefined,
+            blockId: opts.blockId || undefined,
           }),
         });
 

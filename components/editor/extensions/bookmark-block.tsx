@@ -514,7 +514,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   const url = (node.attrs.url as string) || "";
   const fileName = (node.attrs.fileName as string) || "";
   const mimeType = (node.attrs.mimeType as string) || "";
-  const blockId = (node.attrs.blockId as string) || "";
+  const blockId = (node.attrs.blockId as string | null) || undefined;
   const { workspaceId, pageId, onComment } = extension.options as EmbedBlockOptions;
   const { upload, uploading, error: uploadError } = useUpload({
     kind: "block_media",
@@ -529,6 +529,20 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   const [zooming, setZooming] = useState(false);
   const changeRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+    function handleOutside(e: MouseEvent) {
+      if (!popupRef.current?.contains(e.target as globalThis.Node)) {
+        setExpanded(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [expanded]);
 
   const [preview, setPreview] = useState<LinkPreview | null>(null);
   const [previewError, setPreviewError] = useState(false);
@@ -621,7 +635,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
     }
     return (
       <NodeViewWrapper contentEditable={false}>
-        <div className="relative my-1 flex flex-col items-center gap-2">
+        <div className="relative my-1 flex flex-col items-center gap-2" ref={popupRef}>
           <button
             className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
             onClick={() => setExpanded(false)}

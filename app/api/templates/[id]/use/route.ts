@@ -2,8 +2,9 @@ import { createId } from "@paralleldrive/cuid2";
 import { and, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { blocks, databaseProperties, databaseViews, pages, propertyValues, templates } from "@/lib/db/schema";
+import { databaseProperties, databaseViews, pages, propertyValues, templates } from "@/lib/db/schema";
 import { insertPageWithClosure } from "@/lib/pages/closure";
+import { createPageFromSnapshot, type PageSnapshot as BasePageSnapshot } from "@/lib/templates/instantiate";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
 const useSchema = z.object({
@@ -11,28 +12,11 @@ const useSchema = z.object({
   parentId:    z.string().uuid().nullable().default(null),
 });
 
-type SnapshotBlock = {
-  id: string;
-  type: string;
-  content: unknown;
-  schema_version?: number;
-  order_index: number;
-  parent_block_id: string | null;
-  children?: SnapshotBlock[];
-};
-
 type PropOption  = { name: string; color: string };
 type SchemaProp  = { name: string; type: string; options?: PropOption[] };
 type SchemaView  = { name: string; type: string; isDefault?: boolean; groupBy?: string };
 
-type PageSnapshot = {
-  title:       string;
-  icon:        string | null;
-  cover_url:   string | null;
-  is_full_width: boolean;
-  font_family: string;
-  blocks:      SnapshotBlock[];
-  subpages:    { title: string }[];
+type PageSnapshot = BasePageSnapshot & {
   database_schema: null | {
     properties:  SchemaProp[];
     views:       SchemaView[];
@@ -258,86 +242,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
 
       // ── REGULAR PAGE TEMPLATE ──────────────────────────────────────────────
-      const [page] = await tx
-        .insert(pages)
-        .values({
-          shortId,
-          workspaceId,
-          parentId,
-          kind:         "page",
-          title:        snapshot.title || tpl.name,
-          icon:         snapshot.icon ?? null,
-          coverUrl:     snapshot.cover_url ?? null,
-          isFullWidth:  snapshot.is_full_width ?? false,
-          orderIndex,
-          createdBy:    session.user.id,
-          lastEditedBy: session.user.id,
-        })
-        .returning();
-
-      await insertPageWithClosure(tx, page.id, parentId);
-
-      async function insertBlocks(snapshotBlocks: SnapshotBlock[], parentBlockId: string | null) {
-        for (const sb of snapshotBlocks) {
-          const newBlockId = crypto.randomUUID();
-          await tx.insert(blocks).values({
-            id:            newBlockId,
-            pageId:        page.id,
-            parentBlockId,
-            type:          sb.type as "paragraph",
-            content:       sb.content ?? {},
-            schemaVersion: sb.schema_version ?? 1,
-            orderIndex:    sb.order_index,
-            createdBy:     session.user.id,
-          });
-          if (sb.children?.length) await insertBlocks(sb.children, newBlockId);
-        }
-      }
-
-      if (snapshot.blocks?.length) {
-        await insertBlocks(snapshot.blocks, null);
-      } else {
-        await tx.insert(blocks).values({
-          pageId:        page.id,
-          parentBlockId: null,
-          type:          "paragraph",
-          content:       { text: [] },
-          schemaVersion: 1,
-          orderIndex:    0,
-          createdBy:     session.user.id,
-        });
-      }
-
-      if (snapshot.subpages?.length) {
-        for (let i = 0; i < snapshot.subpages.length; i++) {
-          const sub    = snapshot.subpages[i];
-          const [subPage] = await tx
-            .insert(pages)
-            .values({
-              shortId:      createId().slice(0, 10),
-              workspaceId,
-              parentId:     page.id,
-              kind:         "page",
-              title:        sub.title || "Untitled",
-              orderIndex:   i,
-              createdBy:    session.user.id,
-              lastEditedBy: session.user.id,
-            })
-            .returning();
-          await insertPageWithClosure(tx, subPage.id, page.id);
-          await tx.insert(blocks).values({
-            pageId:        subPage.id,
-            parentBlockId: null,
-            type:          "paragraph",
-            content:       { text: [] },
-            schemaVersion: 1,
-            orderIndex:    0,
-            createdBy:     session.user.id,
-          });
-        }
-      }
-
-      return page;
+      return createPageFromSnapshot(tx, {
+        snapshot,
+        fallbackTitle: tpl.name,
+        workspaceId,
+        parentId,
+        orderIndex,
+        userId: session.user.id,
+      });
     });
 
     return Response.json({ shortId: newPage.shortId, id: newPage.id, kind: newPage.kind }, { status: 201 });

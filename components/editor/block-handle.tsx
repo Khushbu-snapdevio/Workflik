@@ -6,6 +6,7 @@ import type { Editor } from "@tiptap/react";
 import { Slice, Fragment } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import { Copy, GripVertical, Trash2, MessageSquare } from "lucide-react";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 interface BlockInfo {
  top:   number;
@@ -149,6 +150,13 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
   document.addEventListener("mousedown", close);
   return () => document.removeEventListener("mousedown", close);
  }, [menuOpen]);
+
+ // The grip's mousemove tracker deliberately stops updating `block` while the
+ // dropdown is open (see the early return above), so its `position: fixed`
+ // coordinates would otherwise go stale as soon as the document scrolls. Lock
+ // scroll instead of trying to track position without a live mousemove.
+ useScrollLockWhileOpen(menuOpen, (target) =>
+  !!dropdownRef.current?.contains(target) || !!triggerRef.current?.contains(target));
 
  // ── Block actions ─────────────────────────────────────────────────────────
  const deleteBlock = useCallback(() => {

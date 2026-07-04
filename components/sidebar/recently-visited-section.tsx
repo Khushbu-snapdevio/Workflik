@@ -5,6 +5,7 @@ import { PageIcon } from "@/components/pages/page-icon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 const VISIBLE_MAX = 3;
 
@@ -44,6 +45,9 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
   document.addEventListener("mousedown", handleClick);
   return () => document.removeEventListener("mousedown", handleClick);
  }, [popupOpen]);
+
+ useScrollLockWhileOpen(popupOpen, (target) =>
+  !!popupRef.current?.contains(target) || !!moreRef.current?.contains(target));
 
  const resolved = items.filter((item) => !!pagesMap[item.pageId]);
  if (resolved.length === 0) return null;

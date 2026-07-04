@@ -25,6 +25,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageIcon } from "@/components/pages/page-icon";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 const ROOT_VISIBLE_MAX = 4;
 
@@ -128,6 +129,9 @@ export function PageTree({
   document.addEventListener("mousedown", handleClick);
   return () => document.removeEventListener("mousedown", handleClick);
  }, [moreOpen]);
+
+ useScrollLockWhileOpen(moreOpen, (target) =>
+  !!popupRef.current?.contains(target) || !!moreRef.current?.contains(target));
 
  const lower = filter.toLowerCase();
  const tree = applyFilter(buildTree(pages), lower);

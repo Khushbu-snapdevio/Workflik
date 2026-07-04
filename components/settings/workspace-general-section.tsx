@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, AlertTriangle, Check, ChevronDown, ExternalLink, Link2, Settings, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 /* ── Emoji catalogue ──────────────────────────────────────── */
 const EMOJI_CATEGORIES = [
@@ -47,6 +48,9 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
   document.addEventListener("mousedown", handler);
   return () => document.removeEventListener("mousedown", handler);
  }, [open]);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!panelRef.current?.contains(target) || !!btnRef.current?.contains(target));
 
  function handleOpen() {
   if (!open && btnRef.current) {
@@ -198,19 +202,16 @@ function ChevronSelect({ value, options, onChange }: { value: string; options: {
   function handleKey(e: KeyboardEvent) {
    if (e.key === "Escape") setOpen(false);
   }
-  function preventScroll(e: WheelEvent) {
-   if (menuRef.current?.contains(e.target as Node)) return;
-   e.preventDefault();
-  }
   document.addEventListener("mousedown", handleClick);
   document.addEventListener("keydown", handleKey);
-  window.addEventListener("wheel", preventScroll, { passive: false });
   return () => {
    document.removeEventListener("mousedown", handleClick);
    document.removeEventListener("keydown", handleKey);
-   window.removeEventListener("wheel", preventScroll);
   };
  }, [open]);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
 
  function handleOpen() {
   if (!open && btnRef.current) {

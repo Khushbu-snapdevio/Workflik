@@ -1,18 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
  DndContext, DragOverlay, PointerSensor, useSensor, useSensors, useDroppable,
  type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, ExternalLink, LayoutGrid, X, Trash2, FileText, PanelLeft, GripVertical } from "lucide-react";
-import { OPTION_COLORS, getOptionColor } from "@/components/database/property-registry";
+import { Plus, LayoutGrid, X, FileText, PanelLeft, PanelRight, Pencil, GripVertical, MoreHorizontal, MessageSquare, Pin } from "lucide-react";
+import { OPTION_COLORS, getOptionColor, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
+import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
+import { CellEditorPopover } from "@/components/database/cells/cell-editor";
+import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import type { SharedViewProps, DbEntry, DbProperty, SelectOption } from "@/components/database/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { GroupHeaderMenu } from "@/components/database/group-header-menu";
+import { GroupSettingsPanel, type BoardSettings } from "@/components/database/group-settings-panel";
+import { EntryContextMenu } from "@/components/database/entry-context-menu";
+import { CellCommentPopover } from "@/components/database/cell-comment-popover";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,8 +46,9 @@ function hasDisplayValue(prop: DbProperty, raw: unknown): boolean {
 // ── BoardView ─────────────────────────────────────────────────────────────────
 
 export function BoardView({
- workspaceSlug, entries, properties, valueMap, activeView, isEditor,
- onUpdateValue, onCreateEntry, onUpdateProperty, onDeleteEntry, onOpenEntry,
+ databaseId, workspaceId, workspaceSlug, entries, properties, valueMap, activeView, isEditor,
+ onUpdateValue, onUpdateTitle, onCreateEntry, onUpdateProperty, onDeleteEntry, onDuplicateEntry, onOpenEntry,
+ onAddProperty, onDeleteProperty, onUpdateView, onUpdateEntryIcon,
 }: SharedViewProps) {
  const [draggingId, setDraggingId]   = useState<string | null>(null);
  const [collapsed, setCollapsed]    = useState<Set<string>>(new Set());
@@ -48,6 +58,11 @@ export function BoardView({
  const [deleteTarget, setDeleteTarget] = useState<DbEntry | null>(null);
  const [deletingEntry, setDeletingEntry] = useState(false);
  const [localEntryOrder, setLocalEntryOrder] = useState<Map<string, string[]>>(new Map());
+ const [groupMenu, setGroupMenu]     = useState<{ optionId: string; triggerEl: HTMLElement } | null>(null);
+ const [editingGroupsAnchor, setEditingGroupsAnchor] = useState<HTMLElement | null>(null);
+ const [deleteGroupTarget, setDeleteGroupTarget] = useState<{ id: string; name: string } | null>(null);
+ const [draggingColKey, setDraggingColKey] = useState<string | null>(null);
+ const [pinTooltip, setPinTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
  const addOptRef            = useRef<HTMLDivElement>(null);
  const addOptInputRef         = useRef<HTMLInputElement>(null);
 
@@ -85,9 +100,19 @@ export function BoardView({
 
  const options: SelectOption[] = (groupProp.config?.options ?? []) as SelectOption[];
 
+ const boardSettings = (activeView?.boardSettings ?? {}) as BoardSettings;
+ const sortDirection = boardSettings.sortDirection ?? "manual";
+ const hideEmptyGroups = !!boardSettings.hideEmptyGroups;
+ const colorColumns = boardSettings.colorColumns !== false;
+ // Display-only sorted copy — the underlying option array (and its index-based drag
+ // math in onDragEnd) is untouched, so switching back to Manual restores drag order.
+ const displayOptions = sortDirection === "manual"
+  ? options
+  : [...options].sort((a, b) => sortDirection === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+
  const columns: { id: string | null; label: string; color: string; entries: DbEntry[] }[] = [
   { id: null, label: "No " + groupProp.name, color: "gray", entries: [] },
-  ...options.map((o) => ({ id: o.id, label: o.name, color: o.color, entries: [] as DbEntry[] })),
+  ...displayOptions.map((o) => ({ id: o.id, label: o.name, color: o.color, entries: [] as DbEntry[] })),
  ];
 
  for (const entry of entries) {
@@ -109,19 +134,64 @@ export function BoardView({
   return { ...col, entries: [...sorted, ...extras] };
  });
 
- const configuredCardPropIds = (activeView?.cardDisplayProps as string[] | undefined) ?? [];
- const cardProps = configuredCardPropIds.length > 0
-  ? configuredCardPropIds.map((id) => properties.find((p) => p.id === id)).filter(Boolean) as typeof properties
-  : properties.filter((p) => !p.isSystem && p.id !== groupPropId).slice(0, 4);
+ // Matches Notion: a card shows only its title by default. The one
+ // exception is Status, and only once the user explicitly turns on "Show on
+ // card" from Status's own Edit Property panel — every other property stays
+ // fully editable via the card's own popup but is never rendered on it.
+ // Same rule as Calendar/Gallery.
+ const cardProps = properties.filter((p) => !!p.config?.groupedByStatus && !!p.config?.showOnCard);
  const draggingEntry = draggingId ? entries.find((e) => e.id === draggingId) : null;
 
- function onDragStart({ active }: DragStartEvent) { setDraggingId(String(active.id)); }
+ const hiddenGroupOptionIds = boardSettings.hiddenGroupOptionIds ?? [];
+ const hideAggregation = !!boardSettings.hideAggregation;
+ const visibleColumns = orderedColumns.filter((c) => {
+  if (c.id !== null && hiddenGroupOptionIds.includes(c.id)) return false;
+  if (hideEmptyGroups && c.id !== null && c.entries.length === 0) return false;
+  return true;
+ });
+ const draggableColumnKeys = sortDirection === "manual"
+  ? visibleColumns.filter((c) => c.id !== null).map((c) => "colhandle-" + c.id)
+  : [];
+
+ // Pinned groups render as a compact chip strip in addition to their normal column —
+ // a quick-reference row, independent of that column's hidden/visible state.
+ const pinnedGroupIds = boardSettings.pinnedGroupOptionIds ?? [];
+ const pinnedColumns = orderedColumns.filter((c) => c.id !== null && pinnedGroupIds.includes(c.id));
+ function unpinColumn(optionId: string) {
+  onUpdateView({ boardSettings: { ...boardSettings, pinnedGroupOptionIds: pinnedGroupIds.filter((id) => id !== optionId) } });
+ }
+ function scrollToColumn(colKey: string) {
+  document.querySelector(`[data-col-id="${colKey}"]`)?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+ }
+
+ function onDragStart({ active }: DragStartEvent) {
+  const id = String(active.id);
+  if (id.startsWith("colhandle-")) { setDraggingColKey(id.slice("colhandle-".length)); return; }
+  setDraggingId(id);
+ }
 
  function onDragEnd({ active, over }: DragEndEvent) {
+  const activeId = String(active.id);
+
+  // Whole-column reordering — distinct id prefix so it never collides with card ids.
+  if (activeId.startsWith("colhandle-")) {
+   setDraggingColKey(null);
+   if (!over) return;
+   const overId = String(over.id);
+   if (!overId.startsWith("colhandle-") || activeId === overId) return;
+   const activeOptId = activeId.slice("colhandle-".length);
+   const overOptId  = overId.slice("colhandle-".length);
+   const oldIdx = options.findIndex((o) => o.id === activeOptId);
+   const newIdx = options.findIndex((o) => o.id === overOptId);
+   if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+   const nextOptions = arrayMove(options, oldIdx, newIdx);
+   onUpdateProperty(groupProp!.id, { config: { ...groupProp!.config, options: nextOptions } });
+   return;
+  }
+
   setDraggingId(null);
   if (!over || active.id === over.id) return;
 
-  const activeId = String(active.id);
   const overId = String(over.id);
 
   // Find which column the active card belongs to
@@ -156,6 +226,11 @@ export function BoardView({
   }
  }
 
+ function deleteGroupOption(optionId: string) {
+  const next = options.filter((o) => o.id !== optionId);
+  onUpdateProperty(groupProp!.id, { config: { ...groupProp!.config, options: next } });
+ }
+
  function handleAddOption() {
   const name = newOptName.trim();
   if (!name) return;
@@ -171,11 +246,51 @@ export function BoardView({
 
  return (
   <>
+  {pinnedColumns.length > 0 && (
+   <div className="flex flex-wrap items-center gap-2 border-b border-border/40 px-6 py-2">
+    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
+     <Pin size={11} /> Pinned groups
+    </span>
+    {pinnedColumns.map((col) => {
+     const color = getOptionColor(col.color);
+     const colKey = col.id ?? "no-group";
+     return (
+      <div
+       key={col.id}
+       className="flex shrink-0 items-center gap-0.5 rounded-full border border-transparent pl-1 pr-1 py-1 text-xs font-medium"
+       style={{ backgroundColor: color.bg, color: color.text }}
+      >
+       <button
+        type="button"
+        onClick={() => scrollToColumn(colKey)}
+        onMouseEnter={(e) => setPinTooltip({ label: `Jump to ${col.label}`, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+        onMouseLeave={() => setPinTooltip(null)}
+        className="flex items-center gap-1.5 rounded-full px-1.5 transition-colors hover:opacity-70"
+       >
+        <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
+        {col.label}
+        <span className="opacity-70">{col.entries.length}</span>
+       </button>
+       <button
+        type="button"
+        onClick={() => unpinColumn(col.id!)}
+        onMouseEnter={(e) => setPinTooltip({ label: "Unpin group", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+        onMouseLeave={() => setPinTooltip(null)}
+        className="flex size-5 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-black/10"
+       >
+        <Pin size={10} className="shrink-0 opacity-70" />
+       </button>
+      </div>
+     );
+    })}
+   </div>
+  )}
   <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+   <SortableContext items={draggableColumnKeys} strategy={horizontalListSortingStrategy}>
    <div className="grid items-start gap-3 px-6 py-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
 
     {/* ── Columns ── */}
-    {orderedColumns.map((col) => {
+    {visibleColumns.map((col) => {
      const color   = getOptionColor(col.color);
      const colKey  = col.id ?? "no-group";
      const isCollapsed = collapsed.has(colKey);
@@ -189,8 +304,9 @@ export function BoardView({
      }
 
      return (
+      <SortableColumn key={colKey} colKey={colKey} draggable={col.id !== null && !isCollapsed && sortDirection === "manual"} isDragging={draggingColKey === col.id}>
+      {(handleProps) => (
       <SortableContext
-       key={colKey}
        id={colKey}
        items={col.entries.map((e) => e.id)}
        strategy={verticalListSortingStrategy}
@@ -209,7 +325,10 @@ export function BoardView({
            className="flex h-full flex-col items-center gap-2 py-3"
           >
            {col.id ? (
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold" style={{ backgroundColor: color.bg, color: color.text }}>
+            <span
+             className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold ${colorColumns ? "" : "bg-muted text-muted-foreground/60"}`}
+             style={colorColumns ? { backgroundColor: color.bg, color: color.text } : undefined}
+            >
              {col.entries.length}
             </span>
            ) : (
@@ -226,10 +345,17 @@ export function BoardView({
           </button>
          ) : (
           <>
-           <div className="flex items-center justify-between px-3 py-2.5">
-            <div className="flex items-center gap-2">
+           <div
+            {...handleProps}
+            style={{ touchAction: handleProps ? "none" : undefined }}
+            className={`flex items-center justify-between px-3 py-2.5 ${handleProps ? "cursor-grab" : ""}`}
+           >
+            <div className="flex min-w-0 items-center gap-2">
             {col.id ? (
-             <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold" style={{ backgroundColor: color.bg, color: color.text }}>
+             <span
+              className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold ${colorColumns ? "" : "bg-muted text-muted-foreground/70"}`}
+              style={colorColumns ? { backgroundColor: color.bg, color: color.text } : undefined}
+             >
               <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
               {col.label}
              </span>
@@ -239,17 +365,35 @@ export function BoardView({
               {col.label}
              </span>
             )}
-            <span className="ml-1.5 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
-             {col.entries.length}
-            </span>
+            {!hideAggregation && (
+             <span className="ml-1.5 shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+              {col.entries.length}
+             </span>
+            )}
+            {col.id !== null && pinnedGroupIds.includes(col.id) && (
+             <Pin size={12} className="ml-0.5 shrink-0 text-muted-foreground" />
+            )}
             </div>
-            <button
-             onClick={toggleCollapse}
-             title="Collapse column"
-             className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
-            >
-             <PanelLeft size={13} />
-            </button>
+            <div className="flex shrink-0 items-center gap-0.5">
+             {col.id && (
+              <button
+               onPointerDown={(e) => e.stopPropagation()}
+               onClick={(e) => setGroupMenu({ optionId: col.id!, triggerEl: e.currentTarget as HTMLElement })}
+               title="More options"
+               className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+              >
+               <MoreHorizontal size={13} />
+              </button>
+             )}
+             <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={toggleCollapse}
+              title="Collapse column"
+              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+             >
+              <PanelLeft size={13} />
+             </button>
+            </div>
            </div>
 
 
@@ -260,12 +404,22 @@ export function BoardView({
               key={entry.id}
               entry={entry}
               cardProps={cardProps}
+              properties={properties}
               valueMap={valueMap}
+              databaseId={databaseId}
               workspaceSlug={workspaceSlug}
+              workspaceId={workspaceId}
               isDragging={draggingId === entry.id}
               isEditor={isEditor}
               onDeleteEntry={onDeleteEntry}
               onDeleteRequest={setDeleteTarget}
+              onDuplicateEntry={onDuplicateEntry}
+              onUpdateTitle={onUpdateTitle}
+              onUpdateValue={onUpdateValue}
+              onUpdateProperty={onUpdateProperty}
+              onUpdateEntryIcon={onUpdateEntryIcon}
+              activeView={activeView}
+              onUpdateView={onUpdateView}
               onOpenEntry={onOpenEntry}
               entryOpenMode={activeView?.entryOpenMode ?? "side_panel"}
              />
@@ -285,7 +439,7 @@ export function BoardView({
               const dv = col.id ? { [groupPropId!]: { optionId: col.id } } : {};
               onCreateEntry(dv);
              }}
-             className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+             className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-border/60 px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
             >
              <Plus size={13} />
              Add entry
@@ -296,6 +450,8 @@ export function BoardView({
         </div>
        </ColumnDropTarget>
       </SortableContext>
+      )}
+      </SortableColumn>
      );
     })}
 
@@ -413,23 +569,38 @@ export function BoardView({
      </div>
     )}
    </div>
+   </SortableContext>
 
    <DragOverlay>
     {draggingEntry && (
      <CardShell
       entry={draggingEntry}
       cardProps={cardProps}
+      properties={properties}
       valueMap={valueMap}
+      databaseId={databaseId}
       workspaceSlug={workspaceSlug}
+      workspaceId={workspaceId}
       dragging
       isEditor={false}
       onDeleteEntry={onDeleteEntry}
       onDeleteRequest={() => {}}
+      onUpdateTitle={onUpdateTitle}
+      onUpdateValue={onUpdateValue}
+      onUpdateProperty={onUpdateProperty}
+      onUpdateEntryIcon={onUpdateEntryIcon}
+      activeView={activeView}
+      onUpdateView={onUpdateView}
       entryOpenMode={activeView?.entryOpenMode ?? "side_panel"}
      />
     )}
    </DragOverlay>
   </DndContext>
+
+  {pinTooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={pinTooltip.rect} label={pinTooltip.label} />,
+   document.body,
+  )}
 
   <ConfirmDialog
    open={!!deleteTarget}
@@ -447,7 +618,73 @@ export function BoardView({
     setDeleteTarget(null);
    }}
   />
+
+  {groupMenu && (() => {
+   const opt = options.find((o) => o.id === groupMenu.optionId);
+   if (!opt) return null;
+   return (
+    <GroupHeaderMenu
+     getAnchorRect={() => groupMenu.triggerEl.getBoundingClientRect()}
+     hideAggregation={hideAggregation}
+     onEditGroups={() => setEditingGroupsAnchor(groupMenu.triggerEl)}
+     onToggleHideAggregation={() => onUpdateView({ boardSettings: { ...boardSettings, hideAggregation: !hideAggregation } })}
+     onHideGroup={() => onUpdateView({ boardSettings: { ...boardSettings, hiddenGroupOptionIds: [...hiddenGroupOptionIds, groupMenu.optionId] } })}
+     onDeleteGroup={() => setDeleteGroupTarget({ id: opt.id, name: opt.name })}
+     onClose={() => setGroupMenu(null)}
+    />
+   );
+  })()}
+
+  {editingGroupsAnchor && (
+   <GroupSettingsPanel
+    groupProp={groupProp}
+    properties={properties}
+    boardSettings={boardSettings}
+    getAnchorRect={() => editingGroupsAnchor.getBoundingClientRect()}
+    onUpdateView={onUpdateView}
+    onUpdateProperty={onUpdateProperty}
+    onClose={() => setEditingGroupsAnchor(null)}
+   />
+  )}
+
+  <ConfirmDialog
+   open={deleteGroupTarget !== null}
+   onOpenChange={(o) => { if (!o) setDeleteGroupTarget(null); }}
+   title="Delete this group?"
+   description={`"${deleteGroupTarget?.name ?? ""}" will be removed. Entries currently in it will show as unset. This cannot be undone.`}
+   confirmLabel="Delete"
+   onConfirm={() => { if (deleteGroupTarget) deleteGroupOption(deleteGroupTarget.id); setDeleteGroupTarget(null); }}
+  />
   </>
+ );
+}
+
+// ── SortableColumn ───────────────────────────────────────────────────────────
+// Whole columns are reorderable via drag, using a distinct "colhandle-" id prefix so
+// it never collides with the existing "col-<key>" empty-column drop target. Only the
+// header is the drag handle (passed via render prop) — not the whole column, so
+// dragging a card inside never gets mistaken for dragging the column itself.
+
+function SortableColumn({
+ colKey, draggable, isDragging, children,
+}: {
+ colKey:   string;
+ draggable: boolean;
+ isDragging: boolean;
+ children: (handleProps: Record<string, unknown> | null) => React.ReactElement;
+}) {
+ const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: "colhandle-" + colKey, disabled: !draggable });
+ const style: React.CSSProperties = {
+  transform: CSS.Transform.toString(transform),
+  transition,
+  opacity: isDragging ? 0.4 : 1,
+ };
+ const handleProps = draggable ? { ...attributes, ...listeners } : null;
+
+ return (
+  <div ref={setNodeRef} style={style}>
+   {children(handleProps)}
+  </div>
  );
 }
 
@@ -468,12 +705,25 @@ function ColumnDropTarget({ colKey, isCollapsed, children }: { colKey: string; i
 interface CardProps {
  entry: DbEntry;
  cardProps: SharedViewProps["properties"];
+ /** The full, unrestricted property list — needed to look up Status even
+  *  before "Show on card" is enabled, since at that point it isn't in
+  *  `cardProps` yet. */
+ properties: SharedViewProps["properties"];
  valueMap: Map<string, Map<string, unknown>>;
+ databaseId: string;
  workspaceSlug: string;
+ workspaceId: string;
  isEditor: boolean;
  onDeleteEntry: SharedViewProps["onDeleteEntry"];
  onDeleteRequest: (entry: DbEntry) => void;
+ onDuplicateEntry?: SharedViewProps["onDuplicateEntry"];
  onOpenEntry?: SharedViewProps["onOpenEntry"];
+ onUpdateEntryIcon?: SharedViewProps["onUpdateEntryIcon"];
+ onUpdateTitle: SharedViewProps["onUpdateTitle"];
+ onUpdateValue: SharedViewProps["onUpdateValue"];
+ onUpdateProperty: SharedViewProps["onUpdateProperty"];
+ activeView: SharedViewProps["activeView"];
+ onUpdateView: SharedViewProps["onUpdateView"];
  entryOpenMode?: "side_panel" | "full_page";
  isDragging?: boolean;
  dragging?: boolean;
@@ -498,20 +748,73 @@ function SortableCard(props: CardProps) {
  );
 }
 
-function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEditor, onDeleteRequest, onOpenEntry, entryOpenMode }: CardProps) {
+function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspaceSlug, workspaceId, dragging, isEditor, onDeleteRequest, onDuplicateEntry, onUpdateTitle, onUpdateValue, onUpdateProperty, onUpdateEntryIcon, activeView, onUpdateView, onOpenEntry, entryOpenMode }: CardProps) {
  const [hovered, setHovered] = useState(false);
+ const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+ const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
+ const [commentCount, setCommentCount]  = useState<number | null>(null);
+ const [tooltip, setTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
+ const [editing, setEditing] = useState(false);
+ const [editTitle, setEditTitle] = useState(entry.title ?? "");
+ const [propEditor, setPropEditor] = useState<{ prop: DbProperty; rect: DOMRect } | null>(null);
+ const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
+ const cardRef = useRef<HTMLDivElement>(null);
+ const fetchedRef = useRef(false);
  const filledProps = cardProps.filter((prop) =>
   hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null)
  );
+ const emptyProps = editing ? cardProps.filter((prop) =>
+  !hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null)
+ ) : [];
+
+ useEffect(() => {
+  if (dragging || fetchedRef.current) return;
+  fetchedRef.current = true;
+  fetch(`/api/pages/${entry.id}/comments`)
+   .then((r) => (r.ok ? r.json() : null))
+   .then((data) => {
+    if (!data) return;
+    const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
+    // Only count page-level threads (propertyId === null) — the badge opens the same
+    // page-level popover, and property-scoped comments (added from a table cell) aren't
+    // shown there, so counting them would show a badge that opens to nothing.
+    setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
+   })
+   .catch(() => {});
+ }, [entry.id, dragging]);
+
+ useEffect(() => {
+  if (!editing) return;
+  function h(e: MouseEvent) {
+   if (menuPos || commentAnchor || propEditor) return; // a nested popover owns this click
+   const target = e.target as HTMLElement;
+   if (cardRef.current && !cardRef.current.contains(target)) setEditing(false);
+  }
+  document.addEventListener("mousedown", h);
+  return () => document.removeEventListener("mousedown", h);
+ }, [editing, menuPos, commentAnchor, propEditor]);
+
+ function commitTitle() {
+  const trimmed = editTitle.trim();
+  if (trimmed !== (entry.title ?? "")) onUpdateTitle(entry.id, trimmed);
+ }
 
  return (
+  <>
   <div
+   ref={cardRef}
    className={[
     "group rounded-[var(--radius-md)] border bg-card transition-colors duration-150",
     dragging ? "border-primary/40 opacity-50" : "border-border/60",
    ].join(" ")}
    onMouseEnter={() => setHovered(true)}
    onMouseLeave={() => setHovered(false)}
+   onContextMenu={(e) => {
+    if (!isEditor) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuPos({ x: e.clientX, y: e.clientY });
+   }}
   >
    <>
     {entry.coverUrl && (
@@ -535,53 +838,144 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
        ) : (
         <FileText size={12} className="mt-0.5 shrink-0 text-muted-foreground/60" />
        )}
-       <button
-        style={{ cursor: "pointer" }}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => entryOpenMode === "side_panel" && onOpenEntry ? onOpenEntry(entry) : undefined}
-        className={`min-w-0 flex-1 text-left text-sm font-semibold leading-snug text-foreground transition-colors duration-150 ${
-         entryOpenMode === "side_panel" && onOpenEntry ? "hover:text-muted-foreground" : "cursor-default"
-        }`}
-       >
-        {entry.title || <span className="font-normal text-muted-foreground/60">Untitled</span>}
-       </button>
+       {editing ? (
+        <input
+         autoFocus
+         value={editTitle}
+         onChange={(e) => setEditTitle(e.target.value)}
+         onPointerDown={(e) => e.stopPropagation()}
+         onBlur={commitTitle}
+         onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commitTitle(); (e.target as HTMLInputElement).blur(); }
+          if (e.key === "Escape") { setEditTitle(entry.title ?? ""); setEditing(false); }
+         }}
+         placeholder="Untitled"
+         className="min-w-0 flex-1 bg-transparent text-sm font-semibold leading-snug text-foreground outline-none"
+        />
+       ) : (
+        <button
+         style={{ cursor: "pointer" }}
+         onPointerDown={(e) => e.stopPropagation()}
+         onClick={() => entryOpenMode === "side_panel" && onOpenEntry ? onOpenEntry(entry) : undefined}
+         className={`min-w-0 flex-1 text-left text-sm font-semibold leading-snug text-foreground transition-colors duration-150 ${
+          entryOpenMode === "side_panel" && onOpenEntry ? "hover:text-muted-foreground" : "cursor-default"
+         }`}
+        >
+         {entry.title || <span className="font-normal text-muted-foreground/60">Untitled</span>}
+        </button>
+       )}
 
        {/* Action buttons — visible on hover */}
        <div className="flex shrink-0 items-center gap-0.5 transition-opacity"
-        style={{ opacity: hovered ? 1 : 0 }}>
-        <Link
-         href={`/app/${workspaceSlug}/${entry.shortId}`}
-         onClick={(e) => e.stopPropagation()}
-         onPointerDown={(e) => e.stopPropagation()}
-         title="Open full page"
-         style={{ cursor: "pointer" }}
-         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
-        >
-         <ExternalLink size={12} />
-        </Link>
+        style={{ opacity: hovered || editing ? 1 : 0 }}>
+        {isEditor && !editing ? (
+         <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+           e.stopPropagation();
+           // The icon swaps to the side-peek icon in the same spot the cursor is
+           // already resting on, so no fresh hover event will fire to update the
+           // tooltip — set it directly instead of clearing it to null.
+           setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+           setEditTitle(entry.title ?? "");
+           setEditing(true);
+          }}
+          onMouseEnter={(e) => setTooltip({ label: "Edit", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+          onMouseLeave={() => setTooltip(null)}
+          style={{ cursor: "pointer" }}
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+         >
+          <Pencil size={12} />
+         </button>
+        ) : (
+         <Link
+          href={`/app/${workspaceSlug}/${entry.shortId}`}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseEnter={(e) => setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+          onMouseLeave={() => setTooltip(null)}
+          style={{ cursor: "pointer" }}
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+         >
+          <PanelRight size={12} />
+         </Link>
+        )}
         {isEditor && (
          <button
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); setHovered(false); onDeleteRequest(entry); }}
-          title="Delete entry"
+          onClick={(e) => {
+           e.stopPropagation();
+           setTooltip(null);
+           setMenuPos({ x: e.clientX, y: e.clientY });
+          }}
+          onMouseEnter={(e) => setTooltip({ label: "More options", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+          onMouseLeave={() => setTooltip(null)}
           style={{ cursor: "pointer" }}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
          >
-          <Trash2 size={12} />
+          <MoreHorizontal size={12} />
          </button>
         )}
        </div>
       </div>
 
-      {/* Non-empty properties */}
-      {filledProps.length > 0 && (
+      {/* Non-empty properties + comment count — clickable (same value editor
+          empty properties already open below) so a filled property's value,
+          and for Status specifically its Display As/Wrap content, can be
+          changed right from the card instead of only from Table's column
+          header. */}
+      {(filledProps.length > 0 || !!commentCount) && (
        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2">
         {filledProps.map((prop) => {
          const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
          return (
-          <div key={prop.id} className="min-w-0 shrink-0">
-           <CellDisplay property={prop} value={raw} compact />
-          </div>
+          <button
+           key={prop.id}
+           type="button"
+           onPointerDown={(e) => e.stopPropagation()}
+           onClick={(e) => { e.stopPropagation(); setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
+           className="min-w-0 shrink-0 rounded-[var(--radius-xs)] text-left hover:bg-accent"
+          >
+           <CellDisplay property={prop} value={raw} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} />
+          </button>
+         );
+        })}
+        {!!commentCount && (
+         <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+           e.stopPropagation();
+           setCommentAnchor((e.currentTarget as HTMLElement).getBoundingClientRect());
+          }}
+          className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
+          title="View comments"
+         >
+          <MessageSquare size={11} />
+          {commentCount}
+         </button>
+        )}
+       </div>
+      )}
+
+      {/* Quick-add empty properties — only while editing, matching Notion's inline card editor */}
+      {emptyProps.length > 0 && (
+       <div className="mt-2 flex flex-col gap-0.5 border-t border-border/50 pt-2">
+        {emptyProps.map((prop) => {
+         const TypeIcon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON];
+         return (
+          <button
+           key={prop.id}
+           type="button"
+           onPointerDown={(e) => e.stopPropagation()}
+           onClick={(e) => {
+            e.stopPropagation();
+            setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+           }}
+           className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+          >
+           <TypeIcon size={12} className="shrink-0" />
+           Add {prop.name}
+          </button>
          );
         })}
        </div>
@@ -589,5 +983,99 @@ function CardShell({ entry, cardProps, valueMap, workspaceSlug, dragging, isEdit
      </div>
    </>
   </div>
+
+  {tooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+   document.body,
+  )}
+
+  <EntryContextMenu
+   entryId={entry.id}
+   entryShortId={entry.shortId}
+   entryIcon={entry.icon ?? null}
+   updatedAt={entry.updatedAt ?? null}
+   databaseId={databaseId}
+   workspaceId={workspaceId}
+   workspaceSlug={workspaceSlug}
+   forcePos={menuPos}
+   entryRect={cardRef.current?.getBoundingClientRect() ?? null}
+   onClose={() => setMenuPos(null)}
+   onIconChange={(icon) => onUpdateEntryIcon?.(entry.id, icon)}
+   onDelete={() => { setHovered(false); onDeleteRequest(entry); }}
+   onDuplicate={onDuplicateEntry ? () => onDuplicateEntry(entry.id) : undefined}
+   onOpenEntry={entryOpenMode === "side_panel" && onOpenEntry ? () => onOpenEntry(entry) : undefined}
+   onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+   onValueChange={(propId, value) => onUpdateValue(entry.id, propId, value)}
+   onPropertyConfigChange={onUpdateProperty}
+   activeView={activeView}
+   onUpdateView={onUpdateView}
+  />
+
+  {commentAnchor && (
+   <CellCommentPopover
+    pageId={entry.id}
+    workspaceId={workspaceId}
+    anchorRect={commentAnchor}
+    onClose={() => setCommentAnchor(null)}
+    onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+   />
+  )}
+
+  {propEditor && (
+   <CellEditorPopover
+    property={propEditor.prop}
+    value={valueMap.get(entry.id)?.get(propEditor.prop.id) ?? null}
+    cellRect={propEditor.rect}
+    workspaceId={workspaceId}
+    onSave={(v) => { onUpdateValue(entry.id, propEditor.prop.id, v); setPropEditor(null); }}
+    onClose={() => setPropEditor(null)}
+    onPropertyConfigChange={(propId, config) => onUpdateProperty(propId, { config })}
+    onEditProperty={propEditor.prop.config?.groupedByStatus ? (rect) => {
+     setEditPropPanel({ propId: propEditor.prop.id, anchorRect: rect });
+     setPropEditor(null);
+    } : undefined}
+   />
+  )}
+
+  {editPropPanel && (() => {
+   // Looked up from the full properties list, not `cardProps` — Status isn't
+   // in `cardProps` yet the very first time this opens (before "Show on
+   // card" gets auto-enabled below), so that restricted list can't be used
+   // to find the property being edited.
+   const panelProp = properties.find((p) => p.id === editPropPanel.propId);
+   if (!panelProp) return null;
+   return (
+    <EditPropertySidePanel
+     key={panelProp.id}
+     property={panelProp}
+     getAnchorRect={() => {
+      // Same convention as Calendar/Gallery: always hangs below the
+      // toolbar's own "+New" button, not wherever the card happened to be
+      // clicked from, so it opens in the same predictable spot every time.
+      const btn = document.querySelector("[data-new-entry-button]")?.getBoundingClientRect();
+      if (!btn) return editPropPanel.anchorRect;
+      return new DOMRect(btn.right, btn.top, 0, btn.height);
+     }}
+     onUpdateProperty={(patch) => onUpdateProperty(panelProp.id, patch)}
+     // Deleting/duplicating a property is a bigger, cross-view action better
+     // done from Table's column header (which already offers it) — this
+     // card-level panel exists only to change Status's Display As/Wrap
+     // content for this view, so both are disabled here.
+     canDelete={false}
+     onDeleteProperty={async () => {}}
+     onDuplicateProperty={async () => {}}
+     onBack={() => setEditPropPanel(null)}
+     onClose={() => setEditPropPanel(null)}
+     showCardToggle
+     viewContext={activeView ? {
+      override: activeView.propertyOverrides?.[panelProp.id] ?? {},
+      onUpdateOverride: (patch) => onUpdateView({
+       propertyOverrides: { ...activeView.propertyOverrides, [panelProp.id]: { ...(activeView.propertyOverrides?.[panelProp.id] ?? {}), ...patch } },
+      }),
+     } : undefined}
+    />
+   );
+  })()}
+  </>
  );
 }

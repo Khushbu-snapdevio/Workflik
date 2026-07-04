@@ -75,23 +75,26 @@ export async function GET(_req: Request, { params }: Ctx) {
     // Re-query replies properly
     const allComments = await db
       .select({
-        id:           comments.id,
-        blockId:      comments.blockId,
-        parentId:     comments.parentId,
-        threadNumber: comments.threadNumber,
-        anchorStart:  comments.anchorStart,
-        anchorEnd:    comments.anchorEnd,
-        isResolved:   comments.isResolved,
-        isOrphaned:   comments.isOrphaned,
-        content:      comments.content,
-        reactions:    comments.reactions,
-        createdAt:    comments.createdAt,
-        editedAt:     comments.editedAt,
-        deletedAt:    comments.deletedAt,
-        authorId:     comments.authorId,
-        authorName:   users.name,
-        authorEmail:  users.email,
-        authorImage:  users.image,
+        id:                 comments.id,
+        blockId:            comments.blockId,
+        parentId:           comments.parentId,
+        threadNumber:       comments.threadNumber,
+        anchorStart:        comments.anchorStart,
+        anchorEnd:          comments.anchorEnd,
+        isResolved:         comments.isResolved,
+        isOrphaned:         comments.isOrphaned,
+        content:            comments.content,
+        reactions:          comments.reactions,
+        propertyId:         comments.propertyId,
+        propertyName:       comments.propertyName,
+        propertyValueLabel: comments.propertyValueLabel,
+        createdAt:          comments.createdAt,
+        editedAt:           comments.editedAt,
+        deletedAt:          comments.deletedAt,
+        authorId:           comments.authorId,
+        authorName:         users.name,
+        authorEmail:        users.email,
+        authorImage:        users.image,
       })
       .from(comments)
       .leftJoin(users, eq(users.id, comments.authorId))
@@ -116,19 +119,22 @@ export async function GET(_req: Request, { params }: Ctx) {
     }
 
     const shaped = Array.from(rootMap.values()).map((r) => ({
-      id:           r.id,
-      blockId:      r.blockId,
-      parentId:     r.parentId,
-      threadNumber: r.threadNumber,
-      anchorStart:  r.anchorStart,
-      anchorEnd:    r.anchorEnd,
-      isResolved:   r.isResolved,
-      isOrphaned:   r.isOrphaned,
-      content:      r.deletedAt ? null : r.content,
-      reactions:    (r.reactions as Record<string, string[]>) ?? {},
-      createdAt:    r.createdAt,
-      editedAt:     r.editedAt,
-      deletedAt:    r.deletedAt,
+      id:                 r.id,
+      blockId:            r.blockId,
+      parentId:           r.parentId,
+      threadNumber:       r.threadNumber,
+      anchorStart:        r.anchorStart,
+      anchorEnd:          r.anchorEnd,
+      isResolved:         r.isResolved,
+      isOrphaned:         r.isOrphaned,
+      content:            r.deletedAt ? null : r.content,
+      reactions:          (r.reactions as Record<string, string[]>) ?? {},
+      propertyId:         r.propertyId,
+      propertyName:       r.propertyName,
+      propertyValueLabel: r.propertyValueLabel,
+      createdAt:          r.createdAt,
+      editedAt:           r.editedAt,
+      deletedAt:          r.deletedAt,
       author:       r.authorId
         ? { id: r.authorId, name: r.authorName, email: r.authorEmail, image: r.authorImage }
         : null,
@@ -159,11 +165,14 @@ export async function GET(_req: Request, { params }: Ctx) {
 }
 
 const createCommentSchema = z.object({
-  blockId:     z.string().uuid().nullable().default(null),
-  parentId:    z.string().uuid().nullable().default(null),
-  anchorStart: z.number().int().min(0).nullable().default(null),
-  anchorEnd:   z.number().int().min(0).nullable().default(null),
-  content:     z.record(z.string(), z.unknown()),
+  blockId:            z.string().uuid().nullable().default(null),
+  parentId:           z.string().uuid().nullable().default(null),
+  anchorStart:        z.number().int().min(0).nullable().default(null),
+  anchorEnd:          z.number().int().min(0).nullable().default(null),
+  propertyId:         z.string().uuid().nullable().default(null),
+  propertyName:       z.string().nullable().default(null),
+  propertyValueLabel: z.string().nullable().default(null),
+  content:            z.record(z.string(), z.unknown()),
 });
 
 // POST /api/pages/:id/comments — create comment or reply
@@ -186,7 +195,7 @@ export async function POST(req: Request, { params }: Ctx) {
     const parsed = createCommentSchema.safeParse(body);
     if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
 
-    const { blockId, parentId, anchorStart, anchorEnd, content } = parsed.data;
+    const { blockId, parentId, anchorStart, anchorEnd, propertyId, propertyName, propertyValueLabel, content } = parsed.data;
 
     // Validate reply depth — parent must be a root
     if (parentId) {
@@ -219,10 +228,13 @@ export async function POST(req: Request, { params }: Ctx) {
         .insert(comments)
         .values({
           pageId,
-          blockId:      blockId ?? null,
-          parentId:     parentId ?? null,
-          anchorStart:  anchorStart ?? null,
-          anchorEnd:    anchorEnd ?? null,
+          blockId:            blockId ?? null,
+          parentId:           parentId ?? null,
+          anchorStart:        anchorStart ?? null,
+          anchorEnd:          anchorEnd ?? null,
+          propertyId:         propertyId ?? null,
+          propertyName:       propertyName ?? null,
+          propertyValueLabel: propertyValueLabel ?? null,
           threadNumber,
           content,
           authorId:     session.user.id,

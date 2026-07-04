@@ -1,20 +1,44 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart2,
+  ChevronRight,
+  Code2,
+  DollarSign,
+  LayoutGrid,
+  Megaphone,
+  Search,
+  Trash2,
+  X,
+  Zap,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
-import {
-  Search, X, ArrowLeft, ArrowRight, ChevronRight,
-  LayoutGrid, Zap, BarChart2, Megaphone, Code2, DollarSign, Trash2, AlertTriangle,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { PageIcon } from "@/components/pages/page-icon";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type DbProp = { name: string; type: string; options?: { name: string; color: string }[]; multiple?: boolean };
-type DbView = { name: string; type: string; isDefault?: boolean; groupBy?: string };
-type SchemaForPreview = { properties: DbProp[]; views: DbView[]; sample_rows?: Record<string, string | number>[] };
+type DbProp = {
+  name: string;
+  type: string;
+  options?: { name: string; color: string }[];
+  multiple?: boolean;
+};
+type DbView = {
+  name: string;
+  type: string;
+  isDefault?: boolean;
+  groupBy?: string;
+};
+type SchemaForPreview = {
+  properties: DbProp[];
+  views: DbView[];
+  sample_rows?: Record<string, string | number>[];
+};
 
 type Template = {
   id: string;
@@ -35,73 +59,118 @@ type Template = {
 type CategoryDef = { key: string; label: string; Icon: LucideIcon };
 
 const CATEGORIES: CategoryDef[] = [
-  { key: "all",          label: "All templates",       Icon: LayoutGrid  },
-  { key: "productivity", label: "Productivity",         Icon: Zap         },
-  { key: "project_mgmt", label: "Project management",  Icon: BarChart2   },
-  { key: "marketing",    label: "Marketing & content",  Icon: Megaphone   },
-  { key: "engineering",  label: "Engineering & docs",   Icon: Code2       },
-  { key: "sales",        label: "Sales & finance",      Icon: DollarSign  },
+  { key: "all", label: "All templates", Icon: LayoutGrid },
+  { key: "productivity", label: "Productivity", Icon: Zap },
+  { key: "project_mgmt", label: "Project management", Icon: BarChart2 },
+  { key: "marketing", label: "Marketing & content", Icon: Megaphone },
+  { key: "engineering", label: "Engineering & docs", Icon: Code2 },
+  { key: "sales", label: "Sales & finance", Icon: DollarSign },
 ];
 
 const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
-  gray:   { dot: "bg-muted-foreground/40",  badge: "bg-muted text-muted-foreground"           },
-  red:    { dot: "bg-destructive/50",        badge: "bg-destructive/10 text-destructive"       },
-  orange: { dot: "bg-warning/50",            badge: "bg-warning/10 text-warning"               },
-  yellow: { dot: "bg-warning/40",            badge: "bg-warning/10 text-warning"           },
-  green:  { dot: "bg-success/50",            badge: "bg-success/10 text-success"               },
-  teal:   { dot: "bg-success/40",            badge: "bg-success/10 text-success"           },
-  blue:   { dot: "bg-primary/50",            badge: "bg-primary/10 text-primary"               },
-  purple: { dot: "bg-primary/40",            badge: "bg-primary/10 text-primary/80"        },
-  pink:   { dot: "bg-destructive/40",        badge: "bg-destructive/10 text-destructive/80"},
+  gray: {
+    dot: "bg-muted-foreground/40",
+    badge: "bg-muted text-muted-foreground",
+  },
+  red: {
+    dot: "bg-destructive/50",
+    badge: "bg-destructive/10 text-destructive",
+  },
+  orange: { dot: "bg-warning/50", badge: "bg-warning/10 text-warning" },
+  yellow: { dot: "bg-warning/40", badge: "bg-warning/10 text-warning" },
+  green: { dot: "bg-success/50", badge: "bg-success/10 text-success" },
+  teal: { dot: "bg-success/40", badge: "bg-success/10 text-success" },
+  blue: { dot: "bg-primary/50", badge: "bg-primary/10 text-primary" },
+  purple: { dot: "bg-primary/40", badge: "bg-primary/10 text-primary/80" },
+  pink: {
+    dot: "bg-destructive/40",
+    badge: "bg-destructive/10 text-destructive/80",
+  },
 };
-const DEFAULT_OPT = { dot: "bg-muted-foreground/40", badge: "bg-muted text-muted-foreground" };
+const DEFAULT_OPT = {
+  dot: "bg-muted-foreground/40",
+  badge: "bg-muted text-muted-foreground",
+};
 
 const PROP_TYPE_ICON: Record<string, string> = {
-  title: "Aa", text: "Aa", number: "#", select: "≡", multi_select: "≡",
-  date: "📅", checkbox: "☐", url: "🔗", email: "✉", phone: "☎",
-  person: "👤", relation: "↗", created_by: "👤", created_time: "🕐",
-  last_edited_by: "👤", last_edited_time: "🕐",
+  title: "Aa",
+  text: "Aa",
+  number: "#",
+  select: "≡",
+  multi_select: "≡",
+  date: "📅",
+  checkbox: "☐",
+  url: "🔗",
+  email: "✉",
+  phone: "☎",
+  person: "👤",
+  relation: "↗",
+  created_by: "👤",
+  created_time: "🕐",
+  last_edited_by: "👤",
+  last_edited_time: "🕐",
 };
 
 const BLOCK_ICONS: Record<string, string> = {
-  h1: "H1", h2: "H2", h3: "H3", paragraph: "¶",
-  bullet: "•", numbered: "#", todo: "☐", quote: "❝",
-  callout: "💡", divider: "—", table: "⊞", code: "</>",
+  h1: "H1",
+  h2: "H2",
+  h3: "H3",
+  paragraph: "¶",
+  bullet: "•",
+  numbered: "#",
+  todo: "☐",
+  quote: "❝",
+  callout: "💡",
+  divider: "—",
+  table: "⊞",
+  code: "</>",
+  pdf: "📕",
+  embed: "🌐",
+  bookmark: "🔖",
+  breadcrumb: "»",
+  synced_block: "🔄",
+  sub_page: "📄",
 };
 
-const CAL_DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const CAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const CAL_WEEKS = [
-  [1,  2,  3,  4,  5,  6,  7],
-  [8,  9,  10, 11, 12, 13, 14],
+  [1, 2, 3, 4, 5, 6, 7],
+  [8, 9, 10, 11, 12, 13, 14],
   [15, 16, 17, 18, 19, 20, 21],
   [22, 23, 24, 25, 26, 27, 28],
-  [29, 30,  0,  0,  0,  0,  0],
+  [29, 30, 0, 0, 0, 0, 0],
 ];
 
 interface Props {
-  workspaceId:   string;
+  parentId?: string | null;
+  workspaceId: string;
   workspaceSlug: string;
-  parentId?:     string | null;
 }
 
 // ── Main page component ────────────────────────────────────────────────────────
 
-export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Props) {
-  const router    = useRouter();
+export function TemplatesPageClient({
+  workspaceId,
+  workspaceSlug,
+  parentId,
+}: Props) {
+  const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const [builtIn,   setBuiltIn]   = useState<Template[]>([]);
+  const [builtIn, setBuiltIn] = useState<Template[]>([]);
   const [workspace, setWorkspace] = useState<Template[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [search,    setSearch]    = useState("");
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [selected,  setSelected]  = useState<Template | null>(null);
-  const [applying,  setApplying]  = useState(false);
+  const [selected, setSelected] = useState<Template | null>(null);
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/templates").then(r => r.ok ? r.json() : []),
-      fetch(`/api/workspaces/${workspaceId}/templates`).then(r => r.ok ? r.json() : []),
+      fetch("/api/templates").then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/workspaces/${workspaceId}/templates`).then((r) =>
+        r.ok ? r.json() : []
+      ),
     ])
       .then(([bi, ws]) => {
         setBuiltIn(Array.isArray(bi) ? bi : []);
@@ -113,24 +182,31 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
 
   const q = search.toLowerCase().trim();
   const matches = (t: Template) =>
-    (!q || t.name.toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q)) &&
+    (!q ||
+      t.name.toLowerCase().includes(q) ||
+      (t.description ?? "").toLowerCase().includes(q)) &&
     (activeTab === "all" || t.category === activeTab);
 
-  const filteredBuiltIn   = builtIn.filter(matches);
+  const filteredBuiltIn = builtIn.filter(matches);
   const filteredWorkspace = workspace.filter(matches);
 
   function countForTab(key: string) {
-    if (key === "all") return builtIn.length + workspace.length;
-    return [...builtIn, ...workspace].filter(t => t.category === key).length;
+    if (key === "all") {
+      return builtIn.length + workspace.length;
+    }
+    return [...builtIn, ...workspace].filter((t) => t.category === key).length;
   }
 
   async function deleteTemplate(tpl: Template) {
     // Optimistic remove
-    setWorkspace(prev => prev.filter(t => t.id !== tpl.id));
-    const res = await fetch(`/api/workspaces/${workspaceId}/templates/${tpl.id}`, { method: "DELETE" });
+    setWorkspace((prev) => prev.filter((t) => t.id !== tpl.id));
+    const res = await fetch(
+      `/api/workspaces/${workspaceId}/templates/${tpl.id}`,
+      { method: "DELETE" }
+    );
     if (!res.ok) {
       // rollback
-      setWorkspace(prev => [...prev, tpl]);
+      setWorkspace((prev) => [...prev, tpl]);
     }
   }
 
@@ -143,7 +219,7 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
         body: JSON.stringify({ workspaceId, parentId: parentId ?? null }),
       });
       if (res.ok) {
-        const data = await res.json() as { shortId: string; kind: string };
+        const data = (await res.json()) as { shortId: string; kind: string };
         if (data.kind === "database") {
           router.push(`/app/${workspaceSlug}/t/${data.shortId}`);
         } else {
@@ -162,41 +238,45 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
-
       {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
       <div className="flex h-11 shrink-0 items-center border-b border-border/60 bg-card px-3">
         {selected ? (
           <nav className="flex min-w-0 items-center gap-0.5 text-xs">
             <button
-              type="button"
-              onClick={() => setSelected(null)}
               className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              onClick={() => setSelected(null)}
+              type="button"
             >
-              <LayoutGrid size={13} className="shrink-0" />
+              <LayoutGrid className="shrink-0" size={13} />
               <span className="font-medium">Templates</span>
             </button>
-            <ChevronRight size={12} className="shrink-0 text-muted-foreground/30" />
-            <span className="min-w-0 truncate px-1 font-medium text-foreground">{selected.name}</span>
+            <ChevronRight
+              className="shrink-0 text-muted-foreground/30"
+              size={12}
+            />
+            <span className="min-w-0 truncate px-1 font-medium text-foreground">
+              {selected.name}
+            </span>
           </nav>
         ) : (
           <nav className="flex min-w-0 items-center gap-0.5 text-xs">
             <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground">
-              <LayoutGrid size={13} className="shrink-0" />
+              <LayoutGrid className="shrink-0" size={13} />
               <span className="font-medium text-foreground">Templates</span>
             </span>
             <span className="text-muted-foreground/30">·</span>
-            <span className="truncate px-1 text-muted-foreground/60">Pick a starting point for your next page or database</span>
+            <span className="truncate px-1 text-muted-foreground/60">
+              Pick a starting point for your next page or database
+            </span>
           </nav>
         )}
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
       <div className="flex min-h-0 flex-1">
-
         {/* ── Category filter panel — left side ── */}
         {!selected && (
           <aside className="flex w-[260px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
-
             {/* Header — shows active category count */}
             <div className="border-b border-border/60 px-5 py-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">
@@ -207,40 +287,53 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
                   {countForTab(activeTab)}
                 </span>
                 <span className="mb-0.5 text-sm font-medium text-muted-foreground">
-                  {activeTab === "all" ? "templates" : CATEGORIES.find(c => c.key === activeTab)?.label.toLowerCase()}
+                  {activeTab === "all"
+                    ? "templates"
+                    : CATEGORIES.find(
+                        (c) => c.key === activeTab
+                      )?.label.toLowerCase()}
                 </span>
               </div>
             </div>
 
             {/* Filter items */}
             <div className="flex-1 overflow-y-auto px-3 py-3">
-
               {/* "All" — full-width prominent card */}
               {(() => {
-                const allCat   = CATEGORIES[0]!;
-                const allCnt   = countForTab("all");
+                const allCat = CATEGORIES[0]!;
+                const allCnt = countForTab("all");
                 const allActive = activeTab === "all";
                 return (
                   <button
-                    type="button"
-                    onClick={() => handleCategoryClick("all")}
                     className={`group mb-3 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border px-3.5 py-3 text-left transition-all duration-150 ${
                       allActive
                         ? "border-primary/25 bg-primary/10 text-primary"
                         : "border-border/50 bg-card text-foreground hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
                     }`}
+                    onClick={() => handleCategoryClick("all")}
+                    type="button"
                   >
-                    <span className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${
-                      allActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-                    }`}>
+                    <span
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${
+                        allActive
+                          ? "bg-primary/15 text-primary"
+                          : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                      }`}
+                    >
                       <allCat.Icon size={15} />
                     </span>
-                    <span className={`flex-1 text-sm ${allActive ? "font-semibold" : "font-medium"}`}>
+                    <span
+                      className={`flex-1 text-sm ${allActive ? "font-semibold" : "font-medium"}`}
+                    >
                       All templates
                     </span>
-                    <span className={`shrink-0 rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-bold tabular-nums transition-colors duration-150 ${
-                      allActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-                    }`}>
+                    <span
+                      className={`shrink-0 rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-bold tabular-nums transition-colors duration-150 ${
+                        allActive
+                          ? "bg-primary/15 text-primary"
+                          : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                      }`}
+                    >
                       {allCnt}
                     </span>
                   </button>
@@ -249,42 +342,50 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
 
               {/* Divider with label */}
               <div className="mb-2.5 px-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary/60">By type</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary/60">
+                  By type
+                </p>
               </div>
 
               {/* Individual categories */}
               <div className="space-y-1">
-                {CATEGORIES.slice(1).map(cat => {
-                  const cnt      = countForTab(cat.key);
+                {CATEGORIES.slice(1).map((cat) => {
+                  const cnt = countForTab(cat.key);
                   const isActive = activeTab === cat.key;
-                  const CatIcon  = cat.Icon;
+                  const CatIcon = cat.Icon;
                   return (
                     <button
-                      key={cat.key}
-                      type="button"
-                      onClick={() => handleCategoryClick(cat.key)}
                       className={`group flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left transition-all duration-150 ${
                         isActive
                           ? "bg-primary/10 text-primary"
                           : "text-sidebar-foreground/70 hover:bg-accent hover:text-foreground"
                       }`}
+                      key={cat.key}
+                      onClick={() => handleCategoryClick(cat.key)}
+                      type="button"
                     >
-                      <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
-                        isActive
-                          ? "bg-primary/15 text-primary"
-                          : "bg-muted/70 text-muted-foreground group-hover:bg-accent-foreground/10 group-hover:text-foreground"
-                      }`}>
+                      <span
+                        className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
+                          isActive
+                            ? "bg-primary/15 text-primary"
+                            : "bg-muted/70 text-muted-foreground group-hover:bg-accent-foreground/10 group-hover:text-foreground"
+                        }`}
+                      >
                         <CatIcon size={12} />
                       </span>
-                      <span className={`min-w-0 flex-1 truncate text-sm ${isActive ? "font-semibold" : "font-medium"}`}>
+                      <span
+                        className={`min-w-0 flex-1 truncate text-sm ${isActive ? "font-semibold" : "font-medium"}`}
+                      >
                         {cat.label}
                       </span>
                       {cnt > 0 && (
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums transition-colors duration-150 ${
-                          isActive
-                            ? "bg-primary/15 text-primary"
-                            : "bg-muted text-muted-foreground/60"
-                        }`}>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums transition-colors duration-150 ${
+                            isActive
+                              ? "bg-primary/15 text-primary"
+                              : "bg-muted text-muted-foreground/60"
+                          }`}
+                        >
                           {cnt}
                         </span>
                       )}
@@ -292,7 +393,6 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
                   );
                 })}
               </div>
-
             </div>
           </aside>
         )}
@@ -300,24 +400,23 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
         {/* ── Main panel ── */}
         {selected ? (
           <DetailView
-            selected={selected}
-            workspaceSlug={workspaceSlug}
             applying={applying}
             onApply={() => applyTemplate(selected)}
+            selected={selected}
+            workspaceSlug={workspaceSlug}
           />
         ) : (
           <GalleryView
-            searchRef={searchRef}
-            search={search}
-            onSearch={setSearch}
-            loading={loading}
             filteredBuiltIn={filteredBuiltIn}
             filteredWorkspace={filteredWorkspace}
-            onSelect={setSelected}
+            loading={loading}
             onDeleteWorkspace={deleteTemplate}
+            onSearch={setSearch}
+            onSelect={setSelected}
+            search={search}
+            searchRef={searchRef}
           />
         )}
-
       </div>
     </div>
   );
@@ -326,41 +425,46 @@ export function TemplatesPageClient({ workspaceId, workspaceSlug, parentId }: Pr
 // ── Gallery view ───────────────────────────────────────────────────────────────
 
 function GalleryView({
-  searchRef, search, onSearch, loading,
-  filteredBuiltIn, filteredWorkspace, onSelect, onDeleteWorkspace,
+  searchRef,
+  search,
+  onSearch,
+  loading,
+  filteredBuiltIn,
+  filteredWorkspace,
+  onSelect,
+  onDeleteWorkspace,
 }: {
-  searchRef:           React.RefObject<HTMLInputElement | null>;
-  search:              string;
-  onSearch:            (v: string) => void;
-  loading:             boolean;
-  filteredBuiltIn:     Template[];
-  filteredWorkspace:   Template[];
-  onSelect:            (t: Template) => void;
-  onDeleteWorkspace:   (t: Template) => void;
+  searchRef: React.RefObject<HTMLInputElement | null>;
+  search: string;
+  onSearch: (v: string) => void;
+  loading: boolean;
+  filteredBuiltIn: Template[];
+  filteredWorkspace: Template[];
+  onSelect: (t: Template) => void;
+  onDeleteWorkspace: (t: Template) => void;
 }) {
   const empty = filteredBuiltIn.length === 0 && filteredWorkspace.length === 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-
       {/* Search bar */}
       <div className="shrink-0 border-b border-border/60 px-20 py-2.5">
         <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
-          <Search size={13} className="shrink-0 text-muted-foreground/50" />
+          <Search className="shrink-0 text-muted-foreground/50" size={13} />
           <input
+            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+            onChange={(e) => onSearch(e.target.value)}
+            placeholder="Search templates…"
             ref={searchRef}
             type="text"
             value={search}
-            onChange={e => onSearch(e.target.value)}
-            placeholder="Search templates…"
-            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
           />
           {search && (
             <button
-              type="button"
-              onClick={() => onSearch("")}
               aria-label="Clear search"
               className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary/10 text-primary transition-colors duration-150 hover:bg-primary/20"
+              onClick={() => onSearch("")}
+              type="button"
             >
               <X size={11} />
             </button>
@@ -379,12 +483,20 @@ function GalleryView({
             {filteredBuiltIn.length > 0 && (
               <section>
                 <div className="mb-3 flex items-center gap-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Workflik templates</p>
-                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">{filteredBuiltIn.length}</span>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">
+                    Workflik templates
+                  </p>
+                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                    {filteredBuiltIn.length}
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredBuiltIn.map(tpl => (
-                    <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} />
+                  {filteredBuiltIn.map((tpl) => (
+                    <TemplateCard
+                      key={tpl.id}
+                      onSelect={() => onSelect(tpl)}
+                      template={tpl}
+                    />
                   ))}
                 </div>
               </section>
@@ -392,12 +504,21 @@ function GalleryView({
             {filteredWorkspace.length > 0 && (
               <section>
                 <div className="mb-3 flex items-center gap-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">Workspace templates</p>
-                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">{filteredWorkspace.length}</span>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">
+                    Workspace templates
+                  </p>
+                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                    {filteredWorkspace.length}
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredWorkspace.map(tpl => (
-                    <TemplateCard key={tpl.id} template={tpl} onSelect={() => onSelect(tpl)} onDelete={() => onDeleteWorkspace(tpl)} />
+                  {filteredWorkspace.map((tpl) => (
+                    <TemplateCard
+                      key={tpl.id}
+                      onDelete={() => onDeleteWorkspace(tpl)}
+                      onSelect={() => onSelect(tpl)}
+                      template={tpl}
+                    />
                   ))}
                 </div>
               </section>
@@ -412,31 +533,35 @@ function GalleryView({
 // ── Detail view ────────────────────────────────────────────────────────────────
 
 function DetailView({
-  selected, applying, onApply,
+  selected,
+  applying,
+  onApply,
 }: {
-  selected:      Template;
+  selected: Template;
   workspaceSlug: string;
-  applying:      boolean;
-  onApply:       () => void;
+  applying: boolean;
+  onApply: () => void;
 }) {
-  const catDef  = CATEGORIES.find(c => c.key === selected.category);
+  const catDef = CATEGORIES.find((c) => c.key === selected.category);
   const CatIcon = catDef?.Icon ?? LayoutGrid;
-  const blocks  = selected.pageSnapshot.blocks ?? [];
+  const blocks = selected.pageSnapshot.blocks ?? [];
 
   return (
     <div className="flex min-h-0 flex-1 overflow-hidden">
-
       {/* ── Left info panel ── */}
       <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-border bg-background">
-
         {/* Hero: icon + name + meta */}
         <div className="shrink-0 border-b border-border/50 bg-muted/20 px-5 py-6">
           <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-sm">
-            {selected.pageSnapshot.icon
-              ? <PageIcon icon={selected.pageSnapshot.icon} size={30} />
-              : <CatIcon size={26} className="text-muted-foreground/60" />}
+            {selected.pageSnapshot.icon ? (
+              <PageIcon icon={selected.pageSnapshot.icon} size={30} />
+            ) : (
+              <CatIcon className="text-muted-foreground/60" size={26} />
+            )}
           </div>
-          <h2 className="text-base font-bold leading-snug text-foreground">{selected.name}</h2>
+          <h2 className="text-base font-bold leading-snug text-foreground">
+            {selected.name}
+          </h2>
           {catDef && (
             <div className="mt-2">
               <span className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
@@ -446,7 +571,9 @@ function DetailView({
             </div>
           )}
           {selected.description && (
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{selected.description}</p>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              {selected.description}
+            </p>
           )}
         </div>
 
@@ -461,10 +588,15 @@ function DetailView({
               </p>
               <div className="space-y-0.5 rounded-xl border border-border/50 bg-muted/20 p-3">
                 {blocks.slice(0, 12).map((b, i) => (
-                  <BlockPreview key={i} block={b as { type: string; content?: unknown }} />
+                  <BlockPreview
+                    block={b as { type: string; content?: unknown }}
+                    key={i}
+                  />
                 ))}
                 {blocks.length > 12 && (
-                  <p className="pt-1 text-xs text-muted-foreground/40">+{blocks.length - 12} more</p>
+                  <p className="pt-1 text-xs text-muted-foreground/40">
+                    +{blocks.length - 12} more
+                  </p>
                 )}
               </div>
             </div>
@@ -474,10 +606,10 @@ function DetailView({
         {/* Sticky CTA */}
         <div className="shrink-0 border-t border-border bg-background px-5 py-4">
           <button
-            type="button"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             disabled={applying}
             onClick={onApply}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            type="button"
           >
             {applying ? (
               <>
@@ -485,7 +617,9 @@ function DetailView({
                 Creating page…
               </>
             ) : (
-              <>Use template <ArrowRight size={13} /></>
+              <>
+                Use template <ArrowRight size={13} />
+              </>
             )}
           </button>
           <p className="mt-1.5 text-center text-[10px] text-muted-foreground/50">
@@ -498,7 +632,6 @@ function DetailView({
       <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
         <div className="flex flex-1 flex-col overflow-hidden p-4">
           <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm">
-
             {/* Cover strip with overlapping icon */}
             <div className="relative flex h-[80px] shrink-0 items-end bg-gradient-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
               {selected.pageSnapshot.icon ? (
@@ -506,24 +639,36 @@ function DetailView({
                   <PageIcon icon={selected.pageSnapshot.icon} size={40} />
                 </span>
               ) : (
-                <CatIcon size={34} className="translate-y-[22px] text-muted-foreground/25" />
+                <CatIcon
+                  className="translate-y-[22px] text-muted-foreground/25"
+                  size={34}
+                />
               )}
             </div>
 
             {/* Page content — flex stretch for db views, scroll for page blocks */}
-            <div className={`flex flex-col px-8 pt-10 pb-8 ${selected.pageSnapshot.database_schema ? "min-h-0 flex-1 overflow-hidden" : "flex-1 overflow-y-auto"}`}>
+            <div
+              className={`flex flex-col px-8 pt-10 pb-8 ${selected.pageSnapshot.database_schema ? "min-h-0 flex-1 overflow-hidden" : "flex-1 overflow-y-auto"}`}
+            >
               <h1 className="mb-1 shrink-0 text-xl font-bold text-foreground">
                 {selected.pageSnapshot.title || selected.name}
               </h1>
               {selected.description && (
-                <p className="mb-4 shrink-0 text-sm text-muted-foreground">{selected.description}</p>
+                <p className="mb-4 shrink-0 text-sm text-muted-foreground">
+                  {selected.description}
+                </p>
               )}
               {selected.pageSnapshot.database_schema ? (
-                <DatabasePreview schema={selected.pageSnapshot.database_schema} />
+                <DatabasePreview
+                  schema={selected.pageSnapshot.database_schema}
+                />
               ) : (
                 <div className="space-y-2">
                   {blocks.slice(0, 16).map((b, i) => (
-                    <PageBlockPreview key={i} block={b as { type: string; content?: unknown }} />
+                    <PageBlockPreview
+                      block={b as { type: string; content?: unknown }}
+                      key={i}
+                    />
                   ))}
                 </div>
               )}
@@ -537,13 +682,29 @@ function DetailView({
 
 // ── Template card ──────────────────────────────────────────────────────────────
 
-const MINI_WIDTHS = ["w-4/5", "w-3/5", "w-3/4", "w-1/2", "w-11/12", "w-2/3", "w-5/6"] as const;
+const MINI_WIDTHS = [
+  "w-4/5",
+  "w-3/5",
+  "w-3/4",
+  "w-1/2",
+  "w-11/12",
+  "w-2/3",
+  "w-5/6",
+] as const;
 
-function TemplateCard({ template, onSelect, onDelete }: { template: Template; onSelect: () => void; onDelete?: () => void }) {
-  const catDef  = CATEGORIES.find(c => c.key === template.category);
+function TemplateCard({
+  template,
+  onSelect,
+  onDelete,
+}: {
+  template: Template;
+  onSelect: () => void;
+  onDelete?: () => void;
+}) {
+  const catDef = CATEGORIES.find((c) => c.key === template.category);
   const CatIcon = catDef?.Icon ?? LayoutGrid;
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting,   setDeleting]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleDelete() {
     setDeleting(true);
@@ -571,7 +732,9 @@ function TemplateCard({ template, onSelect, onDelete }: { template: Template; on
         {/* Info */}
         <div className="px-3 py-2">
           <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-sm font-semibold text-foreground">{template.name}</p>
+            <p className="truncate text-sm font-semibold text-foreground">
+              {template.name}
+            </p>
             <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
               <CatIcon size={9} />
             </span>
@@ -586,10 +749,13 @@ function TemplateCard({ template, onSelect, onDelete }: { template: Template; on
         {/* Delete button — only for workspace templates */}
         {onDelete && (
           <button
-            type="button"
-            onClick={e => { e.stopPropagation(); setDeleteOpen(true); }}
             className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteOpen(true);
+            }}
             title="Delete template"
+            type="button"
           >
             <Trash2 size={13} />
           </button>
@@ -597,57 +763,66 @@ function TemplateCard({ template, onSelect, onDelete }: { template: Template; on
       </div>
 
       {/* Delete confirmation modal */}
-      {deleteOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setDeleteOpen(false)} />
-          <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6 shadow-xl">
-            {/* Close */}
-            <button
-              type="button"
+      {deleteOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
               onClick={() => setDeleteOpen(false)}
-              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <X size={16} />
-            </button>
-
-            {/* Icon + title */}
-            <div className="mb-4 flex items-start gap-3 pr-8">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
-                <AlertTriangle size={20} className="text-destructive" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-foreground">Delete template</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Are you sure you want to delete{" "}
-                  <span className="font-semibold text-foreground">"{template.name}"</span>?
-                  This cannot be undone.
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-2">
+            />
+            <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6 shadow-xl">
+              {/* Close */}
               <button
-                type="button"
+                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
                 onClick={() => setDeleteOpen(false)}
-                disabled={deleting}
-                className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
                 type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
               >
-                {deleting ? "Deleting…" : "Delete template"}
+                <X size={16} />
               </button>
+
+              {/* Icon + title */}
+              <div className="mb-4 flex items-start gap-3 pr-8">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
+                  <AlertTriangle className="text-destructive" size={20} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground">
+                    Delete template
+                  </h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold text-foreground">
+                      "{template.name}"
+                    </span>
+                    ? This cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                  disabled={deleting}
+                  onClick={() => setDeleteOpen(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  type="button"
+                >
+                  {deleting ? "Deleting…" : "Delete template"}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
@@ -655,10 +830,10 @@ function TemplateCard({ template, onSelect, onDelete }: { template: Template; on
 // ── Template card thumbnail ────────────────────────────────────────────────────
 
 function TemplateCardThumbnail({ template }: { template: Template }) {
-  const icon   = template.pageSnapshot.icon;
+  const icon = template.pageSnapshot.icon;
   const schema = template.pageSnapshot.database_schema;
   const blocks = template.pageSnapshot.blocks ?? [];
-  const catDef  = CATEGORIES.find(c => c.key === template.category);
+  const catDef = CATEGORIES.find((c) => c.key === template.category);
   const CatIcon = catDef?.Icon ?? LayoutGrid;
 
   return (
@@ -670,7 +845,7 @@ function TemplateCardThumbnail({ template }: { template: Template }) {
             <PageIcon icon={icon} size={14} />
           ) : (
             <div className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
-              <CatIcon size={9} className="text-muted-foreground" />
+              <CatIcon className="text-muted-foreground" size={9} />
             </div>
           )}
           <div className="h-1.5 w-20 rounded-[var(--radius-xs)] bg-foreground/15" />
@@ -716,80 +891,130 @@ function MiniPageContent({ blocks }: { blocks: { type: string }[] }) {
   return (
     <div className="space-y-1.5">
       {items.map((b, i) => (
-        <MiniBlock key={i} type={b.type} wCls={MINI_WIDTHS[i % MINI_WIDTHS.length]!} />
+        <MiniBlock
+          key={i}
+          type={b.type}
+          wCls={MINI_WIDTHS[i % MINI_WIDTHS.length]!}
+        />
       ))}
     </div>
   );
 }
 
 function MiniBlock({ type, wCls }: { type: string; wCls: string }) {
-  if (type === "divider") return <div className="h-px bg-border/50" />;
+  if (type === "divider") {
+    return <div className="h-px bg-border/50" />;
+  }
 
-  if (type === "h1") return (
-    <div className="h-2 w-3/4 rounded-[var(--radius-xs)] bg-foreground/25" />
-  );
-  if (type === "h2") return (
-    <div className="h-1.5 w-1/2 rounded-[var(--radius-xs)] bg-foreground/20" />
-  );
-  if (type === "h3") return (
-    <div className="h-1 w-2/5 rounded-[var(--radius-xs)] bg-foreground/18" />
-  );
+  if (type === "h1") {
+    return (
+      <div className="h-2 w-3/4 rounded-[var(--radius-xs)] bg-foreground/25" />
+    );
+  }
+  if (type === "h2") {
+    return (
+      <div className="h-1.5 w-1/2 rounded-[var(--radius-xs)] bg-foreground/20" />
+    );
+  }
+  if (type === "h3") {
+    return (
+      <div className="h-1 w-2/5 rounded-[var(--radius-xs)] bg-foreground/18" />
+    );
+  }
 
-  if (type === "bullet") return (
-    <div className="flex items-center gap-1.5 pl-2">
-      <div className="size-1 shrink-0 rounded-full bg-muted-foreground/40" />
-      <div className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/15`} />
-    </div>
-  );
-  if (type === "numbered") return (
-    <div className="flex items-center gap-1.5 pl-2">
-      <div className="size-1 shrink-0 rounded-[var(--radius-xs)] bg-muted-foreground/30" />
-      <div className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/15`} />
-    </div>
-  );
+  if (type === "bullet") {
+    return (
+      <div className="flex items-center gap-1.5 pl-2">
+        <div className="size-1 shrink-0 rounded-full bg-muted-foreground/40" />
+        <div
+          className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/15`}
+        />
+      </div>
+    );
+  }
+  if (type === "numbered") {
+    return (
+      <div className="flex items-center gap-1.5 pl-2">
+        <div className="size-1 shrink-0 rounded-[var(--radius-xs)] bg-muted-foreground/30" />
+        <div
+          className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/15`}
+        />
+      </div>
+    );
+  }
 
-  if (type === "todo") return (
-    <div className="flex items-center gap-1.5">
-      <div className="size-2 shrink-0 rounded-[var(--radius-xs)] border border-muted-foreground/30 bg-background" />
-      <div className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/15`} />
-    </div>
-  );
+  if (type === "todo") {
+    return (
+      <div className="flex items-center gap-1.5">
+        <div className="size-2 shrink-0 rounded-[var(--radius-xs)] border border-muted-foreground/30 bg-background" />
+        <div
+          className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/15`}
+        />
+      </div>
+    );
+  }
 
-  if (type === "callout") return (
-    <div className="flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-warning/10 px-2 py-1">
-      <div className="size-1.5 shrink-0 rounded-full bg-warning/60" />
-      <div className="h-1 flex-1 rounded-[var(--radius-xs)] bg-muted-foreground/15" />
-    </div>
-  );
+  if (type === "callout") {
+    return (
+      <div className="flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-warning/10 px-2 py-1">
+        <div className="size-1.5 shrink-0 rounded-full bg-warning/60" />
+        <div className="h-1 flex-1 rounded-[var(--radius-xs)] bg-muted-foreground/15" />
+      </div>
+    );
+  }
 
-  if (type === "quote") return (
-    <div className="flex gap-1.5 pl-0.5">
-      <div className="w-0.5 shrink-0 self-stretch rounded-full bg-border" />
-      <div className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/12`} />
-    </div>
-  );
+  if (type === "quote") {
+    return (
+      <div className="flex gap-1.5 pl-0.5">
+        <div className="w-0.5 shrink-0 self-stretch rounded-full bg-border" />
+        <div
+          className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/12`}
+        />
+      </div>
+    );
+  }
 
-  if (type === "code") return (
-    <div className="rounded-[var(--radius-xs)] bg-muted px-2 py-1">
-      <div className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/25`} />
-    </div>
-  );
+  if (type === "code") {
+    return (
+      <div className="rounded-[var(--radius-xs)] bg-muted px-2 py-1">
+        <div
+          className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/25`}
+        />
+      </div>
+    );
+  }
 
-  return <div className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/12`} />;
+  return (
+    <div
+      className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/12`}
+    />
+  );
 }
 
 // ── Mini database content ──────────────────────────────────────────────────────
 
 function MiniDbContent({ schema }: { schema: SchemaForPreview }) {
-  const defaultView = schema.views.find(v => v.isDefault) ?? schema.views[0];
-  if (defaultView?.type === "board")    return <MiniBoardContent schema={schema} />;
-  if (defaultView?.type === "calendar") return <MiniCalContent />;
+  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
+  if (defaultView?.type === "board") {
+    return <MiniBoardContent schema={schema} />;
+  }
+  if (defaultView?.type === "calendar") {
+    return <MiniCalContent />;
+  }
   return <MiniTableContent schema={schema} />;
 }
 
 function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
   const props = schema.properties
-    .filter(p => !["created_by","created_time","last_edited_by","last_edited_time"].includes(p.type))
+    .filter(
+      (p) =>
+        ![
+          "created_by",
+          "created_time",
+          "last_edited_by",
+          "last_edited_time",
+        ].includes(p.type)
+    )
     .slice(0, 4);
   const rows = schema.sample_rows ?? [];
 
@@ -798,7 +1023,10 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
       {/* Header row */}
       <div className="flex border-b border-border/40 bg-muted/50">
         {props.map((p, i) => (
-          <div key={i} className="min-w-0 flex-1 truncate px-1.5 py-1 font-semibold text-muted-foreground/40">
+          <div
+            className="min-w-0 flex-1 truncate px-1.5 py-1 font-semibold text-muted-foreground/40"
+            key={i}
+          >
             {PROP_TYPE_ICON[p.type] ?? "·"} {p.name.slice(0, 5)}
           </div>
         ))}
@@ -807,20 +1035,32 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
       {Array.from({ length: 3 }).map((_, ri) => {
         const row = rows[ri];
         return (
-          <div key={ri} className="flex border-b border-border/20 last:border-0">
+          <div
+            className="flex border-b border-border/20 last:border-0"
+            key={ri}
+          >
             {props.map((p, pi) => {
               const val = row?.[p.name];
-              const opt = val ? p.options?.find(o => o.name === val) : null;
+              const opt = val ? p.options?.find((o) => o.name === val) : null;
               return (
-                <div key={pi} className="min-w-0 flex-1 overflow-hidden px-1 py-1">
+                <div
+                  className="min-w-0 flex-1 overflow-hidden px-1 py-1"
+                  key={pi}
+                >
                   {opt ? (
-                    <span className={`inline-block max-w-full truncate rounded-[var(--radius-xs)] px-1 leading-[10px] ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}>
+                    <span
+                      className={`inline-block max-w-full truncate rounded-[var(--radius-xs)] px-1 leading-[10px] ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}
+                    >
                       {String(val).slice(0, 6)}
                     </span>
-                  ) : val !== undefined ? (
-                    <span className="block truncate text-foreground/50">{String(val).slice(0, 7)}</span>
+                  ) : val === undefined ? (
+                    <div
+                      className={`${MINI_WIDTHS[(ri * 4 + pi) % MINI_WIDTHS.length]} h-0.5 rounded-[var(--radius-xs)] bg-muted-foreground/15`}
+                    />
                   ) : (
-                    <div className={`${MINI_WIDTHS[(ri * 4 + pi) % MINI_WIDTHS.length]} h-0.5 rounded-[var(--radius-xs)] bg-muted-foreground/15`} />
+                    <span className="block truncate text-foreground/50">
+                      {String(val).slice(0, 7)}
+                    </span>
                   )}
                 </div>
               );
@@ -833,7 +1073,7 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
 }
 
 function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
-  const groupProp = schema.properties.find(p => p.type === "select");
+  const groupProp = schema.properties.find((p) => p.type === "select");
   const cols = (groupProp?.options ?? []).slice(0, 3);
   const rows = schema.sample_rows ?? [];
   const fallback = [
@@ -848,19 +1088,25 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
       {displayCols.map((col, ci) => {
         const clr = OPTION_COLORS[col.color] ?? DEFAULT_OPT;
         const colRows = groupProp
-          ? rows.filter(r => r[groupProp.name] === col.name).slice(0, 2)
+          ? rows.filter((r) => r[groupProp.name] === col.name).slice(0, 2)
           : [];
-        const cardCount = colRows.length > 0 ? colRows.length : ci === 0 ? 2 : ci === 1 ? 2 : 1;
+        const cardCount =
+          colRows.length > 0 ? colRows.length : ci === 0 ? 2 : ci === 1 ? 2 : 1;
 
         return (
-          <div key={ci} className="flex-1">
-            <div className={`mb-1.5 inline-flex items-center gap-0.5 rounded-[var(--radius-xs)] px-1.5 py-px text-[7px] font-semibold ${clr.badge}`}>
+          <div className="flex-1" key={ci}>
+            <div
+              className={`mb-1.5 inline-flex items-center gap-0.5 rounded-[var(--radius-xs)] px-1.5 py-px text-[7px] font-semibold ${clr.badge}`}
+            >
               <div className={`size-1 rounded-full ${clr.dot}`} />
               <span className="truncate">{col.name.slice(0, 8)}</span>
             </div>
             <div className="space-y-1">
               {Array.from({ length: cardCount }).map((_, ki) => (
-                <div key={ki} className="space-y-0.5 rounded-[var(--radius-xs)] border border-border/30 bg-card p-1.5">
+                <div
+                  className="space-y-0.5 rounded-[var(--radius-xs)] border border-border/30 bg-card p-1.5"
+                  key={ki}
+                >
                   <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-foreground/18" />
                   <div className="h-1 w-3/5 rounded-[var(--radius-xs)] bg-muted-foreground/15" />
                 </div>
@@ -878,22 +1124,31 @@ function MiniCalContent() {
   return (
     <div className="overflow-hidden rounded-[var(--radius-xs)] border border-border/40">
       <div className="grid grid-cols-7 border-b border-border/40 bg-muted/30">
-        {["M","T","W","T","F","S","S"].map((d, i) => (
-          <div key={i} className="py-0.5 text-center">
-            <span className="text-[6.5px] font-semibold text-muted-foreground/40">{d}</span>
+        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+          <div className="py-0.5 text-center" key={i}>
+            <span className="text-[6.5px] font-semibold text-muted-foreground/40">
+              {d}
+            </span>
           </div>
         ))}
       </div>
       <div className="grid grid-cols-7">
         {Array.from({ length: 21 }).map((_, i) => (
-          <div key={i} className="relative h-4 border-b border-r border-border/15 p-0.5 last:border-r-0">
+          <div
+            className="relative h-4 border-b border-r border-border/15 p-0.5 last:border-r-0"
+            key={i}
+          >
             {i === 14 ? (
               <div className="flex size-3 items-center justify-center rounded-full bg-primary">
-                <span className="text-[5px] font-bold text-primary-foreground">{i+1}</span>
+                <span className="text-[5px] font-bold text-primary-foreground">
+                  {i + 1}
+                </span>
               </div>
             ) : (
               <>
-                <span className="text-[5.5px] text-muted-foreground/30">{i + 1}</span>
+                <span className="text-[5.5px] text-muted-foreground/30">
+                  {i + 1}
+                </span>
                 {events.has(i) && (
                   <div className="absolute bottom-0.5 left-0.5 right-0.5 h-0.5 rounded-full bg-primary/40" />
                 )}
@@ -908,34 +1163,49 @@ function MiniCalContent() {
 
 // ── Block preview helpers ──────────────────────────────────────────────────────
 
-function BlockPreview({ block }: { block: { type: string; content?: unknown } }) {
+function BlockPreview({
+  block,
+}: {
+  block: { type: string; content?: unknown };
+}) {
   const icon = BLOCK_ICONS[block.type] ?? "·";
-  const c    = block.content as { text?: { text: string }[] } | null;
-  const text = c?.text?.map(t => t.text).join("") ?? "";
+  const c = block.content as { text?: { text: string }[] } | null;
+  const text = c?.text?.map((t) => t.text).join("") ?? "";
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/30">{icon}</span>
+      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/30">
+        {icon}
+      </span>
       <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">
-        {text || <span className="italic text-muted-foreground/30">{block.type}</span>}
+        {text || (
+          <span className="italic text-muted-foreground/30">{block.type}</span>
+        )}
       </span>
     </div>
   );
 }
 
-function PageBlockPreview({ block }: { block: { type: string; content?: unknown } }) {
-  const c    = block.content as { text?: { text: string }[] } | null;
-  const text = c?.text?.map(t => t.text).join("") ?? "";
-  if (block.type === "divider") return <hr className="border-border/40" />;
+function PageBlockPreview({
+  block,
+}: {
+  block: { type: string; content?: unknown };
+}) {
+  const c = block.content as { text?: { text: string }[] } | null;
+  const text = c?.text?.map((t) => t.text).join("") ?? "";
+  if (block.type === "divider") {
+    return <hr className="border-border/40" />;
+  }
   const cls: Record<string, string> = {
-    h1:        "text-base font-bold text-foreground mt-3 first:mt-0",
-    h2:        "text-sm font-bold text-foreground mt-2 first:mt-0",
-    h3:        "text-sm font-semibold text-foreground mt-1.5",
+    h1: "text-base font-bold text-foreground mt-3 first:mt-0",
+    h2: "text-sm font-bold text-foreground mt-2 first:mt-0",
+    h3: "text-sm font-semibold text-foreground mt-1.5",
     paragraph: "text-xs leading-relaxed text-muted-foreground",
-    bullet:    "text-xs leading-relaxed text-muted-foreground pl-3 before:content-['•'] before:mr-2 before:text-muted-foreground/40",
-    numbered:  "text-xs leading-relaxed text-muted-foreground pl-3",
-    todo:      "text-xs leading-relaxed text-muted-foreground pl-3 line-through opacity-50",
-    quote:     "text-xs italic text-muted-foreground border-l-2 border-border pl-3",
-    code:      "text-xs font-mono text-foreground bg-muted rounded-[var(--radius-xs)] px-1.5 py-0.5",
+    bullet:
+      "text-xs leading-relaxed text-muted-foreground pl-3 before:content-['•'] before:mr-2 before:text-muted-foreground/40",
+    numbered: "text-xs leading-relaxed text-muted-foreground pl-3",
+    todo: "text-xs leading-relaxed text-muted-foreground pl-3 line-through opacity-50",
+    quote: "text-xs italic text-muted-foreground border-l-2 border-border pl-3",
+    code: "text-xs font-mono text-foreground bg-muted rounded-[var(--radius-xs)] px-1.5 py-0.5",
   };
   return (
     <p className={cls[block.type] ?? "text-xs text-muted-foreground/50"}>
@@ -954,17 +1224,18 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {schema.views.map(v => (
+          {schema.views.map((v) => (
             <span
-              key={v.name}
               className={[
                 "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
                 v.isDefault
                   ? "border-primary/20 bg-primary/10 text-primary"
                   : "border-border/50 bg-muted/30 text-muted-foreground",
               ].join(" ")}
+              key={v.name}
             >
-              {v.type === "board" ? "⊞" : v.type === "calendar" ? "📅" : "☰"} {v.name}
+              {v.type === "board" ? "⊞" : v.type === "calendar" ? "📅" : "☰"}{" "}
+              {v.name}
             </span>
           ))}
         </div>
@@ -976,27 +1247,36 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
         <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
           {schema.properties.map((p, i) => (
             <div
-              key={p.name}
               className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
-                i < schema.properties.length - 1 ? "border-b border-border/40" : ""
+                i < schema.properties.length - 1
+                  ? "border-b border-border/40"
+                  : ""
               }`}
+              key={p.name}
             >
               <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/60">
                 {PROP_TYPE_ICON[p.type] ?? "·"}
               </span>
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground/80">{p.name}</span>
+              <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground/80">
+                {p.name}
+              </span>
               {p.options && p.options.length > 0 && (
                 <div className="flex shrink-0 items-center gap-1">
-                  {p.options.slice(0, 2).map(o => {
+                  {p.options.slice(0, 2).map((o) => {
                     const clr = OPTION_COLORS[o.color] ?? DEFAULT_OPT;
                     return (
-                      <span key={o.name} className={`max-w-[64px] truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${clr.badge}`}>
+                      <span
+                        className={`max-w-[64px] truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${clr.badge}`}
+                        key={o.name}
+                      >
                         {o.name}
                       </span>
                     );
                   })}
                   {p.options.length > 2 && (
-                    <span className="text-[10px] text-muted-foreground/60">+{p.options.length - 2}</span>
+                    <span className="text-[10px] text-muted-foreground/60">
+                      +{p.options.length - 2}
+                    </span>
                   )}
                 </div>
               )}
@@ -1010,16 +1290,24 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
 
 // ── Database preview (right panel) ────────────────────────────────────────────
 
-function ViewTabs({ views, defaultName }: { views: DbView[]; defaultName: string }) {
+function ViewTabs({
+  views,
+  defaultName,
+}: {
+  views: DbView[];
+  defaultName: string;
+}) {
   return (
     <div className="mb-3 flex items-center gap-1 overflow-x-auto border-b border-border/40 pb-2">
-      {views.map(v => (
+      {views.map((v) => (
         <span
-          key={v.name}
           className={[
             "shrink-0 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium",
-            v.name === defaultName ? "bg-accent text-foreground font-semibold" : "text-muted-foreground/50",
+            v.name === defaultName
+              ? "bg-accent text-foreground font-semibold"
+              : "text-muted-foreground/50",
           ].join(" ")}
+          key={v.name}
         >
           {v.name}
         </span>
@@ -1030,36 +1318,59 @@ function ViewTabs({ views, defaultName }: { views: DbView[]; defaultName: string
 
 function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
   const visibleProps = schema.properties
-    .filter(p => !["created_by","created_time","last_edited_by","last_edited_time"].includes(p.type))
+    .filter(
+      (p) =>
+        ![
+          "created_by",
+          "created_time",
+          "last_edited_by",
+          "last_edited_time",
+        ].includes(p.type)
+    )
     .slice(0, 5);
-  const defaultView = schema.views.find(v => v.isDefault) ?? schema.views[0];
-  const rows        = schema.sample_rows ?? [];
+  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
+  const rows = schema.sample_rows ?? [];
 
   return (
     <div className="mt-3">
-      <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
+      <ViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
       <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
         <div className="flex border-b border-border/40 bg-muted/30">
-          {visibleProps.map(p => (
-            <div key={p.name} className="min-w-0 flex-1 truncate px-2 py-1.5 text-[9.5px] font-semibold text-muted-foreground/60">
-              <span className="mr-1 opacity-50">{PROP_TYPE_ICON[p.type] ?? "·"}</span>
+          {visibleProps.map((p) => (
+            <div
+              className="min-w-0 flex-1 truncate px-2 py-1.5 text-[9.5px] font-semibold text-muted-foreground/60"
+              key={p.name}
+            >
+              <span className="mr-1 opacity-50">
+                {PROP_TYPE_ICON[p.type] ?? "·"}
+              </span>
               {p.name}
             </div>
           ))}
         </div>
         {rows.slice(0, 3).map((row, ri) => (
-          <div key={ri} className="flex border-b border-border/30 last:border-0">
+          <div
+            className="flex border-b border-border/30 last:border-0"
+            key={ri}
+          >
             {visibleProps.map((p, pi) => {
               const val = row[p.name];
-              const opt = p.options?.find(o => o.name === val);
+              const opt = p.options?.find((o) => o.name === val);
               return (
-                <div key={pi} className="min-w-0 flex-1 px-2 py-1.5 text-xs text-foreground/80">
+                <div
+                  className="min-w-0 flex-1 px-2 py-1.5 text-xs text-foreground/80"
+                  key={pi}
+                >
                   {opt ? (
-                    <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}>{val}</span>
-                  ) : val !== undefined ? (
-                    <span className="block truncate">{String(val)}</span>
-                  ) : (
+                    <span
+                      className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}
+                    >
+                      {val}
+                    </span>
+                  ) : val === undefined ? (
                     <span className="text-muted-foreground/20">—</span>
+                  ) : (
+                    <span className="block truncate">{String(val)}</span>
                   )}
                 </div>
               );
@@ -1067,7 +1378,9 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
           </div>
         ))}
         {rows.length === 0 && (
-          <div className="py-3 text-center text-xs text-muted-foreground/30">No sample data</div>
+          <div className="py-3 text-center text-xs text-muted-foreground/30">
+            No sample data
+          </div>
         )}
       </div>
     </div>
@@ -1075,46 +1388,67 @@ function DbTablePreview({ schema }: { schema: SchemaForPreview }) {
 }
 
 function BoardPreview({ schema }: { schema: SchemaForPreview }) {
-  const defaultView = schema.views.find(v => v.isDefault) ?? schema.views[0];
+  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
   const groupByName = defaultView?.groupBy;
-  const groupByProp = schema.properties.find(p => p.name === groupByName) ?? schema.properties.find(p => p.type === "select");
-  const titleProp   = schema.properties.find(p => p.type === "title");
-  const tagProp     = schema.properties.find(p => p.type === "select" && p !== groupByProp);
-  const columns     = (groupByProp?.options ?? []).slice(0, 5);
-  const rows        = schema.sample_rows ?? [];
+  const groupByProp =
+    schema.properties.find((p) => p.name === groupByName) ??
+    schema.properties.find((p) => p.type === "select");
+  const titleProp = schema.properties.find((p) => p.type === "title");
+  const tagProp = schema.properties.find(
+    (p) => p.type === "select" && p !== groupByProp
+  );
+  const columns = (groupByProp?.options ?? []).slice(0, 5);
+  const rows = schema.sample_rows ?? [];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
+      <ViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
       {/* Board grid — columns divide the full height */}
       <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border/40 bg-background">
         {columns.map((col, ci) => {
-          const colRows = groupByProp ? rows.filter(r => r[groupByProp.name] === col.name) : [];
+          const colRows = groupByProp
+            ? rows.filter((r) => r[groupByProp.name] === col.name)
+            : [];
           const clr = OPTION_COLORS[col.color] ?? DEFAULT_OPT;
           return (
             <div
-              key={col.name}
               className={`flex min-w-[148px] flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border/30" : ""}`}
+              key={col.name}
             >
               {/* Column header */}
               <div className="flex shrink-0 items-center gap-1.5 border-b border-border/30 bg-muted/30 px-3 py-2.5">
                 <span className={`size-1.5 shrink-0 rounded-full ${clr.dot}`} />
-                <span className="flex-1 truncate text-[11px] font-semibold text-foreground/70">{col.name}</span>
+                <span className="flex-1 truncate text-[11px] font-semibold text-foreground/70">
+                  {col.name}
+                </span>
                 {colRows.length > 0 && (
-                  <span className="tabular-nums text-[10px] text-muted-foreground/40">{colRows.length}</span>
+                  <span className="tabular-nums text-[10px] text-muted-foreground/40">
+                    {colRows.length}
+                  </span>
                 )}
               </div>
               {/* Cards — grow to fill column height */}
               <div className="flex flex-1 flex-col gap-1.5 overflow-hidden p-2">
                 {colRows.map((row, i) => {
-                  const title  = titleProp ? String(row[titleProp.name] ?? "") : "";
-                  const tagVal = tagProp   ? String(row[tagProp.name]   ?? "") : "";
-                  const tagOpt = tagProp?.options?.find(o => o.name === tagVal);
+                  const title = titleProp
+                    ? String(row[titleProp.name] ?? "")
+                    : "";
+                  const tagVal = tagProp ? String(row[tagProp.name] ?? "") : "";
+                  const tagOpt = tagProp?.options?.find(
+                    (o) => o.name === tagVal
+                  );
                   return (
-                    <div key={i} className="shrink-0 rounded-md border border-border/50 bg-card p-2.5 shadow-sm">
-                      <p className="text-[11px] font-medium leading-snug text-foreground">{title}</p>
+                    <div
+                      className="shrink-0 rounded-md border border-border/50 bg-card p-2.5 shadow-sm"
+                      key={i}
+                    >
+                      <p className="text-[11px] font-medium leading-snug text-foreground">
+                        {title}
+                      </p>
                       {tagOpt && (
-                        <span className={`mt-1.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}>
+                        <span
+                          className={`mt-1.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}
+                        >
                           {tagVal}
                         </span>
                       )}
@@ -1124,7 +1458,9 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
               </div>
               {/* + New — pinned to column bottom */}
               <div className="shrink-0 border-t border-border/20 px-3 py-2">
-                <span className="text-[10px] text-muted-foreground/30">+ New</span>
+                <span className="text-[10px] text-muted-foreground/30">
+                  + New
+                </span>
               </div>
             </div>
           );
@@ -1135,30 +1471,51 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
 }
 
 function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
-  const defaultView = schema.views.find(v => v.isDefault) ?? schema.views[0];
+  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
-      <ViewTabs views={schema.views} defaultName={defaultView?.name ?? ""} />
+      <ViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
       <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/40">
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
-          <span className="text-xs font-semibold text-foreground/70">June 2026</span>
-          <div className="flex gap-2 text-xs text-muted-foreground/30"><span>‹</span><span>›</span></div>
+          <span className="text-xs font-semibold text-foreground/70">
+            June 2026
+          </span>
+          <div className="flex gap-2 text-xs text-muted-foreground/30">
+            <span>‹</span>
+            <span>›</span>
+          </div>
         </div>
         <div className="grid shrink-0 grid-cols-7 border-b border-border/40 bg-muted/10">
-          {CAL_DAYS.map(d => (
-            <div key={d} className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground/40">{d}</div>
+          {CAL_DAYS.map((d) => (
+            <div
+              className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground/40"
+              key={d}
+            >
+              {d}
+            </div>
           ))}
         </div>
         <div className="flex min-h-0 flex-1 flex-col">
           {CAL_WEEKS.map((week, wi) => (
-            <div key={wi} className="grid flex-1 grid-cols-7 border-b border-border/20 last:border-0">
+            <div
+              className="grid flex-1 grid-cols-7 border-b border-border/20 last:border-0"
+              key={wi}
+            >
               {week.map((date, di) => (
-                <div key={di} className="border-r border-border/20 p-1 last:border-0">
+                <div
+                  className="border-r border-border/20 p-1 last:border-0"
+                  key={di}
+                >
                   {date > 0 && (
-                    <span className={date === 19
-                      ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-                      : "text-xs text-muted-foreground/40"
-                    }>{date}</span>
+                    <span
+                      className={
+                        date === 19
+                          ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
+                          : "text-xs text-muted-foreground/40"
+                      }
+                    >
+                      {date}
+                    </span>
                   )}
                 </div>
               ))}
@@ -1171,9 +1528,13 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
 }
 
 function DatabasePreview({ schema }: { schema: SchemaForPreview }) {
-  const defaultView = schema.views.find(v => v.isDefault) ?? schema.views[0];
-  if (defaultView?.type === "board")    return <BoardPreview schema={schema} />;
-  if (defaultView?.type === "calendar") return <CalendarPreview schema={schema} />;
+  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
+  if (defaultView?.type === "board") {
+    return <BoardPreview schema={schema} />;
+  }
+  if (defaultView?.type === "calendar") {
+    return <CalendarPreview schema={schema} />;
+  }
   return <DbTablePreview schema={schema} />;
 }
 
@@ -1183,7 +1544,10 @@ function GallerySkeleton() {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-[var(--radius-md)] border border-border">
+        <div
+          className="overflow-hidden rounded-[var(--radius-md)] border border-border"
+          key={i}
+        >
           <div className="h-40 animate-pulse bg-muted/60" />
           <div className="space-y-2 p-3">
             <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
@@ -1199,11 +1563,15 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-        <LayoutGrid size={22} className="text-muted-foreground/40" />
+        <LayoutGrid className="text-muted-foreground/40" size={22} />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground">No templates found</p>
-        <p className="mt-1 text-xs text-muted-foreground">Try a different search or category.</p>
+        <p className="text-sm font-semibold text-foreground">
+          No templates found
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Try a different search or category.
+        </p>
       </div>
     </div>
   );

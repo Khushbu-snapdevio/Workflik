@@ -5,11 +5,10 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
- Plus, ExternalLink as ArrowSquareOut, Trash2 as Trash, EyeOff as EyeSlash, Type as TextT, Hash, CircleDashed,
- Tag, Calendar as CalendarBlank, CheckSquare, Link as LinkIcon, Mail as Envelope, Phone,
- User, ArrowLeftRight as ArrowsLeftRight, ArrowUp as SortAscending, ArrowDown as SortDescending,
+ Plus, ExternalLink as ArrowSquareOut, Trash2 as Trash, EyeOff as EyeSlash, Type as TextT,
+ ArrowUp as SortAscending, ArrowDown as SortDescending,
  Check, FileText, Table2, GripVertical, MessageSquare as MessageSquareIcon, Link2 as Link2Icon,
- Copy as CopyIcon,
+ Copy as CopyIcon, Settings2 as GearIcon,
 } from "lucide-react";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellActionOverlay } from "@/components/database/cell-action-overlay";
@@ -18,26 +17,26 @@ import {
  type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core";
 import {
- SortableContext, useSortable, verticalListSortingStrategy, arrayMove,
+ SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { PROPERTY_REGISTRY } from "@/components/database/property-registry";
+import { PROPERTY_REGISTRY, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { getOptionColor } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
+import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
+import { resolveDisplayAs, resolveWrapContent, resolvePropertyOrder } from "@/components/database/view-property-resolver";
 import type { SharedViewProps, DbProperty, DbEntry, SelectOption } from "@/components/database/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const PROP_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
- text: TextT, number: Hash, select: CircleDashed, multi_select: Tag,
- date: CalendarBlank, checkbox: CheckSquare, url: LinkIcon, email: Envelope,
- phone: Phone, person: User, relation: ArrowsLeftRight,
-};
-
 const TEXT_TYPES = new Set(["text", "number", "url", "email", "phone"]);
 const POPUP_TYPES = new Set(["select", "multi_select", "date", "person", "relation"]);
+// Badge-style properties (colored pill values) intentionally get comment-only
+// hover actions — no copy-to-clipboard, unlike plain-value properties.
+const BADGE_TYPES = new Set(["select", "multi_select"]);
 
 // ── Property text helper (for clipboard copy) ────────────────────────────────
 function getPropertyText(prop: DbProperty, rawVal: unknown): string {
@@ -125,9 +124,15 @@ function SortableTableRow({
 }: SortableTableRowProps) {
  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
   useSortable({ id: entry.id });
- const [commentPopRect, setCommentPopRect] = useState<DOMRect | null>(null);
- const [commentCount, setCommentCount] = useState<number | null>(null);
- const countFetchedRef = useRef(false);
+ // Comment popover — tracks which cell (propId) it was opened from, plus a
+ // frozen snapshot of that property's name/value for the quoted reference.
+ const [commentPopover, setCommentPopover] = useState<{
+  rect: DOMRect; propId: string | null; propName: string | null; valueLabel: string | null;
+ } | null>(null);
+ // Raw per-property comment list for this row, fetched once and used to derive
+ // a per-cell comment badge count (comments are scoped to a property now).
+ const [rowComments, setRowComments] = useState<Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }> | null>(null);
+ const commentsFetchedRef = useRef(false);
  const [copiedPropId, setCopiedPropId] = useState<string | null>(null);
 
  // Portal-based hover overlay state
@@ -147,19 +152,20 @@ function SortableTableRow({
   leaveTimerRef.current = setTimeout(() => setHoveredCell(null), 150);
  }
 
- function fetchCommentCount() {
-  if (countFetchedRef.current) return;
-  countFetchedRef.current = true;
+ function fetchRowComments() {
+  if (commentsFetchedRef.current) return;
+  commentsFetchedRef.current = true;
   fetch(`/api/pages/${entry.id}/comments`)
    .then((r) => (r.ok ? r.json() : null))
    .then((data) => {
-    if (data) {
-     const n = (data.comments as Array<{ blockId: string | null; deletedAt: string | null }>)
-      .filter((c) => !c.blockId && !c.deletedAt).length;
-     setCommentCount(n);
-    }
+    if (data) setRowComments(data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>);
    })
    .catch(() => {});
+ }
+
+ function commentCountFor(propId: string | null): number | null {
+  if (!rowComments) return null;
+  return rowComments.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === propId).length;
  }
 
  const style = {
@@ -317,10 +323,10 @@ function SortableTableRow({
       onClick={(e) => { setHoveredCell(null); activateCell(entry.id, prop.id, e); }}
       onMouseEnter={(e) => {
        clearLeaveTimer();
-       if (!isActive && !(editPop?.entryId === entry.id && editPop?.propId === prop.id) && !commentPopRect) {
+       if (!isActive && !(editPop?.entryId === entry.id && editPop?.propId === prop.id) && !commentPopover) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         setHoveredCell({ propId: prop.id, prop, rawVal, rect });
-        fetchCommentCount();
+        fetchRowComments();
        }
       }}
       onMouseLeave={scheduleLeave}
@@ -339,10 +345,10 @@ function SortableTableRow({
         className="w-full bg-transparent text-sm text-foreground focus:outline-none"
        />
       ) : rawVal ? (
-       <CellDisplay property={prop} value={rawVal} compact />
+       <CellDisplay property={prop} value={rawVal} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} />
       ) : (
        <>
-        <CellDisplay property={prop} value={rawVal} compact />
+        <CellDisplay property={prop} value={rawVal} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} />
         {isEditor && TEXT_TYPES.has(prop.type) && (
          <span className="pointer-events-none select-none text-sm text-muted-foreground/60">Type…</span>
         )}
@@ -359,17 +365,22 @@ function SortableTableRow({
   {hoveredCell && typeof document !== "undefined" && createPortal(
    <CellActionOverlay
     rect={hoveredCell.rect}
-    propType={hoveredCell.prop.type}
-    commentCount={commentCount}
+    canCopy={!BADGE_TYPES.has(hoveredCell.prop.type) && !!getPropertyText(hoveredCell.prop, hoveredCell.rawVal)}
+    commentCount={commentCountFor(hoveredCell.propId)}
     copied={copiedPropId === hoveredCell.propId}
     onClearLeaveTimer={clearLeaveTimer}
     onScheduleLeave={scheduleLeave}
     onCommentClick={(btnRect) => {
-     if (!commentPopRect) {
+     if (!commentPopover) {
       clearLeaveTimer();
       setHoveredCell(null); // dismiss overlay when popover opens
      }
-     setCommentPopRect(commentPopRect ? null : btnRect);
+     setCommentPopover(commentPopover ? null : {
+      rect: btnRect,
+      propId: hoveredCell.propId,
+      propName: hoveredCell.prop.name,
+      valueLabel: getPropertyText(hoveredCell.prop, hoveredCell.rawVal),
+     });
     }}
     onCopyClick={() => {
      const txt = getPropertyText(hoveredCell.prop, hoveredCell.rawVal);
@@ -391,13 +402,16 @@ function SortableTableRow({
    document.body,
   )}
 
-  {commentPopRect && (
+  {commentPopover && (
    <CellCommentPopover
     pageId={entry.id}
     workspaceId={workspaceId}
-    anchorRect={commentPopRect}
-    onClose={() => { setCommentPopRect(null); countFetchedRef.current = false; }}
-    onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+    anchorRect={commentPopover.rect}
+    propertyId={commentPopover.propId}
+    propertyName={commentPopover.propName}
+    propertyValueLabel={commentPopover.valueLabel}
+    onClose={() => { setCommentPopover(null); commentsFetchedRef.current = false; }}
+    onCommentAdded={() => setRowComments((prev) => [...(prev ?? []), { blockId: null, deletedAt: null, propertyId: commentPopover.propId }])}
    />
   )}
   </>
@@ -409,17 +423,19 @@ function SortableTableRow({
 export function TableView({
  workspaceId, workspaceSlug, entries, properties, valueMap, activeView, isEditor,
  onUpdateValue, onUpdateTitle, onCreateEntry, onAddProperty, onUpdateProperty,
- onDeleteProperty, onUpdateView, onDeleteEntry, selectedEntryIds, onSelectEntry, onOpenEntry,
+ onDeleteProperty, onUpdateView, onDeleteEntry, onDuplicateEntry, selectedEntryIds, onSelectEntry, onOpenEntry,
 }: SharedViewProps) {
  const [activeCell, setActiveCell]   = useState<ActiveCell | null>(null);
  const [editValue, setEditValue]    = useState("");
  const [editPop, setEditPop]      = useState<EditPop | null>(null);
  const [propMenu, setPropMenu]     = useState<PropMenuState | null>(null);
+ const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
  const [addPropMenu, setAddPropMenu]  = useState<AddPropState | null>(null);
  const [propName, setPropName]     = useState("");
  const [renamingProp, setRenamingProp] = useState<string | null>(null);
  const [renameVal, setRenameVal]    = useState("");
  const [rowMenu, setRowMenu]      = useState<RowMenuState | null>(null);
+ const [rowCommentTarget, setRowCommentTarget] = useState<{ entryId: string; rect: DOMRect } | null>(null);
  const [deleteConfirm, setDeleteConfirm] = useState<{ entryId: string } | null>(null);
  const [deletingEntry, setDeletingEntry] = useState(false);
  const [hoveredRowId, setHoveredRowId]   = useState<string | null>(null);
@@ -432,7 +448,7 @@ export function TableView({
  const [draggingId, setDraggingId]      = useState<string | null>(null);
 
  const hiddenIds = new Set((activeView?.hiddenPropertyIds ?? []) as string[]);
- const visible  = properties.filter((p) => !p.isSystem && !hiddenIds.has(p.id));
+ const visible  = resolvePropertyOrder(properties.filter((p) => !p.isSystem && !hiddenIds.has(p.id)), activeView);
 
  const allSelected = entries.length > 0 && entries.every((e) => selectedEntryIds.has(e.id));
  const someSelected = entries.some((e) => selectedEntryIds.has(e.id));
@@ -446,7 +462,10 @@ export function TableView({
   if (!prop) return "";
   return String(v?.[prop.type as keyof typeof v] ?? "");
  }
- function colW(id: string) { return colWidths[id] ?? DEFAULT_COL_W; }
+ // Local state is only the live-drag buffer — the persisted width lives in
+ // this view's own propertyOverrides, so resizing a column in Table never
+ // affects any other view (none of which have columns anyway).
+ function colW(id: string) { return colWidths[id] ?? activeView?.propertyOverrides?.[id]?.width ?? DEFAULT_COL_W; }
 
  function activateCell(entryId: string, propId: string, e: React.MouseEvent) {
   if (!isEditor) return;
@@ -481,20 +500,43 @@ export function TableView({
 
  // Column resize
  function startResize(propId: string, startX: number, startW: number) {
+  let finalW = startW;
   function onMove(e: MouseEvent) {
-   const newW = Math.max(MIN_COL_W, startW + (e.clientX - startX));
-   setColWidths((prev) => ({ ...prev, [propId]: newW }));
+   finalW = Math.max(MIN_COL_W, startW + (e.clientX - startX));
+   setColWidths((prev) => ({ ...prev, [propId]: finalW }));
   }
   function onUp() {
    document.removeEventListener("mousemove", onMove);
    document.removeEventListener("mouseup", onUp);
    document.body.style.cursor = "";
    document.body.style.userSelect = "";
+   if (finalW !== startW) {
+    onUpdateView({
+     propertyOverrides: { ...activeView?.propertyOverrides, [propId]: { ...(activeView?.propertyOverrides?.[propId] ?? {}), width: finalW } },
+    });
+   }
   }
   document.body.style.cursor  = "col-resize";
   document.body.style.userSelect = "none";
   document.addEventListener("mousemove", onMove);
   document.addEventListener("mouseup", onUp);
+ }
+
+ // Reordering only ever drags among currently-VISIBLE columns — hidden ones
+ // keep their existing relative slots in the saved order untouched, so
+ // un-hiding a property later doesn't drop it somewhere unexpected.
+ function handleColumnDragEnd(event: DragEndEvent) {
+  const { active, over } = event;
+  if (!over || active.id === over.id) return;
+  const oldIndex = visible.findIndex((p) => p.id === active.id);
+  const newIndex = visible.findIndex((p) => p.id === over.id);
+  if (oldIndex === -1 || newIndex === -1) return;
+  const newVisibleOrder = arrayMove(visible, oldIndex, newIndex).map((p) => p.id);
+  const fullOrder = resolvePropertyOrder(properties.filter((p) => !p.isSystem), activeView).map((p) => p.id);
+  const visibleIds = new Set(visible.map((p) => p.id));
+  let vi = 0;
+  const merged = fullOrder.map((id) => (visibleIds.has(id) ? newVisibleOrder[vi++] : id));
+  onUpdateView({ propertyOrder: merged });
  }
 
  const propsW  = visible.reduce((s, p) => s + colW(p.id), 0);
@@ -622,53 +664,26 @@ export function TableView({
       <span className="text-xs font-semibold text-muted-foreground tracking-wide">Name</span>
      </div>
 
-     {/* Property headers */}
-     {visible.map((prop) => {
-      const Icon = PROP_ICONS[prop.type] ?? TextT;
-      return (
-       <div
-        key={prop.id}
-        className="group relative shrink-0"
-        style={{ width: colW(prop.id), minWidth: colW(prop.id), height: 34 }}
-       >
-        {renamingProp === prop.id ? (
-         <input
-          value={renameVal}
-          onChange={(e) => setRenameVal(e.target.value)}
-          onBlur={() => { if (renameVal.trim()) onUpdateProperty(prop.id, { name: renameVal.trim() }); setRenamingProp(null); }}
-          onKeyDown={(e) => {
-           if (e.key === "Enter") { if (renameVal.trim()) onUpdateProperty(prop.id, { name: renameVal.trim() }); setRenamingProp(null); }
-           if (e.key === "Escape") setRenamingProp(null);
-          }}
-          autoFocus
-          className="h-full w-full bg-transparent px-3 text-xs font-semibold text-foreground/70 focus:outline-none"
-         />
-        ) : (
-         <button
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-           if (!isEditor) return;
-           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-           setPropMenu(propMenu?.propId === prop.id ? null : { propId: prop.id, rect });
-          }}
-          className="flex h-full w-full items-center gap-2 bg-muted/30 px-3 transition-colors hover:bg-accent/60"
-         >
-          <span className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50">
-           <Icon size={10} />
-          </span>
-          <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">{prop.name}</span>
-         </button>
-        )}
-        {/* Resize handle */}
-        {isEditor && (
-         <div
-          className="absolute right-0 top-0 h-full w-1 cursor-col-resize opacity-0 transition-opacity group-hover:opacity-100 hover:bg-primary/40"
-          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResize(prop.id, e.clientX, colW(prop.id)); }}
-         />
-        )}
-       </div>
-      );
-     })}
+     {/* Property headers — draggable to reorder, saved per-view (propertyOrder) */}
+     <DndContext sensors={sensors} onDragEnd={handleColumnDragEnd}>
+      <SortableContext items={visible.map((p) => p.id)} strategy={horizontalListSortingStrategy}>
+       {visible.map((prop) => (
+        <SortableColumnHeader
+         key={prop.id}
+         prop={prop}
+         width={colW(prop.id)}
+         isEditor={isEditor}
+         isRenaming={renamingProp === prop.id}
+         renameVal={renameVal}
+         onRenameChange={setRenameVal}
+         onCommitRename={() => { if (renameVal.trim()) onUpdateProperty(prop.id, { name: renameVal.trim() }); setRenamingProp(null); }}
+         onCancelRename={() => setRenamingProp(null)}
+         onOpenMenu={(rect) => setPropMenu(propMenu?.propId === prop.id ? null : { propId: prop.id, rect })}
+         onStartResize={(clientX) => startResize(prop.id, clientX, colW(prop.id))}
+        />
+       ))}
+      </SortableContext>
+     </DndContext>
 
      {/* Add property */}
      {isEditor && (
@@ -832,8 +847,19 @@ export function TableView({
     <RowContextMenu
      menu={rowMenu}
      workspaceSlug={workspaceSlug}
+     onCommentClick={(rect) => { setRowCommentTarget({ entryId: rowMenu.entryId, rect }); setRowMenu(null); }}
+     onDuplicate={onDuplicateEntry ? () => { onDuplicateEntry(rowMenu.entryId); setRowMenu(null); } : undefined}
      onDeleteRequest={() => { setDeleteConfirm({ entryId: rowMenu.entryId }); setRowMenu(null); setHoveredRowId(null); }}
      onClose={() => setRowMenu(null)}
+    />
+   )}
+
+   {rowCommentTarget && (
+    <CellCommentPopover
+     pageId={rowCommentTarget.entryId}
+     workspaceId={workspaceId}
+     anchorRect={rowCommentTarget.rect}
+     onClose={() => setRowCommentTarget(null)}
     />
    )}
 
@@ -862,7 +888,11 @@ export function TableView({
      onHide={(id) => { onUpdateView({ hiddenPropertyIds: [...((activeView?.hiddenPropertyIds ?? []) as string[]), id] }); setPropMenu(null); }}
      onDelete={async (id) => { await onDeleteProperty(id); setPropMenu(null); }}
      onSort={(id, dir) => { onUpdateView({ sorts: [{ propertyId: id, direction: dir }] }); setPropMenu(null); }}
+     onUpdateProperty={onUpdateProperty}
+     onDuplicateProperty={async (prop) => { await onAddProperty(`${prop.name} (copy)`, prop.type, prop.config); }}
      onClose={() => setPropMenu(null)}
+     activeView={activeView}
+     onUpdateView={onUpdateView}
     />
    )}
 
@@ -885,6 +915,106 @@ export function TableView({
      onSave={(val) => onUpdateValue(editPop.entryId, editPop.propId, val)}
      onClose={() => setEditPop(null)}
      onPropertyConfigChange={(propId, config) => onUpdateProperty(propId, { config })}
+     onEditProperty={(rect) => setEditPropPanel({ propId: editPop.propId, anchorRect: rect })}
+    />
+   )}
+
+   {editPropPanel && (() => {
+    const panelProp = visible.find((p) => p.id === editPropPanel.propId);
+    if (!panelProp) return null;
+    return (
+     <EditPropertySidePanel
+      key={panelProp.id}
+      property={panelProp}
+      getAnchorRect={() => editPropPanel.anchorRect}
+      canDelete={!panelProp.isSystem}
+      onUpdateProperty={(patch) => onUpdateProperty(panelProp.id, patch)}
+      onDeleteProperty={() => onDeleteProperty(panelProp.id)}
+      onDuplicateProperty={async () => { await onAddProperty(`${panelProp.name} (copy)`, panelProp.type, panelProp.config); }}
+      onClose={() => setEditPropPanel(null)}
+      viewContext={activeView ? {
+       override: activeView.propertyOverrides?.[panelProp.id] ?? {},
+       onUpdateOverride: (patch) => onUpdateView({
+        propertyOverrides: { ...activeView.propertyOverrides, [panelProp.id]: { ...(activeView.propertyOverrides?.[panelProp.id] ?? {}), ...patch } },
+       }),
+      } : undefined}
+     />
+    );
+   })()}
+  </div>
+ );
+}
+
+// ── SortableColumnHeader ─────────────────────────────────────────────────────
+
+interface SortableColumnHeaderProps {
+ prop: DbProperty;
+ width: number;
+ isEditor: boolean;
+ isRenaming: boolean;
+ renameVal: string;
+ onRenameChange: (val: string) => void;
+ onCommitRename: () => void;
+ onCancelRename: () => void;
+ onOpenMenu: (rect: DOMRect) => void;
+ onStartResize: (clientX: number) => void;
+}
+
+function SortableColumnHeader({ prop, width, isEditor, isRenaming, renameVal, onRenameChange, onCommitRename, onCancelRename, onOpenMenu, onStartResize }: SortableColumnHeaderProps) {
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: prop.id, disabled: !isEditor });
+ const style: React.CSSProperties = {
+  width, minWidth: width, height: 34,
+  transform: CSS.Transform.toString(transform),
+  transition,
+  opacity: isDragging ? 0.4 : 1,
+ };
+ const Icon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
+
+ return (
+  <div ref={setNodeRef} style={style} className="group relative shrink-0">
+   {isRenaming ? (
+    <input
+     value={renameVal}
+     onChange={(e) => onRenameChange(e.target.value)}
+     onBlur={onCommitRename}
+     onKeyDown={(e) => {
+      if (e.key === "Enter") onCommitRename();
+      if (e.key === "Escape") onCancelRename();
+     }}
+     autoFocus
+     className="h-full w-full bg-transparent px-3 text-xs font-semibold text-foreground/70 focus:outline-none"
+    />
+   ) : (
+    <button
+     onMouseDown={(e) => e.stopPropagation()}
+     onClick={(e) => {
+      if (!isEditor) return;
+      onOpenMenu((e.currentTarget as HTMLElement).getBoundingClientRect());
+     }}
+     className="flex h-full w-full items-center gap-1.5 bg-muted/30 px-3 transition-colors hover:bg-accent/60"
+    >
+     {isEditor && (
+      <span
+       {...attributes}
+       {...listeners}
+       onClick={(e) => e.stopPropagation()}
+       style={{ touchAction: "none" }}
+       className="flex size-3.5 shrink-0 cursor-grab items-center justify-center text-muted-foreground/0 group-hover:text-muted-foreground/40"
+      >
+       <GripVertical size={11} />
+      </span>
+     )}
+     <span className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50">
+      <Icon size={10} />
+     </span>
+     <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">{prop.name}</span>
+    </button>
+   )}
+   {/* Resize handle */}
+   {isEditor && (
+    <div
+     className="absolute right-0 top-0 h-full w-1 cursor-col-resize opacity-0 transition-opacity group-hover:opacity-100 hover:bg-primary/40"
+     onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onStartResize(e.clientX); }}
     />
    )}
   </div>
@@ -896,17 +1026,22 @@ export function TableView({
 interface RowContextMenuProps {
  menu: RowMenuState;
  workspaceSlug: string;
+ onCommentClick: (rect: DOMRect) => void;
+ onDuplicate?: () => void;
  onDeleteRequest: () => void;
  onClose: () => void;
 }
 
-function RowContextMenu({ menu, workspaceSlug, onDeleteRequest, onClose }: RowContextMenuProps) {
+function RowContextMenu({ menu, workspaceSlug, onCommentClick, onDuplicate, onDeleteRequest, onClose }: RowContextMenuProps) {
  const ref = useRef<HTMLDivElement>(null);
  useEffect(() => {
   function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [onClose]);
+ // Anchored to a row's "⋯" button inside the scrollable table — lock scroll
+ // while open instead of repositioning, so it can't drift from its row.
+ useScrollLockWhileOpen(true, (target) => !!ref.current?.contains(target));
 
  return createPortal(
   <div
@@ -921,13 +1056,12 @@ function RowContextMenu({ menu, workspaceSlug, onDeleteRequest, onClose }: RowCo
    >
     <ArrowSquareOut size={13} className="shrink-0 text-muted-foreground" /> Open full page
    </Link>
-   <Link
-    href={`/app/${workspaceSlug}/${menu.shortId}`}
+   <button
+    onClick={(e) => onCommentClick((e.currentTarget as HTMLElement).getBoundingClientRect())}
     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
-    onClick={onClose}
    >
     <MessageSquareIcon size={13} className="shrink-0 text-muted-foreground" /> Comment
-   </Link>
+   </button>
    <button
     onClick={() => {
      if (typeof window !== "undefined" && navigator.clipboard) {
@@ -940,6 +1074,14 @@ function RowContextMenu({ menu, workspaceSlug, onDeleteRequest, onClose }: RowCo
    >
     <Link2Icon size={13} className="shrink-0 text-muted-foreground" /> Copy link
    </button>
+   {onDuplicate && (
+    <button
+     onClick={onDuplicate}
+     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+    >
+     <CopyIcon size={13} className="shrink-0 text-muted-foreground" /> Duplicate
+    </button>
+   )}
    <div className="my-1 h-px bg-border/60" />
    <button
     onClick={onDeleteRequest}
@@ -961,19 +1103,59 @@ interface PropHeaderMenuProps {
  onHide: (id: string) => void;
  onDelete: (id: string) => Promise<void>;
  onSort: (id: string, dir: "asc" | "desc") => void;
+ onUpdateProperty: (id: string, patch: Record<string, unknown>) => Promise<void>;
+ onDuplicateProperty: (prop: DbProperty) => Promise<void>;
  onClose: () => void;
+ activeView: SharedViewProps["activeView"];
+ onUpdateView: (patch: Record<string, unknown>) => Promise<void>;
 }
 
-function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onClose }: PropHeaderMenuProps) {
+function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpdateProperty, onDuplicateProperty, onClose, activeView, onUpdateView }: PropHeaderMenuProps) {
  const ref = useRef<HTMLDivElement>(null);
  const [confirmDelete, setConfirmDelete] = useState(false);
+ // "Edit property" replaces this same menu's content in place, at the same anchor.
+ const [editingProperty, setEditingProperty] = useState(false);
  useEffect(() => {
-  function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node) && !confirmDelete) onClose(); }
+  function h(e: MouseEvent) {
+   const target = e.target as HTMLElement;
+   if (target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')) return;
+   if (ref.current && !ref.current.contains(target) && !confirmDelete) onClose();
+  }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [onClose, confirmDelete]);
 
+ // `menu.rect` is a one-time snapshot of the column header's "⋯" button, and
+ // `getAnchorRect={() => menu.rect}` below always returns that same frozen value —
+ // so EditPropertySidePanel's own live-reposition-on-scroll effect has nothing
+ // fresh to reposition to. Lock scroll for this whole menu (both the list view and
+ // the nested edit-property view) instead, so the frozen anchor never goes stale.
+ useScrollLockWhileOpen(true, (target) =>
+  !!ref.current?.contains(target) || !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]'));
+
  const sortable = prop && ["text", "number", "select", "date", "checkbox"].includes(prop.type);
+ const isSelectType = prop && (prop.type === "select" || prop.type === "multi_select");
+
+ if (editingProperty && prop) {
+  return (
+   <EditPropertySidePanel
+    property={prop}
+    getAnchorRect={() => menu.rect}
+    canDelete={!prop.isSystem}
+    onUpdateProperty={(patch) => onUpdateProperty(menu.propId, patch)}
+    onDeleteProperty={() => onDelete(menu.propId)}
+    onDuplicateProperty={() => onDuplicateProperty(prop)}
+    onBack={() => setEditingProperty(false)}
+    onClose={onClose}
+    viewContext={activeView ? {
+     override: activeView.propertyOverrides?.[prop.id] ?? {},
+     onUpdateOverride: (patch) => onUpdateView({
+      propertyOverrides: { ...activeView.propertyOverrides, [prop.id]: { ...(activeView.propertyOverrides?.[prop.id] ?? {}), ...patch } },
+     }),
+    } : undefined}
+   />
+  );
+ }
 
  return createPortal(
   <>
@@ -990,6 +1172,9 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onClos
      </>
     )}
     <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
+    {isSelectType && (
+     <button onClick={() => setEditingProperty(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><GearIcon size={13} /> Edit property</button>
+    )}
     <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
     <div className="my-1 h-px bg-border/60" />
     <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"><Trash size={13} /> Delete column</button>
@@ -1024,6 +1209,7 @@ function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPr
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [onClose]);
+ useScrollLockWhileOpen(true, (target) => !!ref.current?.contains(target));
 
  const types = Object.values(PROPERTY_REGISTRY).filter((t) => t.type !== "relation");
 
@@ -1046,7 +1232,7 @@ function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPr
    </div>
    <div className="max-h-60 overflow-y-auto p-1.5">
     {types.map((def) => {
-     const Icon = PROP_ICONS[def.type] ?? TextT;
+     const Icon = PROPERTY_TYPE_ICON[def.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
      return (
       <button
        key={def.type}

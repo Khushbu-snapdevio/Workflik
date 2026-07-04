@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import { SaveAsTemplateModal } from "@/components/templates/save-as-template-modal";
 import { PageHistoryPanel } from "@/components/pages/page-history-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 interface PageActionsMenuProps {
  pageId:    string;
@@ -64,6 +65,9 @@ export function PageActionsMenu({
   document.addEventListener("mousedown", handleClickOutside);
   return () => document.removeEventListener("mousedown", handleClickOutside);
  }, [open]);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!dropdownRef.current?.contains(target) || !!target.closest?.('[role="alertdialog"]'));
 
  async function run(action: string, fn: () => Promise<void>) {
   setLoading(action);

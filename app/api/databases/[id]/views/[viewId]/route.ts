@@ -17,7 +17,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!await guard(id, session.user.id)) return Response.json({ error: "forbidden" }, { status: 403 });
 
   const body = await req.json() as Record<string, unknown>;
-  const allowed = ["name", "filters", "sorts", "groupByPropertyId", "calendarPropertyId", "cardDisplayProps", "hiddenPropertyIds", "galleryCardSize", "entryOpenMode", "filterLogic"];
+  const allowed = ["name", "filters", "sorts", "groupByPropertyId", "calendarPropertyId", "cardDisplayProps", "hiddenPropertyIds", "boardSettings", "galleryCardSize", "entryOpenMode", "filterLogic", "propertyOverrides", "propertyOrder"];
   const patch: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) patch[key] = body[key];

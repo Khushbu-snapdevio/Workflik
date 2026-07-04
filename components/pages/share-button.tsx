@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Share2 } from "lucide-react";
 import { SharePanel } from "@/components/pages/share-panel";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 interface Props {
  pageId:    string;
@@ -16,6 +17,10 @@ export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
  const [open, setOpen]        = useState(false);
  const [pagePrivate, setPagePrivate] = useState(isPrivate);
  const [anchor, setAnchor]      = useState<DOMRect | null>(null);
+ const panelRef = useRef<HTMLDivElement>(null);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!panelRef.current?.contains(target) || !!target.closest?.('[role="alertdialog"]'));
 
  const handlePrivateToggle = useCallback(async (next: boolean) => {
   await fetch(`/api/pages/${pageId}`, {
@@ -54,6 +59,7 @@ export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
      />
      {/* Panel — right-aligned below the Share button, clamped to viewport */}
      <div
+      ref={panelRef}
       style={{
        position: "fixed",
        top:   anchor.bottom + 8,

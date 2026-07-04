@@ -1,7 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { blocks, pages } from "@/lib/db/schema";
+import { blocks, pages, propertyValues } from "@/lib/db/schema";
 import { insertPageWithClosure } from "@/lib/pages/closure";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
@@ -24,6 +24,7 @@ async function duplicateTree(
       shortId:       createId().slice(0, 10),
       workspaceId,
       parentId:      newParentId,
+      databaseId:    source.databaseId,
       kind:          source.kind,
       title:         source.title === "Untitled" ? "Untitled" : `${source.title} (copy)`,
       icon:          source.icon,
@@ -40,6 +41,21 @@ async function duplicateTree(
     .returning();
 
   await insertPageWithClosure(tx, newPage.id, newParentId);
+
+  // Duplicate database property values (for database entries)
+  const sourceValues = await tx
+    .select()
+    .from(propertyValues)
+    .where(eq(propertyValues.entryId, sourceId));
+  if (sourceValues.length > 0) {
+    await tx.insert(propertyValues).values(
+      sourceValues.map((v) => ({
+        entryId:    newPage.id,
+        propertyId: v.propertyId,
+        value:      v.value,
+      }))
+    );
+  }
 
   // Duplicate blocks — root blocks first, then nested (to satisfy FK references)
   const allBlocks = await tx

@@ -7,6 +7,7 @@ import {
   Pencil, Trash2, Link2, Reply, Smile, X, ZoomIn, Download,
 } from "lucide-react";
 import { useSession } from "@/lib/auth/client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,6 +32,9 @@ interface CommentThread {
   blockId: string | null;
   content: Record<string, unknown> | null;
   reactions: Record<string, string[]>;
+  propertyId: string | null;
+  propertyName: string | null;
+  propertyValueLabel: string | null;
   createdAt: string;
   editedAt: string | null;
   deletedAt: string | null;
@@ -277,10 +281,16 @@ interface CellCommentPopoverProps {
   anchorRect: DOMRect;
   onClose: () => void;
   onCommentAdded?: () => void;
+  /** Set when opened from a specific database cell — scopes the thread list to
+   *  this property and snapshots the property name/value onto new comments. */
+  propertyId?: string | null;
+  propertyName?: string | null;
+  propertyValueLabel?: string | null;
 }
 
 export function CellCommentPopover({
   pageId, workspaceId, anchorRect, onClose, onCommentAdded,
+  propertyId = null, propertyName = null, propertyValueLabel = null,
 }: CellCommentPopoverProps) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id ?? null;
@@ -314,11 +324,15 @@ export function CellCommentPopover({
   const [moreMenu, setMoreMenu] = useState<MoreMenuState | null>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
+  // Pending delete confirmation
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; isReply: boolean } | null>(null);
+
   // Emoji menu portal
   const [emojiMenu, setEmojiMenu] = useState<EmojiMenuState | null>(null);
   const emojiMenuRef = useRef<HTMLDivElement>(null);
 
   const popoverRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
@@ -341,17 +355,47 @@ export function CellCommentPopover({
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
+  // Auto-scroll the thread list to the newest comment. Called on first load
+  // and after every submit/reply (which each cycle loading true → false via
+  // fetchComments) — without this, a long thread renders below the fold with
+  // no visual cue that there's more content or that your own new comment
+  // landed there. Also re-run when an attachment image finishes loading,
+  // since images have no reserved height until then and can otherwise push
+  // the "just scrolled to" bottom further down after the fact.
+  const scrollListToBottom = useCallback(() => {
+    const el = listRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    scrollListToBottom();
+  }, [loading, scrollListToBottom]);
+
   // ── Outside click ──────────────────────────────────────────────────────────
 
-  // Keep a stable ref to onClose so handlers registered once always call the
-  // latest version without needing to re-register (which would create a brief
-  // window with no listener, causing missed mousedown events on the buttons).
+  // Keep stable refs so handlers registered once always see the latest values
+  // without needing to re-register (which would create a brief window with no
+  // listener, causing missed mousedown/keydown events on the buttons).
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
+  // While the delete-confirm dialog or the image lightbox is open, outside
+  // clicks/Escape should dismiss THAT overlay only — never the comment popover
+  // underneath it. (The delete confirm's own Delete/Cancel buttons are already
+  // covered by the role="alertdialog" check below, but its backdrop overlay is
+  // a sibling of that role, not a descendant, so it needs this explicit guard.)
+  const pendingDeleteRef = useRef(pendingDelete);
+  useEffect(() => { pendingDeleteRef.current = pendingDelete; }, [pendingDelete]);
+  const lightboxRef = useRef(lightbox);
+  useEffect(() => { lightboxRef.current = lightbox; }, [lightbox]);
+
   useEffect(() => {
     function h(e: MouseEvent) {
-      const target = e.target as Node;
+      if (pendingDeleteRef.current || lightboxRef.current) return;
+      const target = e.target as HTMLElement;
+      if (target.closest?.('[role="alertdialog"], [data-comment-exempt]')) return;
       if (
         !popoverRef.current?.contains(target) &&
         !moreMenuRef.current?.contains(target) &&
@@ -360,15 +404,52 @@ export function CellCommentPopover({
         onCloseRef.current();
       }
     }
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []); // stable — registered once on mount, uses ref for latest onClose
+    document.addEventListener("mousedown", h, true);
+    return () => document.removeEventListener("mousedown", h, true);
+  }, []); // stable — registered once on mount, uses refs for latest state
 
   useEffect(() => {
-    function h(e: KeyboardEvent) { if (e.key === "Escape") onCloseRef.current(); }
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, []); // stable — registered once on mount
+    function h(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      // A nested overlay owns this Escape press — let it close itself instead
+      // of also closing the comment popover underneath. Checked in the CAPTURE
+      // phase (before Radix's own Escape handling on the alertdialog runs and
+      // synchronously clears pendingDelete) — a bubble-phase document listener
+      // would always see the already-cleared state, since document is the last
+      // stop in the bubble phase, after Radix's own handling has already run.
+      if (pendingDeleteRef.current) return;
+      if (lightboxRef.current) { setLightbox(null); return; }
+      onCloseRef.current();
+    }
+    document.addEventListener("keydown", h, true);
+    return () => document.removeEventListener("keydown", h, true);
+  }, []); // stable — registered once on mount, uses refs for latest state
+
+  // Lock the page's scroll while this popover is open. It's a document.body portal
+  // used from many different scroll containers (table rows, board cards, etc.), so
+  // there's no single ref to set `overflow: hidden` on — instead, block wheel/touch
+  // scrolling everywhere except inside the popover itself (and its own nested
+  // portals: the more-menu, emoji picker, and lightbox), so the underlying page can't
+  // drift out from under a `position: fixed` popover that was positioned once at
+  // open time.
+  useEffect(() => {
+    function preventScroll(e: WheelEvent | TouchEvent) {
+      const target = e.target as HTMLElement;
+      if (
+        popoverRef.current?.contains(target) ||
+        moreMenuRef.current?.contains(target) ||
+        emojiMenuRef.current?.contains(target) ||
+        target.closest?.('[data-comment-exempt], [role="alertdialog"]')
+      ) return;
+      e.preventDefault();
+    }
+    document.addEventListener("wheel", preventScroll, { passive: false });
+    document.addEventListener("touchmove", preventScroll, { passive: false });
+    return () => {
+      document.removeEventListener("wheel", preventScroll);
+      document.removeEventListener("touchmove", preventScroll);
+    };
+  }, []); // stable — registered once on mount, uses refs for latest DOM
 
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 60); }, []);
 
@@ -458,7 +539,14 @@ export function CellCommentPopover({
       const res = await fetch(`/api/pages/${pageId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blockId: null, parentId: null, content: makeContent(trimmed, uploaded) }),
+        body: JSON.stringify({
+          blockId: null,
+          parentId: null,
+          propertyId,
+          propertyName,
+          propertyValueLabel,
+          content: makeContent(trimmed, uploaded),
+        }),
       });
       if (res.ok) {
         setText("");
@@ -510,7 +598,6 @@ export function CellCommentPopover({
   }
 
   async function deleteComment(commentId: string) {
-    setMoreMenu(null);
     try {
       await fetch(`/api/pages/${pageId}/comments/${commentId}`, { method: "DELETE" });
       await fetchComments();
@@ -581,15 +668,24 @@ export function CellCommentPopover({
   const anchorCenterX = anchorRect.left + anchorRect.width / 2;
   const left = Math.min(Math.max(8, anchorCenterX - POP_W / 2), winW - POP_W - 8);
   const spaceBelow = winH - anchorRect.bottom - 8;
-  const showBelow = spaceBelow >= 360;
-  const top = showBelow
-    ? anchorRect.bottom + 6
-    : Math.max(8, anchorRect.top - Math.min(420, anchorRect.top - 8) - 6);
-  const maxHeight = showBelow ? winH - top - 8 : anchorRect.top - top - 6;
+  // Only flip above when there's truly not enough room for a usable popover
+  // below (input row + a couple lines) — the list itself scrolls internally
+  // (maxHeight below), so it doesn't need a full 360px of clearance to render
+  // below the anchor. A too-high threshold here made short threads flip above
+  // anchors that sit mid-page, floating the popover far from its entry.
+  const showBelow = spaceBelow >= 180;
+  // When there isn't room below, pin the BOTTOM edge just above the anchor
+  // (via CSS `bottom`, not a `top` computed from an assumed max height) so the
+  // popover hugs the anchor and grows upward by however tall it actually is —
+  // a `top` guessed from a fixed 420px assumption left a large dead gap above
+  // short threads instead of sitting flush against the entry.
+  const top = showBelow ? anchorRect.bottom + 6 : undefined;
+  const bottom = showBelow ? undefined : winH - anchorRect.top + 6;
+  const maxHeight = showBelow ? winH - anchorRect.bottom - 6 - 8 : anchorRect.top - 8 - 6;
 
   // ── Visible threads ────────────────────────────────────────────────────────
 
-  const visible = threads.filter((t) => !t.blockId && !t.deletedAt);
+  const visible = threads.filter((t) => !t.blockId && !t.deletedAt && t.propertyId === propertyId);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -598,7 +694,7 @@ export function CellCommentPopover({
       {/* Main popover */}
       <div
         ref={popoverRef}
-        style={{ position: "fixed", top, left, width: POP_W, zIndex: 800, maxHeight, display: "flex", flexDirection: "column" }}
+        style={{ position: "fixed", top, bottom, left, width: POP_W, zIndex: 800, maxHeight, display: "flex", flexDirection: "column" }}
         className="rounded-[var(--radius-md)] border border-border bg-card shadow-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
@@ -609,7 +705,7 @@ export function CellCommentPopover({
             <Loader2 size={14} className="animate-spin text-muted-foreground" />
           </div>
         ) : visible.length > 0 ? (
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto">
             {visible.map((t) => {
               const bodyText = t.content ? extractText(t.content as Record<string, unknown>) : "";
               const isOwn = t.author?.id === currentUserId;
@@ -618,6 +714,13 @@ export function CellCommentPopover({
 
               return (
                 <div key={t.id} className="border-b border-border/40 last:border-0">
+                  {/* Quoted property reference — frozen snapshot from when the comment was made */}
+                  {t.propertyName && (
+                    <div className="mx-3 mt-2 flex items-baseline gap-1 border-l-2 border-primary/40 pl-2 text-[11px] leading-tight">
+                      <span className="font-semibold text-muted-foreground">{t.propertyName}:</span>
+                      <span className="truncate text-muted-foreground/80">{t.propertyValueLabel || "Empty"}</span>
+                    </div>
+                  )}
                   {/* Root comment */}
                   <div className="px-3 pt-2.5 pb-1 group/comment">
                     <div className="flex items-start gap-2">
@@ -701,7 +804,7 @@ export function CellCommentPopover({
                                   style={{ maxWidth: 200 }}
                                   onClick={() => setLightbox(att.url)}
                                 >
-                                  <img src={att.url} alt={att.name} className="max-h-[140px] w-full object-cover block" />
+                                  <img src={att.url} alt={att.name} onLoad={scrollListToBottom} className="max-h-[140px] w-full object-cover block" />
                                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 transition-colors group-hover/img:bg-black/40">
                                     <span className="flex size-7 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto">
                                       <ZoomIn size={14} />
@@ -758,7 +861,7 @@ export function CellCommentPopover({
 
                   {/* Replies */}
                   {visibleReplies.length > 0 && (
-                    <div className="ml-9 border-l border-border/40 pl-2 pb-1">
+                    <div className="ml-9 border-l border-border/40 pl-2 pr-3 pb-1">
                       {visibleReplies.map((rep) => {
                         const repText = rep.content ? extractText(rep.content as Record<string, unknown>) : "";
                         const repIsOwn = rep.author?.id === currentUserId;
@@ -776,7 +879,6 @@ export function CellCommentPopover({
                                   </span>
                                   <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/reply:opacity-100 transition-opacity shrink-0">
                                     <button
-                                      title="More options"
                                       onClick={(e) => openMoreMenu(e, rep.id, true, repIsOwn)}
                                       className="flex size-4 items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
                                     >
@@ -796,11 +898,22 @@ export function CellCommentPopover({
                                       }}
                                       className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
                                     />
-                                    <button onClick={() => submitEdit(rep.id)} disabled={editSubmitting} className="flex size-4 items-center justify-center rounded bg-primary text-white disabled:opacity-50">
-                                      {editSubmitting ? <Loader2 size={9} className="animate-spin" /> : <Check size={9} />}
+                                    <button
+                                      type="button"
+                                      title="Save (Enter)"
+                                      onClick={() => submitEdit(rep.id)}
+                                      disabled={editSubmitting}
+                                      className="flex size-5 shrink-0 items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                                    >
+                                      {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
                                     </button>
-                                    <button onClick={() => setEditingId(null)} className="flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent">
-                                      <X size={9} />
+                                    <button
+                                      type="button"
+                                      title="Cancel (Esc)"
+                                      onClick={() => setEditingId(null)}
+                                      className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                                    >
+                                      <X size={10} />
                                     </button>
                                   </div>
                                 ) : (
@@ -830,9 +943,23 @@ export function CellCommentPopover({
                         className="min-w-0 flex-1 rounded border border-border bg-muted/30 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none"
                       />
                       <button
+                        type="button"
+                        title="Cancel (Esc)"
+                        onClick={() => { setReplyToId(null); setReplyText(""); }}
+                        className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Send reply"
                         onClick={() => submitReply(t.id)}
                         disabled={!replyText.trim() || replySubmitting}
-                        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 disabled:opacity-40 transition-colors"
+                        className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors ${
+                          replyText.trim()
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                            : "bg-muted text-muted-foreground/40 cursor-not-allowed"
+                        }`}
                       >
                         {replySubmitting ? <Loader2 size={10} className="animate-spin" /> : <ArrowUp size={11} />}
                       </button>
@@ -997,7 +1124,10 @@ export function CellCommentPopover({
               <div className="my-0.5 h-px bg-border/40 mx-1" />
               <button
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
-                onClick={() => deleteComment(moreMenu.commentId)}
+                onClick={() => {
+                  setPendingDelete({ id: moreMenu.commentId, isReply: moreMenu.isReply });
+                  setMoreMenu(null);
+                }}
               >
                 <Trash2 size={12} className="shrink-0" />
                 Delete comment
@@ -1025,6 +1155,7 @@ export function CellCommentPopover({
       {/* ── Image lightbox ── */}
       {lightbox && (
         <div
+          data-comment-exempt
           style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.88)", display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setLightbox(null)}
         >
@@ -1050,6 +1181,21 @@ export function CellCommentPopover({
           />
         </div>
       )}
+
+      {/* ── Delete confirmation ── */}
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
+        title={pendingDelete?.isReply ? "Delete this reply?" : "Delete this comment?"}
+        description={
+          pendingDelete?.isReply
+            ? "This reply will be permanently deleted."
+            : "This comment and all its replies will be permanently deleted."
+        }
+        onConfirm={() => { if (pendingDelete) deleteComment(pendingDelete.id); }}
+        overlayClassName="z-[10000]"
+        className="z-[10000]"
+      />
     </>,
     document.body,
   );

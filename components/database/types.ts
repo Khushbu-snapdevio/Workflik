@@ -19,12 +19,42 @@ export interface DbView {
   galleryCardSize: "small" | "medium" | "large" | null;
   entryOpenMode: "side_panel" | "full_page";
   orderIndex: number;
+  boardSettings?: {
+    hiddenGroupOptionIds?: string[];
+    hiddenStatusGroupKeys?: StatusGroupKey[];
+    hideAggregation?: boolean;
+    sortDirection?: "manual" | "asc" | "desc";
+    hideEmptyGroups?: boolean;
+    colorColumns?: boolean;
+    statusBy?: "group" | "option";
+    pinnedGroupOptionIds?: string[];
+    pinnedStatusGroupKeys?: StatusGroupKey[];
+  };
+  propertyOverrides: ViewPropertyOverrides;
+  propertyOrder: string[];
 }
+
+export type StatusGroupKey = "todo" | "in_progress" | "complete";
+
+/** Per-view copy of settings that otherwise live globally on a property's own
+ *  config — lets e.g. Board show Status as a checkbox while Table keeps it a
+ *  badge, without touching the property itself. Absent per-view (or absent
+ *  entirely, for views created before this existed) falls back to the
+ *  property's own global `config` value — see view-property-resolver.ts. */
+export interface ViewPropertyOverride {
+  displayAs?: "select" | "checkbox";
+  wrapContent?: boolean;
+  /** Table only — ignored by Board/Calendar/Gallery, which show cards, not columns. */
+  width?: number;
+}
+
+export type ViewPropertyOverrides = Record<string, ViewPropertyOverride>;
 
 export interface SelectOption {
   id: string;
   name: string;
   color: string;
+  group?: StatusGroupKey;
 }
 
 export interface DbPropertyConfig {
@@ -32,6 +62,15 @@ export interface DbPropertyConfig {
   format?: string;
   relatedDatabaseId?: string;
   includeTime?: boolean;
+  groupedByStatus?: boolean;
+  wrapContent?: boolean;
+  displayAs?: "select" | "checkbox";
+  /** Custom property icon, same format as page icons (emoji, or JSON for a lucide icon / uploaded image). */
+  icon?: string;
+  /** Calendar/Gallery card display, Status-only — everything else is never
+   *  shown on those cards regardless of this flag. Off by default: a new
+   *  entry's card shows just its title until explicitly enabled here. */
+  showOnCard?: boolean;
 }
 
 export interface DbProperty {
@@ -99,12 +138,14 @@ export interface SharedViewProps {
   onUpdateValue: (entryId: string, propId: string, value: unknown) => Promise<void>;
   onUpdateTitle: (entryId: string, title: string) => Promise<void>;
   onCreateEntry: (defaultValues?: Record<string, unknown>) => Promise<DbEntry | undefined>;
-  onAddProperty: (name: string, type: string) => Promise<DbProperty | undefined>;
+  onAddProperty: (name: string, type: string, config?: DbPropertyConfig) => Promise<DbProperty | undefined>;
   onUpdateProperty: (propId: string, patch: Record<string, unknown>) => Promise<void>;
   onDeleteProperty: (propId: string) => Promise<void>;
   onUpdateView: (patch: Record<string, unknown>) => Promise<void>;
   onDeleteEntry: (entryId: string) => Promise<void>;
+  onDuplicateEntry?: (entryId: string) => Promise<void>;
   onOpenEntry?: (entry: DbEntry) => void;
+  onUpdateEntryIcon?: (entryId: string, icon: string) => Promise<void>;
   selectedEntryIds: Set<string>;
   onSelectEntry: (entryId: string, selected: boolean) => void;
 }

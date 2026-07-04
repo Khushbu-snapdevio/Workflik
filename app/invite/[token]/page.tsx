@@ -1,9 +1,11 @@
 import { and, eq, gt } from "drizzle-orm";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { Button } from "@/components/ui/button";
 import { AcceptInviteClient } from "./accept-invite-client";
 import { WrongAccountError } from "./wrong-account";
 
@@ -39,7 +41,7 @@ export default async function InvitePage({ params }: Props) {
   }
 
   if (member.status === "active") {
-    return <InviteError message="This invite has already been accepted." />;
+    return <InviteError message="This invite has already been accepted." variant="success" />;
   }
 
   // Check if viewer is signed in
@@ -88,18 +90,23 @@ export default async function InvitePage({ params }: Props) {
   );
 }
 
-function InviteError({ message }: { message: string }) {
+function InviteError({ message, variant = "warning" }: { message: string; variant?: "warning" | "success" }) {
+  const Icon = variant === "success" ? CheckCircle2 : AlertCircle;
   return (
     <main className="grid min-h-screen place-items-center bg-page px-4">
       <div className="w-full max-w-md text-center">
-        <h1 className="mb-2 font-bold text-xl">Invite Unavailable</h1>
-        <p className="text-muted-foreground">{message}</p>
-        <a
-          className="mt-6 inline-block text-sm underline"
-          href="/platform/dashboard"
+        <div
+          className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-[var(--radius-lg)] ring-1 ${
+            variant === "success" ? "bg-primary/10 ring-primary/20" : "bg-warning/10 ring-warning/20"
+          }`}
         >
-          Go to dashboard
-        </a>
+          <Icon className={`size-6 ${variant === "success" ? "text-primary" : "text-warning"}`} strokeWidth={1.5} />
+        </div>
+        <h1 className="mb-2 text-lg font-bold text-foreground">Invite Unavailable</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">{message}</p>
+        <Button asChild className="mt-6">
+          <a href="/platform/dashboard">Go to dashboard</a>
+        </Button>
       </div>
     </main>
   );

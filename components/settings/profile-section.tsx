@@ -73,20 +73,35 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
   return () => document.removeEventListener("mousedown", handler);
  }, [open]);
 
+ function computePos(): PanelPos | null {
+  if (!btnRef.current) return null;
+  const rect  = btnRef.current.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const panelH = 320; // approx height of dropdown
+  const right = window.innerWidth - rect.right;
+  return spaceBelow >= panelH
+   ? { top: rect.bottom + 6, right }
+   : { bottom: window.innerHeight - rect.top + 6, right };
+ }
+
  function handleOpen() {
-  if (!open && btnRef.current) {
-   const rect  = btnRef.current.getBoundingClientRect();
-   const spaceBelow = window.innerHeight - rect.bottom;
-   const panelH = 320; // approx height of dropdown
-   const right = window.innerWidth - rect.right;
-   if (spaceBelow >= panelH) {
-    setPos({ top: rect.bottom + 6, right });
-   } else {
-    setPos({ bottom: window.innerHeight - rect.top + 6, right });
-   }
-  }
+  if (!open) setPos(computePos());
   setOpen(o => !o);
  }
+
+ // Keep the panel glued to its trigger button as the page scrolls — position:fixed
+ // alone freezes it at the coordinates from the moment it opened.
+ useEffect(() => {
+  if (!open) return;
+  function reposition() { setPos(computePos()); }
+  window.addEventListener("scroll", reposition, true);
+  window.addEventListener("resize", reposition);
+  return () => {
+   window.removeEventListener("scroll", reposition, true);
+   window.removeEventListener("resize", reposition);
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [open]);
 
  const filtered = search.trim()
   ? TIMEZONES.filter(tz => tz.toLowerCase().includes(search.trim().toLowerCase()))

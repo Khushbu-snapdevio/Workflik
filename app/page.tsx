@@ -123,7 +123,7 @@ export default async function HomePage() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/auth/login" className="hidden text-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground sm:inline-flex">
+            <Link href="/auth/login" className="hidden h-9 items-center rounded-[var(--radius-sm)] px-4 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground sm:inline-flex">
               Sign in
             </Link>
             <Link href="/auth/login" className="hidden h-9 items-center rounded-[var(--radius-sm)] bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 sm:inline-flex">

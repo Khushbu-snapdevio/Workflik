@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, FileText, MessageSquare, MoreHorizontal } from "lucide-react";
+import { PageIcon } from "@/components/pages/page-icon";
+import { EntryContextMenu } from "@/components/database/entry-context-menu";
+import { CellCommentPopover } from "@/components/database/cell-comment-popover";
+import { CellDisplay } from "@/components/database/cells/cell-display";
+import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import {
  DndContext,
  useDraggable,
@@ -17,6 +22,7 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
+import type { DbProperty, DbView } from "@/components/database/types";
 import type { TemplateEntry } from "../template-page-client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -30,53 +36,270 @@ const SHOW_MAX = 2;
 
 type DateVal = { date?: string };
 
+// Same rule board-view.tsx uses to decide whether a property has a
+// display-worthy value — kept in sync so calendar cards and board cards
+// agree on what counts as "filled".
+function hasDisplayValue(prop: DatabaseProperty, raw: unknown, displayAs?: "select" | "checkbox"): boolean {
+ const v = raw as Record<string, unknown> | null;
+ switch (prop.type) {
+  case "text":      return !!(v as { text?: string } | null)?.text;
+  case "number":     return (v as { number?: number | null } | null)?.number != null;
+  // Checkbox-display is meaningful even unset (an empty checkbox is still a
+  // real state to show, unlike an empty pill, which has nothing to render).
+  case "select":     return displayAs === "checkbox" || !!(v as { optionId?: string } | null)?.optionId;
+  case "multi_select": return displayAs === "checkbox" || ((v as { optionIds?: string[] } | null)?.optionIds ?? []).length > 0;
+  case "date":      return !!(v as { date?: string } | null)?.date;
+  case "checkbox":    return !!(v as { checked?: boolean } | null)?.checked;
+  case "url":      return !!(v as { url?: string } | null)?.url;
+  case "email":     return !!(v as { email?: string } | null)?.email;
+  case "phone":     return !!(v as { phone?: string } | null)?.phone;
+  case "person":     return ((v as { userIds?: string[] } | null)?.userIds ?? []).length > 0;
+  case "relation":    return ((v as { entryIds?: string[] } | null)?.entryIds ?? []).length > 0;
+  default:        return false;
+ }
+}
+
+// Toggling a checkbox-display select on a card: unchecking always clears the
+// value; checking picks the first "complete"-group option if the property is
+// grouped (marking it "done", matching what the checkbox visually implies),
+// falling back to the first option at all for an ungrouped select.
+function nextCheckboxSelectValue(prop: DatabaseProperty, raw: unknown): { optionId: string | null } {
+ const optionId = (raw as { optionId?: string | null } | null)?.optionId ?? null;
+ if (optionId) return { optionId: null };
+ const options = ((prop.config as { options?: { id: string; group?: string }[] } | null)?.options ?? []);
+ const target = options.find((o) => o.group === "complete") ?? options[0];
+ return { optionId: target?.id ?? null };
+}
+
+// Same idea for multi-select: unchecking clears every selected option;
+// checking sets just the first "complete"-group (or first overall) option,
+// same single-value semantic a checkbox implies even for a multi-select field.
+function nextCheckboxMultiSelectValue(prop: DatabaseProperty, raw: unknown): { optionIds: string[] } {
+ const optionIds = (raw as { optionIds?: string[] } | null)?.optionIds ?? [];
+ if (optionIds.length > 0) return { optionIds: [] };
+ const options = ((prop.config as { options?: { id: string; group?: string }[] } | null)?.options ?? []);
+ const target = options.find((o) => o.group === "complete") ?? options[0];
+ return { optionIds: target ? [target.id] : [] };
+}
+
 interface Props {
  entries:    TemplateEntry[];
  properties:  DatabaseProperty[];
  activeView:  DatabaseView;
  entryValueMap: Map<string, Map<string, unknown>>;
+ databaseId:  string;
+ workspaceId: string;
+ workspaceSlug: string;
  year:     number;
  month:     number;
  onYearChange: (y: number) => void;
  onMonthChange: (m: number) => void;
  onAddEntry:  (defaultValues?: Record<string, unknown>) => void;
  onDeleteEntry: (entryId: string) => void;
+ onDuplicateEntry?: (entryId: string) => void;
+ onUpdateEntryIcon?: (entryId: string, icon: string) => void;
  onClickEntry: (entryId: string) => void;
  onUpdateEntryDate?: (entryId: string, calPropId: string, newDate: string) => void;
+ onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
+ onUpdateProperty?: (propId: string, patch: Record<string, unknown>) => void;
+ onUpdateView?: (patch: Record<string, unknown>) => Promise<void>;
+}
+
+// ── MorePopupEntryRow ─────────────────────────────────────────────────────────
+// Simpler, non-draggable row used inside the "+N more" overflow popup — mirrors
+// DraggableChip's icon + comment-badge treatment so entries look consistent
+// whether shown in the grid or the overflow list.
+interface MorePopupEntryRowProps {
+ entry: TemplateEntry;
+ onClick: () => void;
+ onDelete: () => void;
+}
+
+function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps) {
+ const [commentCount, setCommentCount] = useState<number | null>(null);
+ const fetchedRef = useRef(false);
+
+ useEffect(() => {
+  if (fetchedRef.current) return;
+  fetchedRef.current = true;
+  fetch(`/api/pages/${entry.id}/comments`)
+   .then((r) => (r.ok ? r.json() : null))
+   .then((data) => {
+    if (!data) return;
+    const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
+    setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
+   })
+   .catch(() => {});
+ }, [entry.id]);
+
+ return (
+  <div
+   className="group/pe flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
+   onClick={onClick}
+  >
+   {entry.icon ? (
+    <PageIcon icon={entry.icon} size={13} className="shrink-0" />
+   ) : (
+    <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+   )}
+   <span className="flex-1 truncate text-sm font-medium text-foreground">
+    {entry.title || "Untitled"}
+   </span>
+   {!!commentCount && (
+    <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+     <MessageSquare size={10} />
+     {commentCount}
+    </span>
+   )}
+   <button
+    onClick={(ev) => { ev.stopPropagation(); onDelete(); }}
+    className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
+   >
+    <Trash2 size={11} />
+   </button>
+  </div>
+ );
 }
 
 // ── DraggableChip ─────────────────────────────────────────────────────────────
 interface DraggableChipProps {
  entry: TemplateEntry;
+ databaseId: string;
+ workspaceId: string;
+ workspaceSlug: string;
+ cardProps: DatabaseProperty[];
+ valueMap: Map<string, Map<string, unknown>>;
  onClickEntry: (id: string) => void;
  onDeleteEntry: (id: string) => void;
+ onDuplicateEntry?: (entryId: string) => void;
+ onUpdateEntryIcon?: (entryId: string, icon: string) => void;
+ onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
+ onUpdateProperty?: (propId: string, patch: Record<string, unknown>) => void;
+ activeView?: DatabaseView | null;
+ onUpdateView?: (patch: Record<string, unknown>) => Promise<void>;
 }
 
-function DraggableChip({ entry, onClickEntry, onDeleteEntry }: DraggableChipProps) {
+function DraggableChip({
+ entry, databaseId, workspaceId, workspaceSlug, cardProps, valueMap, onClickEntry, onDeleteEntry, onDuplicateEntry, onUpdateEntryIcon, onUpdatePropValue, onUpdateProperty,
+ activeView, onUpdateView,
+}: DraggableChipProps) {
  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
   id: entry.id,
  });
  const style = transform ? { transform: CSS.Translate.toString(transform) } : {};
+ const [commentCount, setCommentCount] = useState<number | null>(null);
+ const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+ const [showComment, setShowComment] = useState(false);
+ const fetchedRef = useRef(false);
+ const chipRef = useRef<HTMLDivElement | null>(null);
+ const filledProps = cardProps.filter((prop) => hasDisplayValue(
+  prop, valueMap.get(entry.id)?.get(prop.id) ?? null,
+  resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined),
+ ));
+
+ useEffect(() => {
+  if (fetchedRef.current) return;
+  fetchedRef.current = true;
+  fetch(`/api/pages/${entry.id}/comments`)
+   .then((r) => (r.ok ? r.json() : null))
+   .then((data) => {
+    if (!data) return;
+    const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
+    setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
+   })
+   .catch(() => {});
+ }, [entry.id]);
 
  return (
+  <>
   <div
-   ref={setNodeRef}
+   ref={(el) => { setNodeRef(el); chipRef.current = el; }}
    style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none", cursor: "grab" }}
    {...attributes}
    {...listeners}
-   className="group/event flex items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-[3px] text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+   className="group/event flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background shadow-sm hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
    onClick={(e) => { e.stopPropagation(); onClickEntry(entry.id); }}
+   onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setMenuPos({ x: e.clientX, y: e.clientY }); }}
   >
-   <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
-   <span className="flex-1 truncate">{entry.title || "Untitled"}</span>
-   <button
-    onPointerDown={(e) => e.stopPropagation()}
-    onClick={(e) => { e.stopPropagation(); onDeleteEntry(entry.id); }}
-    className="flex shrink-0 size-3.5 items-center justify-center rounded opacity-0 group-hover/event:opacity-100 hover:bg-destructive/20 hover:text-destructive transition-all"
-   >
-    <X size={8} />
-   </button>
+   <div className="flex items-center gap-1.5 px-1.5 py-1">
+    {entry.icon ? (
+     <PageIcon icon={entry.icon} size={13} className="shrink-0" />
+    ) : (
+     <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+    )}
+    <span className="flex-1 truncate text-xs font-semibold text-foreground">{entry.title || "Untitled"}</span>
+    {!!commentCount && (
+     <button
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => { e.stopPropagation(); setShowComment(true); }}
+      className="flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+     >
+      <MessageSquare size={10} />
+      {commentCount}
+     </button>
+    )}
+    <button
+     onPointerDown={(e) => e.stopPropagation()}
+     onClick={(e) => { e.stopPropagation(); setMenuPos({ x: e.clientX, y: e.clientY }); }}
+     className="flex shrink-0 size-3.5 items-center justify-center rounded opacity-0 group-hover/event:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+    >
+     <MoreHorizontal size={10} />
+    </button>
+   </div>
+
+   {filledProps.length > 0 && (
+    <div className="flex flex-wrap items-center gap-1 px-1.5 pb-1.5">
+     {filledProps.map((prop) => (
+      <div key={prop.id} className="min-w-0 shrink-0">
+       <CellDisplay
+        property={prop as unknown as DbProperty}
+        value={valueMap.get(entry.id)?.get(prop.id) ?? null}
+        compact
+        resolvedDisplayAs={resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined)}
+        resolvedWrapContent={resolveWrapContent(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined)}
+        onToggleCheckbox={() => {
+         const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
+         const next = prop.type === "multi_select" ? nextCheckboxMultiSelectValue(prop, raw) : nextCheckboxSelectValue(prop, raw);
+         onUpdatePropValue(entry.id, prop.id, next);
+        }}
+       />
+      </div>
+     ))}
+    </div>
+   )}
   </div>
+
+  {showComment && chipRef.current && (
+   <CellCommentPopover
+    pageId={entry.id}
+    workspaceId={workspaceId}
+    anchorRect={chipRef.current.getBoundingClientRect()}
+    onClose={() => setShowComment(false)}
+    onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+   />
+  )}
+
+  <EntryContextMenu
+   entryId={entry.id}
+   entryShortId={entry.shortId}
+   entryIcon={entry.icon ?? null}
+   updatedAt={entry.updatedAt ?? null}
+   databaseId={databaseId}
+   workspaceId={workspaceId}
+   workspaceSlug={workspaceSlug}
+   forcePos={menuPos}
+   entryRect={chipRef.current?.getBoundingClientRect() ?? null}
+   onClose={() => setMenuPos(null)}
+   onIconChange={(icon) => onUpdateEntryIcon?.(entry.id, icon)}
+   onDelete={() => onDeleteEntry(entry.id)}
+   onDuplicate={onDuplicateEntry ? () => onDuplicateEntry(entry.id) : undefined}
+   onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
+   onValueChange={(propId, value) => onUpdatePropValue(entry.id, propId, value)}
+   onPropertyConfigChange={onUpdateProperty}
+   activeView={activeView as unknown as DbView | null}
+   onUpdateView={onUpdateView}
+  />
+  </>
  );
 }
 
@@ -103,9 +326,10 @@ function DroppableDateCell({ dateKey, isOver, children, className, ...props }: D
 }
 
 export function TemplateCalendarView({
- entries, properties, activeView, entryValueMap,
+ entries, properties, activeView, entryValueMap, databaseId, workspaceId, workspaceSlug,
  year, month, onYearChange, onMonthChange,
- onAddEntry, onDeleteEntry, onClickEntry, onUpdateEntryDate,
+ onAddEntry, onDeleteEntry, onDuplicateEntry, onUpdateEntryIcon, onClickEntry, onUpdateEntryDate, onUpdatePropValue, onUpdateProperty,
+ onUpdateView,
 }: Props) {
  const today = new Date();
  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -119,6 +343,14 @@ export function TemplateCalendarView({
  // Fall back to first date property if the view doesn't have one pinned yet
  const calProp = properties.find((p) => p.id === activeView.calendarPropertyId)
   ?? properties.find((p) => p.type === "date");
+ // Matches Notion: a card shows only its title by default. The one
+ // exception is Status, and only once the user explicitly turns on "Show on
+ // card" from Status's own Edit Property panel — every other property stays
+ // fully editable via the entry's popup but is never rendered on the card.
+ const cardProps = properties.filter((p) => {
+  const config = p.config as { groupedByStatus?: boolean; showOnCard?: boolean } | null;
+  return p.id !== calProp?.id && !!config?.groupedByStatus && !!config?.showOnCard;
+ });
 
  function pad(n: number) { return String(n).padStart(2, "0"); }
  function dateKey(y: number, m: number, d: number) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
@@ -252,7 +484,7 @@ export function TemplateCalendarView({
 
    {/* ── Calendar grid ─────────────────────────────────────────────────────── */}
    <div
-    className="flex-1 overflow-hidden"
+    className="flex-1 min-h-0 overflow-hidden"
     style={{
      display:       "grid",
      gridTemplateColumns: "repeat(7, 1fr)",
@@ -308,8 +540,19 @@ export function TemplateCalendarView({
          <DraggableChip
           key={e.id}
           entry={e}
+          databaseId={databaseId}
+          workspaceId={workspaceId}
+          workspaceSlug={workspaceSlug}
+          cardProps={cardProps}
+          valueMap={entryValueMap}
           onClickEntry={onClickEntry}
           onDeleteEntry={(id) => setDeleteTarget(id)}
+          onDuplicateEntry={onDuplicateEntry}
+          onUpdateEntryIcon={onUpdateEntryIcon}
+          onUpdatePropValue={onUpdatePropValue}
+          onUpdateProperty={onUpdateProperty}
+          activeView={activeView}
+          onUpdateView={onUpdateView}
          />
         ))}
 
@@ -366,22 +609,12 @@ export function TemplateCalendarView({
        {/* All entries for this date */}
        <div className="max-h-[220px] overflow-y-auto p-1">
         {(dateMap.get(morePopup.key) ?? []).map((e) => (
-         <div
+         <MorePopupEntryRow
           key={e.id}
-          className="group/pe flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
+          entry={e}
           onClick={() => { onClickEntry(e.id); setMorePopup(null); }}
-         >
-          <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
-          <span className="flex-1 truncate text-sm font-medium text-foreground">
-           {e.title || "Untitled"}
-          </span>
-          <button
-           onClick={(ev) => { ev.stopPropagation(); setDeleteTarget(e.id); setMorePopup(null); }}
-           className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
-          >
-           <Trash2 size={11} />
-          </button>
-         </div>
+          onDelete={() => { setDeleteTarget(e.id); setMorePopup(null); }}
+         />
         ))}
        </div>
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, Shuffle, ImageIcon, Clock } from "lucide-react";
 import { useUpload } from "@/lib/storage/use-upload";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { ICON_REGISTRY, PageIcon } from "./page-icon";
 
 // ── Emoji categories (Notion-standard 8 categories) ──────────────────────────
@@ -266,6 +267,9 @@ export function IconPicker({
 
   const currentHand = SKIN_TONES.find(s => s.tone === skinTone)?.hand ?? "✋";
 
+  useScrollLockWhileOpen(showSkinTones, (target) =>
+    !!skinToneMenuRef.current?.contains(target) || !!skinToneBtnRef.current?.contains(target));
+
   const { upload, uploading, error: uploadError } = useUpload({ kind: "page_icon", workspaceId, pageId });
 
   useEffect(() => {
@@ -400,13 +404,21 @@ export function IconPicker({
                 className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
               />
             </div>
-            {/* Shuffle */}
+            {/* Shuffle — updates the icon but keeps the picker open, so the user
+                can click it repeatedly to browse random options before settling
+                on one. Routed through onIconPreview (same "update without closing"
+                callback already used by the upload tab) when the caller supports
+                it; falls back to the old select-and-close behavior otherwise. */}
             <button
               onClick={() => {
                 const picked = randomEmoji();
                 const final = applyTone(stripTone(picked), skinTone);
-                onSelect(final);
-                onClose();
+                if (onIconPreview) {
+                  onIconPreview(final);
+                } else {
+                  onSelect(final);
+                  onClose();
+                }
               }}
               title="Random"
               className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

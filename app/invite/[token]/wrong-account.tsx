@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signOut } from "@/lib/auth/client";
 
 export function WrongAccountError({
@@ -56,12 +57,12 @@ export function WrongAccountError({
      >
       Sign out &amp; continue as {invitedEmail}
      </button>
-     <a
+     <Link
       className="inline-flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-      href="/platform/dashboard"
+      href="/platform/post-auth"
      >
-      Go to dashboard
-     </a>
+      Go to your workspace
+     </Link>
     </div>
    </div>
   </main>

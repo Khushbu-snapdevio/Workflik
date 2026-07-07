@@ -18,16 +18,26 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 RUN corepack enable \
-  && groupadd --system --gid 1001 krova \
-  && useradd --system --uid 1001 --gid krova krova
+  && groupadd --system --gid 1001 workflik \
+  && useradd --system --uid 1001 --gid workflik workflik
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY config ./config
-COPY db ./db
 COPY lib ./lib
 COPY scripts ./scripts
 
-USER krova
+# Local-disk uploads (STORAGE_DRIVER=local) live here so cleanup/reconciliation
+# jobs (cleanup-orphaned-media, sync-storage-usage) can reach the same files
+# the app writes — mount the same volume as the app container in compose.
+RUN mkdir -p /app/uploads && chown -R workflik:workflik /app/uploads
+
+USER workflik
+
+# No HTTP server to poll (unlike the app container) — the worker touches
+# /tmp/worker-heartbeat on an interval (scripts/worker.ts); unhealthy if
+# that file hasn't been refreshed in over a minute (hung/crash-looping).
+HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
+  CMD test -f /tmp/worker-heartbeat && [ $(( $(date +%s) - $(stat -c %Y /tmp/worker-heartbeat) )) -lt 60 ]
 
 CMD ["pnpm", "worker:start"]

@@ -1,109 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { AlertCircle, Check, ChevronDown, Users, X } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, ArrowLeftRight, Users, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { RoleSelect } from "@/components/ui/role-select";
 
-const ROLE_OPTIONS = [
- { value: "editor", label: "Editor" },
+type Role = "admin" | "editor" | "viewer";
+
+const ADMIN_ROLE_OPTION = { value: "admin", label: "Admin" } as const;
+const BASE_ROLE_OPTIONS = [
+ { value: "editor", label: "Member" },
  { value: "viewer", label: "Viewer" },
 ] as const;
-
-function RoleSelect({
- value, onChange, disabled = false,
-}: { value: string; onChange: (v: "editor" | "viewer") => void; disabled?: boolean }) {
- const [open, setOpen] = useState(false);
- const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
- const [mounted, setMounted] = useState(false);
- const btnRef = useRef<HTMLButtonElement>(null);
- const menuRef = useRef<HTMLDivElement>(null);
- const selected = ROLE_OPTIONS.find(o => o.value === value);
-
- useEffect(() => { setMounted(true); }, []);
-
- useEffect(() => {
-  if (!open) return;
-  function handleClick(e: MouseEvent) {
-   const t = e.target as Node;
-   if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
-   setOpen(false);
-  }
-  function handleKey(e: KeyboardEvent) {
-   if (e.key === "Escape") setOpen(false);
-  }
-  document.addEventListener("mousedown", handleClick);
-  document.addEventListener("keydown", handleKey);
-  return () => {
-   document.removeEventListener("mousedown", handleClick);
-   document.removeEventListener("keydown", handleKey);
-  };
- }, [open]);
-
- useScrollLockWhileOpen(open, (target) =>
-  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
-
- function handleOpen() {
-  if (!open && btnRef.current) {
-   const rect = btnRef.current.getBoundingClientRect();
-   setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-  }
-  setOpen(o => !o);
- }
-
- const menu = mounted && open && pos ? createPortal(
-  <div
-   ref={menuRef}
-   style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 9999 }}
-   className="min-w-[110px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-card py-1"
-  >
-   {ROLE_OPTIONS.map(o => (
-    <button
-     key={o.value}
-     type="button"
-     onClick={() => { onChange(o.value); setOpen(false); }}
-     className={[
-      "flex w-full items-center justify-between gap-3 px-3 py-1.5 text-xs transition-colors duration-150",
-      o.value === value
-       ? "bg-accent text-foreground font-medium"
-       : "text-foreground hover:bg-accent",
-     ].join(" ")}
-    >
-     {o.label}
-     {o.value === value && <Check size={11} className="shrink-0 text-foreground" />}
-    </button>
-   ))}
-  </div>,
-  document.body
- ) : null;
-
- return (
-  <>
-   <button
-    ref={btnRef}
-    type="button"
-    disabled={disabled}
-    onClick={handleOpen}
-    className={[
-     "flex items-center gap-1.5 rounded-[var(--radius-sm)] border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors duration-150",
-     "focus-visible:outline-none disabled:opacity-50",
-     open ? "border-primary" : "border-border hover:border-border/80",
-    ].join(" ")}
-   >
-    <span className="min-w-[44px] text-left">{selected?.label ?? value}</span>
-    <ChevronDown
-     size={12}
-     className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`}
-    />
-   </button>
-   {menu}
-  </>
- );
-}
 
 interface MemberRow {
  id:      string;
@@ -123,8 +34,16 @@ interface Props {
  workspaceName: string;
  currentUserId: string;
  isAdmin:    boolean;
+ isOwner:    boolean;
+ ownerUserId:  string | null;
  members:    MemberRow[];
 }
+
+const ROLE_LABELS: Record<string, string> = {
+ admin:  "Admin",
+ editor: "Member",
+ viewer: "Viewer",
+};
 
 const ROLE_STYLES: Record<string, { badge: string; dot: string }> = {
  admin: { badge: "bg-muted text-muted-foreground",   dot: "bg-foreground/40" },
@@ -149,16 +68,21 @@ function ago(d: Date | null | undefined) {
  return `${Math.floor(h / 24)}d ago`;
 }
 
-export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, members: init }: Props) {
+export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, isOwner, ownerUserId, members: init }: Props) {
  const [members,  setMembers] = useState(init);
  const [email,   setEmail]  = useState("");
- const [role,   setRole]   = useState<"editor"|"viewer">("editor");
+ const [role,   setRole]   = useState<Role>("editor");
+ const inviteRoleOptions = isOwner ? [ADMIN_ROLE_OPTION, ...BASE_ROLE_OPTIONS] : BASE_ROLE_OPTIONS;
  const [inviting, setInviting] = useState(false);
  const [inviteErr, setInviteErr] = useState("");
  const [busy,   setBusy]   = useState<string | null>(null);
  const [actionErr, setActionErr] = useState("");
  const [pendingRemove, setPendingRemove] = useState<{ userId: string; name: string } | null>(null);
  const [pendingCancelInvite, setPendingCancelInvite] = useState<{ id: string; email: string } | null>(null);
+ const [pendingTransfer, setPendingTransfer] = useState<{ userId: string; name: string } | null>(null);
+ const [transferBusy, setTransferBusy] = useState(false);
+ const [transferSent, setTransferSent] = useState<string | null>(null);
+ const [transferErr, setTransferErr] = useState("");
 
  const active = members.filter(m => m.status === "active");
  const invited = members.filter(m => m.status === "invited");
@@ -177,7 +101,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
   finally { setInviting(false); }
  }
 
- async function changeRole(userId: string, newRole: "editor"|"viewer") {
+ async function changeRole(userId: string, newRole: Role) {
   setBusy(userId); setActionErr("");
   try {
    const r = await fetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
@@ -207,6 +131,19 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
    else { const d = await r.json().catch(() => ({})); setActionErr((d as { error?: string }).error ?? "Failed to cancel invite"); }
   } catch { setActionErr("Network error"); }
   finally { setBusy(null); }
+ }
+
+ async function transferOwnership(userId: string, name: string) {
+  setTransferBusy(true); setTransferErr("");
+  try {
+   const r = await fetch(`/api/workspaces/${workspaceId}/transfer`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetUserId: userId }),
+   });
+   if (r.ok) setTransferSent(name);
+   else { const d = await r.json().catch(() => ({})); setTransferErr((d as { error?: string }).error ?? "Failed to start transfer"); }
+  } catch { setTransferErr("Network error"); }
+  finally { setTransferBusy(false); }
  }
 
  async function resend(id: string) {
@@ -260,7 +197,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
         onKeyDown={e => e.key === "Enter" && invite()}
         className="flex-1 focus-visible:border-primary"
        />
-       <RoleSelect value={role} onChange={setRole} />
+       <RoleSelect value={role} options={inviteRoleOptions} onChange={v => setRole(v as Role)} />
        <Button
         type="button"
         size="sm"
@@ -287,6 +224,19 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
     </p>
    )}
 
+   {transferErr && (
+    <p className="mb-4 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+     <AlertCircle size={14} className="shrink-0" />
+     {transferErr}
+    </p>
+   )}
+
+   {transferSent && (
+    <p className="mb-4 rounded-[var(--radius-sm)] border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+     Confirmation email sent to your inbox — the transfer to <strong className="text-foreground">{transferSent}</strong> completes once you click the link there.
+    </p>
+   )}
+
    {/* ── Active members ── */}
    <div className="mb-7">
     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Members</p>
@@ -295,6 +245,12 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
       const display  = m.userName?.trim() || m.userEmail?.trim() || m.invitedEmail?.trim() || "Unknown";
       const isMe    = m.userId === currentUserId;
       const isAdminRow = m.role === "admin";
+      const isOwnerRow = !!m.userId && m.userId === ownerUserId;
+      // A regular admin can manage editors/viewers; only the owner can also
+      // touch other admins. Nobody can manage their own row or the owner's
+      // (the owner's role only changes via Transfer Ownership).
+      const canManageRole = isAdmin && !isMe && !isOwnerRow && (!isAdminRow || isOwner);
+      const rowRoleOptions = isOwner ? [ADMIN_ROLE_OPTION, ...BASE_ROLE_OPTIONS] : BASE_ROLE_OPTIONS;
       const style   = ROLE_STYLES[m.role] ?? ROLE_STYLES.viewer!;
       return (
        <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < active.length - 1 ? "border-b border-border/40" : ""}`}>
@@ -310,16 +266,31 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
          {m.userName && m.userEmail && <p className="text-xs text-muted-foreground truncate">{m.userEmail}</p>}
         </div>
         {/* Role control */}
-        {isAdmin && !isAdminRow && !isMe ? (
-         <RoleSelect value={m.role} onChange={v => changeRole(m.userId!, v)} disabled={busy === m.userId} />
+        {canManageRole ? (
+         <RoleSelect value={m.role} options={rowRoleOptions} onChange={v => changeRole(m.userId!, v as Role)} disabled={busy === m.userId} />
         ) : (
-         <Badge variant="secondary" className={`shrink-0 flex items-center gap-1.5 capitalize ${style.badge}`}>
+         <Badge variant="secondary" className={`shrink-0 flex items-center gap-1.5 ${style.badge}`}>
           <span className={`size-1.5 rounded-full ${style.dot}`} />
-          {m.role}
+          {ROLE_LABELS[m.role] ?? m.role}
+          {isOwnerRow && <span className="text-[10px] font-normal text-muted-foreground/70">(owner)</span>}
          </Badge>
         )}
+        {/* Transfer ownership — owner only, to anyone else active */}
+        {isOwner && !isOwnerRow && m.userId && (
+         <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setPendingTransfer({ userId: m.userId!, name: display })}
+          disabled={transferBusy}
+          title="Transfer ownership to this person"
+          className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground/70 hover:bg-accent hover:text-foreground shadow-none border-0"
+         >
+          <ArrowLeftRight size={14} />
+         </Button>
+        )}
         {/* Remove button */}
-        {isAdmin && !isAdminRow && m.userId && (
+        {canManageRole && m.userId && (
          <Button
           type="button"
           variant="destructive"
@@ -360,8 +331,8 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
           <p className="truncate text-sm font-semibold text-foreground">{addr}</p>
           <p className="text-xs text-muted-foreground">Invited {ago(m.createdAt)}</p>
          </div>
-         <Badge variant="secondary" className="shrink-0 capitalize">
-          {m.role}
+         <Badge variant="secondary" className="shrink-0">
+          {ROLE_LABELS[m.role] ?? m.role}
          </Badge>
          {isAdmin && (
           <div className="flex items-center gap-1.5">
@@ -397,7 +368,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
     open={!!pendingRemove}
     onOpenChange={(o) => !o && setPendingRemove(null)}
     title={`Remove ${pendingRemove?.name}?`}
-    description="They will lose access to this workspace immediately."
+    description="They will lose access to this workspace immediately. This also resets the shareable invite link, so anyone else who has it will need a new one."
     confirmLabel="Remove"
     onConfirm={() => { if (pendingRemove) { remove(pendingRemove.userId); setPendingRemove(null); } }}
    />
@@ -410,6 +381,17 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, m
     cancelLabel="Keep invite"
     confirmLabel="Cancel invite"
     onConfirm={() => { if (pendingCancelInvite) { cancelInvite(pendingCancelInvite.id); setPendingCancelInvite(null); } }}
+   />
+
+   <ConfirmDialog
+    open={!!pendingTransfer}
+    onOpenChange={(o) => !o && setPendingTransfer(null)}
+    title={`Transfer ownership to ${pendingTransfer?.name}?`}
+    description="You'll stay an admin, but they'll become the sole workspace owner — only they will be able to grant or revoke the Admin role after this. We'll email you a confirmation link before it takes effect."
+    confirmLabel="Send confirmation email"
+    confirmLoadingLabel="Sending…"
+    loading={transferBusy}
+    onConfirm={() => { if (pendingTransfer) transferOwnership(pendingTransfer.userId, pendingTransfer.name); }}
    />
   </div>
  );

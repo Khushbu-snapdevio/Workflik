@@ -4,6 +4,7 @@ import { WorkspaceSetup } from "@/components/workspace/workspace-setup";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces } from "@/lib/db/schema";
+import { isSmtpConfigured } from "@/lib/smtp/client";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -37,6 +38,7 @@ export default async function WorkspaceSetupPage({ params }: Props) {
       workspaceName={ws.name}
       workspaceSlug={ws.slug}
       workspaceKind={ws.kind}
+      smtpConfigured={isSmtpConfigured()}
     />
   );
 }

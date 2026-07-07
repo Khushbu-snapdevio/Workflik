@@ -5,7 +5,9 @@ import { workspaceMembers, workspaces } from "@/lib/db/schema";
 import {
   apiError,
   ApiError,
+  countActiveAdmins,
   getSession,
+  getWorkspace,
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
@@ -13,10 +15,10 @@ import { writeAuditLog } from "@/lib/orbit/audit";
 type Ctx = { params: Promise<{ id: string; userId: string }> };
 
 const patchSchema = z.object({
-  role: z.enum(["editor", "viewer"]),
+  role: z.enum(["admin", "editor", "viewer"]),
 });
 
-// PATCH /api/workspaces/:id/members/:userId — change role (Admin cannot be changed via this endpoint)
+// PATCH /api/workspaces/:id/members/:userId — change role
 export async function PATCH(req: Request, { params }: Ctx) {
   try {
     const { id, userId } = await params;
@@ -29,7 +31,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
       return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
     }
 
-    // Cannot change role of the current Admin via this endpoint (only via transfer)
     const [target] = await db
       .select({ role: workspaceMembers.role })
       .from(workspaceMembers)
@@ -43,8 +44,29 @@ export async function PATCH(req: Request, { params }: Ctx) {
       .limit(1);
 
     if (!target) return apiError(404, "Member not found");
-    if (target.role === "admin") {
-      return apiError(403, "Admin role can only be changed via Transfer Ownership");
+
+    const workspace = await getWorkspace(id);
+    // The owner's own membership row is untouchable here — swapping who
+    // holds that seat is a bigger deal (see Transfer Ownership) than a
+    // regular role edit, and protecting it guarantees the workspace always
+    // has at least one admin without needing a separate count check for it.
+    if (workspace.createdBy === userId) {
+      return apiError(403, "The workspace owner's role can only be changed via Transfer Ownership");
+    }
+
+    const isOwner = workspace.createdBy === null || workspace.createdBy === session.user.id;
+    const settingAdmin = parsed.data.role === "admin";
+    const wasAdmin = target.role === "admin";
+
+    if ((settingAdmin || wasAdmin) && !isOwner) {
+      return apiError(403, "Only the workspace owner can grant or revoke the Admin role");
+    }
+
+    if (wasAdmin && !settingAdmin) {
+      const adminCount = await countActiveAdmins(id);
+      if (adminCount <= 1) {
+        return apiError(400, "Cannot demote the workspace's last admin");
+      }
     }
 
     const [updated] = await db
@@ -81,7 +103,6 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const session = await getSession();
     await requireWorkspaceMember(id, session.user.id, "admin");
 
-    // Cannot remove the Admin (only via Transfer Ownership)
     const [target] = await db
       .select({ role: workspaceMembers.role })
       .from(workspaceMembers)
@@ -95,8 +116,21 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       .limit(1);
 
     if (!target) return apiError(404, "Member not found");
+
+    const workspace = await getWorkspace(id);
+    if (workspace.createdBy === userId) {
+      return apiError(403, "Cannot remove the workspace owner — transfer ownership first");
+    }
+
     if (target.role === "admin") {
-      return apiError(403, "Cannot remove the workspace Admin — transfer ownership first");
+      const isOwner = workspace.createdBy === null || workspace.createdBy === session.user.id;
+      if (!isOwner) {
+        return apiError(403, "Only the workspace owner can remove another admin");
+      }
+      const adminCount = await countActiveAdmins(id);
+      if (adminCount <= 1) {
+        return apiError(400, "Cannot remove the workspace's last admin");
+      }
     }
 
     await db.transaction(async (tx) => {

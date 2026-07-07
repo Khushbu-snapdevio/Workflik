@@ -71,7 +71,7 @@ export function OptionSubmenu({ option, anchorRect, onRename, onDelete, onRecolo
       ref={ref}
       data-edit-property-exempt
       style={{ position: "fixed", top, left, width, zIndex: 500 }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-lg"
+      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Rename */}

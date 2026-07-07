@@ -9,8 +9,9 @@ import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
 import { createBlankPage, createPageFromSnapshot, type PageSnapshot } from "@/lib/templates/instantiate";
 import { uniqueSlug } from "@/lib/workspaces/auth";
+import { getOrCreateInviteeUser } from "@/lib/workspaces/invites";
 
-export type InviteEntry = { email: string; role: "editor" | "viewer" };
+export type InviteEntry = { email: string; role: "admin" | "editor" | "viewer" };
 
 interface OnboardingData {
   kind:          "personal" | "team";
@@ -28,7 +29,7 @@ interface OnboardingData {
 // single empty page, same as Notion's "Start blank".
 const ONBOARDING_TEMPLATE_NAMES: Record<string, string> = {
   "getting-started":  "Getting Started",
-  "project-tracker":  "Project Tracker",
+  "project-tracker":  "Tasks Tracker",
   "meeting-notes":    "Meeting Notes",
   "personal-journal": "Daily Journal",
 };
@@ -107,12 +108,16 @@ export async function completeOnboardingAction(data: OnboardingData) {
     const email        = inv.email.trim().toLowerCase();
     const inviteToken  = crypto.randomUUID();
     const inviteExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    // Pre-create the account now (same as Settings → Members invites) so
+    // /invite/[token] can attach a workspace membership to it immediately —
+    // the invitee sets their name/password when accepting.
+    const { user: invitee } = await getOrCreateInviteeUser(email);
 
     const [member] = await db
       .insert(workspaceMembers)
       .values({
         workspaceId:  workspace.id,
-        userId:       null,
+        userId:       invitee.id,
         role:         inv.role,
         status:       "invited",
         invitedEmail: email,
@@ -122,6 +127,8 @@ export async function completeOnboardingAction(data: OnboardingData) {
       })
       .returning();
 
+    console.log(`[invite] ${session.user.email} invited ${email} as "${inv.role}" to workspace "${workspace.name}" (onboarding)`);
+
     await enqueueJob(JOB_NAMES.WORKSPACE_INVITE_SEND, {
       memberId:      member.id,
       workspaceId:   workspace.id,
@@ -129,7 +136,9 @@ export async function completeOnboardingAction(data: OnboardingData) {
       inviterName:   session.user.name ?? session.user.email,
       workspaceName: workspace.name,
       inviteToken,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error(`[onboarding] failed to enqueue invite email for ${email}:`, err);
+    });
   }
 
   redirect(`/app/${workspace.slug}`);

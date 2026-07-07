@@ -8,9 +8,66 @@ import {
   workspaceMembers,
   workspaces,
 } from "@/lib/db/schema";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 export default async function PostAuthPage() {
   const session = await requireSession();
+
+  // Auto-accept any invites waiting on this account, but only on a brand
+  // new invitee's very first login (no active membership anywhere yet) —
+  // that's the one case where which workspace they belong to is already
+  // decided by the invite itself, so there's nothing to confirm. An
+  // already-established user who picks up an *additional* pending invite
+  // still goes through the explicit "Accept & Join" screen (/invite/[token]),
+  // which also catches an invite addressed to the wrong signed-in account.
+  const [existingActiveMembership] = await db
+    .select({ id: workspaceMembers.id })
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.userId, session.user.id),
+        eq(workspaceMembers.status, "active")
+      )
+    )
+    .limit(1);
+
+  const pendingInvites = existingActiveMembership
+    ? []
+    : await db
+        .select({ id: workspaceMembers.id, workspaceId: workspaceMembers.workspaceId, slug: workspaces.slug })
+        .from(workspaceMembers)
+        .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
+        .where(
+          and(
+            eq(workspaceMembers.userId, session.user.id),
+            eq(workspaceMembers.status, "invited")
+          )
+        );
+
+  if (pendingInvites.length > 0) {
+    await db
+      .update(workspaceMembers)
+      .set({ status: "active", joinedAt: new Date(), inviteToken: null })
+      .where(
+        and(
+          eq(workspaceMembers.userId, session.user.id),
+          eq(workspaceMembers.status, "invited")
+        )
+      );
+    await db
+      .update(users)
+      .set({ onboardingCompleted: true })
+      .where(eq(users.id, session.user.id));
+    for (const invite of pendingInvites) {
+      await writeAuditLog({
+        actorId:    session.user.id,
+        action:     "member.auto_joined",
+        targetType: "workspace",
+        targetId:   invite.workspaceId,
+      });
+    }
+    redirect(`/app/${pendingInvites[0].slug}`);
+  }
 
   // First-time users must complete onboarding before seeing a workspace
   const [freshUser] = await db

@@ -339,7 +339,7 @@ export function TemplateGalleryModal({
                   {/* Header */}
                   <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
                     <button
-                      className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       onClick={handleBack}
                       type="button"
                     >
@@ -357,7 +357,7 @@ export function TemplateGalleryModal({
 
                   {/* Icon + name hero */}
                   <div className="flex items-center gap-3 border-b border-border/40 bg-muted/20 px-4 py-4">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-2xl shadow-sm">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-xl)] border border-border bg-card text-2xl">
                       {selected.pageSnapshot.icon || (
                         <CatIcon className="text-muted-foreground" size={20} />
                       )}
@@ -391,7 +391,7 @@ export function TemplateGalleryModal({
                         <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
                           Included in this template
                         </p>
-                        <div className="space-y-1 rounded-xl border border-border/50 bg-muted/20 p-3">
+                        <div className="space-y-1 rounded-[var(--radius-xl)] border border-border/50 bg-muted/20 p-3">
                           {blocks.slice(0, 12).map((b, i) => (
                             <BlockPreview
                               block={b as { type: string; content?: unknown }}
@@ -411,7 +411,7 @@ export function TemplateGalleryModal({
                   {/* Use template CTA */}
                   <div className="border-t border-border/60 px-4 py-4">
                     <button
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+                      className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-xl)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
                       disabled={applying}
                       onClick={() => applyTemplate(selected)}
                       type="button"
@@ -437,11 +437,11 @@ export function TemplateGalleryModal({
                 {/* Right panel — page preview fills full height */}
                 <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
                   <div className="flex flex-1 flex-col overflow-hidden p-4">
-                    <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                    <div className="flex flex-1 flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-background">
                       {/* Cover strip with overlapping icon */}
                       <div className="relative flex h-[80px] shrink-0 items-end bg-gradient-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
                         {selected.pageSnapshot.icon ? (
-                          <span className="translate-y-[22px] text-[40px] leading-none drop-shadow-sm">
+                          <span className="translate-y-[22px] text-[40px] leading-none">
                             {selected.pageSnapshot.icon}
                           </span>
                         ) : (
@@ -685,7 +685,7 @@ function DbSchemaPreview({
           {schema.views.map((v) => (
             <span
               className={[
-                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
+                "inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-xs font-medium",
                 v.isDefault
                   ? "border-primary/20 bg-primary/10 text-primary"
                   : "border-border/50 bg-muted/30 text-muted-foreground",
@@ -704,7 +704,7 @@ function DbSchemaPreview({
         <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
           Properties ({schema.properties.length})
         </p>
-        <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
+        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/50 bg-card">
           {schema.properties.map((p, i) => (
             <div
               className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
@@ -872,7 +872,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
     <div className="flex min-h-0 flex-1 flex-col">
       <ViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
       {/* Board grid — columns divide the full height */}
-      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border/40 bg-background">
+      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-[var(--radius-lg)] border border-border/40 bg-background">
         {columns.map((col, ci) => {
           const colRows = groupByProp
             ? rows.filter((r) => r[groupByProp.name] === col.name)
@@ -907,7 +907,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   );
                   return (
                     <div
-                      className="shrink-0 rounded-md border border-border/50 bg-card p-2.5 shadow-sm"
+                      className="shrink-0 rounded-[var(--radius-md)] border border-border/50 bg-card p-2.5"
                       key={i}
                     >
                       <p className="text-[11px] font-medium leading-snug text-foreground">
@@ -954,7 +954,7 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
       <ViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
-      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/40">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/40">
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
           <span className="text-xs font-semibold text-foreground/70">
             June 2026
@@ -1051,7 +1051,7 @@ function EmptyState() {
           No templates yet
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Templates are added by the WorkFlik team via Orbit Admin.
+          An admin can add templates from Orbit Admin.
         </p>
       </div>
     </div>

@@ -39,6 +39,7 @@ export default function NotificationSettingsPage() {
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     fetch("/api/user/notification-preferences")
@@ -61,14 +62,20 @@ export default function NotificationSettingsPage() {
   }, []);
 
   async function save() {
-    setSaving(true); setSaved(false);
+    setSaving(true); setSaved(false); setSaveError("");
     try {
-      await fetch("/api/user/notification-preferences", {
+      const res = await fetch("/api/user/notification-preferences", {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emailFrequency: emailOn ? frequency : "off", weeklyDigestDay: weeklyDay, ...events }),
       });
-      setSaved(true); setTimeout(() => setSaved(false), 3000);
-    } catch { /* no-op */ }
+      if (res.ok) {
+        setSaved(true); setTimeout(() => setSaved(false), 3000);
+      } else {
+        setSaveError("Failed to save — please try again.");
+      }
+    } catch {
+      setSaveError("Network error — change wasn't saved.");
+    }
     finally { setSaving(false); }
   }
 
@@ -98,6 +105,10 @@ export default function NotificationSettingsPage() {
           <p className="text-sm text-muted-foreground">Control how and when you get notified.</p>
         </div>
       </div>
+
+      <p className="mt-4 rounded-[var(--radius-md)] border border-border/60 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+        These preferences are per-account, not per-workspace — they apply the same way across every workspace you&apos;re a member of.
+      </p>
 
       {/* ── Email channel card ── */}
       <div className="mt-8">
@@ -210,6 +221,9 @@ export default function NotificationSettingsPage() {
 
       {/* ── Save button ── */}
       <div className="mt-8 flex items-center justify-end gap-3">
+        {saveError && (
+          <span className="text-sm text-destructive">{saveError}</span>
+        )}
         {saved && (
           <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Check size={14} />

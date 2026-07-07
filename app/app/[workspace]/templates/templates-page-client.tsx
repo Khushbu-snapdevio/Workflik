@@ -9,6 +9,7 @@ import {
   Code2,
   DollarSign,
   LayoutGrid,
+  Loader2,
   Megaphone,
   Search,
   Trash2,
@@ -16,7 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PageIcon } from "@/components/pages/page-icon";
 
@@ -145,6 +146,9 @@ interface Props {
   parentId?: string | null;
   workspaceId: string;
   workspaceSlug: string;
+  isPlatformAdmin: boolean;
+  currentUserId: string;
+  isWorkspaceAdmin: boolean;
 }
 
 // ── Main page component ────────────────────────────────────────────────────────
@@ -153,6 +157,9 @@ export function TemplatesPageClient({
   workspaceId,
   workspaceSlug,
   parentId,
+  isPlatformAdmin,
+  currentUserId,
+  isWorkspaceAdmin,
 }: Props) {
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
@@ -164,21 +171,23 @@ export function TemplatesPageClient({
   const [activeTab, setActiveTab] = useState("all");
   const [selected, setSelected] = useState<Template | null>(null);
   const [applying, setApplying] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
-  useEffect(() => {
-    Promise.all([
+  const refetchTemplates = useCallback(() => {
+    return Promise.all([
       fetch("/api/templates").then((r) => (r.ok ? r.json() : [])),
       fetch(`/api/workspaces/${workspaceId}/templates`).then((r) =>
         r.ok ? r.json() : []
       ),
-    ])
-      .then(([bi, ws]) => {
-        setBuiltIn(Array.isArray(bi) ? bi : []);
-        setWorkspace(Array.isArray(ws) ? ws : []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    ]).then(([bi, ws]) => {
+      setBuiltIn(Array.isArray(bi) ? bi : []);
+      setWorkspace(Array.isArray(ws) ? ws : []);
+    });
   }, [workspaceId]);
+
+  useEffect(() => {
+    refetchTemplates().finally(() => setLoading(false));
+  }, [refetchTemplates]);
 
   const q = search.toLowerCase().trim();
   const matches = (t: Template) =>
@@ -198,6 +207,7 @@ export function TemplatesPageClient({
   }
 
   async function deleteTemplate(tpl: Template) {
+    setDeleteError("");
     // Optimistic remove
     setWorkspace((prev) => prev.filter((t) => t.id !== tpl.id));
     const res = await fetch(
@@ -207,6 +217,7 @@ export function TemplatesPageClient({
     if (!res.ok) {
       // rollback
       setWorkspace((prev) => [...prev, tpl]);
+      setDeleteError(`Couldn't delete "${tpl.name}" — only its creator or a workspace admin can delete it.`);
     }
   }
 
@@ -407,14 +418,21 @@ export function TemplatesPageClient({
           />
         ) : (
           <GalleryView
+            activeTab={activeTab}
+            currentUserId={currentUserId}
+            deleteError={deleteError}
             filteredBuiltIn={filteredBuiltIn}
             filteredWorkspace={filteredWorkspace}
+            isPlatformAdmin={isPlatformAdmin}
+            isWorkspaceAdmin={isWorkspaceAdmin}
             loading={loading}
             onDeleteWorkspace={deleteTemplate}
             onSearch={setSearch}
             onSelect={setSelected}
+            onTemplatesSeeded={refetchTemplates}
             search={search}
             searchRef={searchRef}
+            totalBuiltInCount={builtIn.length}
           />
         )}
       </div>
@@ -433,6 +451,13 @@ function GalleryView({
   filteredWorkspace,
   onSelect,
   onDeleteWorkspace,
+  activeTab,
+  totalBuiltInCount,
+  isPlatformAdmin,
+  onTemplatesSeeded,
+  currentUserId,
+  isWorkspaceAdmin,
+  deleteError,
 }: {
   searchRef: React.RefObject<HTMLInputElement | null>;
   search: string;
@@ -442,6 +467,13 @@ function GalleryView({
   filteredWorkspace: Template[];
   onSelect: (t: Template) => void;
   onDeleteWorkspace: (t: Template) => void;
+  activeTab: string;
+  totalBuiltInCount: number;
+  isPlatformAdmin: boolean;
+  onTemplatesSeeded: () => void;
+  currentUserId: string;
+  isWorkspaceAdmin: boolean;
+  deleteError: string;
 }) {
   const empty = filteredBuiltIn.length === 0 && filteredWorkspace.length === 0;
 
@@ -477,7 +509,12 @@ function GalleryView({
         {loading ? (
           <GallerySkeleton />
         ) : empty ? (
-          <EmptyState />
+          <EmptyState
+            hasActiveFilter={Boolean(search) || activeTab !== "all"}
+            isPlatformAdmin={isPlatformAdmin}
+            onSeeded={onTemplatesSeeded}
+            totalBuiltInCount={totalBuiltInCount}
+          />
         ) : (
           <div className="space-y-7">
             {filteredBuiltIn.length > 0 && (
@@ -511,15 +548,23 @@ function GalleryView({
                     {filteredWorkspace.length}
                   </span>
                 </div>
+                {deleteError && (
+                  <p className="mb-3 rounded-[var(--radius-sm)] bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                    {deleteError}
+                  </p>
+                )}
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredWorkspace.map((tpl) => (
-                    <TemplateCard
-                      key={tpl.id}
-                      onDelete={() => onDeleteWorkspace(tpl)}
-                      onSelect={() => onSelect(tpl)}
-                      template={tpl}
-                    />
-                  ))}
+                  {filteredWorkspace.map((tpl) => {
+                    const canDelete = tpl.createdBy === currentUserId || isWorkspaceAdmin;
+                    return (
+                      <TemplateCard
+                        key={tpl.id}
+                        onDelete={canDelete ? () => onDeleteWorkspace(tpl) : undefined}
+                        onSelect={() => onSelect(tpl)}
+                        template={tpl}
+                      />
+                    );
+                  })}
                 </div>
               </section>
             )}
@@ -552,7 +597,7 @@ function DetailView({
       <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-border bg-background">
         {/* Hero: icon + name + meta */}
         <div className="shrink-0 border-b border-border/50 bg-muted/20 px-5 py-6">
-          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-border bg-card shadow-sm">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] border border-border bg-card">
             {selected.pageSnapshot.icon ? (
               <PageIcon icon={selected.pageSnapshot.icon} size={30} />
             ) : (
@@ -564,7 +609,7 @@ function DetailView({
           </h2>
           {catDef && (
             <div className="mt-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                 <CatIcon size={9} />
                 {catDef.label}
               </span>
@@ -586,7 +631,7 @@ function DetailView({
               <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
                 Includes
               </p>
-              <div className="space-y-0.5 rounded-xl border border-border/50 bg-muted/20 p-3">
+              <div className="space-y-0.5 rounded-[var(--radius-xl)] border border-border/50 bg-muted/20 p-3">
                 {blocks.slice(0, 12).map((b, i) => (
                   <BlockPreview
                     block={b as { type: string; content?: unknown }}
@@ -606,7 +651,7 @@ function DetailView({
         {/* Sticky CTA */}
         <div className="shrink-0 border-t border-border bg-background px-5 py-4">
           <button
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-xl)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             disabled={applying}
             onClick={onApply}
             type="button"
@@ -631,11 +676,11 @@ function DetailView({
       {/* ── Right preview panel — fills full height, no dead whitespace ── */}
       <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
         <div className="flex flex-1 flex-col overflow-hidden p-4">
-          <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+          <div className="flex flex-1 flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-background">
             {/* Cover strip with overlapping icon */}
             <div className="relative flex h-[80px] shrink-0 items-end bg-gradient-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
               {selected.pageSnapshot.icon ? (
-                <span className="translate-y-[22px] drop-shadow-sm">
+                <span className="translate-y-[22px]">
                   <PageIcon icon={selected.pageSnapshot.icon} size={40} />
                 </span>
               ) : (
@@ -749,7 +794,7 @@ function TemplateCard({
         {/* Delete button — only for workspace templates */}
         {onDelete && (
           <button
-            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-muted-foreground opacity-0 backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               setDeleteOpen(true);
@@ -771,7 +816,7 @@ function TemplateCard({
               className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
               onClick={() => setDeleteOpen(false)}
             />
-            <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6 shadow-xl">
+            <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6">
               {/* Close */}
               <button
                 className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
@@ -1227,7 +1272,7 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
           {schema.views.map((v) => (
             <span
               className={[
-                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
+                "inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-xs font-medium",
                 v.isDefault
                   ? "border-primary/20 bg-primary/10 text-primary"
                   : "border-border/50 bg-muted/30 text-muted-foreground",
@@ -1244,7 +1289,7 @@ function DbSchemaPreview({ schema }: { schema: SchemaForPreview }) {
         <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
           Properties ({schema.properties.length})
         </p>
-        <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
+        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/50 bg-card">
           {schema.properties.map((p, i) => (
             <div
               className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
@@ -1404,7 +1449,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
     <div className="flex min-h-0 flex-1 flex-col">
       <ViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
       {/* Board grid — columns divide the full height */}
-      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border/40 bg-background">
+      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-[var(--radius-lg)] border border-border/40 bg-background">
         {columns.map((col, ci) => {
           const colRows = groupByProp
             ? rows.filter((r) => r[groupByProp.name] === col.name)
@@ -1439,7 +1484,7 @@ function BoardPreview({ schema }: { schema: SchemaForPreview }) {
                   );
                   return (
                     <div
-                      className="shrink-0 rounded-md border border-border/50 bg-card p-2.5 shadow-sm"
+                      className="shrink-0 rounded-[var(--radius-md)] border border-border/50 bg-card p-2.5"
                       key={i}
                     >
                       <p className="text-[11px] font-medium leading-snug text-foreground">
@@ -1475,7 +1520,7 @@ function CalendarPreview({ schema }: { schema: SchemaForPreview }) {
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
       <ViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
-      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/40">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/40">
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
           <span className="text-xs font-semibold text-foreground/70">
             June 2026
@@ -1559,20 +1604,79 @@ function GallerySkeleton() {
   );
 }
 
-function EmptyState() {
+function EmptyState({
+  hasActiveFilter,
+  totalBuiltInCount,
+  isPlatformAdmin,
+  onSeeded,
+}: {
+  hasActiveFilter: boolean;
+  totalBuiltInCount: number;
+  isPlatformAdmin: boolean;
+  onSeeded: () => void;
+}) {
+  const [seeding, setSeeding] = useState(false);
+
+  // A search/category filter matching nothing is a different situation from
+  // this instance genuinely having zero built-in templates seeded yet — the
+  // two need different copy (and, for the zero-templates case, a real fix
+  // rather than a suggestion to search differently).
+  if (hasActiveFilter || totalBuiltInCount > 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
+          <LayoutGrid className="text-muted-foreground/40" size={22} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-foreground">
+            No templates found
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Try a different search or category.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  async function seedTemplates() {
+    setSeeding(true);
+    try {
+      await fetch("/api/orbit/templates/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force: false }),
+      });
+      onSeeded();
+    } finally {
+      setSeeding(false);
+    }
+  }
+
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
         <LayoutGrid className="text-muted-foreground/40" size={22} />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground">
-          No templates found
-        </p>
+        <p className="text-sm font-semibold text-foreground">No templates yet</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Try a different search or category.
+          {isPlatformAdmin
+            ? "This instance doesn't have any built-in templates seeded yet."
+            : "Ask your instance admin to seed the built-in templates from Orbit Admin."}
         </p>
       </div>
+      {isPlatformAdmin && (
+        <button
+          className="mt-1 inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+          disabled={seeding}
+          onClick={seedTemplates}
+          type="button"
+        >
+          {seeding && <Loader2 className="size-3.5 animate-spin" />}
+          {seeding ? "Seeding…" : "Seed default templates"}
+        </button>
+      )}
     </div>
   );
 }

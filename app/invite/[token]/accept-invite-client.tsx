@@ -18,6 +18,12 @@ type Props = {
   role:          string;
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  admin:  "Admin",
+  editor: "Member",
+  viewer: "Viewer",
+};
+
 export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -34,7 +40,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
         return;
       }
       const data = await res.json() as { workspaceSlug?: string };
-      router.replace(data.workspaceSlug ? `/app/workspaces/join-setup/${data.workspaceSlug}` : "/platform/dashboard");
+      router.replace(data.workspaceSlug ? `/app/${data.workspaceSlug}` : "/platform/post-auth");
     } finally {
       setLoading(false);
     }
@@ -51,7 +57,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
             <CardTitle>Join {workspaceName}</CardTitle>
             <CardDescription>
               You&apos;ve been invited to join as{" "}
-              <strong className="capitalize">{role}</strong>.
+              <strong>{ROLE_LABELS[role] ?? role}</strong>.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -66,7 +72,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
             <Button
               className="w-full"
               disabled={loading}
-              onClick={() => router.replace("/platform/dashboard")}
+              onClick={() => router.replace("/platform/post-auth")}
               variant="ghost"
             >
               Decline

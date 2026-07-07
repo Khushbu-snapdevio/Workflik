@@ -57,6 +57,20 @@ export async function requireWorkspaceMember(
   return member;
 }
 
+export async function countActiveAdmins(workspaceId: string): Promise<number> {
+  const admins = await db
+    .select({ id: workspaceMembers.id })
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        eq(workspaceMembers.role, "admin"),
+        eq(workspaceMembers.status, "active")
+      )
+    );
+  return admins.length;
+}
+
 export async function getWorkspace(workspaceId: string) {
   const [workspace] = await db
     .select()

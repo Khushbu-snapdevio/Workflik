@@ -16,7 +16,7 @@ export const workspaces = pgTable("workspaces", {
   slug:              text("slug").notNull().unique(),
   kind:              text("kind").notNull().default("personal"),
   icon:              text("icon"),
-  defaultPageAccess: defaultPageAccess("default_page_access").notNull().default("shared"),
+  defaultPageAccess: defaultPageAccess("default_page_access").notNull().default("can_edit"),
   inviteLinkToken:   text("invite_link_token").unique(),
   inviteLinkActive:  boolean("invite_link_active").notNull().default(false),
   inviteLinkRole:    workspaceRole("invite_link_role").notNull().default("editor"),

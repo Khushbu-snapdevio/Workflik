@@ -2,7 +2,8 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 /* ─── SVG icons (no emojis) ─────────────────────────────────────── */
 
@@ -142,6 +143,7 @@ export function TooltipTour({ tourCompleted }: Props) {
   const [targetRect, setTargetRect]= useState<DOMRect | null>(null);
   const [animIn,     setAnimIn]    = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     setMounted(true);
@@ -169,9 +171,18 @@ export function TooltipTour({ tourCompleted }: Props) {
 
   const completeTour = useCallback(() => {
     setAnimIn(false);
-    setTimeout(() => setActive(false), 200);
+    setTimeout(() => setActive(false), 160);
     fetch("/api/onboarding/tour-complete", { method: "POST" }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") completeTour();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [active, completeTour]);
 
   function handleNext() {
     if (step < TOUR_STEPS.length - 1) {
@@ -220,26 +231,33 @@ export function TooltipTour({ tourCompleted }: Props) {
 
       {/* Tooltip */}
       <div
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby={titleId}
         style={{
           position:   "fixed",
           zIndex:     9999,
           width:      TOOLTIP_W,
-          transition: "opacity 200ms ease",
+          transition: "opacity 160ms ease, transform 160ms ease",
           opacity:    animIn ? 1 : 0,
           ...tooltipStyle,
+          transform:  `${tooltipStyle.transform ?? ""} scale(${animIn ? 1 : 0.96})`.trim(),
         }}
-        className="rounded-[var(--radius-lg)] border border-border bg-card p-5"
+        className="rounded-[var(--radius-lg)] border border-border bg-card p-5 shadow-[var(--shadow-float)]"
       >
         {/* Close */}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-xs"
           onClick={completeTour}
-          className="absolute right-3 top-3 flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+          aria-label="Close tour"
+          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
         >
           <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-3">
             <path d="M2 2l10 10M12 2L2 12" />
           </svg>
-        </button>
+        </Button>
 
         {/* Icon */}
         <div className="mb-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
@@ -247,7 +265,7 @@ export function TooltipTour({ tourCompleted }: Props) {
         </div>
 
         {/* Text */}
-        <h3 className="mb-1.5 text-sm font-semibold leading-snug text-foreground">
+        <h3 id={titleId} className="mb-1.5 text-sm font-semibold leading-snug text-foreground">
           {current.title}
         </h3>
         <p className="mb-5 text-xs leading-relaxed text-muted-foreground">
@@ -261,36 +279,24 @@ export function TooltipTour({ tourCompleted }: Props) {
           </span>
           <div className="flex items-center gap-2">
             {step > 0 && (
-              <button
-                type="button"
-                onClick={handleBack}
-                className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors duration-150 hover:bg-accent"
-              >
+              <Button type="button" variant="outline" size="xs" onClick={handleBack}>
                 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="size-3">
                   <path d="M12 7H2M6 3L2 7l4 4" />
                 </svg>
                 Back
-              </button>
+              </Button>
             )}
-            <button
-              type="button"
-              onClick={completeTour}
-              className="text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground"
-            >
+            <Button type="button" variant="ghost" size="xs" onClick={completeTour}>
               Skip
-            </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
-            >
+            </Button>
+            <Button type="button" size="xs" onClick={handleNext}>
               {isLast ? "Done" : "Next"}
               {!isLast && (
                 <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="size-3">
                   <path d="M2 7h10M8 3l4 4-4 4" />
                 </svg>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

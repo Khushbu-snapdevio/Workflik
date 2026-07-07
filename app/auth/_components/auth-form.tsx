@@ -1,14 +1,23 @@
 "use client";
 
+import { Eye, EyeOff, KeyRound, Link2, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
 import { PRODUCT_NAME } from "@/config/platform";
-import { signIn, useSession } from "@/lib/auth/client";
+import { signIn, signUp, useSession } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+interface AuthMethods {
+  emailPassword: boolean;
+  magicLink: boolean;
+  google: boolean;
+  smtpConfigured: boolean;
+  isBootstrap: boolean;
+}
 
 export function AuthForm() {
   return (
@@ -18,15 +27,36 @@ export function AuthForm() {
   );
 }
 
+function GoogleIcon() {
+  return (
+    <svg className="size-[18px] shrink-0" viewBox="0 0 24 24">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
 function AuthFormInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, isPending } = useSession();
+
+  const [methods, setMethods] = useState<AuthMethods | null>(null);
+  const [methodsError, setMethodsError] = useState(false);
+  const [view, setView] = useState<"password" | "magic-link">("password");
+
+  const [name, setName] = useState("");
   const [email, setEmail] = useState(searchParams.get("hint") ?? "");
+  const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  const callbackURL = searchParams.get("next") ?? "/platform/post-auth";
 
   useEffect(() => {
     if (session) {
@@ -34,17 +64,84 @@ function AuthFormInner() {
     }
   }, [router, session]);
 
+  useEffect(() => {
+    fetch("/api/auth/methods")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("methods request failed"))))
+      .then((data: AuthMethods) => {
+        setMethods(data);
+        // Default to whichever credential method is actually available —
+        // password is preferred (it's the primary method), fall back to
+        // magic link if password sign-in is disabled on this instance.
+        // Irrelevant during bootstrap, where password is the only option.
+        if (!data.isBootstrap && !data.emailPassword && data.magicLink) {
+          setView("magic-link");
+        }
+      })
+      .catch(() => setMethodsError(true));
+  }, []);
+
   if (isPending || session) {
     return null;
   }
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  if (methodsError) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-page px-4">
+        <div className="w-full max-w-[380px] text-center">
+          <div className="rounded-[var(--radius-xl)] border border-border bg-card px-8 py-8">
+            <h1 className="mb-2 text-xl font-bold text-foreground">
+              Can&rsquo;t reach the sign-in service
+            </h1>
+            <p className="mb-6 text-sm text-muted-foreground">
+              This usually means the database hasn&rsquo;t been migrated yet
+              (run <code className="rounded-[var(--radius-xs)] bg-muted px-1 py-0.5 text-xs">pnpm db:migrate</code>),
+              or the app can&rsquo;t connect to it. Check the server logs, then try again.
+            </p>
+            <Button
+              type="button"
+              size="default"
+              className="w-full"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!methods) {
+    return null;
+  }
+
+  // Bootstrapping this instance (no account exists anywhere yet) always
+  // forces a password-only signup view, regardless of the admin-configured
+  // toggles below — there's no admin yet to have set them, and Google/magic
+  // link would be extra friction for the one moment every self-hoster must
+  // get through: creating the first, always-available account.
+  const showGoogle = !methods.isBootstrap && methods.google;
+  const showMagicLink = !methods.isBootstrap && methods.magicLink;
+  const showPassword = methods.isBootstrap || methods.emailPassword;
+  const canSwitchCredentialView = showMagicLink && showPassword;
+  const activeView = canSwitchCredentialView ? view : showPassword ? "password" : "magic-link";
+  // Self-serve signup only ever exists to create that first account — once
+  // it exists, this instance is invite-only (an admin invites you, you set
+  // your password via the emailed link, then sign in here).
+  const passwordMode: "signin" | "signup" = methods.isBootstrap ? "signup" : "signin";
+
+  async function onMagicLinkSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (!email.trim()) {
+      setError("Please enter your work email.");
+      return;
+    }
+
     setSubmitting(true);
 
-    const callbackURL = searchParams.get("next") ?? "/platform/post-auth";
-    const result = await signIn.magicLink({ callbackURL, email });
+    const result = await signIn.magicLink({ callbackURL, email: email.trim().toLowerCase() });
 
     setSubmitting(false);
     if (result.error) {
@@ -52,6 +149,69 @@ function AuthFormInner() {
       return;
     }
     setSent(true);
+  }
+
+  async function onPasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    if (passwordMode === "signup" && !name.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!email.trim()) {
+      setError("Please enter your work email.");
+      return;
+    }
+    if (passwordMode === "signup" && password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const result =
+      passwordMode === "signup"
+        ? await signUp.email({ name, email: normalizedEmail, password, callbackURL })
+        : await signIn.email({ email: normalizedEmail, password, callbackURL });
+
+    setSubmitting(false);
+    if (result.error) {
+      setError(result.error.message ?? "Something went wrong. Please try again.");
+      return;
+    }
+    router.replace(callbackURL);
+  }
+
+  async function onGoogleClick() {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      const result = await signIn.social({
+        provider: "google",
+        callbackURL,
+        disableRedirect: true,
+      });
+      if (result?.error) {
+        setError(result.error.message ?? "Google sign-in failed.");
+        return;
+      }
+      const rawUrl = (result?.data as { url?: string } | null)?.url;
+      if (rawUrl) {
+        const url = new URL(rawUrl);
+        url.searchParams.set("prompt", "select_account");
+        window.location.href = url.toString();
+      } else {
+        setError("Couldn't start Google sign-in. Please try again.");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
   }
 
   return (
@@ -67,21 +227,36 @@ function AuthFormInner() {
         <div className="rounded-[var(--radius-xl)] border border-border bg-card px-8 py-8">
 
           {sent ? (
-            /* ── Email sent state ── */
+            /* ── Magic link sent state ── */
             <div className="text-center">
               <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-success/10">
                 <svg className="size-7 text-success" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>
-              <h1 className="mb-2 text-xl font-bold text-foreground">Check your inbox</h1>
-              <p className="mb-1 text-sm text-muted-foreground">
-                We sent a sign-in link to
-              </p>
-              <p className="mb-7 text-sm font-semibold text-foreground">{email}</p>
-              <p className="mb-6 text-xs text-muted-foreground">
-                Open the link in your email to sign in. The link expires in 10 minutes.
-              </p>
+              {methods.smtpConfigured ? (
+                <>
+                  <h1 className="mb-2 text-xl font-bold text-foreground">Check your inbox</h1>
+                  <p className="mb-1 text-sm text-muted-foreground">
+                    We sent a sign-in link to
+                  </p>
+                  <p className="mb-7 text-sm font-semibold text-foreground">{email}</p>
+                  <p className="mb-6 text-xs text-muted-foreground">
+                    Open the link in your email to sign in. The link expires in 10 minutes.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="mb-2 text-xl font-bold text-foreground">Check the server logs</h1>
+                  <p className="mb-1 text-sm text-muted-foreground">
+                    Email isn't configured on this instance, so no email was actually sent to
+                  </p>
+                  <p className="mb-7 text-sm font-semibold text-foreground">{email}</p>
+                  <p className="mb-6 text-xs text-muted-foreground">
+                    Your sign-in link was printed to the background worker's console output instead. Copy it from there to sign in.
+                  </p>
+                </>
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -96,90 +271,202 @@ function AuthFormInner() {
             /* ── Sign-in form ── */
             <>
               <div className="mb-7">
-                <h1 className="text-xl font-bold text-foreground">Welcome back</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Sign in to your {PRODUCT_NAME} workspace</p>
+                <h1 className="text-xl font-bold text-foreground">
+                  {activeView === "magic-link"
+                    ? "Sign in with a magic link"
+                    : methods.isBootstrap
+                    ? "Create the instance admin account"
+                    : "Welcome back"}
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {activeView === "magic-link"
+                    ? "We'll email you a link to sign in — no password needed."
+                    : methods.isBootstrap
+                    ? `You'll manage this entire ${PRODUCT_NAME} instance as its instance admin.`
+                    : `Sign in to your ${PRODUCT_NAME} workspace`}
+                </p>
               </div>
 
-              {/* Google */}
-              <Button
-                type="button"
-                variant="outline"
-                size="default"
-                disabled={googleLoading}
-                onClick={async () => {
-                  setGoogleLoading(true);
-                  setError(null);
-                  try {
-                    const result = await signIn.social({
-                      provider: "google",
-                      callbackURL: "/platform/post-auth",
-                      disableRedirect: true,
-                    });
-                    if (result?.error) {
-                      setError(result.error.message ?? "Google sign-in failed.");
-                      return;
-                    }
-                    const rawUrl = (result?.data as { url?: string } | null)?.url;
-                    if (rawUrl) {
-                      const url = new URL(rawUrl);
-                      url.searchParams.set("prompt", "select_account");
-                      window.location.href = url.toString();
-                    }
-                  } finally {
-                    setGoogleLoading(false);
-                  }
-                }}
-                className="flex h-11 w-full items-center justify-center gap-3 bg-muted/40"
-              >
-                <svg className="size-[18px] shrink-0" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                {googleLoading ? "Redirecting…" : "Continue with Google"}
-              </Button>
+              {activeView === "password" && showPassword && (
+                <form className="space-y-4" noValidate onSubmit={onPasswordSubmit}>
+                  {passwordMode === "signup" && (
+                    <div>
+                      <Label htmlFor="name" className="mb-1.5 block text-sm font-medium text-foreground">
+                        Full name
+                      </Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        autoComplete="name"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Jane Cooper"
+                        className="w-full focus-visible:border-primary"
+                      />
+                    </div>
+                  )}
 
-              {/* Divider */}
-              <div className="my-5 flex items-center gap-3">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-xs font-medium text-muted-foreground">or continue with email</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
+                  <div>
+                    <Label htmlFor="password-email" className="mb-1.5 block text-sm font-medium text-foreground">
+                      Work email
+                    </Label>
+                    <Input
+                      id="password-email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      className="w-full focus-visible:border-primary"
+                    />
+                  </div>
 
-              {/* Magic link form */}
-              <form onSubmit={onSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Work email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="w-full focus-visible:border-primary"
-                  />
-                </div>
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                        Password
+                      </Label>
+                      {passwordMode === "signin" && (
+                        <Link
+                          href="/auth/forgot-password"
+                          className="text-xs font-medium text-muted-foreground underline underline-offset-2 transition-colors duration-150 hover:text-primary"
+                        >
+                          Forgot password?
+                        </Link>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={passwordVisible ? "text" : "password"}
+                        autoComplete={passwordMode === "signup" ? "new-password" : "current-password"}
+                        required
+                        minLength={8}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pr-9 focus-visible:border-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPasswordVisible((v) => !v)}
+                        tabIndex={-1}
+                        aria-label={passwordVisible ? "Hide password" : "Show password"}
+                        className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground transition-colors duration-150 hover:text-foreground"
+                      >
+                        {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
 
-                {error && (
-                  <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
-                    {error}
-                  </p>
-                )}
+                  {error && (
+                    <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                      {error}
+                    </p>
+                  )}
 
-                <Button
-                  type="submit"
-                  size="default"
-                  disabled={submitting}
-                  className="w-full"
-                >
-                  {submitting ? "Sending link…" : "Send magic link"}
-                </Button>
-              </form>
+                  <Button type="submit" size="default" disabled={submitting} className="w-full">
+                    {submitting && <Loader2 className="size-4 animate-spin" />}
+                    {submitting
+                      ? passwordMode === "signup" ? "Creating account…" : "Signing in…"
+                      : passwordMode === "signup" ? "Create account" : "Sign in"}
+                  </Button>
+                </form>
+              )}
+
+              {activeView === "magic-link" && showMagicLink && (
+                <form className="space-y-4" noValidate onSubmit={onMagicLinkSubmit}>
+                  <div>
+                    <Label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
+                      Work email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      className="w-full focus-visible:border-primary"
+                    />
+                  </div>
+
+                  {error && (
+                    <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                      {error}
+                    </p>
+                  )}
+
+                  <Button type="submit" size="default" disabled={submitting} className="w-full">
+                    {submitting && <Loader2 className="size-4 animate-spin" />}
+                    {submitting ? "Sending link…" : "Send magic link"}
+                  </Button>
+                </form>
+              )}
+
+              {!showGoogle && !showMagicLink && !showPassword && (
+                <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                  No sign-in methods are currently enabled on this instance. Contact your administrator.
+                </p>
+              )}
+
+              {/* Alternative methods — always secondary, always at the bottom.
+                  Switching between password/magic-link swaps the whole view
+                  above (new heading + form) rather than a persistent tab bar. */}
+              {(showGoogle || (canSwitchCredentialView && (showPassword || showMagicLink))) && (
+                <>
+                  <div className="my-5 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs font-medium text-muted-foreground">or</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {showGoogle && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="default"
+                        disabled={googleLoading}
+                        onClick={onGoogleClick}
+                        className="flex h-11 w-full items-center justify-center gap-3 bg-muted/40"
+                      >
+                        <GoogleIcon />
+                        {googleLoading ? "Redirecting…" : "Continue with Google"}
+                      </Button>
+                    )}
+
+                    {canSwitchCredentialView && activeView === "password" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="default"
+                        onClick={() => { setView("magic-link"); setError(null); }}
+                        className="flex h-11 w-full items-center justify-center gap-2.5 bg-muted/40"
+                      >
+                        <Link2 size={16} />
+                        Sign in with a magic link
+                      </Button>
+                    )}
+
+                    {canSwitchCredentialView && activeView === "magic-link" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="default"
+                        onClick={() => { setView("password"); setError(null); }}
+                        className="flex h-11 w-full items-center justify-center gap-2.5 bg-muted/40"
+                      >
+                        <KeyRound size={16} />
+                        Sign in with a password instead
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

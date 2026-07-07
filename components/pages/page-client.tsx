@@ -142,14 +142,14 @@ export function PageClient({
         type="button"
         onClick={() => coverInput.current?.click()}
         disabled={coverUploading}
-        className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-colors duration-150 hover:bg-card disabled:opacity-50"
+        className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors duration-150 hover:bg-card disabled:opacity-50"
        >
         {coverUploading ? "Uploading…" : "Change cover"}
        </button>
        <button
         type="button"
         onClick={() => saveCover(null)}
-        className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur-sm transition-colors duration-150 hover:bg-card"
+        className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors duration-150 hover:bg-card"
        >
         Remove
        </button>

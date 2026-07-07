@@ -360,7 +360,7 @@ export function IconPicker({
   return (
     <div
       ref={pickerRef}
-      className="absolute left-0 top-full z-[500] mt-2 w-[352px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover shadow-lg"
+      className="absolute left-0 top-full z-[500] mt-2 w-[352px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover"
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── Tab bar — Notion underline style ── */}
@@ -606,7 +606,7 @@ export function IconPicker({
               />
               {uploadedUrl ? (
                 <div className="flex flex-col items-center gap-4 py-3">
-                  <img src={uploadedUrl} alt="Icon preview" className="size-[72px] rounded-[6px] border border-border object-cover shadow-sm" />
+                  <img src={uploadedUrl} alt="Icon preview" className="size-[72px] rounded-[6px] border border-border object-cover" />
                   <div className="flex items-center gap-2">
                     <button onClick={() => applyImage(uploadedUrl)} className="rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90">Apply</button>
                     <button onClick={() => fileRef.current?.click()} disabled={uploading} className="rounded-[var(--radius-sm)] border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50">{uploading ? "Uploading…" : "Change"}</button>

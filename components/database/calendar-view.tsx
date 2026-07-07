@@ -203,7 +203,7 @@ function DraggableChip({
         style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none" }}
         {...attributes}
         {...listeners}
-        className="group/chip relative flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background shadow-sm transition-colors hover:border-border hover:bg-accent/30 cursor-pointer"
+        className="group/chip relative flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background transition-colors hover:border-border hover:bg-accent/30 cursor-pointer"
         onMouseEnter={() => setShowDots(true)}
         onMouseLeave={() => setShowDots(false)}
         onContextMenu={(e) => {

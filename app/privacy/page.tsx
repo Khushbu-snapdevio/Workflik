@@ -35,7 +35,7 @@ const SECTIONS = [
   },
   {
     title: "Your Rights",
-    content: `Depending on your location, you may have rights to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; export your data in a portable format. To exercise any of these rights, contact us at privacy@workflik.com.`,
+    content: `Depending on your location, you may have rights to: access the personal data we hold about you; correct inaccurate data; request deletion of your data; export your data in a portable format. To exercise any of these rights, contact the administrator of this ${PRODUCT_NAME} instance.`,
   },
   {
     title: "Children's Privacy",
@@ -51,7 +51,7 @@ const SECTIONS = [
   },
   {
     title: "Contact Us",
-    content: `If you have questions or concerns about this Privacy Policy or our data practices, please contact our privacy team at privacy@workflik.com.`,
+    content: `If you have questions or concerns about this Privacy Policy or our data practices, please contact the administrator of this ${PRODUCT_NAME} instance.`,
   },
 ];
 
@@ -89,6 +89,16 @@ export default function PrivacyPage() {
             <p className="text-base leading-7 text-muted-foreground">
               {PRODUCT_NAME} is committed to protecting your personal information. This Privacy Policy explains
               what data we collect, how we use it, and the choices you have.
+            </p>
+          </div>
+
+          {/* Self-hosted notice */}
+          <div className="mt-4 rounded-[var(--radius-lg)] border border-warning/30 bg-warning/5 px-6 py-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              <strong className="text-foreground">Note for instance operators:</strong> {PRODUCT_NAME} is
+              self-hosted software — the organization or individual running this instance, not the {PRODUCT_NAME}
+              project, is the data controller for the information described below. Review and adapt this template
+              to your own data-handling practices before relying on it.
             </p>
           </div>
         </div>

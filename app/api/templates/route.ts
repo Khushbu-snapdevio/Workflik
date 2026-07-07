@@ -1,4 +1,4 @@
-import { count, eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { templates } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
@@ -32,16 +32,17 @@ export async function GET() {
 
 async function ensureBuiltInTemplates() {
   try {
-    const [{ cnt }] = await db
-      .select({ cnt: count() })
+    const existing = await db
+      .select({ name: templates.name })
       .from(templates)
       .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
-
-    if (Number(cnt) >= 16) return;
+    const existingNames = new Set(existing.map((t) => t.name));
 
     const { BUILT_IN_TEMPLATES } = await import("@/app/api/orbit/templates/seed/route");
+    const missing = BUILT_IN_TEMPLATES.filter((t) => !existingNames.has(t.name));
+    if (missing.length === 0) return;
 
-    const rows = BUILT_IN_TEMPLATES.map((t) => ({
+    const rows = missing.map((t) => ({
       name:         t.name,
       description:  t.description,
       category:     t.category,

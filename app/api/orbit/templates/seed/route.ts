@@ -1,4 +1,4 @@
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -19,26 +19,73 @@ type View = { name: string; type: "table" | "board" | "calendar"; isDefault?: bo
 type SampleRow = Record<string, string | number>;
 type DbSchema = { properties: Prop[]; views: View[]; sample_rows: SampleRow[] };
 
-function dbSnap(title: string, icon: string, tagline: string, schema: DbSchema) {
+type SnapshotBlock = {
+  id: string;
+  type: string;
+  content: unknown;
+  schema_version: number;
+  order_index: number;
+  parent_block_id: string | null;
+  children: SnapshotBlock[];
+};
+
+type PageSnapshotSeed = {
+  title: string;
+  icon: string;
+  cover_url: null;
+  is_full_width: boolean;
+  font_family: string;
+  blocks: SnapshotBlock[];
+  subpages: never[];
+  database_schema?: DbSchema;
+};
+
+function block(
+  type: string,
+  content: unknown,
+  order_index: number,
+  children: SnapshotBlock[] = []
+): SnapshotBlock {
+  return {
+    id: crypto.randomUUID(),
+    type,
+    content,
+    schema_version: 1,
+    order_index,
+    parent_block_id: null,
+    children,
+  };
+}
+
+function text(value: string) {
+  return { text: [{ text: value, marks: [] }] };
+}
+
+function dbSnap(title: string, icon: string, tagline: string, schema: DbSchema): PageSnapshotSeed {
   return {
     title,
     icon,
     cover_url: null,
     is_full_width: false,
     font_family: "default",
-    blocks: [
-      {
-        id: crypto.randomUUID(),
-        type: "paragraph",
-        content: { text: [{ text: tagline, marks: [] }] },
-        schema_version: 1,
-        order_index: 0,
-        parent_block_id: null,
-        children: [],
-      },
-    ],
+    blocks: [block("paragraph", text(tagline), 0)],
     subpages: [],
     database_schema: schema,
+  };
+}
+
+// A plain content page (no database) — used for onboarding-style templates
+// like "Getting Started" and "Daily Journal" that are just blocks, not a
+// table/board of records.
+function pageSnap(title: string, icon: string, blocks: SnapshotBlock[]): PageSnapshotSeed {
+  return {
+    title,
+    icon,
+    cover_url: null,
+    is_full_width: false,
+    font_family: "default",
+    blocks,
+    subpages: [],
   };
 }
 
@@ -46,10 +93,48 @@ export const BUILT_IN_TEMPLATES: {
   name: string;
   description: string;
   category: "productivity" | "project_mgmt" | "marketing" | "engineering" | "sales";
-  pageSnapshot: ReturnType<typeof dbSnap>;
+  pageSnapshot: PageSnapshotSeed;
 }[] = [
 
-  // ── Productivity ────────────────────────────────────────────────────────────
+  // ── Onboarding ───────────────────────────────────────────────────────────────
+
+  {
+    name: "Getting Started",
+    description: "A quick intro guide to your new workspace.",
+    category: "productivity",
+    pageSnapshot: pageSnap("Getting Started", "👋", [
+      block("paragraph", text("Welcome to Workflik! Here's how to get the most out of your workspace."), 0),
+      block("todo", { checked: true, ...text("Open this page — you're already here 🎉") }, 1),
+      block("todo", { checked: false, ...text('Click anywhere below and type "/" to see what you can create — headings, tables, to-dos, and more') }, 2),
+      block("todo", { checked: false, ...text("Use the sidebar to organize pages into a tree — drag and drop to reorder or nest them") }, 3),
+      block("todo", { checked: false, ...text("Invite your teammates from Workspace Settings → Members") }, 4),
+      block("toggle", text("A few more tips"), 5, [
+        block("paragraph", text("Press Cmd/Ctrl+K to search across every page in your workspace."), 0),
+        block("paragraph", text('Turn any page into a reusable template from its "•••" menu.'), 1),
+        block("paragraph", text("Star pages from the sidebar to pin your favorites at the top."), 2),
+      ]),
+    ]),
+  },
+
+  {
+    name: "Daily Journal",
+    description: "Daily reflections and ideas.",
+    category: "productivity",
+    pageSnapshot: pageSnap("Daily Journal", "📔", [
+      block("paragraph", text("A simple space for daily reflections and ideas."), 0),
+      block("h2", text("Today"), 1),
+      block("todo", { checked: false, ...text("What went well today?") }, 2),
+      block("todo", { checked: false, ...text("What could be better?") }, 3),
+      block("todo", { checked: false, ...text("One thing I'm grateful for") }, 4),
+      block("toggle", text("More writing prompts"), 5, [
+        block("paragraph", text("What did I learn today?"), 0),
+        block("paragraph", text("What's one small win from today?"), 1),
+        block("paragraph", text("What's on my mind for tomorrow?"), 2),
+      ]),
+    ]),
+  },
+
+  // ── Productivity ─────────────────────────────────────────────────────────────
 
   {
     name: "Meeting Notes",
@@ -644,7 +729,7 @@ export const BUILT_IN_TEMPLATES: {
   },
 ];
 
-// POST /api/orbit/templates/seed — seed all 16 built-in templates (idempotent)
+// POST /api/orbit/templates/seed — seed all 18 built-in templates (idempotent)
 // Body: { force?: boolean } — if force=true, delete all existing built-ins first
 export async function POST(req: Request) {
   const session = await requirePlatformAdmin();
@@ -656,18 +741,23 @@ export async function POST(req: Request) {
     await db
       .delete(templates)
       .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
-  } else {
-    const [{ cnt }] = await db
-      .select({ cnt: count() })
-      .from(templates)
-      .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
-
-    if (Number(cnt) >= 16) {
-      return Response.json({ message: "Already seeded", count: cnt });
-    }
   }
 
-  const rows = BUILT_IN_TEMPLATES.map((t) => ({
+  // Insert only templates that don't already exist by name — safe to call
+  // repeatedly (e.g. after BUILT_IN_TEMPLATES grows) without ever producing
+  // duplicate rows for names that were seeded in an earlier pass.
+  const existing = await db
+    .select({ name: templates.name })
+    .from(templates)
+    .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
+  const existingNames = new Set(existing.map((t) => t.name));
+
+  const missing = BUILT_IN_TEMPLATES.filter((t) => !existingNames.has(t.name));
+  if (missing.length === 0) {
+    return Response.json({ message: "Already seeded", count: existing.length });
+  }
+
+  const rows = missing.map((t) => ({
     name:         t.name,
     description:  t.description,
     category:     t.category,

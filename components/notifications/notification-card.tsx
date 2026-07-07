@@ -27,8 +27,9 @@ const TYPE_ACTION: Record<string, string> = {
   reopened:         "reopened a thread",
   access_granted:   "granted you access",
   workspace_invite: "added you to workspace",
+  workspace_invite_accepted: "accepted your workspace invite",
   guest_accepted:   "accepted your invite",
-  trash_warning:    "moved a page to Trash",
+  trash_warning:    "has a page that will be permanently deleted soon",
   page_update:      "edited a page",
   task_assigned:    "assigned you a task",
 };
@@ -41,6 +42,7 @@ const TYPE_DOT_CLASS: Record<string, string> = {
   reopened:         "bg-warning",
   access_granted:   "bg-success",
   workspace_invite: "bg-primary",
+  workspace_invite_accepted: "bg-success",
   guest_accepted:   "bg-success",
   trash_warning:    "bg-destructive",
   page_update:      "bg-muted-foreground",

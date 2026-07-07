@@ -638,7 +638,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
             <span className="text-lg leading-none">📕</span>
             Embed a PDF
           </button>
-          <div className="w-full max-w-sm rounded-[var(--radius-md)] border border-border bg-popover p-4 shadow-lg">
+          <div className="w-full max-w-sm rounded-[var(--radius-md)] border border-border bg-popover p-4">
             <Tabs defaultValue="upload">
               <TabsList className="w-full" variant="line">
                 <TabsTrigger value="upload">Upload</TabsTrigger>

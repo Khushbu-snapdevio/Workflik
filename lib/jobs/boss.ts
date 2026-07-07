@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 import { normalizePgConnectionString } from "@/lib/pg-connection";
 import { sleep } from "@/lib/utils";
 import { ensureJobQueues } from "@/lib/jobs/queue-options";
-import { JOB_NAMES } from "@/lib/jobs/job-names";
+import { registerHandlers } from "@/lib/jobs/register";
 
 const boss = new PgBoss({
   connectionString: normalizePgConnectionString(env.DATABASE_URL),
@@ -38,21 +38,7 @@ export async function startWorker() {
 
   await startBossWithRetry();
   await ensureJobQueues(boss);
-
-  const { handleEmailSend }           = await import("@/lib/jobs/handlers/email-send");
-  const { handleEmailOutboxReap }     = await import("@/lib/jobs/handlers/email-outbox-reap");
-  const { handleScaffoldHealthcheck } = await import("@/lib/jobs/handlers/scaffold-healthcheck");
-  const { handleWorkspaceInviteSend } = await import("@/lib/jobs/handlers/send-workspace-invite");
-
-  await Promise.all([
-    boss.work(JOB_NAMES.EMAIL_SEND, handleEmailSend),
-    boss.work(JOB_NAMES.EMAIL_OUTBOX_REAP, handleEmailOutboxReap),
-    boss.work(JOB_NAMES.SCAFFOLD_HEALTHCHECK, handleScaffoldHealthcheck),
-    boss.work(JOB_NAMES.WORKSPACE_INVITE_SEND, handleWorkspaceInviteSend),
-  ]);
-
-  await boss.schedule(JOB_NAMES.EMAIL_OUTBOX_REAP, "*/15 * * * *", {});
-  await boss.schedule(JOB_NAMES.SCAFFOLD_HEALTHCHECK, "*/10 * * * *", {});
+  await registerHandlers(boss);
 
   console.log("[worker] handlers registered");
 }

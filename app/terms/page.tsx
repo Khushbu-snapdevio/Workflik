@@ -30,10 +30,6 @@ const SECTIONS = [
     content: `You retain ownership of all content you create or upload to ${PRODUCT_NAME}. By using our service, you grant us a limited, non-exclusive licence to store and process your content solely to provide the service to you. We do not sell or share your content with third parties.`,
   },
   {
-    title: "Subscriptions and Billing",
-    content: `${PRODUCT_NAME} may offer free and paid plans. Paid subscriptions are billed in advance on a monthly or annual basis. You may cancel your subscription at any time; cancellation takes effect at the end of the current billing period and no refunds are issued for unused time.`,
-  },
-  {
     title: "Data and Privacy",
     content: `Our collection and use of personal information is described in our Privacy Policy. By using ${PRODUCT_NAME}, you consent to the data practices described there.`,
   },
@@ -51,7 +47,7 @@ const SECTIONS = [
   },
   {
     title: "Contact",
-    content: `If you have questions about these Terms, please contact us at legal@workflik.com.`,
+    content: `If you have questions about these Terms, please contact the administrator of this ${PRODUCT_NAME} instance.`,
   },
 ];
 
@@ -89,6 +85,16 @@ export default function TermsPage() {
             <p className="text-base leading-7 text-muted-foreground">
               By accessing or using {PRODUCT_NAME}, you agree to be bound by these Terms of Service.
               Please read them carefully before using our platform.
+            </p>
+          </div>
+
+          {/* Self-hosted notice */}
+          <div className="mt-4 rounded-[var(--radius-lg)] border border-warning/30 bg-warning/5 px-6 py-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              <strong className="text-foreground">Note for instance operators:</strong> {PRODUCT_NAME} is
+              self-hosted software — the organization or individual running this instance, not the {PRODUCT_NAME}
+              project, is the party offering the service described below. Review and adapt this template to your
+              own organization before relying on it.
             </p>
           </div>
         </div>

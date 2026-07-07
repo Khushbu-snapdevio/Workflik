@@ -17,6 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
   reopened:         "reopened a comment thread",
   access_granted:   "granted you access to a page",
   workspace_invite: "added you to a workspace",
+  workspace_invite_accepted: "accepted your workspace invite",
   guest_accepted:   "accepted your guest invitation",
   trash_warning:    "A page you own will be permanently deleted in 3 days",
 };
@@ -64,7 +65,7 @@ export async function handleNotificationEmailSend(jobs: Job<NotificationEmailSen
     const senderLabel = notif.senderName ?? "Someone";
     const action      = TYPE_LABELS[notif.type] ?? "sent you a notification";
     const pageLabel   = notif.pageTitle ? ` on "${notif.pageTitle}"` : "";
-    const appUrl      = env.NEXT_PUBLIC_APP_URL ?? "https://app.workflik.com";
+    const appUrl      = env.NEXT_PUBLIC_APP_URL;
 
     const subject = `${senderLabel} ${action}${pageLabel}`;
     const html = await renderEmailTemplate(

@@ -1,6 +1,6 @@
 {
-  "id": "98b65f9c-29d6-4449-a766-663e7730d8e4",
-  "prevId": "e1b37052-5542-4006-a9c8-c6c677c17391",
+  "id": "e1b37052-5542-4006-a9c8-c6c677c17391",
+  "prevId": "6e412547-079d-47ee-8a6f-96de8ac64872",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1263,13 +1263,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'[]'::jsonb"
-        },
-        "board_settings": {
-          "name": "board_settings",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
         },
         "gallery_card_size": {
           "name": "gallery_card_size",

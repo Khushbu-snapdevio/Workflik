@@ -120,6 +120,7 @@ export const notificationType = pgEnum("notification_type", [
   "reopened",
   "access_granted",
   "workspace_invite",
+  "workspace_invite_accepted",
   "guest_accepted",
   "trash_warning",
   "page_update",
@@ -159,6 +160,7 @@ export const searchSourceType = pgEnum("search_source_type", [
 export const auditTargetType = pgEnum("audit_target_type", [
   "user",
   "workspace",
+  "settings",
 ]);
 
 export const fileUploadKind = pgEnum("file_upload_kind", [

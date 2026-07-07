@@ -555,7 +555,7 @@ function PropertyFlyout({
     <div
       data-edit-property-exempt
       style={{ position: "fixed", top, left, zIndex: 9999, width: FW }}
-      className="max-h-[320px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
+      className="max-h-[320px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1"
       onClick={(e) => e.stopPropagation()}
     >
       {loading && <p className="px-2.5 py-2 text-xs text-muted-foreground/60">Loading…</p>}
@@ -658,7 +658,7 @@ function InlineValueEditor({
       ref={ref}
       data-edit-property-exempt
       style={{ position: "fixed", top, left, zIndex: 9999, width: W }}
-      className="rounded-[var(--radius-md)] border border-border bg-popover p-2 shadow-lg"
+      className="rounded-[var(--radius-md)] border border-border bg-popover p-2"
       onClick={(e) => e.stopPropagation()}
     >
       <input

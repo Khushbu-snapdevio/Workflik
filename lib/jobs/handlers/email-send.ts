@@ -5,9 +5,26 @@ import { db } from "@/lib/db";
 import { sendEmailViaSmtp } from "@/lib/smtp/client";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { type EmailSendPayload, JOB_NAMES } from "@/lib/jobs/job-names";
+import { sleep } from "@/lib/utils";
 
 const MAX_ATTEMPTS = 3;
 const RETRY_BACKOFF_SECONDS = [60, 300, 900];
+
+// Many SMTP providers (Mailtrap's testing plan included) reject sends that
+// come in faster than ~1/second, independent of any monthly quota. Since
+// jobs can be enqueued in a tight burst (e.g. inviting several teammates at
+// once), pace actual sends here rather than relying on job-polling timing,
+// which isn't a reliable guarantee against bursts.
+const MIN_SEND_INTERVAL_MS = 1100;
+let lastSendAt = 0;
+
+async function waitForSendSlot() {
+  const wait = lastSendAt + MIN_SEND_INTERVAL_MS - Date.now();
+  if (wait > 0) {
+    await sleep(wait);
+  }
+  lastSendAt = Date.now();
+}
 
 export async function handleEmailSend(jobs: Job<EmailSendPayload>[]) {
   for (const job of jobs) {
@@ -33,7 +50,10 @@ async function processEmailSendJob(job: Job<EmailSendPayload>) {
   const attempt = claimed.attemptCount;
   const remainingAttempts = MAX_ATTEMPTS - attempt;
 
+  console.log(`[email-send] attempt ${attempt}/${MAX_ATTEMPTS} — sending "${claimed.subject}" to ${claimed.recipientEmail}`);
+
   try {
+    await waitForSendSlot();
     await sendEmailViaSmtp({
       html:    claimed.htmlBody,
       subject: claimed.subject,
@@ -44,10 +64,15 @@ async function processEmailSendJob(job: Job<EmailSendPayload>) {
       .update(emailOutbox)
       .set({ status: "sent", updatedAt: new Date() })
       .where(eq(emailOutbox.id, outboxId));
+
+    console.log(`[email-send] sent to ${claimed.recipientEmail}`);
   } catch (error) {
     const reason = error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500);
 
     if (remainingAttempts > 0) {
+      const delay = RETRY_BACKOFF_SECONDS[Math.min(attempt - 1, RETRY_BACKOFF_SECONDS.length - 1)];
+      console.error(`[email-send] FAILED to send to ${claimed.recipientEmail} (attempt ${attempt}/${MAX_ATTEMPTS}), retrying in ${delay}s — ${reason}`);
+
       await db
         .update(emailOutbox)
         .set({ lastError: reason, status: "queued", updatedAt: new Date() })
@@ -56,10 +81,12 @@ async function processEmailSendJob(job: Job<EmailSendPayload>) {
       await enqueueJob(
         JOB_NAMES.EMAIL_SEND,
         { outboxId },
-        { startAfter: RETRY_BACKOFF_SECONDS[Math.min(attempt - 1, RETRY_BACKOFF_SECONDS.length - 1)] }
+        { startAfter: delay }
       );
       return;
     }
+
+    console.error(`[email-send] FAILED to send to ${claimed.recipientEmail} — giving up after ${MAX_ATTEMPTS} attempts — ${reason}`);
 
     await db
       .update(emailOutbox)

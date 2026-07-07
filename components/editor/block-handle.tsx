@@ -83,6 +83,28 @@ function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
  }
 }
 
+// Re-measures the on-screen rect of an already-resolved block by its document
+// position, rather than the mouse coordinates that first found it. Used to
+// keep the handle glued to its block while scrolling, since scrolling doesn't
+// fire mousemove and would otherwise leave the fixed-position handle stuck at
+// its last known coordinates while the block scrolls away underneath it.
+function getBlockRect(editor: Editor, nodePos: number): { top: number; left: number } | null {
+ try {
+  const editorEl = editor.view.dom as HTMLElement;
+  const er    = editorEl.getBoundingClientRect();
+  const domInfo = editor.view.domAtPos(nodePos + 1);
+  let domNode  = domInfo.node as HTMLElement;
+  if (domNode.nodeType === Node.TEXT_NODE) domNode = domNode.parentElement!;
+  while (domNode.parentElement && domNode.parentElement !== editorEl) {
+   domNode = domNode.parentElement;
+  }
+  const br = domNode.getBoundingClientRect();
+  return { top: br.top + br.height / 2, left: er.left - 56 };
+ } catch {
+  return null;
+ }
+}
+
 export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?: (nodePos: number, absoluteY: number) => void }) {
  const [block, setBlock]    = useState<BlockInfo | null>(null);
  const [menuOpen, setMenuOpen] = useState(false);
@@ -137,6 +159,30 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
    document.removeEventListener("mousemove", onMove);
    clearTimeout(hideTimer.current);
   };
+ }, [editor]);
+
+ // ── Keep the handle glued to its block while scrolling ────────────────────
+ // Scroll events don't fire mousemove, and the handle's ancestor scroll
+ // containers (e.g. #page-scroll-container) don't bubble scroll to window,
+ // so listen with capture on document to catch scrolling on any ancestor.
+ useEffect(() => {
+  const onScroll = () => {
+   if (menuOpenRef.current) return;
+   setBlock((prev) => {
+    if (!prev) return prev;
+    const rect = getBlockRect(editor, prev.nodePos);
+    if (!rect) return null;
+
+    const editorEl = editor.view.dom as HTMLElement;
+    const er   = editorEl.getBoundingClientRect();
+    if (rect.top < er.top - 10 || rect.top > er.bottom + 10) return null;
+
+    return { ...prev, top: rect.top, left: rect.left };
+   });
+  };
+
+  document.addEventListener("scroll", onScroll, true);
+  return () => document.removeEventListener("scroll", onScroll, true);
  }, [editor]);
 
  // ── Outside-click closes dropdown ─────────────────────────────────────────

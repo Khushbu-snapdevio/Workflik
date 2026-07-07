@@ -39,7 +39,7 @@ export function TemplateDeleteButton({ templateId, templateName }: Props) {
       {open && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
-          <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6 shadow-xl">
+          <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6">
             <button
               type="button"
               onClick={() => setOpen(false)}

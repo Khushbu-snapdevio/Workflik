@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces } from "@/lib/db/schema";
 import { apiError, ApiError, getSession } from "@/lib/workspaces/auth";
+import { acceptWorkspaceInviteTx } from "@/lib/workspaces/invites";
 import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ token: string }> };
@@ -19,6 +20,7 @@ export async function POST(_req: Request, { params }: Ctx) {
         status:       workspaceMembers.status,
         invitedEmail: workspaceMembers.invitedEmail,
         inviteExpires:workspaceMembers.inviteExpires,
+        invitedBy:    workspaceMembers.invitedBy,
         workspaceSlug: workspaces.slug,
       })
       .from(workspaceMembers)
@@ -56,15 +58,15 @@ export async function POST(_req: Request, { params }: Ctx) {
       return Response.json({ workspaceSlug: member.workspaceSlug });
     }
 
-    await db
-      .update(workspaceMembers)
-      .set({
-        userId:      session.user.id,
-        status:      "active",
-        joinedAt:    new Date(),
-        inviteToken: null,
-      })
-      .where(eq(workspaceMembers.id, member.id));
+    await db.transaction(async (tx) => {
+      await acceptWorkspaceInviteTx(tx, {
+        memberId:     member.id,
+        workspaceId:  member.workspaceId,
+        userId:       session.user.id,
+        invitedBy:    member.invitedBy,
+        accepterName: session.user.name ?? session.user.email,
+      });
+    });
 
     await writeAuditLog({
       actorId:    session.user.id,

@@ -33,8 +33,21 @@ export async function POST(req: Request, { params }: Ctx) {
     }
 
     const { targetUserId } = parsed.data;
+    const workspace = await getWorkspace(id);
 
-    // Target must already be an active Editor or Viewer in this workspace
+    // Only the current owner can hand off ownership — the confirmation
+    // email goes to whoever initiates this, so allowing any admin to start
+    // a transfer would let them redirect ownership to themselves or a third
+    // party without the actual owner's consent.
+    if (workspace.createdBy !== null && workspace.createdBy !== session.user.id) {
+      return apiError(403, "Only the workspace owner can transfer ownership");
+    }
+
+    if (targetUserId === workspace.createdBy) {
+      return apiError(400, "Target user is already the workspace owner");
+    }
+
+    // Target must already be an active member of this workspace
     const [targetMember] = await db
       .select({ role: workspaceMembers.role })
       .from(workspaceMembers)
@@ -48,7 +61,6 @@ export async function POST(req: Request, { params }: Ctx) {
       .limit(1);
 
     if (!targetMember) return apiError(404, "Target user is not an active member of this workspace");
-    if (targetMember.role === "admin") return apiError(400, "Target user is already the Admin");
 
     const [targetUser] = await db
       .select({ name: users.name, email: users.email })
@@ -57,8 +69,6 @@ export async function POST(req: Request, { params }: Ctx) {
       .limit(1);
 
     if (!targetUser) return apiError(404, "Target user not found");
-
-    const workspace = await getWorkspace(id);
     const token     = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 

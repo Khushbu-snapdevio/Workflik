@@ -19,6 +19,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { FavoritesSection } from "@/components/sidebar/favorites-section";
 import { PageTree } from "@/components/sidebar/page-tree";
@@ -183,8 +184,19 @@ export function Sidebar({
  function handleToggleFavorite(pageId: string, isFav: boolean) {
   window.dispatchEvent(new CustomEvent("workflik:favorites-changed", { detail: { pageId, isFavorited: !isFav } }));
   if (isFav) {
+   const removed = favorites.find((f) => f.pageId === pageId);
    setFavorites((prev) => prev.filter((f) => f.pageId !== pageId));
-   fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" }).catch(() => {});
+   fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" })
+    .then((r) => {
+     if (!r.ok && removed) {
+      setFavorites((prev) => [...prev, removed]);
+      toast.error("Couldn't remove favorite — please try again.");
+     }
+    })
+    .catch(() => {
+     if (removed) setFavorites((prev) => [...prev, removed]);
+     toast.error("Couldn't remove favorite — please try again.");
+    });
   } else {
    // Optimistic add
    const tempId = crypto.randomUUID();
@@ -198,10 +210,14 @@ export function Sidebar({
     .then((data) => {
      if (data) {
       setFavorites((prev) => prev.map((f) => (f.id === tempId ? data : f)));
+     } else {
+      setFavorites((prev) => prev.filter((f) => f.id !== tempId));
+      toast.error("Couldn't add favorite — please try again.");
      }
     })
     .catch(() => {
      setFavorites((prev) => prev.filter((f) => f.id !== tempId));
+     toast.error("Couldn't add favorite — please try again.");
     });
   }
  }
@@ -351,7 +367,7 @@ export function Sidebar({
      <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-2 py-3">
       <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><Trash2 size={18} /></CollapsedNavItem>
       {isAdmin && (
-       <CollapsedNavItem href="/orbit-admin/orbit" label="Admin Panel">
+       <CollapsedNavItem href="/orbit-admin/orbit" label="Orbit Admin">
         <Shield size={18} />
        </CollapsedNavItem>
       )}

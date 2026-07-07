@@ -18,6 +18,7 @@ const TYPE_LABEL: Record<string, string> = {
   reopened:         "reopened a thread",
   access_granted:   "granted you page access",
   workspace_invite: "added you to a workspace",
+  workspace_invite_accepted: "accepted your workspace invite",
   guest_accepted:   "accepted your invitation",
   trash_warning:    "page will be deleted soon",
 };

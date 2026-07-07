@@ -1,6 +1,6 @@
 {
-  "id": "83bde405-016d-4d49-8981-9b80986da836",
-  "prevId": "56e8fd9a-2ecb-4c1f-addc-b1376ebc5818",
+  "id": "56e8fd9a-2ecb-4c1f-addc-b1376ebc5818",
+  "prevId": "edc3a0e1-f17b-44c2-ae1c-a048540ad4d3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -836,34 +836,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": 1
-        },
-        "notify_mentions": {
-          "name": "notify_mentions",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "notify_page_updates": {
-          "name": "notify_page_updates",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "notify_workspace_invites": {
-          "name": "notify_workspace_invites",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "notify_task_assignments": {
-          "name": "notify_task_assignments",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
         },
         "created_at": {
           "name": "created_at",

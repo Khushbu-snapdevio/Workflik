@@ -1,9 +1,18 @@
 "use client";
 
 import Image from "next/image";
+import { X } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { completeOnboardingAction, type InviteEntry } from "@/app/actions/onboarding";
 import { PRODUCT_NAME } from "@/config/platform";
+import { RoleSelect } from "@/components/ui/role-select";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
+const INVITE_ROLE_OPTIONS = [
+ { value: "admin",  label: "Admin" },
+ { value: "editor", label: "Member" },
+ { value: "viewer", label: "Viewer" },
+] as const;
 
 /* ─── Data ──────────────────────────────────────────────────────── */
 
@@ -62,9 +71,9 @@ const EMPTY_INVITE: InviteEntry = { email: "", role: "editor" };
 
 /* ─── Component ─────────────────────────────────────────────────── */
 
-interface Props { initialName: string }
+interface Props { initialName: string; smtpConfigured: boolean }
 
-export function OnboardingUI({ initialName }: Props) {
+export function OnboardingUI({ initialName, smtpConfigured }: Props) {
  const [step,          setStep]         = useState(PROFILE_STEP);
  const [displayName,   setDisplayName]  = useState(initialName);
  const [jobTitle,      setJobTitle]     = useState("");
@@ -75,6 +84,7 @@ export function OnboardingUI({ initialName }: Props) {
  ]);
  const [templateKey,   setTemplateKey]  = useState("blank");
  const [pending, startTransition]       = useTransition();
+ const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
 
  const nameInputRef   = useRef<HTMLInputElement>(null);
  const profileNameRef = useRef<HTMLInputElement>(null);
@@ -84,7 +94,11 @@ export function OnboardingUI({ initialName }: Props) {
  const isTeam = selections[2] !== "solo" && selections[2] !== "";
 
  const totalSteps    = isTeam ? 7 : 6;
- const progressTotal = selections[2] ? totalSteps : 6;
+ // Only reflects the team/solo choice once the user has actually moved past
+ // that question (clicked Continue) — using the live selection instead would
+ // make the progress bar/dot count change the instant an option is clicked,
+ // before the choice is confirmed.
+ const progressTotal = step > Q_LAST_STEP ? totalSteps : 6;
 
  const isProfileStep  = step === PROFILE_STEP;
  const isQuestionStep = step >= Q_FIRST_STEP && step <= Q_LAST_STEP;
@@ -105,12 +119,16 @@ export function OnboardingUI({ initialName }: Props) {
   setInvites((prev) => prev.map((inv, idx) => idx === i ? { ...inv, email } : inv));
  }
 
- function updateInviteRole(i: number, role: "editor" | "viewer") {
+ function updateInviteRole(i: number, role: "admin" | "editor" | "viewer") {
   setInvites((prev) => prev.map((inv, idx) => idx === i ? { ...inv, role } : inv));
  }
 
  function addInviteRow() {
   if (invites.length < 8) setInvites((prev) => [...prev, { ...EMPTY_INVITE }]);
+ }
+
+ function removeInviteRow(i: number) {
+  setInvites((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
  }
 
  function handleContinue() {
@@ -124,6 +142,14 @@ export function OnboardingUI({ initialName }: Props) {
   if (isNameStep) { setStep(isTeam ? INVITE_STEP : TEMPLATE_SOLO); return; }
   if (isInviteStep) { setStep(TEMPLATE_TEAM); return; }
   if (isTemplateStep) { finish(); }
+ }
+
+ function handleBack() {
+  if (step === PROFILE_STEP) return;
+  // Every step's predecessor is simply step - 1 — the team/solo branch
+  // reuses index 5 for either INVITE_STEP or TEMPLATE_SOLO, but only one of
+  // those is ever reachable for a given isTeam value, so there's no clash.
+  setStep(step - 1);
  }
 
  function handleSkip() {
@@ -315,7 +341,9 @@ export function OnboardingUI({ initialName }: Props) {
        <span className="text-primary">{workspaceName || "your workspace"}</span>
       </h1>
       <p className="mb-6 text-center text-sm text-muted-foreground">
-       They&rsquo;ll get an email invite and can join straight away.
+       {smtpConfigured
+        ? "They’ll get an email invite and can join straight away."
+        : "Email isn’t configured on this instance yet, so invite links won’t be emailed — you’ll need to share them manually from workspace settings."}
       </p>
 
       <div className="mb-3 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
@@ -332,19 +360,42 @@ export function OnboardingUI({ initialName }: Props) {
           className="h-11 flex-1 bg-transparent px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
          />
          <div className="h-6 w-px bg-border" />
-         <button
-          type="button"
-          onClick={() => updateInviteRole(i, inv.role === "editor" ? "viewer" : "editor")}
-          className="flex h-11 items-center gap-1 px-3.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
-         >
-          {inv.role === "editor" ? "Editor" : "Viewer"}
-          <svg className="size-3 opacity-50" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
-           <path d="M6 9l6 6 6-6" />
-          </svg>
-         </button>
+         <div className="px-2">
+          <RoleSelect
+           value={inv.role}
+           options={INVITE_ROLE_OPTIONS}
+           onChange={(v) => updateInviteRole(i, v as "admin" | "editor" | "viewer")}
+          />
+         </div>
+         {invites.length > 1 && (
+          <button
+           type="button"
+           onClick={() => setPendingRemoveIndex(i)}
+           aria-label="Remove this invite"
+           className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+          >
+           <X size={14} />
+          </button>
+         )}
         </div>
        ))}
       </div>
+
+      <ConfirmDialog
+       open={pendingRemoveIndex !== null}
+       onOpenChange={(o) => !o && setPendingRemoveIndex(null)}
+       title="Remove this invite?"
+       description={
+        pendingRemoveIndex !== null && invites[pendingRemoveIndex]?.email.trim()
+         ? `"${invites[pendingRemoveIndex]!.email.trim()}" won't be invited.`
+         : "This empty row will be removed."
+       }
+       confirmLabel="Remove"
+       onConfirm={() => {
+        if (pendingRemoveIndex !== null) removeInviteRow(pendingRemoveIndex);
+        setPendingRemoveIndex(null);
+       }}
+      />
 
       {invites.length < 8 && (
        <button
@@ -409,25 +460,40 @@ export function OnboardingUI({ initialName }: Props) {
     )}
 
     {/* ── Actions ───────────────────────────────────────── */}
-    <button
-     type="button"
-     onClick={handleContinue}
-     disabled={!canContinue || pending}
-     className="flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-     {btnLabel}
-     {!pending && !isLast && !isInviteStep && (
-      <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
-       <path d="M5 12h14M12 5l7 7-7 7" />
-      </svg>
+    <div className="flex w-full items-center gap-2.5">
+     {step > PROFILE_STEP && (
+      <button
+       type="button"
+       onClick={handleBack}
+       disabled={pending}
+       className="flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+      >
+       <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+       </svg>
+       Back
+      </button>
      )}
-    </button>
+     <button
+      type="button"
+      onClick={handleContinue}
+      disabled={!canContinue || pending}
+      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+     >
+      {btnLabel}
+      {!pending && !isLast && !isInviteStep && (
+       <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+       </svg>
+      )}
+     </button>
+    </div>
 
     <button
      type="button"
      onClick={handleSkip}
      disabled={pending}
-     className="mt-3 text-xs text-muted-foreground/50 transition-colors duration-150 hover:text-muted-foreground"
+     className="mt-5 text-sm font-medium text-muted-foreground underline underline-offset-2 transition-colors duration-150 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
     >
      {isInviteStep ? "Skip for now" : isLast ? "Start blank instead" : "Skip this step"}
     </button>

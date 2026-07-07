@@ -127,7 +127,7 @@ export default async function OrbitAnalyticsPage() {
    ),
   },
   {
-   label: "Workspaces", value: totalWorkspaces!.count, sub: "Active tenants",
+   label: "Workspaces", value: totalWorkspaces!.count, sub: "On this instance",
    icon: (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-4">
      <path d="M2 5.5h12M2 10.5h12M5.5 2v12M10.5 2v12"/><rect x="1.5" y="1.5" width="13" height="13" rx="2"/>

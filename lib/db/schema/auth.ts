@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   index,
   integer,
   pgTable,
@@ -7,6 +8,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { updatedAt } from "./types";
 
 export const users = pgTable("users", {
@@ -55,9 +57,32 @@ export const accounts = pgTable("accounts", {
   refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
   scope:                text("scope"),
   idToken:              text("id_token"),
+  // Hashed password — only set on the row where providerId = "credential"
+  // (Better Auth's email+password sign-up/sign-in).
+  password:             text("password"),
   createdAt:            timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt:            updatedAt(),
 }, (t) => [index("accounts_user_idx").on(t.userId)]);
+
+// Instance-wide toggle for which sign-in methods are offered — a self-hosted
+// single-instance app has one operator, not per-workspace auth policy, so
+// this is a singleton row (id is always 1) rather than workspace-scoped.
+// Enforced server-side in lib/auth/index.ts's `hooks.before`, not just hidden
+// in the UI, so disabling a method actually blocks the endpoint.
+export const authSettings = pgTable("auth_settings", {
+  id:                   integer("id").primaryKey().default(1),
+  emailPasswordEnabled: boolean("email_password_enabled").notNull().default(true),
+  magicLinkEnabled:     boolean("magic_link_enabled").notNull().default(true),
+  googleEnabled:        boolean("google_enabled").notNull().default(true),
+  updatedBy:            uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt:            updatedAt(),
+}, (t) => [
+  check("auth_settings_singleton_chk", sql`${t.id} = 1`),
+  check(
+    "auth_settings_at_least_one_chk",
+    sql`${t.emailPasswordEnabled} OR ${t.magicLinkEnabled} OR ${t.googleEnabled}`
+  ),
+]);
 
 export const verifications = pgTable("verifications", {
   id:         uuid("id").primaryKey().defaultRandom(),
@@ -73,3 +98,4 @@ export type NewUser      = typeof users.$inferInsert;
 export type Session      = typeof sessions.$inferSelect;
 export type Account      = typeof accounts.$inferSelect;
 export type Verification = typeof verifications.$inferSelect;
+export type AuthSettings = typeof authSettings.$inferSelect;

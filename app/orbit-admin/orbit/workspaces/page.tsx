@@ -32,7 +32,7 @@ export default async function OrbitWorkspacesPage() {
    {/* Header */}
    <div className="mb-6">
     <h1 className="text-xl font-bold tracking-tight text-foreground">Workspaces</h1>
-    <p className="mt-1 text-sm text-muted-foreground">All tenant workspaces — inspect members, force delete.</p>
+    <p className="mt-1 text-sm text-muted-foreground">All workspaces on this instance — inspect members, force delete.</p>
     <div className="mt-3">
      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <strong className="font-bold text-foreground">{allWorkspaces.length}</strong> total

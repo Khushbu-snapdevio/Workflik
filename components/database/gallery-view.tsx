@@ -628,7 +628,7 @@ function GalleryCard({
       <div
         className={[
           "relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card transition-colors duration-150",
-          dragging ? "shadow-xl opacity-90" : "",
+          dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
         onMouseEnter={() => !dragging && setHovered(true)}
         onMouseLeave={() => setHovered(false)}

@@ -278,7 +278,7 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
             />
           </div>
           {results.length > 0 && (
-            <div className="absolute left-0 top-[calc(100%+4px)] z-[200] max-h-64 w-full min-w-[260px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover py-1 shadow-lg">
+            <div className="absolute left-0 top-[calc(100%+4px)] z-[200] max-h-64 w-full min-w-[260px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover py-1">
               <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground/70">
                 {isRecent ? "Recent" : "Pages"}
               </p>
@@ -305,7 +305,7 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
             </div>
           )}
           {query.trim() && results.length === 0 && (
-            <div className="absolute left-0 top-[calc(100%+4px)] z-[200] w-full rounded-[var(--radius-md)] border border-border bg-popover px-3 py-2 text-sm text-muted-foreground shadow-lg">
+            <div className="absolute left-0 top-[calc(100%+4px)] z-[200] w-full rounded-[var(--radius-md)] border border-border bg-popover px-3 py-2 text-sm text-muted-foreground">
               No matching pages
             </div>
           )}

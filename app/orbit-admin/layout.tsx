@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { requireAdmin } from "@/lib/authz";
+import packageJson from "@/package.json";
 
 export default async function AdminLayout({
   children,
@@ -16,6 +17,7 @@ export default async function AdminLayout({
         <AdminSidebar
           email={session.user.email}
           image={(session.user as { image?: string | null }).image ?? null}
+          version={packageJson.version}
         />
       }
     >

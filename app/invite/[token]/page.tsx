@@ -1,12 +1,14 @@
-import { and, eq, gt } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { accounts, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
 import { AcceptInviteClient } from "./accept-invite-client";
+import { SetPasswordAcceptClient } from "./set-password-client";
 import { WrongAccountError } from "./wrong-account";
 
 type Props = { params: Promise<{ token: string }> };
@@ -19,6 +21,7 @@ export default async function InvitePage({ params }: Props) {
     .select({
       id:           workspaceMembers.id,
       workspaceId:  workspaceMembers.workspaceId,
+      userId:       workspaceMembers.userId,
       role:         workspaceMembers.role,
       status:       workspaceMembers.status,
       invitedEmail: workspaceMembers.invitedEmail,
@@ -48,7 +51,31 @@ export default async function InvitePage({ params }: Props) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) {
-    // Redirect to login with next param pointing back here
+    // A brand-new invitee (no existing sign-in method at all) sets a
+    // password right here instead of bouncing through a separate login
+    // page — same click-to-join UX as an already-registered invitee.
+    const [existingAccount] = member.userId
+      ? await db
+          .select({ id: accounts.id })
+          .from(accounts)
+          .where(eq(accounts.userId, member.userId))
+          .limit(1)
+      : [];
+
+    if (member.userId && !existingAccount) {
+      return (
+        <SetPasswordAcceptClient
+          token={token}
+          workspaceName={member.workspaceName}
+          workspaceIcon={member.workspaceIcon ?? null}
+          role={member.role}
+          invitedEmail={member.invitedEmail}
+        />
+      );
+    }
+
+    // Already has a sign-in method (password/magic-link/Google) — log in
+    // with it, then come straight back here to finish accepting.
     redirect(`/auth/login?next=/invite/${token}`);
   }
 
@@ -77,7 +104,7 @@ export default async function InvitePage({ params }: Props) {
     .limit(1);
 
   if (existing) {
-    redirect(`/platform/dashboard`);
+    redirect(`/platform/post-auth`);
   }
 
   return (
@@ -105,7 +132,7 @@ function InviteError({ message, variant = "warning" }: { message: string; varian
         <h1 className="mb-2 text-lg font-bold text-foreground">Invite Unavailable</h1>
         <p className="text-sm leading-relaxed text-muted-foreground">{message}</p>
         <Button asChild className="mt-6">
-          <a href="/platform/dashboard">Go to dashboard</a>
+          <Link href="/platform/post-auth">Go to your workspace</Link>
         </Button>
       </div>
     </main>

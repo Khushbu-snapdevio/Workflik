@@ -248,7 +248,7 @@ function CardShell({
    className={[
     "group relative rounded-[var(--radius-sm)] border bg-background p-3 transition-all",
     dragging
-     ? "border-primary/40 opacity-50 shadow-md"
+     ? "border-primary/40 opacity-50"
      : "border-border/50 hover:border-border hover:-translate-y-0.5",
    ].join(" ")}
    onClick={() => !dragging && !editing && onClickEntry(entry.id)}

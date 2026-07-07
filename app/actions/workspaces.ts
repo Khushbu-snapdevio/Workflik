@@ -10,10 +10,13 @@ import { writeAuditLog } from "@/lib/orbit/audit";
 export async function createWorkspaceAction(formData: FormData) {
   const session = await requireSession();
   const name = (formData.get("name") as string)?.trim();
-  if (!name) return;
 
   const rawKind = formData.get("kind") as string | null;
   const kind: "personal" | "team" = rawKind === "team" ? "team" : "personal";
+
+  if (!name) {
+    redirect(`/app/workspaces/new?kind=${kind}&error=empty-name`);
+  }
 
   const slug = await uniqueSlug(name);
 

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { isSmtpConfigured } from "@/lib/smtp/client";
 import { OnboardingUI } from "./_onboarding-ui";
 
 export const metadata = { title: "Welcome" };
@@ -21,5 +22,5 @@ export default async function OnboardingPage() {
     redirect("/platform/post-auth");
   }
 
-  return <OnboardingUI initialName={user?.name ?? ""} />;
+  return <OnboardingUI initialName={user?.name ?? ""} smtpConfigured={isSmtpConfigured()} />;
 }

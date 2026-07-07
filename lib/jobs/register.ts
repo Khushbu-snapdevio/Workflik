@@ -86,20 +86,21 @@ export async function registerHandlers(boss: PgBoss) {
 }
 
 async function autoSeedTemplatesOnStartup() {
-  const { and, count, eq, isNull } = await import("drizzle-orm");
+  const { and, eq, isNull } = await import("drizzle-orm");
   const { db } = await import("@/lib/db");
   const { templates } = await import("@/lib/db/schema");
 
-  const [{ cnt }] = await db
-    .select({ cnt: count() })
+  const existing = await db
+    .select({ name: templates.name })
     .from(templates)
     .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
-
-  if (Number(cnt) >= 16) return;
+  const existingNames = new Set(existing.map((t) => t.name));
 
   const { BUILT_IN_TEMPLATES } = await import("@/app/api/orbit/templates/seed/route");
+  const missing = BUILT_IN_TEMPLATES.filter((t) => !existingNames.has(t.name));
+  if (missing.length === 0) return;
 
-  const rows = BUILT_IN_TEMPLATES.map((t) => ({
+  const rows = missing.map((t) => ({
     name:         t.name,
     description:  t.description,
     category:     t.category,

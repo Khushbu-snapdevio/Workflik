@@ -1,13 +1,13 @@
 import { db } from "@/lib/db";
 import { platformAuditLog } from "@/lib/db/schema";
 
-type AuditTargetType = "user" | "workspace";
+type AuditTargetType = "user" | "workspace" | "settings";
 
 interface WriteAuditParams {
   actorId:    string;
   action:     string;
   targetType: AuditTargetType;
-  targetId:   string;
+  targetId?:  string;
   metadata?:  Record<string, unknown>;
 }
 
@@ -16,7 +16,7 @@ export async function writeAuditLog(params: WriteAuditParams) {
     actorId:    params.actorId,
     action:     params.action,
     targetType: params.targetType,
-    targetId:   params.targetId,
+    targetId:   params.targetId ?? null,
     metadata:   params.metadata ?? null,
   });
 }

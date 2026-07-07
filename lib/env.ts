@@ -7,7 +7,13 @@ const optionalString = z.preprocess(
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
-  APP_SECRET: z.string().min(1),
+  APP_SECRET: z
+    .string()
+    .min(32, "APP_SECRET must be at least 32 characters — generate one with: openssl rand -base64 32")
+    .refine(
+      (v) => v !== "replace-with-at-least-32-random-characters",
+      "APP_SECRET is still set to the .env.example placeholder — generate a real one with: openssl rand -base64 32"
+    ),
   NEXT_PUBLIC_APP_URL: z.url(),
   NODE_ENV: z
     .enum(["development", "test", "production"])

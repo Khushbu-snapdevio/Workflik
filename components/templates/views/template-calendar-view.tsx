@@ -217,7 +217,7 @@ function DraggableChip({
    style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none", cursor: "grab" }}
    {...attributes}
    {...listeners}
-   className="group/event flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background shadow-sm hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
+   className="group/event flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
    onClick={(e) => { e.stopPropagation(); onClickEntry(entry.id); }}
    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setMenuPos({ x: e.clientX, y: e.clientY }); }}
   >
@@ -627,7 +627,7 @@ export function TemplateCalendarView({
   {/* ── DragOverlay ────────────────────────────────────────────────────────── */}
   <DragOverlay dropAnimation={null}>
    {draggingEntry && (
-    <div className="flex items-center gap-1 rounded-[var(--radius-xs)] bg-primary px-1.5 py-[3px] text-xs font-medium text-primary-foreground shadow-md cursor-grabbing">
+    <div className="flex items-center gap-1 rounded-[var(--radius-xs)] bg-primary px-1.5 py-[3px] text-xs font-medium text-primary-foreground cursor-grabbing">
      <span className="size-1.5 shrink-0 rounded-full bg-primary-foreground/60" />
      <span className="max-w-[120px] truncate">{draggingEntry.title || "Untitled"}</span>
     </div>

@@ -789,7 +789,7 @@ export function TableView({
        </SortableContext>
        <DragOverlay>
         {draggingEntry && (
-         <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 shadow-lg text-sm font-medium text-foreground">
+         <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
           <GripVertical size={13} className="text-muted-foreground/40" />
           {draggingEntry.title || "Untitled"}
          </div>

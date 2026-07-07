@@ -22,7 +22,7 @@ export function SeedTemplatesButton({ currentCount }: { currentCount: number }) 
     router.refresh();
   }
 
-  if (currentCount >= 16) {
+  if (currentCount >= 18) {
     return (
       <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground">✓ {currentCount} built-in templates seeded</span>
@@ -45,7 +45,7 @@ export function SeedTemplatesButton({ currentCount }: { currentCount: number }) 
       disabled={loading || done}
       className="inline-flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
     >
-      {loading ? "Seeding…" : done ? "✓ Done" : "⚡ Seed 16 default templates"}
+      {loading ? "Seeding…" : done ? "✓ Done" : "⚡ Seed 18 default templates"}
     </button>
   );
 }

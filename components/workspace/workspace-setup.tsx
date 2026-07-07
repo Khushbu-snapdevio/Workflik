@@ -1,9 +1,17 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { RoleSelect } from "@/components/ui/role-select";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
+const INVITE_ROLE_OPTIONS = [
+ { value: "admin",  label: "Admin" },
+ { value: "editor", label: "Member" },
+ { value: "viewer", label: "Viewer" },
+] as const;
 
 /* ─── Step definitions ──────────────────────────────────────────── */
 
@@ -25,7 +33,7 @@ const TEAM_STEPS = [
  {
   key: "focus",
   question: "What does your team work on?",
-  subtitle: "We'll suggest the best defaults for your teamspace.",
+  subtitle: "We'll suggest the best defaults for your workspace.",
   options: [
    { value: "product",   label: "Product & Engineering", description: "Sprints, roadmaps, tech docs" },
    { value: "design",    label: "Design & Creative",    description: "Briefs, assets, feedback" },
@@ -38,10 +46,10 @@ const TEAM_STEPS = [
 /* ─── Invite row ─────────────────────────────────────────────────── */
 
 function InviteRow({
- index, value, role, onChange, onRoleChange, isFirst,
+ index, value, role, onChange, onRoleChange, onRemove, isFirst,
 }: {
  index: number; value: string; role: string; isFirst: boolean;
- onChange: (v: string) => void; onRoleChange: (v: string) => void;
+ onChange: (v: string) => void; onRoleChange: (v: string) => void; onRemove?: () => void;
 }) {
  return (
   <div className={`flex items-center gap-0 ${!isFirst ? "border-t border-border" : ""}`}>
@@ -53,16 +61,19 @@ function InviteRow({
     className="h-11 flex-1 bg-transparent px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
    />
    <div className="h-6 w-px bg-border" />
-   <button
-    type="button"
-    onClick={() => onRoleChange(role === "editor" ? "viewer" : "editor")}
-    className="flex h-11 items-center gap-1 px-3.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
-   >
-    {role === "editor" ? "Editor" : "Viewer"}
-    <svg className="size-3 opacity-50" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
-     <path d="M6 9l6 6 6-6" />
-    </svg>
-   </button>
+   <div className="px-2">
+    <RoleSelect value={role} options={INVITE_ROLE_OPTIONS} onChange={onRoleChange} />
+   </div>
+   {onRemove && (
+    <button
+     type="button"
+     onClick={onRemove}
+     aria-label="Remove this invite"
+     className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+    >
+     <X size={14} />
+    </button>
+   )}
   </div>
  );
 }
@@ -74,11 +85,12 @@ type Props = {
  workspaceName: string;
  workspaceSlug: string;
  workspaceKind: string;
+ smtpConfigured: boolean;
 };
 
 const EMPTY_INVITE = { email: "", role: "editor" };
 
-export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, workspaceKind }: Props) {
+export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, workspaceKind, smtpConfigured }: Props) {
  const router = useRouter();
  const isTeam = workspaceKind === "team";
 
@@ -92,6 +104,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
  ]);
  const [inviteError, setInviteError] = useState("");
  const [pending, startTransition] = useTransition();
+ const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
 
  const isInviteStep = isTeam && step === steps.length;
  const isLastStep = step === totalSteps - 1;
@@ -118,22 +131,39 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
   if (invites.length < 8) setInvites((prev) => [...prev, { ...EMPTY_INVITE }]);
  }
 
- async function sendInvites() {
+ function removeInviteRow(i: number) {
+  setInvites((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
+ }
+
+ async function sendInvites(): Promise<string[]> {
   const toSend = invites.filter((inv) => inv.email.trim() && inv.email.includes("@"));
+  const failed: string[] = [];
   for (const inv of toSend) {
-   await fetch(`/api/workspaces/${workspaceId}/members`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: inv.email.trim().toLowerCase(), role: inv.role }),
-   });
+   try {
+    const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ email: inv.email.trim().toLowerCase(), role: inv.role }),
+    });
+    if (!res.ok) failed.push(inv.email.trim());
+   } catch {
+    failed.push(inv.email.trim());
+   }
   }
+  return failed;
  }
 
  function handleContinue() {
   if (isInviteStep) {
    startTransition(async () => {
     setInviteError("");
-    await sendInvites();
+    const failed = await sendInvites();
+    if (failed.length > 0) {
+     setInviteError(
+      `Couldn't send an invite to: ${failed.join(", ")}. You can try again from workspace settings.`
+     );
+     return;
+    }
     router.push(`/app/${workspaceSlug}`);
    });
   } else if (isLastStep) {
@@ -233,7 +263,9 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
        <span className="text-primary">{workspaceName}</span>
       </h1>
       <p className="mb-6 text-center text-sm text-muted-foreground">
-       They'll get an email invite and can join right away.
+       {smtpConfigured
+        ? "They'll get an email invite and can join right away."
+        : "Email isn't configured on this instance yet, so invite links won't be emailed — you'll need to share them manually from workspace settings."}
       </p>
 
       <div className="mb-3 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
@@ -246,9 +278,26 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
          role={inv.role}
          onChange={(v) => updateInvite(i, v)}
          onRoleChange={(v) => updateRole(i, v)}
+         onRemove={invites.length > 1 ? () => setPendingRemoveIndex(i) : undefined}
         />
        ))}
       </div>
+
+      <ConfirmDialog
+       open={pendingRemoveIndex !== null}
+       onOpenChange={(o) => !o && setPendingRemoveIndex(null)}
+       title="Remove this invite?"
+       description={
+        pendingRemoveIndex !== null && invites[pendingRemoveIndex]?.email.trim()
+         ? `"${invites[pendingRemoveIndex]!.email.trim()}" won't be invited.`
+         : "This empty row will be removed."
+       }
+       confirmLabel="Remove"
+       onConfirm={() => {
+        if (pendingRemoveIndex !== null) removeInviteRow(pendingRemoveIndex);
+        setPendingRemoveIndex(null);
+       }}
+      />
 
       {invites.length < 8 && (
        <button

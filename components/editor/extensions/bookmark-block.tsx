@@ -645,7 +645,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
             <span className="text-lg leading-none">🌐</span>
             Embed anything (PDFs, Google Docs, Google Maps, Spotify…)
           </button>
-          <div className="w-full max-w-sm rounded-[var(--radius-md)] border border-border bg-popover p-4 shadow-lg">
+          <div className="w-full max-w-sm rounded-[var(--radius-md)] border border-border bg-popover p-4">
             <Tabs defaultValue="link">
               <TabsList className="w-full" variant="line">
                 <TabsTrigger value="link">Link</TabsTrigger>

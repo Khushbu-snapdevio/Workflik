@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 /* ── Icon picker — same Notion-style picker used for page/database icons
@@ -100,14 +101,17 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
   </div>
  );
 }
-function CardRow({ label, desc, control, last }: { label: string; desc?: string; control: React.ReactNode; last?: boolean }) {
+function CardRow({ label, desc, control, last, feedback }: { label: string; desc?: string; control: React.ReactNode; last?: boolean; feedback?: React.ReactNode }) {
  return (
   <div className={`flex items-center justify-between gap-6 px-5 py-4 ${!last ? "border-b border-border/40" : ""}`}>
    <div className="min-w-0 flex-1">
     <p className="text-sm font-medium text-foreground">{label}</p>
     {desc && <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>}
    </div>
-   <div className="shrink-0">{control}</div>
+   <div className="flex shrink-0 items-center gap-2.5">
+    {feedback}
+    {control}
+   </div>
   </div>
  );
 }
@@ -210,9 +214,11 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
  const [inviteRole,   setInviteRole]   = useState(workspace.inviteLinkRole ?? "editor");
  const [saving,      setSaving]      = useState<string | null>(null);
  const [saved,      setSaved]      = useState<string | null>(null);
+ const [patchError,   setPatchError]   = useState<{ field: string; message: string } | null>(null);
  const [nameError,    setNameError]    = useState("");
  const [copied,      setCopied]      = useState(false);
  const [deleteOpen,   setDeleteOpen]   = useState(false);
+ const [regenerateOpen, setRegenerateOpen] = useState(false);
  const [deleteName,   setDeleteName]   = useState("");
  const [deleting,    setDeleting]    = useState(false);
  const [deleteError,  setDeleteError]  = useState("");
@@ -247,35 +253,44 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
   finally { setSaving(null); }
  }
 
- async function patchWs(patch: Record<string, unknown>) {
+ async function patchWs(patch: Record<string, unknown>, rollback?: () => void) {
   const field = Object.keys(patch)[0]!;
-  setSaving(field); setSaved(null);
+  setSaving(field); setSaved(null); setPatchError(null);
   try {
    const res = await fetch(`/api/workspaces/${workspace.id}`, {
     method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch),
    });
    if (res.ok) {
     setSaved(field); setTimeout(() => setSaved(null), 2500);
+   } else {
+    rollback?.();
+    const d = await res.json().catch(() => ({}));
+    setPatchError({ field, message: d.error ?? "Failed to save" });
    }
-  } catch { /* no-op */ }
+  } catch {
+   rollback?.();
+   setPatchError({ field, message: "Network error — change wasn't saved" });
+  }
   finally { setSaving(null); }
  }
 
  async function generateLink() {
-  setSaving("inviteLink");
+  setSaving("inviteLink"); setPatchError(null);
   try {
    const r = await fetch(`/api/workspaces/${workspace.id}/invite-link`, { method: "POST" });
    if (r.ok) { const d = await r.json(); setInviteToken(d.inviteLinkToken ?? ""); setInviteActive(true); }
-  } catch { /* no-op */ }
+   else setPatchError({ field: "inviteLink", message: "Failed to generate a new link" });
+  } catch { setPatchError({ field: "inviteLink", message: "Network error — link wasn't regenerated" }); }
   finally { setSaving(null); }
  }
 
  async function disableLink() {
-  setSaving("inviteDisable");
+  setSaving("inviteDisable"); setPatchError(null);
   try {
    const r = await fetch(`/api/workspaces/${workspace.id}/invite-link`, { method: "DELETE" });
    if (r.ok) setInviteActive(false);
-  } catch { /* no-op */ }
+   else setPatchError({ field: "inviteDisable", message: "Failed to disable the link" });
+  } catch { setPatchError({ field: "inviteDisable", message: "Network error — link wasn't disabled" }); }
   finally { setSaving(null); }
  }
 
@@ -289,7 +304,10 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
   finally { setDeleting(false); }
  }
 
- function changeIcon(v: string) { setIcon(v); patchWs({ icon: v || null }); }
+ function changeIcon(v: string) {
+  const prev = icon; setIcon(v);
+  patchWs({ icon: v || null }, () => setIcon(prev));
+ }
 
  const origin  = typeof window !== "undefined" ? window.location.origin : "";
  const inviteUrl = inviteToken ? `${origin}/invite/${inviteToken}` : "";
@@ -378,7 +396,15 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
     <SectionLabel label="Defaults" />
     <Card>
      <CardRow label="Default page access" desc="New pages created in this workspace will inherit this access level." last
-      control={<ChevronSelect value={access} options={ACCESS} onChange={v => { setAccess(v); patchWs({ defaultPageAccess: v }); }} />}
+      feedback={
+       saved === "defaultPageAccess" ? <span className="text-xs text-muted-foreground">Saved ✓</span>
+       : patchError?.field === "defaultPageAccess" ? <span className="text-xs text-destructive">{patchError.message}</span>
+       : null
+      }
+      control={<ChevronSelect value={access} options={ACCESS} onChange={v => {
+       const prev = access; setAccess(v);
+       patchWs({ defaultPageAccess: v }, () => setAccess(prev));
+      }} />}
      />
     </Card>
    </div>
@@ -405,14 +431,27 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
        </div>
       </div>
       <CardRow label="Join as" desc="New members via this link will be assigned this role."
-       control={<ChevronSelect value={inviteRole} options={[{value:"editor",label:"Editor"},{value:"viewer",label:"Viewer"}]}
-        onChange={v => { setInviteRole(v); patchWs({ inviteLinkRole: v }); }} />}
+       feedback={
+        saved === "inviteLinkRole" ? <span className="text-xs text-muted-foreground">Saved ✓</span>
+        : patchError?.field === "inviteLinkRole" ? <span className="text-xs text-destructive">{patchError.message}</span>
+        : null
+       }
+       control={<ChevronSelect value={inviteRole} options={[{value:"editor",label:"Member"},{value:"viewer",label:"Viewer"}]}
+        onChange={v => {
+         const prev = inviteRole; setInviteRole(v);
+         patchWs({ inviteLinkRole: v }, () => setInviteRole(prev));
+        }} />}
       />
       <CardRow label="Manage link" last
+       feedback={
+        (patchError?.field === "inviteLink" || patchError?.field === "inviteDisable")
+         ? <span className="text-xs text-destructive">{patchError.message}</span>
+         : null
+       }
        control={
         <div className="flex gap-2">
-         <Button type="button" variant="outline" size="sm" onClick={generateLink} disabled={saving === "inviteLink"}>
-          Regenerate
+         <Button type="button" variant="outline" size="sm" onClick={() => setRegenerateOpen(true)} disabled={saving === "inviteLink"}>
+          {saving === "inviteLink" ? "Regenerating…" : "Regenerate"}
          </Button>
          <Button type="button" variant="destructive" size="sm" onClick={disableLink} disabled={saving === "inviteDisable"}>
           Disable
@@ -476,6 +515,17 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
      </div>
     </div>
    </div>
+
+   <ConfirmDialog
+    open={regenerateOpen}
+    onOpenChange={setRegenerateOpen}
+    title="Regenerate the invite link?"
+    description="The current link stops working immediately — anyone who has it but hasn't joined yet will no longer be able to use it."
+    confirmLabel="Regenerate"
+    confirmLoadingLabel="Regenerating…"
+    loading={saving === "inviteLink"}
+    onConfirm={generateLink}
+   />
   </div>
  );
 }

@@ -15,7 +15,7 @@ export default async function MembersSettingsPage({ params }: Props) {
   const session = await requireSession();
 
   const [ws] = await db
-    .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug })
+    .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug, createdBy: workspaces.createdBy })
     .from(workspaces)
     .where(eq(workspaces.slug, slug))
     .limit(1);
@@ -53,12 +53,19 @@ export default async function MembersSettingsPage({ params }: Props) {
     .leftJoin(users, eq(users.id, workspaceMembers.userId))
     .where(eq(workspaceMembers.workspaceId, ws.id));
 
+  // The owner (workspace.createdBy) is the only one who can grant/revoke
+  // the Admin role for others — falls back to "any admin" if the original
+  // owner's account no longer exists, mirroring the server-side check.
+  const isOwner = ws.createdBy === null || ws.createdBy === session.user.id;
+
   return (
     <WorkspaceMembersSection
       workspaceId={ws.id}
       workspaceName={ws.name}
       currentUserId={session.user.id}
       isAdmin={myMember.role === "admin"}
+      isOwner={isOwner}
+      ownerUserId={ws.createdBy}
       members={members}
     />
   );

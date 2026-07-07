@@ -180,7 +180,7 @@ export function GroupSettingsPanel({
       ref={ref}
       data-edit-property-exempt
       style={{ position: "fixed", top, left, width: PANEL_WIDTH, maxHeight, zIndex: 400 }}
-      className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-xl"
+      className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
       {view === "groupBy" ? (
         <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
@@ -271,7 +271,7 @@ export function GroupSettingsPanel({
               </span>
             </button>
             {showStatusByPicker && (
-              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border/60 bg-popover p-1 shadow-sm">
+              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border/60 bg-popover p-1">
                 {([
                   { key: "group" as const, label: "Group" },
                   { key: "option" as const, label: "Option" },
@@ -305,7 +305,7 @@ export function GroupSettingsPanel({
             </span>
           </button>
           {showSortPicker && (
-            <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border/60 bg-popover p-1 shadow-sm">
+            <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border/60 bg-popover p-1">
               {(["manual", "asc", "desc"] as const).map((dir) => (
                 <button
                   key={dir}

@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { users, workspaceMembers } from "@/lib/db/schema";
+import { workspaceMembers, users } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
 import { triggerWorkspaceInviteNotification } from "@/lib/notifications/triggers";
@@ -12,6 +12,7 @@ import {
   getWorkspace,
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
+import { getOrCreateInviteeUser } from "@/lib/workspaces/invites";
 import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -51,7 +52,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
 const inviteSchema = z.object({
   email: z.email(),
-  role:  z.enum(["editor", "viewer"]).default("editor"),
+  role:  z.enum(["admin", "editor", "viewer"]).default("editor"),
 });
 
 // POST /api/workspaces/:id/members — invite a user by email
@@ -67,17 +68,27 @@ export async function POST(req: Request, { params }: Ctx) {
       return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
     }
 
-    const { email, role } = parsed.data;
+    const { role } = parsed.data;
+    const email = parsed.data.email.trim().toLowerCase();
     const workspace = await getWorkspace(id);
 
-    // Check if already a member (active)
-    const [existingUser] = await db
-      .select({ id: users.id, name: users.name })
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    // Only the workspace owner can hand out the Admin role — any other
+    // admin can still invite editors/viewers freely. Falls back to "any
+    // admin" if the original owner's account no longer exists.
+    const isOwner = workspace.createdBy === null || workspace.createdBy === session.user.id;
+    if (role === "admin" && !isOwner) {
+      return apiError(403, "Only the workspace owner can invite someone as an Admin");
+    }
 
-    if (existingUser) {
+    // better-auth always looks up users by a lowercased email, so this row
+    // must be stored lowercase too or the invitee will never be able to sign
+    // in. If this email has never been seen before, pre-create a placeholder
+    // user row now so the invite can attach a workspace membership to it
+    // immediately — they'll set a name/password when accepting via
+    // /invite/[token] (app/api/invite/[token]/set-password).
+    const { user: existingUser, isNew: isBrandNewInvitee } = await getOrCreateInviteeUser(email);
+
+    if (!isBrandNewInvitee) {
       const [activeMember] = await db
         .select({ id: workspaceMembers.id })
         .from(workspaceMembers)
@@ -118,7 +129,7 @@ export async function POST(req: Request, { params }: Ctx) {
         .insert(workspaceMembers)
         .values({
           workspaceId:  id,
-          userId:       existingUser?.id ?? null,
+          userId:       existingUser.id,
           role,
           status:       "invited",
           invitedEmail: email,
@@ -128,8 +139,9 @@ export async function POST(req: Request, { params }: Ctx) {
         })
         .returning();
 
-      // Notify the invitee only when they already have an account
-      if (existingUser) {
+      // In-app notification only makes sense for someone who can already
+      // sign in and check it — a brand-new invitee gets the email instead.
+      if (!isBrandNewInvitee) {
         await triggerWorkspaceInviteNotification(tx, {
           workspaceId: id,
           inviterId:   session.user.id,
@@ -141,7 +153,11 @@ export async function POST(req: Request, { params }: Ctx) {
       return [m];
     });
 
-    // Enqueue invite email (Rule 2: async work via pg-boss, never inline)
+    console.log(`[invite] ${session.user.email} invited ${email} as "${role}" to workspace "${workspace.name}"${isBrandNewInvitee ? " (new account)" : " (existing account)"}`);
+
+    // Same "click to accept" link for everyone, whether they already have an
+    // account or not — /invite/[token] detects which case it is and either
+    // asks them to sign in or lets them set a password right there.
     await enqueueJob(JOB_NAMES.WORKSPACE_INVITE_SEND, {
       memberId:      member.id,
       workspaceId:   id,

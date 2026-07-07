@@ -142,7 +142,7 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
 
             {/* Hover card */}
             <div className="pointer-events-none invisible absolute right-0 top-[calc(100%+8px)] z-[200] opacity-0 transition-all duration-150 group-hover:visible group-hover:opacity-100">
-              <div className="min-w-[200px] overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+              <div className="min-w-[200px] overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
                 <div className="flex items-center gap-3 px-4 py-3">
                   {user.image ? (
                     <img src={user.image} alt={displayName} className="size-9 shrink-0 rounded-full object-cover" />

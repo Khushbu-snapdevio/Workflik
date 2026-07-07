@@ -817,6 +817,21 @@ body {
 .lp-fade-in   { animation: lp-fade-in   0.5s ease                           both; }
 .lp-scale-in  { animation: lp-scale-in  0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+/* ── Hero ambient glow — a soft, slowly-breathing radial wash in the
+   product's own accent color, purely decorative ── */
+@keyframes lp-glow-pulse {
+  0%, 100% { opacity: 0.5;  transform: translate(-50%, -33%) scale(1);    }
+  50%      { opacity: 0.85; transform: translate(-50%, -33%) scale(1.08); }
+}
+.lp-glow {
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 22%, transparent) 0%, transparent 70%);
+  filter: blur(40px);
+  animation: lp-glow-pulse 8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-glow { animation: none; opacity: 0.6; }
+}
+
 /* ── Scroll-reveal (IntersectionObserver driven) ──────────────────────────── */
 .sr {
   opacity: 0;

@@ -45,16 +45,9 @@ export function MobileNav() {
               <Link
                 href="/auth/login"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center rounded-[var(--radius-sm)] border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/auth/login"
-                onClick={() => setOpen(false)}
                 className="flex w-full items-center justify-center rounded-[var(--radius-sm)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
               >
-                Try for free
+                Sign in
               </Link>
             </div>
           </nav>

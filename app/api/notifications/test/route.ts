@@ -5,7 +5,7 @@ import { apiError, getSession } from "@/lib/workspaces/auth";
 
 const VALID_TYPES = [
   "mention", "comment", "reply", "resolved", "reopened",
-  "access_granted", "workspace_invite", "guest_accepted",
+  "access_granted", "workspace_invite", "workspace_invite_accepted", "guest_accepted",
   "trash_warning", "page_update", "task_assigned",
 ] as const;
 
@@ -19,6 +19,7 @@ const SNIPPETS: Record<NotifType, string> = {
   reopened:         "",
   access_granted:   "",
   workspace_invite: "",
+  workspace_invite_accepted: "Test User",
   guest_accepted:   "Test User",
   trash_warning:    "Q4 Planning Document",
   page_update:      "Q4 Planning Document",

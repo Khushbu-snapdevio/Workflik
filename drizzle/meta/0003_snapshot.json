@@ -1,5 +1,5 @@
 {
-  "id": "e1b37052-5542-4006-a9c8-c6c677c17391",
+  "id": "6e412547-079d-47ee-8a6f-96de8ac64872",
   "prevId": "f88cd768-91e0-4d40-8852-7d9f1ee6e3fd",
   "version": "7",
   "dialect": "postgresql",
@@ -536,24 +536,6 @@
           "notNull": true,
           "default": "'{}'::jsonb"
         },
-        "property_id": {
-          "name": "property_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "property_name": {
-          "name": "property_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "property_value_label": {
-          "name": "property_value_label",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -619,21 +601,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "comments_property_idx": {
-          "name": "comments_property_idx",
-          "columns": [
-            {
-              "expression": "property_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -682,19 +649,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "comments_property_id_database_properties_id_fk": {
-          "name": "comments_property_id_database_properties_id_fk",
-          "tableFrom": "comments",
-          "tableTo": "database_properties",
-          "columnsFrom": [
-            "property_id"
           ],
           "columnsTo": [
             "id"

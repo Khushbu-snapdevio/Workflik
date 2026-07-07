@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { workspaces } from "@/lib/db/schema";
+import { users, workspaces } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { TemplatesPageClient } from "./templates-page-client";
 
@@ -25,10 +25,19 @@ export default async function TemplatesPage({ params }: Props) {
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) notFound();
 
+  const [freshUser] = await db
+    .select({ isPlatformAdmin: users.isPlatformAdmin })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
   return (
     <TemplatesPageClient
       workspaceId={ws.id}
       workspaceSlug={slug}
+      isPlatformAdmin={Boolean(freshUser?.isPlatformAdmin)}
+      currentUserId={session.user.id}
+      isWorkspaceAdmin={member.role === "admin"}
     />
   );
 }

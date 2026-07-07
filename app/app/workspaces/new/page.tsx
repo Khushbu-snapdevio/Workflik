@@ -2,17 +2,17 @@ import Image from "next/image";
 import { requireSession } from "@/lib/authz";
 import { createWorkspaceAction } from "@/app/actions/workspaces";
 import { PRODUCT_NAME } from "@/config/platform";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CreateWorkspaceSubmitButton } from "./submit-button";
 
 export const metadata = { title: `Create Workspace — ${PRODUCT_NAME}` };
 
-type Props = { searchParams: Promise<{ kind?: string }> };
+type Props = { searchParams: Promise<{ kind?: string; error?: string }> };
 
 export default async function NewWorkspacePage({ searchParams }: Props) {
  await requireSession();
- const { kind } = await searchParams;
+ const { kind, error } = await searchParams;
  const isTeam = kind === "team";
 
  return (
@@ -56,18 +56,12 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
         maxLength={100}
         className="w-full focus-visible:border-primary"
        />
+       {error === "empty-name" && (
+        <p className="text-xs text-destructive">Please enter a name for your workspace.</p>
+       )}
       </div>
 
-      <Button
-       type="submit"
-       size="sm"
-       className="mt-5 flex h-11 w-full items-center justify-center gap-2"
-      >
-       {isTeam ? "Create team workspace" : "Create workspace"}
-       <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
-        <path d="M5 12h14M12 5l7 7-7 7" />
-       </svg>
-      </Button>
+      <CreateWorkspaceSubmitButton label={isTeam ? "Create team workspace" : "Create workspace"} />
      </form>
 
      <div className="border-t border-border px-7 py-4">

@@ -1,8 +1,10 @@
 import { count, desc, gte } from "drizzle-orm";
 import Link from "next/link";
+import { SetupChecklist } from "@/components/orbit/setup-checklist";
 import { db } from "@/lib/db";
 import { emailOutbox, platformAuditLog, users, workspaces } from "@/lib/db/schema";
 import { getQueueSummary } from "@/lib/jobs/queue-inspection";
+import { getInstanceSetupStatus } from "@/lib/orbit/setup-status";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Overview – Orbit Admin" };
@@ -91,8 +93,17 @@ export default async function OrbitOverviewPage() {
     }).from(platformAuditLog).orderBy(desc(platformAuditLog.createdAt)).limit(8),
   ]);
 
+  const setupStatus = getInstanceSetupStatus();
+
   return (
     <div className="space-y-6">
+
+      <SetupChecklist
+        appSecretIsPlaceholder={setupStatus.appSecretIsPlaceholder}
+        smtpConfigured={setupStatus.smtpConfigured}
+        storageConfigured={setupStatus.storageConfigured}
+        storageDriver={setupStatus.storageDriver}
+      />
 
       {/* ── Page header ── */}
       <div className="flex items-start justify-between gap-4">
@@ -143,7 +154,7 @@ export default async function OrbitOverviewPage() {
           href="/orbit-admin/orbit/workspaces"
           value={totalWorkspaces!.count}
           label="Workspaces"
-          sub="Active tenants"
+          sub="On this instance"
           icon={
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-4">
               <path d="M2 5.5h12M2 10.5h12M5.5 2v12M10.5 2v12"/><rect x="1.5" y="1.5" width="13" height="13" rx="2"/>

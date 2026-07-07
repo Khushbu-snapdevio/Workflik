@@ -1,7 +1,7 @@
 import { and, eq, gt } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { verifications, workspaceMembers } from "@/lib/db/schema";
+import { verifications, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { apiError, ApiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
 
@@ -38,33 +38,25 @@ export async function GET(req: Request, { params }: Ctx) {
     const targetUserId = verification.identifier.split(":")[2];
     if (!targetUserId) return apiError(400, "Malformed transfer token");
 
-    // Capture current admin before demoting
-    const [currentAdmin] = await db
-      .select({ userId: workspaceMembers.userId })
-      .from(workspaceMembers)
-      .where(
-        and(
-          eq(workspaceMembers.workspaceId, id),
-          eq(workspaceMembers.role, "admin"),
-          eq(workspaceMembers.status, "active")
-        )
-      )
+    // Capture the outgoing owner before handing off
+    const [workspace] = await db
+      .select({ createdBy: workspaces.createdBy })
+      .from(workspaces)
+      .where(eq(workspaces.id, id))
       .limit(1);
+    const previousOwnerId = workspace?.createdBy ?? null;
 
     await db.transaction(async (tx) => {
-      // Demote current admin → editor
+      // Hand off the exclusive "owner" designation — this is what actually
+      // controls who can grant/revoke the Admin role (see members routes),
+      // not the role column itself, since multiple admins can now coexist.
       await tx
-        .update(workspaceMembers)
-        .set({ role: "editor" })
-        .where(
-          and(
-            eq(workspaceMembers.workspaceId, id),
-            eq(workspaceMembers.role, "admin"),
-            eq(workspaceMembers.status, "active")
-          )
-        );
+        .update(workspaces)
+        .set({ createdBy: targetUserId })
+        .where(eq(workspaces.id, id));
 
-      // Promote target → admin
+      // Make sure the new owner holds Admin (promote if they weren't
+      // already one) — everyone else's role is left untouched.
       await tx
         .update(workspaceMembers)
         .set({ role: "admin" })
@@ -82,17 +74,17 @@ export async function GET(req: Request, { params }: Ctx) {
         .where(eq(verifications.id, verification.id));
     });
 
-    if (currentAdmin?.userId) {
+    if (previousOwnerId) {
       await writeAuditLog({
-        actorId:    currentAdmin.userId,
+        actorId:    previousOwnerId,
         action:     "workspace.ownership_transferred",
         targetType: "workspace",
         targetId:   id,
-        metadata:   { fromUserId: currentAdmin.userId, toUserId: targetUserId },
+        metadata:   { fromUserId: previousOwnerId, toUserId: targetUserId },
       });
     }
 
-    redirect(`/platform/dashboard?transfer=success`);
+    redirect(`/platform/post-auth`);
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error(err);

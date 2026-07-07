@@ -1,6 +1,6 @@
 {
-  "id": "56e8fd9a-2ecb-4c1f-addc-b1376ebc5818",
-  "prevId": "edc3a0e1-f17b-44c2-ae1c-a048540ad4d3",
+  "id": "edc3a0e1-f17b-44c2-ae1c-a048540ad4d3",
+  "prevId": "98b65f9c-29d6-4449-a766-663e7730d8e4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4147,13 +4147,7 @@
         "equation",
         "linked_page",
         "database",
-        "template_button",
-        "pdf",
-        "embed",
-        "bookmark",
-        "breadcrumb",
-        "synced_block",
-        "sub_page"
+        "template_button"
       ]
     },
     "public.default_page_access": {

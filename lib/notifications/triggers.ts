@@ -261,6 +261,29 @@ export async function triggerWorkspaceInviteNotification(
   });
 }
 
+export async function triggerWorkspaceInviteAcceptedNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId: string;
+    inviterId:   string;
+    accepterId:  string;
+    memberId:    string;
+    accepterName: string;
+  }
+): Promise<void> {
+  const { workspaceId, inviterId, accepterId, memberId, accepterName } = params;
+  if (inviterId === accepterId) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId:    inviterId,
+    senderId:       accepterId,
+    type:           "workspace_invite_accepted",
+    pageId:         null,
+    sourceId:       memberId,
+    contentSnippet: accepterName.slice(0, 100),
+  });
+}
+
 export async function triggerGuestAcceptedNotification(
   tx: AnyTx,
   params: {

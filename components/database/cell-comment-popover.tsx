@@ -117,7 +117,7 @@ const FullEmojiPicker = React.forwardRef<HTMLDivElement, {
     <div
       ref={ref}
       style={{ position: "fixed", top, left, zIndex: 9999, width: pickerW }}
-      className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-popover shadow-xl overflow-hidden"
+      className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-popover overflow-hidden"
       onClick={e => e.stopPropagation()}
       onPointerDown={e => e.stopPropagation()}
     >
@@ -695,7 +695,7 @@ export function CellCommentPopover({
       <div
         ref={popoverRef}
         style={{ position: "fixed", top, bottom, left, width: POP_W, zIndex: 800, maxHeight, display: "flex", flexDirection: "column" }}
-        className="rounded-[var(--radius-md)] border border-border bg-card shadow-xl overflow-hidden"
+        className="rounded-[var(--radius-md)] border border-border bg-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
@@ -1089,7 +1089,7 @@ export function CellCommentPopover({
             zIndex: 900,
             width: 148,
           }}
-          className="overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover py-0.5 shadow-lg"
+          className="overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover py-0.5"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >

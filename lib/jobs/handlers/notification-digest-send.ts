@@ -106,7 +106,7 @@ async function sendDigestForUser(
 
   const dateLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const subject   = `Your ${PRODUCT_NAME} activity for ${dateLabel}`;
-  const appUrl    = env.NEXT_PUBLIC_APP_URL ?? "https://app.workflik.com";
+  const appUrl    = env.NEXT_PUBLIC_APP_URL;
 
   const sections = [...byPage.entries()].map(([pageTitle, items]) => ({
     pageTitle,

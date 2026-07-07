@@ -6,6 +6,7 @@ import { getCurrentSession } from "@/lib/authz";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { MobileNav } from "@/components/landing/mobile-nav";
+import { Button } from "@/components/ui/button";
 
 /* ─── SVG icons ─── */
 function IconEditor() {
@@ -54,7 +55,7 @@ function IconTemplate() {
 
 const FEATURES = [
   { Icon: IconEditor,   title: "Rich block editor",       description: "Write anything — quick notes, long-form docs, wikis. A powerful slash-command editor that stays out of your way." },
-  { Icon: IconTeam,     title: "Team workspaces",          description: "Invite teammates, set roles, and collaborate in a shared space. Everyone sees the same source of truth, always." },
+  { Icon: IconTeam,     title: "Role-based workspaces",    description: "Invite teammates as Admin, Member, or Viewer. Only the workspace owner can grant Admin — access stays deliberate, not accidental." },
   { Icon: IconPages,    title: "Nested page tree",         description: "Organise content in a deeply-nested sidebar. Drag, drop, and restructure your docs any way your team thinks." },
   { Icon: IconTemplate, title: "Ready-made templates",     description: "Start fast with sprint notes, briefs, wikis, and SOPs — or save your own pages as templates for your team." },
   { Icon: IconSearch,   title: "Instant full-text search", description: "Find any page, heading, or paragraph in milliseconds. Search across every workspace you belong to." },
@@ -62,16 +63,10 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { num: "01", title: "Sign in instantly",  desc: "Enter your email. We send a magic link — no password, no friction." },
-  { num: "02", title: "Set up your space",  desc: "Name your workspace and invite your first teammates in seconds." },
-  { num: "03", title: "Pick a template",    desc: "Start from 50+ templates — or a blank page. Your call." },
-  { num: "04", title: "Start writing",      desc: "Your first page is one click away. The whole team can jump in immediately." },
-];
-
-const TESTIMONIALS = [
-  { quote: "We replaced both Confluence and Notion with Workflik in a single week. Our team hasn't looked back — the editor is just faster and cleaner.", name: "Sarah K.",  role: "Head of Engineering",    initials: "SK" },
-  { quote: "The search is incredible. I can find any paragraph across 500 pages in under a second. That alone made it worth switching.",                  name: "Marcus L.", role: "Product Manager",         initials: "ML" },
-  { quote: "Finally a workspace tool that doesn't feel like enterprise software. My whole ops team was onboarded in an afternoon.",                        name: "Priya N.",  role: "Director of Operations",  initials: "PN" },
+  { num: "01", title: "Set up the instance",  desc: "The first person to sign in becomes the instance admin — one time only, no public sign-up after that." },
+  { num: "02", title: "Invite your team",     desc: "Add teammates by email and assign their role: Admin, Member, or Viewer. You decide who gets in." },
+  { num: "03", title: "They sign in",         desc: "Invited teammates set a password from their invite email — no accounts appear that you didn't create." },
+  { num: "04", title: "Start writing",        desc: "Pick a template or start blank. The whole team can jump in immediately." },
 ];
 
 const USE_CASES = [
@@ -123,30 +118,20 @@ export default async function HomePage() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/auth/login" className="hidden h-9 items-center rounded-[var(--radius-sm)] px-4 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground sm:inline-flex">
-              Sign in
-            </Link>
-            <Link href="/auth/login" className="hidden h-9 items-center rounded-[var(--radius-sm)] bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 sm:inline-flex">
-              Try for free
-            </Link>
+            <Button asChild size="sm" className="hidden sm:inline-flex">
+              <Link href="/auth/login">Sign in</Link>
+            </Button>
             <MobileNav />
           </div>
         </div>
       </header>
 
       {/* ── Hero ────────────────────────────────── NARROW — centered text */}
-      <section className="px-4 pb-14 pt-16 text-center sm:px-6 sm:pb-20 sm:pt-24">
-        <div className="mx-auto max-w-2xl">
-          <div className="lp-fade-up mb-7 flex justify-center" style={{ animationDelay: "0.05s" }}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5">
-              <span className="relative flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
-                <span className="relative inline-flex size-2 rounded-full bg-primary" />
-              </span>
-              <span className="text-xs font-semibold text-primary">Now in early access — free to join</span>
-            </span>
-          </div>
+      <section className="relative overflow-hidden px-4 pb-14 pt-16 text-center sm:px-6 sm:pb-20 sm:pt-24">
+        {/* Ambient glow — purely decorative, respects reduced-motion via the lp-glow class */}
+        <div aria-hidden className="lp-glow pointer-events-none absolute left-1/2 top-0 -z-10 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/3 rounded-full" />
 
+        <div className="mx-auto max-w-2xl">
           <h1 className="lp-fade-up mb-5 text-4xl font-black leading-[1.07] tracking-tight sm:text-5xl md:text-6xl" style={{ animationDelay: "0.1s" }}>
             Your team&rsquo;s{" "}
             <span className="text-primary">second brain</span>{" "}
@@ -158,20 +143,22 @@ export default async function HomePage() {
           </p>
 
           <div className="lp-fade-up flex justify-center" style={{ animationDelay: "0.26s" }}>
-            <Link href="/auth/login" className="inline-flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-primary px-7 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
-              Get started free
-              <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-            </Link>
+            <Button asChild size="xl">
+              <Link href="/auth/login">
+                Sign in
+                <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </Link>
+            </Button>
           </div>
 
           <p className="lp-fade-in mt-4 text-xs text-muted-foreground/50" style={{ animationDelay: "0.34s" }}>
-            No credit card required · Set up in under 2 minutes
+            Set up your instance in under 2 minutes
           </p>
         </div>
 
         {/* App preview — breaks wider than the text */}
         <div className="lp-scale-in mx-auto mt-14 max-w-5xl" style={{ animationDelay: "0.4s" }}>
-          <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+          <div className="group overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card transition-shadow duration-300 hover:shadow-[0_20px_60px_-15px_rgba(2,132,199,0.25)]">
             <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-4 py-3">
               <div className="flex gap-1.5">
                 <span className="size-2.5 rounded-full bg-border" />
@@ -179,7 +166,7 @@ export default async function HomePage() {
                 <span className="size-2.5 rounded-full bg-border" />
               </div>
               <div className="mx-auto flex h-6 w-56 items-center justify-center rounded-[var(--radius-xs)] bg-muted/80">
-                <span className="text-xs font-medium text-muted-foreground/60">app.workflik.com/workspace</span>
+                <span className="text-xs font-medium text-muted-foreground/60">{PRODUCT_NAME.toLowerCase()}.example.com/workspace</span>
               </div>
             </div>
             <div className="flex h-60 sm:h-80">
@@ -196,7 +183,7 @@ export default async function HomePage() {
                     { icon: "🎨", label: "Design System",    active: false },
                     { icon: "👋", label: "Onboarding",       active: false },
                   ].map((item) => (
-                    <div key={item.label} className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-1.5 ${item.active ? "bg-primary/10 text-primary" : "text-muted-foreground/60"}`}>
+                    <div key={item.label} className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-1.5 transition-colors duration-150 ${item.active ? "bg-primary/10 text-primary" : "text-muted-foreground/60 group-hover:text-muted-foreground/80"}`}>
                       <span className="text-xs leading-none">{item.icon}</span>
                       <span className={`truncate text-xs ${item.active ? "font-semibold" : ""}`}>{item.label}</span>
                     </div>
@@ -246,11 +233,11 @@ export default async function HomePage() {
               {[
                 { value: "Unlimited", label: "Pages & docs"     },
                 { value: "Real-time", label: "Collaboration"     },
-                { value: "50+",       label: "Starter templates" },
+                { value: "18",        label: "Starter templates" },
                 { value: "< 100ms",   label: "Full-text search"  },
               ].map((stat) => (
-                <div key={stat.label} className="flex flex-col items-center px-6 py-10 text-center">
-                  <span className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">{stat.value}</span>
+                <div key={stat.label} className="group flex flex-col items-center px-6 py-10 text-center transition-colors duration-200 hover:bg-accent/40">
+                  <span className="text-2xl font-black tracking-tight text-foreground transition-transform duration-200 group-hover:scale-[1.06] sm:text-3xl">{stat.value}</span>
                   <span className="mt-1.5 text-xs font-medium text-muted-foreground">{stat.label}</span>
                 </div>
               ))}
@@ -276,11 +263,11 @@ export default async function HomePage() {
             </ScrollReveal>
 
             {/* Right: feature grid */}
-            <div className="flex-1 grid gap-8 sm:grid-cols-2">
+            <div className="flex-1 grid gap-3 sm:grid-cols-2">
               {FEATURES.map((f, i) => (
                 <ScrollReveal key={f.title} delay={i * 50}>
-                  <div className="flex gap-4">
-                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary">
+                  <div className="group flex gap-4 rounded-[var(--radius-lg)] border border-transparent p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card">
+                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
                       <f.Icon />
                     </div>
                     <div>
@@ -301,17 +288,17 @@ export default async function HomePage() {
         <div className="mx-auto max-w-6xl">
           <ScrollReveal className="mb-12 text-center sm:mb-14">
             <p className="mb-3 text-xs font-semibold tracking-wide text-primary">Simple by design</p>
-            <h2 className="mb-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Up and running in minutes</h2>
-            <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">No onboarding call. No setup wizard. Just sign in and start writing.</p>
+            <h2 className="mb-3 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Access, on your terms</h2>
+            <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground">No public sign-up, no waiting on us — just an admin, an invite, and you&rsquo;re in.</p>
           </ScrollReveal>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
               <ScrollReveal key={s.num} delay={i * 70}>
-                <div className="flex h-full flex-col rounded-[var(--radius-xl)] border border-border bg-page p-6">
+                <div className="group flex h-full flex-col rounded-[var(--radius-xl)] border border-border bg-page p-6 transition-all duration-200 hover:-translate-y-1 hover:border-primary/30">
                   {/* Step badge + arrow row */}
                   <div className="mb-5 flex items-center justify-between">
-                    <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground">
+                    <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground transition-transform duration-200 group-hover:scale-105">
                       Step {s.num}
                     </span>
                     {i < STEPS.length - 1 && (
@@ -329,39 +316,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Testimonials ──────────────────────────── CONTAINED max-w-5xl */}
-      <section className="border-t border-border px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-5xl">
-          <ScrollReveal className="mb-12 text-center sm:mb-16">
-            <p className="mb-3 text-xs font-semibold tracking-wide text-primary">Loved by teams</p>
-            <h2 className="text-3xl font-black tracking-tight text-foreground sm:text-4xl">What early users are saying</h2>
-          </ScrollReveal>
-          <div className="grid gap-5 sm:grid-cols-3">
-            {TESTIMONIALS.map((t, i) => (
-              <ScrollReveal key={t.name} delay={i * 70}>
-                <div className="flex h-full flex-col rounded-[var(--radius-xl)] border border-border bg-card p-6 sm:p-7">
-                  <div className="mb-4 flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <svg key={j} className="size-3.5 fill-warning" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <p className="mb-6 flex-1 text-sm leading-relaxed text-foreground/90">&ldquo;{t.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3 border-t border-border/60 pt-5">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{t.initials}</span>
-                    <div>
-                      <p className="text-xs font-bold text-foreground">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.role}</p>
-                    </div>
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── Use cases ─────────────────────────────── FULL WIDTH bg-card */}
       <section id="for-teams" className="border-t border-border bg-card px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-6xl">
@@ -372,8 +326,8 @@ export default async function HomePage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {USE_CASES.map((u, i) => (
               <ScrollReveal key={u.label} delay={i * 60}>
-                <div className="h-full rounded-[var(--radius-xl)] border border-border bg-page p-5 sm:p-6">
-                  <div className="mb-4 flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary">
+                <div className="group h-full rounded-[var(--radius-xl)] border border-border bg-page p-5 transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_12px_32px_-12px_rgba(2,132,199,0.2)] sm:p-6">
+                  <div className="mb-4 flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
                     {u.icon}
                   </div>
                   <h3 className="mb-2 text-sm font-bold text-foreground">{u.label}</h3>
@@ -394,16 +348,15 @@ export default async function HomePage() {
               Ready to bring your team together?
             </h2>
             <p className="mb-10 text-base leading-relaxed text-white/65">
-              Sign up in seconds — no setup, no credit card. Start writing in your first workspace today.
+              Sign in to invite your team and start writing together today.
             </p>
             <Link
               href="/auth/login"
-              className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-white px-8 text-sm font-semibold text-primary transition-colors duration-150 hover:bg-white/90"
+              className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-white px-8 text-sm font-semibold text-primary transition-all duration-150 hover:-translate-y-0.5 hover:bg-white/90"
             >
-              Create your workspace
+              Sign in
               <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
             </Link>
-            <p className="mt-5 text-xs text-white/40">No credit card required · Cancel anytime</p>
           </div>
         </ScrollReveal>
       </section>
@@ -458,7 +411,7 @@ export default async function HomePage() {
 
           <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-8 sm:mt-14 sm:flex-row">
             <p className="text-xs text-muted-foreground/60">
-              &copy; {new Date().getFullYear()} {PRODUCT_NAME}, Inc. All rights reserved.
+              &copy; {new Date().getFullYear()} {PRODUCT_NAME}. All rights reserved.
             </p>
             <a
               href="#top"

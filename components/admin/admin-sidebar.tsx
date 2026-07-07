@@ -78,6 +78,15 @@ const SECONDARY = [
       </svg>
     ),
   },
+  {
+    href: "/orbit-admin/orbit/settings", label: "Settings",
+    icon: (
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
+        <circle cx="7" cy="7" r="2"/>
+        <path d="M7 1v1.5M7 11.5V13M13 7h-1.5M2.5 7H1M11.1 2.9l-1.1 1.1M4 9l-1.1 1.1M11.1 11.1L10 10M4 5L2.9 3.9"/>
+      </svg>
+    ),
+  },
 ];
 
 function UserAvatar({ image, email, className }: { image: string | null; email: string; className?: string }) {
@@ -95,7 +104,15 @@ function UserAvatar({ image, email, className }: { image: string | null; email: 
   );
 }
 
-export function AdminSidebar({ email, image }: { email: string; image: string | null }) {
+export function AdminSidebar({
+  email,
+  image,
+  version,
+}: {
+  email: string;
+  image: string | null;
+  version?: string;
+}) {
   const pathname      = usePathname();
   const displayName   = email.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const [userMenu, setUserMenu] = useState(false);
@@ -190,6 +207,9 @@ export function AdminSidebar({ email, image }: { email: string; image: string | 
           </span>
           Back to workspace
         </Link>
+        {version && (
+          <p className="px-2.5 pt-1 text-xs text-sidebar-foreground/40">v{version}</p>
+        )}
       </div>
 
       {/* User footer — same popup pattern as workspace sidebar */}

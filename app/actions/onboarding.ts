@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { templates, users, workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
-import { createBlankPage, createPageFromSnapshot, type PageSnapshot } from "@/lib/templates/instantiate";
+import { createBlankPage, createDatabaseFromSnapshot, createPageFromSnapshot, type DatabaseSchema, type PageSnapshot } from "@/lib/templates/instantiate";
 import { uniqueSlug } from "@/lib/workspaces/auth";
 import { getOrCreateInviteeUser } from "@/lib/workspaces/invites";
 
@@ -80,14 +80,26 @@ export async function completeOnboardingAction(data: OnboardingData) {
       : [];
 
     if (tpl) {
-      await createPageFromSnapshot(tx, {
-        snapshot:      tpl.pageSnapshot as PageSnapshot,
-        fallbackTitle: tpl.name,
-        workspaceId:   ws.id,
-        parentId:      null,
-        orderIndex:    0,
-        userId:        session.user.id,
-      });
+      const snapshot = tpl.pageSnapshot as PageSnapshot;
+      if (snapshot.database_schema) {
+        await createDatabaseFromSnapshot(tx, {
+          snapshot:      snapshot as PageSnapshot & { database_schema: DatabaseSchema },
+          fallbackTitle: tpl.name,
+          workspaceId:   ws.id,
+          parentId:      null,
+          orderIndex:    0,
+          userId:        session.user.id,
+        });
+      } else {
+        await createPageFromSnapshot(tx, {
+          snapshot,
+          fallbackTitle: tpl.name,
+          workspaceId:   ws.id,
+          parentId:      null,
+          orderIndex:    0,
+          userId:        session.user.id,
+        });
+      }
     } else {
       await createBlankPage(tx, {
         workspaceId: ws.id,

@@ -168,10 +168,10 @@ export function CommentComposer({
 
   const containerCls = mode === "edit"
     ? "border-primary/40 bg-primary/5 focus-within:border-primary/60"
-    : "border-border/60 bg-card focus-within:border-primary/40";
+    : "border-transparent bg-muted/50 focus-within:border-border focus-within:bg-card";
 
   return (
-    <div className={`rounded-[var(--radius-sm)] border transition-colors duration-150 ${containerCls}`}>
+    <div className={`rounded-[var(--radius-md)] border transition-colors duration-150 ${containerCls}`}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}

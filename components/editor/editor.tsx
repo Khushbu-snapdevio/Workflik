@@ -110,7 +110,7 @@ export function PageEditor({
     blockId: string | null;
     anchorStart: number | null;
     anchorEnd: number | null;
-    blockY: number; // px from top of editor container
+    blockY: number; // viewport-absolute Y (px) — matches getBoundingClientRect/coordsAtPos
   } | null>(null);
 
   function openCommentCard(
@@ -137,6 +137,21 @@ export function PageEditor({
       !!commentCardRef.current?.contains(target) ||
       !!target.closest?.('[data-comment-exempt], [role="alertdialog"]')
   );
+
+  // Belt-and-suspenders: useScrollLockWhileOpen only blocks wheel/touch, which
+  // misses scrollbar-drag and keyboard scrolling (Space/PageDown/arrows).
+  // Freezing the actual scroll container's overflow catches every input
+  // method and always restores cleanly on close via the effect cleanup.
+  useEffect(() => {
+    if (!commentCard) return;
+    const scrollEl = document.getElementById("page-scroll-container");
+    if (!scrollEl) return;
+    const prevOverflow = scrollEl.style.overflow;
+    scrollEl.style.overflow = "hidden";
+    return () => {
+      scrollEl.style.overflow = prevOverflow;
+    };
+  }, [commentCard]);
 
   // Ref to the slash menu component so the TipTap extension can forward keyboard events
   const slashMenuRef = useRef<SlashMenuHandle>(null);
@@ -614,7 +629,6 @@ export function PageEditor({
               if (nodeOffset !== null) {
                 try {
                   const editorEl = editor.view.dom as HTMLElement;
-                  const editorRect = editorEl.getBoundingClientRect();
                   const domInfo = editor.view.domAtPos(nodeOffset + 1);
                   let el = domInfo.node as HTMLElement;
                   if (el.nodeType === Node.TEXT_NODE) {
@@ -623,7 +637,11 @@ export function PageEditor({
                   while (el.parentElement && el.parentElement !== editorEl) {
                     el = el.parentElement;
                   }
-                  blockY = el.getBoundingClientRect().top - editorRect.top - 20;
+                  // Viewport-absolute Y (matches every other openCommentCard
+                  // caller) — the card is position:fixed, so subtracting the
+                  // editor's own top here was pinning it near the viewport
+                  // top instead of next to the clicked block.
+                  blockY = el.getBoundingClientRect().top - 20;
                 } catch {
                   /* ignore */
                 }
@@ -636,34 +654,57 @@ export function PageEditor({
         />
       )}
 
-      {/* Floating comment card — fixed to viewport right edge, no layout overflow */}
+      {/* Floating comment card — anchored just right of the editor column,
+          next to the block it was opened from, clamped to stay on-screen */}
       {commentCard &&
         workspaceId &&
+        editor &&
         typeof document !== "undefined" &&
-        createPortal(
-          <div
-            ref={commentCardRef}
-            style={{
-              position: "fixed",
-              right: 16,
-              top: Math.max(8, commentCard.blockY),
-              zIndex: 400,
-              width: 400,
-            }}
-          >
-            <CommentCard
-              anchorEnd={commentCard.anchorEnd}
-              anchorStart={commentCard.anchorStart}
-              blockId={commentCard.blockId}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-              onClose={closeCommentCard}
-              pageId={pageId}
-              workspaceId={workspaceId}
-            />
-          </div>,
-          document.body
-        )}
+        (() => {
+          const CARD_WIDTH = 380;
+          const CARD_MAX_HEIGHT = 550; // header + capped thread list + composer
+          const VIEWPORT_MARGIN = 16;
+          const editorRect = editor.view.dom.getBoundingClientRect();
+
+          let left = editorRect.right + 20;
+          left = Math.min(left, window.innerWidth - CARD_WIDTH - VIEWPORT_MARGIN);
+          left = Math.max(left, VIEWPORT_MARGIN);
+
+          const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - CARD_MAX_HEIGHT - VIEWPORT_MARGIN);
+          const top = Math.min(Math.max(VIEWPORT_MARGIN, commentCard.blockY), maxTop);
+
+          return createPortal(
+            <>
+              {/* Subtle backdrop — dims the page while the card is open and
+                  gives the outside-click-to-close handler an obvious target */}
+              <div
+                className="fixed inset-0 bg-black/5 dark:bg-black/20"
+                style={{ zIndex: 399 }}
+              />
+              <div
+                ref={commentCardRef}
+                style={{
+                  position: "fixed",
+                  left,
+                  top,
+                  zIndex: 400,
+                }}
+              >
+                <CommentCard
+                  anchorEnd={commentCard.anchorEnd}
+                  anchorStart={commentCard.anchorStart}
+                  blockId={commentCard.blockId}
+                  currentUserId={currentUserId}
+                  isAdmin={isAdmin}
+                  onClose={closeCommentCard}
+                  pageId={pageId}
+                  workspaceId={workspaceId}
+                />
+              </div>
+            </>,
+            document.body
+          );
+        })()}
     </div>
   );
 }

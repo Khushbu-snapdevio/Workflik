@@ -27,7 +27,6 @@ import { ConfirmDialog }   from "@/components/ui/confirm-dialog";
 import { ShareButton }     from "@/components/pages/share-button";
 import { FavoriteButton }    from "@/components/pages/favorite-button";
 import { PageActionsMenu }   from "@/components/pages/page-actions-menu";
-import { PageCommentButton }  from "@/components/pages/page-comment-button";
 import { IconPicker }       from "@/components/pages/icon-picker";
 import { PageIcon }        from "@/components/pages/page-icon";
 import { getOptionColor, groupOptions } from "@/components/database/property-registry";
@@ -1579,12 +1578,6 @@ export function TemplatePageClient({
       currentUserId={currentUserId}
       isPrivate={isPrivate}
       isEditor={isEditor}
-     />
-     <PageCommentButton
-      pageId={page.id}
-      workspaceId={workspaceId}
-      currentUserId={currentUserId}
-      isAdmin={isAdmin}
      />
      <FavoriteButton
       pageId={page.id}

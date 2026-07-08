@@ -45,6 +45,11 @@ interface CommentThread {
  isOrphaned:  boolean;
  content:   Record<string, unknown> | null;
  reactions:  Record<string, string[]>;
+ // Set when this thread was opened from a database property cell (e.g. the
+ // "Category" column) rather than the whole page — these are shown in their
+ // own property-scoped popover (CellCommentPopover), never in this card's
+ // page-level/block-level lists.
+ propertyId:  string | null;
  createdAt:  string;
  editedAt:   string | null;
  deletedAt:  string | null;
@@ -456,8 +461,10 @@ export function CommentCard({
   return () => document.removeEventListener("keydown", handler);
  }, [onClose, variant]);
 
+ // Page-level threads (blockId === null) exclude property-scoped comments —
+ // those belong to CellCommentPopover / the property row, not this card.
  const threads = (data?.comments ?? []).filter((t) =>
-  blockId ? t.blockId === blockId : !t.blockId
+  blockId ? t.blockId === blockId : (!t.blockId && !t.propertyId)
  );
  const nonOrphaned = threads.filter((t) => !t.isOrphaned);
  const orphaned  = threads.filter((t) => t.isOrphaned);
@@ -586,47 +593,47 @@ export function CommentCard({
  return (
   <div
    ref={cardRef}
-   className="w-[360px] border border-border bg-card overflow-hidden"
+   className="w-[380px] border border-border bg-card overflow-hidden"
    style={{ borderRadius: "var(--radius-xl)" }}
   >
    {/* ── Context header ── shows user this is a BLOCK comment, not page-level */}
-   <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/40 bg-muted/20">
-    <div className="flex items-center gap-2">
-     <div className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
-      <CursorTextIcon size={12} className="text-muted-foreground" />
+   <div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-border/50 bg-muted/25">
+    <div className="flex items-center gap-2.5 min-w-0">
+     <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-primary/15 bg-primary/10">
+      <CursorTextIcon size={13} className="text-primary" />
      </div>
-     <span className="text-xs font-semibold text-foreground/80">
-      {blockId ? "Block comment" : "Page comment"}
-     </span>
-     <span className="inline-flex items-center rounded-[var(--radius-xs)] px-1.5 py-px text-xs font-bold leading-none border bg-muted text-muted-foreground border-border">
-      {blockId ? "BLOCK" : "PAGE"}
-     </span>
-     {unresolvedCount > 0 && (
-      <span className="text-xs font-semibold text-muted-foreground">
-       · {unresolvedCount} open
+     <div className="min-w-0">
+      <span className="text-sm font-semibold text-foreground leading-tight">
+       {blockId ? "Block comment" : "Page comment"}
       </span>
-     )}
-     {resolvedCount > 0 && (
-      <button
-       type="button"
-       onClick={() => setShowResolved((v) => !v)}
-       className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-150"
-      >
-       {showResolved ? "hide resolved" : `${resolvedCount} resolved`}
-      </button>
-     )}
+      <p className="text-xs text-muted-foreground leading-tight mt-0.5">
+       {unresolvedCount > 0 ? `${unresolvedCount} open` : "No open threads"}
+       {resolvedCount > 0 && (
+        <>
+         {" · "}
+         <button
+          type="button"
+          onClick={() => setShowResolved((v) => !v)}
+          className="underline decoration-dotted underline-offset-2 hover:text-foreground transition-colors duration-150"
+         >
+          {showResolved ? "hide resolved" : `${resolvedCount} resolved`}
+         </button>
+        </>
+       )}
+      </p>
+     </div>
     </div>
     <button
      type="button"
      onClick={onClose}
-     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
     >
-     <XIcon size={12} />
+     <XIcon size={13} />
     </button>
    </div>
 
    {/* Thread list */}
-   <div className="max-h-[380px] overflow-y-auto">
+   <div className="max-h-[400px] overflow-y-auto">
     {loading && (
      <div className="flex items-center justify-center py-8">
       <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
@@ -670,7 +677,7 @@ export function CommentCard({
    </div>
 
    {/* Composer */}
-   <div className="border-t border-border/40 px-3 py-2.5">
+   <div className="border-t border-border/50 bg-muted/10 px-3 py-2.5">
     <CommentComposer
      workspaceId={workspaceId}
      mode="new"
@@ -759,7 +766,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
  return (
   <div
    id={`comment-${thread.id}`}
-   className={`group/thread relative border-b border-border/30 last:border-0 transition-colors duration-150 hover:bg-accent/40 ${thread.isResolved ? "opacity-55" : ""}`}
+   className={`group/thread relative border-b border-border/20 last:border-0 transition-colors duration-150 hover:bg-accent/30 ${thread.isResolved ? "opacity-55" : ""}`}
   >
    {/* ── Floating action pill — appears top-right on hover ── */}
    {!thread.deletedAt && (
@@ -839,8 +846,8 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
    )}
 
    {/* ── Root comment body ── */}
-   <div className="flex items-start gap-2.5 px-4 pt-3.5 pb-2.5">
-    <UserAvatar name={thread.author?.name} image={thread.author?.image} />
+   <div className="flex items-start gap-2.5 px-4 pt-4 pb-2.5">
+    <UserAvatar name={thread.author?.name} image={thread.author?.image} size={28} />
     <div className="flex-1 min-w-0 pr-6">
      {/* Name + time row */}
      <div className="flex items-baseline gap-1.5 mb-1">
@@ -869,7 +876,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
        onCancel={() => setEditingId(null)}
       />
      ) : (
-      <p className="text-sm text-foreground/85 leading-[1.5] whitespace-pre-wrap break-words">
+      <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap break-words">
        {renderContent(thread.content)}
       </p>
      )}
@@ -903,7 +910,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
 
    {/* ── Replies ── */}
    {thread.replies.length > 0 && (
-    <div className="ml-[52px] mr-4 mb-2 border-l-2 border-border/40 pl-3">
+    <div className="ml-[56px] mr-4 mb-2 border-l-2 border-border/30 pl-3">
      {thread.replies.map((reply) => (
       <ReplyRow
        key={reply.id}
@@ -921,7 +928,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
 
    {/* ── Reply input ── */}
    {!thread.isResolved && (
-    <div className="pl-[52px] pr-4 pb-3">
+    <div className="pl-[56px] pr-4 pb-3">
      <CommentComposer
       key={replyKey}
       workspaceId={workspaceId}
@@ -1001,7 +1008,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
       onCancel={() => setEditingId(null)}
      />
     ) : (
-     <p className="text-sm text-foreground/80 leading-[1.5] whitespace-pre-wrap break-words">
+     <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap break-words">
       {renderContent(reply.content)}
      </p>
     )}

@@ -207,13 +207,14 @@ export default async function PageEditorPage({ params }: Props) {
             isPrivate={page.isPrivate}
             isEditor={isEditor}
           />
-          <PageCommentButton
-            pageId={page.id}
-            workspaceId={ws.id}
-            currentUserId={session.user.id}
-            isAdmin={isAdmin}
-            mode="scroll"
-          />
+          {page.kind === "entry" && (
+            <PageCommentButton
+              pageId={page.id}
+              workspaceId={ws.id}
+              currentUserId={session.user.id}
+              isAdmin={isAdmin}
+            />
+          )}
           <FavoriteButton
             pageId={page.id}
             workspaceId={ws.id}

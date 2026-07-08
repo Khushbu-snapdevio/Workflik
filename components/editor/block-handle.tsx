@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { Slice, Fragment } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
-import { Copy, GripVertical, Plus, Trash2, MessageSquare } from "lucide-react";
+import { Copy, GripVertical, Trash2, MessageSquare } from "lucide-react";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 interface BlockInfo {
@@ -44,7 +44,7 @@ function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
      const br = domNode.getBoundingClientRect();
      return {
       top:   br.top + br.height / 2,
-      left:   er.left - 56,
+      left:   er.left - 36,
       nodePos,
       nodeSize: node.nodeSize,
      };
@@ -74,7 +74,7 @@ function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
   const br = el.getBoundingClientRect();
   return {
    top:   br.top + br.height / 2,
-   left:   er.left - 56,
+   left:   er.left - 36,
    nodePos,
    nodeSize: node.nodeSize,
   };
@@ -99,7 +99,7 @@ function getBlockRect(editor: Editor, nodePos: number): { top: number; left: num
    domNode = domNode.parentElement;
   }
   const br = domNode.getBoundingClientRect();
-  return { top: br.top + br.height / 2, left: er.left - 56 };
+  return { top: br.top + br.height / 2, left: er.left - 36 };
  } catch {
   return null;
  }
@@ -233,24 +233,6 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
   onComment(block.nodePos, block.top);
  }, [block, onComment]);
 
- // Inserts a fresh paragraph right after this block, moves the cursor into
- // it, then types "/" — reusing the existing slash-command Suggestion
- // plugin (character-triggered) instead of a separate imperative "open
- // menu" API, so the "+" button and typing "/" always behave identically.
- const addBlockBelow = useCallback(() => {
-  if (!block) return;
-  const { nodePos, nodeSize } = block;
-  setMenuOpen(false);
-  const insertPos = nodePos + nodeSize;
-  editor
-   .chain()
-   .focus()
-   .insertContentAt(insertPos, { type: "paragraph" })
-   .setTextSelection(insertPos + 1)
-   .insertContent("/")
-   .run();
- }, [editor, block]);
-
  // ── Drag handlers ─────────────────────────────────────────────────────────
  const handleDragStart = useCallback((e: React.DragEvent<HTMLButtonElement>) => {
   if (!block) { e.preventDefault(); return; }
@@ -314,17 +296,6 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
     alignItems: "center",
    }}
   >
-   {/* + — insert a new block right below this one and open the block-type menu */}
-   <button
-    type="button"
-    onMouseDown={(e) => e.stopPropagation()}
-    onClick={addBlockBelow}
-    title="Add block below"
-    className="flex h-6 w-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
-   >
-    <Plus size={14} />
-   </button>
-
    {/* ⠿ grip — drag to reorder, click to open block menu */}
    <button
     ref={triggerRef}

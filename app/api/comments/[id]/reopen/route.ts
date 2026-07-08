@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { comments, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { requirePagePermission } from "@/lib/permissions/resolver";
 import { triggerReopenedNotification } from "@/lib/notifications/triggers";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -28,7 +29,7 @@ export async function POST(_req: Request, { params }: Ctx) {
     if (!row) return apiError(404, "Comment not found");
     if (row.parentId !== null) return apiError(400, "Only thread roots can be reopened");
 
-    await requireWorkspaceMember(row.workspaceId, session.user.id);
+    await requirePagePermission(session.user.id, row.pageId, "can_comment");
 
     const [updated] = await db.transaction(async (tx) => {
       const result = await tx

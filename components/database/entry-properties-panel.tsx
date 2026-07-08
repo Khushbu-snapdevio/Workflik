@@ -1,13 +1,47 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Settings2 } from "lucide-react";
+import { Settings2, MessageSquare } from "lucide-react";
 import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
+import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import type { DbProperty, DbPropertyValue } from "@/components/database/types";
+
+// Plain-text snapshot of a property's current value, frozen onto a comment at
+// creation time (mirrors the same helper in template-table-view.tsx) so a
+// comment still shows what the property said even if the value changes later.
+function getPropertyValueText(prop: DbProperty, raw: unknown): string {
+  if (!raw) return "";
+  const v = raw as Record<string, unknown>;
+  const config = (prop.config ?? {}) as { options?: { id: string; name: string }[] };
+  switch (prop.type) {
+    case "text":     return String(v.text ?? "");
+    case "number":   return v.number != null ? String(v.number) : "";
+    case "url":      return String(v.url ?? "");
+    case "email":    return String(v.email ?? "");
+    case "phone":    return String(v.phone ?? "");
+    case "checkbox": return v.checked ? "Yes" : "No";
+    case "person":   return String(v.name ?? "");
+    case "date": {
+      const d = v.date as string | undefined;
+      return d ? new Date(`${d}T00:00:00`).toLocaleDateString() : "";
+    }
+    case "select": {
+      const optId = v.optionId as string | undefined;
+      if (!optId) return "";
+      return (config.options ?? []).find((o) => o.id === optId)?.name ?? "";
+    }
+    case "multi_select": {
+      const ids = (v.optionIds as string[] | undefined) ?? [];
+      const opts = config.options ?? [];
+      return ids.map((id) => opts.find((o) => o.id === id)?.name ?? "").filter(Boolean).join(", ");
+    }
+    default: return "";
+  }
+}
 
 interface EntryPropertiesPanelProps {
   entryId:     string;
@@ -35,13 +69,35 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
   // Edit-property side panel (select/status only)
   const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
 
+  // Property-scoped comments (e.g. commenting on "Category: Retro") — kept
+  // separate from the page-level Comments section further down the page.
+  const [rowComments, setRowComments] = useState<Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }> | null>(null);
+  const [commentPopover, setCommentPopover] = useState<{ propId: string; rect: DOMRect; propName: string; valueLabel: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/pages/${entryId}/comments`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setRowComments(data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [entryId]);
+
+  function commentCountFor(propId: string): number {
+    if (!rowComments) return 0;
+    return rowComments.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === propId).length;
+  }
+
   // `popover`/`editPropPanel` are one-time DOMRect snapshots of a property row's
   // trigger, and `getAnchorRect={() => editPropPanel.anchorRect}` below always
   // returns that same frozen value — so EditPropertySidePanel's own
   // reposition-on-scroll effect has nothing fresh to reposition to. Lock scroll
   // while either popover is open instead, so the frozen anchor never goes stale.
-  useScrollLockWhileOpen(!!popover || !!editPropPanel, (target) =>
-   !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]'));
+  useScrollLockWhileOpen(!!popover || !!editPropPanel || !!commentPopover, (target) =>
+   !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt], [data-comment-exempt]'));
 
   useEffect(() => {
     let cancelled = false;
@@ -241,6 +297,33 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                 )}
 
               </div>
+
+              {/* Comment column — visible on row hover, or always once a
+                  comment exists so past discussion stays discoverable */}
+              {(() => {
+                const count = commentCountFor(prop.id);
+                return (
+                  <button
+                    type="button"
+                    title="Comment on this property"
+                    onClick={(e) => {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setCommentPopover({
+                        propId: prop.id,
+                        rect,
+                        propName: prop.name,
+                        valueLabel: getPropertyValueText(prop, val),
+                      });
+                    }}
+                    className={`mt-1 flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-muted-foreground/60 transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
+                      count > 0 ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"
+                    }`}
+                  >
+                    <MessageSquare size={12} />
+                    {count > 0 && <span className="text-[10px] font-bold leading-none">{count}</span>}
+                  </button>
+                );
+              })()}
             </div>
           );
         })}
@@ -270,6 +353,19 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
           onDeleteProperty={() => deletePropertyLocal(editPropProp.id)}
           onDuplicateProperty={() => duplicatePropertyLocal(editPropProp)}
           onClose={() => setEditPropPanel(null)}
+        />
+      )}
+
+      {commentPopover && (
+        <CellCommentPopover
+          pageId={entryId}
+          workspaceId={workspaceId}
+          anchorRect={commentPopover.rect}
+          propertyId={commentPopover.propId}
+          propertyName={commentPopover.propName}
+          propertyValueLabel={commentPopover.valueLabel}
+          onClose={() => setCommentPopover(null)}
+          onCommentAdded={() => setRowComments((prev) => [...(prev ?? []), { blockId: null, deletedAt: null, propertyId: commentPopover.propId }])}
         />
       )}
     </>

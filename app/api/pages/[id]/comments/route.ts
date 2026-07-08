@@ -2,7 +2,8 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { comments, pages, users } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { requirePagePermission } from "@/lib/permissions/resolver";
 import {
   triggerCommentNotifications,
   triggerMentionNotifications,
@@ -24,7 +25,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     if (!page) return apiError(404, "Page not found");
 
-    await requireWorkspaceMember(page.workspaceId, session.user.id);
+    await requirePagePermission(session.user.id, pageId, "can_view");
 
     // Load all roots (including soft-deleted) + their authors
     const roots = await db
@@ -189,7 +190,7 @@ export async function POST(req: Request, { params }: Ctx) {
 
     if (!page) return apiError(404, "Page not found");
 
-    await requireWorkspaceMember(page.workspaceId, session.user.id);
+    await requirePagePermission(session.user.id, pageId, "can_comment");
 
     const body = await req.json();
     const parsed = createCommentSchema.safeParse(body);
@@ -241,7 +242,6 @@ export async function POST(req: Request, { params }: Ctx) {
         })
         .returning();
 
-      // Notification triggers (no-ops in Phase 11; Phase 13 fills them)
       await triggerCommentNotifications(tx, {
         commentId:   inserted.id,
         pageId,

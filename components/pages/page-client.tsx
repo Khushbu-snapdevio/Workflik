@@ -298,12 +298,16 @@ export function PageClient({
      />
     </div>
 
-    <PageCommentsSection
-     currentUserId={currentUserId}
-     isAdmin={isAdmin}
-     pageId={pageId}
-     workspaceId={workspaceId}
-    />
+    {/* Page-level comments — Notion-style: only database entries (records) get
+        a whole-page comment thread; plain content pages use block comments only. */}
+    {databaseId && (
+     <PageCommentsSection
+      currentUserId={currentUserId}
+      isAdmin={isAdmin}
+      pageId={pageId}
+      workspaceId={workspaceId}
+     />
+    )}
 
    </div>
   </div>

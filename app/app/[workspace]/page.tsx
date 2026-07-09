@@ -329,9 +329,8 @@ export default async function WorkspacePage({ params }: Props) {
                 <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
 
                   {/* Welcome header */}
-                  <div className="relative overflow-hidden border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
-                    <div className="pointer-events-none absolute -right-6 -top-6 size-32 rounded-full bg-primary/5" />
-                    <div className="relative flex items-center gap-4">
+                  <div className="border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
+                    <div className="flex items-center gap-4">
                       <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10">
                         <svg className="size-5 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24">
                           <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>

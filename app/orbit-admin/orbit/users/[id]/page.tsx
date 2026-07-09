@@ -1,12 +1,15 @@
-import { desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gt } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BanButton, ImpersonateButton, RevokeSessionsButton } from "@/components/orbit/orbit-admin-actions";
+import { PaginationControls } from "@/components/orbit/pagination-controls";
 import { db } from "@/lib/db";
 import { sessions, users, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "User Detail – Orbit Admin" };
+
+const SESSIONS_PAGE_SIZE = 15;
 
 function ago(d: Date | null | undefined) {
  if (!d) return "—";
@@ -24,14 +27,28 @@ function avatarColor(str: string) {
  return colors[h % colors.length]!;
 }
 
-export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+interface Props {
+ params:       Promise<{ id: string }>;
+ searchParams: Promise<{ page?: string }>;
+}
+
+export default async function UserDetailPage({ params, searchParams }: Props) {
  const { id } = await params;
+ const sp = await searchParams;
+ const sessionsPage = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 
  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
  if (!user) notFound();
 
- const [userSessions, memberships] = await Promise.all([
-  db.select().from(sessions).where(eq(sessions.userId, id)).orderBy(desc(sessions.createdAt)).limit(10),
+ const now = new Date();
+
+ const [userSessions, [totalSessions], [activeSessionsCount], memberships] = await Promise.all([
+  db.select().from(sessions).where(eq(sessions.userId, id))
+   .orderBy(desc(sessions.createdAt))
+   .limit(SESSIONS_PAGE_SIZE)
+   .offset((sessionsPage - 1) * SESSIONS_PAGE_SIZE),
+  db.select({ count: count() }).from(sessions).where(eq(sessions.userId, id)),
+  db.select({ count: count() }).from(sessions).where(and(eq(sessions.userId, id), gt(sessions.expiresAt, now))),
   db.select({
    id:          workspaceMembers.id,
    role:        workspaceMembers.role,
@@ -50,8 +67,6 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
  ]);
 
  const isAdmin        = user.isPlatformAdmin;
- const now            = new Date();
- const activeSessions = userSessions.filter(s => new Date(s.expiresAt) > now);
  const displayName    = user.name?.trim() || user.email || "?";
  const avatarChar     = displayName[0]!.toUpperCase();
  const avatarBg       = avatarColor(user.id);
@@ -89,10 +104,10 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
      <p className="mt-0.5 text-sm text-muted-foreground">{user.email}</p>
      <div className="mt-3 flex flex-wrap items-center gap-2">
       <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-       <strong className="font-bold text-foreground">{userSessions.length}</strong> sessions
+       <strong className="font-bold text-foreground">{totalSessions!.count}</strong> sessions
       </span>
       <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-       <strong className="font-bold text-foreground">{activeSessions.length}</strong> active
+       <strong className="font-bold text-foreground">{activeSessionsCount!.count}</strong> active
       </span>
       <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
        <strong className="font-bold text-foreground">{memberships.length}</strong> workspaces
@@ -155,7 +170,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3">
        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Sessions</h2>
-       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{userSessions.length}</span>
+       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{totalSessions!.count}</span>
       </div>
       {userSessions.length === 0 ? (
        <p className="px-5 py-10 text-center text-xs text-muted-foreground">No sessions found</p>
@@ -184,6 +199,15 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
        </div>
       )}
      </div>
+     {totalSessions!.count > SESSIONS_PAGE_SIZE && (
+      <PaginationControls
+       page={sessionsPage}
+       pageSize={SESSIONS_PAGE_SIZE}
+       totalCount={totalSessions!.count}
+       basePath={`/orbit-admin/orbit/users/${id}`}
+       query=""
+      />
+     )}
 
      {/* Workspace memberships */}
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
@@ -207,13 +231,18 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <p className="text-xs font-semibold text-foreground">{m.wsName ?? "Deleted workspace"}</p>
             <p className="text-xs text-muted-foreground/70">/{m.wsSlug ?? m.workspaceId}</p>
            </div>
-           <div className="flex shrink-0 flex-col items-end gap-1">
+           <div className="flex shrink-0 flex-col items-end gap-1.5">
             <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-semibold ${
              m.role === "viewer" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
             }`}>{m.role}</span>
-            <span className={`text-xs font-semibold ${
-             m.status === "active" ? "text-success" : "text-muted-foreground"
-            }`}>{m.status}</span>
+            <span className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-semibold ${
+             m.status === "active" ? "bg-success/10 text-success" : m.status === "invited" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
+            }`}>
+             <span className={`size-1.5 rounded-full ${
+              m.status === "active" ? "bg-success" : m.status === "invited" ? "bg-warning" : "bg-muted-foreground/40"
+             }`} />
+             {m.status}
+            </span>
            </div>
           </Link>
          );

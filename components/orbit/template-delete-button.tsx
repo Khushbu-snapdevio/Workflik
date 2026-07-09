@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Trash2, AlertTriangle, X } from "lucide-react";
+import { IconTooltipButton } from "@/components/orbit/icon-tooltip-button";
 
 interface Props {
   templateId: string;
@@ -14,27 +15,35 @@ export function TemplateDeleteButton({ templateId, templateName }: Props) {
   const router = useRouter();
   const [open,    setOpen]    = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [error,   setError]   = useState("");
 
   async function handleDelete() {
     setDeleting(true);
-    const res = await fetch(`/api/orbit/templates/${templateId}`, { method: "DELETE" });
-    setDeleting(false);
-    if (res.ok) {
-      setOpen(false);
-      router.refresh();
+    setError("");
+    try {
+      const res = await fetch(`/api/orbit/templates/${templateId}`, { method: "DELETE" });
+      if (res.ok) {
+        setOpen(false);
+        router.refresh();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setError((d as { error?: string }).error ?? "Failed to delete template");
+      }
+    } catch {
+      setError("Network error");
+    } finally {
+      setDeleting(false);
     }
   }
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1 rounded-[var(--radius-xs)] px-2.5 py-1 text-xs font-semibold text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
-      >
-        <Trash2 size={11} />
-        Delete
-      </button>
+      <IconTooltipButton
+        icon={<Trash2 size={14} />}
+        label="Delete"
+        danger
+        onClick={() => { setError(""); setOpen(true); }}
+      />
 
       {open && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center">
@@ -61,6 +70,13 @@ export function TemplateDeleteButton({ templateId, templateName }: Props) {
                 </p>
               </div>
             </div>
+
+            {error && (
+              <p className="mb-3 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                <AlertTriangle size={12} className="shrink-0" />
+                {error}
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-2">
               <button

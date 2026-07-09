@@ -157,23 +157,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
           <TooltipTour tourCompleted={freshUser?.tourCompleted ?? true} />
         </HintProvider>
       </NotificationProvider>
-      <Toaster
-        position="bottom-center"
-        closeButton={false}
-        toastOptions={{
-          style: {
-            background: "#FFFFFF",
-            color: "#0C2340",
-            border: "1px solid #DAEAF5",
-            boxShadow: "0 2px 8px rgba(12,35,64,0.08), 0 8px 24px rgba(12,35,64,0.10)",
-            fontSize: "13px",
-            fontWeight: 500,
-            borderRadius: "8px",
-            padding: "10px 16px",
-            gap: "8px",
-          },
-        }}
-      />
+      <Toaster position="bottom-right" closeButton={false} />
     </SearchProvider>
   );
 }

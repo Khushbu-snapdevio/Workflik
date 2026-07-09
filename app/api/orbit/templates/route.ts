@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templates, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -72,6 +73,14 @@ export async function POST(req: Request) {
       pageSnapshot,
     })
     .returning();
+
+  await writeAuditLog({
+    actorId:    session.user.id,
+    action:     "template.created",
+    targetType: "template",
+    targetId:   tpl!.id,
+    metadata:   { name: tpl!.name, category: tpl!.category },
+  });
 
   return Response.json(tpl, { status: 201 });
 }

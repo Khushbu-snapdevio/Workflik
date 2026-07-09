@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { isSmtpConfigured } from "@/lib/smtp/client";
 import { ProfileSection } from "@/components/settings/profile-section";
 
 export const metadata: Metadata = { title: "My Profile — Settings" };
@@ -26,5 +27,5 @@ export default async function ProfileSettingsPage({ params }: Props) {
     .where(eq(users.id, session.user.id))
     .limit(1);
 
-  return <ProfileSection user={user!} />;
+  return <ProfileSection smtpConfigured={isSmtpConfigured()} user={user!} />;
 }

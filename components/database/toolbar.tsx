@@ -171,7 +171,18 @@ export function DatabaseToolbar({
       if (addViewDropRef.current && !addViewDropRef.current.contains(t)) {
         setAddViewRect(null);
       }
-      if (contextDropRef.current && !contextDropRef.current.contains(t)) {
+      // Exclude the trigger button itself — it already toggles open/closed in
+      // its own onClick. Next.js hydrates the whole document, so React's
+      // stopPropagation on the button can't stop this sibling document-level
+      // listener from also seeing the same mousedown; without this exclusion,
+      // clicking the button while its menu is open would close it here first,
+      // then the button's onClick would immediately reopen it (reading the
+      // just-cleared state) — the menu would blink instead of closing.
+      if (
+        contextDropRef.current &&
+        !contextDropRef.current.contains(t) &&
+        !(t as HTMLElement).closest?.("[data-view-context-trigger]")
+      ) {
         setContextView(null);
         setContextRect(null);
       }
@@ -316,6 +327,7 @@ export function DatabaseToolbar({
 
                 {isEditor && !editingId && (
                   <button
+                    data-view-context-trigger
                     className={[
                       "flex h-full w-6 items-center justify-center rounded-[var(--radius-xs)] transition-colors duration-150",
                       contextView?.id === view.id

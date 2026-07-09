@@ -1,11 +1,15 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { requireAdmin } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { templates } from "@/lib/db/schema";
 import { TemplatePublishToggle } from "@/components/orbit/template-publish-toggle";
 import { SeedTemplatesButton } from "@/components/orbit/seed-templates-button";
 import { TemplateDeleteButton } from "@/components/orbit/template-delete-button";
+import { TemplatePreviewButton } from "@/components/orbit/template-preview-modal";
+import { IconTooltipButton } from "@/components/orbit/icon-tooltip-button";
+import { BackToTopButton } from "@/components/orbit/back-to-top-button";
 
 export const metadata = { title: "Templates – Orbit Admin" };
 
@@ -93,9 +97,9 @@ export default async function OrbitTemplatesPage() {
       </p>
      </div>
     ) : (
-     <div className="overflow-x-auto">
+     <div>
       <table className="w-full">
-       <thead>
+       <thead className="sticky top-0 z-10 bg-card">
         <tr className="bg-muted/40">
          {["Template", "Category", "Status", "Updated", "Actions"].map(h => (
           <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
@@ -115,7 +119,7 @@ export default async function OrbitTemplatesPage() {
             )}
            </td>
            <td className="px-5 py-3.5">
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${catCls}`}>
+            <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${catCls}`}>
              {CATEGORY_LABELS[tpl.category] ?? tpl.category}
             </span>
            </td>
@@ -127,18 +131,20 @@ export default async function OrbitTemplatesPage() {
              {tpl.status}
             </span>
            </td>
-           <td className="px-5 py-3.5 text-xs text-muted-foreground">
+           <td className="whitespace-nowrap px-5 py-3.5 text-xs text-muted-foreground">
             {tpl.updatedAt
              ? new Date(tpl.updatedAt).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })
              : "—"}
            </td>
            <td className="px-5 py-3.5">
-            <div className="flex items-center gap-2">
-             <Link href={`/orbit-admin/orbit/templates/${tpl.id}/edit`}
-              className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground">
-              Edit
-             </Link>
-             <TemplatePublishToggle templateId={tpl.id} currentStatus={tpl.status} />
+            <div className="flex items-center gap-1">
+             <TemplatePreviewButton templateId={tpl.id} />
+             <IconTooltipButton
+              icon={<Pencil size={14} />}
+              label="Edit"
+              href={`/orbit-admin/orbit/templates/${tpl.id}/edit`}
+             />
+             <TemplatePublishToggle templateId={tpl.id} templateName={tpl.name} currentStatus={tpl.status} />
              <TemplateDeleteButton templateId={tpl.id} templateName={tpl.name} />
             </div>
            </td>
@@ -150,6 +156,8 @@ export default async function OrbitTemplatesPage() {
      </div>
     )}
    </div>
+
+   <BackToTopButton />
   </div>
  );
 }

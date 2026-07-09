@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templates, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -38,6 +39,14 @@ export async function PATCH(
     .set({ status: "published" })
     .where(eq(templates.id, id))
     .returning();
+
+  await writeAuditLog({
+    actorId:    session.user.id,
+    action:     "template.published",
+    targetType: "template",
+    targetId:   id,
+    metadata:   { name: updated!.name },
+  });
 
   return Response.json(updated);
 }

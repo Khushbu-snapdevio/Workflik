@@ -1,7 +1,8 @@
 "use client";
 
-import { BookOpen, Clock, FileText, Grid2X2, Loader2, Lock, Search, Star, X } from "lucide-react";
+import { AlertCircle, BookOpen, Check, Clock, FileText, Grid2X2, Loader2, Lock, Search, Star, Trash2, X } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -63,7 +64,7 @@ function timeAgo(iso: string) {
 }
 
 export function LibraryClient({
-  pages,
+  pages: initialPages,
   workspaceSlug,
   workspaceId,
 }: {
@@ -71,22 +72,29 @@ export function LibraryClient({
   workspaceSlug: string;
   workspaceId: string;
 }) {
+  const [pages, setPages]   = useState<PageRow[]>(initialPages);
   const [tab, setTab]       = useState<Tab>("all");
   const [search, setSearch]   = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore]   = useState(false);
   const [favs, setFavs]     = useState<Set<string>>(
-    () => new Set(pages.filter((p) => p.isFavorited).map((p) => p.id))
+    () => new Set(initialPages.filter((p) => p.isFavorited).map((p) => p.id))
   );
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
+  const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+  const [deletingSelected, setDeletingSelected]      = useState(false);
+  const [deleteErr, setDeleteErr]              = useState("");
 
   function changeTab(next: Tab) {
     setTab(next);
     setVisibleCount(PAGE_SIZE);
+    setSelectedIds(new Set());
   }
 
   function changeSearch(val: string) {
     setSearch(val);
     setVisibleCount(PAGE_SIZE);
+    setSelectedIds(new Set());
   }
 
   function loadMore() {
@@ -124,6 +132,33 @@ export function LibraryClient({
     window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
   }
 
+  function toggleRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll(visibleIds: string[]) {
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : new Set(visibleIds));
+  }
+
+  async function handleDeleteSelected() {
+    setDeletingSelected(true); setDeleteErr("");
+    const ids = [...selectedIds];
+    try {
+      const results  = await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
+      const failed  = results.filter((r) => !r.ok).length;
+      const removed  = new Set(ids.filter((_, i) => results[i]!.ok));
+      setPages((prev) => prev.filter((p) => !removed.has(p.id)));
+      setSelectedIds(new Set());
+      if (failed > 0) setDeleteErr(`Failed to delete ${failed} page${failed !== 1 ? "s" : ""}`);
+    } catch { setDeleteErr("Network error"); }
+    finally { setDeletingSelected(false); setConfirmDeleteSelected(false); }
+  }
+
   const tabCount = (id: Tab) =>
     id === "all"       ? pages.length :
     id === "recents"   ? pages.filter((p) => p.isRecent).length :
@@ -138,6 +173,11 @@ export function LibraryClient({
       return true;
     })
     .filter((p) => !search || p.title.toLowerCase().includes(search.toLowerCase()));
+
+  const visibleRows  = filtered.slice(0, visibleCount);
+  const visibleIds   = visibleRows.map((p) => p.id);
+  const allSelected  = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && visibleIds.some((id) => selectedIds.has(id));
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -168,25 +208,56 @@ export function LibraryClient({
             ))}
           </div>
 
-          {/* Search */}
-          <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs transition-colors duration-150 focus-within:border-border">
-            <Search size={13} className="shrink-0 text-muted-foreground/50" />
-            <input
-              className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
-              placeholder="Search pages…"
-              value={search}
-              onChange={(e) => changeSearch(e.target.value)}
-              type="text"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => changeSearch("")}
-                className="text-muted-foreground/40 transition-colors duration-150 hover:text-muted-foreground"
-              >
-                <X size={12} />
-              </button>
+          <div className="flex items-center gap-2">
+            {/* Selection toolbar — shown only when rows are checked */}
+            {selectedIds.size > 0 && (
+              <>
+                <span className="text-xs font-medium text-muted-foreground">{selectedIds.size} selected</span>
+                <button
+                  type="button"
+                  disabled={deletingSelected}
+                  onClick={() => setSelectedIds(new Set())}
+                  className="flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                >
+                  <X size={12} />
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingSelected}
+                  onClick={() => setConfirmDeleteSelected(true)}
+                  className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-destructive/40 bg-destructive/8 px-3 text-xs font-medium text-destructive transition-colors hover:border-destructive/70 hover:bg-destructive/15 disabled:opacity-50"
+                >
+                  {deletingSelected ? (
+                    <><Loader2 size={12} className="animate-spin" />Deleting…</>
+                  ) : (
+                    <><Trash2 size={12} />Delete selected ({selectedIds.size})</>
+                  )}
+                </button>
+                <div className="h-5 w-px bg-border/60" />
+              </>
             )}
+
+            {/* Search */}
+            <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs transition-colors duration-150 focus-within:border-border">
+              <Search size={13} className="shrink-0 text-muted-foreground/50" />
+              <input
+                className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                placeholder="Search pages…"
+                value={search}
+                onChange={(e) => changeSearch(e.target.value)}
+                type="text"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => changeSearch("")}
+                  className="text-muted-foreground/40 transition-colors duration-150 hover:text-muted-foreground"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -194,6 +265,13 @@ export function LibraryClient({
       {/* ── Content ── */}
       <div className="flex-1 overflow-auto">
         <div key={tab} className="mx-auto w-full max-w-[1200px] animate-in fade-in slide-in-from-bottom-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 duration-200">
+
+          {deleteErr && (
+            <p className="mb-3 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <AlertCircle size={14} className="shrink-0" />
+              {deleteErr}
+            </p>
+          )}
 
           {filtered.length === 0 ? (
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
@@ -211,7 +289,32 @@ export function LibraryClient({
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
 
               {/* Table header */}
-              <div className="grid border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}>
+              <div className="grid items-center border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px" }}>
+                <label className="flex cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={() => toggleSelectAll(visibleIds)}
+                    className="sr-only"
+                  />
+                  <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
+                    allSelected
+                      ? "border-primary bg-primary"
+                      : someSelected
+                        ? "border-primary bg-primary/20"
+                        : "border-border/60 bg-background hover:border-primary/50"
+                  }`}>
+                    {allSelected && (
+                      <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
+                        <polyline points="2 6 5 9 10 3"/>
+                      </svg>
+                    )}
+                    {someSelected && (
+                      <span className="block h-0.5 w-2 rounded-full bg-primary" />
+                    )}
+                  </span>
+                </label>
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Page name</span>
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Created by</span>
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Last edited</span>
@@ -220,11 +323,13 @@ export function LibraryClient({
 
               {/* Rows */}
               <div className="divide-y divide-border/40">
-                {filtered.slice(0, visibleCount).map((page) => (
+                {visibleRows.map((page) => {
+                  const isChecked = selectedIds.has(page.id);
+                  return (
                   <div
                     key={page.id}
                     className="group/row relative grid items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
-                    style={{ gridTemplateColumns: "1fr 200px 130px 130px" }}
+                    style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px" }}
                   >
                     {/* Full-row navigation link underneath */}
                     <Link
@@ -232,6 +337,21 @@ export function LibraryClient({
                       className="absolute inset-0"
                       aria-label={page.title || "Untitled"}
                     />
+
+                    {/* Row checkbox */}
+                    <label className="relative z-10 flex cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleRow(page.id)}
+                        className="sr-only"
+                      />
+                      <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
+                        isChecked ? "border-primary bg-primary" : "border-border/50 bg-background hover:border-primary/50"
+                      }`}>
+                        {isChecked && <Check size={10} className="text-white" style={{ transform: "translate(0.6px, -0.2px)" }} />}
+                      </span>
+                    </label>
 
                     {/* Page name cell */}
                     <div className="relative z-10 flex min-w-0 items-center gap-2.5 pr-4">
@@ -275,7 +395,8 @@ export function LibraryClient({
                     {/* Created */}
                     <span className="relative z-10 text-xs text-muted-foreground/70">{timeAgo(page.createdAt)}</span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Footer: count + load more / show less */}
@@ -330,6 +451,17 @@ export function LibraryClient({
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteSelected}
+        onOpenChange={(o) => !o && setConfirmDeleteSelected(false)}
+        title={`Move ${selectedIds.size} page${selectedIds.size !== 1 ? "s" : ""} to Trash?`}
+        description="They will be moved to Trash and permanently deleted after 30 days."
+        confirmLabel="Move to Trash"
+        confirmLoadingLabel="Moving…"
+        loading={deletingSelected}
+        onConfirm={handleDeleteSelected}
+      />
     </div>
   );
 }

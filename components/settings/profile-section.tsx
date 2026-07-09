@@ -1,9 +1,11 @@
 "use client";
 
-import { Camera, Check, ChevronDown, Clock, Globe, Loader2, Search, User, X } from "lucide-react";
+import { ArrowRight, Camera, Check, ChevronDown, Clock, Globe, Loader2, Search, ShieldAlert, User, X } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUpload } from "@/lib/storage/use-upload";
+import { changeEmail } from "@/lib/auth/client";
 import { useSettingsUser } from "./settings-user-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +19,22 @@ interface UserData {
  timezone: string | null;
  image:  string | null;
 }
-interface Props { user: UserData }
+interface BlockingWorkspace {
+ id:        string;
+ name:      string;
+ slug:      string;
+ hasOtherMembers: boolean;
+}
+interface Props {
+ user: UserData;
+ /** Whether this instance has SMTP configured — without it, verification
+  *  emails are only logged server-side, so the UI needs to say so instead
+  *  of implying an inbox delivery that won't happen. */
+ smtpConfigured: boolean;
+}
+interface PendingEmailChange { newEmail: string; sentAt: number }
+
+const PENDING_EMAIL_TTL_MS = 60 * 60 * 1000; // matches the server's 1h verification-token expiry
 
 const TIMEZONES = [
  "UTC",
@@ -179,7 +196,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
 }
 
 /* ── ProfileSection ───────────────────────────────────────── */
-export function ProfileSection({ user }: Props) {
+export function ProfileSection({ user, smtpConfigured }: Props) {
  const [name,     setName]     = useState(user.name ?? "");
  const [jobTitle,   setJobTitle]   = useState(user.jobTitle ?? "");
  const [timezone,   setTimezone]   = useState(user.timezone ?? "UTC");
@@ -193,13 +210,92 @@ export function ProfileSection({ user }: Props) {
  const [deleteEmail,  setDeleteEmail]  = useState("");
  const [deleting,   setDeleting]   = useState(false);
  const [deleteError,  setDeleteError]  = useState("");
+ const [blockingWorkspaces, setBlockingWorkspaces] = useState<BlockingWorkspace[]>([]);
  const [removePhotoConfirm, setRemovePhotoConfirm] = useState(false);
+
+ // ── Change email ──
+ const pendingEmailKey = `wf_pending_email_change:${user.id}`;
+ const [changingEmail, setChangingEmail] = useState(false);
+ const [newEmail,    setNewEmail]    = useState("");
+ const [emailSending,  setEmailSending]  = useState(false);
+ const [emailError,   setEmailError]   = useState("");
+ const [pendingEmail,  setPendingEmail]  = useState<PendingEmailChange | null>(null);
+ const [emailChangedBanner, setEmailChangedBanner] = useState(false);
 
  const nameRef = useRef(name); nameRef.current = name;
  const jobRef = useRef(jobTitle); jobRef.current = jobTitle;
  const fileRef = useRef<HTMLInputElement>(null);
  const { upload, uploading: avatarUploading } = useUpload({ kind: "user_avatar" });
  const { updateUser } = useSettingsUser();
+
+ // Restore a pending change-email request across refreshes (better-auth
+ // keeps no server-side record of it — the token itself is the only state —
+ // so this is purely a local UI convenience, not a source of truth).
+ useEffect(() => {
+  try {
+   const raw = localStorage.getItem(pendingEmailKey);
+   if (!raw) return;
+   const parsed = JSON.parse(raw) as PendingEmailChange;
+   const expired = Date.now() - parsed.sentAt > PENDING_EMAIL_TTL_MS;
+   const alreadyApplied = parsed.newEmail === user.email;
+   if (expired || alreadyApplied) {
+    localStorage.removeItem(pendingEmailKey);
+    return;
+   }
+   setPendingEmail(parsed);
+  } catch { localStorage.removeItem(pendingEmailKey); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []);
+
+ // better-auth redirects back here with ?emailChanged=1 once the
+ // verification link is clicked and the swap completes server-side.
+ useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("emailChanged") !== "1") return;
+  setEmailChangedBanner(true);
+  localStorage.removeItem(pendingEmailKey);
+  setPendingEmail(null);
+  params.delete("emailChanged");
+  const qs = params.toString();
+  window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []);
+
+ async function sendChangeEmail(target: string) {
+  setEmailSending(true);
+  setEmailError("");
+  const result = await changeEmail({
+   newEmail: target,
+   callbackURL: `${window.location.pathname}?emailChanged=1`,
+  });
+  setEmailSending(false);
+  if (result.error) {
+   setEmailError(result.error.message ?? "Something went wrong. Please try again.");
+   return false;
+  }
+  const pending: PendingEmailChange = { newEmail: target, sentAt: Date.now() };
+  localStorage.setItem(pendingEmailKey, JSON.stringify(pending));
+  setPendingEmail(pending);
+  return true;
+ }
+
+ async function handleSendChangeEmail() {
+  const trimmed = newEmail.trim().toLowerCase();
+  if (!trimmed) return;
+  if (trimmed === user.email.toLowerCase()) {
+   setEmailError("That's already your current email.");
+   return;
+  }
+  if (await sendChangeEmail(trimmed)) {
+   setChangingEmail(false);
+   setNewEmail("");
+  }
+ }
+
+ function handleDismissPending() {
+  localStorage.removeItem(pendingEmailKey);
+  setPendingEmail(null);
+ }
 
  useEffect(() => {
   setTzTime(timeInZone(timezone));
@@ -259,14 +355,18 @@ export function ProfileSection({ user }: Props) {
  }
 
  async function handleDeleteAccount() {
-  setDeleteError(""); setDeleting(true);
+  setDeleteError(""); setBlockingWorkspaces([]); setDeleting(true);
   try {
    const res = await fetch("/api/user/account", {
     method: "DELETE", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: deleteEmail }),
    });
    if (res.ok) { window.location.href = "/"; }
-   else { const d = await res.json().catch(() => ({})); setDeleteError(d.error ?? "Something went wrong"); }
+   else {
+    const d = await res.json().catch(() => ({}));
+    setDeleteError(d.error ?? "Something went wrong");
+    setBlockingWorkspaces(Array.isArray(d.blockingWorkspaces) ? d.blockingWorkspaces : []);
+   }
   } catch { setDeleteError("Network error"); }
   finally { setDeleting(false); }
  }
@@ -289,6 +389,20 @@ export function ProfileSection({ user }: Props) {
      <p className="text-sm text-muted-foreground">Manage your name, photo, and personal details.</p>
     </div>
    </div>
+
+   {emailChangedBanner && (
+    <div className="mb-6 flex items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-success/30 bg-success/5 px-4 py-3">
+     <div className="flex items-center gap-2">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success">
+       <Check size={11} strokeWidth={3} className="text-white" />
+      </span>
+      <p className="text-sm font-medium text-success">Your email address has been updated.</p>
+     </div>
+     <button type="button" onClick={() => setEmailChangedBanner(false)} className="shrink-0 text-success/60 hover:text-success">
+      <X size={14} />
+     </button>
+    </div>
+   )}
 
    {/* ── Photo ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Photo</p>
@@ -380,20 +494,99 @@ export function ProfileSection({ user }: Props) {
     </div>
 
     {/* Email */}
-    <div className="flex items-center justify-between gap-4 px-5 py-4">
-     <div className="min-w-0">
-      <p className="text-sm font-medium text-foreground">Email</p>
-      <p className="mt-0.5 text-xs text-muted-foreground">Contact support to change your email address.</p>
+    <div className="px-5 py-4">
+     <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0">
+       <p className="text-sm font-medium text-foreground">Email</p>
+       <p className="mt-0.5 text-xs text-muted-foreground">Used to sign in to your account.</p>
+      </div>
+      {!changingEmail && (
+       <div className="shrink-0 flex flex-col items-end gap-1">
+        <Input
+         type="text"
+         value={user.email}
+         readOnly
+         disabled
+         className="w-[220px] cursor-not-allowed text-muted-foreground"
+        />
+        <button
+         type="button"
+         onClick={() => { setChangingEmail(true); setNewEmail(""); setEmailError(""); }}
+         className="text-xs font-medium text-primary hover:underline"
+        >
+         Change email
+        </button>
+       </div>
+      )}
      </div>
-     <div className="shrink-0">
-      <Input
-       type="text"
-       value={user.email}
-       readOnly
-       disabled
-       className="w-[220px] cursor-not-allowed text-muted-foreground"
-      />
-     </div>
+
+     {changingEmail && (
+      <div className="mt-3 space-y-2">
+       <div className="flex items-center gap-2">
+        <Input
+         type="email"
+         value={newEmail}
+         onChange={e => setNewEmail(e.target.value)}
+         placeholder="new@email.com"
+         autoFocus
+         className="w-[260px] focus-visible:border-primary"
+        />
+        <Button
+         size="sm"
+         type="button"
+         onClick={handleSendChangeEmail}
+         disabled={emailSending || !newEmail.trim()}
+        >
+         {emailSending ? "Sending…" : "Send verification link"}
+        </Button>
+        <Button
+         variant="outline"
+         size="sm"
+         type="button"
+         onClick={() => { setChangingEmail(false); setNewEmail(""); setEmailError(""); }}
+        >
+         Cancel
+        </Button>
+       </div>
+       {emailError && <p className="text-xs text-destructive">{emailError}</p>}
+      </div>
+     )}
+
+     {pendingEmail && !changingEmail && (
+      <div className="mt-3 flex items-start justify-between gap-3 rounded-[var(--radius-md)] border border-primary/20 bg-primary/5 px-3.5 py-2.5">
+       <div className="min-w-0 flex items-start gap-2">
+        <Clock size={14} className="mt-0.5 shrink-0 text-primary" />
+        <div className="min-w-0">
+         <p className="text-xs font-medium text-foreground">
+          Check <span className="font-semibold">{pendingEmail.newEmail}</span> for a confirmation link.
+         </p>
+         <p className="mt-0.5 text-[11px] text-muted-foreground">
+          {smtpConfigured
+           ? "Link expires in 1 hour. Your current email keeps working until you confirm."
+           : "This instance has no email sending configured — ask your admin to check the server logs for the link."}
+         </p>
+        </div>
+       </div>
+       <div className="shrink-0 flex items-center gap-2">
+        <button
+         type="button"
+         disabled={emailSending}
+         onClick={() => sendChangeEmail(pendingEmail.newEmail)}
+         className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+        >
+         {emailSending ? "Sending…" : "Resend"}
+        </button>
+        <span className="text-muted-foreground/30">·</span>
+        <button
+         type="button"
+         onClick={handleDismissPending}
+         className="text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+         Dismiss
+        </button>
+       </div>
+      </div>
+     )}
     </div>
    </div>
 
@@ -462,13 +655,45 @@ export function ProfileSection({ user }: Props) {
          placeholder={user.email}
          className="w-full border-destructive/30 focus-visible:border-destructive"
         />
-        {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+        {deleteError && blockingWorkspaces.length === 0 && (
+         <p className="text-xs text-destructive">{deleteError}</p>
+        )}
+        {blockingWorkspaces.length > 0 && (
+         <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning/5 px-3.5 py-3">
+          <div className="flex items-start gap-2.5">
+           <ShieldAlert size={16} className="mt-0.5 shrink-0 text-warning" />
+           <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-foreground">{deleteError}</p>
+            <ul className="mt-2.5 space-y-1.5">
+             {blockingWorkspaces.map(w => (
+              <li key={w.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border/60 bg-card px-3 py-2">
+               <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-foreground">{w.name}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                 {w.hasOtherMembers
+                  ? "You're the only Admin — promote or transfer to someone else"
+                  : "No other members yet — invite someone before deleting your account"}
+                </p>
+               </div>
+               <Link
+                href={`/app/${w.slug}/settings/members`}
+                className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+               >
+                Manage members <ArrowRight size={12} />
+               </Link>
+              </li>
+             ))}
+            </ul>
+           </div>
+          </div>
+         </div>
+        )}
         <div className="flex gap-2">
          <Button
           variant="outline"
           size="sm"
           type="button"
-          onClick={() => { setDeleteOpen(false); setDeleteEmail(""); setDeleteError(""); }}
+          onClick={() => { setDeleteOpen(false); setDeleteEmail(""); setDeleteError(""); setBlockingWorkspaces([]); }}
           >
           Cancel
          </Button>

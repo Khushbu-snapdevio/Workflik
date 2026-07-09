@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { X, Check, ChevronDown } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { DbProperty, FilterRule } from "./types";
 import type { SelectOption } from "./types";
 
@@ -196,9 +197,18 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
        />
       )}
 
-      {needsValue && !isMultiVal && (
+      {needsValue && !isMultiVal && prop?.type === "date" && (
+       <DatePicker
+        value={(filter.value as string) || null}
+        onChange={(v) => update(idx, { value: v ?? "" })}
+        placeholder="Value…"
+        className="h-[26px] w-32 gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs"
+       />
+      )}
+
+      {needsValue && !isMultiVal && prop?.type !== "date" && (
        <input
-        type={prop?.type === "number" ? "number" : prop?.type === "date" ? "date" : "text"}
+        type={prop?.type === "number" ? "number" : "text"}
         value={String(filter.value ?? "")}
         onChange={(e) => update(idx, { value: e.target.value })}
         placeholder="Value…"

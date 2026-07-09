@@ -1,8 +1,8 @@
-import { count, desc, gte } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gt, gte, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { SetupChecklist } from "@/components/orbit/setup-checklist";
 import { db } from "@/lib/db";
-import { emailOutbox, platformAuditLog, users, workspaces } from "@/lib/db/schema";
+import { emailOutbox, platformAuditLog, sessions, users, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { getQueueSummary } from "@/lib/jobs/queue-inspection";
 import { getInstanceSetupStatus } from "@/lib/orbit/setup-status";
 
@@ -75,6 +75,7 @@ export default async function OrbitOverviewPage() {
 
   const [
     [totalUsers], [newUsers7d], [newUsers30d], [totalWorkspaces], [emailCount],
+    [activeWorkspaces30d], [activeSessions],
     queues, recentUsers, recentAudit,
   ] = await Promise.all([
     db.select({ count: count() }).from(users),
@@ -82,6 +83,19 @@ export default async function OrbitOverviewPage() {
     db.select({ count: count() }).from(users).where(gte(users.createdAt, day30)),
     db.select({ count: count() }).from(workspaces),
     db.select({ count: count() }).from(emailOutbox),
+    // "Active workspaces" — any workspace with at least one active member who
+    // has logged in (i.e. created a session) in the last 30 days.
+    db.select({ count: countDistinct(workspaceMembers.workspaceId) })
+      .from(workspaceMembers)
+      .where(and(
+        eq(workspaceMembers.status, "active"),
+        inArray(
+          workspaceMembers.userId,
+          db.select({ id: sessions.userId }).from(sessions).where(gte(sessions.createdAt, day30))
+        )
+      )),
+    // "Current active sessions" — not-yet-expired session rows right now.
+    db.select({ count: count() }).from(sessions).where(gt(sessions.expiresAt, now)),
     getQueueSummary(),
     db.select().from(users).orderBy(desc(users.createdAt)).limit(8),
     db.select({
@@ -176,7 +190,7 @@ export default async function OrbitOverviewPage() {
       </div>
 
       {/* ── Secondary strip ── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Link href="/orbit-admin/orbit/queues"
           className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
@@ -208,6 +222,33 @@ export default async function OrbitOverviewPage() {
             <path d="M2 6h8M7 3l3 3-3 3"/>
           </svg>
         </Link>
+        <Link href="/orbit-admin/orbit/workspaces"
+          className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-success/10">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-success">
+              <path d="M2 5.5h12M2 10.5h12M5.5 2v12M10.5 2v12"/><rect x="1.5" y="1.5" width="13" height="13" rx="2"/>
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-foreground">{activeWorkspaces30d!.count}</p>
+            <p className="text-xs text-muted-foreground">Active workspaces (30d)</p>
+          </div>
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-muted-foreground/30 opacity-0 transition group-hover:opacity-100">
+            <path d="M2 6h8M7 3l3 3-3 3"/>
+          </svg>
+        </Link>
+        <div className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-success/10">
+            <span className="relative flex size-2.5">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-success" />
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-foreground">{activeSessions!.count}</p>
+            <p className="text-xs text-muted-foreground">Active sessions</p>
+          </div>
+        </div>
       </div>
 
       {/* ── Bottom panels ── */}

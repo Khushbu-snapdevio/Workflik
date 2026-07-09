@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { useSession } from "@/lib/auth/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
+import { emitCommentsChanged } from "@/lib/comments/comment-events";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,32 +48,12 @@ interface CommentThread {
 interface MoreMenuState { commentId: string; isReply: boolean; isOwn: boolean; rect: DOMRect }
 interface EmojiMenuState { commentId: string; rect: DOMRect }
 
-// ── Emoji data ────────────────────────────────────────────────────────────────
-
-const EMOJI_CATEGORIES = [
-  { id: "recent",   icon: "🕐", label: "Recent",             emojis: [] as string[] },
-  { id: "people",   icon: "😀", label: "Smileys & People",   emojis: ["😀","😃","😄","😁","😆","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","😵","🤯","🤠","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰","😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","👻","💩","🤡","👹","👺","👽","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","🤚","🖐️","✋","🖖","👌","✌️","🤞","👍","👎","✊","👊","👏","🙌","🤲","🙏","💪","👀","❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","💕","💞","💓","💗","💖","💘","💝"] },
-  { id: "nature",   icon: "🐶", label: "Animals & Nature",   emojis: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🐦","🦆","🦅","🦉","🦇","🐺","🐴","🦄","🐝","🦋","🐛","🐌","🐞","🐜","🐢","🐍","🦎","🐙","🦑","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🦊","🐊","🐅","🐆","🦓","🐘","🦏","🐪","🦒","🦘","🐕","🐩","🐈","🐓","🦃","🦚","🦜","🕊️","🐇","🦝","🦦","🦥","🐁","🐿️","🦔","🌵","🎄","🌲","🌳","🌴","🌱","🌿","☘️","🍀","🍃","🍂","🍁","🍄","🌾","💐","🌷","🌹","🥀","🌺","🌸","🌼","🌻","🌞","🌝","🌛","🌜","🌚","🌕","🌙","⭐","🌟","🌠","🌌","☁️","⛅","🌤️","🌧️","⛈️","🌩️","❄️","☃️","⛄","🌊","🌀","🌈","🌐","🌋","🏔️","⛰️"] },
-  { id: "food",     icon: "🍎", label: "Food & Drink",       emojis: ["🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍒","🍑","🥭","🍍","🥥","🥝","🍅","🍆","🥑","🥦","🥕","🧄","🧅","🥔","🌽","🥐","🥯","🍞","🥖","🧀","🥚","🍳","🥞","🧇","🥓","🥩","🍗","🍖","🌭","🍔","🍟","🍕","🥪","🌮","🌯","🥗","🍝","🍜","🍲","🍛","🍣","🍱","🥟","🍤","🍙","🍚","🍘","🧁","🍰","🎂","🍮","🍭","🍬","🍫","🍿","🍩","🍪","🌰","🍯","🧃","🥤","🧋","🍵","☕","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🍾"] },
-  { id: "activity", icon: "⚽", label: "Activity",            emojis: ["⚽","🏀","🏈","⚾","🎾","🏐","🏉","🎱","🏓","🏸","🥊","🥋","🎯","🎳","🏹","🎣","🤿","🎿","🛷","🏆","🥇","🥈","🥉","🎖️","🎗️","🎫","🎟️","🎪","🤹","🎭","🎨","🎬","🎤","🎧","🎼","🎵","🎶","🎹","🥁","🎷","🎺","🎸","🎻","🎲","♟️","🎮","🕹️","🧩","🪄"] },
-  { id: "travel",   icon: "🚗", label: "Travel & Places",    emojis: ["🚗","🚕","🚙","🚌","🏎️","🚓","🚑","🚒","🚚","🚜","🏍️","🛵","🚲","✈️","🚀","🛸","🚁","🚢","⛵","🚤","🚂","🚆","🚇","🚉","🏠","🏡","🏢","🏥","🏦","🏨","🏪","🏫","🏭","🏯","🏰","⛪","🕌","🛕","🕍","⛩️","🗼","🗽","⛲","🌍","🌎","🌏","🗺️","🧭","🌋","⛰️","🏔️","🏕️","🏖️","🏜️","🏝️","🏞️","🏟️"] },
-  { id: "objects",  icon: "💡", label: "Objects",             emojis: ["💡","🔦","🕯️","🧯","💰","💳","💎","⚖️","🔧","🔨","🛠️","⛏️","🔩","⚙️","🧲","🪜","🧰","💊","💉","🩹","🩺","🔬","🔭","🚪","🛏️","🛋️","🚽","🚿","🛁","🧴","🧹","🧺","🧼","🧽","🧵","🧶","👓","🕶️","📱","💻","⌨️","🖥️","🖨️","📷","📹","🎥","📞","☎️","📺","📻","⏰","⌚","🔋","🔌","💡","🗑️","🔒","🔓","🔑","🗝️","📌","📍","📎","✂️","📏","📐","✏️","📝","📖","📚","📰","🔖","🏷️","💼","👜","👛","💄","🪞","🪟","🛒","🎁","🎊","🎉","🎈","🎀","🎗️","🎟️"] },
-  { id: "symbols",  icon: "❤️", label: "Symbols",             emojis: ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","✅","❌","⭕","🛑","⛔","📛","🚫","💯","🔥","💢","♨️","⚠️","🚸","♻️","✴️","🆚","🆘","❗","❕","❓","❔","‼️","⁉️","💠","🔱","⚜️","🔰","Ⓜ️","🔅","🔆","📶","🎦","☮️","✝️","☪️","🕉️","✡️","☯️","🆔","⚛️","☢️","☣️","🔞","📵","🚭","♀️","♂️","⚧️","➕","➖","✖️","➗","♾️","💲","™️","©️","®️","▶️","⏩","◀️","⏪","⏸️","⏹️","⏺️","🔃","🔄","🔙","🔛","🔝","🔜","♠️","♥️","♦️","♣️","♟️","🃏","🀄","🎴"] },
-];
-
-// Track recently used emojis (runtime only – no persistence needed)
-const _recentEmojis: string[] = [];
-
-function addToRecent(emoji: string) {
-  const i = _recentEmojis.indexOf(emoji);
-  if (i !== -1) _recentEmojis.splice(i, 1);
-  _recentEmojis.unshift(emoji);
-  if (_recentEmojis.length > 16) _recentEmojis.pop();
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 // ── Full Emoji Picker ─────────────────────────────────────────────────────────
+// Wraps the same EmojiGridPicker used by the page icon picker and inline
+// comment reactions, so every emoji-picking surface in the app looks and
+// behaves identically (search, recents, skin tone, category shortcut bar).
 
 const FullEmojiPicker = React.forwardRef<HTMLDivElement, {
   rect: DOMRect;
@@ -80,36 +62,12 @@ const FullEmojiPicker = React.forwardRef<HTMLDivElement, {
   onSelect: (emoji: string) => void;
   onClose: () => void;
 }>(function FullEmojiPicker({ rect, winH, winW, onSelect, onClose }, ref) {
-  const [search, setSearch] = useState("");
-  const [activeCat, setActiveCat] = useState("people");
-  const searchRef = useRef<HTMLInputElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { searchRef.current?.focus(); }, []);
-
-  const pickerW = 340;
-  const pickerH = 360;
+  const pickerW = 352;
+  const pickerH = 322;
   const left = Math.max(8, Math.min(rect.right - pickerW, winW - pickerW - 8));
   const top  = rect.bottom + 6 + pickerH > winH
     ? Math.max(8, rect.top - pickerH - 6)
     : rect.bottom + 6;
-
-  const recentCat = { ...EMOJI_CATEGORIES[0], emojis: [..._recentEmojis] };
-  const allCats   = [recentCat, ...EMOJI_CATEGORIES.slice(1)];
-
-  const filtered = search.trim()
-    ? allCats.flatMap(c => c.emojis).filter((e, i, arr) =>
-        arr.indexOf(e) === i &&
-        (e.includes(search) || true) // simple substring; emoji names not available, show all on any char
-      ).slice(0, 80)
-    : null;
-
-  function scrollTo(catId: string) {
-    if (!scrollRef.current) return;
-    const el = scrollRef.current.querySelector(`[data-cat="${catId}"]`);
-    if (el) (el as HTMLElement).scrollIntoView({ block: "start" });
-    setActiveCat(catId);
-  }
 
   if (typeof document === "undefined") return null;
 
@@ -117,77 +75,11 @@ const FullEmojiPicker = React.forwardRef<HTMLDivElement, {
     <div
       ref={ref}
       style={{ position: "fixed", top, left, zIndex: 9999, width: pickerW }}
-      className="flex flex-col rounded-[var(--radius-lg)] border border-border bg-popover overflow-hidden"
+      className="rounded-[var(--radius-lg)] border border-border bg-popover overflow-hidden"
       onClick={e => e.stopPropagation()}
       onPointerDown={e => e.stopPropagation()}
     >
-      {/* Search */}
-      <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-muted-foreground/50">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          ref={searchRef}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Filter..."
-          className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
-        />
-        {search && (
-          <button onClick={() => setSearch("")} className="text-muted-foreground/50 hover:text-foreground transition-colors">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
-        )}
-      </div>
-
-      {/* Emoji grid */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar" style={{ maxHeight: 264 }}>
-        {filtered ? (
-          <div className="px-2 pt-2 pb-1">
-            <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">Search results</p>
-            {filtered.length === 0
-              ? <p className="py-4 text-center text-xs text-muted-foreground/40">No results</p>
-              : (
-                <div className="grid grid-cols-8 gap-0.5">
-                  {filtered.map(emoji => (
-                    <button key={emoji} onClick={() => { onSelect(emoji); onClose(); }}
-                      className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-xl hover:bg-accent transition-colors leading-none"
-                    >{emoji}</button>
-                  ))}
-                </div>
-              )
-            }
-          </div>
-        ) : allCats.map(cat => {
-          if (cat.id === "recent" && cat.emojis.length === 0) return null;
-          return (
-            <div key={cat.id} data-cat={cat.id} className="px-2 pt-2 pb-1">
-              <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">{cat.label}</p>
-              <div className="grid grid-cols-8 gap-0.5">
-                {cat.emojis.map((emoji, i) => (
-                  <button key={`${emoji}-${i}`} onClick={() => { onSelect(emoji); onClose(); }}
-                    className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-xl hover:bg-accent transition-colors leading-none"
-                  >{emoji}</button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Category tabs */}
-      <div className="flex items-center justify-around border-t border-border/60 px-1 py-1.5">
-        {allCats.filter(c => c.id !== "recent" || _recentEmojis.length > 0).map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => { setSearch(""); scrollTo(cat.id); }}
-            title={cat.label}
-            className={`flex size-7 items-center justify-center rounded text-base transition-colors ${activeCat === cat.id ? "bg-accent" : "hover:bg-accent/60"}`}
-          >
-            {cat.icon}
-          </button>
-        ))}
-      </div>
+      <EmojiGridPicker onSelect={onSelect} onClose={onClose} />
     </div>,
     document.body,
   );
@@ -556,6 +448,7 @@ export function CellCommentPopover({
         setLoading(true);
         await fetchComments();
         onCommentAdded?.();
+        emitCommentsChanged(pageId);
       }
     } finally { setSubmitting(false); }
   }
@@ -576,6 +469,7 @@ export function CellCommentPopover({
         setLoading(true);
         await fetchComments();
         onCommentAdded?.();
+        emitCommentsChanged(pageId);
       }
     } finally { setReplySubmitting(false); }
   }
@@ -593,6 +487,7 @@ export function CellCommentPopover({
       if (res.ok) {
         setEditingId(null);
         await fetchComments();
+        emitCommentsChanged(pageId);
       }
     } finally { setEditSubmitting(false); }
   }
@@ -601,6 +496,7 @@ export function CellCommentPopover({
     try {
       await fetch(`/api/pages/${pageId}/comments/${commentId}`, { method: "DELETE" });
       await fetchComments();
+      emitCommentsChanged(pageId);
     } catch {}
   }
 
@@ -1145,7 +1041,6 @@ export function CellCommentPopover({
           winH={winH}
           winW={winW}
           onSelect={(emoji) => {
-            addToRecent(emoji);
             toggleReaction(emojiMenu.commentId, emoji);
           }}
           onClose={() => setEmojiMenu(null)}

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templates, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -651,7 +652,7 @@ export const BUILT_IN_TEMPLATES: {
       ],
       sample_rows: [
         { "Doc name": "New feature PRD",      "Status": "Draft",     "Category": "PRD"                      },
-        { "Doc name": "New engineering doc",  "Status": "Published", "Category": "PRD, Best Practices"      },
+        { "Doc name": "New engineering doc",  "Status": "Published", "Category": "Best Practices"           },
         { "Doc name": "User guide",           "Status": "In Review", "Category": "Guide"                    },
       ],
     }),
@@ -741,6 +742,13 @@ export async function POST(req: Request) {
     await db
       .delete(templates)
       .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
+
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "template.reseeded",
+      targetType: "template",
+      metadata:   { force: true },
+    });
   }
 
   // Insert only templates that don't already exist by name — safe to call
@@ -769,6 +777,13 @@ export async function POST(req: Request) {
   }));
 
   await db.insert(templates).values(rows);
+
+  await writeAuditLog({
+    actorId:    session.user.id,
+    action:     "template.seeded",
+    targetType: "template",
+    metadata:   { count: rows.length, names: rows.map((r) => r.name) },
+  });
 
   return Response.json({ message: "Seeded", count: rows.length }, { status: 201 });
 }
@@ -803,6 +818,15 @@ export async function PATCH(_req: Request) {
       .set({ pageSnapshot: { ...snap, icon: newIcon } })
       .where(eq(templates.id, row.id));
     updated++;
+  }
+
+  if (updated > 0) {
+    await writeAuditLog({
+      actorId:    session.user.id,
+      action:     "template.icons_updated",
+      targetType: "template",
+      metadata:   { updated },
+    });
   }
 
   return Response.json({ message: "Icons updated", updated });

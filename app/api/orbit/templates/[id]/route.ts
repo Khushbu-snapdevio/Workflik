@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templates, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
+import { writeAuditLog } from "@/lib/orbit/audit";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -76,6 +77,14 @@ export async function PATCH(
     .where(eq(templates.id, id))
     .returning();
 
+  await writeAuditLog({
+    actorId:    session.user.id,
+    action:     "template.updated",
+    targetType: "template",
+    targetId:   id,
+    metadata:   { name: updated!.name, fields: Object.keys(updates) },
+  });
+
   return Response.json(updated);
 }
 
@@ -96,5 +105,14 @@ export async function DELETE(
   if (!tpl) return apiError(404, "Template not found");
 
   await db.delete(templates).where(eq(templates.id, id));
+
+  await writeAuditLog({
+    actorId:    session.user.id,
+    action:     "template.deleted",
+    targetType: "template",
+    targetId:   id,
+    metadata:   { name: tpl.name },
+  });
+
   return Response.json({ deleted: id });
 }

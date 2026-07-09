@@ -161,6 +161,8 @@ export const auditTargetType = pgEnum("audit_target_type", [
   "user",
   "workspace",
   "settings",
+  "template",
+  "email",
 ]);
 
 export const fileUploadKind = pgEnum("file_upload_kind", [

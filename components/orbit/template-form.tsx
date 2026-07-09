@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Trash2, Smile } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -8,6 +9,15 @@ import { TemplateEditor } from "./template-editor";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
 import type { DbBlock } from "@/components/editor/serializer";
+
+// IconPicker renders itself as a fixed-size 352px-wide panel positioned
+// "absolute left-0 top-full" relative to its nearest positioned ancestor —
+// it needs to be portaled to <body> with viewport coordinates, otherwise it
+// gets clipped (and forces horizontal scroll) inside any narrow/scrollable
+// container like this form's 260px sidebar. Same pattern already used in
+// workspace-general-section.tsx and entry-context-menu.tsx.
+const ICON_PICKER_WIDTH = 352;
+const ICON_PICKER_HEIGHT = 400;
 
 const CATEGORIES = [
   { key: "productivity", label: "Productivity" },
@@ -67,6 +77,21 @@ export function TemplateForm({ template }: Props) {
   const [error, setError]               = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [emojiOpen, setEmojiOpen]       = useState(false);
+  const [iconPickerPos, setIconPickerPos] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted]           = useState(false);
+  const iconTriggerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  function toggleEmojiOpen() {
+    if (!emojiOpen && iconTriggerRef.current) {
+      const rect = iconTriggerRef.current.getBoundingClientRect();
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - ICON_PICKER_WIDTH - 8));
+      const top = Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - ICON_PICKER_HEIGHT));
+      setIconPickerPos({ top, left });
+    }
+    setEmojiOpen((v) => !v);
+  }
 
   async function handleSave() {
     if (!name.trim()) { setError("Name is required"); return; }
@@ -143,10 +168,11 @@ export function TemplateForm({ template }: Props) {
             <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Icon</label>
             <div className="relative">
               <div
+                ref={iconTriggerRef}
                 role="button"
                 tabIndex={0}
-                onClick={() => setEmojiOpen(v => !v)}
-                onKeyDown={(e) => e.key === "Enter" && setEmojiOpen(v => !v)}
+                onClick={toggleEmojiOpen}
+                onKeyDown={(e) => e.key === "Enter" && toggleEmojiOpen()}
                 className="flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 transition-colors hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 {icon ? (
@@ -167,13 +193,18 @@ export function TemplateForm({ template }: Props) {
                   </button>
                 )}
               </div>
-              {emojiOpen && (
-                <IconPicker
-                  onSelect={(v) => { setIcon(v); setEmojiOpen(false); }}
-                  onIconPreview={(v) => setIcon(v)}
-                  onRemove={icon ? () => { setIcon(""); setEmojiOpen(false); } : undefined}
-                  onClose={() => setEmojiOpen(false)}
-                />
+              {mounted && emojiOpen && iconPickerPos && createPortal(
+                <div style={{ position: "fixed", top: iconPickerPos.top, left: iconPickerPos.left, zIndex: 9999 }}>
+                  <div className="relative">
+                    <IconPicker
+                      onSelect={(v) => { setIcon(v); setEmojiOpen(false); }}
+                      onIconPreview={(v) => setIcon(v)}
+                      onRemove={icon ? () => { setIcon(""); setEmojiOpen(false); } : undefined}
+                      onClose={() => setEmojiOpen(false)}
+                    />
+                  </div>
+                </div>,
+                document.body
               )}
             </div>
           </div>

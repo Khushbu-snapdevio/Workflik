@@ -3,6 +3,7 @@ import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { emailOutbox } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/utils";
+import { EmailRetryButton } from "@/components/orbit/email-retry-button";
 
 export const metadata = { title: "Email – Orbit Admin" };
 
@@ -74,11 +75,11 @@ export default async function OrbitEmailPage() {
       <p className="mt-0.5 text-xs text-muted-foreground/60">Emails will appear here when sent.</p>
      </div>
     ) : (
-     <div className="overflow-x-auto">
+     <div>
       <table className="w-full">
        <thead>
         <tr className="bg-muted/40">
-         {["Recipient", "Subject", "Type", "Status", "Attempts", "Sent at"].map(h => (
+         {["Recipient", "Subject", "Type", "Status", "Time"].map(h => (
           <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{h}</th>
          ))}
         </tr>
@@ -86,32 +87,50 @@ export default async function OrbitEmailPage() {
        <tbody className="divide-y divide-border">
         {outbox.map(email => {
          const cls = STATUS_CLS[email.status] ?? STATUS_CLS.queued!;
+         // There's no dedicated "sent at" column in the schema — updatedAt is
+         // bumped on every status transition, so for a "sent" row it *is* the
+         // send time. For anything still in flight or failed, show when it
+         // was queued instead, labeled accordingly so it's never misleading.
+         const isSent = email.status === "sent";
          return (
           <tr key={email.id} className="transition-colors hover:bg-accent">
            <td className="px-5 py-3.5">
-            <p className="text-xs font-semibold text-foreground">{email.recipientEmail}</p>
+            <p className="truncate text-xs font-semibold text-foreground">{email.recipientEmail}</p>
            </td>
-           <td className="max-w-[260px] px-5 py-3.5">
+           <td className="max-w-[220px] px-5 py-3.5">
             <p className="truncate text-xs text-foreground/70">{email.subject}</p>
            </td>
            <td className="px-5 py-3.5">
-            <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+            <span className="whitespace-nowrap rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
              {TYPE_LABEL[email.type] ?? email.type}
             </span>
            </td>
-           <td className="px-5 py-3.5">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls.pill}`}>
-             <span className={`size-1.5 rounded-full ${cls.dot}`} />
-             {email.status}
-            </span>
+           <td className="max-w-[220px] px-5 py-3.5">
+            <div className="flex items-center gap-2">
+             <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls.pill}`}>
+              <span className={`size-1.5 rounded-full ${cls.dot}`} />
+              {email.status}
+             </span>
+             {email.attemptCount > 1 && (
+              <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{email.attemptCount} attempts</span>
+             )}
+            </div>
+            {email.status === "failed" && (
+             <div className="mt-2 rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-2.5 py-2">
+              {email.lastError && (
+               <p className="break-words text-[10px] leading-relaxed text-destructive">
+                {email.lastError}
+               </p>
+              )}
+              <div className={email.lastError ? "mt-2" : undefined}>
+               <EmailRetryButton id={email.id} />
+              </div>
+             </div>
+            )}
            </td>
-           <td className="px-5 py-3.5">
-            <span className={`text-xs font-semibold ${email.attemptCount > 1 ? "text-warning" : "text-muted-foreground"}`}>
-             {email.attemptCount}
-            </span>
-           </td>
-           <td className="px-5 py-3.5 text-xs text-muted-foreground">
-            {formatDateTime(email.createdAt)}
+           <td className="whitespace-nowrap px-5 py-3.5 text-xs text-muted-foreground">
+            <p>{formatDateTime(isSent ? email.updatedAt : email.createdAt)}</p>
+            <p className="text-[10px] text-muted-foreground/60">{isSent ? "Sent" : "Queued"}</p>
            </td>
           </tr>
          );

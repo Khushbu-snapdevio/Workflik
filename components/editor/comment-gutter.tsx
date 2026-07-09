@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import type { DbBlock } from "./serializer";
+import { onCommentsChanged } from "@/lib/comments/comment-events";
 
 interface BlockCount { blockId: string; count: number }
 interface Indicator { blockId: string; count: number; top: number; left: number }
@@ -27,12 +28,10 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
  countsRef.current = counts;
 
  // ── Fetch comment counts ──────────────────────────────────────────────────
- useEffect(() => {
-  let cancelled = false;
+ const fetchCounts = useCallback(() => {
   fetch(`/api/pages/${pageId}/comments`)
    .then((r) => r.json())
    .then((data) => {
-    if (cancelled) return;
     const map = new Map<string, number>();
     for (const t of (data.comments ?? []) as Array<{
      blockId: string | null;
@@ -46,8 +45,15 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
     setCounts(Array.from(map.entries()).map(([blockId, count]) => ({ blockId, count })));
    })
    .catch(() => {});
-  return () => { cancelled = true; };
- }, [pageId, refresh]);
+ }, [pageId]);
+
+ useEffect(() => {
+  fetchCounts();
+ }, [fetchCounts, refresh]);
+
+ // Any comment mutation anywhere on this page updates the gutter badges
+ // immediately instead of waiting for the card-close refresh bump.
+ useEffect(() => onCommentsChanged(pageId, fetchCounts), [pageId, fetchCounts]);
 
  // ── Stable measure — reads counts from ref, never recreated on count change ──
  const measure = useCallback(() => {

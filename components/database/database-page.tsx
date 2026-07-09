@@ -432,7 +432,10 @@ export function DatabasePage({
         showSortBar={showSortBar}
         onToggleFilterBar={() => { setShowFilterBar((v) => !v); setShowSortBar(false); }}
         onToggleSortBar={() => { setShowSortBar((v) => !v); setShowFilterBar(false); }}
-        onCreateEntry={() => createEntry()}
+        onCreateEntry={async () => {
+          const entry = await createEntry();
+          if (entry) openEntry(entry);
+        }}
         onAddProperty={addProperty}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}

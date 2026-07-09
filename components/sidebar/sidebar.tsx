@@ -489,7 +489,7 @@ export function Sidebar({
         <div className="flex items-center gap-3">
          <div className="relative shrink-0">
           <UserAvatar image={userImage} email={userEmail} className="size-10 text-sm" />
-          <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-popover bg-success" />
+          <span className="absolute bottom-0 right-0 size-2.5 translate-x-1/3 translate-y-1/3 rounded-full border-2 border-popover bg-success" />
          </div>
          <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold leading-tight text-foreground">

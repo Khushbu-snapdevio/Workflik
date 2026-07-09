@@ -69,17 +69,25 @@ export function BanButton({ userId, banned, onDone }: { userId: string; banned: 
  const [loading, setLoading] = useState(false);
  const [error, setError] = useState<string | null>(null);
  const [confirmOpen, setConfirmOpen] = useState(false);
+ const [reason, setReason] = useState("");
 
  async function doToggle() {
   const action = banned ? "unban" : "ban";
   setLoading(true);
   setError(null);
   try {
-   const res = await fetch(`/api/orbit/users/${userId}/${action}`, { method: "POST" });
+   const res = await fetch(`/api/orbit/users/${userId}/${action}`, {
+    method: "POST",
+    ...(action === "ban" && {
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ reason: reason.trim() || undefined }),
+    }),
+   });
    if (!res.ok) {
     const j = await res.json().catch(() => ({}));
     throw new Error((j as { error?: string }).error ?? `Failed to ${action}`);
    }
+   setReason("");
    onDone?.();
    router.refresh();
   } catch (e) {
@@ -104,14 +112,36 @@ export function BanButton({ userId, banned, onDone }: { userId: string; banned: 
    </button>
    {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
 
-   <ConfirmDialog
-    open={confirmOpen}
-    onOpenChange={setConfirmOpen}
-    title={banned ? "Unban this user?" : "Ban this user?"}
-    description={banned ? "The user will regain access to the platform." : "The user will be blocked from signing in."}
-    confirmLabel={banned ? "Unban" : "Ban"}
-    onConfirm={doToggle}
-   />
+   {banned ? (
+    <ConfirmDialog
+     open={confirmOpen}
+     onOpenChange={setConfirmOpen}
+     title="Unban this user?"
+     description="The user will regain access to the platform."
+     confirmLabel="Unban"
+     onConfirm={doToggle}
+    />
+   ) : (
+    <AlertDialog open={confirmOpen} onOpenChange={(o) => { setConfirmOpen(o); if (!o) setReason(""); }}>
+     <AlertDialogContent>
+      <AlertDialogHeader>
+       <AlertDialogTitle>Ban this user?</AlertDialogTitle>
+       <AlertDialogDescription>The user will be blocked from signing in.</AlertDialogDescription>
+      </AlertDialogHeader>
+      <textarea
+       value={reason}
+       onChange={(e) => setReason(e.target.value)}
+       placeholder="Reason (optional, visible in the audit log)…"
+       rows={2}
+       className="mt-1 w-full resize-none rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+      />
+      <AlertDialogFooter>
+       <AlertDialogCancel>Cancel</AlertDialogCancel>
+       <AlertDialogAction onClick={doToggle} disabled={loading}>Ban</AlertDialogAction>
+      </AlertDialogFooter>
+     </AlertDialogContent>
+    </AlertDialog>
+   )}
   </div>
  );
 }

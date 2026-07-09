@@ -1,7 +1,7 @@
 "use client";
 
 // Small custom-styled tooltip matching the one used in table view's cell
-// action overlay (bg-popover/border/shadow) — kept separate from the
+// action overlay (bg-popover/border, no shadow) — kept separate from the
 // shadcn Tooltip primitive, which uses an inverted dark-pill style that
 // doesn't match this app's design system.
 export function IconTooltip({ rect, label }: { rect: DOMRect; label: string }) {
@@ -22,7 +22,6 @@ export function IconTooltip({ rect, label }: { rect: DOMRect; label: string }) {
         whiteSpace: "nowrap",
         pointerEvents: "none",
         zIndex: 9999,
-        boxShadow: "0 2px 8px color-mix(in srgb, var(--foreground) 12%, transparent)",
       }}
     >
       {label}

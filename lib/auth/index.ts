@@ -9,6 +9,7 @@ import { isAuthMethodEnabled } from "@/lib/auth/settings";
 import * as schema from "@/lib/db/schema";
 import { db } from "@/lib/db";
 import { enqueueEmail } from "@/lib/email";
+import { changeEmailTemplate } from "@/lib/email/templates/change-email";
 import { magicLinkTemplate } from "@/lib/email/templates/magic-link";
 import { resetPasswordTemplate } from "@/lib/email/templates/reset-password";
 import { env } from "@/lib/env";
@@ -100,6 +101,36 @@ export const auth = betterAuth({
       await enqueueEmail({
         to: user.email,
         subject: `Reset your ${PRODUCT_NAME} password`,
+        html,
+        text,
+      });
+    },
+  },
+  // Powers the "Change email" flow in Settings → My profile. Deliberately
+  // left at its default (no `sendChangeEmailConfirmation`, no
+  // `updateEmailWithoutVerification`) so every request — regardless of the
+  // account's current emailVerified state — falls through to the single
+  // "send a verification link to the NEW address" path below: the old
+  // email keeps working until that link is clicked, so nobody can lock
+  // themselves out mid-change.
+  user: {
+    changeEmail: {
+      enabled: true,
+    },
+  },
+  emailVerification: {
+    // Only ever reached via the change-email flow above — this app doesn't
+    // require email verification at signup, so there's no other caller.
+    sendVerificationEmail: async ({ user, url }) => {
+      console.log("[change-email] verification link for:", user.email);
+      console.log("[change-email] link:", url);
+      const { html, text } = await changeEmailTemplate({
+        newEmail: user.email,
+        verifyUrl: url,
+      });
+      await enqueueEmail({
+        to: user.email,
+        subject: `Confirm your new ${PRODUCT_NAME} email address`,
         html,
         text,
       });

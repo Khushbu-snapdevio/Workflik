@@ -1,6 +1,6 @@
-import { count, eq, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { emailOutbox, sessions, users, workspaces } from "@/lib/db/schema";
+import { emailOutbox, notifications, pages, searchQueryLog, sessions, users, workspaces } from "@/lib/db/schema";
 
 export const metadata = { title: "Analytics – Orbit Admin" };
 
@@ -76,6 +76,9 @@ export default async function OrbitAnalyticsPage() {
   emailStatusRows,
   usersLast30d, workspacesLast30d,
   [prevWeekUsers],
+  topWorkspacesByPages,
+  [notifTotal], [notifRead],
+  [searchTotal30d], [searchNoResult30d],
  ] = await Promise.all([
   db.select({ count: count() }).from(users),
   db.select({ count: count() }).from(users).where(gte(users.createdAt, day7)),
@@ -87,7 +90,38 @@ export default async function OrbitAnalyticsPage() {
   db.select({ createdAt: users.createdAt }).from(users).where(gte(users.createdAt, day30)),
   db.select({ createdAt: workspaces.createdAt }).from(workspaces).where(gte(workspaces.createdAt, day30)),
   db.select({ count: count() }).from(users).where(gte(users.createdAt, day14)),
+  // "Feature usage by workspace" — page count is the clearest single proxy
+  // for how much a workspace is actually being used day to day.
+  db.select({ workspaceId: pages.workspaceId, cnt: count() })
+   .from(pages)
+   .where(eq(pages.isDeleted, false))
+   .groupBy(pages.workspaceId)
+   .orderBy(desc(count()))
+   .limit(6),
+  db.select({ count: count() }).from(notifications),
+  db.select({ count: count() }).from(notifications).where(eq(notifications.isRead, true)),
+  db.select({ count: count() }).from(searchQueryLog).where(gte(searchQueryLog.createdAt, day30)),
+  db.select({ count: count() }).from(searchQueryLog).where(and(gte(searchQueryLog.createdAt, day30), eq(searchQueryLog.resultCount, 0))),
  ]);
+
+ const topWorkspaceIds = topWorkspacesByPages.map(w => w.workspaceId);
+ const topWorkspaceNames = topWorkspaceIds.length > 0
+  ? await db.select({ id: workspaces.id, name: workspaces.name })
+   .from(workspaces)
+   .where(inArray(workspaces.id, topWorkspaceIds))
+  : [];
+ const workspaceNameMap = new Map(topWorkspaceNames.map(w => [w.id, w.name]));
+ const featureUsage = topWorkspacesByPages.map(w => ({
+  name: workspaceNameMap.get(w.workspaceId) ?? "Unknown workspace",
+  pages: w.cnt,
+ }));
+
+ const notificationOpenRate = notifTotal!.count > 0
+  ? Math.round((notifRead!.count / notifTotal!.count) * 100)
+  : 0;
+ const searchNoResultRate = searchTotal30d!.count > 0
+  ? Math.round((searchNoResult30d!.count / searchTotal30d!.count) * 100)
+  : 0;
 
  const userSignups30d = groupByDay(usersLast30d.map(u => u.createdAt),  30, now);
  const wsGrowth30d   = groupByDay(workspacesLast30d.map(w => w.createdAt), 30, now);
@@ -271,6 +305,74 @@ export default async function OrbitAnalyticsPage() {
        </div>
       )}
      </div>
+    </ChartCard>
+
+    <ChartCard title="Feature usage by workspace" subtitle="Top workspaces ranked by page count"
+     value={featureUsage.length} valueLabel="workspaces shown">
+     {featureUsage.length === 0 ? (
+      <p className="py-6 text-center text-xs text-muted-foreground">No workspace activity yet.</p>
+     ) : (
+      <div className="space-y-2.5">
+       {featureUsage.map((w, i) => {
+        const max = featureUsage[0]!.pages || 1;
+        return (
+         <div key={`${w.name}-${i}`} className="flex items-center gap-3">
+          <span className="w-32 shrink-0 truncate text-xs font-medium text-foreground/80" title={w.name}>{w.name}</span>
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted/50">
+           <div className="h-full rounded-full bg-primary" style={{ width: `${(w.pages / max) * 100}%` }} />
+          </div>
+          <span className="w-10 shrink-0 text-right text-xs font-bold text-foreground">{w.pages}</span>
+         </div>
+        );
+       })}
+      </div>
+     )}
+    </ChartCard>
+
+    <ChartCard title="Notification open rate" subtitle="Share of notifications marked as read, all time"
+     value={notificationOpenRate} valueLabel="% opened" badge={`${notifRead!.count} / ${notifTotal!.count} read`}>
+     <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted/50">
+      <div className="h-full rounded-full bg-primary" style={{ width: `${notificationOpenRate}%` }} />
+     </div>
+     <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="rounded-[var(--radius-md)] bg-muted/50 p-3 text-center">
+       <p className="text-base font-bold text-primary">{notifRead!.count}</p>
+       <p className="mt-0.5 text-xs font-semibold text-muted-foreground">Read</p>
+      </div>
+      <div className="rounded-[var(--radius-md)] bg-muted/50 p-3 text-center">
+       <p className="text-base font-bold text-foreground">{notifTotal!.count - notifRead!.count}</p>
+       <p className="mt-0.5 text-xs font-semibold text-muted-foreground">Unread</p>
+      </div>
+     </div>
+    </ChartCard>
+
+    <ChartCard title="Search usage" subtitle="Searches run and no-result rate — last 30 days"
+     value={searchTotal30d!.count} valueLabel="searches" badge={`${searchNoResultRate}% no results`}>
+     {searchTotal30d!.count === 0 ? (
+      <p className="py-6 text-center text-xs text-muted-foreground">No searches logged in the last 30 days.</p>
+     ) : (
+      <div className="mt-2 space-y-4">
+       <div>
+        <div className="mb-1.5 flex items-center justify-between">
+         <span className="text-xs font-semibold text-foreground/70">No-result rate</span>
+         <span className={`text-xs font-bold ${searchNoResultRate > 30 ? "text-destructive" : "text-primary"}`}>{searchNoResultRate}%</span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-muted/50">
+         <div className={`h-full rounded-full ${searchNoResultRate > 30 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${searchNoResultRate}%` }} />
+        </div>
+       </div>
+       <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-[var(--radius-md)] border border-border bg-muted/30 p-3 text-center">
+         <p className="text-xl font-bold text-foreground">{searchTotal30d!.count}</p>
+         <p className="text-xs font-medium text-muted-foreground">Total searches</p>
+        </div>
+        <div className="rounded-[var(--radius-md)] border border-border bg-muted/30 p-3 text-center">
+         <p className="text-xl font-bold text-foreground">{searchNoResult30d!.count}</p>
+         <p className="text-xs font-medium text-muted-foreground">Returned nothing</p>
+        </div>
+       </div>
+      </div>
+     )}
     </ChartCard>
 
    </div>

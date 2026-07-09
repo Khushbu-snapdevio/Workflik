@@ -1,12 +1,22 @@
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ForceDeleteWorkspaceButton } from "@/components/orbit/orbit-admin-actions";
 import { db } from "@/lib/db";
-import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { pages, users, workspaceMembers, workspaceStorageUsage, workspaces } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/utils";
 
 export const metadata = { title: "Workspace Detail – Orbit Admin" };
+
+const QUOTA_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB — matches app/api/workspaces/[id]/storage/route.ts
+
+function formatBytes(bytes: number): string {
+ if (bytes <= 0) return "0 B";
+ const units = ["B", "KB", "MB", "GB", "TB"];
+ const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+ const value = bytes / 1024 ** i;
+ return `${i === 0 ? value : value.toFixed(1)} ${units[i]}`;
+}
 
 function avatarCls(str: string) {
  const cls = ["bg-primary", "bg-destructive", "bg-success", "bg-warning", "bg-muted-foreground", "bg-secondary-foreground"];
@@ -29,23 +39,29 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
  const [ws] = await db.select().from(workspaces).where(eq(workspaces.id, id)).limit(1);
  if (!ws) notFound();
 
- const members = await db
-  .select({
-   id:    workspaceMembers.id,
-   userId:  workspaceMembers.userId,
-   role:   workspaceMembers.role,
-   status:  workspaceMembers.status,
-   joinedAt: workspaceMembers.joinedAt,
-   createdAt: workspaceMembers.createdAt,
-   userName: users.name,
-   userEmail: users.email,
-   userId2:  users.id,
-  })
-  .from(workspaceMembers)
-  .leftJoin(users, eq(workspaceMembers.userId, users.id))
-  .where(eq(workspaceMembers.workspaceId, id));
+ const [members, [pageCount], [storageRow]] = await Promise.all([
+  db
+   .select({
+    id:    workspaceMembers.id,
+    userId:  workspaceMembers.userId,
+    role:   workspaceMembers.role,
+    status:  workspaceMembers.status,
+    joinedAt: workspaceMembers.joinedAt,
+    createdAt: workspaceMembers.createdAt,
+    userName: users.name,
+    userEmail: users.email,
+    userId2:  users.id,
+   })
+   .from(workspaceMembers)
+   .leftJoin(users, eq(workspaceMembers.userId, users.id))
+   .where(eq(workspaceMembers.workspaceId, id)),
+  db.select({ count: count() }).from(pages).where(and(eq(pages.workspaceId, id), eq(pages.isDeleted, false))),
+  db.select({ bytesUsed: workspaceStorageUsage.bytesUsed }).from(workspaceStorageUsage).where(eq(workspaceStorageUsage.workspaceId, id)).limit(1),
+ ]);
 
  const activeMembers = members.filter(m => m.status === "active");
+ const bytesUsed = Number(storageRow?.bytesUsed ?? 0);
+ const storagePct = Math.min((bytesUsed / QUOTA_BYTES) * 100, 100);
 
  return (
   <div>
@@ -84,6 +100,14 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
      <div className="px-6 py-4">
       <p className="text-lg font-bold text-primary">{members.length}</p>
       <p className="text-xs text-muted-foreground/60">Total members</p>
+     </div>
+     <div className="px-6 py-4">
+      <p className="text-lg font-bold text-primary">{pageCount!.count}</p>
+      <p className="text-xs text-muted-foreground/60">Pages</p>
+     </div>
+     <div className="px-6 py-4">
+      <p className={`text-lg font-bold ${storagePct >= 90 ? "text-destructive" : "text-primary"}`}>{formatBytes(bytesUsed)}</p>
+      <p className="text-xs text-muted-foreground/60">Storage ({storagePct.toFixed(1)}% of 5 GB)</p>
      </div>
      <div className="ml-auto px-6 py-4 text-right">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Created</p>
@@ -156,11 +180,16 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
             <p className="text-xs font-semibold text-foreground">{m.userEmail ?? "—"}</p>
             {m.userName && <p className="text-xs text-muted-foreground">{m.userName}</p>}
            </div>
-           <div className="flex shrink-0 flex-col items-end gap-1">
+           <div className="flex shrink-0 flex-col items-end gap-1.5">
             <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
              m.role === "admin" || m.role === "editor" ? "bg-primary/10 text-primary" : "bg-muted/50 text-muted-foreground"
             }`}>{m.role}</span>
-            <span className={`text-xs font-semibold ${m.status === "active" ? "text-success" : "text-warning"}`}>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+             m.status === "active" ? "bg-success/10 text-success" : m.status === "invited" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
+            }`}>
+             <span className={`size-1.5 rounded-full ${
+              m.status === "active" ? "bg-success" : m.status === "invited" ? "bg-warning" : "bg-muted-foreground/40"
+             }`} />
              {m.status}
             </span>
            </div>

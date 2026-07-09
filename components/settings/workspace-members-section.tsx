@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AlertCircle, ArrowLeftRight, Users, X } from "lucide-react";
+import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,14 +90,22 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
 
  async function invite() {
   if (!email.trim()) return;
+  const invitedEmail = email.trim();
   setInviting(true); setInviteErr("");
   try {
    const r = await fetch(`/api/workspaces/${workspaceId}/members`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email.trim(), role }),
+    body: JSON.stringify({ email: invitedEmail, role }),
    });
-   if (r.ok) { const newMember = await r.json(); setMembers(prev => [...prev, newMember]); setEmail(""); }
-   else { const d = await r.json().catch(() => ({})); setInviteErr(d.error ?? "Failed to send invite"); }
+   if (r.ok) {
+    const newMember = await r.json();
+    setMembers(prev => [...prev, newMember]);
+    setEmail("");
+    toast.success("Invitation sent", { description: `${invitedEmail} will get an email to join as ${ROLE_LABELS[role] ?? role}.` });
+   } else {
+    const d = await r.json().catch(() => ({}));
+    setInviteErr(d.error ?? "Failed to send invite");
+   }
   } catch { setInviteErr("Network error"); }
   finally { setInviting(false); }
  }
@@ -146,11 +155,12 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
   finally { setTransferBusy(false); }
  }
 
- async function resend(id: string) {
+ async function resend(id: string, email: string) {
   setBusy(`resend-${id}`); setActionErr("");
   try {
    const r = await fetch(`/api/workspaces/${workspaceId}/invitations/${id}/resend`, { method: "POST" });
-   if (!r.ok) { const d = await r.json().catch(() => ({})); setActionErr((d as { error?: string }).error ?? "Failed to resend invite"); }
+   if (r.ok) toast.success("Invitation resent", { description: `A new invite email was sent to ${email}.` });
+   else { const d = await r.json().catch(() => ({})); setActionErr((d as { error?: string }).error ?? "Failed to resend invite"); }
   } catch { setActionErr("Network error"); }
   finally { setBusy(null); }
  }
@@ -293,12 +303,12 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
         {canManageRole && m.userId && (
          <Button
           type="button"
-          variant="destructive"
+          variant="ghost"
           size="sm"
           onClick={() => setPendingRemove({ userId: m.userId!, name: display })}
           disabled={busy === m.userId}
           title="Remove"
-          className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
+          className="flex size-7 shrink-0 items-center justify-center p-0 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
          >
           <X size={14} />
          </Button>
@@ -340,18 +350,19 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => resend(m.id)}
+            onClick={() => resend(m.id, addr)}
             disabled={busy === `resend-${m.id}`}
             >
             {busy === `resend-${m.id}` ? "…" : "Resend"}
            </Button>
            <Button
             type="button"
-            variant="destructive"
+            variant="ghost"
             size="sm"
             onClick={() => setPendingCancelInvite({ id: m.id, email: addr })}
             disabled={busy === m.id}
-            className="flex size-7 items-center justify-center p-0 bg-transparent text-muted-foreground/70 hover:bg-destructive/5 hover:text-destructive shadow-none border-0"
+            title="Cancel invitation"
+            className="flex size-7 items-center justify-center p-0 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
            >
             <X size={14} />
            </Button>

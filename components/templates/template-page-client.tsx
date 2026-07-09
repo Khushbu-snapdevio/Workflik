@@ -24,6 +24,7 @@ import { TemplateBoardView }  from "./views/template-board-view";
 import { TemplateCalendarView } from "./views/template-calendar-view";
 import { TemplateGalleryView } from "./views/template-gallery-view";
 import { ConfirmDialog }   from "@/components/ui/confirm-dialog";
+import { DatePicker }     from "@/components/ui/date-picker";
 import { ShareButton }     from "@/components/pages/share-button";
 import { FavoriteButton }    from "@/components/pages/favorite-button";
 import { PageActionsMenu }   from "@/components/pages/page-actions-menu";
@@ -706,12 +707,12 @@ function PanelPropValue({
   const dateStr = (value as { date?: string } | null)?.date ?? "";
   if (editing) {
    return (
-    <input autoFocus type="date" value={draft} onChange={(e) => setDraft(e.target.value)}
-     onBlur={() => { setEditing(false); onSave(draft ? { date: draft } : null); }}
-     onKeyDown={(e) => {
-      if (e.key === "Escape") setEditing(false);
-     }}
-     className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
+    <DatePicker
+     autoFocus
+     value={draft || null}
+     onChange={(v) => { setEditing(false); onSave(v ? { date: v } : null); }}
+     onOpenChange={(o) => { if (!o) setEditing(false); }}
+     className="h-[22px] gap-1.5 rounded border-primary/50 px-2 py-0.5 text-xs"
     />
    );
   }
@@ -1049,6 +1050,9 @@ export function TemplatePageClient({
  const pageTitleRef  = useRef<HTMLInputElement>(null);
  const addViewRef   = useRef<HTMLDivElement>(null);
  const viewMenuRef  = useRef<HTMLDivElement>(null);
+ const filterPanelRef = useRef<HTMLDivElement>(null);
+ const sortPanelRef  = useRef<HTMLDivElement>(null);
+ const propertiesPanelRef = useRef<HTMLDivElement>(null);
  const tableViewRef = useRef<HTMLDivElement>(null);
  const scrollAreaRef = useRef<HTMLDivElement>(null);
  const viewToolbarRef = useRef<HTMLDivElement>(null);
@@ -1091,6 +1095,35 @@ export function TemplatePageClient({
   return () => document.removeEventListener("mousedown", h);
  }, [showAddView]);
 
+ // Filter / Sort / Properties toolbar popups — close on outside click, same
+ // pattern as the "Add view" popup above (they were missing this entirely).
+ useEffect(() => {
+  if (!showFilter) return;
+  function h(e: MouseEvent) {
+   if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) setShowFilter(false);
+  }
+  document.addEventListener("mousedown", h);
+  return () => document.removeEventListener("mousedown", h);
+ }, [showFilter]);
+
+ useEffect(() => {
+  if (!showSort) return;
+  function h(e: MouseEvent) {
+   if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) setShowSort(false);
+  }
+  document.addEventListener("mousedown", h);
+  return () => document.removeEventListener("mousedown", h);
+ }, [showSort]);
+
+ useEffect(() => {
+  if (!showProperties) return;
+  function h(e: MouseEvent) {
+   if (propertiesPanelRef.current && !propertiesPanelRef.current.contains(e.target as Node)) setShowProperties(false);
+  }
+  document.addEventListener("mousedown", h);
+  return () => document.removeEventListener("mousedown", h);
+ }, [showProperties]);
+
  // Lock the page's own scroll container while the view menu is open — its
  // position is a one-time snapshot (position:fixed, not re-measured), so
  // letting the page scroll underneath would leave it floating over the wrong
@@ -1107,7 +1140,16 @@ export function TemplatePageClient({
  useEffect(() => {
   if (!viewMenuTarget) return;
   function h(e: MouseEvent) {
-   if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+   const target = e.target as HTMLElement;
+   // The trigger button already toggles open/closed itself in its own onClick —
+   // if this "outside click" check didn't exclude it, a click on the button while
+   // the menu is open would close it here (mousedown fires before click, and
+   // Next.js hydrates the whole document so React's stopPropagation on the
+   // button can't stop this sibling document-level listener from also seeing
+   // it), and then the button's own onClick would immediately reopen it,
+   // reading a just-cleared state — the menu would blink instead of closing.
+   if (target.closest("[data-view-menu-trigger]")) return;
+   if (viewMenuRef.current && !viewMenuRef.current.contains(target)) {
     setViewMenuTarget(null); setViewMenuRect(null);
    }
   }
@@ -1300,6 +1342,7 @@ export function TemplatePageClient({
   }
   // Only enter inline title-edit mode when no title was pre-supplied (table/calendar add)
   if (!t) setEditingTitleId(e.id);
+  return { id: e.id, shortId: e.shortId };
  }, [page.id]);
 
  const saveTitle = useCallback(async (entryId: string, title: string) => {
@@ -1803,6 +1846,7 @@ export function TemplatePageClient({
 
         {/* ⋮ menu button — shown on hover */}
         <button
+         data-view-menu-trigger
          onMouseDown={(e) => e.stopPropagation()}
          onClick={(e) => {
           e.stopPropagation();
@@ -1875,7 +1919,7 @@ export function TemplatePageClient({
     </div>
 
     <div className="mb-1 flex shrink-0 items-center gap-0.5">
-     <div className="relative">
+     <div ref={filterPanelRef} className="relative">
       <button
        onClick={() => { const next = !showFilter; closeAllToolbarPopups(); setShowFilter(next); }}
        className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeFilterCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
@@ -1895,7 +1939,7 @@ export function TemplatePageClient({
       )}
      </div>
 
-     <div className="relative">
+     <div ref={sortPanelRef} className="relative">
       <button
        onClick={() => { const next = !showSort; closeAllToolbarPopups(); setShowSort(next); }}
        className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeSortCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
@@ -1915,7 +1959,7 @@ export function TemplatePageClient({
       )}
      </div>
 
-     <div className="relative">
+     <div ref={propertiesPanelRef} className="relative">
       <button
        onClick={() => { const next = !showProperties; closeAllToolbarPopups(); setShowProperties(next); }}
        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -1936,7 +1980,8 @@ export function TemplatePageClient({
      <button
       ref={newButtonRef}
       data-new-entry-button
-      onClick={() => {
+      onClick={async () => {
+       let defaultValues: Record<string, unknown> | undefined;
        if (activeView?.type === "calendar") {
         const calPropId = activeView.calendarPropertyId
          ?? properties.find((p) => p.type === "date")?.id;
@@ -1946,11 +1991,11 @@ export function TemplatePageClient({
          // If user is viewing the current month use today; otherwise use 1st of viewed month
          const isCurrentMonth = calYear === now.getFullYear() && calMonth === now.getMonth();
          const day = isCurrentMonth ? now.getDate() : 1;
-         addEntry({ [calPropId]: { date: `${calYear}-${pad(calMonth + 1)}-${pad(day)}` } });
-         return;
+         defaultValues = { [calPropId]: { date: `${calYear}-${pad(calMonth + 1)}-${pad(day)}` } };
         }
        }
-       addEntry();
+       const entry = await addEntry(defaultValues);
+       if (entry) router.push(`/app/${workspaceSlug}/${entry.shortId}`);
       }}
       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
      >
@@ -2005,7 +2050,7 @@ export function TemplatePageClient({
       databaseId={page.id}
       workspaceSlug={workspaceSlug}
       workspaceId={workspaceId}
-      onAddEntry={addEntry}
+      onAddEntry={async (dv) => { await addEntry(dv); }}
       onDeleteEntry={deleteEntry}
       onDuplicateEntry={duplicateEntry}
       onClickEntry={handleClickEntry}
@@ -2031,7 +2076,7 @@ export function TemplatePageClient({
       month={calMonth}
       onYearChange={setCalYear}
       onMonthChange={setCalMonth}
-      onAddEntry={addEntry}
+      onAddEntry={async (dv) => { await addEntry(dv); }}
       onDeleteEntry={deleteEntry}
       onDuplicateEntry={duplicateEntry}
       onUpdateEntryIcon={saveEntryIcon}
@@ -2050,7 +2095,7 @@ export function TemplatePageClient({
       entryValueMap={entryValueMap}
       workspaceSlug={workspaceSlug}
       workspaceId={workspaceId}
-      onAddEntry={addEntry}
+      onAddEntry={async (dv) => { await addEntry(dv); }}
       onDeleteEntry={deleteEntry}
       onDuplicateEntry={duplicateEntry}
       onClickEntry={handleClickEntry}
@@ -2071,7 +2116,7 @@ export function TemplatePageClient({
       editingTitleId={editingTitleId}
       onToggleSelect={toggleSelect}
       onToggleSelectAll={toggleSelectAll}
-      onAddEntry={addEntry}
+      onAddEntry={async (dv) => { await addEntry(dv); }}
       onSaveTitle={saveTitle}
       onStartEditTitle={setEditingTitleId}
       onClickEntry={handleClickEntry}

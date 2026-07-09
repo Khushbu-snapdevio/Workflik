@@ -1,5 +1,5 @@
-import { and, asc, count, desc, eq } from "drizzle-orm";
-import { BookOpen, ChevronRight, Clock, FileText, LayoutGrid, Plus, Star, Users } from "lucide-react";
+import { and, asc, count, desc, eq, ne } from "drizzle-orm";
+import { BookOpen, ChevronRight, Clock, FileText, LayoutGrid, LayoutTemplate, Plus, Settings, Star, UserPlus, Users } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import Link from "next/link";
 
@@ -49,6 +49,22 @@ function PageIcon({ icon, size = "sm" }: { icon: string | null; size?: "sm" | "l
   return <FileText size={px} className="shrink-0 text-muted-foreground/40" />;
 }
 
+// Deterministic accent per page (same id → same color every time), so tile
+// rows read as a set of distinct items instead of one flat gray column —
+// same idea as the initials-avatar palette in Rule 26, applied to page tiles.
+const CHIP_COLORS = [
+  "bg-primary/10",
+  "bg-secondary",
+  "bg-warning/10",
+  "bg-success/10",
+  "bg-accent",
+];
+function chipColorFor(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  return CHIP_COLORS[Math.abs(hash) % CHIP_COLORS.length];
+}
+
 export default async function WorkspacePage({ params }: Props) {
   const { workspace: slug } = await params;
   const session = await requireSession();
@@ -60,7 +76,7 @@ export default async function WorkspacePage({ params }: Props) {
     .limit(1);
   if (!ws) notFound();
 
-  const [recentRaw, [{ memberCount }], [{ pageCount }], favRaw] = await Promise.all([
+  const [recentRaw, [{ memberCount }], [{ pageCount }], favRaw, workspacePagesRaw, [{ topPageCount }]] = await Promise.all([
     db
       .select({ id: userRecentlyVisited.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, visitedAt: userRecentlyVisited.visitedAt })
       .from(userRecentlyVisited)
@@ -77,17 +93,26 @@ export default async function WorkspacePage({ params }: Props) {
       .where(and(eq(userFavorites.userId, session.user.id), eq(userFavorites.workspaceId, ws.id), eq(pages.isDeleted, false)))
       .orderBy(asc(userFavorites.orderIndex))
       .limit(6),
+    // Only real top-level content (pages + databases) — database entries
+    // (kind "entry") are rows inside a database, not standalone pages, so
+    // they'd show up here without their parent database for context.
+    db
+      .select({ id: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, updatedAt: pages.updatedAt })
+      .from(pages)
+      .where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false), ne(pages.kind, "entry")))
+      .orderBy(desc(pages.updatedAt))
+      .limit(8),
+    db.select({ topPageCount: count() }).from(pages).where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false), ne(pages.kind, "entry"))),
   ]);
 
-  const recentPages = recentRaw.map((p) => ({ ...p, visitedAt: p.visitedAt.toISOString() }));
-  const favPages    = favRaw;
+  const recentPages    = recentRaw.map((p) => ({ ...p, visitedAt: p.visitedAt.toISOString() }));
+  const favPages       = favRaw;
+  const workspacePages = workspacePagesRaw.map((p) => ({ ...p, updatedAt: p.updatedAt.toISOString() }));
   const firstName   = session.user.name?.split(" ")[0] ?? session.user.email.split("@")[0];
   const today       = new Date().toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" });
   const onboardingStepsDone = (pageCount >= 1 ? 1 : 0) + (memberCount > 1 ? 1 : 0);
   // Show the ghost "New page" tile whenever there's room left in a 4-wide
-  // row — paired with the auto-fit grid below, tiles always stretch to fill
-  // the full row edge-to-edge (no dead space), and a lone recent page never
-  // balloons to fill the whole row alone since the ghost tile joins it.
+  // row, so a lone recent page is never presented as the only tile.
   const showNewPageGhostTile = recentPages.length < 4;
 
   return (
@@ -120,50 +145,93 @@ export default async function WorkspacePage({ params }: Props) {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-muted/30">
 
-        {/* ── Hero greeting banner ── */}
-        <div className="border-b border-border/50 bg-gradient-to-b from-primary/5 to-transparent">
-          <div className="mx-auto w-full max-w-[1200px] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-            <div className="flex items-center gap-5">
-              <div className="flex size-16 shrink-0 items-center justify-center rounded-[var(--radius-xl)] bg-primary text-2xl font-bold text-primary-foreground select-none ring-4 ring-primary/15 ring-offset-2 ring-offset-background">
-                {(ws.name ?? "W").charAt(0).toUpperCase()}
+        {/* ── Hero card: greeting + stat strip in one unit ── */}
+        <div className="mx-auto w-full max-w-[1200px] px-4 pt-6 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+            <div className="bg-gradient-to-br from-primary/10 via-transparent to-transparent px-6 py-6 sm:px-8 sm:py-7">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-xl font-bold text-primary-foreground select-none">
+                  {(ws.name ?? "W").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <h1 className="truncate text-2xl font-bold tracking-tight text-foreground leading-snug">
+                    <WorkspaceGreeting firstName={firstName} />
+                  </h1>
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{ws.name} · {today}</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground leading-snug">
-                  <WorkspaceGreeting firstName={firstName} />
-                </h1>
-                <div className="mt-2 flex items-center gap-3 flex-wrap">
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <span className="font-semibold text-foreground">{pageCount}</span> page{pageCount !== 1 ? "s" : ""}
-                  </span>
-                  <span className="size-1 rounded-full bg-muted-foreground/40 shrink-0" />
-                  <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Users size={13} className="shrink-0" />
-                    <span className="font-semibold text-foreground">{memberCount}</span> member{memberCount !== 1 ? "s" : ""}
-                  </span>
-                  {favPages.length > 0 && (
-                    <>
-                      <span className="size-1 rounded-full bg-muted-foreground/40 shrink-0" />
-                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Star size={13} className="text-warning shrink-0" fill="currentColor" />
-                        <span className="font-semibold text-foreground">{favPages.length}</span> favorited
-                      </span>
-                    </>
-                  )}
+            </div>
+            <div className="grid grid-cols-3 divide-x divide-border/50 border-t border-border/60">
+              <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+                  <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </span>
+                <div className="min-w-0">
+                  <p className="text-lg font-bold leading-none text-foreground">{pageCount}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">Page{pageCount !== 1 ? "s" : ""}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-secondary">
+                  <Users size={16} className="text-secondary-foreground" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-lg font-bold leading-none text-foreground">{memberCount}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">Member{memberCount !== 1 ? "s" : ""}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-warning/10">
+                  <Star size={15} className="text-warning" fill="currentColor" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-lg font-bold leading-none text-foreground">{favPages.length}</p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">Starred</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Main content grid ── */}
-        <div className="mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
-          <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-[1fr_260px]">
+        {/* ── Main content — single full-width column ── */}
+        <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6">
 
-            {/* ── Left column ── */}
-            <div className="flex flex-col gap-6">
+            {/* Quick actions — bento tile row, replaces the old narrow sidebar list */}
+            <section>
+              <h2 className="mb-3 text-sm font-semibold text-foreground">Quick actions</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                <NewPageButton
+                  workspaceId={ws.id}
+                  workspaceSlug={slug}
+                  className="group flex flex-col items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-card px-4 py-5 text-center transition-all duration-150 hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary">
+                    <Plus size={18} />
+                  </span>
+                  <span className="text-xs font-semibold text-foreground">New page</span>
+                </NewPageButton>
+                {([
+                  { label: "Library",        href: `/app/${slug}/library`,          iconBg: "bg-secondary",     icon: <BookOpen size={18} className="text-secondary-foreground" /> },
+                  { label: "Templates",      href: `/app/${slug}/templates`,        iconBg: "bg-warning/10",    icon: <LayoutTemplate size={18} className="text-warning" /> },
+                  { label: "Settings",       href: `/app/${slug}/settings`,         iconBg: "bg-muted",         icon: <Settings size={18} className="text-muted-foreground" /> },
+                  { label: "Invite members", href: `/app/${slug}/settings/members`, iconBg: "bg-success/10",    icon: <UserPlus size={18} className="text-success" /> },
+                ] as const).map((action) => (
+                  <Link
+                    key={action.label}
+                    href={action.href}
+                    className="group flex flex-col items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-card px-4 py-5 text-center transition-all duration-150 hover:border-primary/30 hover:bg-primary/5"
+                  >
+                    <span className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${action.iconBg}`}>
+                      {action.icon}
+                    </span>
+                    <span className="text-xs font-semibold text-foreground">{action.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
 
               {/* Jump back in — grid cards */}
               {recentPages.length > 0 && (
@@ -178,42 +246,50 @@ export default async function WorkspacePage({ params }: Props) {
                       View all <ChevronRight size={12} />
                     </Link>
                   </div>
-                  <div
-                    className="grid gap-3"
-                    style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
-                  >
-                    {recentPages.map((page) => (
-                      <Link
-                        key={page.id}
-                        href={`/app/${slug}/${page.shortId}`}
-                        className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-border border-l-2 border-l-transparent bg-card p-4 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
-                      >
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
-                          <PageIcon icon={page.icon} size="lg" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground leading-snug">
-                            {page.title || "Untitled"}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground/50">{timeAgo(page.visitedAt)}</p>
-                        </div>
-                      </Link>
-                    ))}
-                    {/* Ghost "new page" tile — the row always divides evenly
-                        between real cards + this tile, so it never leaves
-                        dead space when there are only 1-3 recent pages. */}
-                    {showNewPageGhostTile && (
-                      <NewPageButton
-                        workspaceId={ws.id}
-                        workspaceSlug={slug}
-                        className="group flex min-w-0 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-border p-4 text-muted-foreground transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
-                      >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
-                          <Plus size={16} />
-                        </span>
-                        <span className="text-xs font-medium">New page</span>
-                      </NewPageButton>
-                    )}
+                  {/* Framed in a subtly tinted outer container (same pattern
+                      as "All Pages" below) so the row reads as one contained
+                      module even with just 1-2 tiles — floating unbordered
+                      tiles left the rest of the row looking like an
+                      unfinished gap. A proper grid (not flex-wrap with
+                      fixed-width tiles) keeps columns aligned instead of
+                      leaving an orphaned tile stranded on its own row, and
+                      each tile gets the same bordered-card + hover-lift
+                      treatment as "Quick actions" above for visual
+                      consistency across the dashboard. */}
+                  <div className="rounded-[var(--radius-lg)] border border-border bg-muted/20 p-3">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                      {recentPages.map((page) => (
+                        <Link
+                          key={page.id}
+                          href={`/app/${slug}/${page.shortId}`}
+                          className="group flex flex-col gap-3 overflow-hidden rounded-[var(--radius-md)] border border-border/60 bg-card p-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
+                        >
+                          <div className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${chipColorFor(page.id)}`}>
+                            <PageIcon icon={page.icon} size="lg" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground leading-snug transition-colors duration-150 group-hover:text-primary">
+                              {page.title || "Untitled"}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground/50">{timeAgo(page.visitedAt)}</p>
+                          </div>
+                        </Link>
+                      ))}
+                      {/* Ghost "new page" tile — same grid cell as the real
+                          tiles, inside the same frame. */}
+                      {showNewPageGhostTile && (
+                        <NewPageButton
+                          workspaceId={ws.id}
+                          workspaceSlug={slug}
+                          className="group flex flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-border bg-card p-3 text-muted-foreground transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
+                        >
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
+                            <Plus size={16} />
+                          </span>
+                          <span className="text-xs font-medium">New page</span>
+                        </NewPageButton>
+                      )}
+                    </div>
                   </div>
                 </section>
               )}
@@ -372,143 +448,71 @@ export default async function WorkspacePage({ params }: Props) {
                 </div>
               )}
 
-              {/* All Pages */}
-              {pageCount > 0 && (
+              {/* All Pages — inline list of real pages, not just a link out */}
+              {topPageCount > 0 && (
                 <section>
-                  <div className="flex items-center gap-2 mb-3">
-                    <BookOpen size={14} className="text-muted-foreground/50 shrink-0" />
-                    <h2 className="text-sm font-semibold text-foreground">All Pages</h2>
-                    <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{pageCount}</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <BookOpen size={14} className="text-muted-foreground/50 shrink-0" />
+                      <h2 className="text-sm font-semibold text-foreground">All Pages</h2>
+                      <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{topPageCount}</span>
+                    </div>
+                    <Link href={`/app/${slug}/library`} className="flex items-center gap-0.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground">
+                      View all <ChevronRight size={12} />
+                    </Link>
                   </div>
-                  <Link
-                    href={`/app/${slug}/library`}
-                    className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border border-l-2 border-l-transparent bg-card px-5 py-4 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
-                  >
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
-                      <BookOpen size={18} className="text-muted-foreground/50" />
+                  <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+                    <div className="divide-y divide-border/40">
+                      {workspacePages.map((page) => (
+                        <Link
+                          key={page.id}
+                          href={`/app/${slug}/${page.shortId}`}
+                          className="group flex items-center gap-3 border-l-2 border-l-transparent px-5 py-3 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
+                        >
+                          <div className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${chipColorFor(page.id)}`}>
+                            <PageIcon icon={page.icon} />
+                          </div>
+                          <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{page.title || "Untitled"}</p>
+                          <p className="shrink-0 text-xs text-muted-foreground/50">{timeAgo(page.updatedAt)}</p>
+                          <ChevronRight size={14} className="shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100" />
+                        </Link>
+                      ))}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground">Open Library</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">Browse, search and manage all {pageCount} pages</p>
-                    </div>
-                    <ChevronRight size={16} className="shrink-0 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground" />
-                  </Link>
+                    {topPageCount > workspacePages.length && (
+                      <Link
+                        href={`/app/${slug}/library`}
+                        className="flex items-center justify-center gap-1 border-t border-border/40 bg-muted/10 py-2.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                      >
+                        View all {topPageCount} pages <ChevronRight size={12} />
+                      </Link>
+                    )}
+                  </div>
                 </section>
               )}
 
-            </div>
-
-            {/* ── Right column ── */}
-            <div className="flex flex-col gap-4">
-
-              {/* Workspace stats — 3-up grid (only when workspace has pages) */}
-              {pageCount > 0 && (
-                <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-                  <div className="border-b border-border/60 bg-muted/20 px-4 py-2.5">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Overview</p>
-                  </div>
-                  <div className="grid grid-cols-3 divide-x divide-border/40">
-                    <div className="flex flex-col items-center justify-center gap-1.5 px-2 py-4">
-                      <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                      <span className="text-2xl font-bold text-foreground leading-none">{pageCount}</span>
-                      <span className="text-xs font-medium text-muted-foreground">Pages</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-1.5 px-2 py-4">
-                      <Users size={16} className="text-secondary-foreground" />
-                      <span className="text-2xl font-bold text-foreground leading-none">{memberCount}</span>
-                      <span className="text-xs font-medium text-muted-foreground">Members</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center gap-1.5 px-2 py-4">
-                      <Star size={14} className="text-warning" fill="currentColor" />
-                      <span className="text-2xl font-bold text-foreground leading-none">{favPages.length}</span>
-                      <span className="text-xs font-medium text-muted-foreground">Starred</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* What's included — shown only for first-time users */}
-              {pageCount === 0 && (
-                <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-                  <div className="border-b border-border/60 bg-muted/20 px-4 py-2.5">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">What&apos;s included</p>
-                  </div>
-                  <div className="divide-y divide-border/40">
-                    {([
-                      { iconBg: "bg-primary/10", icon: <svg className="size-3.5 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>, label: "Pages & docs", desc: "Rich text editor" },
-                      { iconBg: "bg-secondary", icon: <svg className="size-3.5 text-secondary-foreground" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg>, label: "Databases", desc: "Tables, boards, calendars" },
-                      { iconBg: "bg-warning/10", icon: <svg className="size-3.5 text-warning" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>, label: "Templates", desc: "16+ ready-to-use" },
-                      { iconBg: "bg-success/10", icon: <svg className="size-3.5 text-success" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>, label: "Team collaboration", desc: "Members & sharing" },
-                    ] as const).map((f) => (
-                      <div key={f.label} className="flex items-center gap-3 px-4 py-2.5">
-                        <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] ${f.iconBg}`}>{f.icon}</span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-foreground">{f.label}</p>
-                          <p className="text-xs text-muted-foreground/60">{f.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quick actions */}
-              <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-                <div className="border-b border-border/60 bg-muted/20 px-4 py-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Quick actions</p>
-                </div>
-                <div className="divide-y divide-border/40">
-                  <NewPageButton
-                    workspaceId={ws.id}
-                    workspaceSlug={slug}
-                    className="group/qa flex w-full items-center gap-2.5 border-l-2 border-l-transparent px-4 py-3 text-left transition-all duration-150 hover:border-l-primary hover:bg-primary/5 disabled:opacity-60"
-                  >
-                    <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
-                      <Plus size={13} />
-                    </span>
-                    <span className="text-xs font-medium text-foreground group-hover/qa:text-foreground">New page</span>
-                    <ChevronRight size={12} className="ml-auto shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover/qa:opacity-100" />
-                  </NewPageButton>
+            {/* What's included — shown only for first-time users, bento style to match Quick actions */}
+            {pageCount === 0 && (
+              <section>
+                <h2 className="mb-3 text-sm font-semibold text-foreground">What&apos;s included</h2>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {([
-                    {
-                      label: "Library",
-                      href: `/app/${slug}/library`,
-                      iconBg: "bg-secondary",
-                      icon: <svg className="size-3.5 text-secondary-foreground" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>,
-                    },
-                    {
-                      label: "Templates",
-                      href: `/app/${slug}/templates`,
-                      iconBg: "bg-warning/10",
-                      icon: <svg className="size-3.5 text-warning" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>,
-                    },
-                    {
-                      label: "Settings",
-                      href: `/app/${slug}/settings`,
-                      iconBg: "bg-muted",
-                      icon: <svg className="size-3.5 text-muted-foreground" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
-                    },
-                    {
-                      label: "Invite members",
-                      href: `/app/${slug}/settings/members`,
-                      iconBg: "bg-success/10",
-                      icon: <svg className="size-3.5 text-success" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>,
-                    },
-                  ] as const).map((action) => (
-                    <Link key={action.label} href={action.href}
-                      className="group/qa flex items-center gap-2.5 border-l-2 border-l-transparent px-4 py-3 transition-all duration-150 hover:border-l-primary hover:bg-primary/5">
-                      <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] ${action.iconBg}`}>
-                        {action.icon}
-                      </span>
-                      <span className="text-xs font-medium text-muted-foreground group-hover/qa:text-foreground">{action.label}</span>
-                      <ChevronRight size={12} className="ml-auto shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover/qa:opacity-100" />
-                    </Link>
+                    { iconBg: "bg-primary/10", icon: <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>, label: "Pages & docs", desc: "Rich text editor" },
+                    { iconBg: "bg-secondary", icon: <svg className="size-4 text-secondary-foreground" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg>, label: "Databases", desc: "Tables, boards, calendars" },
+                    { iconBg: "bg-warning/10", icon: <svg className="size-4 text-warning" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>, label: "Templates", desc: "16+ ready-to-use" },
+                    { iconBg: "bg-success/10", icon: <svg className="size-4 text-success" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>, label: "Team collaboration", desc: "Members & sharing" },
+                  ] as const).map((f) => (
+                    <div key={f.label} className="flex flex-col items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-card px-4 py-5 text-center">
+                      <span className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${f.iconBg}`}>{f.icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-foreground">{f.label}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground/60">{f.desc}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
+              </section>
+            )}
 
-
-            </div>
           </div>
         </div>
       </div>

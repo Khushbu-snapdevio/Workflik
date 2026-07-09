@@ -1,6 +1,6 @@
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { pages, pageClosure, searchIndex, workspaceMembers } from "@/lib/db/schema";
+import { pages, pageClosure, searchIndex, searchQueryLog, workspaceMembers } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 export const runtime = "nodejs";
@@ -146,6 +146,13 @@ export async function GET(req: Request) {
       updatedAt:  r.updatedAt,
       rank:       r.rank,
     }));
+
+    // Fire-and-forget — powers the Orbit Analytics "search usage & no-result
+    // rate" metrics. Never awaited/blocking: a logging failure must never
+    // affect the actual search response.
+    db.insert(searchQueryLog)
+      .values({ workspaceId, userId: session.user.id, query: q, resultCount: results.length })
+      .catch(() => {});
 
     return Response.json({ results, total: results.length });
   } catch (err) {

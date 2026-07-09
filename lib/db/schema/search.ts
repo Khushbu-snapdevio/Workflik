@@ -1,5 +1,6 @@
 import {
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -9,6 +10,7 @@ import {
 import { searchSourceType, tsvector, updatedAt } from "./types";
 import { workspaces } from "./workspace";
 import { pages } from "./pages";
+import { users } from "./auth";
 
 export const searchIndex = pgTable("search_index", {
   id:           uuid("id").primaryKey().defaultRandom(),
@@ -26,3 +28,20 @@ export const searchIndex = pgTable("search_index", {
 ]);
 
 export type SearchIndex = typeof searchIndex.$inferSelect;
+
+// One row per non-empty search a user actually ran — powers the Orbit
+// Analytics "search usage & no-result rate" metrics. Never joined into the
+// user-facing search response itself; write-only from the search route.
+export const searchQueryLog = pgTable("search_query_log", {
+  id:          uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  userId:      uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  query:       text("query").notNull(),
+  resultCount: integer("result_count").notNull(),
+  createdAt:   timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("search_query_log_created_idx").on(t.createdAt),
+  index("search_query_log_workspace_idx").on(t.workspaceId),
+]);
+
+export type SearchQueryLog = typeof searchQueryLog.$inferSelect;

@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { platformAuditLog } from "@/lib/db/schema";
 
-type AuditTargetType = "user" | "workspace" | "settings";
+type AuditTargetType = "user" | "workspace" | "settings" | "template" | "email";
 
 interface WriteAuditParams {
   actorId:    string;

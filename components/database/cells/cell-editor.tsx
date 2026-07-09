@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { format } from "date-fns";
 import { Check, Plus, Settings2, X, UserPlus, ChevronRight, Loader2, ArrowLeft, MoreHorizontal, GripVertical } from "lucide-react";
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { OPTION_COLORS, getOptionColor, groupOptions } from "@/components/database/property-registry";
 import { OptionSubmenu } from "@/components/database/option-submenu";
+import { Calendar } from "@/components/ui/calendar";
 import type { DbProperty, DbPropertyConfig, SelectOption, StatusGroupKey, WorkspaceMember } from "@/components/database/types";
 import { createId } from "@paralleldrive/cuid2";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
@@ -433,39 +435,31 @@ interface DateEditorProps {
 
 function DateEditor({ value, onSave, onClose }: DateEditorProps) {
  const raw = (value as { date?: string | null } | null)?.date ?? "";
- // Convert ISO to yyyy-mm-dd for <input type="date">
- const [dateStr, setDateStr] = useState(raw ? raw.slice(0, 10) : "");
+ const selected = raw ? new Date(`${raw.slice(0, 10)}T00:00:00`) : undefined;
 
- function save() {
-  onSave({ date: dateStr || null });
+ function select(date: Date | undefined) {
+  onSave({ date: date ? format(date, "yyyy-MM-dd") : null });
   onClose();
  }
 
  return (
-  <div className="flex flex-col gap-3 p-3">
-   <p className="text-xs font-medium text-muted-foreground">Select date</p>
-   <input
-    type="date"
-    autoFocus
-    value={dateStr}
-    onChange={(e) => setDateStr(e.target.value)}
-    onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
-    className="rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:border-primary/50"
-   />
-   <div className="flex gap-2">
-    {dateStr && (
-     <button
-      onClick={() => { onSave({ date: null }); onClose(); }}
-      className="flex-1 rounded-[var(--radius-sm)] border border-border py-1.5 text-xs text-muted-foreground hover:bg-accent"
-     >
-      Clear
-     </button>
-    )}
+  <div className="flex flex-col">
+   <Calendar mode="single" selected={selected} onSelect={select} defaultMonth={selected ?? new Date()} autoFocus />
+   <div className="flex items-center justify-between border-t border-border/60 px-3 py-2">
     <button
-     onClick={save}
-     className="flex-1 rounded-[var(--radius-sm)] bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+     type="button"
+     disabled={!raw}
+     onClick={() => { onSave({ date: null }); onClose(); }}
+     className="text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
     >
-     Apply
+     Clear
+    </button>
+    <button
+     type="button"
+     onClick={() => select(new Date())}
+     className="text-xs font-medium text-primary transition-colors duration-150 hover:text-primary/80"
+    >
+     Today
     </button>
    </div>
   </div>

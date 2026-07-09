@@ -25,6 +25,7 @@ import { createPortal } from "react-dom";
 import type { DatabaseProperty, DatabaseView } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellActionOverlay } from "@/components/database/cell-action-overlay";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
@@ -126,11 +127,23 @@ function EditableCell({
   if (e.key === "Escape") setEditing(false);
  }
 
+ if (editing && type === "date") {
+  return (
+   <DatePicker
+    autoFocus
+    value={draft || null}
+    onChange={(v) => { setEditing(false); onSave(v ? { date: v } : null); }}
+    onOpenChange={(o) => { if (!o) setEditing(false); }}
+    className="h-[22px] gap-1.5 rounded border-primary/60 px-2 py-0.5 text-sm"
+   />
+  );
+ }
+
  if (editing) {
   return (
    <input
     ref={inputRef}
-    type={type === "date" ? "date" : type === "number" ? "number" : "text"}
+    type={type === "number" ? "number" : "text"}
     value={draft}
     onChange={(e) => setDraft(e.target.value)}
     onBlur={commit}

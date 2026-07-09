@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import { CommentComposer } from "@/components/editor/comment-composer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { emitCommentsChanged } from "@/lib/comments/comment-events";
 
 // ---------- Types ----------
 
@@ -255,12 +257,8 @@ function UserAvatar({ name, image, size = 24 }: { name?: string | null; image?: 
 }
 
 // ---------- Emoji Picker ----------
-
-const EMOJI_LIST = [
- "👍","👎","❤️","😄","😮","😢","😡","🎉",
- "🚀","👀","🔥","✅","💯","🙏","💪","🤔",
- "💡","⚡","🎯","✨","🎊","😂","🫡","🫶",
-];
+// Full searchable/categorized emoji grid (same one used for page icons),
+// swapped in for the old fixed 24-emoji reaction grid.
 
 function EmojiPicker({
  anchor,
@@ -275,7 +273,12 @@ function EmojiPicker({
 
  useEffect(() => {
   function handler(e: MouseEvent) {
-   if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+   if (ref.current && !ref.current.contains(e.target as Node)) {
+    // Skin-tone dropdown (rendered by EmojiGridPicker) is a portal outside
+    // ref — don't close when clicking inside it.
+    if ((e.target as HTMLElement).closest?.("[data-emoji-picker-exempt]")) return;
+    onClose();
+   }
   }
   document.addEventListener("mousedown", handler);
   return () => document.removeEventListener("mousedown", handler);
@@ -286,7 +289,7 @@ function EmojiPicker({
  if (typeof document === "undefined") return null;
 
  // Position below the button, aligned to its right edge, clamped to viewport
- const pickerW = 186;
+ const pickerW = 352;
  const left = Math.max(8, Math.min(anchor.right - pickerW, window.innerWidth - pickerW - 8));
  const top = anchor.bottom + 6;
 
@@ -295,20 +298,9 @@ function EmojiPicker({
    ref={ref}
    data-comment-exempt     // tells the card's outside-click handler to ignore this portal
    style={{ position: "fixed", top, left, zIndex: 9999 }}
-   className="bg-card border border-border rounded-[var(--radius-md)] p-2"
+   className="w-[352px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover"
   >
-   <div className="grid grid-cols-6 gap-0.5">
-    {EMOJI_LIST.map((emoji) => (
-     <button
-      key={emoji}
-      type="button"
-      onClick={() => { onSelect(emoji); onClose(); }}
-      className="text-lg rounded-[var(--radius-sm)] hover:bg-accent p-1.5 transition-colors duration-150 leading-none"
-     >
-      {emoji}
-     </button>
-    ))}
-   </div>
+   <EmojiGridPicker onSelect={onSelect} onClose={onClose} />
   </div>,
   document.body,
  );
@@ -476,6 +468,14 @@ export function CommentCard({
  // Count only for this block/context, not the whole page
  const unresolvedCount = threads.filter((t) => !t.isResolved && !t.deletedAt).length;
 
+ // Reload this card's own thread list AND tell the rest of the page (header
+ // badge, sidebar panel, block gutter) that something changed — without this,
+ // those only pick up new comments on their next mount/poll.
+ function notifyChanged() {
+  loadComments();
+  emitCommentsChanged(pageId);
+ }
+
  async function createComment(content: Record<string, unknown>) {
   await fetch(`/api/pages/${pageId}/comments`, {
    method: "POST",
@@ -487,7 +487,7 @@ export function CommentCard({
     content,
    }),
   });
-  loadComments();
+  notifyChanged();
  }
 
  async function createReply(parentId: string, content: Record<string, unknown>) {
@@ -496,17 +496,17 @@ export function CommentCard({
    headers: { "Content-Type": "application/json" },
    body: JSON.stringify({ blockId: blockId ?? null, parentId, content }),
   });
-  loadComments();
+  notifyChanged();
  }
 
  async function resolveThread(id: string) {
   await fetch(`/api/comments/${id}/resolve`, { method: "POST" });
-  loadComments();
+  notifyChanged();
  }
 
  async function reopenThread(id: string) {
   await fetch(`/api/comments/${id}/reopen`, { method: "POST" });
-  loadComments();
+  notifyChanged();
  }
 
  // ── Inline variant — renders inside the Comments panel ───────────────────
@@ -565,7 +565,7 @@ export function CommentCard({
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         workspaceId={workspaceId}
-        onMutate={loadComments}
+        onMutate={notifyChanged}
         onResolve={resolveThread}
         onReopen={reopenThread}
         onReply={createReply}
@@ -657,7 +657,7 @@ export function CommentCard({
       currentUserId={currentUserId}
       isAdmin={isAdmin}
       workspaceId={workspaceId}
-      onMutate={loadComments}
+      onMutate={notifyChanged}
       onResolve={resolveThread}
       onReopen={reopenThread}
       onReply={createReply}

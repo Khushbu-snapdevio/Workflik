@@ -1,10 +1,14 @@
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, ilike, or } from "drizzle-orm";
 import Link from "next/link";
+import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces } from "@/lib/db/schema";
-import { formatDateTime } from "@/lib/utils";
+import { AdminSearchBox } from "@/components/orbit/admin-search-box";
+import { PaginationControls } from "@/components/orbit/pagination-controls";
 
 export const metadata = { title: "Workspaces – Orbit Admin" };
+
+const PAGE_SIZE = 24;
 
 function ago(d: Date | null | undefined) {
  if (!d) return "—";
@@ -13,17 +17,39 @@ function ago(d: Date | null | undefined) {
  return `${Math.floor(s / 86400)}d ago`;
 }
 
-export default async function OrbitWorkspacesPage() {
- const allWorkspaces = await db
-  .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug, icon: workspaces.icon, createdAt: workspaces.createdAt })
-  .from(workspaces)
-  .orderBy(desc(workspaces.createdAt));
+interface Props {
+ searchParams: Promise<{ q?: string; page?: string }>;
+}
 
- const memberCounts = await db
-  .select({ workspaceId: workspaceMembers.workspaceId, cnt: count() })
-  .from(workspaceMembers)
-  .where(eq(workspaceMembers.status, "active"))
-  .groupBy(workspaceMembers.workspaceId);
+export default async function OrbitWorkspacesPage({ searchParams }: Props) {
+ const sp   = await searchParams;
+ const q    = (sp.q ?? "").trim();
+ const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+
+ const searchFilter = q
+  ? or(ilike(workspaces.name, `%${q}%`), ilike(workspaces.slug, `%${q}%`))
+  : undefined;
+
+ const [allWorkspaces, [totalCount], [filteredCount]] = await Promise.all([
+  db.select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug, icon: workspaces.icon, createdAt: workspaces.createdAt })
+   .from(workspaces)
+   .where(searchFilter)
+   .orderBy(desc(workspaces.createdAt))
+   .limit(PAGE_SIZE)
+   .offset((page - 1) * PAGE_SIZE),
+  db.select({ count: count() }).from(workspaces),
+  searchFilter
+   ? db.select({ count: count() }).from(workspaces).where(searchFilter)
+   : db.select({ count: count() }).from(workspaces),
+ ]);
+
+ const memberCounts = allWorkspaces.length > 0
+  ? await db
+   .select({ workspaceId: workspaceMembers.workspaceId, cnt: count() })
+   .from(workspaceMembers)
+   .where(eq(workspaceMembers.status, "active"))
+   .groupBy(workspaceMembers.workspaceId)
+  : [];
 
  const countMap = new Map(memberCounts.map(r => [r.workspaceId, r.cnt]));
 
@@ -31,12 +57,24 @@ export default async function OrbitWorkspacesPage() {
   <div>
    {/* Header */}
    <div className="mb-6">
-    <h1 className="text-xl font-bold tracking-tight text-foreground">Workspaces</h1>
-    <p className="mt-1 text-sm text-muted-foreground">All workspaces on this instance — inspect members, force delete.</p>
-    <div className="mt-3">
+    <div className="flex items-start justify-between gap-4">
+     <div>
+      <h1 className="text-xl font-bold tracking-tight text-foreground">Workspaces</h1>
+      <p className="mt-1 text-sm text-muted-foreground">All workspaces on this instance — inspect members, force delete.</p>
+     </div>
+     <Suspense fallback={<div className="h-9 w-64 rounded-[var(--radius-md)] bg-muted animate-pulse" />}>
+      <AdminSearchBox placeholder="Search by name or slug…" />
+     </Suspense>
+    </div>
+    <div className="mt-3 flex items-center gap-2">
      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-      <strong className="font-bold text-foreground">{allWorkspaces.length}</strong> total
+      <strong className="font-bold text-foreground">{totalCount!.count}</strong> total
      </span>
+     {q && (
+      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+       <strong className="font-bold text-foreground">{filteredCount!.count}</strong> matching "{q}"
+      </span>
+     )}
     </div>
    </div>
 
@@ -79,9 +117,20 @@ export default async function OrbitWorkspacesPage() {
        <path d="M3 7h14M3 13h14M7 2v16M13 2v16" strokeLinecap="round"/>
       </svg>
      </div>
-     <p className="text-sm font-semibold text-muted-foreground">No workspaces yet</p>
+     <p className="text-sm font-semibold text-muted-foreground">{q ? "No workspaces found" : "No workspaces yet"}</p>
+     {q && <p className="mt-1 text-xs text-muted-foreground/60">Try a different name or slug.</p>}
     </div>
    )}
+
+   <div className="mt-4">
+    <PaginationControls
+     page={page}
+     pageSize={PAGE_SIZE}
+     totalCount={filteredCount!.count}
+     basePath="/orbit-admin/orbit/workspaces"
+     query={q}
+    />
+   </div>
   </div>
  );
 }

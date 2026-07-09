@@ -1,151 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Search, Shuffle, ImageIcon, Clock } from "lucide-react";
+import { Search, ImageIcon } from "lucide-react";
 import { useUpload } from "@/lib/storage/use-upload";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { ICON_REGISTRY, PageIcon } from "./page-icon";
-
-// ── Emoji categories (Notion-standard 8 categories) ──────────────────────────
-
-type EmojiCategory = { id: string; label: string; icon: string; emojis: string[] };
-
-const EMOJI_CATEGORIES: EmojiCategory[] = [
-  {
-    id: "people",
-    label: "Smileys & People",
-    icon: "😀",
-    emojis: [
-      "😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍",
-      "🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫",
-      "🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤",
-      "😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥸","😎",
-      "🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰",
-      "😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬",
-      "😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹",
-      "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉",
-      "👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝",
-      "🙏","💅","🤳","💪","🦵","🦶","👂","🦻","👃","🦷","🦴","👀","👁️","👅","💋",
-      "💌","💘","💝","💖","💗","💓","💞","💕","❣️","❤️","🧡","💛","💚","💙","💜",
-      "🖤","🤍","🤎","💔","❤️‍🔥","❤️‍🩹","💯","💢","💥","💫","💦","💨","🕳️","💬",
-    ],
-  },
-  {
-    id: "animals",
-    label: "Animals & Nature",
-    icon: "🐶",
-    emojis: [
-      "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐻‍❄️","🐨","🐯","🦁","🐮","🐷","🐸",
-      "🐵","🙈","🙉","🙊","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴",
-      "🦄","🐝","🐛","🦋","🐌","🐞","🐜","🦟","🦗","🕷️","🦂","🐢","🐍","🦎","🦖",
-      "🦕","🐙","🦑","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅",
-      "🐆","🦓","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🦬","🐃","🐂",
-      "🌵","🎄","🌲","🌳","🌴","🪵","🌱","🌿","☘️","🍀","🎍","🪴","🎋","🍃","🍂",
-      "🍁","🍄","🌾","💐","🌷","🌹","🥀","🌺","🌸","🌼","🌻","🌞","🌝","🌛","🌜",
-      "🌚","🌕","🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌙","🌟","⭐","🌠","🌌","☀️",
-      "🌤️","⛅","🌥️","☁️","🌦️","🌧️","⛈️","🌩️","🌨️","❄️","☃️","⛄","🌬️","💨","🌪️",
-    ],
-  },
-  {
-    id: "food",
-    label: "Food & Drink",
-    icon: "🍕",
-    emojis: [
-      "🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥",
-      "🥝","🍅","🫒","🍆","🥑","🥦","🥬","🥒","🌶️","🫑","🧄","🧅","🥔","🍠","🥐",
-      "🥯","🍞","🥖","🫓","🧀","🥚","🍳","🧈","🥞","🧇","🥓","🥩","🍗","🍖","🦴",
-      "🌭","🍔","🍟","🍕","🫔","🌮","🌯","🥙","🧆","🥚","🍿","🧂","🥫","🍱","🍘",
-      "🍙","🍚","🍛","🍜","🍝","🍠","🍢","🍣","🍤","🍥","🥮","🍡","🥟","🥠","🥡",
-      "🦀","🦞","🦐","🦑","🦪","🍦","🍧","🍨","🍩","🍪","🎂","🍰","🧁","🥧","🍫",
-      "🍬","🍭","🍮","🍯","🍼","🥛","☕","🫖","🍵","🧃","🥤","🧋","🍶","🍺","🍻",
-      "🥂","🍷","🥃","🍸","🍹","🧉","🍾","🧊","🥄","🍴","🍽️","🥢","🫙","🧂","🫕",
-    ],
-  },
-  {
-    id: "activity",
-    label: "Activity",
-    icon: "⚽",
-    emojis: [
-      "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍",
-      "🏑","🪃","🥅","⛳","🪁","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🪃","🎱","🎮",
-      "🕹️","🎲","🧩","🧸","🪅","🎭","🎨","🖼️","🎪","🤹","🎠","🎡","🎢","🎟️","🎫",
-      "🏆","🥇","🥈","🥉","🏅","🎖️","🏵️","🎗️","🎀","🎁","🎊","🎉","🎋","🎍","🎎",
-      "🎏","🎐","🧧","🎆","🎇","🧨","🎴","🀄","🃏","🎰","🎳","🎻","🎸","🎹","🥁",
-      "🎷","🎺","🪗","🎙️","🎚️","🎛️","📻","🎤","🎧","📢","📣","🔔","🔕","🎵","🎶",
-    ],
-  },
-  {
-    id: "travel",
-    label: "Travel & Places",
-    icon: "✈️",
-    emojis: [
-      "🚗","🚕","🚙","🚌","🚎","🏎️","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍️",
-      "🛵","🚲","🛴","🛺","🚨","🚔","🚍","🚘","🚖","🚡","🚠","🚟","🚃","🚋","🚞",
-      "🚝","🚄","🚅","🚈","🚂","🚆","🚇","🚊","🚉","✈️","🛫","🛬","🛩️","💺","🛰️",
-      "🚀","🛸","🚁","🛶","⛵","🚤","🛥️","🛳️","⛴️","🚢","🗺️","🧭","🏔️","⛰️","🌋",
-      "🗻","🏕️","🏖️","🏜️","🏝️","🏞️","🏟️","🏛️","🏗️","🧱","🏘️","🏚️","🏠","🏡","🏢",
-      "🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽",
-      "⛪","🕌","🛕","🕍","⛩️","🕋","⛲","⛺","🌁","🌃","🏙️","🌄","🌅","🌆","🌇",
-      "🌉","🌌","🌠","🎇","🎆","🎑","🗾","🏔️","🌐","🗺️","🧳","☂️","⛱️","🎡","🎢",
-    ],
-  },
-  {
-    id: "objects",
-    label: "Objects",
-    icon: "💡",
-    emojis: [
-      "💡","🔦","🕯️","🪔","💰","💴","💵","💶","💷","💸","💳","🪙","💹","📈","📉",
-      "📊","📋","📌","📍","📎","🖇️","📏","📐","✂️","🗃️","🗄️","🗑️","🔒","🔓","🔏",
-      "🔐","🔑","🗝️","🔨","🪓","⛏️","⚒️","🛠️","🗡️","⚔️","🛡️","🪚","🔧","🪛","🔩",
-      "⚙️","🗜️","🔗","⛓️","🪝","🧲","🪜","⚖️","🦯","🔭","🔬","🩺","💊","🩹","🩻",
-      "🧬","🦠","🧪","🧫","🧲","🪄","🔮","🧿","🪬","🧸","🪆","🪅","🎭","🎨","🖼️",
-      "📷","📸","📹","🎥","📽️","🎞️","📞","☎️","📟","📠","📺","📻","🧭","⏱️","⏰",
-      "🕰️","📡","🔋","🔌","💻","🖥️","🖨️","⌨️","🖱️","💾","💿","📀","📱","📲","☎️",
-      "📔","📒","📓","📕","📗","📘","📙","📚","📖","🔖","🏷️","📝","✏️","✒️","🖊️",
-      "🖋️","🖌️","📮","📯","📦","📫","📪","📬","📭","📮","🗳️","🗂️","📁","📂","🗃️",
-    ],
-  },
-  {
-    id: "symbols",
-    label: "Symbols",
-    icon: "❤️",
-    emojis: [
-      "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","❤️‍🔥","❤️‍🩹","💔","❣️","💕","💞",
-      "💓","💗","💖","💝","💘","💟","☮️","✝️","☪️","🕉️","☸️","🔯","🪯","✡️","☦️",
-      "🛐","⛎","♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓","🆔",
-      "⚛️","🈴","🈳","🈺","🈵","🈹","🈲","🅰️","🅱️","🆎","🆑","🅾️","🆘","❌","⭕",
-      "🛑","⛔","📛","🚫","💯","💢","♨️","🚷","🚯","🚳","🚱","🔞","📵","🔕","🔇",
-      "🔈","🔉","🔊","📯","🔔","🔕","🎵","🎶","⚠️","🚸","🔱","⚜️","🔰","♻️","✅",
-      "🈶","🈚","🈸","🈺","🈷️","✴️","🆚","💮","🉐","㊙️","㊗️","🈴","🈵","🈹","🈲",
-      "⁉️","🔟","💹","❇️","✳️","❎","🌐","💠","Ⓜ️","🌀","💤","🏧","🚾","♿","🅿️",
-      "🛗","🈳","🚰","🚹","🚺","🚻","🚼","🚽","🚿","🛁","🛒","🔃","🔄","🔙","🔚",
-      "🔛","🔜","🔝","⏫","⬆️","↗️","➡️","↘️","⬇️","↙️","⬅️","↖️","↕️","↔️","↩️",
-      "1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","0️⃣","#️⃣","*️⃣","▶️","⏸️","⏹️",
-    ],
-  },
-  {
-    id: "flags",
-    label: "Flags",
-    icon: "🏳️",
-    emojis: [
-      "🏳️","🏴","🏁","🚩","🏳️‍🌈","🏳️‍⚧️","🏴‍☠️","🇺🇳",
-      "🇦🇫","🇦🇱","🇩🇿","🇦🇩","🇦🇴","🇦🇬","🇦🇷","🇦🇲","🇦🇺","🇦🇹","🇦🇿","🇧🇸","🇧🇭","🇧🇩","🇧🇧",
-      "🇧🇾","🇧🇪","🇧🇿","🇧🇯","🇧🇹","🇧🇴","🇧🇦","🇧🇼","🇧🇷","🇧🇳","🇧🇬","🇧🇫","🇧🇮","🇨🇻","🇰🇭",
-      "🇨🇲","🇨🇦","🇨🇫","🇹🇩","🇨🇱","🇨🇳","🇨🇴","🇰🇲","🇨🇬","🇨🇩","🇨🇷","🇨🇮","🇭🇷","🇨🇺","🇨🇾",
-      "🇨🇿","🇩🇰","🇩🇯","🇩🇲","🇩🇴","🇪🇨","🇪🇬","🇸🇻","🇬🇶","🇪🇷","🇪🇪","🇸🇿","🇪🇹","🇫🇯","🇫🇮",
-      "🇫🇷","🇬🇦","🇬🇲","🇬🇪","🇩🇪","🇬🇭","🇬🇷","🇬🇩","🇬🇹","🇬🇳","🇬🇼","🇬🇾","🇭🇹","🇭🇳","🇭🇺",
-      "🇮🇸","🇮🇳","🇮🇩","🇮🇷","🇮🇶","🇮🇪","🇮🇱","🇮🇹","🇯🇲","🇯🇵","🇯🇴","🇰🇿","🇰🇪","🇰🇮","🇽🇰",
-      "🇰🇼","🇰🇬","🇱🇦","🇱🇻","🇱🇧","🇱🇸","🇱🇷","🇱🇾","🇱🇮","🇱🇹","🇱🇺","🇲🇬","🇲🇼","🇲🇾","🇲🇻",
-      "🇲🇱","🇲🇹","🇲🇭","🇲🇷","🇲🇺","🇲🇽","🇫🇲","🇲🇩","🇲🇨","🇲🇳","🇲🇪","🇲🇦","🇲🇿","🇲🇲","🇳🇦",
-      "🇳🇷","🇳🇵","🇳🇱","🇳🇿","🇳🇮","🇳🇪","🇳🇬","🇳🇴","🇴🇲","🇵🇰","🇵🇼","🇵🇸","🇵🇦","🇵🇬","🇵🇾",
-      "🇵🇪","🇵🇭","🇵🇱","🇵🇹","🇶🇦","🇷🇴","🇷🇺","🇷🇼","🇰🇳","🇱🇨","🇻🇨","🇼🇸","🇸🇲","🇸🇹","🇸🇦",
-      "🇸🇳","🇷🇸","🇸🇨","🇸🇱","🇸🇬","🇸🇰","🇸🇮","🇸🇧","🇸🇴","🇿🇦","🇸🇸","🇪🇸","🇱🇰","🇸🇩","🇸🇷",
-      "🇸🇪","🇨🇭","🇸🇾","🇹🇼","🇹🇯","🇹🇿","🇹🇭","🇹🇱","🇹🇬","🇹🇴","🇹🇹","🇹🇳","🇹🇷","🇹🇲","🇺🇬",
-      "🇺🇦","🇦🇪","🇬🇧","🇺🇸","🇺🇾","🇺🇿","🇻🇺","🇻🇪","🇻🇳","🇾🇪","🇿🇲","🇿🇼","🏴󠁧󠁢󠁥󠁮󠁧󠁿","🏴󠁧󠁢󠁳󠁣󠁴󠁿","🏴󠁧󠁢󠁷󠁬󠁳󠁿",
-    ],
-  },
-];
+import { EmojiGridPicker } from "./emoji-grid-picker";
 
 // ── Icon colors ───────────────────────────────────────────────────────────────
 
@@ -165,67 +24,6 @@ const ICON_COLORS = [
 ];
 
 const ICON_NAMES = Object.keys(ICON_REGISTRY);
-const RECENT_KEY = "wf_recent_emojis";
-const SKIN_TONE_KEY = "wf_skin_tone";
-const MAX_RECENT = 20;
-
-const SKIN_TONES = [
-  { tone: "",           hand: "✋"  },
-  { tone: "\u{1F3FB}", hand: "✋🏻" },
-  { tone: "\u{1F3FC}", hand: "✋🏼" },
-  { tone: "\u{1F3FD}", hand: "✋🏽" },
-  { tone: "\u{1F3FE}", hand: "✋🏾" },
-  { tone: "\u{1F3FF}", hand: "✋🏿" },
-] as const;
-
-// Emojis in People category that accept skin-tone modifiers
-const SKIN_TONE_CAPABLE = new Set([
-  "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉",
-  "👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🙏",
-  "💅","🤳","💪","🦵","🦶","👂","🦻","👃","🫵","🫴","🫳","🫲","🫱","🫶","🫰",
-]);
-
-function stripTone(emoji: string): string {
-  // Remove Fitzpatrick skin-tone modifier (U+1F3FB – U+1F3FF) so we always store the base emoji
-  return emoji.replace(/[\u{1F3FB}-\u{1F3FF}]/u, "");
-}
-
-function applyTone(emoji: string, tone: string): string {
-  const base = stripTone(emoji);
-  if (!tone || !SKIN_TONE_CAPABLE.has(base)) return base;
-  // Strip variation selector (U+FE0F) so the skin tone modifier combines correctly.
-  // e.g. 🖐️(U+1F590+FE0F) + 🏽 must be stored as U+1F590+1F3FD, not U+1F590+FE0F+1F3FD,
-  // otherwise browsers render them as two separate glyphs.
-  return base.replace(/️/g, "") + tone;
-}
-
-function getSavedTone(): string {
-  try { return localStorage.getItem(SKIN_TONE_KEY) ?? ""; } catch { return ""; }
-}
-function saveTone(tone: string) {
-  try { localStorage.setItem(SKIN_TONE_KEY, tone); } catch { /* noop */ }
-}
-
-function getRecent(): string[] {
-  try {
-    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
-    // Migrate: strip any stored tone modifiers so recent list only contains base emojis
-    return [...new Set(raw.map(stripTone).filter(Boolean))];
-  } catch { return []; }
-}
-function addRecent(emoji: string) {
-  try {
-    const base = stripTone(emoji);
-    if (!base) return;
-    const list = [base, ...getRecent().filter((e) => e !== base)].slice(0, MAX_RECENT);
-    localStorage.setItem(RECENT_KEY, JSON.stringify(list));
-  } catch { /* noop */ }
-}
-
-function randomEmoji(): string {
-  const all = EMOJI_CATEGORIES.flatMap((c) => c.emojis);
-  return all[Math.floor(Math.random() * all.length)] ?? "📝";
-}
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -248,9 +46,6 @@ export function IconPicker({
   onSelect, onIconPreview, onRemove, onClose, workspaceId, pageId, uploadKind = "page_icon",
 }: IconPickerProps) {
   const [tab, setTab] = useState<"emoji" | "icons" | "upload">("emoji");
-  const [emojiSearch, setEmojiSearch] = useState("");
-  const [skinTone, setSkinTone] = useState<string>(() => getSavedTone());
-  const [showSkinTones, setShowSkinTones] = useState(false);
   const [iconColor, setIconColor] = useState("#6b7280");
   const [iconSearch, setIconSearch] = useState("");
   const [uploadSubTab, setUploadSubTab] = useState<"file" | "link">("file");
@@ -258,30 +53,19 @@ export function IconPicker({
   const [linkUrl, setLinkUrl] = useState("");
   const [linkPreviewOk, setLinkPreviewOk] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
-  const [skinToneRect, setSkinToneRect] = useState<DOMRect | null>(null);
-  const skinToneBtnRef = useRef<HTMLButtonElement>(null);
-  const skinToneMenuRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
-  const emojiScrollRef = useRef<HTMLDivElement>(null);
-  const catRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
-
-  const currentHand = SKIN_TONES.find(s => s.tone === skinTone)?.hand ?? "✋";
-
-  useScrollLockWhileOpen(showSkinTones, (target) =>
-    !!skinToneMenuRef.current?.contains(target) || !!skinToneBtnRef.current?.contains(target));
 
   const { upload, uploading, error: uploadError } = useUpload({ kind: uploadKind, workspaceId, pageId });
 
   useEffect(() => {
-    setRecentEmojis(getRecent());
     function down(e: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        // Skin-tone dropdown is a portal outside pickerRef — don't close when clicking inside it
-        if (skinToneMenuRef.current && skinToneMenuRef.current.contains(e.target as Node)) return;
+        // Skin-tone dropdown (rendered by EmojiGridPicker) is a portal outside
+        // pickerRef — don't close when clicking inside it.
+        if ((e.target as HTMLElement).closest?.("[data-emoji-picker-exempt]")) return;
         onCloseRef.current();
       }
     }
@@ -293,33 +77,6 @@ export function IconPicker({
   const filteredIcons = iconSearch.trim()
     ? ICON_NAMES.filter((n) => n.toLowerCase().includes(iconSearch.trim().toLowerCase()))
     : ICON_NAMES;
-
-  const emojiSearchResults = emojiSearch.trim()
-    ? EMOJI_CATEGORIES.flatMap((c) => c.emojis)
-        .filter((e) => e.includes(emojiSearch.trim()))
-    : null;
-
-  function scrollToCategory(id: string) {
-    const el = catRefs.current[id];
-    if (el && emojiScrollRef.current) {
-      emojiScrollRef.current.scrollTop = el.offsetTop - 4;
-    }
-  }
-
-  function handleEmojiSelect(emoji: string) {
-    const base = stripTone(emoji);
-    const final = applyTone(base, skinTone);
-    addRecent(base); // always store the base emoji — tone is applied dynamically on display/select
-    setRecentEmojis(getRecent());
-    onSelect(final);
-    onClose();
-  }
-
-  function handleSkinTone(tone: string) {
-    setSkinTone(tone);
-    saveTone(tone);
-    setShowSkinTones(false);
-  }
 
   async function handleUpload(file: File) {
     const res = await upload(file);
@@ -347,15 +104,6 @@ export function IconPicker({
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith("image/")) handleUpload(file);
   }
-
-  const EmojiBtn = ({ emoji }: { emoji: string }) => (
-    <button
-      onClick={() => handleEmojiSelect(emoji)}
-      className="flex size-[30px] items-center justify-center rounded-[var(--radius-xs)] text-[19px] leading-none transition-colors hover:bg-accent"
-    >
-      {emoji}
-    </button>
-  );
 
   return (
     <div
@@ -395,136 +143,23 @@ export function IconPicker({
 
       {/* ── Emoji tab ── */}
       {tab === "emoji" && (
-        <div className="flex flex-col">
-          {/* Search row */}
-          <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-2.5">
-            <div className="relative flex-1">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
-              <input
-                value={emojiSearch}
-                onChange={(e) => setEmojiSearch(e.target.value)}
-                placeholder="Filter..."
-                autoFocus
-                className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-              />
-            </div>
-            {/* Shuffle — updates the icon but keeps the picker open, so the user
-                can click it repeatedly to browse random options before settling
-                on one. Routed through onIconPreview (same "update without closing"
-                callback already used by the upload tab) when the caller supports
-                it; falls back to the old select-and-close behavior otherwise. */}
-            <button
-              onClick={() => {
-                const picked = randomEmoji();
-                const final = applyTone(stripTone(picked), skinTone);
-                if (onIconPreview) {
-                  onIconPreview(final);
-                } else {
-                  onSelect(final);
-                  onClose();
-                }
-              }}
-              title="Random"
-              className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Shuffle size={13} />
-            </button>
-            {/* Skin tone */}
-            <div className="relative">
-              <button
-                ref={skinToneBtnRef}
-                onClick={() => {
-                  const r = skinToneBtnRef.current?.getBoundingClientRect();
-                  if (!showSkinTones && r) setSkinToneRect(r);
-                  setShowSkinTones(p => !p);
-                }}
-                title="Select skin tone"
-                className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border text-[18px] leading-none transition-colors ${showSkinTones ? "border-primary/50 bg-accent" : "border-border bg-background hover:bg-accent"}`}
-              >
-                {currentHand}
-              </button>
-              {showSkinTones && skinToneRect && typeof document !== "undefined" && createPortal(
-                <div
-                  ref={skinToneMenuRef}
-                  style={{ position: "fixed", top: skinToneRect.bottom + 6, right: window.innerWidth - skinToneRect.right, zIndex: 9999 }}
-                  className="flex items-center gap-0.5 rounded-[var(--radius-md)] border border-border bg-popover p-1.5"
-                  onMouseDown={(e) => e.stopPropagation()}
-                >
-                  {SKIN_TONES.map((s) => (
-                    <button
-                      key={s.tone}
-                      onClick={() => handleSkinTone(s.tone)}
-                      title={s.tone ? `Skin tone ${s.hand}` : "Default"}
-                      className={`flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[18px] leading-none transition-colors hover:bg-accent ${skinTone === s.tone ? "bg-accent ring-1 ring-primary/40" : ""}`}
-                    >
-                      {s.hand}
-                    </button>
-                  ))}
-                </div>,
-                document.body
-              )}
-            </div>
-          </div>
-
-          {/* Emoji scroll area */}
-          <div ref={emojiScrollRef} className="h-[232px] overflow-y-auto px-2.5">
-            {emojiSearchResults ? (
-              emojiSearchResults.length === 0 ? (
-                <p className="py-8 text-center text-xs text-muted-foreground">No emojis found</p>
-              ) : (
-                <div className="grid grid-cols-10 gap-0 pb-2 pt-1">
-                  {emojiSearchResults.map((emoji, i) => <EmojiBtn key={`s-${emoji}-${i}`} emoji={emoji} />)}
-                </div>
-              )
-            ) : (
-              <>
-                {recentEmojis.length > 0 && (
-                  <div ref={(el) => { catRefs.current["recent"] = el; }}>
-                    <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground/50">
-                      Recently used
-                    </p>
-                    <div className="grid grid-cols-10 gap-0 pb-1">
-                      {recentEmojis.map((emoji, i) => (
-                        <EmojiBtn key={`r-${emoji}-${i}`} emoji={emoji} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {EMOJI_CATEGORIES.map((cat) => (
-                  <div key={cat.id} ref={(el) => { catRefs.current[cat.id] = el; }}>
-                    <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground/50">
-                      {cat.label}
-                    </p>
-                    <div className="grid grid-cols-10 gap-0 pb-1">
-                      {cat.emojis.map((emoji, i) => <EmojiBtn key={`${cat.id}-${emoji}-${i}`} emoji={emoji} />)}
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-
-          {/* Category shortcut bar */}
-          <div className="flex items-center gap-0 overflow-x-auto border-t border-border/50 px-2 py-1 scrollbar-none">
-            <button
-              onClick={() => scrollToCategory("recent")}
-              title="Recently used"
-              className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Clock size={13} />
-            </button>
-            {EMOJI_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => scrollToCategory(cat.id)}
-                title={cat.label}
-                className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[15px] leading-none transition-colors hover:bg-accent"
-              >
-                {cat.icon}
-              </button>
-            ))}
-          </div>
-        </div>
+        <EmojiGridPicker
+          onSelect={onSelect}
+          onClose={onClose}
+          // Shuffle updates the icon but keeps the picker open, so the user
+          // can click it repeatedly to browse random options before settling
+          // on one. Routed through onIconPreview (same "update without closing"
+          // callback already used by the upload tab) when the caller supports
+          // it; falls back to the old select-and-close behavior otherwise.
+          onShuffle={(emoji) => {
+            if (onIconPreview) {
+              onIconPreview(emoji);
+            } else {
+              onSelect(emoji);
+              onClose();
+            }
+          }}
+        />
       )}
 
       {/* ── Icons tab ── */}

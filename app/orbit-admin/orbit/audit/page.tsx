@@ -21,7 +21,25 @@ const ACTION_META: Record<string, { label: string; pill: string }> = {
  "member.removed":                 { label: "Member removed",          pill: "bg-destructive/5 text-destructive border-destructive/20" },
  "session.impersonated":           { label: "User impersonated",       pill: "bg-primary/10 text-primary border-primary/20" },
  "session.revoked_all":            { label: "Sessions revoked",        pill: "bg-primary/10 text-primary border-primary/20" },
+ "template.created":               { label: "Template created",        pill: "bg-primary/10 text-primary border-primary/20" },
+ "template.updated":               { label: "Template updated",        pill: "bg-warning/10 text-warning border-warning/20" },
+ "template.deleted":               { label: "Template deleted",        pill: "bg-destructive/5 text-destructive border-destructive/20" },
+ "template.published":             { label: "Template published",      pill: "bg-success/10 text-success border-success/20" },
+ "template.unpublished":           { label: "Template unpublished",    pill: "bg-warning/10 text-warning border-warning/20" },
+ "template.seeded":                { label: "Templates seeded",        pill: "bg-primary/10 text-primary border-primary/20" },
+ "template.reseeded":              { label: "Templates re-seeded",     pill: "bg-warning/10 text-warning border-warning/20" },
+ "template.icons_updated":         { label: "Template icons updated",  pill: "bg-primary/10 text-primary border-primary/20" },
+ "email.retried":                  { label: "Email retried",           pill: "bg-primary/10 text-primary border-primary/20" },
+ "user.auto_promoted_first_admin": { label: "Auto-promoted to admin",  pill: "bg-primary/10 text-primary border-primary/20" },
 };
+
+// Fallback for any action type not in ACTION_META — "user.auto_promoted_first_admin"
+// → "Auto promoted first admin" — so unmapped actions still read as a label
+// instead of a raw dotted/underscored string that can overflow its pill.
+function humanizeAction(action: string): string {
+ const tail = action.includes(".") ? action.slice(action.indexOf(".") + 1) : action;
+ return tail.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+}
 
 function ago(d: Date | null | undefined) {
  if (!d) return "—";
@@ -76,7 +94,7 @@ export default async function OrbitAuditPage() {
    ) : (
     <div className="rounded-[var(--radius-lg)] border border-border bg-card">
      <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border/60 bg-muted/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-      <span className="w-36">Action</span>
+      <span className="w-44">Action</span>
       <span className="pl-4">Details</span>
       <span className="pr-6">Actor</span>
       <span>When</span>
@@ -87,9 +105,12 @@ export default async function OrbitAuditPage() {
        const md   = ev.metadata as Record<string, unknown> | null;
        return (
         <div key={ev.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 px-5 py-3.5 transition-colors hover:bg-accent">
-         <span className="w-36 shrink-0">
-          <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}>
-           {meta?.label ?? ev.action}
+         <span className="w-44 min-w-0 shrink-0">
+          <span
+           title={meta ? undefined : ev.action}
+           className={`inline-flex max-w-full items-center truncate rounded-full border px-2 py-0.5 text-xs font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}
+          >
+           {meta?.label ?? humanizeAction(ev.action)}
           </span>
          </span>
          <div className="min-w-0 pl-4">

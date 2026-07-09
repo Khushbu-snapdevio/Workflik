@@ -126,6 +126,55 @@ export function PageEditor({
     setGutterRefresh((n) => n + 1);
   }
 
+  // Resolve a block's on-screen Y position (from its persisted order in
+  // currentBlocksRef) and open its comment card there — shared by the gutter
+  // badge click and by the "jump to this comment" action from the comments panel.
+  function openBlockComment(blockId: string) {
+    const sorted = [...currentBlocksRef.current].sort(
+      (a, b) => a.orderIndex - b.orderIndex
+    );
+    const idx = sorted.findIndex((b) => b.id === blockId);
+    let blockY = 0;
+    if (idx >= 0 && editorRef.current) {
+      let nodeOffset: number | null = null;
+      editorRef.current.state.doc.forEach((_n, offset, di) => {
+        if (di === idx) {
+          nodeOffset = offset;
+        }
+      });
+      if (nodeOffset !== null) {
+        try {
+          const editorEl = editorRef.current.view.dom as HTMLElement;
+          const domInfo = editorRef.current.view.domAtPos(nodeOffset + 1);
+          let el = domInfo.node as HTMLElement;
+          if (el.nodeType === Node.TEXT_NODE) {
+            el = el.parentElement!;
+          }
+          while (el.parentElement && el.parentElement !== editorEl) {
+            el = el.parentElement;
+          }
+          blockY = el.getBoundingClientRect().top - 20;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    openCommentCard(blockId, null, null, blockY);
+  }
+
+  // Lets the topbar "Comments" panel (which lives outside the editor) jump to
+  // a specific block comment without prop-drilling — same effect as clicking
+  // that block's gutter badge.
+  useEffect(() => {
+    function onJumpToComment(e: Event) {
+      const detail = (e as CustomEvent<{ pageId: string; blockId?: string; propertyId?: string }>).detail;
+      if (!detail || detail.pageId !== pageId || !detail.blockId) return;
+      openBlockComment(detail.blockId);
+    }
+    window.addEventListener("workflik:jump-to-page-comment", onJumpToComment);
+    return () => window.removeEventListener("workflik:jump-to-page-comment", onJumpToComment);
+  }, [pageId]);
+
   // `commentCard.blockY` is a one-time pixel offset computed when the card
   // opens — there's no live anchor to reposition from as the page scrolls, so
   // lock scroll instead. Exempt CommentCard's own nested portals (emoji
@@ -612,43 +661,7 @@ export function PageEditor({
           activeBlockId={commentCard?.blockId ?? null}
           blocksRef={currentBlocksRef}
           editor={editor}
-          onOpen={(blockId) => {
-            // Resolve Y for this block from its gutter badge position
-            const sorted = [...currentBlocksRef.current].sort(
-              (a, b) => a.orderIndex - b.orderIndex
-            );
-            const idx = sorted.findIndex((b) => b.id === blockId);
-            let blockY = 0;
-            if (idx >= 0) {
-              let nodeOffset: number | null = null;
-              editor.state.doc.forEach((_n, offset, di) => {
-                if (di === idx) {
-                  nodeOffset = offset;
-                }
-              });
-              if (nodeOffset !== null) {
-                try {
-                  const editorEl = editor.view.dom as HTMLElement;
-                  const domInfo = editor.view.domAtPos(nodeOffset + 1);
-                  let el = domInfo.node as HTMLElement;
-                  if (el.nodeType === Node.TEXT_NODE) {
-                    el = el.parentElement!;
-                  }
-                  while (el.parentElement && el.parentElement !== editorEl) {
-                    el = el.parentElement;
-                  }
-                  // Viewport-absolute Y (matches every other openCommentCard
-                  // caller) — the card is position:fixed, so subtracting the
-                  // editor's own top here was pinning it near the viewport
-                  // top instead of next to the clicked block.
-                  blockY = el.getBoundingClientRect().top - 20;
-                } catch {
-                  /* ignore */
-                }
-              }
-            }
-            openCommentCard(blockId, null, null, blockY);
-          }}
+          onOpen={openBlockComment}
           pageId={pageId}
           refresh={gutterRefresh}
         />

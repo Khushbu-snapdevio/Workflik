@@ -91,6 +91,20 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
     return rowComments.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === propId).length;
   }
 
+  // Lets the topbar "Comments" panel jump to a specific property's comment
+  // popover without prop-drilling — triggers the exact same button click a
+  // user would make on that property row's own comment icon.
+  useEffect(() => {
+    function onJumpToComment(e: Event) {
+      const detail = (e as CustomEvent<{ pageId: string; blockId?: string; propertyId?: string }>).detail;
+      if (!detail || detail.pageId !== entryId || !detail.propertyId) return;
+      const btn = document.querySelector<HTMLButtonElement>(`[data-property-comment-id="${detail.propertyId}"]`);
+      btn?.click();
+    }
+    window.addEventListener("workflik:jump-to-page-comment", onJumpToComment);
+    return () => window.removeEventListener("workflik:jump-to-page-comment", onJumpToComment);
+  }, [entryId]);
+
   // `popover`/`editPropPanel` are one-time DOMRect snapshots of a property row's
   // trigger, and `getAnchorRect={() => editPropPanel.anchorRect}` below always
   // returns that same frozen value — so EditPropertySidePanel's own
@@ -306,6 +320,7 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                   <button
                     type="button"
                     title="Comment on this property"
+                    data-property-comment-id={prop.id}
                     onClick={(e) => {
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       setCommentPopover({

@@ -15,6 +15,7 @@ import { CellDisplay } from "@/components/database/cells/cell-display";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
+import { isGroupableType, areGroupsEditable, deriveGroups, getEntryGroupIds, defaultValueForGroup, valueAfterGroupMove } from "@/components/database/grouping";
 import type { SharedViewProps, DbEntry, DbProperty, SelectOption } from "@/components/database/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GroupHeaderMenu } from "@/components/database/group-header-menu";
@@ -43,6 +44,26 @@ function hasDisplayValue(prop: DbProperty, raw: unknown): boolean {
  }
 }
 
+// Card drag ids are tagged with the column they're rendered in
+// ("card\0<colKey>\0<entryId>") rather than just the raw entry id — required
+// once a Person-grouped board can show the SAME entry in more than one
+// column (multi-assignee), since dnd-kit needs a unique id per draggable
+// instance and onDragEnd needs to know which specific column-instance of a
+// possibly-duplicated card was actually dragged. \0 can't appear in a real
+// uuid/cuid2, so splitting back apart is unambiguous. For every other
+// (single-membership) group type this is a no-op change in behavior — an
+// entry only ever has one tagged id to begin with.
+function cardSortId(colKey: string, entryId: string): string {
+ return `card\0${colKey}\0${entryId}`;
+}
+function parseCardSortId(id: string): { colKey: string; entryId: string } | null {
+ if (!id.startsWith("card\0")) return null;
+ const rest = id.slice("card\0".length);
+ const sep = rest.indexOf("\0");
+ if (sep === -1) return null;
+ return { colKey: rest.slice(0, sep), entryId: rest.slice(sep + 1) };
+}
+
 // ── BoardView ─────────────────────────────────────────────────────────────────
 
 export function BoardView({
@@ -50,7 +71,7 @@ export function BoardView({
  onUpdateValue, onUpdateTitle, onCreateEntry, onUpdateProperty, onDeleteEntry, onDuplicateEntry, onOpenEntry,
  onAddProperty, onDeleteProperty, onUpdateView, onUpdateEntryIcon,
 }: SharedViewProps) {
- const [draggingId, setDraggingId]   = useState<string | null>(null);
+ const [draggingSortId, setDraggingSortId] = useState<string | null>(null);
  const [collapsed, setCollapsed]    = useState<Set<string>>(new Set());
  const [addingOption, setAddingOption] = useState(false);
  const [newOptName, setNewOptName]   = useState("");
@@ -67,7 +88,7 @@ export function BoardView({
  const addOptInputRef         = useRef<HTMLInputElement>(null);
 
  const groupPropId = activeView?.groupByPropertyId;
- const groupProp  = properties.find((p) => p.id === groupPropId && p.type === "select");
+ const groupProp  = properties.find((p) => p.id === groupPropId && isGroupableType(p.type));
 
  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -91,34 +112,44 @@ export function BoardView({
     <div>
      <p className="text-sm font-semibold text-foreground">No group-by property</p>
      <p className="mt-1 text-xs text-muted-foreground">
-      Open the <strong>Group</strong> dropdown in the toolbar and pick a Select property to organise cards into columns.
+      Open the <strong>Group</strong> dropdown in the toolbar and pick a Select, Status, Checkbox, or Person property to organise cards into columns.
      </p>
     </div>
    </div>
   );
  }
 
+ // Only select/status have a real, user-managed option list — checkbox/person's
+ // groups are derived (see deriveGroups), so `options` is empty (and all the
+ // option-CRUD UI below is gated off) for those two types.
  const options: SelectOption[] = (groupProp.config?.options ?? []) as SelectOption[];
+ const groupsEditable = areGroupsEditable(groupProp.type);
 
  const boardSettings = (activeView?.boardSettings ?? {}) as BoardSettings;
  const sortDirection = boardSettings.sortDirection ?? "manual";
  const hideEmptyGroups = !!boardSettings.hideEmptyGroups;
  const colorColumns = boardSettings.colorColumns !== false;
+ const baseGroups = deriveGroups(groupProp, entries, valueMap);
  // Display-only sorted copy — the underlying option array (and its index-based drag
  // math in onDragEnd) is untouched, so switching back to Manual restores drag order.
- const displayOptions = sortDirection === "manual"
-  ? options
-  : [...options].sort((a, b) => sortDirection === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+ const displayGroups = sortDirection === "manual"
+  ? baseGroups
+  : [...baseGroups].sort((a, b) => sortDirection === "asc" ? a.label.localeCompare(b.label) : b.label.localeCompare(a.label));
 
+ // Checkbox never has an "unset" state (always true/false), so a synthetic
+ // "No X" bucket would just be permanently, meaninglessly empty — every other
+ // groupable type keeps it, matching the original behavior exactly.
  const columns: { id: string | null; label: string; color: string; entries: DbEntry[] }[] = [
-  { id: null, label: "No " + groupProp.name, color: "gray", entries: [] },
-  ...displayOptions.map((o) => ({ id: o.id, label: o.name, color: o.color, entries: [] as DbEntry[] })),
+  ...(groupProp.type === "checkbox" ? [] : [{ id: null, label: "No " + groupProp.name, color: "gray", entries: [] as DbEntry[] }]),
+  ...displayGroups.map((g) => ({ id: g.id, label: g.label, color: g.color ?? "gray", entries: [] as DbEntry[] })),
  ];
 
  for (const entry of entries) {
-  const val = valueMap.get(entry.id)?.get(groupPropId!) as { optionId?: string } | null;
-  const col = columns.find((c) => c.id === (val?.optionId ?? null)) ?? columns[0];
-  col.entries.push(entry);
+  const val = valueMap.get(entry.id)?.get(groupPropId!) ?? null;
+  for (const key of getEntryGroupIds(groupProp, val)) {
+   const col = columns.find((c) => c.id === key) ?? columns[0];
+   col.entries.push(entry);
+  }
  }
 
  // Apply local ordering overrides for within-column reordering
@@ -140,7 +171,8 @@ export function BoardView({
  // fully editable via the card's own popup but is never rendered on it.
  // Same rule as Calendar/Gallery.
  const cardProps = properties.filter((p) => !!p.config?.groupedByStatus && !!p.config?.showOnCard);
- const draggingEntry = draggingId ? entries.find((e) => e.id === draggingId) : null;
+ const draggingEntryId = draggingSortId ? parseCardSortId(draggingSortId)?.entryId ?? null : null;
+ const draggingEntry = draggingEntryId ? entries.find((e) => e.id === draggingEntryId) : null;
 
  const hiddenGroupOptionIds = boardSettings.hiddenGroupOptionIds ?? [];
  const hideAggregation = !!boardSettings.hideAggregation;
@@ -149,7 +181,11 @@ export function BoardView({
   if (hideEmptyGroups && c.id !== null && c.entries.length === 0) return false;
   return true;
  });
- const draggableColumnKeys = sortDirection === "manual"
+ // Whole-column reordering only makes sense for select/status, whose column
+ // order is a persisted, user-owned array (`config.options`) — checkbox/person
+ // columns are derived fresh every render, so there's nothing to persist a
+ // reordering into.
+ const draggableColumnKeys = sortDirection === "manual" && groupsEditable
   ? visibleColumns.filter((c) => c.id !== null).map((c) => "colhandle-" + c.id)
   : [];
 
@@ -167,19 +203,19 @@ export function BoardView({
  function onDragStart({ active }: DragStartEvent) {
   const id = String(active.id);
   if (id.startsWith("colhandle-")) { setDraggingColKey(id.slice("colhandle-".length)); return; }
-  setDraggingId(id);
+  setDraggingSortId(id);
  }
 
  function onDragEnd({ active, over }: DragEndEvent) {
-  const activeId = String(active.id);
+  const activeRaw = String(active.id);
 
   // Whole-column reordering — distinct id prefix so it never collides with card ids.
-  if (activeId.startsWith("colhandle-")) {
+  if (activeRaw.startsWith("colhandle-")) {
    setDraggingColKey(null);
    if (!over) return;
    const overId = String(over.id);
-   if (!overId.startsWith("colhandle-") || activeId === overId) return;
-   const activeOptId = activeId.slice("colhandle-".length);
+   if (!overId.startsWith("colhandle-") || activeRaw === overId) return;
+   const activeOptId = activeRaw.slice("colhandle-".length);
    const overOptId  = overId.slice("colhandle-".length);
    const oldIdx = options.findIndex((o) => o.id === activeOptId);
    const newIdx = options.findIndex((o) => o.id === overOptId);
@@ -189,34 +225,40 @@ export function BoardView({
    return;
   }
 
-  setDraggingId(null);
+  setDraggingSortId(null);
   if (!over || active.id === over.id) return;
 
-  const overId = String(over.id);
+  // Card ids are tagged with their column ("card\0<colKey>\0<entryId>") — see
+  // cardSortId's comment. This is what makes cross-column drag correct even
+  // when the same entry appears in more than one column (Person, multiple
+  // assignees): the id itself says which column-instance was dragged,
+  // instead of searching for "the" column containing this entry (ambiguous
+  // once an entry can be in several at once).
+  const overRaw = String(over.id);
+  const activeParsed = parseCardSortId(activeRaw);
+  if (!activeParsed) return;
+  const { colKey: activeColKey, entryId: activeId } = activeParsed;
 
-  // Find which column the active card belongs to
-  const activeCol = orderedColumns.find((c) => c.entries.some((e) => e.id === activeId));
-  if (!activeCol) return;
-  const activeColKey = activeCol.id ?? "no-group";
+  const overParsed = parseCardSortId(overRaw);
+  const targetColKey = overRaw.startsWith("col-") ? overRaw.slice("col-".length) : overParsed?.colKey;
+  if (targetColKey == null) return;
 
-  // Determine the target column: droppable id is "col-<key>", or match a card's column
-  const targetColByDroppable = orderedColumns.find((c) => "col-" + (c.id ?? "no-group") === overId);
-  const targetColByCard = orderedColumns.find((c) => c.entries.some((e) => e.id === overId));
-  const targetCol = targetColByDroppable ?? targetColByCard;
-  if (!targetCol) return;
-  const targetColKey = targetCol.id ?? "no-group";
+  const activeCol = orderedColumns.find((c) => (c.id ?? "no-group") === activeColKey);
+  const targetCol = orderedColumns.find((c) => (c.id ?? "no-group") === targetColKey);
+  if (!activeCol || !targetCol) return;
 
   if (activeColKey === targetColKey) {
    // Within-column reordering
    const currentOrder = activeCol.entries.map((e) => e.id);
    const oldIndex = currentOrder.indexOf(activeId);
-   const newIndex = targetColByCard ? currentOrder.indexOf(overId) : currentOrder.length - 1;
+   const newIndex = overParsed && overParsed.colKey === targetColKey ? currentOrder.indexOf(overParsed.entryId) : currentOrder.length - 1;
    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
    const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
    setLocalEntryOrder((prev) => new Map(prev).set(activeColKey, newOrder));
   } else {
    // Cross-column move: call server update and clear local order for both columns
-   onUpdateValue(activeId, groupPropId!, targetCol.id === null ? { optionId: null } : { optionId: targetCol.id });
+   const currentValue = valueMap.get(activeId)?.get(groupPropId!) ?? null;
+   onUpdateValue(activeId, groupPropId!, valueAfterGroupMove(groupProp!, currentValue, activeCol.id, targetCol.id));
    setLocalEntryOrder((prev) => {
     const next = new Map(prev);
     next.delete(activeColKey);
@@ -304,11 +346,11 @@ export function BoardView({
      }
 
      return (
-      <SortableColumn key={colKey} colKey={colKey} draggable={col.id !== null && !isCollapsed && sortDirection === "manual"} isDragging={draggingColKey === col.id}>
+      <SortableColumn key={colKey} colKey={colKey} draggable={col.id !== null && !isCollapsed && sortDirection === "manual" && groupsEditable} isDragging={draggingColKey === col.id}>
       {(handleProps) => (
       <SortableContext
        id={colKey}
-       items={col.entries.map((e) => e.id)}
+       items={col.entries.map((e) => cardSortId(colKey, e.id))}
        strategy={verticalListSortingStrategy}
       >
        <ColumnDropTarget colKey={colKey} isCollapsed={isCollapsed}>
@@ -402,6 +444,7 @@ export function BoardView({
             {col.entries.map((entry) => (
              <SortableCard
               key={entry.id}
+              sortId={cardSortId(colKey, entry.id)}
               entry={entry}
               cardProps={cardProps}
               properties={properties}
@@ -409,7 +452,7 @@ export function BoardView({
               databaseId={databaseId}
               workspaceSlug={workspaceSlug}
               workspaceId={workspaceId}
-              isDragging={draggingId === entry.id}
+              isDragging={draggingSortId === cardSortId(colKey, entry.id)}
               isEditor={isEditor}
               onDeleteEntry={onDeleteEntry}
               onDeleteRequest={setDeleteTarget}
@@ -436,7 +479,8 @@ export function BoardView({
            {isEditor && (
             <button
              onClick={() => {
-              const dv = col.id ? { [groupPropId!]: { optionId: col.id } } : {};
+              const gv = col.id ? defaultValueForGroup(groupProp, col.id) : undefined;
+              const dv = gv ? { [groupPropId!]: gv } : {};
               onCreateEntry(dv);
              }}
              className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-border/60 px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
@@ -455,8 +499,9 @@ export function BoardView({
      );
     })}
 
-    {/* ── Add option column ── */}
-    {isEditor && (
+    {/* ── Add option column — select/status only; checkbox/person's columns
+        are derived, not a user-managed option list to add to. ── */}
+    {isEditor && groupsEditable && (
      <div ref={addOptRef}>
       {!addingOption ? (
        <button
@@ -575,6 +620,7 @@ export function BoardView({
     {draggingEntry && (
      <CardShell
       entry={draggingEntry}
+      sortId={draggingSortId ?? ""}
       cardProps={cardProps}
       properties={properties}
       valueMap={valueMap}
@@ -620,16 +666,21 @@ export function BoardView({
   />
 
   {groupMenu && (() => {
-   const opt = options.find((o) => o.id === groupMenu.optionId);
-   if (!opt) return null;
+   // Looked up from `columns` (works for every groupable type's derived
+   // label), not `options` (select/status only) — `options.find` here would
+   // always miss for Checkbox/Person, whose groups never live in
+   // `config.options`, silently swallowing the menu for them.
+   const col = columns.find((c) => c.id === groupMenu.optionId);
+   if (!col) return null;
    return (
     <GroupHeaderMenu
      getAnchorRect={() => groupMenu.triggerEl.getBoundingClientRect()}
      hideAggregation={hideAggregation}
+     editable={groupsEditable}
      onEditGroups={() => setEditingGroupsAnchor(groupMenu.triggerEl)}
      onToggleHideAggregation={() => onUpdateView({ boardSettings: { ...boardSettings, hideAggregation: !hideAggregation } })}
      onHideGroup={() => onUpdateView({ boardSettings: { ...boardSettings, hiddenGroupOptionIds: [...hiddenGroupOptionIds, groupMenu.optionId] } })}
-     onDeleteGroup={() => setDeleteGroupTarget({ id: opt.id, name: opt.name })}
+     onDeleteGroup={() => setDeleteGroupTarget({ id: col.id!, name: col.label })}
      onClose={() => setGroupMenu(null)}
     />
    );
@@ -704,6 +755,10 @@ function ColumnDropTarget({ colKey, isCollapsed, children }: { colKey: string; i
 
 interface CardProps {
  entry: DbEntry;
+ /** dnd-kit drag id — tagged with the rendering column (see cardSortId), NOT
+  *  just `entry.id`, so a Person-grouped card shown in two columns at once
+  *  registers as two distinct draggables instead of colliding. */
+ sortId: string;
  cardProps: SharedViewProps["properties"];
  /** The full, unrestricted property list — needed to look up Status even
   *  before "Show on card" is enabled, since at that point it isn't in
@@ -730,7 +785,7 @@ interface CardProps {
 }
 
 function SortableCard(props: CardProps) {
- const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.entry.id });
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.sortId });
  const style: React.CSSProperties = {
   transform: CSS.Transform.toString(transform),
   transition,

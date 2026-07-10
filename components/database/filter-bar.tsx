@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Check, ChevronDown } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
+import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import type { DbProperty, FilterRule } from "./types";
 import type { SelectOption } from "./types";
 
@@ -10,6 +12,7 @@ const OPERATORS: Record<string, { value: string; label: string }[]> = {
  text:     [{ value: "contains", label: "contains" }, { value: "not_contains", label: "doesn't contain" }, { value: "is", label: "is exactly" }, { value: "is_not", label: "is not" }, { value: "starts_with", label: "starts with" }, { value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
  number:    [{ value: "=", label: "=" }, { value: "!=", label: "≠" }, { value: "<", label: "<" }, { value: ">", label: ">" }, { value: "<=", label: "≤" }, { value: ">=", label: "≥" }, { value: "is_empty", label: "is empty" }],
  select:    [{ value: "is", label: "is" }, { value: "is_not", label: "is not" }, { value: "is_any_of", label: "is any of" }, { value: "is_none_of", label: "is none of" }, { value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
+ status:    [{ value: "is", label: "is" }, { value: "is_not", label: "is not" }, { value: "is_any_of", label: "is any of" }, { value: "is_none_of", label: "is none of" }, { value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
  multi_select: [{ value: "contains", label: "contains" }, { value: "not_contains", label: "doesn't contain" }, { value: "is_empty", label: "is empty" }],
  date:     [{ value: "is", label: "is" }, { value: "is_before", label: "is before" }, { value: "is_after", label: "is after" }, { value: "is_empty", label: "is empty" }],
  checkbox:   [{ value: "is_checked", label: "is checked" }, { value: "is_not_checked", label: "is not checked" }],
@@ -31,13 +34,18 @@ function MultiOptionPicker({ options, value, onChange }: {
  onChange: (ids: string[]) => void;
 }) {
  const [open, setOpen] = useState(false);
+ const [rect, setRect] = useState<DOMRect | null>(null);
  const ref       = useRef<HTMLDivElement>(null);
+ const btnRef     = useRef<HTMLButtonElement>(null);
+ const menuRef     = useRef<HTMLDivElement>(null);
  const selected    = new Set(value);
 
  useEffect(() => {
   if (!open) return;
   function h(e: MouseEvent) {
-   if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+   if (ref.current?.contains(e.target as Node)) return;
+   if (menuRef.current?.contains(e.target as Node)) return;
+   setOpen(false);
   }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
@@ -52,7 +60,11 @@ function MultiOptionPicker({ options, value, onChange }: {
  return (
   <div ref={ref} className="relative">
    <button
-    onClick={() => setOpen((v) => !v)}
+    ref={btnRef}
+    onClick={() => {
+     if (!open) setRect(btnRef.current?.getBoundingClientRect() ?? null);
+     setOpen((v) => !v);
+    }}
     className="flex h-7 min-w-[80px] items-center justify-between gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none"
    >
     <span className="truncate text-left">
@@ -60,8 +72,12 @@ function MultiOptionPicker({ options, value, onChange }: {
     </span>
     <ChevronDown size={10} className="shrink-0 text-muted-foreground" />
    </button>
-   {open && (
-    <div className="absolute left-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background">
+   {open && rect && typeof document !== "undefined" && createPortal(
+    <div
+     ref={menuRef}
+     className="fixed z-50 w-44 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+     style={{ top: getClampedTop(rect, 200, { gap: 4 }), left: getClampedLeft(rect, 176) }}
+    >
      {options.length === 0 ? (
       <p className="px-3 py-2.5 text-xs text-muted-foreground">No options defined</p>
      ) : (
@@ -75,7 +91,7 @@ function MultiOptionPicker({ options, value, onChange }: {
         >
          <div className={`flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border transition-colors duration-150 ${on ? "border-primary bg-primary" : "border-border"}`}>
           {on && (
-           <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+           <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
             <polyline points="2 6 5 9 10 3"/>
            </svg>
           )}
@@ -85,7 +101,8 @@ function MultiOptionPicker({ options, value, onChange }: {
        );
       })
      )}
-    </div>
+    </div>,
+    document.body,
    )}
   </div>
  );
@@ -150,7 +167,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
     const ops = OPERATORS[prop?.type ?? "text"] ?? OPERATORS.text;
     const needsValue = !NO_VALUE_OPS.has(filter.operator);
 
-    const isMultiVal = MULTI_VAL_OPS.has(filter.operator) && prop?.type === "select";
+    const isMultiVal = MULTI_VAL_OPS.has(filter.operator) && (prop?.type === "select" || prop?.type === "status");
 
     return (
      <div key={idx} className="flex items-center gap-2 text-xs">

@@ -38,6 +38,7 @@ import {
   getOptionColor,
   PROPERTY_TYPE_ICON,
 } from "@/components/database/property-registry";
+import { isGroupableType, deriveGroups, getEntryGroupIds, defaultValueForGroup } from "@/components/database/grouping";
 import type {
   DbEntry,
   DbProperty,
@@ -166,7 +167,7 @@ export function GalleryView({
   // Grouping
   const groupPropId = activeView?.groupByPropertyId;
   const groupProp = groupPropId
-    ? properties.find((p) => p.id === groupPropId && p.type === "select")
+    ? properties.find((p) => p.id === groupPropId && isGroupableType(p.type))
     : null;
 
   type Group = {
@@ -177,23 +178,16 @@ export function GalleryView({
   };
   let groups: Group[] = [];
   if (groupProp) {
-    const options = (groupProp.config?.options ?? []) as SelectOption[];
     groups = [
       { id: null, label: `No ${groupProp.name}`, color: null, entries: [] },
-      ...options.map((o) => ({
-        id: o.id,
-        label: o.name,
-        color: o.color,
-        entries: [] as DbEntry[],
-      })),
+      ...deriveGroups(groupProp, entries, valueMap).map((g) => ({ ...g, entries: [] as DbEntry[] })),
     ];
     for (const entry of entries) {
-      const val = valueMap.get(entry.id)?.get(groupPropId!) as {
-        optionId?: string;
-      } | null;
-      const g =
-        groups.find((gr) => gr.id === (val?.optionId ?? null)) ?? groups[0];
-      g.entries.push(entry);
+      const val = valueMap.get(entry.id)?.get(groupPropId!) ?? null;
+      for (const key of getEntryGroupIds(groupProp, val)) {
+        const g = groups.find((gr) => gr.id === key) ?? groups[0];
+        g.entries.push(entry);
+      }
     }
     groups = groups.filter((g) => g.entries.length > 0 || g.id === null);
   }
@@ -261,13 +255,10 @@ export function GalleryView({
                         "text-muted-foreground/70 transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
                         "h-24",
                       ].join(" ")}
-                      onClick={() =>
-                        onCreateEntry(
-                          group.id
-                            ? { [groupPropId!]: { optionId: group.id } }
-                            : {}
-                        )
-                      }
+                      onClick={() => {
+                        const dv = groupProp && group.id ? defaultValueForGroup(groupProp, group.id) : undefined;
+                        onCreateEntry(dv ? { [groupPropId!]: dv } : {});
+                      }}
                     >
                       <Plus size={16} />
                       <span className="text-xs font-medium">New entry</span>

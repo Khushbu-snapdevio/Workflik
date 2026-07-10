@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Share2 } from "lucide-react";
 import { SharePanel } from "@/components/pages/share-panel";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 interface Props {
  pageId:    string;
@@ -62,7 +63,7 @@ export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
       ref={panelRef}
       style={{
        position: "fixed",
-       top:   anchor.bottom + 8,
+       top:   getClampedTop(anchor, 480, { gap: 8 }),
        // align panel's right edge with button's right edge, but never push off left edge
        right:  Math.max(16, window.innerWidth - anchor.right),
        zIndex:  201,

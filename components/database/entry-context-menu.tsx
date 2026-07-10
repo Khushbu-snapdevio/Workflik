@@ -29,10 +29,10 @@ function fmtRelative(iso: string): string {
 
 const itemClass = "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-foreground hover:bg-accent transition-colors";
 
-// Matches CellEditorPopover's own supported types (select/multi_select/date/
-// person/relation) — everything else (text/number/url/email/phone/checkbox)
+// Matches CellEditorPopover's own supported types (select/status/multi_select/
+// date/person/relation) — everything else (text/number/url/email/phone/checkbox)
 // has no popover UI there and would render blank if routed through it.
-const POPOVER_TYPES = new Set(["select", "multi_select", "date", "person", "relation"]);
+const POPOVER_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
 
 interface EntryContextMenuProps {
   entryId: string;

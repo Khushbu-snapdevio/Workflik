@@ -1,8 +1,11 @@
 export type ViewType = "table" | "board" | "calendar" | "gallery";
 
 export type PropertyType =
-  | "text" | "number" | "select" | "multi_select" | "date"
-  | "checkbox" | "url" | "email" | "phone" | "person" | "relation";
+  | "text" | "number" | "select" | "multi_select" | "status" | "date"
+  | "checkbox" | "url" | "email" | "phone" | "person" | "relation" | "rollup" | "formula";
+
+export type RollupAggregation =
+  | "count" | "count_values" | "sum" | "average" | "min" | "max" | "range" | "earliest" | "latest";
 
 export interface DbView {
   id: string;
@@ -71,6 +74,15 @@ export interface DbPropertyConfig {
    *  shown on those cards regardless of this flag. Off by default: a new
    *  entry's card shows just its title until explicitly enabled here. */
   showOnCard?: boolean;
+  /** Rollup only — which of THIS database's own Relation properties to
+   *  aggregate through. */
+  relationPropertyId?: string;
+  /** Rollup only — which property on the related database to aggregate. */
+  targetPropertyId?: string;
+  /** Rollup only. */
+  aggregation?: RollupAggregation;
+  /** Formula only — the raw expression text (see lib/formula/). */
+  expression?: string;
 }
 
 export interface DbProperty {
@@ -138,7 +150,7 @@ export interface SharedViewProps {
   onUpdateValue: (entryId: string, propId: string, value: unknown) => Promise<void>;
   onUpdateTitle: (entryId: string, title: string) => Promise<void>;
   onCreateEntry: (defaultValues?: Record<string, unknown>) => Promise<DbEntry | undefined>;
-  onAddProperty: (name: string, type: string, config?: DbPropertyConfig) => Promise<DbProperty | undefined>;
+  onAddProperty: (name: string, type: string, config?: DbPropertyConfig, twoWay?: boolean) => Promise<DbProperty | undefined>;
   onUpdateProperty: (propId: string, patch: Record<string, unknown>) => Promise<void>;
   onDeleteProperty: (propId: string) => Promise<void>;
   onUpdateView: (patch: Record<string, unknown>) => Promise<void>;

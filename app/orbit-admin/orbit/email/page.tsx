@@ -4,8 +4,15 @@ import { db } from "@/lib/db";
 import { emailOutbox } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/utils";
 import { EmailRetryButton } from "@/components/orbit/email-retry-button";
+import { PaginationControls } from "@/components/orbit/pagination-controls";
 
 export const metadata = { title: "Email – Orbit Admin" };
+
+const PAGE_SIZE = 10;
+
+interface Props {
+ searchParams: Promise<{ page?: string }>;
+}
 
 const STATUS_CLS: Record<string, { pill: string; dot: string }> = {
  sent:    { pill: "bg-success/10 text-success",           dot: "bg-success" },
@@ -19,9 +26,14 @@ const TYPE_LABEL: Record<string, string> = {
  digest_email:       "Digest",
 };
 
-export default async function OrbitEmailPage() {
- const [outbox, statusCounts] = await Promise.all([
-  db.select().from(emailOutbox).orderBy(desc(emailOutbox.createdAt)).limit(50),
+export default async function OrbitEmailPage({ searchParams }: Props) {
+ const sp   = await searchParams;
+ const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+
+ const [outbox, [totalRow], statusCounts] = await Promise.all([
+  db.select().from(emailOutbox).orderBy(desc(emailOutbox.createdAt))
+   .limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE),
+  db.select({ count: count() }).from(emailOutbox),
   Promise.all(
    (["sent", "queued", "sending", "failed"] as const).map(s =>
     db.select({ cnt: count() }).from(emailOutbox).where(eq(emailOutbox.status, s))
@@ -30,7 +42,7 @@ export default async function OrbitEmailPage() {
   ),
  ]);
 
- const total = outbox.length;
+ const totalCount = totalRow?.count ?? 0;
 
  return (
   <div className="space-y-6">
@@ -59,9 +71,9 @@ export default async function OrbitEmailPage() {
     <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3.5">
      <div>
       <h2 className="text-sm font-semibold text-foreground">Outbox</h2>
-      <p className="text-xs text-muted-foreground">Latest {total} transactional emails</p>
+      <p className="text-xs text-muted-foreground">All transactional emails, most recent first</p>
      </div>
-     <span className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{total} shown</span>
+     <span className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{totalCount} total</span>
     </div>
 
     {outbox.length === 0 ? (
@@ -139,6 +151,16 @@ export default async function OrbitEmailPage() {
       </table>
      </div>
     )}
+   </div>
+
+   <div className="mt-4">
+    <PaginationControls
+     page={page}
+     pageSize={PAGE_SIZE}
+     totalCount={totalCount}
+     basePath="/orbit-admin/orbit/email"
+     query=""
+    />
    </div>
   </div>
  );

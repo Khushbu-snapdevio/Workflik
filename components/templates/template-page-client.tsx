@@ -18,6 +18,7 @@ import {
 
 const CalendarBlankIcon = CalendarIcon;
 import { useUpload } from "@/lib/storage/use-upload";
+import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import { TemplateTableView }  from "./views/template-table-view";
 import { TemplateBoardView }  from "./views/template-board-view";
@@ -2142,7 +2143,12 @@ export function TemplatePageClient({
   {viewMenuTarget && viewMenuRect && typeof document !== "undefined" && createPortal(
    <div
     ref={viewMenuRef}
-    style={{ position: "fixed", top: viewMenuRect.bottom + 4, left: viewMenuRect.left, zIndex: 500 }}
+    style={{
+     position: "fixed",
+     top: getClampedTop(viewMenuRect, views.length > 1 ? 133 : 80),
+     left: getClampedLeft(viewMenuRect, 192, { align: "start" }),
+     zIndex: 500,
+    }}
     className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
    >
     <button

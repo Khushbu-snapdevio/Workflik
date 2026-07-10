@@ -1,10 +1,17 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { platformAuditLog, users } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
+import { PaginationControls } from "@/components/orbit/pagination-controls";
 
 export const metadata = { title: "Audit Trail – Orbit Admin" };
+
+const PAGE_SIZE = 25;
+
+interface Props {
+ searchParams: Promise<{ page?: string }>;
+}
 
 const ACTION_META: Record<string, { label: string; pill: string }> = {
  "user.signup":                    { label: "User signed up",          pill: "bg-success/10 text-success border-success/20" },
@@ -50,23 +57,32 @@ function ago(d: Date | null | undefined) {
  return `${Math.floor(s / 86400)}d ago`;
 }
 
-export default async function OrbitAuditPage() {
- const events = await db
-  .select({
-   id:         platformAuditLog.id,
-   action:     platformAuditLog.action,
-   targetType: platformAuditLog.targetType,
-   targetId:   platformAuditLog.targetId,
-   metadata:   platformAuditLog.metadata,
-   createdAt:  platformAuditLog.createdAt,
-   actorName:  users.name,
-   actorEmail: users.email,
-   actorId:    users.id,
-  })
-  .from(platformAuditLog)
-  .leftJoin(users, eq(platformAuditLog.actorId, users.id))
-  .orderBy(desc(platformAuditLog.createdAt))
-  .limit(200);
+export default async function OrbitAuditPage({ searchParams }: Props) {
+ const sp   = await searchParams;
+ const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+
+ const [events, [totalRow]] = await Promise.all([
+  db
+   .select({
+    id:         platformAuditLog.id,
+    action:     platformAuditLog.action,
+    targetType: platformAuditLog.targetType,
+    targetId:   platformAuditLog.targetId,
+    metadata:   platformAuditLog.metadata,
+    createdAt:  platformAuditLog.createdAt,
+    actorName:  users.name,
+    actorEmail: users.email,
+    actorId:    users.id,
+   })
+   .from(platformAuditLog)
+   .leftJoin(users, eq(platformAuditLog.actorId, users.id))
+   .orderBy(desc(platformAuditLog.createdAt))
+   .limit(PAGE_SIZE)
+   .offset((page - 1) * PAGE_SIZE),
+  db.select({ count: count() }).from(platformAuditLog),
+ ]);
+
+ const totalCount = totalRow?.count ?? 0;
 
  return (
   <div>
@@ -76,7 +92,7 @@ export default async function OrbitAuditPage() {
     <p className="mt-1 text-sm text-muted-foreground">Append-only log of all admin operator actions.</p>
     <div className="mt-3">
      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-      <strong className="font-bold text-foreground">{events.length}</strong> events (last 200)
+      <strong className="font-bold text-foreground">{totalCount}</strong> events total
      </span>
     </div>
    </div>
@@ -158,6 +174,16 @@ export default async function OrbitAuditPage() {
      </div>
     </div>
    )}
+
+   <div className="mt-4">
+    <PaginationControls
+     page={page}
+     pageSize={PAGE_SIZE}
+     totalCount={totalCount}
+     basePath="/orbit-admin/orbit/audit"
+     query=""
+    />
+   </div>
   </div>
  );
 }

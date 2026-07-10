@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 interface Props {
  workspaceSlug: string;
@@ -68,7 +69,7 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
       ref={panelRef}
       style={{
        position: "fixed",
-       top: anchor.bottom + 8,
+       top: getClampedTop(anchor, 320, { gap: 8 }),
        right: Math.max(16, window.innerWidth - anchor.right),
        zIndex: 201,
       }}

@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { users, workspaces } from "@/lib/db/schema";
@@ -32,12 +33,14 @@ export default async function TemplatesPage({ params }: Props) {
     .limit(1);
 
   return (
-    <TemplatesPageClient
-      workspaceId={ws.id}
-      workspaceSlug={slug}
-      isPlatformAdmin={Boolean(freshUser?.isPlatformAdmin)}
-      currentUserId={session.user.id}
-      isWorkspaceAdmin={member.role === "admin"}
-    />
+    <Suspense>
+      <TemplatesPageClient
+        workspaceId={ws.id}
+        workspaceSlug={slug}
+        isPlatformAdmin={Boolean(freshUser?.isPlatformAdmin)}
+        currentUserId={session.user.id}
+        isWorkspaceAdmin={member.role === "admin"}
+      />
+    </Suspense>
   );
 }

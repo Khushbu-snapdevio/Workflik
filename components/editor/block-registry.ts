@@ -38,8 +38,6 @@ export interface BlockDefinition {
   icon: string; // emoji used in slash menu
   label: string;
   mdShortcut?: string; // markdown shortcut hint
-  // Phase 7+: media blocks require file upload; stub until then
-  requiresPhase?: number;
   slashCmd: string; // what user types after /
   type: BlockType;
 }
@@ -278,7 +276,6 @@ export const BLOCK_REGISTRY: Record<BlockType, BlockDefinition> = {
     icon: "⊞",
     category: "reference",
     slashCmd: "database",
-    requiresPhase: 8,
   },
   template_button: {
     type: "template_button",
@@ -287,7 +284,6 @@ export const BLOCK_REGISTRY: Record<BlockType, BlockDefinition> = {
     icon: "⚡",
     category: "reference",
     slashCmd: "template-button",
-    requiresPhase: 9,
   },
 };
 

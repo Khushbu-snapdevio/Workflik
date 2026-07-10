@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Trash2, AlertTriangle, X } from "lucide-react";
-import { IconTooltipButton } from "@/components/orbit/icon-tooltip-button";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 
 interface Props {
   templateId: string;

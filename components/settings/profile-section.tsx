@@ -355,20 +355,29 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
  }
 
  async function handleDeleteAccount() {
-  setDeleteError(""); setBlockingWorkspaces([]); setDeleting(true);
+  setDeleting(true);
+  // A blocked-by-workspaces rejection can round-trip fast enough (especially
+  // locally) that toggling `deleting` back off reads as a flicker rather than
+  // a deliberate loading state — floor the visible duration so the button
+  // always dips into its disabled/spinner state for a beat, even when the
+  // response is near-instant.
+  const minDuration = new Promise(resolve => setTimeout(resolve, 400));
   try {
-   const res = await fetch("/api/user/account", {
-    method: "DELETE", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: deleteEmail }),
-   });
-   if (res.ok) { window.location.href = "/"; }
-   else {
-    const d = await res.json().catch(() => ({}));
-    setDeleteError(d.error ?? "Something went wrong");
-    setBlockingWorkspaces(Array.isArray(d.blockingWorkspaces) ? d.blockingWorkspaces : []);
-   }
-  } catch { setDeleteError("Network error"); }
-  finally { setDeleting(false); }
+   const [res] = await Promise.all([
+    fetch("/api/user/account", {
+     method: "DELETE", headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ email: deleteEmail }),
+    }),
+    minDuration,
+   ]);
+   if (res.ok) { window.location.href = "/"; return; }
+   const d = await res.json().catch(() => ({}));
+   setDeleteError(d.error ?? "Something went wrong");
+   setBlockingWorkspaces(Array.isArray(d.blockingWorkspaces) ? d.blockingWorkspaces : []);
+  } catch {
+   await minDuration;
+   setDeleteError("Network error");
+  } finally { setDeleting(false); }
  }
 
  const displayImage = avatarPreview ?? currentImage;
@@ -702,8 +711,9 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
           size="sm"
           type="button"
           onClick={handleDeleteAccount}
-          disabled={deleting || deleteEmail !== user.email}
+          disabled={deleting || deleteEmail !== user.email || blockingWorkspaces.length > 0}
           >
+          {deleting && <Loader2 size={13} className="animate-spin" />}
           {deleting ? "Deleting…" : "Delete account"}
          </Button>
         </div>

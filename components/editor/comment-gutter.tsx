@@ -6,6 +6,9 @@ import { MessageSquare } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 import type { DbBlock } from "./serializer";
 import { onCommentsChanged } from "@/lib/comments/comment-events";
+import { getClampedLeft } from "@/lib/ui/clamp-to-viewport";
+
+const INDICATOR_WIDTH = 52;
 
 interface BlockCount { blockId: string; count: number }
 interface Indicator { blockId: string; count: number; top: number; left: number }
@@ -67,6 +70,11 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
 
   const editorEl = editor.view.dom as HTMLElement;
   const editorRect = editorEl.getBoundingClientRect();
+  const rawLeft = editorRect.right + 16;
+  const left = getClampedLeft(
+   { top: editorRect.top, bottom: editorRect.bottom, left: rawLeft, right: rawLeft },
+   INDICATOR_WIDTH,
+  );
   const result: Indicator[] = [];
 
   const sorted = [...blocksRef.current].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -92,7 +100,7 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
     const top = rect.top + rect.height / 2 - 10;
     // Don't render badges below the editor's bottom edge (avoids overlapping page-level comments)
     if (top > editorRect.bottom - 10) continue;
-    result.push({ blockId, count, top, left: editorRect.right + 16 });
+    result.push({ blockId, count, top, left });
    } catch { /* skip this block, don't wipe others */ }
   }
 

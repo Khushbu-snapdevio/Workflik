@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
+import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import {
  Search as MagnifyingGlassIcon,
  X as XIcon,
@@ -99,12 +100,17 @@ function FilterChip<T extends string>({
  onChange: (v: T) => void;
 }) {
  const [open, setOpen] = useState(false);
+ const [rect, setRect] = useState<DOMRect | null>(null);
  const ref = useRef<HTMLDivElement>(null);
+ const btnRef = useRef<HTMLButtonElement>(null);
+ const menuRef = useRef<HTMLDivElement>(null);
 
  useEffect(() => {
   if (!open) return;
   function h(e: MouseEvent) {
-   if (!ref.current?.contains(e.target as Node)) setOpen(false);
+   if (ref.current?.contains(e.target as Node)) return;
+   if (menuRef.current?.contains(e.target as Node)) return;
+   setOpen(false);
   }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
@@ -116,7 +122,11 @@ function FilterChip<T extends string>({
  return (
   <div ref={ref} className="relative">
    <button
-    onClick={() => setOpen((p) => !p)}
+    ref={btnRef}
+    onClick={() => {
+     if (!open) setRect(btnRef.current?.getBoundingClientRect() ?? null);
+     setOpen((p) => !p);
+    }}
     className={[
      "flex items-center gap-1 rounded-[var(--radius-sm)] border px-3 py-1 text-xs font-medium transition-colors duration-150",
      active
@@ -128,8 +138,12 @@ function FilterChip<T extends string>({
     <ChevronDown size={10} className="opacity-60" />
    </button>
 
-   {open && (
-    <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
+   {open && rect && typeof document !== "undefined" && createPortal(
+    <div
+     ref={menuRef}
+     className="fixed z-50 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1"
+     style={{ top: getClampedTop(rect, 200, { gap: 4 }), left: getClampedLeft(rect, 160) }}
+    >
      {options.map((opt) => (
       <button
        key={opt.value}
@@ -145,7 +159,8 @@ function FilterChip<T extends string>({
        {opt.label}
       </button>
      ))}
-    </div>
+    </div>,
+    document.body,
    )}
   </div>
  );
@@ -263,6 +278,17 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
  const backdropRef  = useRef<HTMLDivElement>(null);
  const dialogRef   = useRef<HTMLDivElement>(null);
+ // Guards against an older in-flight request overwriting a newer one's
+ // results if responses arrive out of order.
+ const requestIdRef = useRef(0);
+ // A zero-result response can be a real "no matches" OR just a mid-word
+ // fragment the backend's stemmed matching temporarily misses (e.g. typing
+ // through "getting" letter by letter can drop out of matching partway).
+ // Rather than clearing the panel the instant any response comes back empty
+ // — which flashes "No results" and then real matches again a keystroke
+ // later — an empty response is held for a beat so a same-query keystroke
+ // can supersede it before it ever reaches the screen.
+ const emptyHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
  async function runReindex() {
   setReindexing(true);
@@ -289,14 +315,22 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    .catch(() => {});
  }, [workspaceId]);
 
+ // Cancel any pending empty-result hold if the dialog itself closes
+ useEffect(() => {
+  return () => { if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current); };
+ }, []);
+
  // Debounced search
  const runSearch = useCallback(async (q: string, type: FilterType, date: FilterDate, titleOnlyMode: boolean) => {
   if (!q.trim()) {
+   if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current);
+   requestIdRef.current++; // invalidate any in-flight request
    setResults([]);
    setTotal(0);
    setIsPending(false);
    return;
   }
+  const myRequestId = ++requestIdRef.current;
   setLoading(true);
   try {
    const params = new URLSearchParams({
@@ -309,20 +343,39 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    const res = await fetch(`/api/search?${params}`);
    if (!res.ok) throw new Error("Search failed");
    const data = await res.json() as { results: SearchResult[]; total: number };
-   setResults(data.results);
-   setTotal(data.total);
-   setActiveIndex(0);
+   if (myRequestId !== requestIdRef.current) return; // superseded by a newer search
+
+   if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current);
+   if (data.results.length > 0) {
+    setResults(data.results);
+    setTotal(data.total);
+    setActiveIndex(0);
+   } else {
+    // Hold the previous (possibly non-empty) results on screen briefly —
+    // if the user keeps typing, this timer gets cancelled by the next
+    // runSearch call before it ever commits the empty state.
+    emptyHoldRef.current = setTimeout(() => {
+     if (myRequestId !== requestIdRef.current) return;
+     setResults([]);
+     setTotal(0);
+     setActiveIndex(0);
+    }, 450);
+   }
   } catch {
-   setResults([]);
+   if (myRequestId === requestIdRef.current) setResults([]);
   } finally {
-   setLoading(false);
-   setIsPending(false);
+   if (myRequestId === requestIdRef.current) {
+    setLoading(false);
+    setIsPending(false);
+   }
   }
  }, [workspaceId]);
 
  useEffect(() => {
   if (debounceRef.current) clearTimeout(debounceRef.current);
   if (!query.trim()) {
+   if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current);
+   requestIdRef.current++; // invalidate any in-flight/pending search
    setIsPending(false);
    setResults([]);
    setTotal(0);

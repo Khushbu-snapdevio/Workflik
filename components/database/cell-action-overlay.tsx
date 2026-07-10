@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MessageSquare, Check, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { getClampedLeft, getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 interface CellActionOverlayProps {
   rect: DOMRect;
@@ -32,7 +33,12 @@ export function CellActionOverlay({
 
   function showTooltip(e: React.MouseEvent, label: string) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setTooltipPos({ top: r.bottom + 6, left: r.left + r.width / 2 });
+    const estimatedWidth = Math.min(200, Math.max(32, label.length * 6 + 16));
+    const centeredLeft = r.left + r.width / 2 - estimatedWidth / 2;
+    setTooltipPos({
+      top:  getClampedTop(r, 28),
+      left: getClampedLeft({ top: r.top, bottom: r.bottom, left: centeredLeft, right: centeredLeft + estimatedWidth }, estimatedWidth),
+    });
     setTooltip(label);
   }
 
@@ -150,7 +156,6 @@ export function CellActionOverlay({
             position: "fixed",
             top: tooltipPos.top,
             left: tooltipPos.left,
-            transform: "translateX(-50%)",
             background: "var(--popover)",
             color: "var(--popover-foreground)",
             border: "1px solid var(--border)",

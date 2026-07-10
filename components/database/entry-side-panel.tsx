@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
  X, ExternalLink as ArrowSquareOut, Trash2 as Trash, ArrowLeft,
- Type as TextT, Hash, CircleDashed, Tag, Calendar as CalendarBlank,
+ Type as TextT, Hash, CircleDashed, CircleDot, Tag, Calendar as CalendarBlank,
  CheckSquare, Link as LinkIcon, Mail as Envelope, Phone, User, ArrowLeftRight as ArrowsLeftRight,
  FileText, Pencil as PencilSimple,
 } from "lucide-react";
@@ -15,12 +15,12 @@ import { PageEditor } from "@/components/editor/editor";
 import type { DbEntry, DbProperty } from "@/components/database/types";
 
 const PROP_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
- text: TextT, number: Hash, select: CircleDashed, multi_select: Tag,
+ text: TextT, number: Hash, select: CircleDashed, status: CircleDot, multi_select: Tag,
  date: CalendarBlank, checkbox: CheckSquare, url: LinkIcon,
  email: Envelope, phone: Phone, person: User, relation: ArrowsLeftRight,
 };
 
-const POPUP_TYPES = new Set(["select", "multi_select", "date", "person", "relation"]);
+const POPUP_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
 const TEXT_TYPES = new Set(["text", "number", "url", "email", "phone"]);
 
 interface EntrySidePanelProps {

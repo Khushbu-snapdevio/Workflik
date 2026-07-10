@@ -18,6 +18,10 @@ import { SaveAsTemplateModal } from "@/components/templates/save-as-template-mod
 import { PageHistoryPanel } from "@/components/pages/page-history-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
+
+const MENU_HEIGHT    = 360;
+const HISTORY_HEIGHT = 460;
 
 interface PageActionsMenuProps {
  pageId:    string;
@@ -28,6 +32,19 @@ interface PageActionsMenuProps {
  pageShortId:  string;
  pageTitle?:  string;
  pageKind?:   string;
+ parentShortId?: string | null;
+ /** Overrides the default "navigate away" behavior after a successful
+  *  delete — pass this when the menu is used from a list/table row (e.g.
+  *  Library) rather than on the page currently being viewed, so deleting a
+  *  row doesn't yank the user out of the list they were managing. */
+ onDeleted?: () => void;
+ /** Same idea for duplicate — default behavior jumps to the new page, which
+  *  only makes sense when the menu lives on the page being viewed. */
+ onDuplicated?: (newShortId: string) => void;
+ /** Renders the trigger as a bare "⋮" icon button with no "More" text label —
+  *  for dense list/table rows (e.g. Library) where a labeled button is too
+  *  wide and out of place next to other icon-only row affordances. */
+ iconOnly?: boolean;
 }
 
 const menuItemClass =
@@ -42,6 +59,10 @@ export function PageActionsMenu({
  pageShortId,
  pageTitle,
  pageKind,
+ parentShortId,
+ onDeleted,
+ onDuplicated,
+ iconOnly,
 }: PageActionsMenuProps) {
  const router = useRouter();
  const [open, setOpen]          = useState(false);
@@ -95,7 +116,9 @@ export function PageActionsMenu({
 
   // For databases: always navigate away — never call router.refresh() on the current
   // database URL after deletion (that re-renders the now-deleted page → 404).
-  if (pageKind === "database") {
+  // Skipped when onDeleted is provided (list/table context — there's no
+  // "current page" to redirect away from, the row just needs to disappear).
+  if (pageKind === "database" && !onDeleted) {
    window.location.replace(`/app/${workspaceSlug}`);
    return;
   }
@@ -104,11 +127,21 @@ export function PageActionsMenu({
   setConfirmTrash(false);
 
   if (res?.ok) {
+   if (onDeleted) {
+    onDeleted();
+    return;
+   }
    const data = await res.json().catch(() => ({})) as { deleted?: string };
    if (data.deleted === "permanent") {
     window.location.replace(`/app/${workspaceSlug}`);
    } else {
-    router.refresh();
+    // This menu only appears on the page currently being viewed, so it's
+    // always safe (and necessary) to navigate away once it's trashed — a
+    // full navigation also picks up fresh sidebar state, since the sidebar
+    // otherwise only refetches on a "pages:refresh" event it never gets here.
+    window.location.replace(
+     parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}`
+    );
    }
   } else {
    router.refresh();
@@ -127,7 +160,12 @@ export function PageActionsMenu({
    const res = await fetch(`/api/pages/${pageId}/duplicate`, { method: "POST" });
    if (res.ok) {
     const data = await res.json() as { shortId: string };
-    router.push(`/app/${workspaceSlug}/${data.shortId}`);
+    window.dispatchEvent(new CustomEvent("pages:refresh"));
+    if (onDuplicated) {
+     onDuplicated(data.shortId);
+    } else {
+     router.push(`/app/${workspaceSlug}/${data.shortId}`);
+    }
    }
   });
  }
@@ -176,7 +214,7 @@ export function PageActionsMenu({
  function openMenu() {
   if (buttonRef.current) {
    const r = buttonRef.current.getBoundingClientRect();
-   setDropdownPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+   setDropdownPos({ top: getClampedTop(r, MENU_HEIGHT), right: window.innerWidth - r.right });
   }
   setOpen(true);
  }
@@ -188,11 +226,15 @@ export function PageActionsMenu({
     type="button"
     onClick={() => (open ? setOpen(false) : openMenu())}
     disabled={loading !== null}
-    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50"
+    className={
+     iconOnly
+      ? "flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50"
+      : "flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50"
+    }
     aria-label="Page actions"
    >
     <DotsThreeIcon size={14} />
-    More
+    {!iconOnly && "More"}
    </button>
 
    {/* Dropdown — rendered in document.body so it escapes overflow:hidden containers */}
@@ -237,7 +279,7 @@ export function PageActionsMenu({
           setOpen(false);
           if (buttonRef.current) {
            const r = buttonRef.current.getBoundingClientRect();
-           setHistoryAnchor({ top: r.bottom + 6, right: window.innerWidth - r.right });
+           setHistoryAnchor({ top: getClampedTop(r, HISTORY_HEIGHT), right: window.innerWidth - r.right });
           }
          }}
          className={menuItemClass}

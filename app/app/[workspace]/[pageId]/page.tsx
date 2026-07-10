@@ -228,6 +228,7 @@ export default async function PageEditorPage({ params }: Props) {
               pageShortId={page.shortId}
               pageTitle={page.title ?? ""}
               pageKind={page.kind}
+              parentShortId={breadcrumbs[breadcrumbs.length - 1]?.shortId ?? null}
             />
           )}
         </div>

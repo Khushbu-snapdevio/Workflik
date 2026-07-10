@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Settings } from "lucide-react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 
 const NAV = [
@@ -80,12 +81,7 @@ const SECONDARY = [
   },
   {
     href: "/orbit-admin/orbit/settings", label: "Settings",
-    icon: (
-      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
-        <circle cx="7" cy="7" r="2"/>
-        <path d="M7 1v1.5M7 11.5V13M13 7h-1.5M2.5 7H1M11.1 2.9l-1.1 1.1M4 9l-1.1 1.1M11.1 11.1L10 10M4 5L2.9 3.9"/>
-      </svg>
-    ),
+    icon: <Settings className="size-[15px]" strokeWidth={1.5} />,
   },
 ];
 
@@ -235,25 +231,9 @@ export function AdminSidebar({
 
             <div className="mx-3 h-px bg-border/50" />
 
-            {/* Back to workspace */}
-            <div className="p-1.5">
-              <Link
-                href="/platform/post-auth"
-                onClick={() => setUserMenu(false)}
-                className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-accent"
-              >
-                <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 group-hover:bg-primary/10 group-hover:text-primary">
-                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[13px]">
-                    <path d="M9 7H3M5 4L2 7l3 3"/><path d="M6 2h5a.5.5 0 01.5.5v9a.5.5 0 01-.5.5H6"/>
-                  </svg>
-                </span>
-                <span className="text-sm font-medium text-foreground">Back to workspace</span>
-              </Link>
-            </div>
-
-            <div className="mx-3 h-px bg-border/50" />
-
-            {/* Sign out */}
+            {/* Sign out — "Back to workspace" deliberately omitted here: it
+                already lives as an always-visible link right below this
+                popup, so repeating it here was pure duplication. */}
             <div className="p-1.5">
               <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
                 <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">

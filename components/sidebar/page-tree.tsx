@@ -203,8 +203,11 @@ export function PageTree({
   if (moreRef.current) {
    const r = moreRef.current.getBoundingClientRect();
    const POPUP_MAX_H = 360;
+   const POPUP_W = 288;
    const top = Math.max(8, Math.min(r.top, window.innerHeight - POPUP_MAX_H - 8));
-   setPopupPos({ top, left: r.right + 8 });
+   let left = r.right + 8;
+   if (left + POPUP_W > window.innerWidth - 8) left = Math.max(8, r.left - 8 - POPUP_W);
+   setPopupPos({ top, left });
   }
   setMoreOpen((v) => !v);
  }
@@ -412,7 +415,8 @@ function PageTreeNode({
   // local onPagesChange update is enough; no full router.refresh() needed.
   const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(node.shortId);
   if (onDeletedPage || node.kind === "database") {
-   window.location.replace(`/app/${workspaceSlug}`);
+   const parentShortId = node.kind === "database" ? undefined : pages.find((p) => p.id === node.parentId)?.shortId;
+   window.location.replace(parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}`);
   }
  }
 
@@ -478,7 +482,15 @@ function PageTreeNode({
       onClick={(e) => {
        e.stopPropagation();
        const rect = btnRef.current?.getBoundingClientRect();
-       if (rect) setMenuPos({ x: rect.right + 4, y: rect.top });
+       if (rect) {
+        const MENU_W = 180;
+        const MENU_H = 240;
+        let x = rect.right + 4;
+        if (x + MENU_W > window.innerWidth - 8) x = rect.left - 4 - MENU_W;
+        x = Math.max(8, x);
+        const y = Math.max(8, Math.min(rect.top, window.innerHeight - 8 - MENU_H));
+        setMenuPos({ x, y });
+       }
        setMenuOpen((v) => !v);
       }}
       tabIndex={-1}

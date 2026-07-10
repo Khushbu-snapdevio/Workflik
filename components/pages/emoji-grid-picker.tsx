@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Search, Shuffle, Clock } from "lucide-react";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { emojiMatches } from "@/lib/emoji-search";
+import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 // ── Emoji categories (Notion-standard 8 categories) ──────────────────────────
 // Extracted out of IconPicker so the same searchable, categorized emoji grid
@@ -149,6 +150,30 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
   },
 ];
 
+// Country/region flags are two Unicode "regional indicator" characters (A–Z pairs)
+// that map 1:1 to an ISO 3166-1 alpha-2 code — Windows' system emoji font doesn't
+// draw these as colored flags (shows raw letter pairs instead), so in the picker
+// grid we render them via the flag-icons SVG set instead of the native glyph.
+const REGIONAL_INDICATOR_BASE = 0x1f1e6;
+const SUBDIVISION_FLAG_CODES: Record<string, string> = {
+  "🏴󠁧󠁢󠁥󠁮󠁧󠁿": "gb-eng",
+  "🏴󠁧󠁢󠁳󠁣󠁴󠁿": "gb-sct",
+  "🏴󠁧󠁢󠁷󠁬󠁳󠁿": "gb-wls",
+};
+
+function flagIconCode(emoji: string): string | null {
+  if (SUBDIVISION_FLAG_CODES[emoji]) return SUBDIVISION_FLAG_CODES[emoji];
+  const points = [...emoji];
+  if (points.length !== 2) return null;
+  let code = "";
+  for (const ch of points) {
+    const cp = ch.codePointAt(0)!;
+    if (cp < REGIONAL_INDICATOR_BASE || cp > REGIONAL_INDICATOR_BASE + 25) return null;
+    code += String.fromCharCode(cp - REGIONAL_INDICATOR_BASE + 65);
+  }
+  return code.toLowerCase();
+}
+
 const RECENT_KEY = "wf_recent_emojis";
 const SKIN_TONE_KEY = "wf_skin_tone";
 const MAX_RECENT = 20;
@@ -274,14 +299,20 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
     setShowSkinTones(false);
   }
 
-  const EmojiBtn = ({ emoji }: { emoji: string }) => (
-    <button
-      onClick={() => handleEmojiSelect(emoji)}
-      className="flex size-[30px] items-center justify-center rounded-[var(--radius-xs)] text-[19px] leading-none transition-colors hover:bg-accent"
-    >
-      {emoji}
-    </button>
-  );
+  const EmojiBtn = ({ emoji }: { emoji: string }) => {
+    const flagCode = flagIconCode(emoji);
+    return (
+      <button
+        onClick={() => handleEmojiSelect(emoji)}
+        onDragStart={(e) => e.preventDefault()}
+        draggable={false}
+        aria-label={emoji}
+        className="flex size-[30px] select-none items-center justify-center rounded-[var(--radius-xs)] text-[19px] leading-none transition-colors hover:bg-accent"
+      >
+        {flagCode ? <span className={`fi fi-${flagCode} fis rounded-[2px]`} /> : emoji}
+      </button>
+    );
+  };
 
   return (
     <div className="flex flex-col">
@@ -318,8 +349,10 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
               if (!showSkinTones && r) setSkinToneRect(r);
               setShowSkinTones(p => !p);
             }}
+            onDragStart={(e) => e.preventDefault()}
+            draggable={false}
             title="Select skin tone"
-            className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border text-[18px] leading-none transition-colors ${showSkinTones ? "border-primary/50 bg-accent" : "border-border bg-background hover:bg-accent"}`}
+            className={`flex size-8 shrink-0 select-none items-center justify-center rounded-[var(--radius-sm)] border text-[18px] leading-none transition-colors ${showSkinTones ? "border-primary/50 bg-accent" : "border-border bg-background hover:bg-accent"}`}
           >
             {currentHand}
           </button>
@@ -327,7 +360,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             <div
               ref={skinToneMenuRef}
               data-emoji-picker-exempt
-              style={{ position: "fixed", top: skinToneRect.bottom + 6, right: window.innerWidth - skinToneRect.right, zIndex: 9999 }}
+              style={{ position: "fixed", top: getClampedTop(skinToneRect, 50), right: window.innerWidth - skinToneRect.right, zIndex: 9999 }}
               className="flex items-center gap-0.5 rounded-[var(--radius-md)] border border-border bg-popover p-1.5"
               onMouseDown={(e) => e.stopPropagation()}
             >
@@ -335,8 +368,10 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
                 <button
                   key={s.tone}
                   onClick={() => handleSkinTone(s.tone)}
-                  title={s.tone ? `Skin tone ${s.hand}` : "Default"}
-                  className={`flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[18px] leading-none transition-colors hover:bg-accent ${skinTone === s.tone ? "bg-accent ring-1 ring-primary/40" : ""}`}
+                  onDragStart={(e) => e.preventDefault()}
+                  draggable={false}
+                  title={s.tone ? "Skin tone" : "Default"}
+                  className={`flex size-8 select-none items-center justify-center rounded-[var(--radius-sm)] text-[18px] leading-none transition-colors hover:bg-accent ${skinTone === s.tone ? "bg-accent ring-1 ring-primary/40" : ""}`}
                 >
                   {s.hand}
                 </button>
@@ -398,8 +433,10 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
           <button
             key={cat.id}
             onClick={() => scrollToCategory(cat.id)}
+            onDragStart={(e) => e.preventDefault()}
+            draggable={false}
             title={cat.label}
-            className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[15px] leading-none transition-colors hover:bg-accent"
+            className="flex size-7 shrink-0 select-none items-center justify-center rounded-[var(--radius-sm)] text-[15px] leading-none transition-colors hover:bg-accent"
           >
             {cat.icon}
           </button>

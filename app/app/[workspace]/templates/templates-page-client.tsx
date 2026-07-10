@@ -17,7 +17,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PageIcon } from "@/components/pages/page-icon";
@@ -165,6 +165,7 @@ export function TemplatesPageClient({
   isWorkspaceAdmin,
 }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [builtIn, setBuiltIn] = useState<Template[]>([]);
@@ -191,6 +192,20 @@ export function TemplatesPageClient({
   useEffect(() => {
     refetchTemplates().finally(() => setLoading(false));
   }, [refetchTemplates]);
+
+  // Deep-link support: /templates?open=<name> opens that template's preview
+  // directly (used by the home page's quick-start template chips) instead of
+  // landing on the plain gallery grid.
+  useEffect(() => {
+    const openName = searchParams.get("open");
+    if (!openName || builtIn.length === 0) return;
+    const match = builtIn.find(
+      (t) => t.name.toLowerCase() === openName.toLowerCase()
+    );
+    if (match) setPreviewTemplate(match);
+    router.replace(`/app/${workspaceSlug}/templates`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [builtIn]);
 
   const q = search.toLowerCase().trim();
   const matches = (t: Template) =>
@@ -237,6 +252,7 @@ export function TemplatesPageClient({
       });
       if (res.ok) {
         const data = (await res.json()) as { shortId: string; kind: string };
+        window.dispatchEvent(new CustomEvent("pages:refresh"));
         if (data.kind === "database") {
           router.push(`/app/${workspaceSlug}/t/${data.shortId}`);
         } else {
@@ -253,7 +269,7 @@ export function TemplatesPageClient({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="@container flex h-full flex-col overflow-hidden bg-background">
       {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
       <div className="flex h-11 shrink-0 items-center border-b border-border/60 bg-card px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
@@ -269,9 +285,12 @@ export function TemplatesPageClient({
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────────────────── */}
-      <div className="flex min-h-0 flex-1">
-        {/* ── Category filter panel — left side ── */}
-        <aside className="flex w-[260px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
+      <div className="flex min-h-0 flex-1 flex-col @[768px]:flex-row">
+        {/* ── Category filter panel — stacks above the grid on small screens,
+            sits to the left on @md+ (container-query, since this page sits
+            next to the app's own resizable sidebar — a viewport breakpoint
+            can't tell how much width that leaves us, only a container one can) ── */}
+        <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-sidebar @[768px]:w-[260px] @[768px]:border-b-0 @[768px]:border-r">
           {/* Header — shows active category count */}
           <div className="border-b border-border/60 px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">
@@ -470,7 +489,7 @@ function GalleryView({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Search bar */}
-      <div className="shrink-0 border-b border-border/60 px-20 py-2.5">
+      <div className="shrink-0 border-b border-border/60 px-4 py-2.5 @[640px]:px-8 @[1024px]:px-20">
         <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
           <Search className="shrink-0 text-muted-foreground/50" size={13} />
           <input
@@ -495,7 +514,7 @@ function GalleryView({
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-y-auto px-20 pb-10 pt-6">
+      <div className="flex-1 overflow-y-auto px-4 pb-10 pt-6 @[640px]:px-8 @[1024px]:px-20">
         {loading ? (
           <GallerySkeleton />
         ) : empty ? (
@@ -517,11 +536,11 @@ function GalleryView({
                     {filteredBuiltIn.length}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 @[480px]:grid-cols-2 @[1024px]:grid-cols-3 @[1280px]:grid-cols-4">
                   {filteredBuiltIn.map((tpl) => (
                     <TemplateCard
                       applying={applyingId === tpl.id}
-                      disabled={applyingId !== null}
+                      disabled={applyingId === tpl.id}
                       key={tpl.id}
                       onPreview={() => onPreview(tpl)}
                       onUse={() => onUse(tpl)}
@@ -546,14 +565,14 @@ function GalleryView({
                     {deleteError}
                   </p>
                 )}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 @[480px]:grid-cols-2 @[1024px]:grid-cols-3 @[1280px]:grid-cols-4">
                   {filteredWorkspace.map((tpl) => {
                     const canDelete =
                       tpl.createdBy === currentUserId || isWorkspaceAdmin;
                     return (
                       <TemplateCard
                         applying={applyingId === tpl.id}
-                        disabled={applyingId !== null}
+                        disabled={applyingId === tpl.id}
                         key={tpl.id}
                         onDelete={
                           canDelete ? () => onDeleteWorkspace(tpl) : undefined
@@ -628,7 +647,7 @@ function TemplateCard({
         <TemplateCardThumbnail template={template} />
 
         {/* Info */}
-        <div className="flex flex-1 flex-col px-3 py-2.5">
+        <div className="flex flex-1 flex-col px-4 py-2.5">
           <div className="flex items-start justify-between gap-2">
             <p className="truncate text-sm font-semibold text-foreground">
               {template.name}
@@ -1420,8 +1439,8 @@ function TemplateCardThumbnail({ template }: { template: Template }) {
   const CatIcon = catDef?.Icon ?? LayoutGrid;
 
   return (
-    <div className="relative h-40 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
-      <div className="p-3">
+    <div className="relative h-36 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
+      <div className="flex h-full flex-col justify-center p-3">
         {/* Icon indicator row */}
         <div className="mb-2.5 flex items-center gap-1.5">
           {icon ? (
@@ -1827,7 +1846,7 @@ function MiniCalContent() {
 
 function GallerySkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 @[480px]:grid-cols-2 @[1024px]:grid-cols-3 @[1280px]:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div
           className="overflow-hidden rounded-[var(--radius-md)] border border-border"

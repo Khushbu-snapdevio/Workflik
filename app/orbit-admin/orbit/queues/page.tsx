@@ -26,6 +26,18 @@ export default async function OrbitQueuesPage() {
  const failedJobs  = queues.filter(r => r.state === "failed").reduce((s, r) => s + r.count, 0);
  const activeJobs  = queues.filter(r => r.state === "active").reduce((s, r) => s + r.count, 0);
 
+ // Failing queues surface first (heaviest failure count first) so a problem
+ // queue can never scroll off-screen once the queue list grows — the busier
+ // healthy queues sort next, purely-idle/low-volume ones sink to the bottom.
+ const queueRows = Array.from(queueMap.entries())
+  .map(([name, rows]) => ({
+   name,
+   rows,
+   qTotal:      rows.reduce((s, r) => s + r.count, 0),
+   failedCount: rows.find(r => r.state === "failed")?.count ?? 0,
+  }))
+  .sort((a, b) => b.failedCount - a.failedCount || b.qTotal - a.qTotal);
+
  return (
   <div className="space-y-6">
 
@@ -69,9 +81,8 @@ export default async function OrbitQueuesPage() {
 
      {/* Rows */}
      <div className="divide-y divide-border/50">
-      {Array.from(queueMap.entries()).map(([name, rows]) => {
-       const qTotal   = rows.reduce((s, r) => s + r.count, 0);
-       const hasFailed = rows.some(r => r.state === "failed");
+      {queueRows.map(({ name, rows, qTotal, failedCount }) => {
+       const hasFailed = failedCount > 0;
        return (
         <div key={name} className="grid grid-cols-[1fr_auto] items-center gap-4 px-4 py-3 hover:bg-muted/20 transition-colors duration-100">
 

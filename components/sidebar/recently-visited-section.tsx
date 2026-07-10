@@ -59,8 +59,11 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
   if (moreRef.current) {
    const r = moreRef.current.getBoundingClientRect();
    const POPUP_MAX_H = 360;
+   const POPUP_W = 288;
    const top = Math.max(8, Math.min(r.top, window.innerHeight - POPUP_MAX_H - 8));
-   setPopupPos({ top, left: r.right + 8 });
+   let left = r.right + 8;
+   if (left + POPUP_W > window.innerWidth - 8) left = Math.max(8, r.left - 8 - POPUP_W);
+   setPopupPos({ top, left });
   }
   setPopupOpen((v) => !v);
  }

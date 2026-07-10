@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Eye, Loader2, X, Database, FileText, AlertCircle } from "lucide-react";
 import { PageIcon } from "@/components/pages/page-icon";
-import { IconTooltipButton } from "@/components/orbit/icon-tooltip-button";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 
 interface SchemaProp {
   name: string;

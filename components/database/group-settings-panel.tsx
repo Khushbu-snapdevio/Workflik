@@ -71,7 +71,13 @@ export function GroupSettingsPanel({
   const pinnedGroupKeys = boardSettings.pinnedStatusGroupKeys ?? [];
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const selectProps = properties.filter((p) => p.type === "select" && !p.isSystem);
+  // This panel's own UI (rename/recolor/reorder options, pin/hide by option
+  // id) only applies to option-list-shaped properties — Select and Status
+  // (Status is always `config.groupedByStatus: true`, so the status-aware
+  // rendering below already covers it). Checkbox/Person switch the board's
+  // group-by property from the toolbar's own "Group" dropdown instead, which
+  // doesn't assume an editable option list.
+  const selectProps = properties.filter((p) => (p.type === "select" || p.type === "status") && !p.isSystem);
   const filteredSelectProps = selectProps.filter((p) => p.name.toLowerCase().includes(groupBySearch.trim().toLowerCase()));
 
   const orderedOptions = sortDirection === "manual"

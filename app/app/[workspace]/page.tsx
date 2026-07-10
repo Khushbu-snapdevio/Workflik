@@ -83,7 +83,7 @@ export default async function WorkspacePage({ params }: Props) {
       .innerJoin(pages, eq(pages.id, userRecentlyVisited.pageId))
       .where(and(eq(userRecentlyVisited.userId, session.user.id), eq(userRecentlyVisited.workspaceId, ws.id), eq(pages.isDeleted, false)))
       .orderBy(desc(userRecentlyVisited.visitedAt))
-      .limit(8),
+      .limit(10),
     db.select({ memberCount: count() }).from(workspaceMembers).where(and(eq(workspaceMembers.workspaceId, ws.id), eq(workspaceMembers.status, "active"))),
     db.select({ pageCount: count() }).from(pages).where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false))),
     db
@@ -116,7 +116,7 @@ export default async function WorkspacePage({ params }: Props) {
   const showNewPageGhostTile = recentPages.length < 4;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="@container flex h-full flex-col overflow-hidden bg-background">
 
       {/* ── Topbar ── */}
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card px-3">
@@ -202,7 +202,7 @@ export default async function WorkspacePage({ params }: Props) {
             {/* Quick actions — bento tile row, replaces the old narrow sidebar list */}
             <section>
               <h2 className="mb-3 text-sm font-semibold text-foreground">Quick actions</h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 @[640px]:grid-cols-3 @[1024px]:grid-cols-5">
                 <NewPageButton
                   workspaceId={ws.id}
                   workspaceSlug={slug}
@@ -257,7 +257,7 @@ export default async function WorkspacePage({ params }: Props) {
                       treatment as "Quick actions" above for visual
                       consistency across the dashboard. */}
                   <div className="rounded-[var(--radius-lg)] border border-border bg-muted/20 p-3">
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-3 @[640px]:grid-cols-3 @[1024px]:grid-cols-5">
                       {recentPages.map((page) => (
                         <Link
                           key={page.id}
@@ -398,17 +398,19 @@ export default async function WorkspacePage({ params }: Props) {
                           View all <ChevronRight size={11} />
                         </Link>
                       </div>
-                      {/* Mini template previews */}
+                      {/* Mini template previews — labels are real template
+                          names so the link can deep-link straight to that
+                          template's preview, not just the generic gallery. */}
                       <div className="grid grid-cols-4 gap-2 pl-[52px]">
                         {([
-                          { emoji: "📋", label: "Project tracker" },
-                          { emoji: "📝", label: "Meeting notes" },
-                          { emoji: "✅", label: "Task list" },
-                          { emoji: "📅", label: "Weekly planner" },
+                          { emoji: "📋", label: "Projects" },
+                          { emoji: "📝", label: "Meeting Notes" },
+                          { emoji: "✅", label: "Tasks Tracker" },
+                          { emoji: "📅", label: "Content Calendar" },
                         ] as const).map((t) => (
                           <Link
                             key={t.label}
-                            href={`/app/${slug}/templates`}
+                            href={`/app/${slug}/templates?open=${encodeURIComponent(t.label)}`}
                             className="group flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-2.5 py-2 transition-all duration-150 hover:border-primary/20 hover:bg-card"
                           >
                             <span className="text-base leading-none">{t.emoji}</span>
@@ -493,7 +495,7 @@ export default async function WorkspacePage({ params }: Props) {
             {pageCount === 0 && (
               <section>
                 <h2 className="mb-3 text-sm font-semibold text-foreground">What&apos;s included</h2>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 @[640px]:grid-cols-4">
                   {([
                     { iconBg: "bg-primary/10", icon: <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>, label: "Pages & docs", desc: "Rich text editor" },
                     { iconBg: "bg-secondary", icon: <svg className="size-4 text-secondary-foreground" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg>, label: "Databases", desc: "Tables, boards, calendars" },

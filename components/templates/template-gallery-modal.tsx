@@ -172,6 +172,7 @@ export function TemplateGalleryModal({
       if (res.ok) {
         const data = (await res.json()) as { shortId: string; kind: string };
         onClose();
+        window.dispatchEvent(new CustomEvent("pages:refresh"));
         // Database templates open in the template view; regular pages open normally
         if (data.kind === "database") {
           router.push(`/app/${workspaceSlug}/t/${data.shortId}`);

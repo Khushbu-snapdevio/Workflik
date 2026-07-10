@@ -3,6 +3,13 @@ import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { databaseProperties, databaseViews, pages, propertyValues, workspaceMembers } from "@/lib/db/schema";
 
+// Mirrors lib/db/schema/types.ts's propertyType Postgres enum — see the same
+// constant in ../route.ts for why this is duplicated rather than shared.
+const VALID_PROPERTY_TYPES = new Set([
+  "text", "number", "select", "multi_select", "status", "date",
+  "checkbox", "url", "email", "phone", "person", "relation", "rollup", "formula",
+]);
+
 async function guard(databaseId: string, userId: string) {
   const [page] = await db.select().from(pages).where(and(eq(pages.id, databaseId), eq(pages.kind, "database"))).limit(1);
   if (!page) return null;
@@ -23,6 +30,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     defaultValue?: unknown;
     confirmDestructive?: boolean;
   };
+
+  if (body.type != null && !VALID_PROPERTY_TYPES.has(body.type)) {
+    return Response.json({ error: "invalid_property_type" }, { status: 400 });
+  }
 
   const [existing] = await db.select().from(databaseProperties).where(eq(databaseProperties.id, propId)).limit(1);
   if (!existing || existing.databaseId !== id) return Response.json({ error: "not_found" }, { status: 404 });

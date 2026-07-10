@@ -103,7 +103,7 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
 
  return (
   <div ref={ref} data-edit-property-exempt style={baseStyle} className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background">
-   {(property.type === "select" || property.type === "multi_select") && (
+   {(property.type === "select" || property.type === "status" || property.type === "multi_select") && (
     <SelectEditor
      property={property}
      value={value}

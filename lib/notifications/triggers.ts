@@ -364,9 +364,11 @@ export async function triggerTrashWarningNotification(
     pageTitle:   string;
   }
 ): Promise<void> {
-  const { workspaceId, pageId, deletedBy, createdBy, pageTitle } = params;
-  const snip = pageTitle.slice(0, 100);
+  const { workspaceId, pageId, deletedBy, createdBy } = params;
 
+  // contentSnippet stays null — the page title is already shown via the
+  // pageId join, so repeating it here just duplicated the same text in
+  // the UI.
   const recipients = new Set<string>([deletedBy, createdBy]);
   for (const recipientId of recipients) {
     await insertAndEnqueue(tx, {
@@ -376,7 +378,7 @@ export async function triggerTrashWarningNotification(
       type:           "trash_warning",
       pageId,
       sourceId:       pageId,
-      contentSnippet: snip,
+      contentSnippet: null,
     });
   }
 }

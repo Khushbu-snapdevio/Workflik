@@ -41,6 +41,8 @@ export default async function LibraryPage({ params }: Props) {
       icon:         pages.icon,
       kind:         pages.kind,
       isPrivate:    pages.isPrivate,
+      isLocked:     pages.isLocked,
+      parentId:     pages.parentId,
       createdBy:    pages.createdBy,
       lastEditedBy: pages.lastEditedBy,
       createdAt:    pages.createdAt,
@@ -55,6 +57,14 @@ export default async function LibraryPage({ params }: Props) {
     ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, creatorIds))
     : [];
   const usersMap = Object.fromEntries(userRows.map((u) => [u.id, u.name || u.email || "Unknown"]));
+
+  // Parent pages aren't otherwise fetched — PageActionsMenu needs the
+  // parent's shortId to know where to redirect after a page is trashed.
+  const parentIds = [...new Set(allPages.map((p) => p.parentId).filter(Boolean) as string[])];
+  const parentRows = parentIds.length > 0
+    ? await db.select({ id: pages.id, shortId: pages.shortId }).from(pages).where(inArray(pages.id, parentIds))
+    : [];
+  const parentShortIdMap = Object.fromEntries(parentRows.map((p) => [p.id, p.shortId]));
 
   const recentRows = await db
     .select({ pageId: userRecentlyVisited.pageId, visitedAt: userRecentlyVisited.visitedAt })
@@ -79,6 +89,7 @@ export default async function LibraryPage({ params }: Props) {
     visitedAt:   visitedAtMap[p.id] ?? null,
     isRecent:    recentPageIds.has(p.id),
     isFavorited: favPageIds.has(p.id),
+    parentShortId: p.parentId ? (parentShortIdMap[p.parentId] ?? null) : null,
   }));
 
   return (

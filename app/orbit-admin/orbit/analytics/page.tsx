@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { emailOutbox, notifications, pages, searchQueryLog, sessions, users, workspaces } from "@/lib/db/schema";
 
@@ -79,6 +79,7 @@ export default async function OrbitAnalyticsPage() {
   topWorkspacesByPages,
   [notifTotal], [notifRead],
   [searchTotal30d], [searchNoResult30d],
+  [activatedUsers],
  ] = await Promise.all([
   db.select({ count: count() }).from(users),
   db.select({ count: count() }).from(users).where(gte(users.createdAt, day7)),
@@ -102,6 +103,11 @@ export default async function OrbitAnalyticsPage() {
   db.select({ count: count() }).from(notifications).where(eq(notifications.isRead, true)),
   db.select({ count: count() }).from(searchQueryLog).where(gte(searchQueryLog.createdAt, day30)),
   db.select({ count: count() }).from(searchQueryLog).where(and(gte(searchQueryLog.createdAt, day30), eq(searchQueryLog.resultCount, 0))),
+  // Activation = did this user ever actually use the product (created a
+  // page) — not "did they create a workspace." Most users join a teammate's
+  // existing workspace via invite, so workspace count badly undercounts
+  // real engagement; distinct page authors is the honest signal.
+  db.select({ count: countDistinct(pages.createdBy) }).from(pages),
  ]);
 
  const topWorkspaceIds = topWorkspacesByPages.map(w => w.workspaceId);
@@ -138,7 +144,7 @@ export default async function OrbitAnalyticsPage() {
  ];
 
  const activationRate = totalUsers!.count > 0
-  ? Math.round((totalWorkspaces!.count / totalUsers!.count) * 100)
+  ? Math.round((activatedUsers!.count / totalUsers!.count) * 100)
   : 0;
 
  const kpis = [
@@ -262,12 +268,12 @@ export default async function OrbitAnalyticsPage() {
      </div>
     </ChartCard>
 
-    <ChartCard title="Growth overview" subtitle="User acquisition and workspace activation"
+    <ChartCard title="Growth overview" subtitle="User acquisition and product activation"
      value={activationRate} valueLabel="activation rate" badge={`${newUsers7d!.count} signups this week`}>
      <div className="mt-2 space-y-4">
       <div>
        <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground/70">Users → Workspaces</span>
+        <span className="text-xs font-semibold text-foreground/70">Users who created a page</span>
         <span className="text-xs font-bold text-primary">{activationRate}%</span>
        </div>
        <div className="h-2.5 overflow-hidden rounded-full bg-muted/50">

@@ -8,7 +8,7 @@ import { TemplatePublishToggle } from "@/components/orbit/template-publish-toggl
 import { SeedTemplatesButton } from "@/components/orbit/seed-templates-button";
 import { TemplateDeleteButton } from "@/components/orbit/template-delete-button";
 import { TemplatePreviewButton } from "@/components/orbit/template-preview-modal";
-import { IconTooltipButton } from "@/components/orbit/icon-tooltip-button";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { BackToTopButton } from "@/components/orbit/back-to-top-button";
 
 export const metadata = { title: "Templates – Orbit Admin" };

@@ -1,10 +1,12 @@
 "use client";
 
-import { AlertCircle, BookOpen, Check, Clock, FileText, Grid2X2, Loader2, Lock, Search, Star, Trash2, X } from "lucide-react";
+import { AlertCircle, BookOpen, Check, Clock, FileText, Grid2X2, Loader2, Lock, PenOff, Search, Star, Trash2, X } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
+import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const PAGE_SIZE = 10;
 
@@ -15,6 +17,8 @@ type PageRow = {
   icon:        string | null;
   kind:        string;
   isPrivate:   boolean;
+  isLocked:    boolean;
+  parentShortId: string | null;
   createdAt:   string;
   updatedAt:   string;
   creatorName: string;
@@ -63,6 +67,20 @@ function timeAgo(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+// timeAgo() reads Date.now(), so it must not run during SSR — the value would
+// differ from the client's first render (a "just now" gap or a minute tick)
+// and trigger a hydration mismatch. Rendering null until mount keeps the
+// server/client markup identical, then fills in and keeps itself fresh.
+function TimeAgo({ iso }: { iso: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    setLabel(timeAgo(iso));
+    const id = setInterval(() => setLabel(timeAgo(iso)), 60000);
+    return () => clearInterval(id);
+  }, [iso]);
+  return <>{label}</>;
+}
+
 export function LibraryClient({
   pages: initialPages,
   workspaceSlug,
@@ -72,7 +90,24 @@ export function LibraryClient({
   workspaceSlug: string;
   workspaceId: string;
 }) {
+  const router = useRouter();
   const [pages, setPages]   = useState<PageRow[]>(initialPages);
+
+  // Duplicating a page (via the row actions menu) triggers router.refresh()
+  // rather than navigating away — this syncs local state once the server
+  // component re-runs and hands down fresh props with the new row included.
+  useEffect(() => { setPages(initialPages); }, [initialPages]);
+
+  // Pick up page mutations made OUTSIDE this table too (e.g. deleting or
+  // duplicating from the sidebar's own row menu) — those dispatch the same
+  // "pages:refresh" event the sidebar listens for, but this table only ever
+  // re-synced from its own row actions, so it went stale for anyone else's.
+  useEffect(() => {
+    function onPagesRefresh() { router.refresh(); }
+    window.addEventListener("pages:refresh", onPagesRefresh);
+    return () => window.removeEventListener("pages:refresh", onPagesRefresh);
+  }, [router]);
+
   const [tab, setTab]       = useState<Tab>("all");
   const [search, setSearch]   = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -154,6 +189,7 @@ export function LibraryClient({
       const removed  = new Set(ids.filter((_, i) => results[i]!.ok));
       setPages((prev) => prev.filter((p) => !removed.has(p.id)));
       setSelectedIds(new Set());
+      if (removed.size > 0) window.dispatchEvent(new CustomEvent("pages:refresh"));
       if (failed > 0) setDeleteErr(`Failed to delete ${failed} page${failed !== 1 ? "s" : ""}`);
     } catch { setDeleteErr("Network error"); }
     finally { setDeletingSelected(false); setConfirmDeleteSelected(false); }
@@ -289,7 +325,7 @@ export function LibraryClient({
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
 
               {/* Table header */}
-              <div className="grid items-center border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px" }}>
+              <div className="grid items-center border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px 90px" }}>
                 <label className="flex cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
@@ -305,11 +341,7 @@ export function LibraryClient({
                         ? "border-primary bg-primary/20"
                         : "border-border/60 bg-background hover:border-primary/50"
                   }`}>
-                    {allSelected && (
-                      <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
-                        <polyline points="2 6 5 9 10 3"/>
-                      </svg>
-                    )}
+                    {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                     {someSelected && (
                       <span className="block h-0.5 w-2 rounded-full bg-primary" />
                     )}
@@ -319,6 +351,7 @@ export function LibraryClient({
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Created by</span>
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Last edited</span>
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Created</span>
+                <span />
               </div>
 
               {/* Rows */}
@@ -329,7 +362,7 @@ export function LibraryClient({
                   <div
                     key={page.id}
                     className="group/row relative grid items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
-                    style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px" }}
+                    style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px 90px" }}
                   >
                     {/* Full-row navigation link underneath */}
                     <Link
@@ -349,7 +382,7 @@ export function LibraryClient({
                       <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
                         isChecked ? "border-primary bg-primary" : "border-border/50 bg-background hover:border-primary/50"
                       }`}>
-                        {isChecked && <Check size={10} className="text-white" style={{ transform: "translate(0.6px, -0.2px)" }} />}
+                        {isChecked && <Check size={10} className="text-white" strokeWidth={3} />}
                       </span>
                     </label>
 
@@ -363,6 +396,16 @@ export function LibraryClient({
                       </span>
                       {page.isPrivate && (
                         <Lock size={11} className="shrink-0 text-muted-foreground/40" />
+                      )}
+                      {page.isLocked && (
+                        <div className="group/locked relative shrink-0">
+                          <PenOff size={11} className="text-warning/70" />
+                          <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/locked:opacity-100">
+                            <p className="text-xs font-semibold text-popover-foreground">
+                              Locked — editing disabled
+                            </p>
+                          </div>
+                        </div>
                       )}
 
                       {/* Favorite button with tooltip */}
@@ -390,10 +433,40 @@ export function LibraryClient({
                     <span className="relative z-10 pr-4 text-xs text-muted-foreground/70">{page.creatorName}</span>
 
                     {/* Last edited */}
-                    <span className="relative z-10 pr-4 text-xs text-muted-foreground/70">{timeAgo(page.updatedAt)}</span>
+                    <span className="relative z-10 pr-4 text-xs text-muted-foreground/70"><TimeAgo iso={page.updatedAt} /></span>
 
                     {/* Created */}
-                    <span className="relative z-10 text-xs text-muted-foreground/70">{timeAgo(page.createdAt)}</span>
+                    <span className="relative z-10 pr-2 text-xs text-muted-foreground/70"><TimeAgo iso={page.createdAt} /></span>
+
+                    {/* Row actions */}
+                    <span className="relative z-10 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                      <PageActionsMenu
+                        pageId={page.id}
+                        isLocked={page.isLocked}
+                        isDeleted={false}
+                        workspaceSlug={workspaceSlug}
+                        workspaceId={workspaceId}
+                        pageShortId={page.shortId}
+                        pageTitle={page.title}
+                        pageKind={page.kind}
+                        parentShortId={page.parentShortId}
+                        iconOnly
+                        onDeleted={() => {
+                          setPages((prev) => prev.filter((p) => p.id !== page.id));
+                          setSelectedIds((prev) => {
+                            if (!prev.has(page.id)) return prev;
+                            const next = new Set(prev);
+                            next.delete(page.id);
+                            return next;
+                          });
+                          window.dispatchEvent(new CustomEvent("pages:refresh"));
+                        }}
+                        onDuplicated={() => {
+                          router.refresh();
+                          window.dispatchEvent(new CustomEvent("pages:refresh"));
+                        }}
+                      />
+                    </span>
                   </div>
                   );
                 })}

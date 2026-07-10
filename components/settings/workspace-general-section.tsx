@@ -10,6 +10,7 @@ import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 /* ── Icon picker — same Notion-style picker used for page/database icons
    (search, emoji categories, lucide icons, image upload) instead of a

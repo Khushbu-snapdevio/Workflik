@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { emitCommentsChanged } from "@/lib/comments/comment-events";
+import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 // ---------- Types ----------
 
@@ -343,7 +344,7 @@ function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNo
     <div
      ref={menuRef}
      data-comment-exempt
-     style={{ position: "fixed", top: menuRect.bottom + 4, right: window.innerWidth - menuRect.right, zIndex: 9999 }}
+     style={{ position: "fixed", top: getClampedTop(menuRect, 140, { gap: 4 }), right: window.innerWidth - menuRect.right, zIndex: 9999 }}
      className="w-[188px] rounded-[var(--radius-sm)] border border-border bg-card py-1"
     >
      {/* Pass close fn via context-like prop-drilling trick: clone children with close */}

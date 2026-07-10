@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -138,7 +139,13 @@ function SelectField({
    {open && menuRect && typeof document !== "undefined" && createPortal(
     <div
      ref={menuRef}
-     style={{ position: "fixed", top: menuRect.bottom + 4, left: menuRect.left, minWidth: menuRect.width, zIndex: 9999 }}
+     style={{
+      position: "fixed",
+      top: getClampedTop(menuRect, 8 + options.length * 36),
+      left: getClampedLeft(menuRect, menuRect.width, { align: "start" }),
+      minWidth: menuRect.width,
+      zIndex: 9999,
+     }}
      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
     >
      {options.map((o) => (

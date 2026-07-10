@@ -31,8 +31,16 @@ import {
   PROPERTY_REGISTRY,
   PROPERTY_TYPE_ICON,
 } from "@/components/database/property-registry";
+import { isGroupableType } from "@/components/database/grouping";
+import { RelationDatabasePicker } from "@/components/database/relation-database-picker";
+import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
+import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import {
+  getClampedLeft,
+  getClampedTop,
+} from "@/lib/ui/clamp-to-viewport";
 import type { DbProperty, DbView, FilterRule, SortRule } from "./types";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -58,7 +66,9 @@ interface ToolbarProps {
   activeViewId: string | null;
   inline?: boolean;
   isEditor: boolean;
-  onAddProperty: (name: string, type: string) => Promise<unknown>;
+  workspaceId: string;
+  databaseId: string;
+  onAddProperty: (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => Promise<unknown>;
   onAddView: (name: string, type: string) => void;
   onBulkDelete: () => Promise<void>;
   onClearSelection: () => void;
@@ -88,6 +98,8 @@ export function DatabaseToolbar({
   properties,
   activeView,
   isEditor,
+  workspaceId,
+  databaseId,
   onSwitchView,
   onAddView,
   onDuplicateView,
@@ -225,8 +237,8 @@ export function DatabaseToolbar({
     setShowBulkConfirm(false);
   }
 
-  const selectProps = properties.filter(
-    (p) => p.type === "select" && !p.isSystem
+  const groupableProps = properties.filter(
+    (p) => isGroupableType(p.type) && !p.isSystem
   );
   const dateProps = properties.filter((p) => p.type === "date" && !p.isSystem);
 
@@ -405,7 +417,7 @@ export function DatabaseToolbar({
         {(activeView?.type === "board" ||
           activeView?.type === "table" ||
           activeView?.type === "gallery") &&
-          selectProps.length > 0 && (
+          groupableProps.length > 0 && (
             <div className="flex shrink-0 items-center gap-1.5">
               {!inline && (
                 <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground/60">
@@ -438,7 +450,7 @@ export function DatabaseToolbar({
                 onMouseDown={(e) => e.stopPropagation()}
               >
                 {activeView.groupByPropertyId ? (
-                  (selectProps.find(
+                  (groupableProps.find(
                     (p) => p.id === activeView.groupByPropertyId
                   )?.name ?? "Group")
                 ) : (
@@ -736,8 +748,8 @@ export function DatabaseToolbar({
             ref={addViewDropRef}
             style={{
               position: "fixed",
-              top: addViewRect.bottom + 6,
-              left: addViewRect.left,
+              top: getClampedTop(addViewRect, 200),
+              left: getClampedLeft(addViewRect, 320, { align: "start" }),
               zIndex: 300,
             }}
           >
@@ -795,8 +807,8 @@ export function DatabaseToolbar({
             ref={contextDropRef}
             style={{
               position: "fixed",
-              top: contextRect.bottom + 4,
-              left: contextRect.left,
+              top: getClampedTop(contextRect, 140),
+              left: getClampedLeft(contextRect, 192, { align: "start" }),
               zIndex: 500,
             }}
           >
@@ -849,6 +861,8 @@ export function DatabaseToolbar({
             hiddenPropertyIds={
               (activeView?.hiddenPropertyIds ?? []) as string[]
             }
+            workspaceId={workspaceId}
+            databaseId={databaseId}
             onAddProperty={isEditor ? onAddProperty : undefined}
             onClose={() => setPropsRect(null)}
             onToggle={(propId, hidden) => {
@@ -883,8 +897,11 @@ export function DatabaseToolbar({
             ref={groupDropRef}
             style={{
               position: "fixed",
-              top: groupRect.bottom + 6,
-              left: groupRect.left,
+              top: getClampedTop(
+                groupRect,
+                Math.min(400, 46 + (groupableProps.length + 1) * 36)
+              ),
+              left: getClampedLeft(groupRect, 192, { align: "start" }),
               zIndex: 300,
             }}
           >
@@ -909,8 +926,9 @@ export function DatabaseToolbar({
                 </span>
                 None
               </button>
-              {selectProps.map((p) => {
+              {groupableProps.map((p) => {
                 const isActive = activeView.groupByPropertyId === p.id;
+                const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON] ?? CircleDashed;
                 return (
                   <button
                     className={[
@@ -926,7 +944,7 @@ export function DatabaseToolbar({
                     }}
                   >
                     <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                      <CircleDashed
+                      <TypeIcon
                         className="text-muted-foreground/60"
                         size={11}
                       />
@@ -972,8 +990,11 @@ export function DatabaseToolbar({
             ref={dateDropRef}
             style={{
               position: "fixed",
-              top: dateRect.bottom + 6,
-              left: dateRect.left,
+              top: getClampedTop(
+                dateRect,
+                Math.min(400, 46 + (dateProps.length + 1) * 36)
+              ),
+              left: getClampedLeft(dateRect, 192, { align: "start" }),
               zIndex: 300,
             }}
           >
@@ -1054,8 +1075,8 @@ const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
   ) {
     const selected = new Set(cardDisplayProps);
     const panelW = 240;
-    const left = Math.max(8, rect.right - panelW);
-    const top = rect.bottom + 6;
+    const left = getClampedLeft(rect, panelW, { align: "end" });
+    const top = getClampedTop(rect, 296);
 
     function toggle(propId: string) {
       if (selected.has(propId)) {
@@ -1148,7 +1169,9 @@ const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
 
 interface PropertiesPanelProps {
   hiddenPropertyIds: string[];
-  onAddProperty?: (name: string, type: string) => Promise<unknown>;
+  workspaceId: string;
+  databaseId: string;
+  onAddProperty?: (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => Promise<unknown>;
   onClose: () => void;
   onToggle: (propId: string, hide: boolean) => void;
   onUpdateHidden: (ids: string[]) => void;
@@ -1156,9 +1179,7 @@ interface PropertiesPanelProps {
   rect: DOMRect;
 }
 
-const PROP_TYPES_LIST = Object.values(PROPERTY_REGISTRY).filter(
-  (d) => d.type !== "relation"
-);
+const PROP_TYPES_LIST = Object.values(PROPERTY_REGISTRY);
 
 const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
   function PropertiesPanel(
@@ -1166,6 +1187,8 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
       rect,
       properties,
       hiddenPropertyIds,
+      workspaceId,
+      databaseId,
       onToggle,
       onUpdateHidden,
       onAddProperty,
@@ -1176,15 +1199,18 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
     const [adding, setAdding] = useState(false);
     const [newName, setNewName] = useState("");
     const [saving, setSaving] = useState(false);
+    const [pickingRelation, setPickingRelation] = useState(false);
+    const [pickingRollup, setPickingRollup] = useState(false);
+    const [pickingFormula, setPickingFormula] = useState(false);
 
     // Position: align right edge of panel to button right edge, open below
     const panelW = 260;
-    const left = Math.max(8, rect.right - panelW);
-    const top = rect.bottom + 6;
+    const left = getClampedLeft(rect, panelW, { align: "end" });
+    const top = getClampedTop(rect, 320);
 
     const allVisible = hiddenPropertyIds.length === 0;
 
-    async function handleAdd(type: string) {
+    async function handleAdd(type: string, config?: Record<string, unknown>, twoWay?: boolean) {
       if (!onAddProperty || saving) {
         return;
       }
@@ -1193,11 +1219,53 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
         newName.trim() ||
           (PROPERTY_REGISTRY[type as keyof typeof PROPERTY_REGISTRY]?.label ??
             type),
-        type
+        type,
+        config,
+        twoWay
       );
       setNewName("");
       setAdding(false);
       setSaving(false);
+      setPickingRelation(false);
+      setPickingRollup(false);
+      setPickingFormula(false);
+    }
+
+    if (pickingRelation) {
+      return (
+        <RelationDatabasePicker
+          rect={rect}
+          workspaceId={workspaceId}
+          onBack={() => setPickingRelation(false)}
+          onClose={() => setPickingRelation(false)}
+          onPick={(relatedDatabaseId, twoWay) => handleAdd("relation", { relatedDatabaseId }, twoWay)}
+        />
+      );
+    }
+
+    if (pickingRollup) {
+      return (
+        <RollupConfigPicker
+          rect={rect}
+          properties={properties}
+          onBack={() => setPickingRollup(false)}
+          onClose={() => setPickingRollup(false)}
+          onPick={(config) => handleAdd("rollup", config)}
+        />
+      );
+    }
+
+    if (pickingFormula) {
+      return (
+        <FormulaConfigPicker
+          rect={rect}
+          databaseId={databaseId}
+          properties={properties}
+          onBack={() => setPickingFormula(false)}
+          onClose={() => setPickingFormula(false)}
+          onPick={(expression) => handleAdd("formula", { expression })}
+        />
+      );
     }
 
     return (
@@ -1299,7 +1367,12 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
                         className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
                         disabled={saving}
                         key={def.type}
-                        onClick={() => handleAdd(def.type)}
+                        onClick={() => {
+                          if (def.type === "relation") setPickingRelation(true);
+                          else if (def.type === "rollup") setPickingRollup(true);
+                          else if (def.type === "formula") setPickingFormula(true);
+                          else handleAdd(def.type);
+                        }}
                       >
                         <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-muted-foreground">
                           <Icon size={11} />

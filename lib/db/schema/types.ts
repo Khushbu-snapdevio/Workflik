@@ -87,6 +87,7 @@ export const propertyType = pgEnum("property_type", [
   "number",
   "select",
   "multi_select",
+  "status",
   "date",
   "checkbox",
   "url",
@@ -94,6 +95,8 @@ export const propertyType = pgEnum("property_type", [
   "phone",
   "person",
   "relation",
+  "rollup",
+  "formula",
 ]);
 
 export const accessLevel = pgEnum("access_level", [

@@ -60,7 +60,8 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
       );
     }
 
-    case "select": {
+    case "select":
+    case "status": {
       const optionId = (v as { optionId?: string | null } | null)?.optionId ?? null;
       if (displayAs === "checkbox") {
         const icon = <CheckboxGlyph checked={!!optionId} />;
@@ -240,6 +241,15 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
           {entryIds.length} {entryIds.length === 1 ? "entry" : "entries"}
         </span>
       );
+    }
+
+    // Computed server-side (app/api/databases/[id]/entries/route.ts and
+    // lib/formula/) — read-only, pre-formatted text, never edited from here.
+    case "rollup":
+    case "formula": {
+      const display = (v as { display?: string | null } | null)?.display ?? null;
+      if (!display) return null;
+      return <span className="truncate text-xs text-muted-foreground">{display}</span>;
     }
 
     default:

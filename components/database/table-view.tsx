@@ -26,17 +26,22 @@ import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import { resolveDisplayAs, resolveWrapContent, resolvePropertyOrder } from "@/components/database/view-property-resolver";
+import { isGroupableType, deriveGroups, getEntryGroupIds } from "@/components/database/grouping";
+import { RelationDatabasePicker } from "@/components/database/relation-database-picker";
+import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
+import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
 import type { SharedViewProps, DbProperty, DbEntry, SelectOption } from "@/components/database/types";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const TEXT_TYPES = new Set(["text", "number", "url", "email", "phone"]);
-const POPUP_TYPES = new Set(["select", "multi_select", "date", "person", "relation"]);
+const POPUP_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
 // Badge-style properties (colored pill values) intentionally get comment-only
 // hover actions — no copy-to-clipboard, unlike plain-value properties.
-const BADGE_TYPES = new Set(["select", "multi_select"]);
+const BADGE_TYPES = new Set(["select", "status", "multi_select"]);
 
 // ── Property text helper (for clipboard copy) ────────────────────────────────
 function getPropertyText(prop: DbProperty, rawVal: unknown): string {
@@ -53,7 +58,8 @@ function getPropertyText(prop: DbProperty, rawVal: unknown): string {
    const d = (v as { date?: string | null }).date;
    return d ? new Date(d).toLocaleDateString() : "";
   }
-  case "select": {
+  case "select":
+  case "status": {
    const optId = (v as { optionId?: string | null }).optionId;
    if (!optId) return "";
    const opts = (prop.config?.options ?? []) as SelectOption[];
@@ -235,7 +241,7 @@ function SortableTableRow({
        isSelected ? "border-primary bg-primary" : "border-border/50 bg-background"
       }`} style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}>
        {isSelected && (
-        <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
          <polyline points="2 6 5 9 10 3"/>
         </svg>
        )}
@@ -421,7 +427,7 @@ function SortableTableRow({
 // ── TableView ────────────────────────────────────────────────────────────────
 
 export function TableView({
- workspaceId, workspaceSlug, entries, properties, valueMap, activeView, isEditor,
+ databaseId, workspaceId, workspaceSlug, entries, properties, valueMap, activeView, isEditor,
  onUpdateValue, onUpdateTitle, onCreateEntry, onAddProperty, onUpdateProperty,
  onDeleteProperty, onUpdateView, onDeleteEntry, onDuplicateEntry, selectedEntryIds, onSelectEntry, onOpenEntry,
 }: SharedViewProps) {
@@ -545,19 +551,19 @@ export function TableView({
 
  // Grouping
  const groupPropId = activeView?.groupByPropertyId;
- const groupProp  = groupPropId ? properties.find((p) => p.id === groupPropId && p.type === "select") : null;
+ const groupProp  = groupPropId ? properties.find((p) => p.id === groupPropId && isGroupableType(p.type)) : null;
 
  type RowGroup = { id: string | null; label: string; color: string | null; entries: DbEntry[] };
  let rowGroups: RowGroup[] | null = null;
  if (groupProp) {
-  const opts = (groupProp.config?.options ?? []) as SelectOption[];
   const gMap = new Map<string | null, RowGroup>();
   gMap.set(null, { id: null, label: `No ${groupProp.name}`, color: null, entries: [] });
-  opts.forEach((o) => gMap.set(o.id, { id: o.id, label: o.name, color: o.color, entries: [] }));
+  deriveGroups(groupProp, entries, valueMap).forEach((g) => gMap.set(g.id, { ...g, entries: [] }));
   for (const e of entries) {
-   const val = valueMap.get(e.id)?.get(groupPropId!) as { optionId?: string } | null;
-   const key = val?.optionId ?? null;
-   (gMap.get(key) ?? gMap.get(null)!).entries.push(e);
+   const val = valueMap.get(e.id)?.get(groupPropId!) ?? null;
+   for (const key of getEntryGroupIds(groupProp, val)) {
+    (gMap.get(key) ?? gMap.get(null)!).entries.push(e);
+   }
   }
   rowGroups = [...gMap.values()].filter((g) => g.entries.length > 0 || g.id === null);
  }
@@ -641,7 +647,7 @@ export function TableView({
            : "border-border/60 bg-background hover:border-primary/50"
         }`}>
          {allSelected && (
-          <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
            <polyline points="2 6 5 9 10 3"/>
           </svg>
          )}
@@ -900,8 +906,11 @@ export function TableView({
     <AddPropertyMenu
      rect={addPropMenu.rect}
      propName={propName}
+     workspaceId={workspaceId}
+     databaseId={databaseId}
+     properties={properties}
      onNameChange={setPropName}
-     onAdd={async (name, type) => { await onAddProperty(name, type); setAddPropMenu(null); setPropName(""); }}
+     onAdd={async (name, type, config, twoWay) => { await onAddProperty(name, type, config, twoWay); setAddPropMenu(null); setPropName(""); }}
      onClose={() => { setAddPropMenu(null); setPropName(""); }}
     />
    )}
@@ -1043,10 +1052,19 @@ function RowContextMenu({ menu, workspaceSlug, onCommentClick, onDuplicate, onDe
  // while open instead of repositioning, so it can't drift from its row.
  useScrollLockWhileOpen(true, (target) => !!ref.current?.contains(target));
 
+ const itemCount = 3 + (onDuplicate ? 1 : 0) + 1;
+ const menuHeight = itemCount * 32 + 9 + 8;
+ const menuWidth = 192;
+
  return createPortal(
   <div
    ref={ref}
-   style={{ position: "fixed", top: menu.rect.bottom + 6, left: menu.rect.left, zIndex: 300 }}
+   style={{
+    position: "fixed",
+    top: getClampedTop(menu.rect, menuHeight),
+    left: getClampedLeft(menu.rect, menuWidth),
+    zIndex: 300,
+   }}
    className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
   >
    <Link
@@ -1133,8 +1151,8 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpda
  useScrollLockWhileOpen(true, (target) =>
   !!ref.current?.contains(target) || !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]'));
 
- const sortable = prop && ["text", "number", "select", "date", "checkbox"].includes(prop.type);
- const isSelectType = prop && (prop.type === "select" || prop.type === "multi_select");
+ const sortable = prop && ["text", "number", "select", "status", "date", "checkbox"].includes(prop.type);
+ const isSelectType = prop && (prop.type === "select" || prop.type === "status" || prop.type === "multi_select");
 
  if (editingProperty && prop) {
   return (
@@ -1157,11 +1175,21 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpda
   );
  }
 
+ const itemCount = 3 + (sortable ? 2 : 0) + (isSelectType ? 1 : 0);
+ const dividerCount = 1 + (sortable ? 1 : 0);
+ const menuHeight = itemCount * 32 + dividerCount * 9 + 8;
+ const menuWidth = 192;
+
  return createPortal(
   <>
    <div
     ref={ref}
-    style={{ position: "fixed", top: menu.rect.bottom + 4, left: menu.rect.left, zIndex: 300 }}
+    style={{
+     position: "fixed",
+     top: getClampedTop(menu.rect, menuHeight),
+     left: getClampedLeft(menu.rect, menuWidth),
+     zIndex: 300,
+    }}
     className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
    >
     {sortable && (
@@ -1197,26 +1225,79 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpda
 interface AddPropertyMenuProps {
  rect: DOMRect;
  propName: string;
+ workspaceId: string;
+ databaseId: string;
+ properties: DbProperty[];
  onNameChange: (v: string) => void;
- onAdd: (name: string, type: string) => void;
+ onAdd: (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => void;
  onClose: () => void;
 }
 
-function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPropertyMenuProps) {
+function AddPropertyMenu({ rect, propName, workspaceId, databaseId, properties, onNameChange, onAdd, onClose }: AddPropertyMenuProps) {
  const ref = useRef<HTMLDivElement>(null);
+ const [pickingRelation, setPickingRelation] = useState(false);
+ const [pickingRollup, setPickingRollup] = useState(false);
+ const [pickingFormula, setPickingFormula] = useState(false);
  useEffect(() => {
-  function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); }
+  function h(e: MouseEvent) { if (pickingRelation || pickingRollup || pickingFormula) return; if (ref.current && !ref.current.contains(e.target as Node)) onClose(); }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
- }, [onClose]);
+ }, [onClose, pickingRelation, pickingRollup, pickingFormula]);
  useScrollLockWhileOpen(true, (target) => !!ref.current?.contains(target));
 
- const types = Object.values(PROPERTY_REGISTRY).filter((t) => t.type !== "relation");
+ const types = Object.values(PROPERTY_REGISTRY);
+ const menuWidth = 240;
+ const menuHeight = 320;
+
+ if (pickingRelation) {
+  return (
+   <RelationDatabasePicker
+    rect={rect}
+    workspaceId={workspaceId}
+    onBack={() => setPickingRelation(false)}
+    onClose={onClose}
+    onPick={(relatedDatabaseId, twoWay) => {
+     onAdd(propName.trim() || "Relation", "relation", { relatedDatabaseId }, twoWay);
+    }}
+   />
+  );
+ }
+
+ if (pickingRollup) {
+  return (
+   <RollupConfigPicker
+    rect={rect}
+    properties={properties}
+    onBack={() => setPickingRollup(false)}
+    onClose={onClose}
+    onPick={(config) => onAdd(propName.trim() || "Rollup", "rollup", config)}
+   />
+  );
+ }
+
+ if (pickingFormula) {
+  return (
+   <FormulaConfigPicker
+    rect={rect}
+    databaseId={databaseId}
+    properties={properties}
+    onBack={() => setPickingFormula(false)}
+    onClose={onClose}
+    onPick={(expression) => onAdd(propName.trim() || "Formula", "formula", { expression })}
+   />
+  );
+ }
 
  return createPortal(
   <div
    ref={ref}
-   style={{ position: "fixed", top: rect.bottom + 6, left: Math.max(8, rect.right - 240), zIndex: 300, width: 240 }}
+   style={{
+    position: "fixed",
+    top: getClampedTop(rect, menuHeight),
+    left: getClampedLeft(rect, menuWidth, { align: "end" }),
+    zIndex: 300,
+    width: menuWidth,
+   }}
    className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
   >
    <div className="border-b border-border px-3 py-2.5">
@@ -1236,7 +1317,12 @@ function AddPropertyMenu({ rect, propName, onNameChange, onAdd, onClose }: AddPr
      return (
       <button
        key={def.type}
-       onClick={() => onAdd(propName.trim() || def.label, def.type)}
+       onClick={() => {
+        if (def.type === "relation") setPickingRelation(true);
+        else if (def.type === "rollup") setPickingRollup(true);
+        else if (def.type === "formula") setPickingFormula(true);
+        else onAdd(propName.trim() || def.label, def.type);
+       }}
        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-sm text-foreground hover:bg-accent"
       >
        <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50 text-muted-foreground">

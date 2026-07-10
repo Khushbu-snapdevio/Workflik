@@ -29,7 +29,8 @@ function getPropertyValueText(prop: DbProperty, raw: unknown): string {
       const d = v.date as string | undefined;
       return d ? new Date(`${d}T00:00:00`).toLocaleDateString() : "";
     }
-    case "select": {
+    case "select":
+    case "status": {
       const optId = v.optionId as string | undefined;
       if (!optId) return "";
       return (config.options ?? []).find((o) => o.id === optId)?.name ?? "";
@@ -51,7 +52,7 @@ interface EntryPropertiesPanelProps {
 }
 
 const INLINE_TYPES = new Set(["text", "number", "url", "email", "phone"]);
-const POPOVER_TYPES = new Set(["select", "multi_select", "date", "person", "relation"]);
+const POPOVER_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
 
 export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEditor }: EntryPropertiesPanelProps) {
   const [properties, setProperties] = useState<DbProperty[]>([]);

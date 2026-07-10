@@ -20,17 +20,17 @@ export interface NotificationItem {
 }
 
 const TYPE_ACTION: Record<string, string> = {
-  mention:          "mentioned you",
-  comment:          "left a comment",
-  reply:            "replied to you",
-  resolved:         "resolved a thread",
-  reopened:         "reopened a thread",
+  mention:          "mentioned you in a comment",
+  comment:          "commented on a page",
+  reply:           "replied to your comment",
+  resolved:         "resolved a comment thread",
+  reopened:         "reopened a comment thread",
   access_granted:   "granted you access",
-  workspace_invite: "added you to workspace",
-  workspace_invite_accepted: "accepted your workspace invite",
-  guest_accepted:   "accepted your invite",
-  trash_warning:    "has a page that will be permanently deleted soon",
-  page_update:      "edited a page",
+  workspace_invite: "invited you to a workspace",
+  workspace_invite_accepted: "accepted your workspace invitation",
+  guest_accepted:   "accepted your workspace invitation",
+  trash_warning:    "has a page that will be permanently deleted from Trash",
+  page_update:      "updated a page",
   task_assigned:    "assigned you a task",
 };
 
@@ -90,7 +90,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       )}
 
       {/* Avatar */}
-      <div className="relative mt-0.5 shrink-0">
+      <div className="relative mt-0.5 shrink-0 self-start">
         {isSystem ? (
           <div className="flex size-9 items-center justify-center rounded-full bg-muted/70 ring-1 ring-border/40">
             <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 text-muted-foreground/60">
@@ -102,7 +102,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
           <img
             src={notification.senderImage}
             alt={who}
-            className="size-9 rounded-full object-cover ring-1 ring-border/40 select-none"
+            className="block size-9 rounded-full object-cover ring-1 ring-border/40 select-none"
           />
         ) : (
           <div
@@ -113,7 +113,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
         )}
         {dotClass && (
           <span
-            className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border border-card ${dotClass}`}
+            className={`absolute bottom-0 right-0 size-2.5 rounded-full border border-card ${dotClass}`}
           />
         )}
       </div>

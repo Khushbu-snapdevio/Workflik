@@ -2,14 +2,14 @@
 // Each entry defines: icon, label, empty value, display formatter, cell editor component name.
 
 import {
-  Type, Hash, CircleDashed, Tag, Calendar, CheckSquare, Link,
-  Mail, Phone, User, ArrowLeftRight, type LucideIcon,
+  Type, Hash, CircleDashed, Tag, CircleDot, Calendar, CheckSquare, Link,
+  Mail, Phone, User, ArrowLeftRight, Sigma, SquareFunction, type LucideIcon,
 } from "lucide-react";
 import type { SelectOption, StatusGroupKey } from "@/components/database/types";
 
 export type PropertyType =
-  | "text" | "number" | "select" | "multi_select" | "date"
-  | "checkbox" | "url" | "email" | "phone" | "person" | "relation";
+  | "text" | "number" | "select" | "multi_select" | "status" | "date"
+  | "checkbox" | "url" | "email" | "phone" | "person" | "relation" | "rollup" | "formula";
 
 export interface PropertyDefinition {
   type:        PropertyType;
@@ -51,6 +51,14 @@ export const PROPERTY_REGISTRY: Record<PropertyType, PropertyDefinition> = {
     icon:       "⊕",
     emptyValue: { optionIds: [] },
     sortable:   false,
+    filterable: true,
+  },
+  status: {
+    type:       "status",
+    label:      "Status",
+    icon:       "◍",
+    emptyValue: { optionId: null },
+    sortable:   true,
     filterable: true,
   },
   date: {
@@ -109,6 +117,25 @@ export const PROPERTY_REGISTRY: Record<PropertyType, PropertyDefinition> = {
     sortable:   false,
     filterable: true,
   },
+  rollup: {
+    type:       "rollup",
+    label:      "Rollup",
+    icon:       "Σ",
+    // Computed server-side on every read (see app/api/databases/[id]/entries/route.ts)
+    // — never written directly, so there's no meaningful "empty" client value.
+    emptyValue: null,
+    sortable:   false,
+    filterable: false,
+  },
+  formula: {
+    type:       "formula",
+    label:      "Formula",
+    icon:       "ƒ",
+    // Also computed server-side (see lib/formula/), same reasoning as Rollup.
+    emptyValue: null,
+    sortable:   false,
+    filterable: false,
+  },
 };
 
 export const PROPERTY_TYPES = Object.values(PROPERTY_REGISTRY);
@@ -122,6 +149,7 @@ export const PROPERTY_TYPE_ICON: Record<PropertyType, LucideIcon> = {
   number:       Hash,
   select:       CircleDashed,
   multi_select: Tag,
+  status:       CircleDot,
   date:         Calendar,
   checkbox:     CheckSquare,
   url:          Link,
@@ -129,6 +157,8 @@ export const PROPERTY_TYPE_ICON: Record<PropertyType, LucideIcon> = {
   phone:        Phone,
   person:       User,
   relation:     ArrowLeftRight,
+  rollup:       Sigma,
+  formula:      SquareFunction,
 };
 
 // ── Select / Multi-select option colors ──────────────────────────────────────

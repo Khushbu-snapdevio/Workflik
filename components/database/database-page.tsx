@@ -239,11 +239,11 @@ export function DatabasePage({
     await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
   }, [selectedIds]);
 
-  const addProperty = useCallback(async (name: string, type: string, config?: DbPropertyConfig) => {
+  const addProperty = useCallback(async (name: string, type: string, config?: DbPropertyConfig, twoWay?: boolean) => {
     const res = await fetch(`/api/databases/${databaseId}/properties`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type, config }),
+      body: JSON.stringify({ name, type, config, twoWay }),
     });
     if (!res.ok) return;
     const prop = await res.json() as DbProperty;
@@ -420,6 +420,8 @@ export function DatabasePage({
       <DatabaseToolbar
         views={views}
         activeViewId={activeView?.id ?? null}
+        workspaceId={workspaceId}
+        databaseId={databaseId}
         properties={properties}
         activeView={activeView}
         isEditor={isEditor}

@@ -11,15 +11,18 @@ interface Props {
   href?: string;
   onClick?: () => void;
   danger?: boolean;
+  /** Overrides the default sizing/color classes — for call sites that need
+   *  to match an existing surrounding button style exactly. */
+  className?: string;
 }
 
 // Compact icon-only row action with a hover tooltip (via the app's own
 // IconTooltip, not the shadcn dark-pill Tooltip) — used to keep action
 // columns narrow enough that tables don't need horizontal scroll.
-export function IconTooltipButton({ icon, label, href, onClick, danger }: Props) {
+export function IconTooltipButton({ icon, label, href, onClick, danger, className: classNameProp }: Props) {
   const [rect, setRect] = useState<DOMRect | null>(null);
 
-  const className = `flex size-7 items-center justify-center rounded-[var(--radius-xs)] transition-colors duration-150 ${
+  const className = classNameProp ?? `flex size-7 items-center justify-center rounded-[var(--radius-xs)] transition-colors duration-150 ${
     danger
       ? "text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive"
       : "text-muted-foreground hover:bg-accent hover:text-foreground"

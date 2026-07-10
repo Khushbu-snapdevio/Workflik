@@ -80,6 +80,11 @@ export function Sidebar({
  const [filter] = useState("");
  const [pages, setPages] = useState<PageItem[]>(initialPages);
  const [pagesLoading, setPagesLoading] = useState(false);
+ // Lets fetchPages check "do we already have pages?" without depending on
+ // `pages` (which would redefine the callback, and the pages:refresh
+ // listener, on every mutation).
+ const pagesRef = useRef(pages);
+ useEffect(() => { pagesRef.current = pages; }, [pages]);
  const [favorites, setFavorites] = useState<FavoriteItem[]>(initialFavorites);
  const [recentlyVisited, setRecentlyVisited] = useState<{ id: string; pageId: string; visitedAt: string }[]>(initialRecentlyVisited);
  const [newMenu, setNewMenu] = useState(false);
@@ -96,9 +101,12 @@ export function Sidebar({
  const startWidthRef = useRef(0);
  const currentWidthRef = useRef(initialSidebarWidth);
 
- // Re-fetch page tree only when a mutation explicitly fires the refresh event
+ // Re-fetch page tree only when a mutation explicitly fires the refresh event.
+ // Only show the loading skeleton when there's no tree to keep showing yet —
+ // a background refresh (e.g. after adding/duplicating a page) swaps the
+ // data in silently instead of flashing the whole tree to a skeleton.
  const fetchPages = useCallback(() => {
-  setPagesLoading(true);
+  if (pagesRef.current.length === 0) setPagesLoading(true);
   fetch(`/api/workspaces/${workspaceId}/pages/tree`)
    .then((r) => r.json())
    .then((d) => { setPages(Array.isArray(d) ? d : []); setPagesLoading(false); })
@@ -682,7 +690,7 @@ function UserAvatar({
  const showImage = Boolean(image) && !failed;
  return (
   <div
-   className={`flex shrink-0 items-center justify-center overflow-hidden font-bold uppercase ${showImage ? "rounded-full bg-transparent" : "rounded-[var(--radius-sm)] bg-primary text-primary-foreground"} ${className ?? ""}`}
+   className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold uppercase ${showImage ? "bg-transparent" : "bg-primary text-primary-foreground"} ${className ?? ""}`}
   >
    {showImage ? (
     <img

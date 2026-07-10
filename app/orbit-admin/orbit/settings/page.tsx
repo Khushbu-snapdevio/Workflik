@@ -12,6 +12,8 @@ interface AuthSettingsState {
   magicLinkEnabled: boolean;
 }
 
+type AuthSettingsKey = "emailPasswordEnabled" | "magicLinkEnabled" | "googleEnabled";
+
 const GoogleIcon = () => (
   <svg className="size-4" viewBox="0 0 24 24">
     <path
@@ -36,7 +38,7 @@ const GoogleIcon = () => (
 export default function OrbitAuthSettingsPage() {
   const [settings, setSettings] = useState<AuthSettingsState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingKey, setSavingKey] = useState<AuthSettingsKey | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,17 +60,14 @@ export default function OrbitAuthSettingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function toggle(
-    key: "emailPasswordEnabled" | "magicLinkEnabled" | "googleEnabled",
-    value: boolean
-  ) {
+  async function toggle(key: AuthSettingsKey, value: boolean) {
     if (!settings) {
       return;
     }
     setError(null);
     const previous = settings;
     setSettings({ ...settings, [key]: value });
-    setSaving(true);
+    setSavingKey(key);
     setSaved(false);
     try {
       const res = await fetch("/api/orbit/auth-settings", {
@@ -94,7 +93,7 @@ export default function OrbitAuthSettingsPage() {
       setSettings(previous);
       setError("Couldn't save that change. Try again.");
     } finally {
-      setSaving(false);
+      setSavingKey(null);
     }
   }
 
@@ -169,7 +168,8 @@ export default function OrbitAuthSettingsPage() {
             aria-label="Toggle email and password sign-in"
             checked={settings.emailPasswordEnabled}
             disabled={
-              saving || (enabledCount === 1 && settings.emailPasswordEnabled)
+              savingKey === "emailPasswordEnabled" ||
+              (enabledCount === 1 && settings.emailPasswordEnabled)
             }
             onCheckedChange={(checked) =>
               toggle("emailPasswordEnabled", checked)
@@ -194,7 +194,8 @@ export default function OrbitAuthSettingsPage() {
             aria-label="Toggle magic-link sign-in"
             checked={settings.magicLinkEnabled}
             disabled={
-              saving || (enabledCount === 1 && settings.magicLinkEnabled)
+              savingKey === "magicLinkEnabled" ||
+              (enabledCount === 1 && settings.magicLinkEnabled)
             }
             onCheckedChange={(checked) => toggle("magicLinkEnabled", checked)}
           />
@@ -219,7 +220,7 @@ export default function OrbitAuthSettingsPage() {
             aria-label="Toggle Google sign-in"
             checked={settings.googleEnabled && settings.googleConfigured}
             disabled={
-              saving ||
+              savingKey === "googleEnabled" ||
               !settings.googleConfigured ||
               (enabledCount === 1 && settings.googleEnabled)
             }

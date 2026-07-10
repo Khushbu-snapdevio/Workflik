@@ -3,9 +3,27 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Settings, Bell, Check } from "lucide-react";
+import { X, Settings, Bell, Mail, CircleCheck, Trash2 } from "lucide-react";
 import { useNotifications } from "@/components/notifications/notification-provider";
 import { NotificationCard, type NotificationItem } from "@/components/notifications/notification-card";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+// Envelope with a checkmark badge cut into the corner — matches the
+// "mark all as read" glyph style requested over the plain double-check.
+function MailReadIcon() {
+  return (
+    <span className="relative inline-flex">
+      <Mail size={14} />
+      <span className="absolute -bottom-[3px] -right-[3px] flex size-[11px] items-center justify-center rounded-full bg-card">
+        <CircleCheck size={11} strokeWidth={2.5} />
+      </span>
+    </span>
+  );
+}
 
 type FilterKey = "all" | "mentions" | "comments" | "updates";
 
@@ -24,12 +42,13 @@ interface Props {
 
 export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   const router = useRouter();
-  const { panelOpen, closePanel, markRead, markAllRead, refreshCount } = useNotifications();
+  const { panelOpen, closePanel, markRead, markAllRead, clearAll, refreshCount } = useNotifications();
 
   const [filter, setFilter]   = useState<FilterKey>("all");
   const [items, setItems]     = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   const [shouldRender, setShouldRender] = useState(false);
   const [animIn, setAnimIn]             = useState(false);
@@ -75,6 +94,12 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   function handleMarkAllRead() {
     markAllRead();
     setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  }
+
+  function handleClearAll() {
+    clearAll();
+    setItems([]);
+    setConfirmClearAll(false);
   }
 
   function handleClick(notification: NotificationItem) {
@@ -134,35 +159,40 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
               </p>
             </div>
 
-            {/* Right: icon actions */}
-            <div className="flex shrink-0 items-center gap-0.5">
-              {unread > 0 && (
+            {/* Right: icon actions + clear all */}
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <div className="flex items-center gap-0.5">
+                {unread > 0 && (
+                  <IconTooltipButton
+                    icon={<MailReadIcon />}
+                    label="Mark all as read"
+                    onClick={handleMarkAllRead}
+                    className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                  />
+                )}
+                <IconTooltipButton
+                  icon={<Settings size={14} />}
+                  label="Notification settings"
+                  href={`/app/${workspaceSlug}/settings/notifications`}
+                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                />
+                <IconTooltipButton
+                  icon={<X size={14} />}
+                  label="Close"
+                  onClick={closePanel}
+                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                />
+              </div>
+              {items.length > 0 && (
                 <button
                   type="button"
-                  onClick={handleMarkAllRead}
-                  title="Mark all as read"
-                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                  onClick={() => setConfirmClearAll(true)}
+                  className="flex h-6 items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
                 >
-                  <Check size={14} />
+                  <Trash2 size={11} />
+                  Clear all
                 </button>
               )}
-              <a
-                href={`/app/${workspaceSlug}/settings/notifications`}
-                aria-label="Notification settings"
-                title="Notification settings"
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-              >
-                <Settings size={14} />
-              </a>
-              <button
-                type="button"
-                onClick={closePanel}
-                aria-label="Close"
-                title="Close"
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground"
-              >
-                <X size={14} />
-              </button>
             </div>
           </div>
         </div>
@@ -215,6 +245,22 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
           )}
         </div>
       </div>
+
+      {/* Clear all confirmation */}
+      <AlertDialog open={confirmClearAll} onOpenChange={setConfirmClearAll}>
+        <AlertDialogContent className="z-[900]" overlayClassName="z-[900]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all notifications?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes every notification in this workspace's inbox. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAll}>Clear all</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>,
     document.body,
   );

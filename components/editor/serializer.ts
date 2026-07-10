@@ -22,6 +22,7 @@ export interface BlockContent {
   fileName?: string; // for embed (uploaded file)
   icon?: string; // for callout
   image?: string; // for bookmark
+  insertLocation?: "below_button" | "bottom_of_page"; // for template_button
   label?: string;
   language?: string;
   level?: number;
@@ -31,6 +32,7 @@ export interface BlockContent {
   pageId?: string;
   siteName?: string; // for bookmark
   sourceBlockId?: string; // for synced_block reference instances
+  templateBlocks?: { type: string; text: string }[]; // for template_button
   text?: InlineNode[];
   title?: string; // for bookmark
   url?: string;
@@ -389,7 +391,12 @@ export function blockToTipTapNode(block: DbBlock): TipTapNode {
     case "template_button":
       return {
         type: "templateButton",
-        attrs: { label: c.label ?? "Template", blockId: id },
+        attrs: {
+          label: c.label ?? "Template",
+          insertLocation: c.insertLocation ?? "below_button",
+          templateBlocks: c.templateBlocks ?? [{ type: "paragraph", text: "" }],
+          blockId: id,
+        },
       };
 
     case "table":
@@ -615,7 +622,11 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
     case "templateButton":
       return {
         type: "template_button",
-        content: { label: (node.attrs?.label as string) ?? "Template" },
+        content: {
+          label: (node.attrs?.label as string) ?? "Template",
+          insertLocation: (node.attrs?.insertLocation as "below_button" | "bottom_of_page") ?? "below_button",
+          templateBlocks: (node.attrs?.templateBlocks as { type: string; text: string }[]) ?? [{ type: "paragraph", text: "" }],
+        },
       };
 
     default:

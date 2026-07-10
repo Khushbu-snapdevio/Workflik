@@ -74,7 +74,7 @@ export default async function OrbitOverviewPage() {
   const day30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const [
-    [totalUsers], [newUsers7d], [newUsers30d], [totalWorkspaces], [emailCount],
+    [totalUsers], [newUsers7d], [newUsers30d], [totalWorkspaces], [emailCount], [failedEmailCount],
     [activeWorkspaces30d], [activeSessions],
     queues, recentUsers, recentAudit,
   ] = await Promise.all([
@@ -83,6 +83,7 @@ export default async function OrbitOverviewPage() {
     db.select({ count: count() }).from(users).where(gte(users.createdAt, day30)),
     db.select({ count: count() }).from(workspaces),
     db.select({ count: count() }).from(emailOutbox),
+    db.select({ count: count() }).from(emailOutbox).where(eq(emailOutbox.status, "failed")),
     // "Active workspaces" — any workspace with at least one active member who
     // has logged in (i.e. created a session) in the last 30 days.
     db.select({ count: countDistinct(workspaceMembers.workspaceId) })
@@ -107,6 +108,14 @@ export default async function OrbitOverviewPage() {
     }).from(platformAuditLog).orderBy(desc(platformAuditLog.createdAt)).limit(8),
   ]);
 
+  // Real health signal instead of a hardcoded "operational" banner — surfaces
+  // the same failure counts already shown on the Email and Queues pages.
+  const failedJobsCount = queues.filter(q => q.state === "failed").reduce((s, q) => s + q.count, 0);
+  const healthIssues: string[] = [];
+  if (failedEmailCount!.count > 0) healthIssues.push(`${failedEmailCount!.count} failed email${failedEmailCount!.count !== 1 ? "s" : ""}`);
+  if (failedJobsCount > 0) healthIssues.push(`${failedJobsCount} failed job${failedJobsCount !== 1 ? "s" : ""}`);
+  const isHealthy = healthIssues.length === 0;
+
   const setupStatus = getInstanceSetupStatus();
 
   return (
@@ -128,10 +137,14 @@ export default async function OrbitOverviewPage() {
         <div className="flex shrink-0 items-center gap-2">
           <div className="flex items-center gap-1.5">
             <span className="relative flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
-              <span className="relative inline-flex size-2 rounded-full bg-success" />
+              {isHealthy && (
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
+              )}
+              <span className={`relative inline-flex size-2 rounded-full ${isHealthy ? "bg-success" : "bg-destructive"}`} />
             </span>
-            <span className="text-xs font-medium text-muted-foreground">All systems operational</span>
+            <span className={`text-xs font-medium ${isHealthy ? "text-muted-foreground" : "font-semibold text-destructive"}`}>
+              {isHealthy ? "All systems operational" : healthIssues.join(" · ")}
+            </span>
           </div>
           <span className="text-border">·</span>
           <span className="text-xs text-muted-foreground/60">{queues.length} worker{queues.length !== 1 ? "s" : ""} active</span>

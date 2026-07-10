@@ -3,7 +3,7 @@
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import type { DbProperty, SortRule } from "./types";
 
-const SORTABLE = new Set(["text", "number", "select", "date", "checkbox", "url", "email", "phone"]);
+const SORTABLE = new Set(["text", "number", "select", "status", "date", "checkbox", "url", "email", "phone"]);
 const MAX_SORTS = 5;
 
 interface SortBarProps {

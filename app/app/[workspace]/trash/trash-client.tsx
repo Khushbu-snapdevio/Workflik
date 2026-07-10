@@ -256,11 +256,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           ? "border-primary bg-primary/20"
                           : "border-border/60 bg-background hover:border-primary/50"
                     }`}>
-                      {allSelected && (
-                        <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="2 6 5 9 10 3"/>
-                        </svg>
-                      )}
+                      {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                       {someSelected && !allSelected && (
                         <span className="block h-0.5 w-2 rounded-full bg-primary" />
                       )}
@@ -296,7 +292,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
                             isChecked ? "border-primary bg-primary" : "border-border/50 bg-background hover:border-primary/50"
                           }`}>
-                            {isChecked && <Check size={10} className="text-white" />}
+                            {isChecked && <Check size={10} className="text-white" strokeWidth={3} />}
                           </span>
                         </label>
                       </div>
@@ -349,7 +345,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           onClick={() => setConfirmDelete(page)}
                           className="flex h-7 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-xs font-medium text-destructive transition-colors hover:border-destructive/40 hover:bg-destructive/5 disabled:opacity-50"
                         >
-                          {deleting === page.id ? "Deleting…" : <><Trash2 size={12} />Delete forever</>}
+                          {deleting === page.id ? "Deleting…" : <><Trash2 size={12} />Delete permanently</>}
                         </button>
                       </div>
                     </div>
@@ -365,7 +361,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
       <AlertDialog open={confirmDeleteSelected} onOpenChange={(o) => !o && setConfirmDeleteSelected(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedCount} selected item{selectedCount !== 1 ? "s" : ""} forever?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {selectedCount} selected item{selectedCount !== 1 ? "s" : ""} permanently?</AlertDialogTitle>
             <AlertDialogDescription>
               These pages will be permanently deleted and cannot be recovered. All content, comments, and history will be lost.
             </AlertDialogDescription>
@@ -373,7 +369,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteSelected}>
-              Delete {selectedCount} forever
+              Delete {selectedCount} permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -383,7 +379,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete forever?</AlertDialogTitle>
+            <AlertDialogTitle>Delete permanently?</AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDelete && (
                 <span className="flex items-center gap-2 mb-2 p-2.5 rounded-[var(--radius-sm)] border border-border bg-muted/30">
@@ -396,7 +392,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => confirmDelete && handleDelete(confirmDelete)}>Delete forever</AlertDialogAction>
+            <AlertDialogAction onClick={() => confirmDelete && handleDelete(confirmDelete)}>Delete permanently</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

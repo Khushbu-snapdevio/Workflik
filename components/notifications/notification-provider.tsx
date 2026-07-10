@@ -13,6 +13,7 @@ interface NotificationContextValue {
   closePanel:      () => void;
   markRead:        (id: string) => void;
   markAllRead:     () => void;
+  clearAll:        () => void;
   refreshCount:    () => void;
 }
 
@@ -40,6 +41,11 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug }: P
   const panelOpenRef = useRef(false);
   panelOpenRef.current = panelOpen;
 
+  // Notification ids already surfaced this session — guards against the same
+  // row being re-delivered (SSE reconnect race, StrictMode double-mount, etc.)
+  // and re-counted/re-toasted as if it were new.
+  const seenNotificationIds = useRef<Set<string>>(new Set());
+
   const fetchCount = useCallback(() => {
     fetch(`/api/notifications?workspaceId=${encodeURIComponent(workspaceId)}`)
       .then((r) => r.ok ? r.json() : null)
@@ -60,10 +66,14 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug }: P
   useNotificationStream({
     workspaceId,
     onNotifications: (items) => {
-      setUnreadCount((c) => c + items.length);
+      const freshItems = items.filter((n) => !seenNotificationIds.current.has(n.id));
+      if (freshItems.length === 0) return;
+      freshItems.forEach((n) => seenNotificationIds.current.add(n.id));
+
+      setUnreadCount((c) => c + freshItems.length);
       // Use ref so we always read the current panelOpen (never a stale closure)
       if (!panelOpenRef.current) {
-        setToasts((prev) => [...prev, ...items].slice(-5)); // cap at 5 toasts
+        setToasts((prev) => [...prev, ...freshItems].slice(-5)); // cap at 5 toasts
       }
     },
   });
@@ -85,13 +95,22 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug }: P
     setUnreadCount(0);
   }, [workspaceId]);
 
+  const clearAll = useCallback(() => {
+    fetch("/api/notifications/clear-all", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ workspaceId }),
+    }).catch(() => {});
+    setUnreadCount(0);
+  }, [workspaceId]);
+
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   return (
     <NotificationContext.Provider
-      value={{ unreadCount, workspaceId, panelOpen, openPanel, closePanel, markRead, markAllRead, refreshCount: fetchCount }}
+      value={{ unreadCount, workspaceId, panelOpen, openPanel, closePanel, markRead, markAllRead, clearAll, refreshCount: fetchCount }}
     >
       {children}
       {toasts.map((t) => (

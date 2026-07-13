@@ -29,6 +29,7 @@ export interface BlockContent {
   lineNumbers?: boolean;
   mimeType?: string; // for embed (uploaded file)
   objectKey?: string;
+  open?: boolean; // for toggle — expanded/collapsed state
   pageId?: string;
   siteName?: string; // for bookmark
   sourceBlockId?: string; // for synced_block reference instances
@@ -247,7 +248,7 @@ export function blockToTipTapNode(block: DbBlock): TipTapNode {
     case "toggle":
       return {
         type: "toggle",
-        attrs: { blockId: id },
+        attrs: { blockId: id, open: c.open ?? false },
         content: [
           {
             type: "toggleSummary",
@@ -432,9 +433,8 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
       };
     }
 
-    case "bulletList":
-    case "listItem": {
-      const inner = node.content?.[0];
+    case "bulletList": {
+      const inner = node.content?.[0]?.content?.[0];
       return {
         type: "bullet",
         content: { text: tiptapContentToInline(inner?.content ?? []) },
@@ -449,13 +449,16 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
       };
     }
 
-    case "taskList":
-    case "taskItem": {
-      const inner = node.content?.[0]?.content?.[0];
+    case "taskList": {
+      // `checked` lives on the taskItem itself, not the taskList container
+      // (the container has no such attr at all — reading it there always
+      // silently resolves to false, regardless of the item's real state).
+      const taskItem = node.content?.[0];
+      const inner = taskItem?.content?.[0];
       return {
         type: "todo",
         content: {
-          checked: (node.attrs?.checked as boolean) ?? false,
+          checked: (taskItem?.attrs?.checked as boolean) ?? false,
           text: tiptapContentToInline(inner?.content ?? []),
         },
       };
@@ -485,7 +488,10 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
       const summary = node.content?.[0];
       return {
         type: "toggle",
-        content: { text: tiptapContentToInline(summary?.content ?? []) },
+        content: {
+          text: tiptapContentToInline(summary?.content ?? []),
+          open: (node.attrs?.open as boolean) ?? false,
+        },
       };
     }
 
@@ -635,10 +641,19 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
 }
 
 // Build a flat list of DB blocks from TipTap document JSON (top-level only; nested handled recursively)
+//
+// Every node's `blockId` attr is expected to already be a permanent,
+// client-generated UUID by the time this runs (see editor.tsx's
+// assignMissingBlockIds, which stamps one on synchronously the moment a new
+// block is created, before it's ever saved) — so it's trusted directly here
+// rather than gated against a previously-confirmed id list. Matching against
+// a server-confirmed list instead used to require waiting for a save
+// round-trip and then re-matching newly-created nodes back to their DB row
+// by array position, which broke (and silently duplicated content) the
+// moment the document's shape changed while that request was in flight.
 export function tiptapDocToBlocks(
   doc: { content?: TipTapNode[] },
-  pageId: string,
-  existingBlocks: DbBlock[] // to match blockId attrs → existing UUIDs
+  pageId: string
 ): Array<{
   id: string | null;
   pageId: string;
@@ -648,7 +663,6 @@ export function tiptapDocToBlocks(
   orderIndex: number;
   schemaVersion: number;
 }> {
-  const idMap = new Map(existingBlocks.map((b) => [b.id, b]));
   const result: Array<{
     id: string | null;
     pageId: string;
@@ -669,7 +683,7 @@ export function tiptapDocToBlocks(
       const { type, content } = tiptapNodeToBlockContent(node);
 
       result.push({
-        id: blockId && idMap.has(blockId) ? blockId : null,
+        id: blockId,
         pageId,
         parentBlockId,
         type,

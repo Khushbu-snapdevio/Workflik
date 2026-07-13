@@ -3,7 +3,7 @@ export default function HistoryLoading() {
     <div className="flex h-full flex-col overflow-hidden bg-background">
 
       {/* Topbar skeleton */}
-      <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-card px-5">
+      <div className="flex h-12 shrink-0 items-center gap-3 bg-background px-5">
         <div className="h-7 w-28 animate-pulse rounded-[var(--radius-sm)] bg-muted" />
         <div className="h-3.5 w-px bg-border" />
         <div className="flex items-center gap-2">

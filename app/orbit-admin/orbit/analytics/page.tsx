@@ -1,6 +1,7 @@
 import { and, count, countDistinct, desc, eq, gte, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { emailOutbox, notifications, pages, searchQueryLog, sessions, users, workspaces } from "@/lib/db/schema";
+import { TruncatedNameLabel } from "@/components/orbit/truncated-name-label";
 
 export const metadata = { title: "Analytics – Orbit Admin" };
 
@@ -323,7 +324,7 @@ export default async function OrbitAnalyticsPage() {
         const max = featureUsage[0]!.pages || 1;
         return (
          <div key={`${w.name}-${i}`} className="flex items-center gap-3">
-          <span className="w-32 shrink-0 truncate text-xs font-medium text-foreground/80" title={w.name}>{w.name}</span>
+          <TruncatedNameLabel name={w.name} />
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted/50">
            <div className="h-full rounded-full bg-primary" style={{ width: `${(w.pages / max) * 100}%` }} />
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Smile } from "lucide-react";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
@@ -28,6 +29,7 @@ export function PageHeader({
   isDeleted,
   isEditor,
 }: PageHeaderProps) {
+  const router = useRouter();
   const [icon, setIcon] = useState<string | null>(initialIcon);
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,10 +57,13 @@ export function PageHeader({
         body: JSON.stringify({ title }),
       });
       document.title = `${title} | WORKFLIK`;
+      window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, title } }));
+      window.dispatchEvent(new CustomEvent("pages:refresh"));
+      router.refresh();
     } finally {
       setSaving(false);
     }
-  }, [pageId]);
+  }, [pageId, router]);
 
   const saveIcon = useCallback(async (newIcon: string | null) => {
     setIcon(newIcon);
@@ -68,10 +73,14 @@ export function PageHeader({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ icon: newIcon }),
     });
-  }, [pageId]);
+    window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, icon: newIcon } }));
+    window.dispatchEvent(new CustomEvent("pages:refresh"));
+    router.refresh();
+  }, [pageId, router]);
 
   function onInput(e: React.FormEvent<HTMLDivElement>) {
     const text = e.currentTarget.textContent ?? "";
+    window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, title: text } }));
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => saveTitle(text), 800);
   }
@@ -102,6 +111,7 @@ export function PageHeader({
           {showPicker && (
             <IconPicker
               onSelect={(v) => saveIcon(v)}
+              onIconPreview={(v) => saveIcon(v)}
               onRemove={() => saveIcon(null)}
               onClose={() => setShowPicker(false)}
               pageId={pageId}

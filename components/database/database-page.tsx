@@ -162,6 +162,28 @@ export function DatabasePage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value }),
     });
+    window.dispatchEvent(new CustomEvent("workflik:entry-value-changed", { detail: { entryId, propertyId: propId, value } }));
+    // Busts the Next.js client router cache so a page navigated to next (e.g.
+    // back to this database's own full-page view) re-fetches fresh server
+    // data instead of reusing whatever was cached before this edit.
+    router.refresh();
+  }, [router]);
+
+  // Values can also change from an entry's own page (EntryPropertiesPanel) or the
+  // row context menu — neither shares state with this list, so without this
+  // listener a value edited elsewhere only shows up here after a full reload.
+  useEffect(() => {
+    function onValueChanged(e: Event) {
+      const detail = (e as CustomEvent<{ entryId: string; propertyId: string; value: unknown }>).detail;
+      if (!detail) return;
+      setRawValues((prev) => {
+        const hit = prev.findIndex((v) => v.entryId === detail.entryId && v.propertyId === detail.propertyId);
+        if (hit >= 0) return prev.map((v, i) => i === hit ? { ...v, value: detail.value } : v);
+        return [...prev, { id: crypto.randomUUID(), entryId: detail.entryId, propertyId: detail.propertyId, value: detail.value, createdAt: "", updatedAt: "" }];
+      });
+    }
+    window.addEventListener("workflik:entry-value-changed", onValueChanged);
+    return () => window.removeEventListener("workflik:entry-value-changed", onValueChanged);
   }, []);
 
   const updateTitle = useCallback(async (entryId: string, title: string) => {
@@ -171,7 +193,10 @@ export function DatabasePage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title }),
     });
-  }, []);
+    window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, title } }));
+    window.dispatchEvent(new CustomEvent("pages:refresh"));
+    router.refresh();
+  }, [router]);
 
   const updateEntryIcon = useCallback(async (entryId: string, icon: string) => {
     setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, icon } : e));
@@ -180,7 +205,10 @@ export function DatabasePage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ icon }),
     });
-  }, []);
+    window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, icon } }));
+    window.dispatchEvent(new CustomEvent("pages:refresh"));
+    router.refresh();
+  }, [router]);
 
   const createEntry = useCallback(async (defaultValues?: Record<string, unknown>) => {
     const res = await fetch(`/api/databases/${databaseId}/entries`, {

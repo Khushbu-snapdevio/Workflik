@@ -44,7 +44,7 @@ export default async function EditTemplatePage({ params }: Props) {
    </div>
 
    {/* Form */}
-   <TemplateForm template={tpl as Parameters<typeof TemplateForm>[0]["template"] & { id: string; name: string; description: string | null; category: string }} />
+   <TemplateForm template={tpl as Parameters<typeof TemplateForm>[0]["template"] & { id: string; name: string; description: string | null; categoryId: string }} />
   </div>
  );
 }

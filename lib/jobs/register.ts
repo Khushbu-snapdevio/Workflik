@@ -88,7 +88,7 @@ export async function registerHandlers(boss: PgBoss) {
 async function autoSeedTemplatesOnStartup() {
   const { and, eq, isNull } = await import("drizzle-orm");
   const { db } = await import("@/lib/db");
-  const { templates } = await import("@/lib/db/schema");
+  const { templateCategories, templates } = await import("@/lib/db/schema");
 
   const existing = await db
     .select({ name: templates.name })
@@ -100,16 +100,26 @@ async function autoSeedTemplatesOnStartup() {
   const missing = BUILT_IN_TEMPLATES.filter((t) => !existingNames.has(t.name));
   if (missing.length === 0) return;
 
-  const rows = missing.map((t) => ({
-    name:         t.name,
-    description:  t.description,
-    category:     t.category,
-    isBuiltIn:    true,
-    status:       "published" as const,
-    workspaceId:  null,
-    createdBy:    null,
-    pageSnapshot: t.pageSnapshot,
-  }));
+  const categories = await db
+    .select({ id: templateCategories.id, key: templateCategories.key })
+    .from(templateCategories);
+  const categoryIdByKey = new Map(categories.map((c) => [c.key, c.id]));
+
+  const rows = missing.flatMap((t) => {
+    const categoryId = categoryIdByKey.get(t.category);
+    if (!categoryId) return [];
+    return [{
+      name:         t.name,
+      description:  t.description,
+      categoryId,
+      isBuiltIn:    true,
+      status:       "published" as const,
+      workspaceId:  null,
+      createdBy:    null,
+      pageSnapshot: t.pageSnapshot,
+    }];
+  });
+  if (rows.length === 0) return;
 
   await db.insert(templates).values(rows);
   console.log(`[startup] seeded ${rows.length} built-in templates`);

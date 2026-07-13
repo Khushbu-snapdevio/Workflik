@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { AlertCircle, ArrowLeftRight, Users, X } from "lucide-react";
 import { toast } from "sonner";
+import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { RoleSelect } from "@/components/ui/role-select";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 
 type Role = "admin" | "editor" | "viewer";
 
@@ -84,6 +87,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
  const [transferBusy, setTransferBusy] = useState(false);
  const [transferSent, setTransferSent] = useState<string | null>(null);
  const [transferErr, setTransferErr] = useState("");
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  const active = members.filter(m => m.status === "active");
  const invited = members.filter(m => m.status === "invited");
@@ -293,7 +297,8 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
           size="sm"
           onClick={() => setPendingTransfer({ userId: m.userId!, name: display })}
           disabled={transferBusy}
-          title="Transfer ownership to this person"
+          onMouseEnter={(e) => showTooltip("Transfer ownership to this person", e)}
+          onMouseLeave={hideTooltip}
           className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground/70 hover:bg-accent hover:text-foreground shadow-none border-0"
          >
           <ArrowLeftRight size={14} />
@@ -307,7 +312,8 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
           size="sm"
           onClick={() => setPendingRemove({ userId: m.userId!, name: display })}
           disabled={busy === m.userId}
-          title="Remove"
+          onMouseEnter={(e) => showTooltip("Remove", e)}
+          onMouseLeave={hideTooltip}
           className="flex size-7 shrink-0 items-center justify-center p-0 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
          >
           <X size={14} />
@@ -361,7 +367,8 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
             size="sm"
             onClick={() => setPendingCancelInvite({ id: m.id, email: addr })}
             disabled={busy === m.id}
-            title="Cancel invitation"
+            onMouseEnter={(e) => showTooltip("Cancel invitation", e)}
+            onMouseLeave={hideTooltip}
             className="flex size-7 items-center justify-center p-0 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
            >
             <X size={14} />
@@ -404,6 +411,11 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
     loading={transferBusy}
     onConfirm={() => { if (pendingTransfer) transferOwnership(pendingTransfer.userId, pendingTransfer.name); }}
    />
+
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }

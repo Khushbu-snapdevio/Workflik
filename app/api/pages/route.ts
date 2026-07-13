@@ -14,6 +14,7 @@ const createPageSchema = z.object({
   kind:        z.enum(["page", "database", "entry"]).default("page"),
   databaseId:  z.string().uuid().nullable().optional(),
   icon:        z.string().nullable().optional(),
+  isPrivate:   z.boolean().optional().default(false),
 });
 
 // POST /api/pages
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
       return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
     }
 
-    const { workspaceId, parentId, title, kind, databaseId, icon } = parsed.data;
+    const { workspaceId, parentId, title, kind, databaseId, icon, isPrivate } = parsed.data;
 
     await requireWorkspaceMember(workspaceId, session.user.id, "editor");
 
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
           databaseId: databaseId ?? null,
           title: title || "Untitled",
           icon: icon ?? null,
+          isPrivate,
           orderIndex,
           createdBy: session.user.id,
           lastEditedBy: session.user.id,

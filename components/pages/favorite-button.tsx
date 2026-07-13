@@ -2,6 +2,9 @@
 
 import { Star } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 interface FavoriteButtonProps {
   pageId:      string;
@@ -12,6 +15,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: FavoriteButtonProps) {
   const [favorited, setFavorited] = useState(initial);
   const [pending, setPending]     = useState(false);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   useEffect(() => {
     function handler(e: Event) {
@@ -47,11 +51,13 @@ export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: Fa
   }
 
   return (
+    <>
     <button
       type="button"
       onClick={toggle}
       disabled={pending}
-      title={favorited ? "Remove from favorites" : "Add to favorites"}
+      onMouseEnter={(e) => showTooltip(favorited ? "Remove from favorites" : "Add to favorites", e)}
+      onMouseLeave={hideTooltip}
       className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] transition-colors disabled:opacity-50 ${
         favorited
           ? "text-warning hover:bg-warning/10"
@@ -60,5 +66,11 @@ export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: Fa
     >
       <Star size={16} fill={favorited ? "currentColor" : "none"} />
     </button>
+
+    {tooltip && typeof document !== "undefined" && createPortal(
+      <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+      document.body,
+    )}
+    </>
   );
 }

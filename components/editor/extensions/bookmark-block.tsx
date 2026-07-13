@@ -21,8 +21,10 @@ import {
 import type { LinkPreview } from "@/app/api/link-preview/route";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useUpload } from "@/lib/storage/use-upload";
 
 // ── Shared URL picker (unresolved state) — mirrors media-blocks.tsx's
@@ -387,6 +389,7 @@ function EmbedToolbar({
   onChangeDirect: () => void;
   onDelete: () => void;
 }) {
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   return (
     <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
       {onComment && (
@@ -394,7 +397,8 @@ function EmbedToolbar({
           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
           onClick={onComment}
           onMouseDown={(e) => e.preventDefault()}
-          title="Comment"
+          onMouseEnter={(e) => showTooltip("Comment", e)}
+          onMouseLeave={hideTooltip}
           type="button"
         >
           <MessageSquare size={13} />
@@ -405,7 +409,8 @@ function EmbedToolbar({
           className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
           onClick={onZoom}
           onMouseDown={(e) => e.preventDefault()}
-          title="Expand"
+          onMouseEnter={(e) => showTooltip("Expand", e)}
+          onMouseLeave={hideTooltip}
           type="button"
         >
           <Maximize2 size={13} />
@@ -418,7 +423,8 @@ function EmbedToolbar({
           href={download.url}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.preventDefault()}
-          title="Download"
+          onMouseEnter={(e) => showTooltip("Download", e)}
+          onMouseLeave={hideTooltip}
         >
           <DownloadIcon size={13} />
         </a>
@@ -427,7 +433,8 @@ function EmbedToolbar({
         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
         onClick={onChangeDirect}
         onMouseDown={(e) => e.preventDefault()}
-        title="Change"
+        onMouseEnter={(e) => showTooltip("Change", e)}
+        onMouseLeave={hideTooltip}
         type="button"
       >
         <Pencil size={12} />
@@ -436,11 +443,16 @@ function EmbedToolbar({
         className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-destructive/80"
         onClick={onDelete}
         onMouseDown={(e) => e.preventDefault()}
-        title="Delete"
+        onMouseEnter={(e) => showTooltip("Delete", e)}
+        onMouseLeave={hideTooltip}
         type="button"
       >
         <Trash2 size={12} />
       </button>
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
+      )}
     </div>
   );
 }

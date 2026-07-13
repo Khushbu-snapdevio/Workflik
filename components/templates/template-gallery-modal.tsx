@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Megaphone,
   Search,
+  Tag,
   X,
   Zap,
 } from "lucide-react";
@@ -34,7 +35,7 @@ type Template = {
   id: string;
   name: string;
   description: string | null;
-  category: string;
+  categoryId: string;
   isBuiltIn: boolean;
   workspaceId: string | null;
   createdBy: string | null;
@@ -50,28 +51,16 @@ type Template = {
   };
 };
 
-type CategoryDef = {
+type TemplateCategory = {
+  id: string;
   key: string;
   label: string;
-  Icon: LucideIcon;
+  orderIndex: number;
 };
 
-const CATEGORIES: CategoryDef[] = [
-  { key: "all", label: "All Templates", Icon: LayoutGrid },
-  { key: "productivity", label: "Productivity", Icon: Zap },
-  { key: "project_mgmt", label: "Project Management", Icon: BarChart2 },
-  { key: "marketing", label: "Marketing & Content", Icon: Megaphone },
-  { key: "engineering", label: "Engineering & Docs", Icon: Code2 },
-  { key: "sales", label: "Sales & Finance", Icon: DollarSign },
-];
-
-const CATEGORY_COLORS: Record<string, { badge: string }> = {
-  productivity: { badge: "bg-muted text-muted-foreground" },
-  project_mgmt: { badge: "bg-muted text-muted-foreground" },
-  marketing: { badge: "bg-muted text-muted-foreground" },
-  engineering: { badge: "bg-muted text-muted-foreground" },
-  sales: { badge: "bg-muted text-muted-foreground" },
-};
+// Categories are admin-managed (not a fixed list), so icons are cycled from
+// a small palette by position rather than mapped per-key.
+const CATEGORY_ICON_CYCLE: LucideIcon[] = [Zap, BarChart2, Megaphone, Code2, DollarSign, Tag];
 
 const DEFAULT_COLOR = { badge: "bg-muted text-muted-foreground" };
 
@@ -109,6 +98,7 @@ export function TemplateGalleryModal({
   const router = useRouter();
   const [builtIn, setBuiltIn] = useState<Template[]>([]);
   const [workspace, setWorkspace] = useState<Template[]>([]);
+  const [categories, setCategories] = useState<TemplateCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>(initialCategory ?? "all");
@@ -123,22 +113,29 @@ export function TemplateGalleryModal({
       fetch(`/api/workspaces/${workspaceId}/templates`).then((r) =>
         r.ok ? r.json() : []
       ),
+      fetch("/api/templates/categories").then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([bi, ws]) => {
+      .then(([bi, ws, cats]) => {
         setBuiltIn(Array.isArray(bi) ? bi : []);
         setWorkspace(Array.isArray(ws) ? ws : []);
+        setCategories(Array.isArray(cats) ? cats : []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
     setTimeout(() => searchRef.current?.focus(), 80);
   }, [workspaceId]);
 
+  const catIconById = new Map(
+    categories.map((c, i) => [c.id, CATEGORY_ICON_CYCLE[i % CATEGORY_ICON_CYCLE.length]])
+  );
+  const catLabelById = new Map(categories.map((c) => [c.id, c.label]));
+
   const q = search.toLowerCase().trim();
   const matches = (t: Template) =>
     (!q ||
       t.name.toLowerCase().includes(q) ||
       (t.description ?? "").toLowerCase().includes(q)) &&
-    (activeTab === "all" || t.category === activeTab);
+    (activeTab === "all" || t.categoryId === activeTab);
 
   const filteredBuiltIn = builtIn.filter(matches);
   const filteredWorkspace = workspace.filter(matches);
@@ -148,7 +145,7 @@ export function TemplateGalleryModal({
     if (key === "all") {
       return total;
     }
-    return [...builtIn, ...workspace].filter((t) => t.category === key).length;
+    return [...builtIn, ...workspace].filter((t) => t.categoryId === key).length;
   }
 
   function handleSelectTemplate(tpl: Template) {
@@ -211,7 +208,11 @@ export function TemplateGalleryModal({
               </div>
 
               <nav className="flex-1 overflow-y-auto px-2 pb-3">
-                {CATEGORIES.map((cat) => {
+                {[{ key: "all", label: "All Templates", Icon: LayoutGrid }, ...categories.map((c, i) => ({
+                  key: c.id,
+                  label: c.label,
+                  Icon: CATEGORY_ICON_CYCLE[i % CATEGORY_ICON_CYCLE.length],
+                }))].map((cat) => {
                   const cnt = countForTab(cat.key);
                   const isActive = activeTab === cat.key;
                   const CatIcon = cat.Icon;
@@ -291,6 +292,8 @@ export function TemplateGalleryModal({
                         <div className="grid grid-cols-3 gap-3">
                           {filteredBuiltIn.map((tpl) => (
                             <TemplateCard
+                              catIconById={catIconById}
+                              catLabelById={catLabelById}
                               key={tpl.id}
                               onSelect={() => handleSelectTemplate(tpl)}
                               template={tpl}
@@ -308,6 +311,8 @@ export function TemplateGalleryModal({
                         <div className="grid grid-cols-3 gap-3">
                           {filteredWorkspace.map((tpl) => (
                             <TemplateCard
+                              catIconById={catIconById}
+                              catLabelById={catLabelById}
                               key={tpl.id}
                               onSelect={() => handleSelectTemplate(tpl)}
                               template={tpl}
@@ -327,10 +332,8 @@ export function TemplateGalleryModal({
         {step === "detail" &&
           selected &&
           (() => {
-            const catColors =
-              CATEGORY_COLORS[selected.category] ?? DEFAULT_COLOR;
-            const catDef = CATEGORIES.find((c) => c.key === selected.category);
-            const CatIcon = catDef?.Icon ?? LayoutGrid;
+            const catLabel = catLabelById.get(selected.categoryId);
+            const CatIcon = catIconById.get(selected.categoryId) ?? LayoutGrid;
             const blocks = selected.pageSnapshot.blocks ?? [];
 
             return (
@@ -369,7 +372,7 @@ export function TemplateGalleryModal({
                       </p>
                       <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-border/50 text-muted-foreground bg-muted/30 mt-0.5">
                         <CatIcon size={9} />
-                        {catDef?.label}
+                        {catLabel}
                       </span>
                     </div>
                   </div>
@@ -506,13 +509,17 @@ export function TemplateGalleryModal({
 function TemplateCard({
   template,
   onSelect,
+  catIconById,
+  catLabelById,
 }: {
   template: Template;
   onSelect: () => void;
+  catIconById: Map<string, LucideIcon>;
+  catLabelById: Map<string, string>;
 }) {
-  const colors = CATEGORY_COLORS[template.category] ?? DEFAULT_COLOR;
-  const catDef = CATEGORIES.find((c) => c.key === template.category);
-  const CatIcon = catDef?.Icon ?? LayoutGrid;
+  const colors = DEFAULT_COLOR;
+  const catLabel = catLabelById.get(template.categoryId);
+  const CatIcon = catIconById.get(template.categoryId) ?? LayoutGrid;
 
   return (
     <button
@@ -564,7 +571,7 @@ function TemplateCard({
             className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-[9.5px] font-semibold ${colors.badge}`}
           >
             <CatIcon size={9} />
-            {catDef?.label ?? template.category}
+            {catLabel}
           </span>
         </div>
       </div>

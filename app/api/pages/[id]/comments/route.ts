@@ -146,6 +146,7 @@ export async function GET(_req: Request, { params }: Ctx) {
         isResolved: rep.isResolved,
         isOrphaned: rep.isOrphaned,
         content:    rep.deletedAt ? null : rep.content,
+        reactions:  (rep.reactions as Record<string, string[]>) ?? {},
         createdAt:  rep.createdAt,
         editedAt:   rep.editedAt,
         deletedAt:  rep.deletedAt,

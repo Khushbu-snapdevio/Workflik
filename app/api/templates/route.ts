@@ -1,6 +1,6 @@
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { templates } from "@/lib/db/schema";
+import { templateCategories, templates } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 // GET /api/templates — list all published built-in templates (authenticated)
@@ -12,8 +12,21 @@ export async function GET() {
     await ensureBuiltInTemplates();
 
     const list = await db
-      .select()
+      .select({
+        id:           templates.id,
+        workspaceId:  templates.workspaceId,
+        name:         templates.name,
+        description:  templates.description,
+        categoryId:   templates.categoryId,
+        isBuiltIn:    templates.isBuiltIn,
+        status:       templates.status,
+        createdBy:    templates.createdBy,
+        pageSnapshot: templates.pageSnapshot,
+        createdAt:    templates.createdAt,
+        updatedAt:    templates.updatedAt,
+      })
       .from(templates)
+      .innerJoin(templateCategories, eq(templates.categoryId, templateCategories.id))
       .where(
         and(
           eq(templates.isBuiltIn, true),
@@ -21,7 +34,7 @@ export async function GET() {
           isNull(templates.workspaceId)
         )
       )
-      .orderBy(templates.category, templates.name);
+      .orderBy(templateCategories.orderIndex, templates.name);
 
     return Response.json(list);
   } catch (err) {
@@ -42,16 +55,26 @@ async function ensureBuiltInTemplates() {
     const missing = BUILT_IN_TEMPLATES.filter((t) => !existingNames.has(t.name));
     if (missing.length === 0) return;
 
-    const rows = missing.map((t) => ({
-      name:         t.name,
-      description:  t.description,
-      category:     t.category,
-      isBuiltIn:    true,
-      status:       "published" as const,
-      workspaceId:  null,
-      createdBy:    null,
-      pageSnapshot: t.pageSnapshot,
-    }));
+    const categories = await db
+      .select({ id: templateCategories.id, key: templateCategories.key })
+      .from(templateCategories);
+    const categoryIdByKey = new Map(categories.map((c) => [c.key, c.id]));
+
+    const rows = missing.flatMap((t) => {
+      const categoryId = categoryIdByKey.get(t.category);
+      if (!categoryId) return [];
+      return [{
+        name:         t.name,
+        description:  t.description,
+        categoryId,
+        isBuiltIn:    true,
+        status:       "published" as const,
+        workspaceId:  null,
+        createdBy:    null,
+        pageSnapshot: t.pageSnapshot,
+      }];
+    });
+    if (rows.length === 0) return;
 
     await db.insert(templates).values(rows);
   } catch {

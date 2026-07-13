@@ -18,6 +18,9 @@ import {
 
 const CalendarBlankIcon = CalendarIcon;
 import { useUpload } from "@/lib/storage/use-upload";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import { TemplateTableView }  from "./views/template-table-view";
@@ -27,6 +30,9 @@ import { TemplateGalleryView } from "./views/template-gallery-view";
 import { ConfirmDialog }   from "@/components/ui/confirm-dialog";
 import { DatePicker }     from "@/components/ui/date-picker";
 import { ShareButton }     from "@/components/pages/share-button";
+import { CopyLinkButton }   from "@/components/pages/copy-link-button";
+import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
+import { PagePrivacyPill }   from "@/components/pages/page-privacy-pill";
 import { FavoriteButton }    from "@/components/pages/favorite-button";
 import { PageActionsMenu }   from "@/components/pages/page-actions-menu";
 import { IconPicker }       from "@/components/pages/icon-picker";
@@ -35,7 +41,7 @@ import { getOptionColor, groupOptions } from "@/components/database/property-reg
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import type { SelectOption, DbPropertyConfig, DbProperty } from "@/components/database/types";
 
-export type TemplateEntry = { id: string; shortId: string; title: string; orderIndex: number; icon?: string | null; updatedAt?: string | null };
+export type TemplateEntry = { id: string; shortId: string; title: string; orderIndex: number; icon?: string | null; updatedAt?: string | null; commentCount?: number };
 export type TemplateValue = { id: string; entryId: string; propertyId: string; value: unknown };
 export type FilterRule  = { id: string; propertyId: string; operator: string; value: unknown };
 export type SortRule   = { id: string; propertyId: string; direction: "asc" | "desc" };
@@ -533,6 +539,7 @@ function PanelPropRow({
  const Icon  = PROP_TYPE_ICON[prop.type] ?? TextTIcon;
  const config = (prop.config ?? {}) as PPropConfig;
  const isSelectType = prop.type === "select" || prop.type === "multi_select";
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  return (
   <div className="group/proprow flex min-h-[32px] items-start gap-0 rounded-[var(--radius-sm)] transition-colors hover:bg-muted/30">
@@ -545,7 +552,8 @@ function PanelPropRow({
     {isSelectType && onEditProperty && (
      <button
       type="button"
-      title="Edit property"
+      onMouseEnter={(e) => showTooltip("Edit property", e)}
+      onMouseLeave={hideTooltip}
       onClick={() => onEditProperty(prop.id)}
       className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/50 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/proprow:opacity-100"
      >
@@ -556,6 +564,10 @@ function PanelPropRow({
    <div className="flex-1 px-2 py-[5px]">
     <PanelPropValue type={prop.type} config={config} value={value} onSave={onSave} />
    </div>
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }
@@ -817,6 +829,7 @@ function EntryDetailPanel({
  const [confirmDelete, setConfirmDelete] = useState(false);
  const valMap      = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
  const visibleProps   = properties.filter((p) => !p.isHidden);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  function commitTitle() {
   const t = title.trim() || "Untitled";
@@ -849,8 +862,9 @@ function EntryDetailPanel({
       </Link>
       <button
        onClick={() => setConfirmDelete(true)}
+       onMouseEnter={(e) => showTooltip("Delete entry", e)}
+       onMouseLeave={hideTooltip}
        className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-       title="Delete entry"
       >
        <TrashIcon size={14} />
       </button>
@@ -913,6 +927,10 @@ function EntryDetailPanel({
     confirmLabel="Delete"
     onConfirm={() => { onDelete(entry.id); setConfirmDelete(false); onClose(); }}
    />
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </>
  );
 }
@@ -930,6 +948,7 @@ interface Props {
  page: {
   id: string; shortId: string; title: string;
   icon: string | null; coverUrl: string | null; kind: string;
+  updatedAt: string | null;
  };
  properties:  DatabaseProperty[];
  views:     DatabaseView[];
@@ -938,9 +957,12 @@ interface Props {
  workspaceSlug: string;
  workspaceName: string;
  workspaceId:  string;
- breadcrumbs:  { shortId: string; title: string }[];
+ breadcrumbs:  { id: string; shortId: string; title: string }[];
  defaultViewId: string | null;
  currentUserId: string;
+ currentUserName: string | null;
+ currentUserEmail: string | null;
+ currentUserImage: string | null;
  isPrivate:   boolean;
  isFavorited:  boolean;
  isEditor:   boolean;
@@ -958,9 +980,12 @@ export function TemplatePageClient({
  workspaceSlug,
  workspaceName,
  workspaceId,
- breadcrumbs,
+ breadcrumbs: initBreadcrumbs,
  defaultViewId,
  currentUserId,
+ currentUserName,
+ currentUserEmail,
+ currentUserImage,
  isPrivate,
  isFavorited,
  isEditor,
@@ -973,9 +998,42 @@ export function TemplatePageClient({
  const [entries,  setEntries]  = useState<TemplateEntry[]>(initEntries);
  const [values,   setValues]   = useState<TemplateValue[]>(initValues);
 
+ // Property values can also be edited from an entry's own page (EntryPropertiesPanel)
+ // or the row context menu — neither shares state with this list, so without this
+ // listener a value edited elsewhere only shows up here after a full page reload.
+ useEffect(() => {
+  function onValueChanged(e: Event) {
+   const detail = (e as CustomEvent<{ entryId: string; propertyId: string; value: unknown }>).detail;
+   if (!detail) return;
+   setValues((prev) => {
+    const idx = prev.findIndex((v) => v.entryId === detail.entryId && v.propertyId === detail.propertyId);
+    if (idx >= 0) { const n = [...prev]; n[idx] = { ...n[idx], value: detail.value }; return n; }
+    return [...prev, { id: crypto.randomUUID(), entryId: detail.entryId, propertyId: detail.propertyId, value: detail.value }];
+   });
+  }
+  window.addEventListener("workflik:entry-value-changed", onValueChanged);
+  return () => window.removeEventListener("workflik:entry-value-changed", onValueChanged);
+ }, []);
+
+ const [breadcrumbs, setBreadcrumbs] = useState(initBreadcrumbs);
+
+ // Ancestor titles are otherwise frozen server props — renaming an ancestor
+ // page elsewhere (or this page's own title, handled by pageTitle below)
+ // would only show up here after a full reload without this listener.
+ useEffect(() => {
+  function onTitleChanged(e: Event) {
+   const detail = (e as CustomEvent<{ pageId: string; title?: string }>).detail;
+   if (!detail || detail.title === undefined) return;
+   setBreadcrumbs((prev) => prev.map((c) => c.id === detail.pageId ? { ...c, title: detail.title! } : c));
+  }
+  window.addEventListener("workflik:page-title-changed", onTitleChanged);
+  return () => window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+ }, []);
+
  const router = useRouter();
  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  // The toolbar's "New" button — every "Edit property" popup anchors here, not to
  // whichever column/cell triggered it, so its position is always the same and predictable.
@@ -992,6 +1050,7 @@ export function TemplatePageClient({
  const [pageTitle,  setPageTitle]  = useState(page.title);
  const [pageIcon,   setPageIcon]   = useState<string | null>(page.icon);
  const [pageCoverUrl, setPageCoverUrl] = useState<string | null>(page.coverUrl);
+ const [removeCoverConfirm, setRemoveCoverConfirm] = useState(false);
 
  const descKey = `page-desc:${page.id}`;
  const [pageDescription,  setPageDescription]  = useState<string>("");
@@ -1305,11 +1364,11 @@ export function TemplatePageClient({
    const res = await fetch(`/api/databases/${page.id}/entries?viewId=${viewId}`);
    if (res.ok) {
     const data = await res.json() as {
-     entries:    { id: string; shortId: string; title: string; orderIndex: number; icon: string | null; updatedAt: string | null }[];
+     entries:    { id: string; shortId: string; title: string; orderIndex: number; icon: string | null; updatedAt: string | null; commentCount?: number }[];
      propertyValues: TemplateValue[];
     };
     setEntries(data.entries.map((e) => ({
-     id: e.id, shortId: e.shortId, title: e.title, orderIndex: e.orderIndex, icon: e.icon, updatedAt: e.updatedAt,
+     id: e.id, shortId: e.shortId, title: e.title, orderIndex: e.orderIndex, icon: e.icon, updatedAt: e.updatedAt, commentCount: e.commentCount,
     })));
     setValues(data.propertyValues);
    }
@@ -1354,7 +1413,10 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ title: t }),
   });
- }, []);
+  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, title: t } }));
+  window.dispatchEvent(new CustomEvent("pages:refresh"));
+  router.refresh();
+ }, [router]);
 
  const savePanelTitle = useCallback(async (entryId: string, title: string) => {
   const t = title.trim() || "Untitled";
@@ -1363,7 +1425,10 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ title: t }),
   });
- }, []);
+  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, title: t } }));
+  window.dispatchEvent(new CustomEvent("pages:refresh"));
+  router.refresh();
+ }, [router]);
 
  const saveEntryIcon = useCallback(async (entryId: string, icon: string) => {
   setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, icon } : e));
@@ -1371,7 +1436,10 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ icon }),
   });
- }, []);
+  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, icon } }));
+  window.dispatchEvent(new CustomEvent("pages:refresh"));
+  router.refresh();
+ }, [router]);
 
  const deleteEntry = useCallback(async (entryId: string) => {
   setEntries((prev) => prev.filter((e) => e.id !== entryId));
@@ -1407,7 +1475,12 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ value }),
   });
- }, []);
+  window.dispatchEvent(new CustomEvent("workflik:entry-value-changed", { detail: { entryId, propertyId: propId, value } }));
+  // Busts the Next.js client router cache so a page navigated to next (e.g.
+  // this entry's own page) re-fetches fresh server data instead of reusing
+  // whatever was cached before this edit.
+  router.refresh();
+ }, [router]);
 
  // ── Selection ──────────────────────────────────────────────────────────────
 
@@ -1556,6 +1629,9 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ title: t }),
   });
+  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: page.id, title: t } }));
+  window.dispatchEvent(new CustomEvent("pages:refresh"));
+  router.refresh();
  }
 
  async function savePageIcon(icon: string) {
@@ -1564,6 +1640,9 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ icon: icon || null }),
   });
+  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: page.id, icon: icon || null } }));
+  window.dispatchEvent(new CustomEvent("pages:refresh"));
+  router.refresh();
  }
 
  async function savePageCover(coverUrl: string) {
@@ -1585,7 +1664,8 @@ export function TemplatePageClient({
   <div className={"flex h-full flex-col overflow-hidden bg-background"}>
 
    {/* Breadcrumbs + actions */}
-   <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card/95 px-3 backdrop-blur-sm">
+   <PagePrivacyProvider initialIsPrivate={isPrivate}>
+   <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
     <nav className="flex min-w-0 items-center gap-0.5 text-xs">
      <Link
       href={`/app/${workspaceSlug}`}
@@ -1613,16 +1693,27 @@ export function TemplatePageClient({
        {pageTitle || "Untitled"}
       </span>
      </span>
+     <PagePrivacyPill />
     </nav>
 
     {/* Action buttons — same as page editor */}
-    <div className="ml-2 flex shrink-0 items-center gap-0.5">
+    <div className="ml-2 flex shrink-0 items-center gap-1">
+     {page.updatedAt && (
+      <span className="mr-1.5 whitespace-nowrap text-xs text-muted-foreground/70">
+       Edited <TimeAgo iso={page.updatedAt} />
+      </span>
+     )}
      <ShareButton
       pageId={page.id}
+      pageShortId={page.shortId}
+      workspaceSlug={workspaceSlug}
       currentUserId={currentUserId}
-      isPrivate={isPrivate}
+      currentUserName={currentUserName}
+      currentUserEmail={currentUserEmail}
+      currentUserImage={currentUserImage}
       isEditor={isEditor}
      />
+     <CopyLinkButton pageId={page.id} />
      <FavoriteButton
       pageId={page.id}
       workspaceId={workspaceId}
@@ -1638,10 +1729,13 @@ export function TemplatePageClient({
        pageShortId={page.shortId}
        pageTitle={pageTitle}
        pageKind={page.kind}
+       parentShortId={breadcrumbs[breadcrumbs.length - 1]?.shortId ?? null}
+       iconOnly
       />
      )}
     </div>
    </div>
+   </PagePrivacyProvider>
 
    {/* Scrollable area: cover + header + sticky toolbar + view */}
    <div ref={scrollAreaRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
@@ -1667,12 +1761,12 @@ export function TemplatePageClient({
          pageId={page.id}
          workspaceId={workspaceId}
          onSelect={(url) => { setShowCoverPicker(false); savePageCover(url); }}
-         onRemove={() => { setShowCoverPicker(false); savePageCover(""); }}
+         onRemove={() => { setShowCoverPicker(false); setRemoveCoverConfirm(true); }}
          onClose={() => setShowCoverPicker(false)}
         />
        )}
       </div>
-      <button onClick={() => savePageCover("")}
+      <button onClick={() => setRemoveCoverConfirm(true)}
        className="rounded-[var(--radius-sm)] bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors">
        Remove
       </button>
@@ -1696,6 +1790,7 @@ export function TemplatePageClient({
        {showIconPicker && (
         <IconPicker
          onSelect={(v) => { savePageIcon(v); setShowIconPicker(false); }}
+         onIconPreview={(v) => savePageIcon(v)}
          onClose={() => setShowIconPicker(false)}
          workspaceId={workspaceId}
          pageId={page.id}
@@ -1716,7 +1811,7 @@ export function TemplatePageClient({
          pageId={page.id}
          workspaceId={workspaceId}
          onSelect={(url) => { setShowCoverPicker(false); savePageCover(url); }}
-         onRemove={() => { setShowCoverPicker(false); savePageCover(""); }}
+         onRemove={() => { setShowCoverPicker(false); setRemoveCoverConfirm(true); }}
          onClose={() => setShowCoverPicker(false)}
         />
        )}
@@ -1737,6 +1832,7 @@ export function TemplatePageClient({
        {showIconPicker && (
         <IconPicker
          onSelect={(v) => { savePageIcon(v); setShowIconPicker(false); }}
+         onIconPreview={(v) => savePageIcon(v)}
          onRemove={() => { savePageIcon(""); setShowIconPicker(false); }}
          onClose={() => setShowIconPicker(false)}
          workspaceId={workspaceId}
@@ -1753,6 +1849,10 @@ export function TemplatePageClient({
         ref={pageTitleRef}
         defaultValue={pageTitle}
         autoFocus
+        onChange={(e) => {
+         setPageTitle(e.target.value);
+         window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: page.id, title: e.target.value } }));
+        }}
         onBlur={(e) => savePageTitle(e.target.value)}
         onKeyDown={(e) => {
          if (e.key === "Enter") savePageTitle((e.target as HTMLInputElement).value);
@@ -1801,8 +1901,8 @@ export function TemplatePageClient({
    </div>
 
    {/* View tabs + toolbar — sticky so it stays visible as cover/header scroll away */}
-   <div ref={viewToolbarRef} className="sticky top-0 z-20 bg-background border-b border-border/60">
-   <div className="mx-auto flex max-w-[1100px] items-end justify-between px-8">
+   <div ref={viewToolbarRef} className="sticky top-0 z-20 bg-background">
+   <div className="mx-auto flex max-w-[1100px] items-end justify-between border-b border-border/60 px-8">
     <div className="flex items-end self-stretch">
      {views.map((view) => {
       const Icon   = VIEW_ICON[view.type] ?? TableIcon;
@@ -1877,7 +1977,8 @@ export function TemplatePageClient({
      <div ref={addViewRef} className="relative mb-1 ml-1">
       <button
        onClick={() => { const next = !showAddView; closeAllToolbarPopups(); setShowAddView(next); }}
-       title="Add a view"
+       onMouseEnter={(e) => showTooltip("Add a view", e)}
+       onMouseLeave={hideTooltip}
        className={[
         "flex size-[26px] items-center justify-center rounded-[var(--radius-sm)] border transition-all",
         showAddView
@@ -2182,6 +2283,16 @@ export function TemplatePageClient({
    document.body
   )}
 
+  {/* ── Remove cover confirmation ── */}
+  <ConfirmDialog
+   open={removeCoverConfirm}
+   onOpenChange={setRemoveCoverConfirm}
+   title="Remove cover image?"
+   description="This removes the cover photo from this page. You can add a new one anytime."
+   confirmLabel="Remove"
+   onConfirm={() => savePageCover("")}
+  />
+
   {/* ── Delete view confirmation ── */}
   <ConfirmDialog
    open={!!deleteViewTarget}
@@ -2193,6 +2304,10 @@ export function TemplatePageClient({
    loading={deletingView}
    onConfirm={() => { if (deleteViewTarget) deleteView(deleteViewTarget.id); }}
   />
+  {tooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+   document.body,
+  )}
   </>
  );
 }

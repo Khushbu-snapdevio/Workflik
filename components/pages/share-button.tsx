@@ -1,27 +1,49 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Share2 } from "lucide-react";
 import { SharePanel } from "@/components/pages/share-panel";
+import { usePagePrivacy } from "@/components/pages/page-privacy-context";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 interface Props {
- pageId:    string;
- currentUserId: string;
- isPrivate:   boolean;
- isEditor:   boolean;
+ pageId:      string;
+ pageShortId:   string;
+ workspaceSlug:  string;
+ currentUserId:  string;
+ currentUserName: string | null;
+ currentUserEmail: string | null;
+ currentUserImage: string | null;
+ isEditor:     boolean;
 }
 
-export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
- const [open, setOpen]        = useState(false);
- const [pagePrivate, setPagePrivate] = useState(isPrivate);
- const [anchor, setAnchor]      = useState<DOMRect | null>(null);
+export function ShareButton({
+ pageId, pageShortId, workspaceSlug, currentUserId, currentUserName, currentUserEmail, currentUserImage,
+}: Props) {
+ const { isPrivate: pagePrivate, setIsPrivate: setPagePrivate } = usePagePrivacy();
+ const [open, setOpen]    = useState(false);
+ const [anchor, setAnchor] = useState<DOMRect | null>(null);
  const panelRef = useRef<HTMLDivElement>(null);
+ const btnRef  = useRef<HTMLButtonElement>(null);
 
  useScrollLockWhileOpen(open, (target) =>
   !!panelRef.current?.contains(target) || !!target.closest?.('[role="alertdialog"]'));
+
+ // Lets CopyLinkButton (a topbar sibling with no shared state) reopen this
+ // same panel for its "Give access" action on a private-page link copy.
+ useEffect(() => {
+  function handler(e: Event) {
+   const detail = (e as CustomEvent<{ pageId: string }>).detail;
+   if (detail?.pageId !== pageId) return;
+   const rect = btnRef.current?.getBoundingClientRect();
+   if (rect) setAnchor(rect);
+   setOpen(true);
+  }
+  window.addEventListener("workflik:open-share", handler);
+  return () => window.removeEventListener("workflik:open-share", handler);
+ }, [pageId]);
 
  const handlePrivateToggle = useCallback(async (next: boolean) => {
   await fetch(`/api/pages/${pageId}`, {
@@ -30,7 +52,7 @@ export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
    body:  JSON.stringify({ isPrivate: next }),
   });
   setPagePrivate(next);
- }, [pageId]);
+ }, [pageId, setPagePrivate]);
 
  function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
   setAnchor(e.currentTarget.getBoundingClientRect());
@@ -42,6 +64,7 @@ export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
  return (
   <>
    <button
+    ref={btnRef}
     type="button"
     onClick={handleClick}
     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97]"
@@ -71,7 +94,12 @@ export function ShareButton({ pageId, currentUserId, isPrivate }: Props) {
      >
       <SharePanel
        pageId={pageId}
+       pageShortId={pageShortId}
+       workspaceSlug={workspaceSlug}
        currentUserId={currentUserId}
+       currentUserName={currentUserName}
+       currentUserEmail={currentUserEmail}
+       currentUserImage={currentUserImage}
        isPrivate={pagePrivate}
        onClose={close}
        onPrivateToggle={handlePrivateToggle}

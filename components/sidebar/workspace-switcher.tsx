@@ -1,9 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageIcon } from "@/components/pages/page-icon";
+import { InviteMembersModal } from "@/components/workspace/invite-members-modal";
+import { useSession } from "@/lib/auth/client";
 
 type Workspace = {
   id: string;
@@ -11,6 +14,7 @@ type Workspace = {
   icon: string | null;
   slug: string;
   role: string;
+  createdBy: string | null;
 };
 
 type Props = {
@@ -19,13 +23,11 @@ type Props = {
 
 export function WorkspaceSwitcher({ currentSlug }: Props) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showJoin, setShowJoin] = useState(false);
-  const [joinLink, setJoinLink] = useState("");
-  const [joinError, setJoinError] = useState("");
-  const joinInputRef = useRef<HTMLInputElement>(null);
+  const [showInvite, setShowInvite] = useState(false);
 
   useEffect(() => {
     fetch("/api/workspaces")
@@ -37,39 +39,12 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
       .catch(() => setLoading(false));
   }, [open]);
 
-  useEffect(() => {
-    if (showJoin) {
-      setTimeout(() => joinInputRef.current?.focus(), 50);
-    }
-  }, [showJoin]);
-
   const current =
     workspaces.find((w) => w.slug === currentSlug) ?? workspaces[0];
 
   function switchTo(slug: string) {
     setOpen(false);
     router.push(`/app/${slug}`);
-  }
-
-  function extractToken(value: string): string | null {
-    const trimmed = value.trim();
-    const urlMatch = trimmed.match(/\/invite\/([a-zA-Z0-9_-]+)/);
-    if (urlMatch) return urlMatch[1];
-    if (/^[a-zA-Z0-9_-]{8,}$/.test(trimmed)) return trimmed;
-    return null;
-  }
-
-  function handleJoin() {
-    setJoinError("");
-    const token = extractToken(joinLink);
-    if (!token) {
-      setJoinError("Please paste a valid invite link.");
-      return;
-    }
-    setOpen(false);
-    setShowJoin(false);
-    setJoinLink("");
-    router.push(`/invite/${token}`);
   }
 
   if (loading) {
@@ -85,7 +60,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
     <div className="relative w-full min-w-0">
       <button
         className="flex w-full min-w-0 items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1 text-left transition-colors hover:bg-primary/5 focus:outline-none"
-        onClick={() => { setOpen((v) => !v); setShowJoin(false); setJoinError(""); }}
+        onClick={() => setOpen((v) => !v)}
         type="button"
       >
         <WorkspaceAvatar
@@ -108,7 +83,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setShowJoin(false); }} />
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
 
             {/* Workspace list */}
@@ -145,46 +120,8 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
               })}
             </div>
 
-            {/* Join workspace panel */}
-            {showJoin && (
-              <div className="border-t border-border p-3">
-                <p className="mb-2 text-xs font-semibold text-foreground">Paste invite link</p>
-                <input
-                  ref={joinInputRef}
-                  className="mb-1.5 h-9 w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  onChange={(e) => { setJoinLink(e.target.value); setJoinError(""); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleJoin(); if (e.key === "Escape") setShowJoin(false); }}
-                  placeholder="https://…/invite/token"
-                  type="text"
-                  value={joinLink}
-                />
-                {joinError && (
-                  <p className="mb-1.5 text-xs text-destructive">{joinError}</p>
-                )}
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1"
-                    onClick={handleJoin}
-                    size="sm"
-                    type="button"
-                    variant="default"
-                  >
-                    Join workspace
-                  </Button>
-                  <Button
-                    onClick={() => { setShowJoin(false); setJoinLink(""); setJoinError(""); }}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-
             {/* Footer */}
-            <div className={`border-t border-border p-1.5 ${showJoin ? "hidden" : ""}`}>
+            <div className="border-t border-border p-1.5">
               <Button
                 className="w-full justify-start gap-2 px-2 font-medium text-muted-foreground hover:text-foreground"
                 onClick={() => { setOpen(false); router.push("/app/workspaces/new"); }}
@@ -199,19 +136,25 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
               </Button>
               <Button
                 className="w-full justify-start gap-2 px-2 font-medium text-muted-foreground hover:text-foreground"
-                onClick={() => setShowJoin(true)}
+                onClick={() => { setOpen(false); setShowInvite(true); }}
                 size="sm"
                 type="button"
                 variant="ghost"
               >
-                <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Join workspace
+                <Mail className="size-3.5 shrink-0" />
+                Invite members
               </Button>
             </div>
           </div>
         </>
+      )}
+
+      {showInvite && current && (
+        <InviteMembersModal
+          workspaceId={current.id}
+          isOwner={!!session?.user?.id && current.createdBy === session.user.id}
+          onClose={() => setShowInvite(false)}
+        />
       )}
     </div>
   );

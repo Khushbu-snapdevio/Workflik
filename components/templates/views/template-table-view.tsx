@@ -29,10 +29,13 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellActionOverlay } from "@/components/database/cell-action-overlay";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
+import { CellDisplay } from "@/components/database/cells/cell-display";
 import { getOptionColor, groupOptions, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { PageIcon } from "@/components/pages/page-icon";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import type { SelectOption, DbPropertyConfig, DbProperty, DbView, ViewPropertyOverride } from "@/components/database/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -52,7 +55,7 @@ type NumberVal   = { number?: number };
 type TextVal    = { text?: string };
 type EmailVal    = { email?: string };
 type UrlVal     = { url?: string };
-type PersonVal   = { name?: string };
+type PersonVal   = { userIds?: string[]; _members?: { id: string; name?: string; email?: string }[] };
 
 // ── Property text helper (for clipboard copy + comment quote snapshot) ───────
 function getPropertyText(prop: DatabaseProperty, raw: unknown): string {
@@ -66,7 +69,10 @@ function getPropertyText(prop: DatabaseProperty, raw: unknown): string {
   case "email":  return String((v as EmailVal).email ?? "");
   case "phone":  return String((v as { phone?: string }).phone ?? "");
   case "checkbox": return (v as CheckboxVal).checked ? "Yes" : "No";
-  case "person": return String((v as PersonVal).name ?? "");
+  case "person": {
+   const members = ((v as PersonVal)._members) ?? [];
+   return members.map((m) => m.name || m.email).filter(Boolean).join(", ");
+  }
   case "date": {
    const d = (v as DateVal).date;
    return d ? new Date(d + "T00:00:00").toLocaleDateString() : "";
@@ -88,16 +94,18 @@ function getPropertyText(prop: DatabaseProperty, raw: unknown): string {
 // ── Editable scalar cell ──────────────────────────────────────────────────────
 
 function EditableCell({
- value, type, placeholder, onSave,
+ value, type, placeholder, onSave, onEditingChange,
 }: {
  value:    string | number | null | undefined;
  type:    "text" | "number" | "email" | "url" | "date";
  placeholder: string;
  onSave:   (v: unknown) => void;
+ onEditingChange: (editing: boolean) => void;
 }) {
  const [editing, setEditing] = useState(false);
  const [draft,  setDraft]  = useState("");
  const inputRef       = useRef<HTMLInputElement>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  function startEdit() {
   setDraft(value != null ? String(value) : "");
@@ -105,6 +113,12 @@ function EditableCell({
  }
 
  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+ // Hide the hover overlay (comment/copy icons) the whole time this cell is
+ // being typed into, matching Notion — not just report it once on click.
+ useEffect(() => {
+  onEditingChange(editing);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [editing]);
 
  function commit() {
   setEditing(false);
@@ -175,11 +189,16 @@ function EditableCell({
     </a>
     <button
      onClick={startEdit}
+     onMouseEnter={(e) => showTooltip("Edit URL", e)}
+     onMouseLeave={hideTooltip}
      className="hidden shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground group-hover/url:block transition-colors"
-     title="Edit URL"
     >
      <PencilSimpleIcon size={11} />
     </button>
+    {tooltip && typeof document !== "undefined" && createPortal(
+     <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+     document.body,
+    )}
    </div>
   );
  }
@@ -187,11 +206,11 @@ function EditableCell({
  return (
   <button
    onClick={startEdit}
-   className="w-full rounded px-1 py-0.5 text-left text-sm hover:bg-muted/60 transition-colors"
+   className="block w-full min-w-0 rounded px-1 py-0.5 text-left text-sm hover:bg-muted/60 transition-colors"
   >
    {display
-    ? <span className="text-foreground">{display}</span>
-    : <span className="text-muted-foreground/60 text-xs">{placeholder}</span>
+    ? <span className="block truncate text-foreground">{display}</span>
+    : <span className="block truncate text-muted-foreground/60 text-xs">{placeholder}</span>
    }
   </button>
  );
@@ -477,54 +496,51 @@ function CheckboxCell({ value, onSave }: { value: CheckboxVal | null | undefined
 }
 
 // ── Person cell ───────────────────────────────────────────────────────────────
-
-function PersonCell({ value, onSave }: { value: PersonVal | null | undefined; onSave: (v: unknown) => void }) {
- const [editing, setEditing] = useState(false);
- const [draft,  setDraft]  = useState(value?.name ?? "");
- const inputRef       = useRef<HTMLInputElement>(null);
- const name         = value?.name ?? "";
-
- useEffect(() => { if (editing) { setDraft(name); inputRef.current?.focus(); } }, [editing, name]);
-
- function commit() {
-  setEditing(false);
-  const n = draft.trim();
-  onSave(n ? { name: n } : null);
- }
-
- if (editing) {
-  return (
-   <input
-    ref={inputRef}
-    value={draft}
-    onChange={(e) => setDraft(e.target.value)}
-    onBlur={commit}
-    onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
-    placeholder="Assignee name…"
-    className="w-full rounded border border-primary/60 bg-background px-2 py-0.5 text-sm outline-none"
-   />
-  );
- }
+// Uses the same shared CellDisplay (read) + CellEditorPopover (edit, workspace-
+// member picker) as every other database view — this used to be its own
+// free-text "type a name" input storing `{ name }`, which didn't match the
+// `{ userIds, _members }` shape every other view saves/reads, so a person
+// picked from the entry's own page (or Board/Gallery/Calendar) always showed
+// as Empty here.
+function PersonCell({
+ property, value, workspaceId, onSave,
+}: {
+ property: DatabaseProperty;
+ value:  PersonVal | null | undefined;
+ workspaceId: string;
+ onSave: (v: unknown) => void;
+}) {
+ const [rect, setRect] = useState<DOMRect | null>(null);
+ const hasValue = (value?.userIds?.length ?? 0) > 0;
 
  return (
-  <button
-   onClick={() => setEditing(true)}
-   className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/60 transition-colors"
-  >
-   {name ? (
-    <>
-     <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-      {name.charAt(0).toUpperCase()}
-     </span>
-     <span className="truncate text-sm text-foreground">{name}</span>
-    </>
-   ) : (
-    <>
-     <UserIcon size={12} className="shrink-0 text-muted-foreground/70" />
-     <span className="text-xs text-muted-foreground/60">Empty</span>
-    </>
+  <>
+   <button
+    type="button"
+    onClick={(e) => setRect((e.currentTarget as HTMLElement).getBoundingClientRect())}
+    className="flex min-h-[24px] w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
+   >
+    {hasValue ? (
+     <CellDisplay property={property as unknown as DbProperty} value={value} />
+    ) : (
+     <>
+      <UserIcon size={12} className="shrink-0 text-muted-foreground/70" />
+      <span className="text-xs text-muted-foreground/60">Empty</span>
+     </>
+    )}
+   </button>
+
+   {rect && (
+    <CellEditorPopover
+     property={property as unknown as DbProperty}
+     value={value ?? null}
+     cellRect={rect}
+     workspaceId={workspaceId}
+     onSave={onSave}
+     onClose={() => setRect(null)}
+    />
    )}
-  </button>
+  </>
  );
 }
 
@@ -813,7 +829,10 @@ function InlineTitleInput({
   <input
    ref={ref}
    value={val}
-   onChange={(e) => setVal(e.target.value)}
+   onChange={(e) => {
+    setVal(e.target.value);
+    window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, title: e.target.value } }));
+   }}
    onBlur={commit}
    onKeyDown={(e) => {
     if (e.key === "Enter") commit();
@@ -828,7 +847,7 @@ function InlineTitleInput({
 // ── Cell renderer ─────────────────────────────────────────────────────────────
 
 function CellContent({
- prop, raw, activeView, workspaceId, onSave, onEditProperty, onUpdateProperty,
+ prop, raw, activeView, workspaceId, onSave, onEditProperty, onUpdateProperty, onEditingChange,
 }: {
  prop:  DatabaseProperty;
  raw:  unknown;
@@ -837,6 +856,7 @@ function CellContent({
  onSave: (v: unknown) => void;
  onEditProperty: (propId: string, rect: DOMRect) => void;
  onUpdateProperty: (propId: string, patch: Record<string, unknown>) => void;
+ onEditingChange: (editing: boolean) => void;
 }) {
  const config = (prop.config ?? {}) as PropConfig;
  const options = config.options ?? [];
@@ -850,23 +870,23 @@ function CellContent({
  switch (prop.type) {
   case "text": {
    const tv = raw as TextVal | null;
-   return <EditableCell value={tv?.text} type="text" placeholder="Empty" onSave={onSave} />;
+   return <EditableCell value={tv?.text} type="text" placeholder="Empty" onSave={onSave} onEditingChange={onEditingChange} />;
   }
   case "number": {
    const nv = raw as NumberVal | null;
-   return <EditableCell value={nv?.number} type="number" placeholder="—" onSave={onSave} />;
+   return <EditableCell value={nv?.number} type="number" placeholder="—" onSave={onSave} onEditingChange={onEditingChange} />;
   }
   case "date": {
    const dv = raw as DateVal | null;
-   return <EditableCell value={dv?.date} type="date" placeholder="Pick date" onSave={onSave} />;
+   return <EditableCell value={dv?.date} type="date" placeholder="Pick date" onSave={onSave} onEditingChange={onEditingChange} />;
   }
   case "email": {
    const ev = raw as EmailVal | null;
-   return <EditableCell value={ev?.email} type="email" placeholder="Empty" onSave={onSave} />;
+   return <EditableCell value={ev?.email} type="email" placeholder="Empty" onSave={onSave} onEditingChange={onEditingChange} />;
   }
   case "url": {
    const uv = raw as UrlVal | null;
-   return <EditableCell value={uv?.url} type="url" placeholder="Empty" onSave={onSave} />;
+   return <EditableCell value={uv?.url} type="url" placeholder="Empty" onSave={onSave} onEditingChange={onEditingChange} />;
   }
   case "select":
    if (isStatus) {
@@ -913,10 +933,10 @@ function CellContent({
     </div>
    );
   case "person":
-   return <PersonCell value={raw as PersonVal | null} onSave={onSave} />;
+   return <PersonCell property={prop} value={raw as PersonVal | null} workspaceId={workspaceId} onSave={onSave} />;
   case "phone": {
    const pv = raw as { phone?: string } | null;
-   return <EditableCell value={pv?.phone} type="text" placeholder="Empty" onSave={(v) => onSave(v ? { phone: (v as { text: string }).text } : null)} />;
+   return <EditableCell value={pv?.phone} type="text" placeholder="Empty" onSave={(v) => onSave(v ? { phone: (v as { text: string }).text } : null)} onEditingChange={onEditingChange} />;
   }
   default:
    return <span className="px-1 text-xs text-muted-foreground/70">—</span>;
@@ -965,12 +985,22 @@ function SortableRow({
  const [hoveredCell, setHoveredCell] = useState<{
   propId: string; prop: DatabaseProperty; rawVal: unknown; rect: DOMRect;
  } | null>(null);
+ // Which property (if any) is currently being typed into — the hover overlay
+ // must not show while the user is actively editing a cell, matching Notion
+ // (and matching the main workspace table view's behavior).
+ const [editingPropId, setEditingPropId] = useState<string | null>(null);
  const [copiedPropId, setCopiedPropId] = useState<string | null>(null);
  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
  // Raw per-property comment list for this row, fetched once and used to derive
  // a per-cell comment badge count (comments are scoped to a property).
  const [rowComments, setRowComments] = useState<Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }> | null>(null);
  const commentsFetchedRef = useRef(false);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+ // entry.commentCount is batch-computed server-side; shadowed in local state
+ // so the row badge can bump instantly when a new page-level comment is
+ // added via commentPopover below, instead of waiting on the next full fetch.
+ const [rowCommentCount, setRowCommentCount] = useState(entry.commentCount ?? 0);
+ useEffect(() => { setRowCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
 
  function clearLeaveTimer() {
   if (leaveTimerRef.current) { clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
@@ -979,6 +1009,22 @@ function SortableRow({
   clearLeaveTimer();
   leaveTimerRef.current = setTimeout(() => setHoveredCell(null), 150);
  }
+
+ // The overlay is a `position: fixed` portal anchored to a `rect` snapshotted
+ // once on mouseenter. Unlike the click-opened menus (which lock scroll
+ // instead), this is a passive hover affordance, so scrolling should just
+ // dismiss it rather than block the table — listen in the capture phase so a
+ // scroll on the table's scroll container (an ancestor, not this row) is seen.
+ useEffect(() => {
+  if (!hoveredCell) return;
+  function handleScroll() {
+   clearLeaveTimer();
+   setHoveredCell(null);
+  }
+  document.addEventListener("scroll", handleScroll, true);
+  return () => document.removeEventListener("scroll", handleScroll, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [hoveredCell]);
 
  function fetchRowComments() {
   if (commentsFetchedRef.current) return;
@@ -1033,8 +1079,9 @@ function SortableRow({
      <div
       {...listeners}
       onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); }}
+      onMouseEnter={(e) => showTooltip("Drag · Click for actions", e)}
+      onMouseLeave={hideTooltip}
       className="flex size-5 cursor-grab items-center justify-center rounded text-muted-foreground/0 hover:bg-accent hover:text-muted-foreground/60 transition-colors active:cursor-grabbing group-hover/row:text-muted-foreground/40"
-      title="Drag · Click for actions"
      >
       <GripVertical size={13} />
      </div>
@@ -1120,13 +1167,31 @@ function SortableRow({
       )}
      </div>
 
+     {!!rowCommentCount && (
+      <button
+       type="button"
+       onClick={(e) => {
+        e.stopPropagation();
+        setCommentPopover({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), propId: null, propName: null, valueLabel: null });
+       }}
+       onMouseEnter={(e) => showTooltip("View comments", e)}
+       onMouseLeave={hideTooltip}
+       className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground/60 transition-opacity duration-150 hover:bg-accent hover:text-foreground"
+       style={{ opacity: isRowHovered ? 1 : 0 }}
+      >
+       <MessageSquareIcon size={11} />
+       {rowCommentCount}
+      </button>
+     )}
+
      {/* Row quick action: OPEN */}
      <div className="ml-auto flex shrink-0 items-center transition-opacity duration-150"
       style={{ opacity: isRowHovered ? 1 : 0 }}>
       <Link
        href={`/app/${workspaceSlug}/${entry.shortId}`}
+       onMouseEnter={(e) => showTooltip("Open full page", e)}
+       onMouseLeave={hideTooltip}
        className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground/60 hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
-       title="Open full page"
       >
        <FileText size={9} />
        OPEN
@@ -1139,10 +1204,10 @@ function SortableRow({
    {visibleProps.map((p) => (
     <td
      key={p.id}
-     className="group/cell relative px-1 py-0.5 transition-colors hover:bg-accent/40"
+     className="group/cell relative overflow-hidden px-1 py-0.5 transition-colors hover:bg-accent/40"
      onMouseEnter={(e) => {
       clearLeaveTimer();
-      if (!commentPopover) {
+      if (!commentPopover && editingPropId !== p.id) {
        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
        setHoveredCell({ propId: p.id, prop: p, rawVal: valMap.get(p.id), rect });
        fetchRowComments();
@@ -1158,6 +1223,10 @@ function SortableRow({
       onSave={(v) => onUpdatePropValue(entry.id, p.id, v)}
       onEditProperty={onEditProperty}
       onUpdateProperty={onUpdateProperty}
+      onEditingChange={(editing) => {
+       if (editing) { clearLeaveTimer(); setHoveredCell(null); setEditingPropId(p.id); }
+       else if (editingPropId === p.id) { setEditingPropId(null); }
+      }}
      />
     </td>
    ))}
@@ -1211,13 +1280,22 @@ function SortableRow({
    <CellCommentPopover
     pageId={entry.id}
     workspaceId={workspaceId}
+    workspaceSlug={workspaceSlug}
+    entryShortId={entry.shortId}
     anchorRect={commentPopover.rect}
     propertyId={commentPopover.propId}
     propertyName={commentPopover.propName}
     propertyValueLabel={commentPopover.valueLabel}
     onClose={() => { setCommentPopover(null); commentsFetchedRef.current = false; }}
-    onCommentAdded={() => setRowComments((prev) => [...(prev ?? []), { blockId: null, deletedAt: null, propertyId: commentPopover.propId }])}
+    onCommentAdded={() => {
+     setRowComments((prev) => [...(prev ?? []), { blockId: null, deletedAt: null, propertyId: commentPopover.propId }]);
+     if (commentPopover.propId === null) setRowCommentCount((c) => c + 1);
+    }}
    />,
+   document.body,
+  )}
+  {tooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
    document.body,
   )}
   </>
@@ -1338,7 +1416,7 @@ export function TemplateTableView({
     </colgroup>
 
     {/* Header */}
-    <thead className="sticky top-0 z-[200] bg-background/95 backdrop-blur-sm">
+    <thead className="sticky top-0 z-[200] bg-background">
      <tr className="border-b border-border/60">
       {/* Drag handle column header (empty) */}
       <th className="w-6 px-0.5 py-2.5" />

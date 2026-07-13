@@ -14,6 +14,7 @@ interface NotificationContextValue {
   markRead:        (id: string) => void;
   markAllRead:     () => void;
   clearAll:        () => void;
+  deleteNotification: (id: string, wasUnread: boolean) => void;
   refreshCount:    () => void;
 }
 
@@ -108,9 +109,14 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug }: P
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const deleteNotification = useCallback((id: string, wasUnread: boolean) => {
+    fetch(`/api/notifications/${id}`, { method: "DELETE" }).catch(() => {});
+    if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1));
+  }, []);
+
   return (
     <NotificationContext.Provider
-      value={{ unreadCount, workspaceId, panelOpen, openPanel, closePanel, markRead, markAllRead, clearAll, refreshCount: fetchCount }}
+      value={{ unreadCount, workspaceId, panelOpen, openPanel, closePanel, markRead, markAllRead, clearAll, deleteNotification, refreshCount: fetchCount }}
     >
       {children}
       {toasts.map((t) => (

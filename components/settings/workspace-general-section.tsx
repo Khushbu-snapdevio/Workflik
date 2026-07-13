@@ -9,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { RoleSelect } from "@/components/ui/role-select";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 /* ── Icon picker — same Notion-style picker used for page/database icons
@@ -24,8 +27,16 @@ function WorkspaceIconPicker({
  const [pos,   setPos]  = useState<{ top: number; left: number } | null>(null);
  const [mounted, setMounted] = useState(false);
  const btnRef = useRef<HTMLButtonElement>(null);
+ const panelRef = useRef<HTMLDivElement>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  useEffect(() => { setMounted(true); }, []);
+
+ // The panel is a `position: fixed` portal anchored to a rect snapshotted
+ // once on open — lock page scroll while it's open instead of
+ // repositioning, matching the pattern used by the app's other click-opened
+ // popovers anchored via a one-time getBoundingClientRect() snapshot.
+ useScrollLockWhileOpen(open, (target) => !!panelRef.current?.contains(target));
 
  function handleOpen() {
   if (!open && btnRef.current) {
@@ -46,12 +57,13 @@ function WorkspaceIconPicker({
  }
 
  const panel = mounted && open && pos ? createPortal(
-  <div style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}>
+  <div ref={panelRef} style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}>
    <div className="relative">
     <IconPicker
      workspaceId={workspaceId}
      uploadKind="workspace_icon"
      onSelect={(v) => { onChange(v); setOpen(false); }}
+     onIconPreview={(v) => onChange(v)}
      onRemove={value ? () => { onChange(""); setOpen(false); } : undefined}
      onClose={() => setOpen(false)}
     />
@@ -62,10 +74,16 @@ function WorkspaceIconPicker({
 
  return (
   <>
-   <button ref={btnRef} type="button" onClick={handleOpen} title="Change icon"
+   <button ref={btnRef} type="button" onClick={handleOpen}
+    onMouseEnter={(e) => showTooltip("Change icon", e)}
+    onMouseLeave={hideTooltip}
     className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border-2 border-dashed border-border bg-muted/30 transition-colors duration-150 hover:border-border hover:bg-accent active:scale-[0.97]">
     {value ? <PageIcon icon={value} size={28} /> : <span className="text-3xl leading-none">📁</span>}
    </button>
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
    {panel}
   </>
  );
@@ -223,6 +241,13 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
  const [deleteName,   setDeleteName]   = useState("");
  const [deleting,    setDeleting]    = useState(false);
  const [deleteError,  setDeleteError]  = useState("");
+ // window.location.origin differs between the server (absent) and the
+ // client's first hydration pass (present) — reading it unconditionally in
+ // the render body causes a hydration mismatch. Gate it behind `mounted` so
+ // both the SSR pass and the client's initial render agree on "", and the
+ // full URL fills in one render later, after hydration has already settled.
+ const [mounted, setMounted] = useState(false);
+ useEffect(() => { setMounted(true); }, []);
 
  const nameRef = useRef(name); nameRef.current = name;
 
@@ -310,7 +335,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
   patchWs({ icon: v || null }, () => setIcon(prev));
  }
 
- const origin  = typeof window !== "undefined" ? window.location.origin : "";
+ const origin  = mounted ? window.location.origin : "";
  const inviteUrl = inviteToken ? `${origin}/invite/${inviteToken}` : "";
  const inviteShort = inviteUrl.replace(/^https?:\/\//, "");
 
@@ -437,7 +462,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
         : patchError?.field === "inviteLinkRole" ? <span className="text-xs text-destructive">{patchError.message}</span>
         : null
        }
-       control={<ChevronSelect value={inviteRole} options={[{value:"editor",label:"Member"},{value:"viewer",label:"Viewer"}]}
+       control={<RoleSelect value={inviteRole} options={[{value:"editor",label:"Member"},{value:"viewer",label:"Viewer"}]}
         onChange={v => {
          const prev = inviteRole; setInviteRole(v);
          patchWs({ inviteLinkRole: v }, () => setInviteRole(prev));

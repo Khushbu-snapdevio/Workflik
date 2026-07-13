@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { templates, users } from "@/lib/db/schema";
+import { templates, templateCategories, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
 
@@ -275,7 +275,7 @@ export const BUILT_IN_TEMPLATES: {
       ],
       views: [
         { name: "All Ideas",   type: "table", isDefault: true },
-        { name: "By category", type: "table", groupBy: "Category" },
+        { name: "By category", type: "board", groupBy: "Category" },
       ],
       sample_rows: [
         { "Idea": "Launch back to school campaign",  "Priority": "High",   "Category": "Activation",    "Total votes": 0 },
@@ -765,16 +765,25 @@ export async function POST(req: Request) {
     return Response.json({ message: "Already seeded", count: existing.length });
   }
 
-  const rows = missing.map((t) => ({
-    name:         t.name,
-    description:  t.description,
-    category:     t.category,
-    isBuiltIn:    true,
-    status:       "published" as const,
-    workspaceId:  null,
-    createdBy:    null,
-    pageSnapshot: t.pageSnapshot,
-  }));
+  const categories = await db
+    .select({ id: templateCategories.id, key: templateCategories.key })
+    .from(templateCategories);
+  const categoryIdByKey = new Map(categories.map((c) => [c.key, c.id]));
+
+  const rows = missing.map((t) => {
+    const categoryId = categoryIdByKey.get(t.category);
+    if (!categoryId) throw new Error(`Unknown template category key: ${t.category}`);
+    return {
+      name:         t.name,
+      description:  t.description,
+      categoryId,
+      isBuiltIn:    true,
+      status:       "published" as const,
+      workspaceId:  null,
+      createdBy:    null,
+      pageSnapshot: t.pageSnapshot,
+    };
+  });
 
   await db.insert(templates).values(rows);
 

@@ -63,17 +63,25 @@ export default function NotificationSettingsPage() {
 
   async function save() {
     setSaving(true); setSaved(false); setSaveError("");
+    // The PATCH below usually resolves in well under 100ms, which makes the
+    // spinner flash imperceptibly — hold it up for a minimum stretch so the
+    // saving -> saved transition actually reads as feedback to the user.
+    const minSpinner = new Promise((resolve) => setTimeout(resolve, 500));
     try {
-      const res = await fetch("/api/user/notification-preferences", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ emailFrequency: emailOn ? frequency : "off", weeklyDigestDay: weeklyDay, ...events }),
-      });
+      const [res] = await Promise.all([
+        fetch("/api/user/notification-preferences", {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emailFrequency: emailOn ? frequency : "off", weeklyDigestDay: weeklyDay, ...events }),
+        }),
+        minSpinner,
+      ]);
       if (res.ok) {
         setSaved(true); setTimeout(() => setSaved(false), 3000);
       } else {
         setSaveError("Failed to save — please try again.");
       }
     } catch {
+      await minSpinner;
       setSaveError("Network error — change wasn't saved.");
     }
     finally { setSaving(false); }
@@ -171,9 +179,9 @@ export default function NotificationSettingsPage() {
         {/* Weekly day picker */}
         {frequency === "weekly" && (
           <div className="mt-4 overflow-hidden rounded-[var(--radius-md)] border border-border bg-card p-4">
-            <p className="mb-3 text-sm font-semibold text-foreground">
+            <p className="mb-3 text-sm text-muted-foreground">
               Send digest every
-              <span className="ml-1.5 text-muted-foreground font-normal">{DAY_FULL[weeklyDay]}</span>
+              <span className="ml-1.5 font-semibold text-foreground">{DAY_FULL[weeklyDay]}</span>
             </p>
             <div className="flex gap-2">
               {DAYS.map((d, i) => (
@@ -225,9 +233,11 @@ export default function NotificationSettingsPage() {
           <span className="text-sm text-destructive">{saveError}</span>
         )}
         {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Check size={14} />
-            Saved
+          <span className="flex items-center gap-1.5">
+            <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-success">
+              <Check size={9} strokeWidth={3} className="text-white" />
+            </span>
+            <span className="text-sm font-medium text-success">Saved</span>
           </span>
         )}
         <Button
@@ -236,6 +246,7 @@ export default function NotificationSettingsPage() {
           onClick={save}
           disabled={saving}
           >
+          {saving && <Loader2 size={13} className="animate-spin" />}
           {saving ? "Saving…" : "Save preferences"}
         </Button>
       </div>

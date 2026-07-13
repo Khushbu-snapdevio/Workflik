@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
- X, Copy, Check, Globe, Lock,
+ X, Check, Globe, Lock, Building2,
  UserPlus, Link2, ChevronDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -45,11 +47,28 @@ const PUBLIC_OPTIONS: { value: PublicLevel; label: string }[] = [
  { value: "can_comment", label: "Can comment" },
 ];
 
+type GeneralAccess = "invited" | "workspace" | "public";
+
+const GENERAL_ACCESS_OPTIONS: {
+ value: GeneralAccess;
+ label: string;
+ icon: typeof Lock;
+}[] = [
+ { value: "invited",  label: "Only people invited",  icon: Lock },
+ { value: "workspace", label: "Workspace members",   icon: Building2 },
+ { value: "public",   label: "Anyone with the link",  icon: Globe },
+];
+
 // ── Props ──────────────────────────────────────────────────────────────────────
 
 interface SharePanelProps {
- pageId:     string;
+ pageId:      string;
+ pageShortId:   string;
+ workspaceSlug:  string;
  currentUserId:  string;
+ currentUserName: string | null;
+ currentUserEmail: string | null;
+ currentUserImage: string | null;
  isPrivate:    boolean;
  onClose:     () => void;
  onPrivateToggle: (isPrivate: boolean) => Promise<void>;
@@ -130,9 +149,9 @@ function SelectField({
     type="button"
     disabled={disabled}
     onClick={handleOpen}
-    className="flex h-8 w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-2.5 text-xs text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
+    className="flex h-9 w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-2.5 text-xs text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
    >
-    <span>{label}</span>
+    <span className="truncate whitespace-nowrap">{label}</span>
     <ChevronDown size={12} className={`shrink-0 text-muted-foreground/60 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
    </button>
 
@@ -171,6 +190,95 @@ function SelectField({
  );
 }
 
+function GeneralAccessControl({
+ value, onChange, disabled,
+}: {
+ value:   GeneralAccess;
+ onChange:  (v: GeneralAccess) => void;
+ disabled?: boolean;
+}) {
+ const [open, setOpen]   = useState(false);
+ const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
+ const btnRef = useRef<HTMLButtonElement>(null);
+ const menuRef = useRef<HTMLDivElement>(null);
+ const current = GENERAL_ACCESS_OPTIONS.find((o) => o.value === value) ?? GENERAL_ACCESS_OPTIONS[1]!;
+ const Icon  = current.icon;
+
+ useEffect(() => {
+  if (!open) return;
+  function handler(e: MouseEvent) {
+   if (menuRef.current?.contains(e.target as Node)) return;
+   if (btnRef.current?.contains(e.target as Node)) return;
+   setOpen(false);
+  }
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+ }, [open]);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
+
+ function handleOpen() {
+  const r = btnRef.current?.getBoundingClientRect();
+  if (!open && r) setMenuRect(r);
+  setOpen((o) => !o);
+ }
+
+ return (
+  <div className="relative">
+   <button
+    ref={btnRef}
+    type="button"
+    disabled={disabled}
+    onClick={handleOpen}
+    className="h-9 w-full flex items-center gap-2.5 rounded-[var(--radius-sm)] border border-border bg-muted/20 px-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-60"
+   >
+    <Icon size={14} className="shrink-0 text-muted-foreground/70" />
+    <span className="flex-1 min-w-0 truncate text-[13px] font-medium text-foreground">{current.label}</span>
+    {disabled ? (
+     <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
+    ) : (
+     <ChevronDown size={13} className={`flex-shrink-0 text-muted-foreground/60 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+    )}
+   </button>
+
+   {open && menuRect && typeof document !== "undefined" && createPortal(
+    <div
+     ref={menuRef}
+     style={{
+      position: "fixed",
+      top: getClampedTop(menuRect, 8 + GENERAL_ACCESS_OPTIONS.length * 36),
+      left: getClampedLeft(menuRect, menuRect.width, { align: "start" }),
+      minWidth: menuRect.width,
+      zIndex: 9999,
+     }}
+     className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
+    >
+     {GENERAL_ACCESS_OPTIONS.map((o) => {
+      const OptionIcon = o.icon;
+      const selected  = o.value === value;
+      return (
+       <button
+        key={o.value}
+        type="button"
+        onClick={() => { onChange(o.value); setOpen(false); }}
+        className={`flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-left transition-colors ${
+         selected ? "bg-primary/10" : "hover:bg-accent"
+        }`}
+       >
+        <OptionIcon size={14} className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground/70"}`} />
+        <span className={`flex-1 min-w-0 truncate text-[13px] font-medium ${selected ? "text-primary" : "text-foreground"}`}>{o.label}</span>
+        {selected && <Check size={13} className="shrink-0 text-primary" />}
+       </button>
+      );
+     })}
+    </div>,
+    document.body
+   )}
+  </div>
+ );
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
  return (
   <p className="mb-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
@@ -179,37 +287,11 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  );
 }
 
-function Toggle({
- checked, onChange, disabled,
-}: {
- checked:  boolean;
- onChange: (v: boolean) => void;
- disabled?: boolean;
-}) {
- return (
-  <button
-   type="button"
-   role="switch"
-   aria-checked={checked}
-   onClick={() => onChange(!checked)}
-   disabled={disabled}
-   className={`relative inline-flex h-[22px] w-10 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50 ${
-    checked ? "bg-primary" : "bg-muted"
-   }`}
-  >
-   <span
-    className={`inline-block h-[17px] w-[17px] transform rounded-full bg-card ring-1 ring-border/30 transition-transform ${
-     checked ? "translate-x-[19px]" : "translate-x-[2px]"
-    }`}
-   />
-  </button>
- );
-}
-
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export function SharePanel({
- pageId, currentUserId, isPrivate: initialPrivate, onClose, onPrivateToggle,
+ pageId, pageShortId, workspaceSlug, currentUserId, currentUserName, currentUserEmail, currentUserImage,
+ isPrivate: initialPrivate, onClose, onPrivateToggle,
 }: SharePanelProps) {
  const panelRef = useRef<HTMLDivElement>(null);
 
@@ -219,15 +301,15 @@ export function SharePanel({
  const [loading, setLoading]       = useState(true);
 
  const [inviteEmail, setInviteEmail]   = useState("");
- const [inviteLevel, setInviteLevel]   = useState<AccessLevel>("can_edit");
  const [inviting, setInviting]      = useState(false);
  const [inviteError, setInviteError]   = useState("");
  const [inviteSuccess, setInviteSuccess] = useState(false);
 
- const [copied, setCopied]        = useState(false);
- const [togglingPublic, setTogglingPublic] = useState(false);
- const [savingPrivate, setSavingPrivate]  = useState(false);
+ const [copied, setCopied]      = useState(false);
+ const [savingAccess, setSavingAccess] = useState(false);
  const [pendingRemoveGrant, setPendingRemoveGrant] = useState<PermissionGrant | null>(null);
+
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  // ── Load ──────────────────────────────────────────────────────────────────
 
@@ -262,7 +344,7 @@ export function SharePanel({
    const res = await fetch(`/api/pages/${pageId}/guests/invite`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body:  JSON.stringify({ email, accessLevel: inviteLevel }),
+    body:  JSON.stringify({ email, accessLevel: "can_edit" }),
    });
    const data = await res.json();
    if (!res.ok) { setInviteError(data.error ?? "Failed to invite"); return; }
@@ -300,14 +382,12 @@ export function SharePanel({
  // ── Public link ───────────────────────────────────────────────────────────
 
  async function togglePublicLink(on: boolean) {
-  setTogglingPublic(true);
   const res = await fetch(`/api/pages/${pageId}/public-link`, {
    method: "POST",
    headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ isActive: on, accessLevel: publicLink?.accessLevel ?? "can_view" }),
   });
   if (res.ok) setPublicLink((await res.json()).link);
-  setTogglingPublic(false);
  }
 
  async function changePublicLevel(level: PublicLevel) {
@@ -320,31 +400,41 @@ export function SharePanel({
  }
 
  function copyLink() {
-  if (!publicLink?.token) return;
-  navigator.clipboard.writeText(`${window.location.origin}/p/${publicLink.token}`);
+  navigator.clipboard.writeText(shareUrl);
   setCopied(true);
   setTimeout(() => setCopied(false), 2000);
  }
 
- // ── Private toggle ────────────────────────────────────────────────────────
+ // ── General access ───────────────────────────────────────────────────────
 
- async function handlePrivateToggle() {
-  setSavingPrivate(true);
-  const next = !isPrivate;
+ async function setPrivate(next: boolean) {
+  await onPrivateToggle(next);
+  setIsPrivate(next);
+ }
+
+ async function changeGeneralAccess(next: GeneralAccess) {
+  setSavingAccess(true);
   try {
-   await onPrivateToggle(next);
-   setIsPrivate(next);
+   if (next === "public") {
+    if (isPrivate) await setPrivate(false);
+    if (!isPublicActive) await togglePublicLink(true);
+   } else {
+    if (isPublicActive) await togglePublicLink(false);
+    await setPrivate(next === "invited");
+   }
   } finally {
-   setSavingPrivate(false);
+   setSavingAccess(false);
   }
  }
 
  // ── Computed ──────────────────────────────────────────────────────────────
 
  const isPublicActive = publicLink?.isActive ?? false;
- const publicUrl   = publicLink?.token
-  ? `${typeof window !== "undefined" ? window.location.origin : ""}/p/${publicLink.token}`
-  : "";
+ const generalAccess: GeneralAccess = isPublicActive ? "public" : isPrivate ? "invited" : "workspace";
+ const origin     = typeof window !== "undefined" ? window.location.origin : "";
+ const shareUrl    = generalAccess === "public" && publicLink?.token
+  ? `${origin}/p/${publicLink.token}`
+  : `${origin}/app/${workspaceSlug}/${pageShortId}`;
 
  // ── Render ────────────────────────────────────────────────────────────────
 
@@ -371,38 +461,27 @@ export function SharePanel({
    <div className="flex-1 overflow-y-auto overscroll-contain">
 
     {/* Invite people */}
-    <div className="px-5 pt-4 pb-4">
-     <SectionLabel>Invite people</SectionLabel>
-     <div className="space-y-2">
+    <div className="px-5 pt-3 pb-3">
+     <div className="flex items-center gap-2">
       <input
        type="email"
        value={inviteEmail}
        onChange={(e) => { setInviteEmail(e.target.value); setInviteError(""); setInviteSuccess(false); }}
        onKeyDown={(e) => { if (e.key === "Enter") invite(); }}
-       placeholder="Add email address…"
-       className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
+       placeholder="Email or group, separated by commas"
+       className="flex-1 min-w-0 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
       />
-      <div className="flex items-center gap-2">
-       <SelectField
-        value={inviteLevel}
-        options={ACCESS_OPTIONS.filter((o) => o.value !== "full_access")}
-        onChange={(v) => setInviteLevel(v as AccessLevel)}
-        className="flex-1"
-       />
-       <button
-        type="button"
-        onClick={invite}
-        disabled={inviting || !inviteEmail.trim()}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-       >
-        {inviting ? (
-         <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-        ) : (
-         <UserPlus size={13} />
-        )}
-        Invite
-       </button>
-      </div>
+      <button
+       type="button"
+       onClick={invite}
+       disabled={inviting || !inviteEmail.trim()}
+       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-4 py-2.5 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+      >
+       {inviting && (
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+       )}
+       Invite
+      </button>
      </div>
      {inviteError && (
       <p className="mt-2 text-xs text-destructive">{inviteError}</p>
@@ -415,23 +494,30 @@ export function SharePanel({
     <div className="h-px bg-border/40 mx-5" />
 
     {/* People with access */}
-    <div className="px-5 py-4">
-     <SectionLabel>People with access</SectionLabel>
-
-     {loading ? (
-      <div className="flex items-center justify-center py-5">
-       <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-      </div>
-     ) : permissions.length === 0 ? (
-      <div className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-muted/30 px-3.5 py-3">
-       <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-        <Lock size={12} className="text-muted-foreground/60" />
+    <div className="px-5 py-3">
+     <div className="space-y-0.5">
+      {/* Owner — always shown, not editable */}
+      <div className="flex items-center gap-3 rounded-[var(--radius-sm)] px-2 py-1.5">
+       <Avatar name={currentUserName ?? currentUserEmail} image={currentUserImage} />
+       <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+         <span className="text-[13px] font-medium text-foreground truncate leading-tight">
+          {currentUserName ?? currentUserEmail ?? "You"}
+         </span>
+         <span className="text-xs text-muted-foreground/60 flex-shrink-0">(you)</span>
+        </div>
+        {currentUserName && currentUserEmail && (
+         <p className="text-xs text-muted-foreground/60 truncate leading-tight">{currentUserEmail}</p>
+        )}
        </div>
-       <p className="text-xs text-muted-foreground">Only you have access to this page.</p>
+       <span className="text-xs text-muted-foreground flex-shrink-0">Full access</span>
       </div>
-     ) : (
-      <div className="space-y-0.5">
-       {permissions.map((grant) => {
+
+      {loading ? (
+       <div className="flex items-center justify-center py-3">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
+       </div>
+      ) : permissions.map((grant) => {
         const isCurrentUser = grant.userId === currentUserId;
         const displayName  = grant.userName ?? grant.guestEmail ?? "Unknown";
         const displayEmail = grant.userEmail ?? grant.guestEmail ?? "";
@@ -441,13 +527,13 @@ export function SharePanel({
         return (
          <div
           key={grant.id}
-          className="group flex items-center gap-3 rounded-[var(--radius-sm)] px-2 py-2 hover:bg-muted/40 transition-colors"
+          className="group flex items-center gap-3 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-muted/40 transition-colors"
          >
           <Avatar name={displayName} image={grant.userImage} />
 
           <div className="flex-1 min-w-0">
            <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-sm font-medium text-foreground truncate leading-tight">
+            <span className="text-[13px] font-medium text-foreground truncate leading-tight">
              {displayName}
             </span>
             {isCurrentUser && (
@@ -479,7 +565,8 @@ export function SharePanel({
             <button
              type="button"
              onClick={() => setPendingRemoveGrant(grant)}
-             title="Remove access"
+             onMouseEnter={(e) => showTooltip("Remove access", e)}
+             onMouseLeave={hideTooltip}
              className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground/60 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
             >
              <X size={12} />
@@ -489,109 +576,47 @@ export function SharePanel({
          </div>
         );
        })}
-      </div>
-     )}
-    </div>
-
-    <div className="h-px bg-border/40 mx-5" />
-
-    {/* Publish to web */}
-    <div className="px-5 py-4">
-     <div className="flex items-start justify-between gap-3">
-      <div className="flex items-start gap-2.5 min-w-0">
-       <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-        <Globe size={14} className="text-primary" />
-       </div>
-       <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground leading-tight">Publish to web</p>
-        <p className="mt-0.5 text-xs text-muted-foreground/60 leading-snug">
-         {isPublicActive
-          ? "Anyone with the link can access this page"
-          : "Share publicly with anyone on the internet"}
-        </p>
-       </div>
-      </div>
-      <Toggle
-       checked={isPublicActive}
-       onChange={togglePublicLink}
-       disabled={togglingPublic}
-      />
      </div>
-
-     {isPublicActive && publicLink && (
-      <div className="mt-3.5 space-y-2.5">
-       <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2.5">
-        <Link2 size={11} className="shrink-0 text-muted-foreground" />
-        <span className="flex-1 truncate text-xs text-muted-foreground font-mono">
-         {publicUrl}
-        </span>
-        <button
-         type="button"
-         onClick={copyLink}
-         className="flex-shrink-0 flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground/70 hover:border-primary/30 hover:bg-primary/5 transition-colors"
-        >
-         {copied
-          ? <Check size={11} className="text-primary" />
-          : <Copy size={11} />}
-         {copied ? "Copied!" : "Copy link"}
-        </button>
-       </div>
-
-       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Visitors can</span>
-        <SelectField
-         value={publicLink.accessLevel}
-         options={PUBLIC_OPTIONS}
-         onChange={(v) => changePublicLevel(v as PublicLevel)}
-        />
-       </div>
-      </div>
-     )}
     </div>
 
     <div className="h-px bg-border/40 mx-5" />
 
-    {/* Page settings */}
-    <div className="px-5 py-4">
-     <SectionLabel>Page settings</SectionLabel>
-     <button
-      type="button"
-      onClick={handlePrivateToggle}
-      disabled={savingPrivate}
-      className={`w-full flex items-center gap-3 rounded-[var(--radius-sm)] border px-3.5 py-3 text-left transition-colors disabled:opacity-60 group ${
-       isPrivate
-        ? "border-primary/20 bg-primary/5 hover:bg-primary/10"
-        : "border-border bg-muted/20 hover:bg-muted/40"
-      }`}
-     >
-      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors ${
-       isPrivate ? "bg-primary/10" : "bg-muted group-hover:bg-muted/80"
-      }`}>
-       <Lock
-        size={14}
-        className={isPrivate ? "text-primary" : "text-muted-foreground/60"}
+    {/* General access */}
+    <div className="px-5 py-3">
+     <SectionLabel>General access</SectionLabel>
+     <div className="flex items-center gap-2">
+      <div className="flex-1 min-w-0">
+       <GeneralAccessControl
+        value={generalAccess}
+        onChange={changeGeneralAccess}
+        disabled={savingAccess}
        />
       </div>
-      <div className="flex-1 min-w-0">
-       <p className={`text-sm font-medium leading-tight ${isPrivate ? "text-primary" : "text-foreground"}`}>
-        {isPrivate ? "Private page" : "Make private"}
-       </p>
-       <p className="mt-0.5 text-xs leading-snug text-muted-foreground/60">
-        {isPrivate
-         ? "Only you and invited people can see this."
-         : "Hide from workspace members — only you can access."}
-       </p>
-      </div>
-      {savingPrivate ? (
-       <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
-      ) : isPrivate ? (
-       <span className="flex-shrink-0 rounded-[var(--radius-xs)] border border-[#bae6fd] bg-[#e0f2fe] px-2 py-0.5 text-xs font-semibold text-[#0369a1]">
-        Private
-       </span>
-      ) : null}
-     </button>
+      {generalAccess === "public" && publicLink && (
+       <SelectField
+        value={publicLink.accessLevel}
+        options={PUBLIC_OPTIONS}
+        onChange={(v) => changePublicLevel(v as PublicLevel)}
+        className="w-36"
+       />
+      )}
+     </div>
     </div>
 
+   </div>
+
+   {/* Footer */}
+   <div className="flex items-center justify-end border-t border-border/40 px-5 py-3">
+    <button
+     type="button"
+     onClick={copyLink}
+     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 hover:border-primary/30 hover:bg-primary/5 transition-colors"
+    >
+     {copied
+      ? <Check size={12} className="text-primary" />
+      : <Link2 size={12} />}
+     {copied ? "Copied!" : "Copy link"}
+    </button>
    </div>
   </div>
 
@@ -603,6 +628,11 @@ export function SharePanel({
    confirmLabel="Remove"
    onConfirm={() => { if (pendingRemoveGrant) { removeGrant(pendingRemoveGrant); setPendingRemoveGrant(null); } }}
   />
+
+  {tooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+   document.body,
+  )}
   </>
  );
 }

@@ -13,6 +13,8 @@ import { Calendar } from "@/components/ui/calendar";
 import type { DbProperty, DbPropertyConfig, SelectOption, StatusGroupKey, WorkspaceMember } from "@/components/database/types";
 import { createId } from "@paralleldrive/cuid2";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 interface CellEditorProps {
  property: DbProperty;
@@ -148,6 +150,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
  const [search, setSearch]   = useState("");
  const [optionMenu, setOptionMenu] = useState<{ opt: SelectOption; rect: DOMRect } | null>(null);
  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  const filtered = options.filter((o) => o.name.toLowerCase().includes(search.toLowerCase()));
  const canCreate = search.trim() && !options.some((o) => o.name.toLowerCase() === search.trim().toLowerCase());
@@ -311,7 +314,8 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
           <button
            onClick={() => quickAddOption(section.key as StatusGroupKey)}
            className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
-           title={`Add option to ${section.label}`}
+           onMouseEnter={(e) => showTooltip(`Add option to ${section.label}`, e)}
+           onMouseLeave={hideTooltip}
           >
            <Plus size={11} />
           </button>
@@ -371,6 +375,11 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
      onRecolor={(color) => recolorOption(optionMenu.opt.id, color)}
      onClose={() => setOptionMenu(null)}
     />
+   )}
+
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
    )}
   </div>
  );

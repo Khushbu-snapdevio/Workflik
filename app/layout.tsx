@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import type { ReactNode } from "react";
+import { PatchPerformanceMeasure } from "@/components/patch-performance-measure";
 import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from "@/config/platform";
 import { cn } from "@/lib/utils";
 import "@fontsource-variable/inter";
@@ -42,13 +42,7 @@ export default function RootLayout({
       lang="en"
     >
       <body suppressHydrationWarning>
-        <Script
-          id="patch-performance-measure"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){var o=performance.measure.bind(performance);performance.measure=function(){try{return o.apply(this,arguments)}catch(e){}};})();`,
-          }}
-        />
+        <PatchPerformanceMeasure />
         {children}
       </body>
     </html>

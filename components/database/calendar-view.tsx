@@ -93,21 +93,9 @@ interface MorePopupEntryRowProps {
 }
 
 function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps) {
-  const [commentCount, setCommentCount] = useState<number | null>(null);
-  const fetchedRef = useRef(false);
-
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    fetch(`/api/pages/${entry.id}/comments`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) return;
-        const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
-        setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
-      })
-      .catch(() => {});
-  }, [entry.id]);
+  // entry.commentCount is batch-computed server-side (open, page-level
+  // threads only) — see board-view.tsx's CardShell for the same change.
+  const commentCount = entry.commentCount ?? 0;
 
   return (
     <div
@@ -166,24 +154,15 @@ function DraggableChip({
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: entry.id });
   const [rightClickPos, setRightClickPos] = useState<{ x: number; y: number } | null>(null);
   const [showDots, setShowDots] = useState(false);
-  const [commentCount, setCommentCount] = useState<number | null>(null);
+  const [commentCount, setCommentCount] = useState<number | null>(entry.commentCount ?? null);
   const [showComment, setShowComment] = useState(false);
-  const fetchedRef = useRef(false);
   const chipRef = useRef<HTMLDivElement | null>(null);
   const style = transform ? { transform: CSS.Translate.toString(transform) } : {};
 
-  useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    fetch(`/api/pages/${entry.id}/comments`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) return;
-        const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
-        setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
-      })
-      .catch(() => {});
-  }, [entry.id]);
+  // entry.commentCount is batch-computed server-side (open, page-level
+  // threads only) — see board-view.tsx's CardShell for the same change.
+  // `onCommentAdded` below still bumps this instantly between fetches.
+  useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
 
   const inner = (
     <>
@@ -278,6 +257,8 @@ function DraggableChip({
         <CellCommentPopover
           pageId={entry.id}
           workspaceId={workspaceId}
+          workspaceSlug={workspaceSlug}
+          entryShortId={entry.shortId}
           anchorRect={chipRef.current.getBoundingClientRect()}
           onClose={() => setShowComment(false)}
           onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
@@ -333,6 +314,20 @@ export function CalendarView({
   const [overDate, setOverDate] = useState<string | null>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [morePopup, setMorePopup] = useState<{ key: string; x: number; y: number; entries: DbEntry[] } | null>(null);
+
+  // morePopup is a `position: fixed` portal anchored to a clientX/clientY
+  // snapshotted once on hover — dismiss it on scroll instead of
+  // repositioning, since locking scroll on every hover would hurt the
+  // calendar grid's own scrolling.
+  useEffect(() => {
+   if (!morePopup) return;
+   function handleScroll() {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setMorePopup(null);
+   }
+   document.addEventListener("scroll", handleScroll, true);
+   return () => document.removeEventListener("scroll", handleScroll, true);
+  }, [morePopup]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 

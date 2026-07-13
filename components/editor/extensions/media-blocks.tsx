@@ -120,12 +120,25 @@ function MediaPicker({
 function MediaActions({
   onChangeDirect,
   onDelete,
+  onAddCaption,
 }: {
   onChangeDirect: () => void;
   onDelete: () => void;
+  /** Omit once a caption is already showing — there's nothing left to reveal. */
+  onAddCaption?: () => void;
 }) {
   return (
     <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+      {onAddCaption && (
+        <button
+          className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-foreground/90"
+          onClick={onAddCaption}
+          onMouseDown={(e) => e.preventDefault()}
+          type="button"
+        >
+          Caption
+        </button>
+      )}
       <button
         className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-destructive/80"
         onClick={onDelete}
@@ -152,7 +165,11 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
   const caption = (node.attrs.caption as string) || "";
   const [picking, setPicking] = useState(!src);
   const [captionDraft, setCaptionDraft] = useState(caption);
+  // Notion doesn't show a caption field under an image until you ask for one —
+  // only pre-show it here if a caption was already saved.
+  const [showCaption, setShowCaption] = useState(!!caption);
   const changeRef = useRef<HTMLInputElement>(null);
+  const captionRef = useRef<HTMLInputElement>(null);
 
   const confirm = useCallback(
     (newSrc: string) => {
@@ -176,6 +193,11 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
   function handleDelete() {
     updateAttributes({ src: "" });
     setPicking(true);
+  }
+
+  function addCaption() {
+    setShowCaption(true);
+    requestAnimationFrame(() => captionRef.current?.focus());
   }
 
   if (picking) {
@@ -205,6 +227,7 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
             style={{ maxHeight: 520, objectFit: "contain" }}
           />
           <MediaActions
+            onAddCaption={showCaption ? undefined : addCaption}
             onChangeDirect={() => changeRef.current?.click()}
             onDelete={handleDelete}
           />
@@ -216,16 +239,19 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
             type="file"
           />
         </div>
-        <input
-          className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
-          onChange={(e) => {
-            setCaptionDraft(e.target.value);
-            updateAttributes({ caption: e.target.value });
-          }}
-          placeholder="Add a caption…"
-          type="text"
-          value={captionDraft}
-        />
+        {showCaption && (
+          <input
+            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
+            onChange={(e) => {
+              setCaptionDraft(e.target.value);
+              updateAttributes({ caption: e.target.value });
+            }}
+            placeholder="Add a caption…"
+            ref={captionRef}
+            type="text"
+            value={captionDraft}
+          />
+        )}
       </figure>
     </NodeViewWrapper>
   );
@@ -237,7 +263,9 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
   const caption = (node.attrs.caption as string) || "";
   const [picking, setPicking] = useState(!src);
   const [captionDraft, setCaptionDraft] = useState(caption);
+  const [showCaption, setShowCaption] = useState(!!caption);
   const changeRef = useRef<HTMLInputElement>(null);
+  const captionRef = useRef<HTMLInputElement>(null);
 
   const confirm = useCallback(
     (newSrc: string) => {
@@ -259,6 +287,11 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
   function handleDelete() {
     updateAttributes({ src: "" });
     setPicking(true);
+  }
+
+  function addCaption() {
+    setShowCaption(true);
+    requestAnimationFrame(() => captionRef.current?.focus());
   }
 
   if (picking) {
@@ -289,6 +322,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
             style={{ maxHeight: 480 }}
           />
           <MediaActions
+            onAddCaption={showCaption ? undefined : addCaption}
             onChangeDirect={() => changeRef.current?.click()}
             onDelete={handleDelete}
           />
@@ -300,16 +334,19 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
             type="file"
           />
         </div>
-        <input
-          className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
-          onChange={(e) => {
-            setCaptionDraft(e.target.value);
-            updateAttributes({ caption: e.target.value });
-          }}
-          placeholder="Add a caption…"
-          type="text"
-          value={captionDraft}
-        />
+        {showCaption && (
+          <input
+            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
+            onChange={(e) => {
+              setCaptionDraft(e.target.value);
+              updateAttributes({ caption: e.target.value });
+            }}
+            placeholder="Add a caption…"
+            ref={captionRef}
+            type="text"
+            value={captionDraft}
+          />
+        )}
       </figure>
     </NodeViewWrapper>
   );
@@ -321,7 +358,9 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   const caption = (node.attrs.caption as string) || "";
   const [picking, setPicking] = useState(!src);
   const [captionDraft, setCaptionDraft] = useState(caption);
+  const [showCaption, setShowCaption] = useState(!!caption);
   const changeRef = useRef<HTMLInputElement>(null);
+  const captionRef = useRef<HTMLInputElement>(null);
 
   const confirm = useCallback(
     (newSrc: string) => {
@@ -343,6 +382,11 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   function handleDelete() {
     updateAttributes({ src: "" });
     setPicking(true);
+  }
+
+  function addCaption() {
+    setShowCaption(true);
+    requestAnimationFrame(() => captionRef.current?.focus());
   }
 
   if (picking) {
@@ -373,6 +417,16 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
             style={{ minWidth: 0 }}
           />
           <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            {!showCaption && (
+              <button
+                className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+                onClick={addCaption}
+                onMouseDown={(e) => e.preventDefault()}
+                type="button"
+              >
+                Caption
+              </button>
+            )}
             <button
               className="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/5"
               onClick={handleDelete}
@@ -398,16 +452,19 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
             type="file"
           />
         </div>
-        <input
-          className="mt-1.5 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
-          onChange={(e) => {
-            setCaptionDraft(e.target.value);
-            updateAttributes({ caption: e.target.value });
-          }}
-          placeholder="Add a caption…"
-          type="text"
-          value={captionDraft}
-        />
+        {showCaption && (
+          <input
+            className="mt-1.5 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+            onChange={(e) => {
+              setCaptionDraft(e.target.value);
+              updateAttributes({ caption: e.target.value });
+            }}
+            placeholder="Add a caption…"
+            ref={captionRef}
+            type="text"
+            value={captionDraft}
+          />
+        )}
       </figure>
     </NodeViewWrapper>
   );

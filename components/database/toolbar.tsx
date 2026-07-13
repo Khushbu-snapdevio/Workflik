@@ -37,6 +37,8 @@ import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
 import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import {
   getClampedLeft,
   getClampedTop,
@@ -134,6 +136,7 @@ export function DatabaseToolbar({
   const [cardsRect, setCardsRect] = useState<DOMRect | null>(null);
   const [groupRect, setGroupRect] = useState<DOMRect | null>(null);
   const [dateRect, setDateRect] = useState<DOMRect | null>(null);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const addViewDropRef = useRef<HTMLDivElement>(null);
   const contextDropRef = useRef<HTMLDivElement>(null);
   const propsDropRef = useRef<HTMLDivElement>(null);
@@ -290,7 +293,7 @@ export function DatabaseToolbar({
 
   return (
     <>
-      <div className="flex h-[46px] shrink-0 items-center overflow-x-auto border-b border-border bg-card pr-4 sm:pr-8 lg:pr-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex h-[46px] shrink-0 items-center overflow-x-auto border-b border-border bg-background pr-4 sm:pr-8 lg:pr-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* ── View tabs ── */}
         <div className="flex shrink-0 self-stretch items-stretch pl-4 sm:pl-8 lg:pl-16">
           {views.map((view) => {
@@ -367,7 +370,8 @@ export function DatabaseToolbar({
                       }
                     }}
                     onMouseDown={(e) => e.stopPropagation()}
-                    title="View options"
+                    onMouseEnter={(e) => showTooltip("View options", e)}
+                    onMouseLeave={hideTooltip}
                   >
                     <MoreVertical className="shrink-0" size={13} />
                   </button>
@@ -534,7 +538,13 @@ export function DatabaseToolbar({
                   onClick={() =>
                     onUpdateView(activeView.id, { galleryCardSize: size })
                   }
-                  title={`${size.charAt(0).toUpperCase() + size.slice(1)} cards`}
+                  onMouseEnter={(e) =>
+                    showTooltip(
+                      `${size.charAt(0).toUpperCase() + size.slice(1)} cards`,
+                      e
+                    )
+                  }
+                  onMouseLeave={hideTooltip}
                 >
                   {size[0].toUpperCase()}
                 </button>
@@ -589,7 +599,8 @@ export function DatabaseToolbar({
             <button
               className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
               onClick={() => setShowSearch(true)}
-              title="Search (⌘K)"
+              onMouseEnter={(e) => showTooltip("Search (⌘K)", e)}
+              onMouseLeave={hideTooltip}
             >
               <MagnifyingGlass size={13} />
             </button>
@@ -668,7 +679,8 @@ export function DatabaseToolbar({
                 );
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="Manage properties"
+              onMouseEnter={(e) => showTooltip("Manage properties", e)}
+              onMouseLeave={hideTooltip}
             >
               <SlidersHorizontal size={13} />
               {!inline && "Properties"}
@@ -694,7 +706,8 @@ export function DatabaseToolbar({
               onClick={() =>
                 onUpdateView(activeView.id, { entryOpenMode: "side_panel" })
               }
-              title="Open entries in side panel"
+              onMouseEnter={(e) => showTooltip("Open entries in side panel", e)}
+              onMouseLeave={hideTooltip}
             >
               <SidebarSimple size={12} />
               {!inline && <span className="hidden xl:inline">Panel</span>}
@@ -709,7 +722,8 @@ export function DatabaseToolbar({
               onClick={() =>
                 onUpdateView(activeView.id, { entryOpenMode: "full_page" })
               }
-              title="Open entries as full page"
+              onMouseEnter={(e) => showTooltip("Open entries as full page", e)}
+              onMouseLeave={hideTooltip}
             >
               <ArrowsOut size={12} />
               {!inline && <span className="hidden xl:inline">Full page</span>}
@@ -1050,6 +1064,13 @@ export function DatabaseToolbar({
               })}
             </div>
           </div>,
+          document.body
+        )}
+
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
           document.body
         )}
     </>

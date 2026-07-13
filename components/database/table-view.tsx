@@ -34,6 +34,8 @@ import type { SharedViewProps, DbProperty, DbEntry, SelectOption } from "@/compo
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -140,6 +142,12 @@ function SortableTableRow({
  const [rowComments, setRowComments] = useState<Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }> | null>(null);
  const commentsFetchedRef = useRef(false);
  const [copiedPropId, setCopiedPropId] = useState<string | null>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+ // entry.commentCount is batch-computed server-side; shadowed in local state
+ // so the row badge can bump instantly when a new page-level comment is
+ // added via commentPopover below, instead of waiting on the next full fetch.
+ const [rowCommentCount, setRowCommentCount] = useState(entry.commentCount ?? 0);
+ useEffect(() => { setRowCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
 
  // Portal-based hover overlay state
  const [hoveredCell, setHoveredCell] = useState<{
@@ -157,6 +165,32 @@ function SortableTableRow({
   clearLeaveTimer();
   leaveTimerRef.current = setTimeout(() => setHoveredCell(null), 150);
  }
+
+ // The overlay is a `position: fixed` portal anchored to a `rect` snapshotted
+ // once on mouseenter. Unlike the click-opened menus below (which lock scroll
+ // instead), this is a passive hover affordance, so scrolling should just
+ // dismiss it rather than block the table — listen in the capture phase so a
+ // scroll on the table's scroll container (an ancestor, not this row) is seen.
+ useEffect(() => {
+  if (!hoveredCell) return;
+  function handleScroll() {
+   clearLeaveTimer();
+   setHoveredCell(null);
+  }
+  document.addEventListener("scroll", handleScroll, true);
+  return () => document.removeEventListener("scroll", handleScroll, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [hoveredCell]);
+
+ // Belt-and-suspenders: the overlay is also blocked from being (re)shown for
+ // the active cell in the mouseenter handler below, but if any cell in this
+ // row becomes active through a path other than that exact click (e.g. a
+ // future keyboard-nav entry point), make sure the hover overlay never stays
+ // stuck showing over a cell the user is actively typing into — matching
+ // Notion, where the comment/copy icons never appear while editing.
+ useEffect(() => {
+  if (activeCell?.entryId === entry.id) setHoveredCell(null);
+ }, [activeCell, entry.id]);
 
  function fetchRowComments() {
   if (commentsFetchedRef.current) return;
@@ -211,7 +245,8 @@ function SortableTableRow({
       }}
       className="flex size-6 cursor-grab items-center justify-center rounded text-muted-foreground/30 hover:bg-accent hover:text-muted-foreground/60 transition-colors active:cursor-grabbing"
       style={{ opacity: isRowHovered ? 1 : 0, transition: "opacity 150ms" }}
-      title="Drag · Click for actions"
+      onMouseEnter={(e) => showTooltip("Drag · Click for actions", e)}
+      onMouseLeave={hideTooltip}
      >
       <GripVertical size={13} />
      </div>
@@ -269,7 +304,10 @@ function SortableTableRow({
      <input
       ref={cellInputRef}
       value={editValue}
-      onChange={(e) => setEditValue(e.target.value)}
+      onChange={(e) => {
+       setEditValue(e.target.value);
+       window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entry.id, title: e.target.value } }));
+      }}
       onBlur={() => { onUpdateTitle(entry.id, editValue); setActiveCell(null); }}
       onKeyDown={(e) => {
        if (e.key === "Enter" || e.key === "Tab") { onUpdateTitle(entry.id, editValue); setActiveCell(null); e.preventDefault(); }
@@ -297,13 +335,31 @@ function SortableTableRow({
      </span>
     )}
 
+    {!!rowCommentCount && (
+     <button
+      type="button"
+      onClick={(e) => {
+       e.stopPropagation();
+       setCommentPopover({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), propId: null, propName: null, valueLabel: null });
+      }}
+      onMouseEnter={(e) => showTooltip("View comments", e)}
+      onMouseLeave={hideTooltip}
+      className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground/60 transition-opacity duration-150 hover:bg-accent hover:text-foreground"
+      style={{ opacity: isRowHovered ? 1 : 0 }}
+     >
+      <MessageSquareIcon size={11} />
+      {rowCommentCount}
+     </button>
+    )}
+
     {/* Row quick action: OPEN */}
     <div className="ml-auto flex shrink-0 items-center transition-opacity duration-150"
      style={{ opacity: isRowHovered ? 1 : 0 }}>
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
       className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground/60 hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
-      title="Open full page"
+      onMouseEnter={(e) => showTooltip("Open full page", e)}
+      onMouseLeave={hideTooltip}
       onClick={(e) => e.stopPropagation()}
      >
       <FileText size={9} />
@@ -320,7 +376,7 @@ function SortableTableRow({
      <div
       key={prop.id}
       className={[
-       "relative flex shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
+       "relative flex min-w-0 shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
        isActive
         ? "bg-primary/5 border-l border-primary/30"
         : "hover:bg-muted/40",
@@ -412,13 +468,22 @@ function SortableTableRow({
    <CellCommentPopover
     pageId={entry.id}
     workspaceId={workspaceId}
+    workspaceSlug={workspaceSlug}
+    entryShortId={entry.shortId}
     anchorRect={commentPopover.rect}
     propertyId={commentPopover.propId}
     propertyName={commentPopover.propName}
     propertyValueLabel={commentPopover.valueLabel}
     onClose={() => { setCommentPopover(null); commentsFetchedRef.current = false; }}
-    onCommentAdded={() => setRowComments((prev) => [...(prev ?? []), { blockId: null, deletedAt: null, propertyId: commentPopover.propId }])}
+    onCommentAdded={() => {
+     setRowComments((prev) => [...(prev ?? []), { blockId: null, deletedAt: null, propertyId: commentPopover.propId }]);
+     if (commentPopover.propId === null) setRowCommentCount((c) => c + 1);
+    }}
    />
+  )}
+  {tooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+   document.body,
   )}
   </>
  );
@@ -452,6 +517,7 @@ export function TableView({
  // DnD state: when grouped, keyed by group id; when ungrouped, keyed by "__flat__"
  const [localEntryOrder, setLocalEntryOrder] = useState<Map<string, string[]>>(new Map());
  const [draggingId, setDraggingId]      = useState<string | null>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  const hiddenIds = new Set((activeView?.hiddenPropertyIds ?? []) as string[]);
  const visible  = resolvePropertyOrder(properties.filter((p) => !p.isSystem && !hiddenIds.has(p.id)), activeView);
@@ -613,7 +679,7 @@ export function TableView({
    {/* ═══════════ HEADER — fixed at top, clipped, synced horizontally ═══════════ */}
    <div
     ref={scrollHeaderRef}
-    className="shrink-0 overflow-hidden bg-card db-header-b"
+    className="shrink-0 overflow-hidden bg-background db-header-b"
    >
     <div style={{ minWidth: totalW, paddingRight: 32 }}>
     <div className="flex items-stretch">
@@ -701,7 +767,8 @@ export function TableView({
          setAddPropMenu(addPropMenu ? null : { rect });
         }}
         className="flex size-full items-center justify-center text-muted-foreground/60 transition-colors hover:bg-accent/60 hover:text-muted-foreground"
-        title="Add property"
+        onMouseEnter={(e) => showTooltip("Add property", e)}
+        onMouseLeave={hideTooltip}
        >
         <Plus size={13} />
        </button>
@@ -864,6 +931,8 @@ export function TableView({
     <CellCommentPopover
      pageId={rowCommentTarget.entryId}
      workspaceId={workspaceId}
+     workspaceSlug={workspaceSlug}
+     entryShortId={entries.find((e) => e.id === rowCommentTarget.entryId)?.shortId ?? ""}
      anchorRect={rowCommentTarget.rect}
      onClose={() => setRowCommentTarget(null)}
     />
@@ -950,6 +1019,10 @@ export function TableView({
      />
     );
    })()}
+  {tooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+   document.body,
+  )}
   </div>
  );
 }

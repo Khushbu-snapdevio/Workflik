@@ -56,33 +56,34 @@ export async function POST(req: Request) {
         );
       }
 
-      // Upsert each block
+      // Upsert each block by its (now always client-generated, permanent) id —
+      // a real INSERT ... ON CONFLICT DO UPDATE rather than an update-only
+      // path, since a fresh id the client just minted won't exist as a row
+      // yet. The client assigns a stable UUID to every block the instant
+      // it's created (before it's ever saved), so the same id is reused on
+      // every subsequent save — this is what makes upserting by id safe.
       for (const b of incoming) {
-        if (b.id) {
-          // Update existing
-          await tx.update(blocks)
-            .set({
-              parentBlockId: b.parentBlockId,
-              type:          b.type as "paragraph",
-              content:       b.content as Record<string, unknown>,
-              orderIndex:    b.orderIndex,
-              schemaVersion: b.schemaVersion,
-            })
-            .where(and(eq(blocks.id, b.id), eq(blocks.pageId, pageId)));
-          savedBlocks.push({ id: b.id, pageId, parentBlockId: b.parentBlockId, type: b.type as "paragraph", content: b.content as Record<string, unknown>, orderIndex: b.orderIndex, schemaVersion: b.schemaVersion });
-        } else {
-          // Insert new — capture the server-assigned UUID
-          const [inserted] = await tx.insert(blocks).values({
-            pageId:        b.pageId,
+        const id = b.id ?? crypto.randomUUID();
+        const [saved] = await tx.insert(blocks).values({
+          id,
+          pageId:        b.pageId,
+          parentBlockId: b.parentBlockId,
+          type:          b.type as "paragraph",
+          content:       b.content as Record<string, unknown>,
+          orderIndex:    b.orderIndex,
+          schemaVersion: b.schemaVersion,
+          createdBy:     session.user.id,
+        }).onConflictDoUpdate({
+          target: blocks.id,
+          set: {
             parentBlockId: b.parentBlockId,
             type:          b.type as "paragraph",
             content:       b.content as Record<string, unknown>,
             orderIndex:    b.orderIndex,
             schemaVersion: b.schemaVersion,
-            createdBy:     session.user.id,
-          }).returning({ id: blocks.id });
-          savedBlocks.push({ id: inserted.id, pageId, parentBlockId: b.parentBlockId, type: b.type as "paragraph", content: b.content as Record<string, unknown>, orderIndex: b.orderIndex, schemaVersion: b.schemaVersion });
-        }
+          },
+        }).returning({ id: blocks.id });
+        savedBlocks.push({ id: saved.id, pageId, parentBlockId: b.parentBlockId, type: b.type as "paragraph", content: b.content as Record<string, unknown>, orderIndex: b.orderIndex, schemaVersion: b.schemaVersion });
       }
 
       // Track last editor and notify page creator when someone else edits.

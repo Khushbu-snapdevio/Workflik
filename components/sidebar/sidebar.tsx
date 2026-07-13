@@ -19,14 +19,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { FavoritesSection } from "@/components/sidebar/favorites-section";
 import { PageTree } from "@/components/sidebar/page-tree";
+import { PrivateSection } from "@/components/sidebar/private-section";
 import { RecentlyVisitedSection } from "@/components/sidebar/recently-visited-section";
 import { WorkspaceSwitcher } from "@/components/sidebar/workspace-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { NewPageButton } from "@/components/workspace/new-page-button";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 
 type PageItem = {
  id: string;
@@ -49,6 +53,7 @@ type Props = {
  workspaceId: string;
  workspaceSlug: string;
  userEmail: string;
+ initialUserName: string | null;
  initialUserImage: string | null;
  isAdmin?: boolean;
  initialPages: PageItem[];
@@ -65,6 +70,7 @@ export function Sidebar({
  workspaceId,
  workspaceSlug,
  userEmail,
+ initialUserName,
  initialUserImage,
  isAdmin = false,
  initialPages,
@@ -75,6 +81,7 @@ export function Sidebar({
 }: Props) {
  const pathname = usePathname();
  const [userImage, setUserImage] = useState<string | null>(initialUserImage);
+ const [userName, setUserName] = useState<string | null>(initialUserName);
  const [width, setWidth] = useState(Math.max(MIN_WIDTH, initialSidebarWidth || MIN_WIDTH));
  const [collapsed, setCollapsed] = useState(initialSidebarCollapsed);
  const [filter] = useState("");
@@ -93,8 +100,10 @@ export function Sidebar({
  const [searchOpen, setSearchOpen] = useState(false);
  const newMenuRef = useRef<HTMLDivElement>(null);
  const userMenuRef = useRef<HTMLDivElement>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  const favoritePageIds = new Set(favorites.map((f) => f.pageId));
+ const displayName = userName?.trim() || formatEmailAsName(userEmail);
 
  const resizingRef = useRef(false);
  const startXRef = useRef(0);
@@ -127,6 +136,14 @@ export function Sidebar({
  }, []);
 
  useEffect(() => {
+  function h(e: Event) {
+   setUserName((e as CustomEvent<{ name: string | null }>).detail.name);
+  }
+  window.addEventListener("workflik:user-name-changed", h);
+  return () => window.removeEventListener("workflik:user-name-changed", h);
+ }, []);
+
+ useEffect(() => {
   const open = () => setSearchOpen(true);
   const close = () => setSearchOpen(false);
   document.addEventListener("workflik:open-search", open);
@@ -144,9 +161,27 @@ export function Sidebar({
    .catch(() => {});
  }, [workspaceId]);
 
+ // "workflik:favorites-changed" exists so components that toggle a favorite
+ // without going through handleToggleFavorite (favorite-button.tsx,
+ // entry-context-menu.tsx) can tell the sidebar to pick up the change. But
+ // handleToggleFavorite's OWN dispatch (fired to keep those same components
+ // in sync when the toggle originates *here*) would otherwise also land on
+ // this listener and kick off a refetch that races the optimistic update
+ // a few lines below it — the GET can resolve with pre-toggle data and
+ // silently wipe out the just-applied change. skipNextFavoritesEventRef
+ // marks that one dispatch as already handled so it's not double-applied.
+ const skipNextFavoritesEventRef = useRef(false);
+
  useEffect(() => {
-  window.addEventListener("workflik:favorites-changed", fetchFavorites);
-  return () => window.removeEventListener("workflik:favorites-changed", fetchFavorites);
+  function onFavoritesChanged() {
+   if (skipNextFavoritesEventRef.current) {
+    skipNextFavoritesEventRef.current = false;
+    return;
+   }
+   fetchFavorites();
+  }
+  window.addEventListener("workflik:favorites-changed", onFavoritesChanged);
+  return () => window.removeEventListener("workflik:favorites-changed", onFavoritesChanged);
  }, [fetchFavorites]);
 
  useEffect(() => {
@@ -190,6 +225,7 @@ export function Sidebar({
  }, []);
 
  function handleToggleFavorite(pageId: string, isFav: boolean) {
+  skipNextFavoritesEventRef.current = true;
   window.dispatchEvent(new CustomEvent("workflik:favorites-changed", { detail: { pageId, isFavorited: !isFav } }));
   if (isFav) {
    const removed = favorites.find((f) => f.pageId === pageId);
@@ -253,7 +289,8 @@ export function Sidebar({
     <div className="flex h-11 w-full shrink-0 items-center justify-center border-b border-sidebar-border">
      <button
       onClick={toggleCollapse}
-      title="Expand sidebar"
+      onMouseEnter={(e) => showTooltip("Expand sidebar", e)}
+      onMouseLeave={hideTooltip}
       type="button"
       className="group relative flex size-9 items-center justify-center rounded-[var(--radius-sm)] outline-none transition-colors duration-150 hover:bg-sidebar-accent"
      >
@@ -277,7 +314,8 @@ export function Sidebar({
       <button
        data-tour="new-page"
        onClick={() => setNewMenu((v) => !v)}
-       title="Create new…"
+       onMouseEnter={(e) => showTooltip("Create new…", e)}
+       onMouseLeave={hideTooltip}
        type="button"
        className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] outline-none transition-colors duration-150 ${
         newMenu
@@ -290,7 +328,8 @@ export function Sidebar({
       <button
        className="relative z-50 flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/70 outline-none transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
        onClick={toggleCollapse}
-       title="Collapse sidebar"
+       onMouseEnter={(e) => showTooltip("Collapse sidebar", e)}
+       onMouseLeave={hideTooltip}
        type="button"
       >
        <PanelLeft size={16} />
@@ -382,9 +421,9 @@ export function Sidebar({
      </nav>
      <div className="flex w-full items-center justify-center border-t border-sidebar-border py-3">
       <div className="group relative">
-       <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm transition-opacity duration-150 hover:opacity-80" />
+       <UserAvatar image={userImage} name={displayName} className="size-8 text-sm transition-opacity duration-150 hover:opacity-80" />
        <div className="pointer-events-none absolute bottom-0 left-full z-50 ml-3 min-w-[160px] whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-3 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-        <p className="text-xs font-semibold text-popover-foreground">{userEmail.split("@")[0]}</p>
+        <p className="text-xs font-semibold text-popover-foreground">{displayName}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{userEmail}</p>
        </div>
       </div>
@@ -447,21 +486,44 @@ export function Sidebar({
      workspaceSlug={workspaceSlug}
     />
 
+    {/* Private */}
+    <PrivateSection
+     pages={pages}
+     workspaceId={workspaceId}
+     workspaceSlug={workspaceSlug}
+     favoritePageIds={favoritePageIds}
+     onToggleFavorite={handleToggleFavorite}
+     onPagesChange={setPages}
+    />
+
     <div className="mx-2 border-t border-sidebar-border" />
 
     {/* Page tree with filter */}
     <div className="flex flex-1 flex-col px-2 py-2">
-     <SectionLabel label="Pages" expanded={pagesExpanded} onToggle={() => setPagesExpanded(v => !v)} />
-     {pagesExpanded && <PageTree
-      favoritePageIds={favoritePageIds}
-      filter={filter}
-      loading={pagesLoading}
-      onPagesChange={setPages}
-      onToggleFavorite={handleToggleFavorite}
-      pages={pages}
+     <SectionLabel
+      label="Pages"
+      expanded={pagesExpanded}
+      onToggle={() => setPagesExpanded(v => !v)}
       workspaceId={workspaceId}
       workspaceSlug={workspaceSlug}
-     />}
+      onBeforeAdd={() => setPagesExpanded(true)}
+     />
+     {/* Grid-rows trick animates height without measuring it in JS — see
+         favorites-section.tsx for the full rationale. */}
+     <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${pagesExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+      <div className="overflow-hidden">
+       <PageTree
+        favoritePageIds={favoritePageIds}
+        filter={filter}
+        loading={pagesLoading}
+        onPagesChange={setPages}
+        onToggleFavorite={handleToggleFavorite}
+        pages={pages}
+        workspaceId={workspaceId}
+        workspaceSlug={workspaceSlug}
+       />
+      </div>
+     </div>
     </div>
 
     <div className="mx-2 border-t border-sidebar-border" />
@@ -491,55 +553,63 @@ export function Sidebar({
 
    {!collapsed && (
     <div className="relative shrink-0 border-t border-sidebar-border px-2 py-2" ref={userMenuRef}>
-     {userMenu && (
-      <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover">
-       <div className="px-3.5 pb-3 pt-3.5">
-        <div className="flex items-center gap-3">
-         <div className="relative shrink-0">
-          <UserAvatar image={userImage} email={userEmail} className="size-10 text-sm" />
-          <span className="absolute bottom-0 right-0 size-2.5 translate-x-1/3 translate-y-1/3 rounded-full border-2 border-popover bg-success" />
-         </div>
-         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold leading-tight text-foreground">
-           {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
-          </p>
-          <p className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">{userEmail}</p>
-         </div>
+     {/* Stays mounted and animates via opacity/transform (instead of
+         conditional mount + animate-in-only) so closing eases out the same
+         way opening eases in — matching the Pages/Favorites/Recently
+         Visited sections' grid-rows collapse, which animates both
+         directions because their content never unmounts either. */}
+     <div
+      aria-hidden={!userMenu}
+      className={`absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 origin-bottom overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover transition-all duration-150 ease-out ${
+       userMenu ? "pointer-events-auto scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
+      }`}
+     >
+      <div className="px-3.5 pb-3 pt-3.5">
+       <div className="flex items-center gap-3">
+        <div className="relative shrink-0">
+         <UserAvatar image={userImage} name={displayName} className="size-10 text-sm" />
+         <span className="absolute bottom-0 right-0 size-2.5 translate-x-1/3 translate-y-1/3 rounded-full border-2 border-popover bg-success" />
+        </div>
+        <div className="min-w-0 flex-1">
+         <p className="truncate text-sm font-semibold leading-tight text-foreground">
+          {displayName}
+         </p>
+         <p className="mt-0.5 truncate text-xs leading-tight text-muted-foreground">{userEmail}</p>
         </div>
        </div>
-       <div className="mx-3 h-px bg-border/50" />
-       <div className="p-1.5">
-        <Link
-         href={`/app/${workspaceSlug}/settings`}
-         onClick={() => setUserMenu(false)}
-         className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-accent"
-        >
-         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 group-hover:bg-primary/10 group-hover:text-primary">
-          <Settings size={13} />
-         </span>
-         <span className="text-sm font-medium text-foreground">Settings</span>
-        </Link>
-       </div>
-       <div className="mx-3 h-px bg-border/50" />
-       <div className="p-1.5">
-        <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
-         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
-          <LogOut size={13} />
-         </span>
-         <span className="text-sm font-medium text-destructive">Sign out</span>
-        </SignOutButton>
-       </div>
       </div>
-     )}
+      <div className="mx-3 h-px bg-border/50" />
+      <div className="p-1.5">
+       <Link
+        href={`/app/${workspaceSlug}/settings`}
+        onClick={() => setUserMenu(false)}
+        className="group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-accent"
+       >
+        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted text-muted-foreground transition-colors duration-150 group-hover:bg-primary/10 group-hover:text-primary">
+         <Settings size={13} />
+        </span>
+        <span className="text-sm font-medium text-foreground">Settings</span>
+       </Link>
+      </div>
+      <div className="mx-3 h-px bg-border/50" />
+      <div className="p-1.5">
+       <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
+        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
+         <LogOut size={13} />
+        </span>
+        <span className="text-sm font-medium text-destructive">Sign out</span>
+       </SignOutButton>
+      </div>
+     </div>
      <button
       type="button"
       onClick={() => setUserMenu((v) => !v)}
       className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-2 transition-colors duration-150 ${userMenu ? "bg-primary/10" : "hover:bg-primary/10"}`}
      >
-      <UserAvatar image={userImage} email={userEmail} className="size-8 text-sm" />
+      <UserAvatar image={userImage} name={displayName} className="size-8 text-sm" />
       <div className="min-w-0 flex-1 text-left">
        <p className="truncate text-sm font-semibold text-sidebar-foreground">
-        {userEmail.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+        {displayName}
        </p>
        <p className="truncate text-xs text-sidebar-foreground/70">{userEmail}</p>
       </div>
@@ -560,6 +630,10 @@ export function Sidebar({
      tabIndex={-1}
      type="button"
     />
+   )}
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
    )}
   </aside>
  );
@@ -676,13 +750,23 @@ function SearchNavButton({ icon }: { icon: React.ReactNode }) {
  );
 }
 
+function formatEmailAsName(email: string): string {
+ return email.split("@")[0].split(".").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+function initialsFromName(name: string): string {
+ const words = name.trim().split(/\s+/).filter(Boolean);
+ if (words.length === 0) return "";
+ return words.length === 1 ? words[0][0].toUpperCase() : (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
 function UserAvatar({
  image,
- email,
+ name,
  className,
 }: {
  image: string | null;
- email: string;
+ name: string;
  className?: string;
 }) {
  const [failed, setFailed] = useState(false);
@@ -700,26 +784,47 @@ function UserAvatar({
      onError={() => setFailed(true)}
     />
    ) : (
-    email[0].toUpperCase()
+    initialsFromName(name)
    )}
   </div>
  );
 }
 
-function SectionLabel({ label, expanded, onToggle }: { label: string; expanded?: boolean; onToggle?: () => void }) {
+function SectionLabel({
+ label, expanded, onToggle, workspaceId, workspaceSlug, onBeforeAdd,
+}: {
+ label: string;
+ expanded?: boolean;
+ onToggle?: () => void;
+ workspaceId?: string;
+ workspaceSlug?: string;
+ onBeforeAdd?: () => void;
+}) {
  return (
-  <button
-   type="button"
-   onClick={onToggle}
-   className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-  >
-   <FileText size={15} className="shrink-0 text-sidebar-foreground/50 transition-colors duration-150 group-hover:text-sidebar-accent-foreground" />
-   <span className="flex-1 text-left">{label}</span>
-   <ChevronDown
-    size={13}
-    className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
-   />
-  </button>
+  <div className="group mb-0.5 flex w-full items-center justify-between rounded-[var(--radius-md)] pr-1 transition-colors duration-150 hover:bg-sidebar-accent">
+   <button
+    type="button"
+    onClick={onToggle}
+    className="flex min-w-0 cursor-pointer items-center gap-1 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-sidebar-accent-foreground"
+   >
+    <span className="truncate">{label}</span>
+    <ChevronDown
+     size={14}
+     className={`shrink-0 text-sidebar-foreground/60 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
+    />
+   </button>
+   {workspaceId && workspaceSlug && (
+    <NewPageButton
+     workspaceId={workspaceId}
+     workspaceSlug={workspaceSlug}
+     title="Add a page"
+     onBeforeCreate={onBeforeAdd}
+     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-sidebar-accent-foreground disabled:opacity-60"
+    >
+     <Plus size={14} />
+    </NewPageButton>
+   )}
+  </div>
  );
 }
 

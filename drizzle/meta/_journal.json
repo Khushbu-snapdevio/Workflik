@@ -120,6 +120,20 @@
       "when": 1783682576537,
       "tag": "0016_keen_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784025333166,
+      "tag": "0017_simple_bedlam",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1784025477726,
+      "tag": "0018_whole_white_queen",
+      "breakpoints": true
     }
   ]
 }

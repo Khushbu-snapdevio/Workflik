@@ -6,6 +6,8 @@ import {
  ClipboardCopy as CopySimpleIcon,
  MoreHorizontal as DotsThreeIcon,
  Download as DownloadSimpleIcon,
+ Eye as EyeIcon,
+ EyeOff as EyeOffIcon,
  Lock as LockKeyIcon,
  Unlock as LockKeyOpenIcon,
  LayoutGrid as SquaresFourIcon,
@@ -17,6 +19,7 @@ import { createPortal } from "react-dom";
 import { SaveAsTemplateModal } from "@/components/templates/save-as-template-modal";
 import { PageHistoryPanel } from "@/components/pages/page-history-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { usePagePrivacy } from "@/components/pages/page-privacy-context";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
@@ -65,6 +68,7 @@ export function PageActionsMenu({
  iconOnly,
 }: PageActionsMenuProps) {
  const router = useRouter();
+ const { isPrivate, setIsPrivate } = usePagePrivacy();
  const [open, setOpen]          = useState(false);
  const [loading, setLoading]       = useState<string | null>(null);
  const [confirmTrash, setConfirmTrash]  = useState(false);
@@ -119,7 +123,9 @@ export function PageActionsMenu({
   // Skipped when onDeleted is provided (list/table context — there's no
   // "current page" to redirect away from, the row just needs to disappear).
   if (pageKind === "database" && !onDeleted) {
-   window.location.replace(`/app/${workspaceSlug}`);
+   window.location.replace(
+    parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`
+   );
    return;
   }
 
@@ -131,18 +137,15 @@ export function PageActionsMenu({
     onDeleted();
     return;
    }
-   const data = await res.json().catch(() => ({})) as { deleted?: string };
-   if (data.deleted === "permanent") {
-    window.location.replace(`/app/${workspaceSlug}`);
-   } else {
-    // This menu only appears on the page currently being viewed, so it's
-    // always safe (and necessary) to navigate away once it's trashed — a
-    // full navigation also picks up fresh sidebar state, since the sidebar
-    // otherwise only refetches on a "pages:refresh" event it never gets here.
-    window.location.replace(
-     parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}`
-    );
-   }
+   // Whether this was a first-time soft-delete ("soft") or a permanent
+   // delete of an already-trashed page ("permanent"), the destination rule
+   // is the same: back to the parent, or Library if this page had none —
+   // Library lists every page, so it's the sensible landing spot when
+   // there's no parent to return to (workspace home is a dashboard, not a
+   // page list).
+   window.location.replace(
+    parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`
+   );
   } else {
    router.refresh();
   }
@@ -173,6 +176,19 @@ export function PageActionsMenu({
  async function handleLock() {
   await run("lock", async () => {
    await fetch(`/api/pages/${pageId}/lock`, { method: "POST" });
+   router.refresh();
+  });
+ }
+
+ async function handleTogglePrivate() {
+  await run("toggle-private", async () => {
+   const next = !isPrivate;
+   await fetch(`/api/pages/${pageId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body:  JSON.stringify({ isPrivate: next }),
+   });
+   setIsPrivate(next);
    router.refresh();
   });
  }
@@ -259,6 +275,11 @@ export function PageActionsMenu({
        <button type="button" onClick={handleCopyLink} className={menuItemClass}>
         <CopyIcon size={14} />
         Copy link
+       </button>
+
+       <button type="button" onClick={handleTogglePrivate} className={menuItemClass}>
+        {isPrivate ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
+        {isPrivate ? "Make shared" : "Make private"}
        </button>
 
        {pageKind !== "database" && (

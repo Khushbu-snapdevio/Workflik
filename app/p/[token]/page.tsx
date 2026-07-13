@@ -66,7 +66,7 @@ export default async function PublicPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-page">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 flex h-12 items-center justify-between bg-page px-6">
         <a
           href="/"
           className="text-sm font-black tracking-tight text-foreground hover:opacity-70 transition-opacity"

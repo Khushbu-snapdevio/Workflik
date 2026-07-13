@@ -10,6 +10,8 @@ import { useSettingsUser } from "./settings-user-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 
 interface UserData {
  id:    string;
@@ -212,6 +214,7 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
  const [deleteError,  setDeleteError]  = useState("");
  const [blockingWorkspaces, setBlockingWorkspaces] = useState<BlockingWorkspace[]>([]);
  const [removePhotoConfirm, setRemovePhotoConfirm] = useState(false);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  // ── Change email ──
  const pendingEmailKey = `wf_pending_email_change:${user.id}`;
@@ -310,7 +313,13 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
     method: "PATCH", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ [field]: value }),
    });
-   if (res.ok) { setSaved(field); setTimeout(() => setSaved(null), 2500); }
+   if (res.ok) {
+    setSaved(field); setTimeout(() => setSaved(null), 2500);
+    if (field === "name" && typeof value === "string") {
+     updateUser({ name: value });
+     window.dispatchEvent(new CustomEvent("workflik:user-name-changed", { detail: { name: value } }));
+    }
+   }
   } catch { /* no-op */ }
   finally { setSaving(null); }
  }
@@ -423,7 +432,8 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
       onClick={() => !avatarUploading && fileRef.current?.click()}
       onKeyDown={e => e.key === "Enter" && !avatarUploading && fileRef.current?.click()}
       className="group relative size-[72px] shrink-0 cursor-pointer rounded-full"
-      title="Click to upload a photo"
+      onMouseEnter={(e) => showTooltip("Click to upload a photo", e)}
+      onMouseLeave={hideTooltip}
      >
       {displayImage
        ? <img src={displayImage} alt={displayName} className="size-[72px] rounded-full object-cover ring-1 ring-border/30" />
@@ -731,6 +741,11 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
     confirmLabel="Remove photo"
     onConfirm={handleRemovePhoto}
    />
+
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }

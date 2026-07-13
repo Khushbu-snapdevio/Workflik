@@ -2,14 +2,18 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import {
   Loader2, Paperclip, AtSign, ArrowUp, MoreHorizontal, Check,
-  Pencil, Trash2, Link2, Reply, Smile, X, ZoomIn, Download,
+  Pencil, Trash2, Link2, Reply, Smile, X, ZoomIn, Download, ExternalLink,
 } from "lucide-react";
 import { useSession } from "@/lib/auth/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
+import { ImageLightbox } from "@/components/editor/comment-card";
 import { emitCommentsChanged } from "@/lib/comments/comment-events";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -178,11 +182,16 @@ interface CellCommentPopoverProps {
   propertyId?: string | null;
   propertyName?: string | null;
   propertyValueLabel?: string | null;
+  /** Used to build the "View all in full page" link once there are more
+   *  comments than this small popover can comfortably show. */
+  workspaceSlug: string;
+  entryShortId: string;
 }
 
 export function CellCommentPopover({
   pageId, workspaceId, anchorRect, onClose, onCommentAdded,
   propertyId = null, propertyName = null, propertyValueLabel = null,
+  workspaceSlug, entryShortId,
 }: CellCommentPopoverProps) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id ?? null;
@@ -205,6 +214,11 @@ export function CellCommentPopover({
   // Inline editing
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  // Attachments carried over from the comment being edited — startEdit() only
+  // captures the text portion into editText, so without also snapshotting
+  // these separately and re-including them in submitEdit's makeContent()
+  // call, saving an edit would silently drop any attached file/image.
+  const [editAttachments, setEditAttachments] = useState<{ url: string; name: string; mimeType: string }[]>([]);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Reply
@@ -219,9 +233,22 @@ export function CellCommentPopover({
   // Pending delete confirmation
   const [pendingDelete, setPendingDelete] = useState<{ id: string; isReply: boolean } | null>(null);
 
-  // Emoji menu portal
+  // Emoji menu portal — reacting TO a comment (adds/removes the sender's own
+  // reaction on that comment).
   const [emojiMenu, setEmojiMenu] = useState<EmojiMenuState | null>(null);
   const emojiMenuRef = useRef<HTMLDivElement>(null);
+
+  // Separate picker for INSERTING an emoji character into the edit or reply
+  // box's text (their own toolbar button, distinct from emojiMenu's
+  // react-to-comment picker above). `target` says which box's text/ref to
+  // insert into since edit and reply share this one picker instance.
+  const [insertEmojiAnchor, setInsertEmojiAnchor] = useState<{ rect: DOMRect; target: "edit" | "reply" } | null>(null);
+  const insertEmojiRef = useRef<HTMLDivElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [editAttachLoading, setEditAttachLoading] = useState(false);
+  const [replyAttachments, setReplyAttachments] = useState<{ url: string; name: string; mimeType: string }[]>([]);
+  const replyFileInputRef = useRef<HTMLInputElement>(null);
+  const [replyAttachLoading, setReplyAttachLoading] = useState(false);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -229,6 +256,14 @@ export function CellCommentPopover({
   const editInputRef = useRef<HTMLInputElement>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+  const router = useRouter();
+
+  function openInFullPage() {
+    onClose();
+    router.push(`/app/${workspaceSlug}/${entryShortId}?comments=1`);
+  }
 
   const hasText = text.trim().length > 0 || attachedFiles.length > 0;
 
@@ -365,6 +400,15 @@ export function CellCommentPopover({
     return () => document.removeEventListener("mousedown", h);
   }, [emojiMenu]);
 
+  useEffect(() => {
+    if (!insertEmojiAnchor) return;
+    function h(e: MouseEvent) {
+      if (!insertEmojiRef.current?.contains(e.target as Node)) setInsertEmojiAnchor(null);
+    }
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [insertEmojiAnchor]);
+
   // ── Actions ────────────────────────────────────────────────────────────────
 
   async function uploadFile(file: File): Promise<{ url: string; name: string; mimeType: string } | null> {
@@ -455,16 +499,17 @@ export function CellCommentPopover({
 
   async function submitReply(parentId: string) {
     const trimmed = replyText.trim();
-    if (!trimmed || replySubmitting) return;
+    if ((!trimmed && replyAttachments.length === 0) || replySubmitting) return;
     setReplySubmitting(true);
     try {
       const res = await fetch(`/api/pages/${pageId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blockId: null, parentId, content: makeContent(trimmed) }),
+        body: JSON.stringify({ blockId: null, parentId, content: makeContent(trimmed, replyAttachments) }),
       });
       if (res.ok) {
         setReplyText("");
+        setReplyAttachments([]);
         setReplyToId(null);
         setLoading(true);
         await fetchComments();
@@ -476,16 +521,17 @@ export function CellCommentPopover({
 
   async function submitEdit(commentId: string) {
     const trimmed = editText.trim();
-    if (!trimmed || editSubmitting) return;
+    if ((!trimmed && editAttachments.length === 0) || editSubmitting) return;
     setEditSubmitting(true);
     try {
       const res = await fetch(`/api/pages/${pageId}/comments/${commentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "edit", content: makeContent(trimmed) }),
+        body: JSON.stringify({ action: "edit", content: makeContent(trimmed, editAttachments) }),
       });
       if (res.ok) {
         setEditingId(null);
+        setEditAttachments([]);
         await fetchComments();
         emitCommentsChanged(pageId);
       }
@@ -528,6 +574,89 @@ export function CellCommentPopover({
     }, 0);
   }
 
+  // Edit box's own toolbar — mirrors insertMention() above and the new-comment
+  // composer's attach flow, so editing has the same capabilities as writing a
+  // fresh comment instead of being a bare text field.
+  function insertEditMention() {
+    const el = editInputRef.current;
+    if (!el) return;
+    const pos = el.selectionStart ?? editText.length;
+    const before = editText.slice(0, pos);
+    const after = editText.slice(pos);
+    const prefix = before.length > 0 && !before.endsWith(" ") ? " @" : "@";
+    const next = before + prefix + after;
+    setEditText(next);
+    setTimeout(() => {
+      el.focus();
+      const cursor = pos + prefix.length;
+      el.setSelectionRange(cursor, cursor);
+    }, 0);
+  }
+
+  function insertReplyMention() {
+    const el = replyInputRef.current;
+    if (!el) return;
+    const pos = el.selectionStart ?? replyText.length;
+    const before = replyText.slice(0, pos);
+    const after = replyText.slice(pos);
+    const prefix = before.length > 0 && !before.endsWith(" ") ? " @" : "@";
+    const next = before + prefix + after;
+    setReplyText(next);
+    setTimeout(() => {
+      el.focus();
+      const cursor = pos + prefix.length;
+      el.setSelectionRange(cursor, cursor);
+    }, 0);
+  }
+
+  // Shared by both the edit and reply boxes' emoji-toolbar button —
+  // insertEmojiAnchor.target says which text/ref to insert into.
+  function insertEmojiIntoTarget(emoji: string) {
+    const target = insertEmojiAnchor?.target;
+    setInsertEmojiAnchor(null);
+    if (target === "reply") {
+      const el = replyInputRef.current;
+      const pos = el?.selectionStart ?? replyText.length;
+      const next = replyText.slice(0, pos) + emoji + replyText.slice(pos);
+      setReplyText(next);
+      setTimeout(() => { el?.focus(); const c = pos + emoji.length; el?.setSelectionRange(c, c); }, 0);
+    } else {
+      const el = editInputRef.current;
+      const pos = el?.selectionStart ?? editText.length;
+      const next = editText.slice(0, pos) + emoji + editText.slice(pos);
+      setEditText(next);
+      setTimeout(() => { el?.focus(); const c = pos + emoji.length; el?.setSelectionRange(c, c); }, 0);
+    }
+  }
+
+  async function handleEditFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    setEditAttachLoading(true);
+    try {
+      const uploaded = await Promise.all(files.map((f) => uploadFile(f)));
+      const ok = uploaded.filter(Boolean) as { url: string; name: string; mimeType: string }[];
+      setEditAttachments((prev) => [...prev, ...ok]);
+    } finally {
+      setEditAttachLoading(false);
+    }
+  }
+
+  async function handleReplyFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    setReplyAttachLoading(true);
+    try {
+      const uploaded = await Promise.all(files.map((f) => uploadFile(f)));
+      const ok = uploaded.filter(Boolean) as { url: string; name: string; mimeType: string }[];
+      setReplyAttachments((prev) => [...prev, ...ok]);
+    } finally {
+      setReplyAttachLoading(false);
+    }
+  }
+
   function openMoreMenu(e: React.MouseEvent, commentId: string, isReply: boolean, isOwn: boolean) {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -542,16 +671,93 @@ export function CellCommentPopover({
     setEmojiMenu({ commentId, rect });
   }
 
-  function startEdit(commentId: string, currentText: string) {
+  function startEdit(commentId: string, currentText: string, currentAttachments: { url: string; name: string; mimeType: string }[]) {
     setMoreMenu(null);
     setEditingId(commentId);
     setEditText(currentText);
+    setEditAttachments(currentAttachments);
     setTimeout(() => editInputRef.current?.focus(), 60);
+  }
+
+  // Attach/mention/insert-emoji row for the edit box — same trio the
+  // new-comment composer offers, so editing isn't a stripped-down experience.
+  function renderEditToolbar() {
+    return (
+      <div className="mt-1 flex items-center gap-0.5">
+        <button
+          type="button"
+          disabled={editAttachLoading}
+          onClick={() => editFileInputRef.current?.click()}
+          onMouseEnter={(e) => showTooltip("Attach file", e)}
+          onMouseLeave={hideTooltip}
+          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+        >
+          {editAttachLoading ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
+        </button>
+        <button
+          type="button"
+          onClick={insertEditMention}
+          onMouseEnter={(e) => showTooltip("Mention someone", e)}
+          onMouseLeave={hideTooltip}
+          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <AtSign size={11} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => setInsertEmojiAnchor({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), target: "edit" })}
+          onMouseEnter={(e) => showTooltip("Insert emoji", e)}
+          onMouseLeave={hideTooltip}
+          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <Smile size={11} />
+        </button>
+      </div>
+    );
+  }
+
+  // Attach/mention/insert-emoji row for the reply box — same trio as
+  // renderEditToolbar above, kept separate since it targets replyText/
+  // replyInputRef/replyAttachments instead of the edit box's state.
+  function renderReplyToolbar() {
+    return (
+      <div className="mt-1 ml-[24px] flex items-center gap-0.5">
+        <button
+          type="button"
+          disabled={replyAttachLoading}
+          onClick={() => replyFileInputRef.current?.click()}
+          onMouseEnter={(e) => showTooltip("Attach file", e)}
+          onMouseLeave={hideTooltip}
+          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+        >
+          {replyAttachLoading ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
+        </button>
+        <button
+          type="button"
+          onClick={insertReplyMention}
+          onMouseEnter={(e) => showTooltip("Mention someone", e)}
+          onMouseLeave={hideTooltip}
+          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <AtSign size={11} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => setInsertEmojiAnchor({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), target: "reply" })}
+          onMouseEnter={(e) => showTooltip("Insert emoji", e)}
+          onMouseLeave={hideTooltip}
+          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <Smile size={11} />
+        </button>
+      </div>
+    );
   }
 
   function startReply(threadId: string) {
     setReplyToId(threadId);
     setReplyText("");
+    setReplyAttachments([]);
     setTimeout(() => replyInputRef.current?.focus(), 60);
   }
 
@@ -635,24 +841,27 @@ export function CellCommentPopover({
                           <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/comment:opacity-100 transition-opacity shrink-0">
                             {/* React */}
                             <button
-                              title="Add reaction"
                               onClick={(e) => openEmojiMenu(e, t.id)}
+                              onMouseEnter={(e) => showTooltip("Add reaction", e)}
+                              onMouseLeave={hideTooltip}
                               className="flex size-[18px] items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors text-sm"
                             >
                               <Smile size={12} />
                             </button>
                             {/* Reply */}
                             <button
-                              title="Reply"
                               onClick={() => startReply(t.id)}
+                              onMouseEnter={(e) => showTooltip("Reply", e)}
+                              onMouseLeave={hideTooltip}
                               className="flex size-[18px] items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
                             >
                               <Reply size={12} />
                             </button>
                             {/* More */}
                             <button
-                              title="More options"
                               onClick={(e) => openMoreMenu(e, t.id, false, isOwn)}
+                              onMouseEnter={(e) => showTooltip("More options", e)}
+                              onMouseLeave={hideTooltip}
                               className="flex size-[18px] items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
                             >
                               <MoreHorizontal size={12} />
@@ -662,73 +871,119 @@ export function CellCommentPopover({
 
                         {/* Body or edit input */}
                         {editingId === t.id ? (
-                          <div className="mt-1 flex items-center gap-1">
-                            <input
-                              ref={editInputRef}
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") { e.preventDefault(); submitEdit(t.id); }
-                                if (e.key === "Escape") setEditingId(null);
-                              }}
-                              className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
-                            />
-                            <button
-                              onClick={() => submitEdit(t.id)}
-                              disabled={editSubmitting}
-                              className="shrink-0 flex size-5 items-center justify-center rounded bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-                            >
-                              {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="shrink-0 flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent transition-colors"
-                            >
-                              <X size={10} />
-                            </button>
+                          <div className="mt-1">
+                            {editAttachments.length > 0 && (
+                              <div className="mb-1 flex flex-wrap gap-1.5">
+                                {editAttachments.map((att, ai) => (
+                                  <div key={ai} className="group/editatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
+                                    <Paperclip size={9} className="shrink-0 text-muted-foreground" />
+                                    <span className="min-w-0 truncate text-[10px] text-foreground/80">{att.name}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditAttachments((prev) => prev.filter((_, i) => i !== ai))}
+                                      className="shrink-0 flex size-3 items-center justify-center rounded-full bg-foreground/70 text-background opacity-0 transition-opacity group-hover/editatt:opacity-100"
+                                    >
+                                      <X size={7} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <input
+                                ref={editInputRef}
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); submitEdit(t.id); }
+                                  if (e.key === "Escape") setEditingId(null);
+                                }}
+                                className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
+                              />
+                              <button
+                                onClick={() => submitEdit(t.id)}
+                                disabled={editSubmitting}
+                                className="shrink-0 flex size-5 items-center justify-center rounded bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+                              >
+                                {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="shrink-0 flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent transition-colors"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                            {renderEditToolbar()}
                           </div>
                         ) : (
                           <>
                             {bodyText ? (
                               <p className="text-xs leading-relaxed text-foreground/85 whitespace-pre-wrap">{bodyText}</p>
                             ) : null}
-                            {t.content && extractAttachments(t.content as Record<string, unknown>).map((att, ai) => (
-                              att.mimeType.startsWith("image/") ? (
-                                <div
-                                  key={ai}
-                                  className="group/img relative mt-1.5 cursor-pointer overflow-hidden rounded-[var(--radius-sm)] border border-border bg-muted"
-                                  style={{ maxWidth: 200 }}
-                                  onClick={() => setLightbox(att.url)}
-                                >
-                                  <img src={att.url} alt={att.name} onLoad={scrollListToBottom} className="max-h-[140px] w-full object-cover block" />
-                                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 transition-colors group-hover/img:bg-black/40">
-                                    <span className="flex size-7 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto">
-                                      <ZoomIn size={14} />
-                                    </span>
-                                    <a
-                                      href={att.url}
-                                      download={att.name}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="flex size-7 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100"
+                            {t.content && (() => {
+                              const atts = extractAttachments(t.content as Record<string, unknown>);
+                              const images = atts.filter((a) => a.mimeType.startsWith("image/"));
+                              const files = atts.filter((a) => !a.mimeType.startsWith("image/"));
+                              // A single image keeps the larger, near-full-width preview; two or
+                              // more switch to a compact 2-column grid instead of stacking full-width
+                              // thumbnails one after another, which ate a lot of vertical space in
+                              // this small popover and didn't scale past one image.
+                              const grid = images.length > 1;
+                              return (
+                                <>
+                                  {images.length > 0 && (
+                                    <div
+                                      className={grid ? "mt-1.5 grid grid-cols-2 gap-1" : "mt-1.5"}
+                                      style={{ maxWidth: 200 }}
                                     >
-                                      <Download size={13} />
+                                      {images.map((att, ai) => (
+                                        <div
+                                          key={ai}
+                                          className="group/img relative cursor-pointer overflow-hidden rounded-[var(--radius-sm)] border border-border bg-muted"
+                                          onClick={() => setLightbox(att.url)}
+                                        >
+                                          <img
+                                            src={att.url}
+                                            alt={att.name}
+                                            onLoad={scrollListToBottom}
+                                            className={`w-full object-cover block ${grid ? "h-[70px]" : "max-h-[140px]"}`}
+                                          />
+                                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 transition-colors group-hover/img:bg-black/40">
+                                            <span className={`flex items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto ${grid ? "size-5" : "size-7"}`}>
+                                              <ZoomIn size={grid ? 10 : 14} />
+                                            </span>
+                                            {!grid && (
+                                              <a
+                                                href={att.url}
+                                                download={att.name}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex size-7 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100"
+                                              >
+                                                <Download size={13} />
+                                              </a>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {files.map((att, ai) => (
+                                    <a
+                                      key={ai}
+                                      href={att.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-1.5 flex items-center gap-1.5 rounded border border-border bg-muted/60 px-2 py-1 text-xs text-foreground hover:bg-accent transition-colors"
+                                      style={{ maxWidth: 200 }}
+                                    >
+                                      <Paperclip size={10} className="shrink-0 text-muted-foreground" />
+                                      <span className="min-w-0 truncate">{att.name}</span>
                                     </a>
-                                  </div>
-                                </div>
-                              ) : (
-                                <a
-                                  key={ai}
-                                  href={att.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="mt-1.5 flex items-center gap-1.5 rounded border border-border bg-muted/60 px-2 py-1 text-xs text-foreground hover:bg-accent transition-colors"
-                                  style={{ maxWidth: 200 }}
-                                >
-                                  <Paperclip size={10} className="shrink-0 text-muted-foreground" />
-                                  <span className="min-w-0 truncate">{att.name}</span>
-                                </a>
-                              )
-                            ))}
+                                  ))}
+                                </>
+                              );
+                            })()}
                           </>
                         )}
 
@@ -783,34 +1038,56 @@ export function CellCommentPopover({
                                   </div>
                                 </div>
                                 {editingId === rep.id ? (
-                                  <div className="flex items-center gap-1">
-                                    <input
-                                      ref={editInputRef}
-                                      value={editText}
-                                      onChange={(e) => setEditText(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") { e.preventDefault(); submitEdit(rep.id); }
-                                        if (e.key === "Escape") setEditingId(null);
-                                      }}
-                                      className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
-                                    />
-                                    <button
-                                      type="button"
-                                      title="Save (Enter)"
-                                      onClick={() => submitEdit(rep.id)}
-                                      disabled={editSubmitting}
-                                      className="flex size-5 shrink-0 items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-                                    >
-                                      {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      title="Cancel (Esc)"
-                                      onClick={() => setEditingId(null)}
-                                      className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                                    >
-                                      <X size={10} />
-                                    </button>
+                                  <div>
+                                    {editAttachments.length > 0 && (
+                                      <div className="mb-1 flex flex-wrap gap-1.5">
+                                        {editAttachments.map((att, ai) => (
+                                          <div key={ai} className="group/editatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
+                                            <Paperclip size={9} className="shrink-0 text-muted-foreground" />
+                                            <span className="min-w-0 truncate text-[10px] text-foreground/80">{att.name}</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditAttachments((prev) => prev.filter((_, i) => i !== ai))}
+                                              className="shrink-0 flex size-3 items-center justify-center rounded-full bg-foreground/70 text-background opacity-0 transition-opacity group-hover/editatt:opacity-100"
+                                            >
+                                              <X size={7} />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        ref={editInputRef}
+                                        value={editText}
+                                        onChange={(e) => setEditText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") { e.preventDefault(); submitEdit(rep.id); }
+                                          if (e.key === "Escape") setEditingId(null);
+                                        }}
+                                        className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => submitEdit(rep.id)}
+                                        onMouseEnter={(e) => showTooltip("Save (Enter)", e)}
+                                        onMouseLeave={hideTooltip}
+                                        disabled={editSubmitting}
+                                        className="flex size-5 shrink-0 items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                                      >
+                                        {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingId(null)}
+                                        onMouseEnter={(e) => showTooltip("Cancel (Esc)", e)}
+                                        onMouseLeave={hideTooltip}
+                                        className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                                      >
+                                        <X size={10} />
+                                      </button>
+                                    </div>
+                                    {renderEditToolbar()}
                                   </div>
                                 ) : (
                                   <p className="text-[11px] leading-relaxed text-foreground/85">{repText}</p>
@@ -825,45 +1102,80 @@ export function CellCommentPopover({
 
                   {/* Reply input */}
                   {replyToId === t.id && (
-                    <div className="flex items-center gap-1.5 px-3 pb-2 pt-0.5">
-                      <UserAvatar author={sessionAuthor} px={18} />
-                      <input
-                        ref={replyInputRef}
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") { e.preventDefault(); submitReply(t.id); }
-                          if (e.key === "Escape") { setReplyToId(null); }
-                        }}
-                        placeholder="Reply…"
-                        className="min-w-0 flex-1 rounded border border-border bg-muted/30 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        title="Cancel (Esc)"
-                        onClick={() => { setReplyToId(null); setReplyText(""); }}
-                        className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
-                      >
-                        <X size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        title="Send reply"
-                        onClick={() => submitReply(t.id)}
-                        disabled={!replyText.trim() || replySubmitting}
-                        className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors ${
-                          replyText.trim()
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
-                            : "bg-muted text-muted-foreground/40 cursor-not-allowed"
-                        }`}
-                      >
-                        {replySubmitting ? <Loader2 size={10} className="animate-spin" /> : <ArrowUp size={11} />}
-                      </button>
+                    <div className="px-3 pb-2 pt-0.5">
+                      {replyAttachments.length > 0 && (
+                        <div className="mb-1 ml-[24px] flex flex-wrap gap-1.5">
+                          {replyAttachments.map((att, ai) => (
+                            <div key={ai} className="group/replyatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
+                              <Paperclip size={9} className="shrink-0 text-muted-foreground" />
+                              <span className="min-w-0 truncate text-[10px] text-foreground/80">{att.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => setReplyAttachments((prev) => prev.filter((_, i) => i !== ai))}
+                                className="shrink-0 flex size-3 items-center justify-center rounded-full bg-foreground/70 text-background opacity-0 transition-opacity group-hover/replyatt:opacity-100"
+                              >
+                                <X size={7} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <UserAvatar author={sessionAuthor} px={18} />
+                        <input
+                          ref={replyInputRef}
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); submitReply(t.id); }
+                            if (e.key === "Escape") { setReplyToId(null); }
+                          }}
+                          placeholder="Reply…"
+                          className="min-w-0 flex-1 rounded border border-border bg-muted/30 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => { setReplyToId(null); setReplyText(""); setReplyAttachments([]); }}
+                          onMouseEnter={(e) => showTooltip("Cancel (Esc)", e)}
+                          onMouseLeave={hideTooltip}
+                          className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => submitReply(t.id)}
+                          onMouseEnter={(e) => showTooltip("Send reply", e)}
+                          onMouseLeave={hideTooltip}
+                          disabled={(!replyText.trim() && replyAttachments.length === 0) || replySubmitting}
+                          className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            replyText.trim() || replyAttachments.length > 0
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                              : "bg-muted text-muted-foreground/40 cursor-not-allowed"
+                          }`}
+                        >
+                          {replySubmitting ? <Loader2 size={10} className="animate-spin" /> : <ArrowUp size={11} />}
+                        </button>
+                      </div>
+                      {renderReplyToolbar()}
                     </div>
                   )}
                 </div>
               );
             })}
+            {/* Once there are more comments than this small popover can
+                comfortably show, offer a shortcut to the richer full-page +
+                sidebar view instead of leaving people stuck scrolling here. */}
+            {visible.length > 2 && (
+              <button
+                type="button"
+                onClick={openInFullPage}
+                className="flex w-full items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <ExternalLink size={12} />
+                View all comments in full page
+              </button>
+            )}
           </div>
         ) : null}
 
@@ -939,27 +1251,46 @@ export function CellCommentPopover({
                 e.target.value = "";
               }}
             />
+            {/* Hidden file input for the edit box's attach button (renderEditToolbar) */}
+            <input
+              ref={editFileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleEditFileChange}
+            />
+            {/* Hidden file input for the reply box's attach button (renderReplyToolbar) */}
+            <input
+              ref={replyFileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleReplyFileChange}
+            />
             <button
               type="button"
-              title="Attach file"
               onClick={() => fileInputRef.current?.click()}
+              onMouseEnter={(e) => showTooltip("Attach file", e)}
+              onMouseLeave={hideTooltip}
               className="flex size-6 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
             >
               <Paperclip size={12} />
             </button>
             <button
               type="button"
-              title="Mention someone"
               onClick={insertMention}
+              onMouseEnter={(e) => showTooltip("Mention someone", e)}
+              onMouseLeave={hideTooltip}
               className="flex size-6 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
             >
               <AtSign size={12} />
             </button>
             <button
               type="button"
-              title="Send comment"
               disabled={submitting}
               onClick={submitComment}
+              onMouseEnter={(e) => showTooltip("Send comment", e)}
+              onMouseLeave={hideTooltip}
               className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-all ${
                 hasText
                   ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
@@ -996,7 +1327,10 @@ export function CellCommentPopover({
                 const thread = threads.find((t) => t.id === moreMenu.commentId);
                 const reply = threads.flatMap((t) => t.replies ?? []).find((r) => r.id === moreMenu.commentId);
                 const content = thread?.content ?? reply?.content;
-                if (content) startEdit(moreMenu.commentId, extractText(content as Record<string, unknown>));
+                if (content) {
+                  const c = content as Record<string, unknown>;
+                  startEdit(moreMenu.commentId, extractText(c), extractAttachments(c));
+                }
               }}
             >
               <Pencil size={12} className="shrink-0 text-muted-foreground" />
@@ -1047,34 +1381,23 @@ export function CellCommentPopover({
         />
       )}
 
-      {/* ── Image lightbox ── */}
+      {/* ── Insert-emoji picker portal — edit/reply boxes' own emoji toolbar button ── */}
+      {insertEmojiAnchor && (
+        <FullEmojiPicker
+          ref={insertEmojiRef}
+          rect={insertEmojiAnchor.rect}
+          winH={winH}
+          winW={winW}
+          onSelect={insertEmojiIntoTarget}
+          onClose={() => setInsertEmojiAnchor(null)}
+        />
+      )}
+
+      {/* ── Image lightbox — shared with the page-level comment card so both
+           surfaces look identical, instead of this popover having its own
+           separate (visually inconsistent) Download/Close-button variant. ── */}
       {lightbox && (
-        <div
-          data-comment-exempt
-          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.88)", display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={() => setLightbox(null)}
-        >
-          <button
-            style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, padding: "6px 8px", cursor: "pointer", color: "#fff", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}
-            onClick={() => setLightbox(null)}
-          >
-            <X size={16} /> Close
-          </button>
-          <a
-            href={lightbox}
-            download
-            onClick={(e) => e.stopPropagation()}
-            style={{ position: "absolute", top: 16, right: 100, background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, padding: "6px 8px", cursor: "pointer", color: "#fff", display: "flex", alignItems: "center", gap: 6, fontSize: 13, textDecoration: "none" }}
-          >
-            <Download size={16} /> Download
-          </a>
-          <img
-            src={lightbox}
-            alt="Full preview"
-            style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 8, boxShadow: "0 8px 40px rgba(0,0,0,0.5)" }}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+        <ImageLightbox src={lightbox} alt="Attachment preview" onClose={() => setLightbox(null)} />
       )}
 
       {/* ── Delete confirmation ── */}
@@ -1091,6 +1414,8 @@ export function CellCommentPopover({
         overlayClassName="z-[10000]"
         className="z-[10000]"
       />
+
+      {tooltip && <IconTooltip rect={tooltip.rect} label={tooltip.label} />}
     </>,
     document.body,
   );

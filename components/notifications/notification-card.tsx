@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, ArrowRight } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 
 export interface NotificationItem {
   id:             string;
@@ -54,9 +55,10 @@ interface Props {
   workspaceSlug: string;
   onMarkRead:    (id: string) => void;
   onClick:       (notification: NotificationItem) => void;
+  onDelete:      (id: string) => void;
 }
 
-export function NotificationCard({ notification, workspaceSlug, onMarkRead, onClick }: Props) {
+export function NotificationCard({ notification, workspaceSlug, onMarkRead, onClick, onDelete }: Props) {
   void workspaceSlug;
   const who      = notification.senderName?.trim()
                 || notification.senderEmail?.split("@")[0]?.trim()
@@ -154,29 +156,26 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       </div>
 
       {/* Hover action buttons */}
-      <div className="absolute right-3 top-3 hidden items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-card p-0.5 group-hover:flex">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="absolute right-3 top-3 hidden items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-card p-0.5 group-hover:flex"
+      >
         {isUnread && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
-            aria-label="Mark as read"
+          <IconTooltipButton
+            icon={<Check size={10} />}
+            label="Mark as read"
+            onClick={() => onMarkRead(notification.id)}
+            placement="below"
             className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
-          >
-            <Check size={10} />
-          </button>
+          />
         )}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isUnread) onMarkRead(notification.id);
-            onClick(notification);
-          }}
-          aria-label="Open page"
-          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary"
-        >
-          <ArrowRight size={10} />
-        </button>
+        <IconTooltipButton
+          icon={<X size={10} />}
+          label="Delete notification"
+          onClick={() => onDelete(notification.id)}
+          placement="below"
+          className="flex size-6 items-center justify-center rounded text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+        />
       </div>
     </div>
   );

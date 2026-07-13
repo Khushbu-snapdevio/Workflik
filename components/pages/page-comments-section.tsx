@@ -1,6 +1,5 @@
 "use client";
 
-import { MessageCircle as ChatDotsIcon } from "lucide-react";
 import { CommentCard } from "@/components/editor/comment-card";
 
 interface Props {
@@ -8,30 +7,32 @@ interface Props {
   workspaceId: string;
   currentUserId: string;
   isAdmin: boolean;
+  /** See CommentCard's onActiveCountChange — lets the parent page react
+   *  instantly (no refetch, no blink) when resolving/reopening changes
+   *  whether any active page-level thread remains. */
+  onActiveCountChange?: (count: number) => void;
 }
 
-// Page-level (blockId-less) comments rendered as a running discussion thread
-// at the bottom of the page content — matching Notion, which shows these
-// inline below the last block instead of in a side panel.
+// Page-level (blockId-less) comments — matching Notion, which shows these
+// right below the title, above the page's own content, with a divider
+// separating them from what follows rather than above them.
 export function PageCommentsSection({
   pageId,
   workspaceId,
   currentUserId,
   isAdmin,
+  onActiveCountChange,
 }: Props) {
   return (
     <div
-      className="mt-12 border-t border-border/50 pt-6"
+      className="mb-6 border-b border-border/50 pb-4"
       id="page-comments-section"
     >
-      <div className="mb-1 flex items-center gap-2 px-4 text-sm font-semibold text-foreground/80">
-        <ChatDotsIcon size={15} className="text-muted-foreground" />
-        Comments
-      </div>
       <CommentCard
         blockId={null}
         currentUserId={currentUserId}
         isAdmin={isAdmin}
+        onActiveCountChange={onActiveCountChange}
         onClose={() => {}}
         pageId={pageId}
         variant="inline"

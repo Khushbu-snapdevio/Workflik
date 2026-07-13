@@ -125,87 +125,97 @@ export function FavoritesSection({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        className="group mb-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
         <Star size={15} className="shrink-0 text-muted-foreground group-hover:text-sidebar-accent-foreground" />
-        <span className="flex-1 text-left">Favorites</span>
+        <span className="text-left">Favorites</span>
         {localFavs.length > 0 && (
           <span className="text-xs text-muted-foreground">{localFavs.length}</span>
         )}
         <ChevronDown
-          size={13}
+          size={14}
           className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
         />
       </button>
 
-      {expanded && (
-        localFavs.length === 0 ? (
-          <p className="px-2.5 py-1 text-xs text-muted-foreground/70">
-            Star a page to add it here.
-          </p>
-        ) : (
-          <>
-            {mounted ? (
-              <DndContext
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                sensors={sensors}
-              >
-                <SortableContext
-                  items={visible.map((f) => f.pageId)}
-                  strategy={verticalListSortingStrategy}
+      {/* Grid-rows trick animates height without measuring it in JS — the
+          row track tweens between 0fr/1fr while overflow-hidden clips the
+          content, giving a smooth expand/collapse instead of an instant
+          mount/unmount. Content stays mounted (just visually clipped) so the
+          transition has something to animate between. */}
+      <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
+          {localFavs.length === 0 ? (
+            <p className="px-2.5 py-1 text-xs text-muted-foreground/70">
+              Star a page to add it here.
+            </p>
+          ) : (
+            <>
+              {mounted ? (
+                <DndContext
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                  sensors={sensors}
                 >
-                  {visible.map((fav) => {
-                    const page = pagesMap[fav.pageId];
-                    return (
-                      <FavoriteRow
-                        favoriteId={fav.pageId}
-                        icon={page?.icon ?? null}
-                        key={fav.pageId}
-                        shortId={page?.shortId ?? fav.pageId}
-                        title={page?.title ?? "Untitled"}
-                        workspaceSlug={workspaceSlug}
-                      />
-                    );
-                  })}
-                </SortableContext>
-              </DndContext>
-            ) : (
-              visible.map((fav) => {
-                const page = pagesMap[fav.pageId];
-                return (
-                  <FavoriteRow
-                    favoriteId={fav.pageId}
-                    icon={page?.icon ?? null}
-                    key={fav.pageId}
-                    shortId={page?.shortId ?? fav.pageId}
-                    title={page?.title ?? "Untitled"}
-                    workspaceSlug={workspaceSlug}
-                  />
-                );
-              })
-            )}
+                  <SortableContext
+                    items={visible.map((f) => f.pageId)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {visible.map((fav) => {
+                      const page = pagesMap[fav.pageId];
+                      return (
+                        <FavoriteRow
+                          favoriteId={fav.pageId}
+                          icon={page?.icon ?? null}
+                          key={fav.pageId}
+                          shortId={page?.shortId ?? fav.pageId}
+                          title={page?.title ?? "Untitled"}
+                          workspaceSlug={workspaceSlug}
+                        />
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
+              ) : (
+                visible.map((fav) => {
+                  const page = pagesMap[fav.pageId];
+                  return (
+                    <FavoriteRow
+                      favoriteId={fav.pageId}
+                      icon={page?.icon ?? null}
+                      key={fav.pageId}
+                      shortId={page?.shortId ?? fav.pageId}
+                      title={page?.title ?? "Untitled"}
+                      workspaceSlug={workspaceSlug}
+                    />
+                  );
+                })
+              )}
 
-            {hasMore && (
-              <button
-                ref={moreRef}
-                type="button"
-                onClick={openPopup}
-                className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              >
-                <MoreHorizontal size={12} />
-                {localFavs.length - VISIBLE_MAX} more
-              </button>
-            )}
-          </>
-        )
-      )}
+              {hasMore && (
+                <button
+                  ref={moreRef}
+                  type="button"
+                  onClick={openPopup}
+                  className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  <MoreHorizontal size={12} />
+                  {localFavs.length - VISIBLE_MAX} more
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
 
-      {/* Popup flyout */}
+      {/* Popup flyout — portaled to document.body, making it a *sibling* of
+          the sidebar's own wrapper (md:z-[550] in workspace-shell.tsx), not a
+          descendant of it. z-[560] keeps it above that wrapper; anything
+          lower renders half-hidden behind the sidebar wherever they overlap. */}
       {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popupRef}
-          className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+          className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
           {/* Header */}

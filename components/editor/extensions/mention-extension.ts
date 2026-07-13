@@ -14,6 +14,12 @@ export type MentionItem =
 
 export type MentionSuggestionProps = SuggestionProps<MentionItem>;
 
+// Exported so the editor's autosave can check whether "@" or "[[" is still
+// live (mid-query, nothing picked yet) before persisting — same reasoning as
+// SLASH_COMMANDS_PLUGIN_KEY in slash-commands.ts.
+export const MENTION_PLUGIN_KEY = new PluginKey("mentionCommands");
+export const PAGE_LINK_PLUGIN_KEY = new PluginKey("pageLinkCommands");
+
 export interface MentionOptions {
   workspaceId:   string;
   currentPageId: string;
@@ -124,7 +130,7 @@ export const MentionCommands = Extension.create<MentionOptions>({
 
     return [
       Suggestion<MentionItem>({
-        pluginKey: new PluginKey("mentionCommands"),
+        pluginKey: MENTION_PLUGIN_KEY,
         editor:        this.editor,
         char:          "@",
         startOfLine:   false,
@@ -172,7 +178,7 @@ export const MentionCommands = Extension.create<MentionOptions>({
       // "[[" — Notion's other page-linking shortcut, alongside "/link to page".
       // Inserts the same inline page mention as "@page", just scoped to pages only.
       Suggestion<MentionItem>({
-        pluginKey: new PluginKey("pageLinkCommands"),
+        pluginKey: PAGE_LINK_PLUGIN_KEY,
         editor:        this.editor,
         char:          "[[",
         startOfLine:   false,

@@ -23,6 +23,7 @@ import { GroupSettingsPanel, type BoardSettings } from "@/components/database/gr
 import { EntryContextMenu } from "@/components/database/entry-context-menu";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ export function BoardView({
  const [deleteGroupTarget, setDeleteGroupTarget] = useState<{ id: string; name: string } | null>(null);
  const [draggingColKey, setDraggingColKey] = useState<string | null>(null);
  const [pinTooltip, setPinTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const addOptRef            = useRef<HTMLDivElement>(null);
  const addOptInputRef         = useRef<HTMLInputElement>(null);
 
@@ -102,6 +104,16 @@ export function BoardView({
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, []);
+
+ // pinTooltip is a `position: fixed` portal anchored to a rect snapshotted
+ // once on hover — dismiss it on scroll instead of repositioning, since
+ // locking scroll on every hover would hurt the board's own scrolling.
+ useEffect(() => {
+  if (!pinTooltip) return;
+  function handleScroll() { setPinTooltip(null); }
+  document.addEventListener("scroll", handleScroll, true);
+  return () => document.removeEventListener("scroll", handleScroll, true);
+ }, [pinTooltip]);
 
  if (!groupProp) {
   return (
@@ -363,7 +375,8 @@ export function BoardView({
           /* Collapsed: vertical pill showing label + count */
           <button
            onClick={toggleCollapse}
-           title={`Expand ${col.label}`}
+           onMouseEnter={(e) => showTooltip(`Expand ${col.label}`, e)}
+           onMouseLeave={hideTooltip}
            className="flex h-full flex-col items-center gap-2 py-3"
           >
            {col.id ? (
@@ -421,7 +434,8 @@ export function BoardView({
               <button
                onPointerDown={(e) => e.stopPropagation()}
                onClick={(e) => setGroupMenu({ optionId: col.id!, triggerEl: e.currentTarget as HTMLElement })}
-               title="More options"
+               onMouseEnter={(e) => showTooltip("More options", e)}
+               onMouseLeave={hideTooltip}
                className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
               >
                <MoreHorizontal size={13} />
@@ -430,7 +444,8 @@ export function BoardView({
              <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={toggleCollapse}
-              title="Collapse column"
+              onMouseEnter={(e) => showTooltip("Collapse column", e)}
+              onMouseLeave={hideTooltip}
               className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
              >
               <PanelLeft size={13} />
@@ -548,7 +563,8 @@ export function BoardView({
           <button
            key={c.id}
            onClick={() => setNewOptColor(c.id)}
-           title={c.id}
+           onMouseEnter={(e) => showTooltip(c.id, e)}
+           onMouseLeave={hideTooltip}
            style={{ backgroundColor: c.dot }}
            className={[
             "size-5 rounded-full transition-colors duration-150",
@@ -645,6 +661,11 @@ export function BoardView({
 
   {pinTooltip && typeof document !== "undefined" && createPortal(
    <IconTooltip rect={pinTooltip.rect} label={pinTooltip.label} />,
+   document.body,
+  )}
+
+  {tooltip && typeof document !== "undefined" && createPortal(
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
    document.body,
   )}
 
@@ -807,14 +828,13 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
  const [hovered, setHovered] = useState(false);
  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
  const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
- const [commentCount, setCommentCount]  = useState<number | null>(null);
+ const [commentCount, setCommentCount]  = useState<number | null>(entry.commentCount ?? null);
  const [tooltip, setTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
  const [editing, setEditing] = useState(false);
  const [editTitle, setEditTitle] = useState(entry.title ?? "");
  const [propEditor, setPropEditor] = useState<{ prop: DbProperty; rect: DOMRect } | null>(null);
  const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
  const cardRef = useRef<HTMLDivElement>(null);
- const fetchedRef = useRef(false);
  const filledProps = cardProps.filter((prop) =>
   hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null)
  );
@@ -822,21 +842,13 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
   !hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null)
  ) : [];
 
- useEffect(() => {
-  if (dragging || fetchedRef.current) return;
-  fetchedRef.current = true;
-  fetch(`/api/pages/${entry.id}/comments`)
-   .then((r) => (r.ok ? r.json() : null))
-   .then((data) => {
-    if (!data) return;
-    const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
-    // Only count page-level threads (propertyId === null) — the badge opens the same
-    // page-level popover, and property-scoped comments (added from a table cell) aren't
-    // shown there, so counting them would show a badge that opens to nothing.
-    setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
-   })
-   .catch(() => {});
- }, [entry.id, dragging]);
+ // entry.commentCount is batch-computed server-side (open, page-level threads
+ // only — same definition the entries list badge uses everywhere else),
+ // so no per-card fetch is needed here. Re-sync whenever a fresh entries
+ // fetch updates it; `onCommentAdded` below still bumps it instantly between
+ // fetches so adding a comment via this card's own popover doesn't wait on
+ // a refetch to show up.
+ useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
 
  useEffect(() => {
   if (!editing) return;
@@ -848,6 +860,16 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [editing, menuPos, commentAnchor, propEditor]);
+
+ // tooltip is a `position: fixed` portal anchored to a rect snapshotted once
+ // on hover — dismiss it on scroll instead of repositioning, since locking
+ // scroll on every card hover would hurt the board's own scrolling.
+ useEffect(() => {
+  if (!tooltip) return;
+  function handleScroll() { setTooltip(null); }
+  document.addEventListener("scroll", handleScroll, true);
+  return () => document.removeEventListener("scroll", handleScroll, true);
+ }, [tooltip]);
 
  function commitTitle() {
   const trimmed = editTitle.trim();
@@ -897,7 +919,10 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
         <input
          autoFocus
          value={editTitle}
-         onChange={(e) => setEditTitle(e.target.value)}
+         onChange={(e) => {
+          setEditTitle(e.target.value);
+          window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entry.id, title: e.target.value } }));
+         }}
          onPointerDown={(e) => e.stopPropagation()}
          onBlur={commitTitle}
          onKeyDown={(e) => {
@@ -1003,7 +1028,8 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            setCommentAnchor((e.currentTarget as HTMLElement).getBoundingClientRect());
           }}
           className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
-          title="View comments"
+          onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+          onMouseLeave={() => setTooltip(null)}
          >
           <MessageSquare size={11} />
           {commentCount}
@@ -1070,6 +1096,8 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
    <CellCommentPopover
     pageId={entry.id}
     workspaceId={workspaceId}
+    workspaceSlug={workspaceSlug}
+    entryShortId={entry.shortId}
     anchorRect={commentAnchor}
     onClose={() => setCommentAnchor(null)}
     onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}

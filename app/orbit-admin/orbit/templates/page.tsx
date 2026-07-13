@@ -1,9 +1,9 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { Pencil } from "lucide-react";
 import { requireAdmin } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { templates } from "@/lib/db/schema";
+import { templateCategories, templates } from "@/lib/db/schema";
 import { TemplatePublishToggle } from "@/components/orbit/template-publish-toggle";
 import { SeedTemplatesButton } from "@/components/orbit/seed-templates-button";
 import { TemplateDeleteButton } from "@/components/orbit/template-delete-button";
@@ -13,30 +13,32 @@ import { BackToTopButton } from "@/components/orbit/back-to-top-button";
 
 export const metadata = { title: "Templates – Orbit Admin" };
 
-const CATEGORY_LABELS: Record<string, string> = {
- productivity: "Productivity",
- project_mgmt: "Project Management",
- marketing:  "Marketing",
- engineering: "Engineering",
- sales:    "Sales",
-};
-
-const CATEGORY_CLS: Record<string, string> = {
- productivity: "bg-primary/10 text-primary",
- project_mgmt: "bg-secondary text-secondary-foreground",
- marketing:   "bg-destructive/10 text-destructive",
- engineering:  "bg-success/10 text-success",
- sales:       "bg-warning/10 text-warning",
-};
+// Cycled by category order — categories are admin-managed so we can't
+// hardcode a color per key anymore.
+const CATEGORY_CLS_CYCLE = [
+ "bg-primary/10 text-primary",
+ "bg-secondary text-secondary-foreground",
+ "bg-destructive/10 text-destructive",
+ "bg-success/10 text-success",
+ "bg-warning/10 text-warning",
+];
 
 export default async function OrbitTemplatesPage() {
  await requireAdmin();
 
- const list = await db
-  .select()
-  .from(templates)
-  .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)))
-  .orderBy(desc(templates.updatedAt));
+ const [list, categories] = await Promise.all([
+  db
+   .select()
+   .from(templates)
+   .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)))
+   .orderBy(desc(templates.updatedAt)),
+  db
+   .select()
+   .from(templateCategories)
+   .orderBy(asc(templateCategories.orderIndex)),
+ ]);
+
+ const categoryById = new Map(categories.map((c, i) => [c.id, { label: c.label, cls: CATEGORY_CLS_CYCLE[i % CATEGORY_CLS_CYCLE.length] }]));
 
  const published = list.filter(t => t.status === "published").length;
  const drafts  = list.filter(t => t.status !== "published").length;
@@ -108,7 +110,7 @@ export default async function OrbitTemplatesPage() {
        </thead>
        <tbody className="divide-y divide-border">
         {list.map(tpl => {
-         const catCls = CATEGORY_CLS[tpl.category] ?? "bg-muted text-muted-foreground";
+         const cat = categoryById.get(tpl.categoryId);
          const isPublished = tpl.status === "published";
          return (
           <tr key={tpl.id} className="group transition-colors hover:bg-accent">
@@ -119,8 +121,8 @@ export default async function OrbitTemplatesPage() {
             )}
            </td>
            <td className="px-5 py-3.5">
-            <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${catCls}`}>
-             {CATEGORY_LABELS[tpl.category] ?? tpl.category}
+            <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${cat?.cls ?? "bg-muted text-muted-foreground"}`}>
+             {cat?.label ?? "—"}
             </span>
            </td>
            <td className="px-5 py-3.5">

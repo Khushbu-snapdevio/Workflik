@@ -119,7 +119,7 @@ export default async function WorkspacePage({ params }: Props) {
     <div className="@container flex h-full flex-col overflow-hidden bg-background">
 
       {/* ── Topbar ── */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card px-3">
+      <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
         <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden text-xs">
           <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-foreground">
             <LayoutGrid size={13} className="shrink-0 text-primary" />

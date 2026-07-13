@@ -4,11 +4,14 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { Paperclip, AtSign, XCircle, ArrowUpCircle, X } from "lucide-react";
+import { Paperclip, AtSign, ArrowUpCircle, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MentionNode } from "@/components/editor/extensions/mention-node";
 import { MentionCommands, type MentionSuggestionProps } from "@/components/editor/extensions/mention-extension";
 import { MentionList, type MentionListHandle } from "@/components/editor/mention-list";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 interface CommentComposerProps {
   workspaceId:     string;
@@ -20,6 +23,62 @@ interface CommentComposerProps {
   autoFocus?:      boolean;
 }
 
+type Attachment = { preview: string; name: string; mimeType: string };
+
+const ATTACHMENT_NODE_TYPES = new Set(["image", "file", "attachment"]);
+
+// The tiptap schema below only knows about paragraph/text/mention nodes — it
+// has no "image"/"file"/"attachment" node type (those are only rendered
+// manually by comment-card.tsx's read-only renderContent()). Handing an
+// existing attachment node to editor's `content:` would throw on an unknown
+// node type and silently drop the ENTIRE doc (not just that node), which is
+// why editing a comment that had an attachment used to blank out the whole
+// box — text included. "attachment" (url/name/mimeType attrs) is a third,
+// separate shape cell-comment-popover.tsx's own composer uses for the same
+// concept; every attachment-like node must be stripped here regardless of
+// which of the two shapes it's in, or the leftover one still crashes the
+// parse. Only the first is re-hydrated into this composer's single-slot
+// `attachment` state (its own attach flow only ever carries one at a time) —
+// a comment with 2+ attachments created via the OTHER composer will still
+// lose the extra ones if re-saved from here, but that beats the previous
+// total data loss.
+function extractInitialAttachment(
+  initialContent: Record<string, unknown> | undefined
+): { docContent: Record<string, unknown> | undefined; attachment: Attachment | null } {
+  const doc = initialContent as { type?: string; content?: unknown[] } | undefined;
+  if (!doc || !Array.isArray(doc.content)) return { docContent: initialContent, attachment: null };
+
+  const attachmentNodes = doc.content.filter((n) => {
+    const type = (n as Record<string, unknown> | null)?.type as string | undefined;
+    return !!type && ATTACHMENT_NODE_TYPES.has(type);
+  });
+  if (attachmentNodes.length === 0) return { docContent: initialContent, attachment: null };
+
+  const node = attachmentNodes[0] as { type: string; attrs?: Record<string, unknown> };
+  const attrs = node.attrs ?? {};
+  const src = (attrs.src as string | undefined) ?? (attrs.url as string | undefined);
+
+  let attachment: Attachment | null = null;
+  if (src) {
+    if (node.type === "attachment") {
+      attachment = { preview: src, name: (attrs.name as string) ?? "attachment", mimeType: (attrs.mimeType as string) ?? "application/octet-stream" };
+    } else if (node.type === "file") {
+      attachment = { preview: src, name: (attrs.name as string) ?? "attachment", mimeType: (attrs.mimeType as string) ?? "application/octet-stream" };
+    } else {
+      attachment = { preview: src, name: (attrs.alt as string) ?? "attachment", mimeType: src.match(/^data:([^;]+);/)?.[1] ?? "image/png" };
+    }
+  }
+
+  const remaining = doc.content.filter((n) => {
+    const type = (n as Record<string, unknown> | null)?.type as string | undefined;
+    return !type || !ATTACHMENT_NODE_TYPES.has(type);
+  });
+  return {
+    docContent: { ...doc, content: remaining.length > 0 ? remaining : [{ type: "paragraph" }] },
+    attachment,
+  };
+}
+
 export function CommentComposer({
   workspaceId,
   placeholder = "Add a comment…",
@@ -29,8 +88,12 @@ export function CommentComposer({
   onCancel,
   autoFocus = false,
 }: CommentComposerProps) {
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const fileInputRef                      = useRef<HTMLInputElement>(null);
-  const [attachment, setAttachment]       = useState<{ preview: string; name: string; mimeType: string } | null>(null);
+  // Computed once per mount (this component remounts fresh each time edit
+  // mode opens on a comment) — see extractInitialAttachment above.
+  const [initial]                         = useState(() => extractInitialAttachment(initialContent));
+  const [attachment, setAttachment]       = useState<Attachment | null>(initial.attachment);
   const [attachLoading, setAttachLoading] = useState(false);
   const [editorEmpty, setEditorEmpty]     = useState(true);
 
@@ -85,7 +148,7 @@ export function CommentComposer({
         onKeyDown: (event) => mentionListRef.current?.onKeyDown(event) ?? false,
       }),
     ],
-    content: initialContent ?? "",
+    content: initial.docContent ?? "",
     autofocus: autoFocus ? "end" : false,
     onUpdate({ editor: e }) {
       setEditorEmpty(e.isEmpty);
@@ -171,7 +234,19 @@ export function CommentComposer({
     : "border-transparent bg-muted/50 focus-within:border-border focus-within:bg-card";
 
   return (
-    <div className={`rounded-[var(--radius-md)] border transition-colors duration-150 ${containerCls}`}>
+    <div className={`relative rounded-[var(--radius-md)] border transition-colors duration-150 ${containerCls}`}>
+      {onCancel && (
+        <button
+          type="button"
+          onMouseEnter={(e) => showTooltip("Cancel (Esc)", e)}
+          onMouseLeave={hideTooltip}
+          onClick={onCancel}
+          className="absolute -top-2 -right-2 h-5 w-5 rounded-full border border-border bg-card text-muted-foreground hover:text-destructive hover:border-destructive/40 flex items-center justify-center shadow-sm transition-colors duration-150 z-10"
+        >
+          <X size={11} />
+        </button>
+      )}
+
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -225,7 +300,8 @@ export function CommentComposer({
         <div className="flex items-center gap-0.5">
           <button
             type="button"
-            title="Attach image or file"
+            onMouseEnter={(e) => showTooltip("Attach image or file", e)}
+            onMouseLeave={hideTooltip}
             className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -234,7 +310,8 @@ export function CommentComposer({
 
           <button
             type="button"
-            title="Mention (@)"
+            onMouseEnter={(e) => showTooltip("Mention (@)", e)}
+            onMouseLeave={hideTooltip}
             className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => {
               editor?.commands.focus("end");
@@ -243,22 +320,12 @@ export function CommentComposer({
           >
             <AtSign size={13} />
           </button>
-
-          {onCancel && (
-            <button
-              type="button"
-              title="Cancel (Esc)"
-              className="p-1 rounded-[var(--radius-sm)] text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors duration-150"
-              onClick={onCancel}
-            >
-              <XCircle size={13} />
-            </button>
-          )}
         </div>
 
         <button
           type="button"
-          title="Submit (Enter)"
+          onMouseEnter={(e) => showTooltip("Submit (Enter)", e)}
+          onMouseLeave={hideTooltip}
           disabled={isEmpty}
           onClick={handleSubmit}
           className={`p-1 rounded-[var(--radius-sm)] transition-colors duration-150 ${
@@ -270,6 +337,10 @@ export function CommentComposer({
           <ArrowUpCircle size={16} />
         </button>
       </div>
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
+      )}
     </div>
   );
 }

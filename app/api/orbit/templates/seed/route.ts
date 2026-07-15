@@ -90,6 +90,17 @@ function pageSnap(title: string, icon: string, blocks: SnapshotBlock[]): PageSna
   };
 }
 
+// Mirrors the rows inserted by drizzle/0017_simple_bedlam.sql — kept here too
+// so template auto-seeding is self-healing even if that migration hasn't
+// run yet (see doc/bugs/2026-07-15-templates-not-auto-seeding.md).
+export const DEFAULT_TEMPLATE_CATEGORIES: { key: string; label: string; orderIndex: number }[] = [
+  { key: "productivity", label: "Productivity",         orderIndex: 0 },
+  { key: "project_mgmt", label: "Project Management",   orderIndex: 1 },
+  { key: "marketing",    label: "Marketing & Content",  orderIndex: 2 },
+  { key: "engineering",  label: "Engineering & Docs",   orderIndex: 3 },
+  { key: "sales",        label: "Sales & Finance",      orderIndex: 4 },
+];
+
 export const BUILT_IN_TEMPLATES: {
   name: string;
   description: string;

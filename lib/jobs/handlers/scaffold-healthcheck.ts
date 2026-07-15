@@ -24,9 +24,11 @@ export async function autoSeedTemplates() {
       .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
     const existingNames = new Set(existing.map((t) => t.name));
 
-    const { BUILT_IN_TEMPLATES } = await import("@/app/api/orbit/templates/seed/route");
+    const { BUILT_IN_TEMPLATES, DEFAULT_TEMPLATE_CATEGORIES } = await import("@/app/api/orbit/templates/seed/route");
     const missing = BUILT_IN_TEMPLATES.filter((t) => !existingNames.has(t.name));
     if (missing.length === 0) return;
+
+    await db.insert(templateCategories).values(DEFAULT_TEMPLATE_CATEGORIES).onConflictDoNothing();
 
     const categories = await db
       .select({ id: templateCategories.id, key: templateCategories.key })

@@ -10,6 +10,12 @@ import {
 
 export type SlashSuggestionProps = SuggestionProps<BlockDefinition>;
 
+// Exported so the editor's autosave can check whether the "/" trigger is
+// still live (mid-query, no command picked yet) before persisting — the
+// character is real, unstyled paragraph text until a command is chosen, so
+// saving while this is active would write a literal "/" to the DB.
+export const SLASH_COMMANDS_PLUGIN_KEY = new PluginKey("slashCommands");
+
 export interface SlashCommandsOptions {
   onKeyDown: (event: KeyboardEvent) => boolean;
   onUpdate: (props: SlashSuggestionProps | null) => void;
@@ -32,7 +38,7 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
 
     return [
       Suggestion<BlockDefinition>({
-        pluginKey: new PluginKey("slashCommands"),
+        pluginKey: SLASH_COMMANDS_PLUGIN_KEY,
         editor: this.editor,
         char: "/",
         startOfLine: false,

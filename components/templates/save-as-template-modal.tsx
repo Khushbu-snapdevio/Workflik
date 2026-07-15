@@ -1,16 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, CheckCircle2 } from "lucide-react";
 
-const CATEGORIES = [
- { key: "productivity", label: "Productivity" },
- { key: "project_mgmt", label: "Project Management" },
- { key: "marketing",  label: "Marketing" },
- { key: "engineering", label: "Engineering" },
- { key: "sales",    label: "Sales" },
-] as const;
+type TemplateCategory = { id: string; key: string; label: string; orderIndex: number };
 
 interface SaveAsTemplateModalProps {
  pageId:   string;
@@ -29,20 +23,32 @@ export function SaveAsTemplateModal({
 }: SaveAsTemplateModalProps) {
  const [name, setName]      = useState(pageTitle || "");
  const [description, setDesc]  = useState("");
- const [category, setCategory]  = useState<string>("productivity");
+ const [categories, setCategories] = useState<TemplateCategory[]>([]);
+ const [categoryId, setCategoryId] = useState<string>("");
  const [saving, setSaving]    = useState(false);
  const [error, setError]     = useState<string | null>(null);
  const [saved, setSaved]     = useState(false);
 
+ useEffect(() => {
+  fetch("/api/templates/categories")
+   .then((r) => (r.ok ? r.json() : []))
+   .then((list: TemplateCategory[]) => {
+    setCategories(list);
+    setCategoryId((current) => current || list[0]?.id || "");
+   })
+   .catch(() => {});
+ }, []);
+
  async function handleSave() {
   if (!name.trim()) { setError("Template name is required"); return; }
+  if (!categoryId) { setError("Choose a category"); return; }
   setSaving(true);
   setError(null);
   try {
    const res = await fetch(`/api/workspaces/${workspaceId}/templates`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, category, pageId }),
+    body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, categoryId, pageId }),
    });
    const data = await res.json();
    if (!res.ok) {
@@ -135,14 +141,14 @@ export function SaveAsTemplateModal({
       <div className="mb-5">
        <label className="mb-1.5 block text-xs font-semibold text-foreground">Category</label>
        <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
          <button
-          key={cat.key}
+          key={cat.id}
           type="button"
-          onClick={() => setCategory(cat.key)}
+          onClick={() => setCategoryId(cat.id)}
           className={[
            "rounded-[var(--radius-sm)] border px-3 py-1 text-xs font-medium transition-colors",
-           category === cat.key
+           categoryId === cat.id
             ? "border-primary bg-primary/10 text-primary"
             : "border-border text-muted-foreground hover:border-border hover:bg-accent",
           ].join(" ")}

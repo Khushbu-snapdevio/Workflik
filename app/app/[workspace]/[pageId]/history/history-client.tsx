@@ -134,7 +134,7 @@ export function HistoryPageClient({
     <div className="flex h-full flex-col overflow-hidden bg-background">
 
       {/* ── Top bar ────────────────────────────────────────────────────────── */}
-      <div className="shrink-0 border-b border-border bg-card">
+      <div className="shrink-0 bg-background">
         <div className="flex h-12 items-center gap-3 px-5">
           <Link
             href={`/app/${workspaceSlug}/${pageShortId}`}

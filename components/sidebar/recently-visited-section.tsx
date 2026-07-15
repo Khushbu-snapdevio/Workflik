@@ -73,18 +73,20 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
    <button
     type="button"
     onClick={() => setExpanded((v) => !v)}
-    className="group mb-0.5 flex w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    className="group mb-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
    >
     <Clock size={15} className="shrink-0 text-muted-foreground group-hover:text-sidebar-accent-foreground" />
-    <span className="flex-1 text-left">Recently Visited</span>
+    <span className="text-left">Recently Visited</span>
     <ChevronDown
-     size={13}
+     size={14}
      className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
     />
    </button>
 
-   {expanded && (
-    <>
+   {/* Grid-rows trick animates height without measuring it in JS — see
+       favorites-section.tsx for the full rationale. */}
+   <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+    <div className="overflow-hidden">
      {visible.map((item) => {
       const page = pagesMap[item.pageId];
       return (
@@ -113,14 +115,17 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
        {resolved.length - VISIBLE_MAX} more
       </button>
      )}
-    </>
-   )}
+    </div>
+   </div>
 
-   {/* Popup flyout */}
+   {/* Popup flyout — portaled to document.body, making it a *sibling* of the
+       sidebar's own wrapper (md:z-[550] in workspace-shell.tsx), not a
+       descendant of it. z-[560] keeps it above that wrapper; anything lower
+       renders half-hidden behind the sidebar wherever the two overlap. */}
    {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
     <div
      ref={popupRef}
-     className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+     className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
      style={{ top: popupPos.top, left: popupPos.left }}
     >
      {/* Header */}

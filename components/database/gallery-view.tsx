@@ -539,7 +539,7 @@ function GalleryCard({
   const [hovered, setHovered] = useState(false);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
-  const [commentCount, setCommentCount] = useState<number | null>(null);
+  const [commentCount, setCommentCount] = useState<number | null>(entry.commentCount ?? null);
   const [tooltip, setTooltip] = useState<{
     label: string;
     rect: DOMRect;
@@ -551,7 +551,6 @@ function GalleryCard({
     rect: DOMRect;
   } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const fetchedRef = useRef(false);
 
   const filledProps = displayProps.filter((prop) =>
     hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null, resolveDisplayAs(prop, activeView))
@@ -563,30 +562,11 @@ function GalleryCard({
       )
     : [];
 
-  useEffect(() => {
-    if (dragging || fetchedRef.current) {
-      return;
-    }
-    fetchedRef.current = true;
-    fetch(`/api/pages/${entry.id}/comments`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!data) {
-          return;
-        }
-        const list = data.comments as Array<{
-          blockId: string | null;
-          deletedAt: string | null;
-          propertyId: string | null;
-        }>;
-        setCommentCount(
-          list.filter(
-            (c) => !c.blockId && !c.deletedAt && c.propertyId === null
-          ).length
-        );
-      })
-      .catch(() => {});
-  }, [entry.id, dragging]);
+  // entry.commentCount is batch-computed server-side (open, page-level
+  // threads only), so no per-card fetch is needed — see board-view.tsx's
+  // CardShell for the same change. `onCommentAdded` below still bumps this
+  // instantly between fetches.
+  useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
 
   useEffect(() => {
     if (!editing) {
@@ -604,6 +584,16 @@ function GalleryCard({
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [editing, menuPos, commentAnchor, propEditor]);
+
+  // tooltip is a `position: fixed` portal anchored to a rect snapshotted once
+  // on hover — dismiss it on scroll instead of repositioning, since locking
+  // scroll on every card hover would hurt the gallery's own scrolling.
+  useEffect(() => {
+    if (!tooltip) return;
+    function handleScroll() { setTooltip(null); }
+    document.addEventListener("scroll", handleScroll, true);
+    return () => document.removeEventListener("scroll", handleScroll, true);
+  }, [tooltip]);
 
   function commitTitle() {
     const trimmed = editTitle.trim();
@@ -778,7 +768,10 @@ function GalleryCard({
                 autoFocus
                 className="min-w-0 flex-1 bg-transparent text-sm font-semibold leading-snug text-foreground outline-none"
                 onBlur={commitTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                onChange={(e) => {
+                  setEditTitle(e.target.value);
+                  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entry.id, title: e.target.value } }));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -880,7 +873,8 @@ function GalleryCard({
                     );
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
-                  title="View comments"
+                  onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+                  onMouseLeave={() => setTooltip(null)}
                 >
                   <MessageSquare size={11} />
                   {commentCount}
@@ -972,6 +966,8 @@ function GalleryCard({
           onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
           pageId={entry.id}
           workspaceId={workspaceId}
+          workspaceSlug={workspaceSlug}
+          entryShortId={entry.shortId}
         />
       )}
 

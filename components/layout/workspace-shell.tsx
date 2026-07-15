@@ -25,10 +25,18 @@ export function WorkspaceShell({ sidebar, children }: Props) {
       )}
 
       {/* Sidebar — fixed overlay on mobile, normal flow on desktop.
-          md:relative md:z-[1] creates a stacking context so sidebar dropdowns
-          always paint above the main content area. */}
+          md:relative md:z-[550] creates a stacking context so sidebar
+          dropdowns (workspace switcher, profile menu, page-tree "more"
+          popup — none of which portal to body) always paint above the main
+          content area, whose own in-page popovers/sticky bars top out
+          around z-[500] (see template-table-view, icon-picker,
+          edit-property-panel). z-[1] used to sit below all of those, so
+          e.g. the database view's sticky toolbar (z-20) or an in-page
+          dropdown (z-[400]/z-[500]) would paint over an open sidebar
+          dropdown instead of under it. Stays below true full-screen modals
+          (z-[580]+), which correctly still cover the sidebar when open. */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:relative md:inset-auto md:z-[1] md:translate-x-0 md:transition-none ${
+        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out md:relative md:inset-auto md:z-[550] md:translate-x-0 md:transition-none ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

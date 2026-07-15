@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, Shuffle, Clock } from "lucide-react";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { emojiMatches } from "@/lib/emoji-search";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 // ── Emoji categories (Notion-standard 8 categories) ──────────────────────────
 // Extracted out of IconPicker so the same searchable, categorized emoji grid
@@ -262,6 +264,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
   const skinToneMenuRef = useRef<HTMLDivElement>(null);
   const emojiScrollRef = useRef<HTMLDivElement>(null);
   const catRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   const currentHand = SKIN_TONES.find(s => s.tone === skinTone)?.hand ?? "✋";
 
@@ -334,7 +337,8 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
               const picked = randomEmoji();
               onShuffle(applyTone(stripTone(picked), skinTone));
             }}
-            title="Random"
+            onMouseEnter={(e) => showTooltip("Random", e)}
+            onMouseLeave={hideTooltip}
             className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Shuffle size={13} />
@@ -351,7 +355,8 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             }}
             onDragStart={(e) => e.preventDefault()}
             draggable={false}
-            title="Select skin tone"
+            onMouseEnter={(e) => showTooltip("Select skin tone", e)}
+            onMouseLeave={hideTooltip}
             className={`flex size-8 shrink-0 select-none items-center justify-center rounded-[var(--radius-sm)] border text-[18px] leading-none transition-colors ${showSkinTones ? "border-primary/50 bg-accent" : "border-border bg-background hover:bg-accent"}`}
           >
             {currentHand}
@@ -370,7 +375,8 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
                   onClick={() => handleSkinTone(s.tone)}
                   onDragStart={(e) => e.preventDefault()}
                   draggable={false}
-                  title={s.tone ? "Skin tone" : "Default"}
+                  onMouseEnter={(e) => showTooltip(s.tone ? "Skin tone" : "Default", e)}
+                  onMouseLeave={hideTooltip}
                   className={`flex size-8 select-none items-center justify-center rounded-[var(--radius-sm)] text-[18px] leading-none transition-colors hover:bg-accent ${skinTone === s.tone ? "bg-accent ring-1 ring-primary/40" : ""}`}
                 >
                   {s.hand}
@@ -424,7 +430,8 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
       <div className="flex items-center justify-around border-t border-border/50 px-1 py-1 scrollbar-none">
         <button
           onClick={() => scrollToCategory("recent")}
-          title="Recently used"
+          onMouseEnter={(e) => showTooltip("Recently used", e)}
+          onMouseLeave={hideTooltip}
           className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
         >
           <Clock size={13} />
@@ -435,13 +442,18 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             onClick={() => scrollToCategory(cat.id)}
             onDragStart={(e) => e.preventDefault()}
             draggable={false}
-            title={cat.label}
+            onMouseEnter={(e) => showTooltip(cat.label, e)}
+            onMouseLeave={hideTooltip}
             className="flex size-7 shrink-0 select-none items-center justify-center rounded-[var(--radius-sm)] text-[15px] leading-none transition-colors hover:bg-accent"
           >
             {cat.icon}
           </button>
         ))}
       </div>
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
+      )}
     </div>
   );
 }

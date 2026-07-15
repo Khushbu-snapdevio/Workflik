@@ -42,13 +42,14 @@ interface Props {
 
 export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   const router = useRouter();
-  const { panelOpen, closePanel, markRead, markAllRead, clearAll, refreshCount } = useNotifications();
+  const { panelOpen, closePanel, markRead, markAllRead, clearAll, deleteNotification, refreshCount } = useNotifications();
 
   const [filter, setFilter]   = useState<FilterKey>("all");
   const [items, setItems]     = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const [shouldRender, setShouldRender] = useState(false);
   const [animIn, setAnimIn]             = useState(false);
@@ -100,6 +101,15 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
     clearAll();
     setItems([]);
     setConfirmClearAll(false);
+  }
+
+  function confirmDelete() {
+    const id = confirmDeleteId;
+    if (!id) return;
+    const notification = items.find((n) => n.id === id);
+    deleteNotification(id, notification ? !notification.isRead : false);
+    setItems((prev) => prev.filter((n) => n.id !== id));
+    setConfirmDeleteId(null);
   }
 
   function handleClick(notification: NotificationItem) {
@@ -239,6 +249,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   workspaceSlug={workspaceSlug}
                   onMarkRead={handleMarkRead}
                   onClick={handleClick}
+                  onDelete={setConfirmDeleteId}
                 />
               ))}
             </div>
@@ -258,6 +269,22 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleClearAll}>Clear all</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete single notification confirmation */}
+      <AlertDialog open={confirmDeleteId !== null} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
+        <AlertDialogContent className="z-[900]" overlayClassName="z-[900]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this notification?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This notification will be permanently removed. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

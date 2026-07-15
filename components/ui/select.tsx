@@ -68,7 +68,13 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "relative z-50 max-h-[var(--radix-select-content-available-height)] min-w-[var(--radix-select-trigger-width)] overflow-hidden",
+          // z-[600] — this app has several elevated stacking tiers (sidebar
+          // z-[550], modals z-[580]/[590]); a Select can be triggered from
+          // inside any of them, so its portal-rendered dropdown needs to sit
+          // above all of them, not just the page underneath. z-50 (shadcn's
+          // default) rendered this invisible/unclickable behind such
+          // surfaces — it wasn't "not opening", just opening underneath.
+          "relative z-[600] max-h-[var(--radix-select-content-available-height)] min-w-[var(--radix-select-trigger-width)] overflow-hidden",
           "rounded-[var(--radius-md)] border border-border bg-popover text-popover-foreground",
           "shadow-[var(--shadow-float)]",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",

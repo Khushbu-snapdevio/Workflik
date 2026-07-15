@@ -6,12 +6,14 @@ import {
  Smile as SmileyIcon, Check as CheckIcon, RotateCcw as ArrowCounterClockwiseIcon,
  MoreHorizontal as DotsThreeIcon, MessageSquare as ChatTextIcon, X as XIcon,
  Mail as EnvelopeIcon, Pencil as PencilSimpleIcon, Link as LinkIcon,
- BellOff as BellSlashIcon, Trash2 as TrashIcon, Type as CursorTextIcon, MessageCircle as ChatDotsIcon,
- Paperclip,
+ BellOff as BellSlashIcon, Trash2 as TrashIcon, MessageCircle as ChatDotsIcon,
+ Paperclip, Reply as ReplyIcon,
 } from "lucide-react";
 import { CommentComposer } from "@/components/editor/comment-composer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { emitCommentsChanged } from "@/lib/comments/comment-events";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
@@ -31,6 +33,7 @@ interface CommentReply {
  isResolved: boolean;
  isOrphaned: boolean;
  content:  Record<string, unknown> | null;
+ reactions: Record<string, string[]>;
  createdAt: string;
  editedAt:  string | null;
  deletedAt: string | null;
@@ -88,7 +91,7 @@ function formatTime(iso: string): string {
 
 // ---------- Image Lightbox ----------
 
-function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
  useEffect(() => {
   function handler(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
   document.addEventListener("keydown", handler);
@@ -98,7 +101,9 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
  if (typeof document === "undefined") return null;
  return createPortal(
   <div
+   data-comment-exempt
    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70"
+   style={{ pointerEvents: "auto" }} // see EmojiPicker's comment — required inside a modal Sheet/Dialog
    onClick={onClose}
   >
    <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -120,15 +125,17 @@ function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClos
  );
 }
 
-function ImageAttachment({ src, alt }: { src: string; alt: string }) {
+export function ImageAttachment({ src, alt }: { src: string; alt: string }) {
  const [open, setOpen] = useState(false);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  return (
   <>
    <button
     type="button"
     onClick={() => setOpen(true)}
     className="mt-1.5 block focus:outline-none rounded-[var(--radius-sm)]"
-    title="Click to enlarge"
+    onMouseEnter={(e) => showTooltip("Click to preview", e)}
+    onMouseLeave={hideTooltip}
    >
     <img
      src={src}
@@ -137,11 +144,16 @@ function ImageAttachment({ src, alt }: { src: string; alt: string }) {
     />
    </button>
    {open && <ImageLightbox src={src} alt={alt} onClose={() => setOpen(false)} />}
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </>
  );
 }
 
-function FileAttachment({ src, name }: { src: string; name: string }) {
+export function FileAttachment({ src, name }: { src: string; name: string }) {
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  function handleClick() {
   if (src.startsWith("data:")) {
    fetch(src)
@@ -161,17 +173,24 @@ function FileAttachment({ src, name }: { src: string; name: string }) {
  }
 
  return (
-  <button
-   type="button"
-   onClick={handleClick}
-   title={`Open ${name}`}
-   className="group mt-1.5 flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted px-3 py-2 transition-colors duration-150 hover:bg-accent"
-  >
-   <Paperclip size={13} className="shrink-0 text-muted-foreground" />
-   <span className="max-w-[180px] truncate text-xs text-foreground/80 group-hover:text-foreground">
-    {name}
-   </span>
-  </button>
+  <>
+   <button
+    type="button"
+    onClick={handleClick}
+    onMouseEnter={(e) => showTooltip(`Open ${name}`, e)}
+    onMouseLeave={hideTooltip}
+    className="group mt-1.5 flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted px-3 py-2 transition-colors duration-150 hover:bg-accent"
+   >
+    <Paperclip size={13} className="shrink-0 text-muted-foreground" />
+    <span className="max-w-[180px] truncate text-xs text-foreground/80 group-hover:text-foreground">
+     {name}
+    </span>
+   </button>
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
+  </>
  );
 }
 
@@ -205,6 +224,22 @@ function renderContent(content: Record<string, unknown> | null): React.ReactNode
      parts.push(<ImageAttachment key={key++} src={attrs.src} alt={attrs.alt ?? "attachment"} />);
     } else {
      parts.push(<FileAttachment key={key++} src={attrs.src} name={attrs.alt ?? "attachment"} />);
+    }
+   }
+  }
+
+  // cell-comment-popover.tsx's composer (used for database-view comment
+  // popovers) stores attachments under this different node shape — url/name/
+  // mimeType instead of image/file's src/alt — so a comment created there
+  // still needs to render correctly wherever else it's viewed (page-level
+  // section, block comments, sidebar panel).
+  if (n.type === "attachment") {
+   const attrs = n.attrs as { url?: string; name?: string; mimeType?: string } | undefined;
+   if (attrs?.url) {
+    if (attrs.mimeType?.startsWith("image/")) {
+     parts.push(<ImageAttachment key={key++} src={attrs.url} alt={attrs.name ?? "attachment"} />);
+    } else {
+     parts.push(<FileAttachment key={key++} src={attrs.url} name={attrs.name ?? "attachment"} />);
     }
    }
   }
@@ -261,7 +296,7 @@ function UserAvatar({ name, image, size = 24 }: { name?: string | null; image?: 
 // Full searchable/categorized emoji grid (same one used for page icons),
 // swapped in for the old fixed 24-emoji reaction grid.
 
-function EmojiPicker({
+export function EmojiPicker({
  anchor,
  onSelect,
  onClose,
@@ -298,7 +333,11 @@ function EmojiPicker({
   <div
    ref={ref}
    data-comment-exempt     // tells the card's outside-click handler to ignore this portal
-   style={{ position: "fixed", top, left, zIndex: 9999 }}
+   // pointerEvents: "auto" overrides the document.body.pointerEvents="none"
+   // that Radix's Dialog/Sheet sets while a modal is open — without it, this
+   // portal (a sibling of the Sheet's own content, not a descendant) silently
+   // inherits the disabled state and becomes unclickable.
+   style={{ position: "fixed", top, left, zIndex: 9999, pointerEvents: "auto" }}
    className="w-[352px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover"
   >
    <EmojiGridPicker onSelect={onSelect} onClose={onClose} />
@@ -309,7 +348,7 @@ function EmojiPicker({
 
 // ---------- Simple Dropdown ----------
 
-function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNode; children: React.ReactNode; onClose?: () => void }) {
+export function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNode; children: React.ReactNode; onClose?: () => void }) {
  const [open, setOpen] = useState(false);
  const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
  const triggerRef = useRef<HTMLDivElement>(null);
@@ -344,7 +383,9 @@ function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNo
     <div
      ref={menuRef}
      data-comment-exempt
-     style={{ position: "fixed", top: getClampedTop(menuRect, 140, { gap: 4 }), right: window.innerWidth - menuRect.right, zIndex: 9999 }}
+     // See EmojiPicker's comment above — required so this portal stays
+     // clickable when opened from inside a modal Sheet/Dialog.
+     style={{ position: "fixed", top: getClampedTop(menuRect, 140, { gap: 4 }), right: window.innerWidth - menuRect.right, zIndex: 9999, pointerEvents: "auto" }}
      className="w-[188px] rounded-[var(--radius-sm)] border border-border bg-card py-1"
     >
      {/* Pass close fn via context-like prop-drilling trick: clone children with close */}
@@ -360,7 +401,7 @@ function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNo
  );
 }
 
-function DropdownItem({
+export function DropdownItem({
  children, onClick, danger, icon, _close,
 }: {
  children: React.ReactNode;
@@ -377,13 +418,13 @@ function DropdownItem({
     danger ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-accent"
    }`}
   >
-   {icon && <span className="text-muted-foreground flex-shrink-0">{icon}</span>}
+   {icon && <span className={`flex-shrink-0 ${danger ? "text-destructive" : "text-muted-foreground"}`}>{icon}</span>}
    {children}
   </button>
  );
 }
 
-function DropdownSeparator() {
+export function DropdownSeparator() {
  return <div className="my-1 border-t border-border/40" />;
 }
 
@@ -399,6 +440,11 @@ interface CommentCardProps {
  isAdmin:    boolean;
  onClose:    () => void;
  variant?:   "floating" | "inline";
+ /** Fired synchronously, from an optimistic local update (no fetch round-trip),
+  *  whenever resolving/reopening changes how many active threads remain in
+  *  this card's scope — lets a page-level "show the comment section" toggle
+  *  react instantly instead of blinking while it waits on its own refetch. */
+ onActiveCountChange?: (count: number) => void;
 }
 
 export function CommentCard({
@@ -411,11 +457,11 @@ export function CommentCard({
  isAdmin,
  onClose,
  variant = "floating",
+ onActiveCountChange,
 }: CommentCardProps) {
  const cardRef = useRef<HTMLDivElement>(null);
  const [data, setData]       = useState<CommentsData | null>(null);
  const [loading, setLoading]    = useState(true);
- const [showResolved, setShowResolved] = useState(false);
 
  const loadComments = useCallback(async () => {
   setLoading(true);
@@ -461,13 +507,11 @@ export function CommentCard({
  );
  const nonOrphaned = threads.filter((t) => !t.isOrphaned);
  const orphaned  = threads.filter((t) => t.isOrphaned);
- const resolvedCount = nonOrphaned.filter((t) => t.isResolved && !t.deletedAt).length;
 
- // Show resolved threads only when toggled on
- const activeVisible = nonOrphaned.filter((t) => !t.isResolved || showResolved);
-
- // Count only for this block/context, not the whole page
- const unresolvedCount = threads.filter((t) => !t.isResolved && !t.deletedAt).length;
+ // Resolved threads are never shown here — matching the inline (page-level)
+ // variant and Notion, where a resolved thread disappears from the block/page
+ // entirely and is only ever visible via the sidebar "Comments" panel.
+ const activeVisible = nonOrphaned.filter((t) => !t.isResolved);
 
  // Reload this card's own thread list AND tell the rest of the page (header
  // badge, sidebar panel, block gutter) that something changed — without this,
@@ -500,66 +544,57 @@ export function CommentCard({
   notifyChanged();
  }
 
+ // Optimistic — no loading flash, no waiting on a refetch before the thread
+ // visually resolves/reopens. Computes the new active count from the same
+ // local update (not a fresh fetch) so a page-level "hide once nothing's
+ // active" toggle can react in the same tick instead of trailing behind.
+ function setResolvedLocally(id: string, isResolved: boolean) {
+  setData((prev) => {
+   if (!prev) return prev;
+   const nextComments = prev.comments.map((t) => (t.id === id ? { ...t, isResolved } : t));
+   const scoped = nextComments.filter((t) =>
+    blockId ? t.blockId === blockId : (!t.blockId && !t.propertyId)
+   );
+   onActiveCountChange?.(scoped.filter((t) => !t.isResolved && !t.deletedAt).length);
+   return { ...prev, comments: nextComments };
+  });
+ }
+
+ // setResolvedLocally updates this card's own UI instantly (no fetch needed).
+ // Other listeners (topbar badge, sidebar panel) only know how to refetch from
+ // the server, so emitCommentsChanged is fired AFTER the request settles —
+ // emitting before would let their refetch race the still-in-flight POST and
+ // read pre-persist data, which then never gets corrected.
  async function resolveThread(id: string) {
-  await fetch(`/api/comments/${id}/resolve`, { method: "POST" });
-  notifyChanged();
+  setResolvedLocally(id, true);
+  const res = await fetch(`/api/comments/${id}/resolve`, { method: "POST" });
+  if (!res.ok) loadComments(); // rare failure path — fall back to a real reload
+  emitCommentsChanged(pageId);
  }
 
  async function reopenThread(id: string) {
-  await fetch(`/api/comments/${id}/reopen`, { method: "POST" });
-  notifyChanged();
+  setResolvedLocally(id, false);
+  const res = await fetch(`/api/comments/${id}/reopen`, { method: "POST" });
+  if (!res.ok) loadComments();
+  emitCommentsChanged(pageId);
  }
 
  // ── Inline variant — renders inside the Comments panel ───────────────────
  if (variant === "inline") {
+  // Resolved threads are never shown inline here, regardless of count — same
+  // as Notion, where the only place to see resolved comments is the sidebar
+  // "Comments" panel's Resolved tab, not a toggle in the page flow itself.
+  const inlineVisible = nonOrphaned.filter((t) => !t.isResolved);
   return (
    <div ref={cardRef}>
-    {/* ── Compose area ── */}
-    <div className="px-4 pt-4 pb-4">
-     <CommentComposer
-      workspaceId={workspaceId}
-      mode="new"
-      placeholder="Write a comment…"
-      onSubmit={createComment}
-     />
-    </div>
-
-    {/* ── Divider + resolved toggle row ── */}
-    <div className="flex items-center gap-3 px-4 mb-1">
-     <div className="flex-1 border-t border-border/30" />
-     {resolvedCount > 0 && (
-      <button
-       type="button"
-       onClick={() => setShowResolved((v) => !v)}
-       className="inline-flex items-center gap-1 shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-150"
-      >
-       <CheckIcon size={10} className={showResolved ? "text-primary" : ""} />
-       {showResolved ? "Hide resolved" : `${resolvedCount} resolved`}
-      </button>
-     )}
-     {resolvedCount === 0 && <div className="flex-1 border-t border-border/30" />}
-    </div>
-
-    {/* ── Thread list / states ── */}
+    {/* ── Thread list ── */}
     {loading ? (
-     <div className="flex items-center justify-center py-16">
+     <div className="flex items-center justify-center py-8">
       <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
      </div>
-    ) : activeVisible.length === 0 ? (
-     <div className="flex flex-col items-center gap-4 px-6 py-14 text-center">
-      <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50 border border-border">
-       <ChatDotsIcon size={24} className="text-muted-foreground/70" />
-      </div>
-      <div>
-       <p className="text-sm font-semibold text-foreground/70">No page-level comments</p>
-       <p className="mt-1 text-xs text-muted-foreground/70 leading-relaxed max-w-[200px]">
-        These comments apply to the whole page, not a specific block.
-       </p>
-      </div>
-     </div>
-    ) : (
+    ) : inlineVisible.length > 0 && (
      <div className="divide-y divide-border/25">
-      {activeVisible.map((thread) => (
+      {inlineVisible.map((thread) => (
        <ThreadSection
         key={thread.id}
         thread={thread}
@@ -586,53 +621,33 @@ export function CommentCard({
       ))}
      </div>
     )}
+
+    {/* ── Compose area — adds a new top-level comment, after the list ── */}
+    <div className={`px-4 pb-4 ${inlineVisible.length > 0 ? "pt-2" : "pt-4"}`}>
+     <CommentComposer
+      workspaceId={workspaceId}
+      mode="new"
+      placeholder="Write a comment…"
+      onSubmit={createComment}
+     />
+    </div>
    </div>
   );
  }
 
  // ── Floating variant — block-level comment card ───────────────────────────
+ // No header (no "Block comment" label/icon, no open/resolved count) and no
+ // persistent close button either — matching Notion, which drops straight
+ // into the thread list with no chrome at all. A visible corner close button
+ // was tried here but collided with each thread's own hover action pill
+ // (also top-right of its row); Escape and outside-click already close the
+ // card (see the effects above), same as Notion's own convention.
  return (
   <div
    ref={cardRef}
-   className="w-[380px] border border-border bg-card overflow-hidden"
+   className="relative w-[380px] border border-border bg-card overflow-hidden"
    style={{ borderRadius: "var(--radius-xl)" }}
   >
-   {/* ── Context header ── shows user this is a BLOCK comment, not page-level */}
-   <div className="flex items-start justify-between gap-3 px-4 py-3 border-b border-border/50 bg-muted/25">
-    <div className="flex items-center gap-2.5 min-w-0">
-     <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-primary/15 bg-primary/10">
-      <CursorTextIcon size={13} className="text-primary" />
-     </div>
-     <div className="min-w-0">
-      <span className="text-sm font-semibold text-foreground leading-tight">
-       {blockId ? "Block comment" : "Page comment"}
-      </span>
-      <p className="text-xs text-muted-foreground leading-tight mt-0.5">
-       {unresolvedCount > 0 ? `${unresolvedCount} open` : "No open threads"}
-       {resolvedCount > 0 && (
-        <>
-         {" · "}
-         <button
-          type="button"
-          onClick={() => setShowResolved((v) => !v)}
-          className="underline decoration-dotted underline-offset-2 hover:text-foreground transition-colors duration-150"
-         >
-          {showResolved ? "hide resolved" : `${resolvedCount} resolved`}
-         </button>
-        </>
-       )}
-      </p>
-     </div>
-    </div>
-    <button
-     type="button"
-     onClick={onClose}
-     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
-    >
-     <XIcon size={13} />
-    </button>
-   </div>
-
    {/* Thread list */}
    <div className="max-h-[400px] overflow-y-auto">
     {loading && (
@@ -704,6 +719,7 @@ interface ThreadSectionProps {
 }
 
 function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, onResolve, onReopen, onReply }: ThreadSectionProps) {
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [editingId,  setEditingId]  = useState<string | null>(null);
  const [replyKey,  setReplyKey]  = useState(0);
  const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
@@ -711,6 +727,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
  const [isUnread,  setIsUnread]  = useState(false);
  const [isMuted,   setIsMuted]   = useState(false);
  const [pendingDeleteThread, setPendingDeleteThread] = useState(false);
+ const [showReplyBox, setShowReplyBox] = useState(false);
 
  // Sync reactions when the thread data refreshes
  useEffect(() => { setReactions(thread.reactions ?? {}); }, [thread.reactions]);
@@ -769,13 +786,22 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
    id={`comment-${thread.id}`}
    className={`group/thread relative border-b border-border/20 last:border-0 transition-colors duration-150 hover:bg-accent/30 ${thread.isResolved ? "opacity-55" : ""}`}
   >
+   {/* ── Unread indicator — right edge, hidden once the hover pill takes over ── */}
+   {isUnread && !thread.deletedAt && editingId !== thread.id && (
+    <span
+     className="absolute top-4 right-4 z-10 size-2 rounded-full bg-primary group-hover/thread:hidden"
+     title="Unread"
+    />
+   )}
+
    {/* ── Floating action pill — appears top-right on hover ── */}
-   {!thread.deletedAt && (
+   {!thread.deletedAt && editingId !== thread.id && (
     <div className="absolute top-2.5 right-3 z-10 hidden group-hover/thread:flex items-center gap-px rounded-[var(--radius-sm)] border border-border/60 bg-card px-0.5 py-0.5">
      {thread.isResolved ? (
       <button
        type="button"
-       title="Reopen thread"
+       onMouseEnter={(e) => showTooltip("Reopen thread", e)}
+       onMouseLeave={hideTooltip}
        onClick={() => onReopen(thread.id)}
        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-primary hover:bg-accent transition-colors duration-150"
       >
@@ -784,7 +810,8 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
      ) : (
       <button
        type="button"
-       title="Resolve thread"
+       onMouseEnter={(e) => showTooltip("Resolve thread", e)}
+       onMouseLeave={hideTooltip}
        onClick={() => onResolve(thread.id)}
        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
       >
@@ -793,7 +820,8 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
      )}
      <button
       type="button"
-      title="Add reaction"
+      onMouseEnter={(e) => showTooltip("Add reaction", e)}
+      onMouseLeave={hideTooltip}
       onClick={(e) => setEmojiAnchor(e.currentTarget.getBoundingClientRect())}
       className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
      >
@@ -816,6 +844,11 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
        </button>
       }
      >
+      {!thread.isResolved && (
+       <DropdownItem icon={<ReplyIcon size={13} />} onClick={() => setShowReplyBox(true)}>
+        Reply
+       </DropdownItem>
+      )}
       <DropdownItem icon={<EnvelopeIcon size={13} />} onClick={() => setIsUnread((v) => !v)}>
        {isUnread ? "Mark as read" : "Mark as unread"}
       </DropdownItem>
@@ -855,12 +888,11 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
       <span className="text-sm font-semibold text-foreground leading-tight truncate">
        {thread.author?.name ?? "Former Member"}
       </span>
-      {isUnread && <span className="size-1.5 rounded-full bg-primary flex-shrink-0 mb-0.5" title="Unread" />}
       <span className="text-xs text-muted-foreground flex-shrink-0">
        {formatTime(thread.createdAt)}
       </span>
       {thread.editedAt && !thread.deletedAt && (
-       <span className="text-xs text-muted-foreground/60 flex-shrink-0">edited</span>
+       <span className="text-xs text-muted-foreground/60 flex-shrink-0">(edited)</span>
       )}
      </div>
 
@@ -891,7 +923,8 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
          <button
           key={emoji}
           type="button"
-          title={iMine ? "Remove reaction" : "Add reaction"}
+          onMouseEnter={(e) => showTooltip(iMine ? "Remove reaction" : "Add reaction", e)}
+          onMouseLeave={hideTooltip}
           onClick={() => { void toggleReaction(emoji); }}
           className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
            iMine
@@ -927,11 +960,12 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
     </div>
    )}
 
-   {/* ── Reply input ── */}
-   {!thread.isResolved && (
+   {/* ── Reply input — hidden until "Reply" is chosen from the ⋯ menu ── */}
+   {!thread.isResolved && showReplyBox && (
     <div className="pl-[56px] pr-4 pb-3">
      <CommentComposer
       key={replyKey}
+      autoFocus
       workspaceId={workspaceId}
       mode="reply"
       placeholder="Reply…"
@@ -947,6 +981,10 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
     description="The entire thread and all replies will be permanently deleted."
     onConfirm={handleDeleteRoot}
    />
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }
@@ -966,6 +1004,35 @@ interface ReplyRowProps {
 function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEditingId, onMutate }: ReplyRowProps) {
  const isAuthor = reply.author?.id === currentUserId;
  const [pendingDelete, setPendingDelete] = useState(false);
+ const [reactions, setReactions] = useState<Record<string, string[]>>(reply.reactions ?? {});
+ const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
+
+ // Sync when the thread data refreshes (e.g. after onMutate's reload)
+ useEffect(() => { setReactions(reply.reactions ?? {}); }, [reply.reactions]);
+
+ async function toggleReaction(emoji: string) {
+  setReactions((prev) => {
+   const hadThisEmoji = (prev[emoji] ?? []).includes(currentUserId);
+   const next: Record<string, string[]> = {};
+   for (const [e, users] of Object.entries(prev)) {
+    const filtered = users.filter((u) => u !== currentUserId);
+    if (filtered.length > 0) next[e] = filtered;
+   }
+   if (!hadThisEmoji) {
+    next[emoji] = [...(next[emoji] ?? []), currentUserId];
+   }
+   return next;
+  });
+  const res = await fetch(`/api/comments/${reply.id}/react`, {
+   method: "POST",
+   headers: { "Content-Type": "application/json" },
+   body: JSON.stringify({ emoji }),
+  });
+  if (res.ok) {
+   const data = await res.json() as { reactions: Record<string, string[]> };
+   setReactions(data.reactions);
+  }
+ }
 
  async function handleEdit(content: Record<string, unknown>) {
   await fetch(`/api/comments/${reply.id}`, {
@@ -994,7 +1061,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
      <span className="text-xs text-muted-foreground flex-shrink-0">
       {formatTime(reply.createdAt)}
      </span>
-     {reply.editedAt && <span className="text-xs text-muted-foreground/60">edited</span>}
+     {reply.editedAt && <span className="text-xs text-muted-foreground/60">(edited)</span>}
     </div>
 
     {reply.deletedAt ? (
@@ -1013,11 +1080,48 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
       {renderContent(reply.content)}
      </p>
     )}
+
+    {Object.keys(reactions).length > 0 && (
+     <div className="flex flex-wrap gap-1 mt-1.5">
+      {Object.entries(reactions).map(([emoji, userIds]) => {
+       const iMine = userIds.includes(currentUserId);
+       return (
+        <button
+         key={emoji}
+         type="button"
+         onClick={() => { void toggleReaction(emoji); }}
+         className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
+          iMine
+           ? "bg-primary/10 border-primary/30 text-primary"
+           : "bg-muted/50 hover:bg-accent border-border/50 hover:border-border text-foreground/70"
+         }`}
+        >
+         {emoji}
+         <span className="text-xs font-semibold ml-0.5">{userIds.length}</span>
+        </button>
+       );
+      })}
+     </div>
+    )}
    </div>
 
    {/* Hover action — floating dot menu */}
-   {!reply.deletedAt && (
+   {!reply.deletedAt && editingId !== reply.id && (
     <div className="absolute top-1.5 right-0 hidden group-hover/reply:flex items-center rounded-[var(--radius-sm)] border border-border/50 bg-card px-0.5 py-0.5">
+     <button
+      type="button"
+      onClick={(e) => setEmojiAnchor(e.currentTarget.getBoundingClientRect())}
+      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+     >
+      <SmileyIcon size={11} />
+     </button>
+     {emojiAnchor && (
+      <EmojiPicker
+       anchor={emojiAnchor}
+       onSelect={(emoji) => { void toggleReaction(emoji); }}
+       onClose={() => setEmojiAnchor(null)}
+      />
+     )}
      <SimpleDropdown
       trigger={
        <button type="button" className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150">

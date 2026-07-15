@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
  X, ExternalLink as ArrowSquareOut, Trash2 as Trash, ArrowLeft,
@@ -12,6 +13,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { PageEditor } from "@/components/editor/editor";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import type { DbEntry, DbProperty } from "@/components/database/types";
 
 const PROP_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -46,6 +49,7 @@ export function EntrySidePanel({
  const [confirmDelete, setConfirmDelete] = useState(false);
  const [deleting, setDeleting]      = useState(false);
  const panelRef             = useRef<HTMLDivElement>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  useEffect(() => { setTitle(entry.title ?? ""); }, [entry.id, entry.title]);
 
@@ -113,7 +117,8 @@ export function EntrySidePanel({
        <button
         onClick={() => setConfirmDelete(true)}
         className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
-        title="Delete entry"
+        onMouseEnter={(e) => showTooltip("Delete entry", e)}
+        onMouseLeave={hideTooltip}
        >
         <Trash size={14} />
        </button>
@@ -150,7 +155,10 @@ export function EntrySidePanel({
        <div className="group/title relative">
         <input
          value={title}
-         onChange={(e) => setTitle(e.target.value)}
+         onChange={(e) => {
+          setTitle(e.target.value);
+          window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entry.id, title: e.target.value } }));
+         }}
          onBlur={() => { if (title !== entry.title) onUpdateTitle(entry.id, title); }}
          onKeyDown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
@@ -329,6 +337,11 @@ export function EntrySidePanel({
      }}
     />
    </div>
+
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
 
    <style>{`
     @keyframes sidePanelIn {

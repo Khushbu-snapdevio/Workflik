@@ -570,6 +570,7 @@ Orbit Admin (`/orbit`) is WorkFlik's internal operations dashboard. **Not access
 - List all built-in templates: name, category, status (Draft / Published)
 - Create a new template using the block-based editor
 - Edit template content, name, description, or category
+- Categories are admin-managed (`template_categories` table), not a fixed list — from the template form, an admin can add a new category inline in addition to picking an existing one. A category can't be deleted while any template still references it.
 - Preview a template as users see it in the gallery
 - Publish → sets status to published; template appears in the user-facing gallery
 - Unpublish → sets status to draft; template hidden from users
@@ -1227,6 +1228,19 @@ const [pageData, databaseRows] = await Promise.all([...])
 
 ---
 
+## Bug Fix Documentation
+
+Whenever a reported bug is diagnosed and fixed, record it as a matched pair of docs under `doc/bugs/` (create the folder if it doesn't exist yet):
+
+- **`doc/bugs/{YYYY-MM-DD}-bug-{slug}.md`** — written once the bug is understood. Contents: what's broken (from the user's perspective), how to reproduce it, and the root cause.
+- **`doc/bugs/{YYYY-MM-DD}-solution-{slug}.md`** — written once the fix lands. Contents: what changed, which file(s), and why that fixes the root cause — not just the symptom.
+
+`{slug}` is a short kebab-case description of the issue (e.g. `sidebar-favorite-toggle-race`), reused **identically** across both files in the pair so they sit next to each other alphabetically and are easy to match up. `{YYYY-MM-DD}` is the date the bug was fixed, not when it was reported.
+
+This applies to real functional/logic bugs — not routine styling tweaks, copy changes, or net-new features with no prior broken behavior.
+
+---
+
 ## Hard Rules
 
 These are derived from architecture decisions that are hard to change after data exists. Follow them from the first commit.
@@ -1270,6 +1284,7 @@ These are derived from architecture decisions that are hard to change after data
 37. **Avatars are always `rounded-full`, sized from the defined scale only.** Fallback initials derived deterministically from name. (See UI Rule 26.)
 38. **Drag handles are `<GripVertical>`, hover-only visible.** Drop indicator is a thin `bg-primary h-0.5` line — no zone highlighting. (See UI Rule 27.)
 39. **Breadcrumb is present on all page views.** Current segment non-clickable. Collapse > 4 segments to `…`. (See UI Rule 28.)
+40. **Every diagnosed bug gets a matched `doc/bugs/{date}-bug-{slug}.md` + `{date}-solution-{slug}.md` pair.** Write the bug doc once the root cause is understood; write the solution doc once the fix lands. (See Bug Fix Documentation.)
 
 ---
 

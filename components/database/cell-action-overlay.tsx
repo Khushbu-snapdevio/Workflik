@@ -107,28 +107,7 @@ export function CellActionOverlay({
               onClick={(e) => {
                 e.stopPropagation();
                 onCopyClick();
-                toast.success("Copied to clipboard", {
-                  duration: 2000,
-                  icon: <Check size={16} style={{ color: "var(--primary-foreground)" }} />,
-                  style: {
-                    background: "linear-gradient(135deg, var(--primary), var(--primary-hover))",
-                    color: "var(--primary-foreground)",
-                    border: "none",
-                    // Hug the short message instead of sonner's default
-                    // 356px / full-width-on-mobile toast sizing. The toast is
-                    // absolutely positioned inside sonner's already page-centered
-                    // container, so left/right + auto margins re-center this
-                    // narrower box within it (sonner's own transform is reserved
-                    // for its slide in/out animation, so we can't center via
-                    // translateX here without breaking that).
-                    width: "fit-content",
-                    maxWidth: 240,
-                    left: 0,
-                    right: 0,
-                    marginLeft: "auto",
-                    marginRight: "auto",
-                  },
-                });
+                toast.success("Copied to clipboard", { duration: 2000 });
               }}
               onMouseEnter={(e) => {
                 if (!copied) {

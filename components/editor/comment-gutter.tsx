@@ -25,6 +25,12 @@ interface Props {
 export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, activeBlockId }: Props) {
  const [counts,   setCounts]   = useState<BlockCount[]>([]);
  const [indicators, setIndicators] = useState<Indicator[]>([]);
+ // Only the currently-hovered block's badge is shown — matching Notion,
+ // where the indicator doesn't persist for every commented block, only the
+ // one you're pointing at — instead of every commented block's badge
+ // floating on screen all the time (including while scrolling, since these
+ // are `position: fixed`).
+ const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
 
  // Keep counts accessible inside stable callbacks without recreating them
  const countsRef = useRef<BlockCount[]>([]);
@@ -141,8 +147,68 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
   };
  }, [editor, measure]); // stable — measure doesn't change anymore
 
+ // ── Track which block is currently hovered ────────────────────────────────
+ // Mirrors block-handle.tsx's own resolveBlock/safe-zone approach: walk up
+ // from the DOM element under the cursor to the editor's direct child, then
+ // match that against the document's top-level children (in order) to find
+ // which block it is. The safe zone extends past the editor's right edge to
+ // cover the badge's own position, plus a short hide delay, so moving the
+ // mouse from a block toward its badge doesn't hide it before it's clickable.
+ useEffect(() => {
+  const hideTimer = { current: undefined as ReturnType<typeof setTimeout> | undefined };
+
+  function resolveHoveredBlockId(e: MouseEvent): string | null {
+   const editorEl = editor.view.dom as HTMLElement;
+   let el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+   if (!el) return null;
+   while (el && el.parentElement !== editorEl) el = el.parentElement;
+   if (!el || el === editorEl) return null;
+
+   const sorted = [...blocksRef.current].sort((a, b) => a.orderIndex - b.orderIndex);
+   let offset = 0;
+   for (let i = 0; i < editor.state.doc.childCount; i++) {
+    const child = editor.state.doc.child(i);
+    if (editor.view.nodeDOM(offset) === el) return sorted[i]?.id ?? null;
+    offset += child.nodeSize;
+   }
+   return null;
+  }
+
+  function onMove(e: MouseEvent) {
+   const editorEl = editor.view.dom as HTMLElement;
+   const er = editorEl.getBoundingClientRect();
+   const inSafeZone = (
+    e.clientX >= er.left &&
+    e.clientX <= er.right + INDICATOR_WIDTH + 32 &&
+    e.clientY >= er.top - 10 &&
+    e.clientY <= er.bottom + 10
+   );
+   if (!inSafeZone) {
+    clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setHoveredBlockId(null), 300);
+    return;
+   }
+   clearTimeout(hideTimer.current);
+
+   const overEditor = (
+    e.clientX >= er.left && e.clientX <= er.right &&
+    e.clientY >= er.top && e.clientY <= er.bottom
+   );
+   if (!overEditor) return; // hovering the gutter itself — keep last block active
+
+   const id = resolveHoveredBlockId(e);
+   if (id) setHoveredBlockId(id);
+  }
+
+  document.addEventListener("mousemove", onMove);
+  return () => {
+   document.removeEventListener("mousemove", onMove);
+   clearTimeout(hideTimer.current);
+  };
+ }, [editor, blocksRef]);
+
  // ── Render ────────────────────────────────────────────────────────────────
- const visible = indicators.filter((i) => i.blockId !== activeBlockId);
+ const visible = indicators.filter((i) => i.blockId !== activeBlockId && i.blockId === hoveredBlockId);
 
  if (visible.length === 0 || typeof document === "undefined") return null;
 

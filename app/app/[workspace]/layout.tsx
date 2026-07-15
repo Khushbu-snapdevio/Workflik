@@ -47,7 +47,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     [prefs],
   ] = await Promise.all([
     db
-      .select({ role: users.role, tourCompleted: users.tourCompleted, image: users.image })
+      .select({ role: users.role, tourCompleted: users.tourCompleted, image: users.image, name: users.name })
       .from(users)
       .where(eq(users.id, session.user.id))
       .limit(1),
@@ -141,6 +141,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
               <Sidebar
                 isAdmin={freshUser?.role === ADMIN_ROLE}
                 userEmail={session.user.email}
+                initialUserName={freshUser?.name ?? null}
                 initialUserImage={freshUser?.image ?? null}
                 workspaceId={ws.id}
                 workspaceSlug={ws.slug}

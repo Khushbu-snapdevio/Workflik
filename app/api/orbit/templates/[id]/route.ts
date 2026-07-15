@@ -3,7 +3,7 @@ import { z } from "zod";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { templates, users } from "@/lib/db/schema";
+import { templates, templateCategories, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
 
@@ -22,7 +22,7 @@ async function requirePlatformAdmin() {
 const patchSchema = z.object({
   name:         z.string().min(1).max(200).optional(),
   description:  z.string().max(1000).nullable().optional(),
-  category:     z.enum(["productivity", "project_mgmt", "marketing", "engineering", "sales"]).optional(),
+  categoryId:   z.string().uuid().optional(),
   pageSnapshot: z.unknown().optional(),
 });
 
@@ -65,10 +65,19 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
 
+  if (parsed.data.categoryId !== undefined) {
+    const [cat] = await db
+      .select({ id: templateCategories.id })
+      .from(templateCategories)
+      .where(eq(templateCategories.id, parsed.data.categoryId))
+      .limit(1);
+    if (!cat) return apiError(400, "Unknown category");
+  }
+
   const updates: Record<string, unknown> = {};
   if (parsed.data.name !== undefined)         updates.name = parsed.data.name;
   if (parsed.data.description !== undefined)  updates.description = parsed.data.description;
-  if (parsed.data.category !== undefined)     updates.category = parsed.data.category;
+  if (parsed.data.categoryId !== undefined)   updates.categoryId = parsed.data.categoryId;
   if (parsed.data.pageSnapshot !== undefined) updates.pageSnapshot = parsed.data.pageSnapshot;
 
   const [updated] = await db

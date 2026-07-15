@@ -68,7 +68,6 @@ export function TemplateEditor({ initialBlocks, onChange }: Props) {
         const raw = tiptapDocToBlocks(
           e.getJSON() as unknown as { content?: never[] },
           "template",
-          initialBlocks,
         );
         const blocks: DbBlock[] = raw.map((b, i) => ({
           id:            b.id ?? `tmp-${i}`,

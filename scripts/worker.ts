@@ -1,11 +1,13 @@
 import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 if (existsSync(".env")) {
   process.loadEnvFile();
 }
 
-const HEARTBEAT_FILE = "/tmp/worker-heartbeat";
+const HEARTBEAT_FILE = join(tmpdir(), "worker-heartbeat");
 const HEARTBEAT_INTERVAL_MS = 20_000;
 
 async function main() {

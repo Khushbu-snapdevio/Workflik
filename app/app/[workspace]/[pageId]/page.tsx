@@ -1,8 +1,9 @@
-import { and, asc, eq, gt, inArray } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import {
+  comments,
   databaseProperties,
   databaseViews,
   pageClosure,
@@ -13,13 +14,16 @@ import {
   workspaces,
 } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
-import { ChevronRight, FileText, Home } from "lucide-react";
-import { PageIcon } from "@/components/pages/page-icon";
 import { PageClient } from "@/components/pages/page-client";
+import { PageBreadcrumbs } from "@/components/pages/page-breadcrumbs";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PageCommentButton } from "@/components/pages/page-comment-button";
 import { FavoriteButton } from "@/components/pages/favorite-button";
 import { ShareButton } from "@/components/pages/share-button";
+import { CopyLinkButton } from "@/components/pages/copy-link-button";
+import { TimeAgo } from "@/components/ui/time-ago";
+import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
+import { PagePrivacyPill } from "@/components/pages/page-privacy-pill";
 import { TrashBanner } from "@/components/pages/trash-banner";
 import { TemplatePageClient } from "@/components/templates/template-page-client";
 
@@ -114,6 +118,27 @@ export default async function PageEditorPage({ params }: Props) {
         ? await db.select().from(propertyValues).where(inArray(propertyValues.entryId, entryIds))
         : [];
 
+    // Open (unresolved, undeleted, root-level, page-level) comment count per
+    // entry — same definition as /api/databases/[id]/entries, shown as a
+    // chat-icon badge next to the entry's name across table/board/gallery/
+    // calendar views. propertyId must be excluded — the badge's popover only
+    // shows page-level threads, so counting property-scoped ones here would
+    // overcount relative to what that popover actually displays.
+    const commentCountRows = entryIds.length > 0
+      ? await db
+          .select({ pageId: comments.pageId, count: sql<number>`count(*)::int` })
+          .from(comments)
+          .where(and(
+            inArray(comments.pageId, entryIds),
+            isNull(comments.parentId),
+            isNull(comments.propertyId),
+            eq(comments.isResolved, false),
+            isNull(comments.deletedAt),
+          ))
+          .groupBy(comments.pageId)
+      : [];
+    const commentCountMap = new Map(commentCountRows.map((r) => [r.pageId, r.count]));
+
     return (
       <TemplatePageClient
         page={{
@@ -123,10 +148,11 @@ export default async function PageEditorPage({ params }: Props) {
           icon:     page.icon,
           coverUrl: page.coverUrl,
           kind:     page.kind,
+          updatedAt: page.updatedAt ? new Date(page.updatedAt).toISOString() : null,
         }}
         properties={props}
         views={views}
-        entries={entries.map((e) => ({ ...e, updatedAt: e.updatedAt ? new Date(e.updatedAt).toISOString() : null }))}
+        entries={entries.map((e) => ({ ...e, updatedAt: e.updatedAt ? new Date(e.updatedAt).toISOString() : null, commentCount: commentCountMap.get(e.id) ?? 0 }))}
         values={values}
         workspaceSlug={slug}
         workspaceName={ws.name}
@@ -134,6 +160,9 @@ export default async function PageEditorPage({ params }: Props) {
         breadcrumbs={breadcrumbs}
         defaultViewId={page.defaultViewId ?? null}
         currentUserId={session.user.id}
+        currentUserName={session.user.name ?? null}
+        currentUserEmail={session.user.email ?? null}
+        currentUserImage={session.user.image ?? null}
         isPrivate={page.isPrivate ?? false}
         isFavorited={isFavorited}
         isEditor={isEditor}
@@ -147,7 +176,13 @@ export default async function PageEditorPage({ params }: Props) {
   // ── Regular / doc pages → PageClient ─────────────────────────────────────────
   const statusBanner = (
     <>
-      {page.isDeleted && <TrashBanner pageId={page.id} workspaceSlug={slug} />}
+      {page.isDeleted && (
+        <TrashBanner
+          pageId={page.id}
+          workspaceSlug={slug}
+          parentShortId={breadcrumbs[breadcrumbs.length - 1]?.shortId ?? null}
+        />
+      )}
       {page.isLocked && (
         <div className="mb-5 flex items-center gap-3 rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
           This page is <strong className="ml-1">locked</strong> — editing is disabled.
@@ -159,54 +194,40 @@ export default async function PageEditorPage({ params }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background" data-page-id={page.id}>
       {/* ── Topbar ── */}
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card px-3">
+      <PagePrivacyProvider initialIsPrivate={page.isPrivate}>
+      <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
 
         {/* Breadcrumbs */}
-        <nav className="flex min-w-0 items-center gap-0.5 text-xs">
-          <a
-            href={`/app/${slug}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-          >
-            <Home size={13} className="shrink-0" />
-            <span className="font-medium">{ws.name}</span>
-          </a>
-
-          {breadcrumbs.map((crumb) => (
-            <span key={crumb.id} className="flex min-w-0 items-center gap-0.5">
-              <ChevronRight size={12} className="shrink-0 text-foreground/30" />
-              <a
-                href={`/app/${slug}/${crumb.shortId}`}
-                className="flex max-w-[120px] items-center gap-1.5 truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-              >
-                {crumb.icon
-                  ? <PageIcon icon={crumb.icon} size={12} />
-                  : <FileText size={12} className="shrink-0" />
-                }
-                {crumb.title || "Untitled"}
-              </a>
-            </span>
-          ))}
-
-          <span className="flex min-w-0 items-center gap-0.5">
-            <ChevronRight size={12} className="shrink-0 text-foreground/30" />
-            <span className="flex max-w-[240px] items-center gap-1.5 truncate px-2 py-1 text-xs font-semibold text-foreground/80">
-              {page.icon
-                ? <PageIcon icon={page.icon} size={12} />
-                : <FileText size={12} className="shrink-0 text-muted-foreground" />
-              }
-              {page.title || "Untitled"}
-            </span>
-          </span>
-        </nav>
+        <div className="flex min-w-0 items-center">
+          <PageBreadcrumbs
+            workspaceSlug={slug}
+            workspaceName={ws.name}
+            ancestors={breadcrumbs}
+            currentPageId={page.id}
+            initialTitle={page.title}
+            initialIcon={page.icon}
+          />
+          <PagePrivacyPill />
+        </div>
 
         {/* Actions */}
-        <div className="ml-2 flex shrink-0 items-center gap-0.5">
+        <div className="ml-2 flex shrink-0 items-center gap-1">
+          {page.updatedAt && (
+            <span className="mr-1.5 whitespace-nowrap text-xs text-muted-foreground/70">
+              Edited <TimeAgo iso={new Date(page.updatedAt).toISOString()} />
+            </span>
+          )}
           <ShareButton
             pageId={page.id}
+            pageShortId={page.shortId}
+            workspaceSlug={slug}
             currentUserId={session.user.id}
-            isPrivate={page.isPrivate}
+            currentUserName={session.user.name ?? null}
+            currentUserEmail={session.user.email ?? null}
+            currentUserImage={session.user.image ?? null}
             isEditor={isEditor}
           />
+          <CopyLinkButton pageId={page.id} />
           <PageCommentButton
             pageId={page.id}
             workspaceId={ws.id}
@@ -229,10 +250,12 @@ export default async function PageEditorPage({ params }: Props) {
               pageTitle={page.title ?? ""}
               pageKind={page.kind}
               parentShortId={breadcrumbs[breadcrumbs.length - 1]?.shortId ?? null}
+              iconOnly
             />
           )}
         </div>
       </div>
+      </PagePrivacyProvider>
 
       <PageClient
         pageId={page.id}

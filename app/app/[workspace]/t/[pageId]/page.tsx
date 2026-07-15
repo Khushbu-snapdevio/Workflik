@@ -1,8 +1,9 @@
-import { and, asc, eq, gt, inArray } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import {
+  comments,
   databaseProperties,
   databaseViews,
   pageClosure,
@@ -47,7 +48,7 @@ export default async function TemplateDatabasePage({ params }: Props) {
     .select({
       id: pages.id, shortId: pages.shortId, title: pages.title,
       icon: pages.icon, coverUrl: pages.coverUrl, kind: pages.kind,
-      defaultViewId: pages.defaultViewId,
+      defaultViewId: pages.defaultViewId, updatedAt: pages.updatedAt,
       isPrivate: pages.isPrivate, isLocked: pages.isLocked, isDeleted: pages.isDeleted,
     })
     .from(pages)
@@ -72,7 +73,7 @@ export default async function TemplateDatabasePage({ params }: Props) {
 
   const breadcrumbs = ancestorRows
     .sort((a, b) => b.depth - a.depth)
-    .map((r) => ({ shortId: r.shortId, title: r.title || "Untitled" }));
+    .map((r) => ({ id: r.id, shortId: r.shortId, title: r.title || "Untitled" }));
 
   const props = await db
     .select()
@@ -107,6 +108,28 @@ export default async function TemplateDatabasePage({ params }: Props) {
           .where(inArray(propertyValues.entryId, entryIds))
       : [];
 
+  // Open (unresolved, undeleted, root-level, page-level) comment count per
+  // entry — same definition as /api/databases/[id]/entries, shown as a
+  // chat-icon badge next to the entry's name across table/board/gallery/
+  // calendar views. propertyId must be excluded — the badge's popover only
+  // shows page-level threads, so counting property-scoped ones here would
+  // overcount relative to what that popover actually displays.
+  const commentCountRows = entryIds.length > 0
+    ? await db
+        .select({ pageId: comments.pageId, count: sql<number>`count(*)::int` })
+        .from(comments)
+        .where(and(
+          inArray(comments.pageId, entryIds),
+          isNull(comments.parentId),
+          isNull(comments.propertyId),
+          eq(comments.isResolved, false),
+          isNull(comments.deletedAt),
+        ))
+        .groupBy(comments.pageId)
+    : [];
+  const commentCountMap = new Map(commentCountRows.map((r) => [r.pageId, r.count]));
+  const entriesWithCommentCounts = entries.map((e) => ({ ...e, commentCount: commentCountMap.get(e.id) ?? 0 }));
+
   return (
     <TemplatePageClient
       page={{
@@ -116,10 +139,11 @@ export default async function TemplateDatabasePage({ params }: Props) {
         icon:     page.icon,
         coverUrl: page.coverUrl,
         kind:     page.kind,
+        updatedAt: page.updatedAt ? new Date(page.updatedAt).toISOString() : null,
       }}
       properties={props}
       views={views}
-      entries={entries}
+      entries={entriesWithCommentCounts}
       values={values}
       workspaceSlug={slug}
       workspaceName={ws.name}
@@ -127,6 +151,9 @@ export default async function TemplateDatabasePage({ params }: Props) {
       breadcrumbs={breadcrumbs}
       defaultViewId={page.defaultViewId ?? null}
       currentUserId={session.user.id}
+      currentUserName={session.user.name ?? null}
+      currentUserEmail={session.user.email ?? null}
+      currentUserImage={session.user.image ?? null}
       isPrivate={page.isPrivate ?? false}
       isFavorited={isFavorited}
       isEditor={isEditor}

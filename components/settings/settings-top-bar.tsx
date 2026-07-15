@@ -52,7 +52,7 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
 
   return (
     <>
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-border/60 bg-card px-3">
+      <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
         {/* Mobile hamburger */}
         <button
           type="button"

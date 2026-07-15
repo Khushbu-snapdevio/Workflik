@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Search, ImageIcon } from "lucide-react";
 import { useUpload } from "@/lib/storage/use-upload";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { ICON_REGISTRY, PageIcon } from "./page-icon";
 import { EmojiGridPicker } from "./emoji-grid-picker";
 
@@ -55,6 +58,7 @@ export function IconPicker({
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
@@ -182,7 +186,8 @@ export function IconPicker({
               <button
                 key={c.value}
                 onClick={() => setIconColor(c.value)}
-                title={c.name}
+                onMouseEnter={(e) => showTooltip(c.name, e)}
+                onMouseLeave={hideTooltip}
                 className="relative flex shrink-0 items-center justify-center transition-transform hover:scale-110"
                 style={{ width: 20, height: 20 }}
               >
@@ -201,7 +206,8 @@ export function IconPicker({
                 {filteredIcons.map((name) => (
                   <button
                     key={name}
-                    title={name}
+                    onMouseEnter={(e) => showTooltip(name, e)}
+                    onMouseLeave={hideTooltip}
                     onClick={() => { onSelect(JSON.stringify({ type: "icon", name, color: iconColor })); onClose(); }}
                     className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] transition-colors hover:bg-accent"
                   >
@@ -302,6 +308,10 @@ export function IconPicker({
             </div>
           )}
         </div>
+      )}
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
       )}
     </div>
   );

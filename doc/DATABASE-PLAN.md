@@ -126,7 +126,6 @@ export const emailFrequency    = pgEnum("email_frequency", ["realtime", "daily",
 export const emailOutboxStatus = pgEnum("email_outbox_status", ["queued", "sending", "sent", "failed"]);
 export const emailOutboxType   = pgEnum("email_outbox_type", ["notification_email", "digest_email"]);
 
-export const templateCategory = pgEnum("template_category", ["personal", "productivity", "project_mgmt", "team", "crm"]);
 export const templateStatus   = pgEnum("template_status", ["draft", "published"]);
 
 // "page" = ordinary page; "entry" = database entry (its title + text property values are indexed together);
@@ -556,13 +555,23 @@ export const searchIndex = pgTable("search_index", {
 
 ```ts
 // lib/db/schema/templates.ts
+// Categories are a managed table (not a fixed enum) so Orbit Admin can add
+// new ones without a schema migration.
+export const templateCategories = pgTable("template_categories", {
+  id:         uuid("id").primaryKey().defaultRandom(),
+  key:        text("key").notNull().unique(),
+  label:      text("label").notNull(),
+  orderIndex: integer("order_index").notNull().default(0),
+  createdAt:  timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Built-in (workspace_id NULL) + custom (workspace-scoped)
 export const templates = pgTable("templates", {
   id:           uuid("id").primaryKey().defaultRandom(),
   workspaceId:  uuid("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
   name:         text("name").notNull(),
   description:  text("description"),
-  category:     templateCategory("category").notNull(),
+  categoryId:   uuid("category_id").notNull().references(() => templateCategories.id),
   isBuiltIn:    boolean("is_built_in").notNull().default(false),
   status:       templateStatus("status").notNull().default("published"),
   createdBy:    uuid("created_by").references(() => users.id, { onDelete: "set null" }),
@@ -571,6 +580,7 @@ export const templates = pgTable("templates", {
   updatedAt:    updatedAt(),
 }, (t) => ({
   workspaceIdx: index("templates_workspace_idx").on(t.workspaceId),
+  categoryIdx:  index("templates_category_idx").on(t.categoryId),
 }));
 
 // lib/db/schema/files.ts

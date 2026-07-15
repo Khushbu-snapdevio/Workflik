@@ -1,6 +1,9 @@
 "use client";
 
 import { ArrowUp, ArrowDown, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import type { DbProperty, SortRule } from "./types";
 
 const SORTABLE = new Set(["text", "number", "select", "status", "date", "checkbox", "url", "email", "phone"]);
@@ -15,6 +18,7 @@ interface SortBarProps {
 export function SortBar({ properties, sorts, onChange }: SortBarProps) {
  const usable = properties.filter((p) => !p.isSystem && SORTABLE.has(p.type));
  const atLimit = sorts.length >= MAX_SORTS;
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  function add() {
   if (atLimit) return;
@@ -83,11 +87,16 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
    <button
     onClick={add}
     disabled={atLimit || usable.length === 0}
-    title={atLimit ? `Maximum ${MAX_SORTS} sort rules` : undefined}
+    onMouseEnter={(e) => { if (atLimit) showTooltip(`Maximum ${MAX_SORTS} sort rules`, e); }}
+    onMouseLeave={hideTooltip}
     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
    >
     + Add sort
    </button>
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }

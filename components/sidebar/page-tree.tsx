@@ -24,7 +24,9 @@ import { NewPageButton } from "@/components/workspace/new-page-button";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { PageIcon } from "@/components/pages/page-icon";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 const ROOT_VISIBLE_MAX = 4;
@@ -240,10 +242,14 @@ export function PageTree({
     </button>
    )}
 
+   {/* Portaled to document.body, making it a *sibling* of the sidebar's own
+       wrapper (md:z-[550] in workspace-shell.tsx), not a descendant of it.
+       z-[560] keeps it above that wrapper; anything lower renders half-hidden
+       behind the sidebar wherever the two overlap. */}
    {moreOpen && popupPos && typeof document !== "undefined" && createPortal(
     <div
      ref={popupRef}
-     className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+     className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
      style={{ top: popupPos.top, left: popupPos.left }}
     >
      {/* Header */}
@@ -377,6 +383,7 @@ function PageTreeNode({
  const [deleting, setDeleting] = useState(false);
  const menuRef = useRef<HTMLDivElement>(null);
  const btnRef = useRef<HTMLButtonElement>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: node.id });
  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : undefined };
@@ -415,8 +422,9 @@ function PageTreeNode({
   // local onPagesChange update is enough; no full router.refresh() needed.
   const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(node.shortId);
   if (onDeletedPage || node.kind === "database") {
-   const parentShortId = node.kind === "database" ? undefined : pages.find((p) => p.id === node.parentId)?.shortId;
-   window.location.replace(parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}`);
+   const parentShortId = pages.find((p) => p.id === node.parentId)?.shortId;
+   // No parent → Library (lists every page), not workspace home (a dashboard).
+   window.location.replace(parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`);
   }
  }
 
@@ -493,8 +501,9 @@ function PageTreeNode({
        }
        setMenuOpen((v) => !v);
       }}
+      onMouseEnter={(e) => showTooltip("Options", e)}
+      onMouseLeave={hideTooltip}
       tabIndex={-1}
-      title="Options"
       type="button"
      >
       <MoreHorizontal size={14} />
@@ -516,7 +525,6 @@ function PageTreeNode({
         onClick={() => {
          setMenuOpen(false);
          onToggleFavorite(node.id, isFav);
-         window.dispatchEvent(new CustomEvent("workflik:favorites-changed", { detail: { pageId: node.id, isFavorited: !isFav } }));
         }}
         type="button"
        >
@@ -588,6 +596,11 @@ function PageTreeNode({
     loading={deleting}
     onConfirm={confirmDelete}
    />
+
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }

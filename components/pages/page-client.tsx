@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ImageIcon, Smile } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ImageIcon, MessageCircle, Smile } from "lucide-react";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
 import { PageEditor } from "@/components/editor/editor";
 import { useUpload } from "@/lib/storage/use-upload";
 import { EntryPropertiesPanel } from "@/components/database/entry-properties-panel";
 import { PageCommentsSection } from "@/components/pages/page-comments-section";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { onCommentsChanged } from "@/lib/comments/comment-events";
 
 interface PageClientProps {
  pageId:        string;
@@ -32,6 +35,7 @@ interface PageClientProps {
 
 export function PageClient({
  pageId,
+ shortId,
  initialTitle,
  initialIcon,
  initialCoverUrl,
@@ -49,11 +53,17 @@ export function PageClient({
  currentUserId = "",
  isAdmin = false,
 }: PageClientProps) {
+ const router = useRouter();
  const [coverUrl, setCoverUrl]   = useState<string | null>(initialCoverUrl);
  const [coverPos]         = useState<number>(initialCoverPosition);
+ const [removeCoverConfirm, setRemoveCoverConfirm] = useState(false);
  const [icon, setIcon]       = useState<string | null>(initialIcon);
  const [showPicker, setShowPicker] = useState(false);
  const [saveState, setSaveState]  = useState<"idle" | "saving" | "saved">("idle");
+ // Hidden by default, matching Notion — only revealed via "Add comment", or
+ // automatically if the page already has an existing page-level thread (so
+ // comments already there don't disappear behind an extra click on reload).
+ const [showComments, setShowComments] = useState(false);
  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
  const titleRef  = useRef<HTMLDivElement>(null);
@@ -90,10 +100,13 @@ export function PageClient({
    document.title = `${title} | WORKFLIK`;
    setSaveState("saved");
    savedTimer.current = setTimeout(() => setSaveState("idle"), 2000);
+   window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, title } }));
+   window.dispatchEvent(new CustomEvent("pages:refresh"));
+   router.refresh();
   } catch {
    setSaveState("idle");
   }
- }, [pageId]);
+ }, [pageId, router]);
 
  const saveIcon = useCallback(async (emoji: string | null) => {
   setIcon(emoji);
@@ -102,7 +115,10 @@ export function PageClient({
    headers: { "Content-Type": "application/json" },
    body: JSON.stringify({ icon: emoji }),
   });
- }, [pageId]);
+  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, icon: emoji } }));
+  window.dispatchEvent(new CustomEvent("pages:refresh"));
+  router.refresh();
+ }, [pageId, router]);
 
  const saveCover = useCallback(async (url: string | null) => {
   setCoverUrl(url);
@@ -111,6 +127,53 @@ export function PageClient({
    headers: { "Content-Type": "application/json" },
    body: JSON.stringify({ coverUrl: url }),
   });
+ }, [pageId]);
+
+ function revealComments() {
+  setShowComments(true);
+  requestAnimationFrame(() => {
+   document.getElementById("page-comments-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+ }
+
+ // Instant, no-refetch path for the common case (resolving/reopening while
+ // already viewing the section) — CommentCard reports this synchronously
+ // from its own optimistic update. The recheck() effect below still exists
+ // as an eventual-consistency fallback (e.g. initial load), but this is what
+ // avoids waiting on a second, independent fetch before hiding the section.
+ function handleActiveCountChange(count: number) {
+  setShowComments(count > 0);
+ }
+
+ // Keep the section visible for as long as an active (unresolved,
+ // undeleted) page-level thread exists — and hide it again the moment the
+ // last one is resolved or deleted, same as Notion. Re-checks on every
+ // comment mutation anywhere on the page (resolve/reopen/delete/create),
+ // not just once on mount.
+ useEffect(() => {
+  function recheck() {
+   fetch(`/api/pages/${pageId}/comments`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+     const threads = (data?.comments ?? []) as Array<{ blockId: string | null; propertyId: string | null; deletedAt: string | null; isResolved: boolean }>;
+     const hasActive = threads.some((t) => !t.blockId && !t.propertyId && !t.deletedAt && !t.isResolved);
+     setShowComments(hasActive);
+    })
+    .catch(() => {});
+  }
+  recheck();
+  return onCommentsChanged(pageId, recheck);
+ }, [pageId]);
+
+ // The topbar "Comments" sheet (PageCommentButton) jumps here for page-level
+ // threads — it can't just scrollIntoView a section that isn't rendered yet.
+ useEffect(() => {
+  function onJump(e: Event) {
+   const detail = (e as CustomEvent<{ pageId: string }>).detail;
+   if (detail?.pageId === pageId) revealComments();
+  }
+  window.addEventListener("workflik:show-page-comments", onJump);
+  return () => window.removeEventListener("workflik:show-page-comments", onJump);
  }, [pageId]);
 
  async function onCoverFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -148,7 +211,7 @@ export function PageClient({
        </button>
        <button
         type="button"
-        onClick={() => saveCover(null)}
+        onClick={() => setRemoveCoverConfirm(true)}
         className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors duration-150 hover:bg-card"
        >
         Remove
@@ -157,6 +220,15 @@ export function PageClient({
      )}
     </div>
    )}
+
+   <ConfirmDialog
+    open={removeCoverConfirm}
+    onOpenChange={setRemoveCoverConfirm}
+    title="Remove cover image?"
+    description="This removes the cover photo from this page. You can add a new one anytime."
+    confirmLabel="Remove"
+    onConfirm={() => saveCover(null)}
+   />
 
    <input
     ref={coverInput}
@@ -200,8 +272,8 @@ export function PageClient({
      </div>
     )}
 
-    {/* Page toolbar — Add cover / Add icon */}
-    {editable && (!coverUrl || !icon) && (
+    {/* Page toolbar — Add cover / Add icon / Add comment */}
+    {editable && (
      <div className={`flex items-center gap-1 transition-opacity duration-150 ${showPicker ? "opacity-100" : "opacity-0 group-hover/page:opacity-100"} ${icon ? "mb-3" : "mb-4"}`}>
       {!coverUrl && (
        <button
@@ -235,6 +307,16 @@ export function PageClient({
         )}
        </div>
       )}
+      {!showComments && (
+       <button
+        type="button"
+        onClick={revealComments}
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+       >
+        <MessageCircle size={13} />
+        Add comment
+       </button>
+      )}
      </div>
     )}
 
@@ -248,6 +330,10 @@ export function PageClient({
       suppressContentEditableWarning
       onInput={(e) => {
        const text = e.currentTarget.textContent ?? "";
+       // Breadcrumbs/mentions update on every keystroke, not just once the
+       // debounced save (below) actually PATCHes the server — matches Notion,
+       // where the crumb visibly follows what you're typing in real time.
+       window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, title: text } }));
        if (saveTimeout.current) clearTimeout(saveTimeout.current);
        saveTimeout.current = setTimeout(() => saveTitle(text), 800);
       }}
@@ -272,14 +358,35 @@ export function PageClient({
      )}
     </div>
 
-    {/* Database entry properties */}
+    {/* Database entry properties — shown above comments for entries opened
+        in full page (Priority/Category/Votes etc. before the comment box),
+        unlike a plain page's comment section, which has no properties to
+        lead with. */}
     {databaseId && (
      <EntryPropertiesPanel
       entryId={pageId}
+      entryShortId={shortId}
       databaseId={databaseId}
       workspaceId={workspaceId}
+      workspaceSlug={workspaceSlug}
       isEditor={isEditor && !isLocked && !isDeleted}
      />
+    )}
+
+    {/* Page-level comments — Notion-style, shown right below the title (and
+        below any entry properties) and above the page's own content. Hidden
+        until "Add comment" is used (or already has a thread), rather than
+        always showing an empty section. */}
+    {showComments && (
+     <div className="mt-4">
+      <PageCommentsSection
+       currentUserId={currentUserId}
+       isAdmin={isAdmin}
+       onActiveCountChange={handleActiveCountChange}
+       pageId={pageId}
+       workspaceId={workspaceId}
+      />
+     </div>
     )}
 
     {/* Editor */}
@@ -297,17 +404,6 @@ export function PageClient({
       isAdmin={isAdmin}
      />
     </div>
-
-    {/* Page-level comments — Notion-style: only database entries (records) get
-        a whole-page comment thread; plain content pages use block comments only. */}
-    {databaseId && (
-     <PageCommentsSection
-      currentUserId={currentUserId}
-      isAdmin={isAdmin}
-      pageId={pageId}
-      workspaceId={workspaceId}
-     />
-    )}
 
    </div>
   </div>

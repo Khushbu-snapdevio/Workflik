@@ -9,10 +9,10 @@ import { Table } from "@tiptap/extension-table";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableRow } from "@tiptap/extension-table-row";
-import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
+import type { Node as PMNode } from "@tiptap/pm/model";
 import type { Editor } from "@tiptap/react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -31,6 +31,7 @@ import {
   type HighlightComment,
   setCommentHighlights,
 } from "./extensions/comment-highlight";
+import { ListItemBlock, TaskItemBlock } from "./extensions/list-item-keymap";
 import {
   AudioBlock,
   FileBlock,
@@ -39,8 +40,10 @@ import {
   VideoBlock,
 } from "./extensions/media-blocks";
 import {
+  MENTION_PLUGIN_KEY,
   MentionCommands,
   type MentionSuggestionProps,
+  PAGE_LINK_PLUGIN_KEY,
 } from "./extensions/mention-extension";
 import { MentionNode } from "./extensions/mention-node";
 import {
@@ -53,8 +56,11 @@ import {
   TableOfContents,
   TemplateButton,
 } from "./extensions/reference-blocks";
-import type { SlashSuggestionProps } from "./extensions/slash-commands";
-import { SlashCommands } from "./extensions/slash-commands";
+import {
+  SLASH_COMMANDS_PLUGIN_KEY,
+  SlashCommands,
+  type SlashSuggestionProps,
+} from "./extensions/slash-commands";
 import { SyncedBlock } from "./extensions/synced-block";
 import { Toggle, ToggleSummary } from "./extensions/toggle";
 import { InlineToolbar } from "./inline-toolbar";
@@ -66,6 +72,87 @@ import { SlashMenu, type SlashMenuHandle } from "./slash-menu";
 const lowlight = createLowlight(common);
 
 const VERSION_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
+// The "/", "@", and "[[" trigger characters (plus whatever query text follows
+// them) are real, live paragraph text until a menu item is chosen — not a
+// placeholder. Saving while one of these suggestion popups is open would
+// persist that literal trigger text to the DB.
+function isSuggestionActive(editor: Editor): boolean {
+  return !!(
+    SLASH_COMMANDS_PLUGIN_KEY.getState(editor.state)?.active ||
+    MENTION_PLUGIN_KEY.getState(editor.state)?.active ||
+    PAGE_LINK_PLUGIN_KEY.getState(editor.state)?.active
+  );
+}
+
+// Stamps a permanent, client-generated blockId onto every block-eligible node
+// that doesn't already have one (or that duplicates one already seen earlier
+// in the same walk — ProseMirror's stock "split block" command, run for a
+// plain Enter press, copies the *original* node's attrs onto the newly split
+// half, so a fresh paragraph can start life already carrying its predecessor's
+// blockId), the instant it's created — mirroring tiptapDocToBlocks's own
+// recursion (top-level, plus toggle/columns/non-reference-syncedBlock
+// children). Assigning ids up front like this, rather than waiting for a save
+// round-trip and then trying to match new nodes back to their DB row by array
+// position, removes that race entirely: a block's id can no longer end up
+// wrong (or get treated as "new" again on every subsequent save, silently
+// duplicating its content) just because the document's shape changed while a
+// request was in flight.
+function assignMissingBlockIds(editor: Editor): boolean {
+  const { state } = editor;
+  const tr = state.tr.setMeta("addToHistory", false);
+  let mutated = false;
+  const seen = new Set<string>();
+
+  function ensureId(node: PMNode, pos: number) {
+    if (!node.attrs || !("blockId" in node.attrs)) {
+      return;
+    }
+    const current = node.attrs.blockId as string | null;
+    if (!current || seen.has(current)) {
+      tr.setNodeMarkup(pos, undefined, { ...node.attrs, blockId: crypto.randomUUID() });
+      mutated = true;
+    } else {
+      seen.add(current);
+    }
+  }
+
+  function recurseInto(node: PMNode, pos: number) {
+    if (node.type.name === "toggle" && node.childCount > 1) {
+      const contentStart = pos + 1;
+      let idx = 0;
+      node.forEach((child, childOffset) => {
+        if (idx > 0) {
+          ensureId(child, contentStart + childOffset);
+          recurseInto(child, contentStart + childOffset);
+        }
+        idx++;
+      });
+    } else if (node.type.name === "columns") {
+      const contentStart = pos + 1;
+      node.forEach((child, childOffset) => {
+        ensureId(child, contentStart + childOffset);
+        recurseInto(child, contentStart + childOffset);
+      });
+    } else if (node.type.name === "syncedBlock" && !node.attrs?.sourceBlockId) {
+      const contentStart = pos + 1;
+      node.forEach((child, childOffset) => {
+        ensureId(child, contentStart + childOffset);
+        recurseInto(child, contentStart + childOffset);
+      });
+    }
+  }
+
+  state.doc.forEach((node, offset) => {
+    ensureId(node, offset);
+    recurseInto(node, offset);
+  });
+
+  if (mutated) {
+    editor.view.dispatch(tr);
+  }
+  return mutated;
+}
 
 interface EditorProps {
   currentUserId?: string;
@@ -246,8 +333,7 @@ export function PageEditor({
 
         const outgoing = tiptapDocToBlocks(
           docJson as { content?: never[] },
-          pageId,
-          currentBlocksRef.current
+          pageId
         );
 
         const res = await fetch("/api/blocks/batch", {
@@ -271,52 +357,12 @@ export function PageEditor({
         }
 
         deletedIds.current = [];
-
-        // Sync server-assigned blockIds back into TipTap nodes so subsequent saves
-        // can match and UPDATE existing DB rows instead of re-inserting them.
-        // Blocks on StarterKit nodes (paragraph, heading, etc.) lose their blockId
-        // attr on creation because TipTap doesn't know about the attr by default;
-        // the BlockIdAttr extension registers it so TipTap preserves it, and this
-        // code stamps the server UUID onto the node after the first save.
-        const ed = editorRef.current;
-        if (data.blocks && ed && !ed.isDestroyed) {
-          const topLevel = data.blocks
-            .filter((b) => !b.parentBlockId)
-            .sort((a, b) => a.orderIndex - b.orderIndex);
-
-          const tr = ed.state.tr.setMeta("addToHistory", false);
-          let nodeIdx = 0;
-          let mutated = false;
-
-          ed.state.doc.forEach(
-            (node: import("@tiptap/pm/model").Node, offset: number) => {
-              const block = topLevel[nodeIdx++];
-              if (
-                block?.id &&
-                node.attrs &&
-                "blockId" in node.attrs &&
-                node.attrs.blockId !== block.id
-              ) {
-                tr.setNodeMarkup(offset, undefined, {
-                  ...node.attrs,
-                  blockId: block.id,
-                });
-                mutated = true;
-              }
-            }
-          );
-
-          if (mutated) {
-            ed.view.dispatch(tr);
-            // Update lastSaved to the post-sync JSON so the onUpdate triggered by
-            // the dispatch above doesn't schedule a redundant re-save.
-            lastSaved.current = JSON.stringify(ed.getJSON());
-          } else {
-            lastSaved.current = docStr;
-          }
-        } else {
-          lastSaved.current = docStr;
-        }
+        // No blockId sync-back needed: every node already carries a permanent,
+        // client-generated id (assignMissingBlockIds, stamped on synchronously
+        // the moment a block is created, before it's ever saved) that the server
+        // upserts by directly, so what was just sent is already what the live
+        // doc has — no server round-trip dependency, no stale-position risk.
+        lastSaved.current = docStr;
 
         setSaveState("saved");
       } catch {
@@ -334,6 +380,11 @@ export function PageEditor({
           codeBlock: false,
           link: false,
           underline: false,
+          // Replaced below with ListItemBlock — stock listItem's Enter/Tab
+          // keymap (splitListItem/sinkListItem) creates multi-item and nested
+          // lists that this app's one-block-per-list-item serializer can't
+          // represent, silently dropping content on the next reload.
+          listItem: false,
         }),
         Placeholder.configure({
           placeholder: ({ node }) => {
@@ -347,8 +398,9 @@ export function PageEditor({
           },
           includeChildren: true,
         }),
+        ListItemBlock,
         TaskList,
-        TaskItem.configure({ nested: false }),
+        TaskItemBlock.configure({ nested: false }),
         Underline,
         Link.configure({ openOnClick: false, autolink: true }),
         TextStyle,
@@ -414,16 +466,29 @@ export function PageEditor({
         if (!editable) {
           return;
         }
+        // Dispatching here retriggers onUpdate with ids now in place — return
+        // and let that second pass (which will find nothing left to assign)
+        // schedule the actual save, rather than doing both in one pass.
+        if (assignMissingBlockIds(e)) {
+          return;
+        }
         if (saveTimer.current) {
           clearTimeout(saveTimer.current);
         }
-        saveTimer.current = setTimeout(() => save(e.getJSON()), 1000);
+        const trySave = () => {
+          if (isSuggestionActive(e)) {
+            saveTimer.current = setTimeout(trySave, 300);
+            return;
+          }
+          save(e.getJSON());
+        };
+        saveTimer.current = setTimeout(trySave, 1000);
       },
     },
     [initialBlocks]
   );
 
-  // Keep editorRef current so the save callback can dispatch blockId sync transactions
+  // Keep editorRef current for the comment-scroll lookup above and other imperative access
   useEffect(() => {
     editorRef.current = editor;
   }, [editor]);

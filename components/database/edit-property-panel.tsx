@@ -15,6 +15,8 @@ import { OptionSubmenu } from "@/components/database/option-submenu";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ICON_REGISTRY, PageIcon } from "@/components/pages/page-icon";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import type { DbProperty, SelectOption, StatusGroupKey, ViewPropertyOverride } from "@/components/database/types";
 
 interface EditPropertySidePanelProps {
@@ -76,6 +78,7 @@ export function EditPropertySidePanel({
   const addInputRef = useRef<HTMLInputElement>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const iconBtnRef = useRef<HTMLButtonElement>(null);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   const reg = PROPERTY_REGISTRY[property.type as keyof typeof PROPERTY_REGISTRY];
   const TypeIcon = PROPERTY_TYPE_ICON[property.type as keyof typeof PROPERTY_TYPE_ICON];
@@ -293,8 +296,9 @@ export function EditPropertySidePanel({
             <button
               ref={iconBtnRef}
               type="button"
-              title="Change icon"
               onClick={() => setShowIconPicker((v) => !v)}
+              onMouseEnter={(e) => showTooltip("Change icon", e)}
+              onMouseLeave={hideTooltip}
               className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-sm text-muted-foreground hover:bg-accent"
             >
               {config.icon ? <PageIcon icon={config.icon} size={15} /> : <TypeIcon size={15} />}
@@ -501,6 +505,11 @@ export function EditPropertySidePanel({
         overlayClassName="z-[500]"
         className="z-[500]"
       />
+
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
+      )}
     </>,
     document.body,
   );
@@ -564,6 +573,7 @@ function SimpleIconPicker({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -585,35 +595,39 @@ function SimpleIconPicker({
     : anchorRect.bottom + 4;
 
   return createPortal(
-    <div
-      ref={ref}
-      data-edit-property-exempt
-      style={{ position: "fixed", top, left, width, zIndex: 500 }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-    >
-      {hasIcon && (
-        <button
-          type="button"
-          onClick={onRemove}
-          className="flex w-full items-center gap-2 border-b border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent"
-        >
-          <X size={12} /> Remove icon
-        </button>
-      )}
-      <div className="grid max-h-[220px] grid-cols-6 gap-0.5 overflow-y-auto p-2">
-        {Object.entries(ICON_REGISTRY).map(([name, Icon]) => (
+    <>
+      <div
+        ref={ref}
+        data-edit-property-exempt
+        style={{ position: "fixed", top, left, width, zIndex: 500 }}
+        className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+      >
+        {hasIcon && (
           <button
-            key={name}
             type="button"
-            title={name}
-            onClick={() => onSelect(JSON.stringify({ type: "icon", name, color: "#6b7280" }))}
-            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+            onClick={onRemove}
+            className="flex w-full items-center gap-2 border-b border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent"
           >
-            <Icon size={15} />
+            <X size={12} /> Remove icon
           </button>
-        ))}
+        )}
+        <div className="grid max-h-[220px] grid-cols-6 gap-0.5 overflow-y-auto p-2">
+          {Object.entries(ICON_REGISTRY).map(([name, Icon]) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onSelect(JSON.stringify({ type: "icon", name, color: "#6b7280" }))}
+              onMouseEnter={(e) => showTooltip(name, e)}
+              onMouseLeave={hideTooltip}
+              className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+            >
+              <Icon size={15} />
+            </button>
+          ))}
+        </div>
       </div>
-    </div>,
+      {tooltip && <IconTooltip rect={tooltip.rect} label={tooltip.label} />}
+    </>,
     document.body,
   );
 }

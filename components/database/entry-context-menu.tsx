@@ -196,6 +196,8 @@ export function EntryContextMenu({
       <CellCommentPopover
         pageId={entryId}
         workspaceId={workspaceId}
+        workspaceSlug={workspaceSlug}
+        entryShortId={entryShortId}
         anchorRect={entryRect ?? new DOMRect(forcePos.x, forcePos.y, 0, 0)}
         onClose={onClose}
         onCommentAdded={onCommentAdded}

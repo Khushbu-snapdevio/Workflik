@@ -8,7 +8,9 @@ import {
 import { FileText } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,7 +19,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { PageIcon } from "@/components/pages/page-icon";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { MiniPageContent } from "@/components/editor/mini-page-content";
 
 const DatabasePage = dynamic(
   () =>
@@ -190,6 +195,22 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
     };
   }, [pageId]);
 
+  // Resolved once above — without this, renaming the linked page elsewhere
+  // leaves this mention showing its old title for as long as it stays mounted.
+  useEffect(() => {
+    function onTitleChanged(e: Event) {
+      const detail = (e as CustomEvent<{ pageId: string; title?: string; icon?: string | null }>).detail;
+      if (!detail || detail.pageId !== pageId) return;
+      setResolved((prev) => prev && {
+        ...prev,
+        title: detail.title !== undefined ? (detail.title || "Untitled") : prev.title,
+        icon: detail.icon !== undefined ? detail.icon : prev.icon,
+      });
+    }
+    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    return () => window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+  }, [pageId]);
+
   // Live search-as-you-type while not yet linked — falls back to recently
   // visited pages when the search box is empty, same as Notion's picker.
   useEffect(() => {
@@ -328,12 +349,12 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <a
-        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-foreground transition-colors hover:bg-accent"
+        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 transition-colors hover:bg-accent"
         href={`/app/${workspaceSlug}/${resolved.shortId}`}
         onClick={(e) => e.stopPropagation()}
       >
         <span className="text-base leading-none">{resolved.icon || "📄"}</span>
-        <span className="text-sm font-medium underline decoration-border underline-offset-2 transition-colors group-hover:decoration-foreground/40">
+        <span className="text-sm font-medium text-primary underline decoration-primary/40 underline-offset-2 transition-colors group-hover:decoration-primary">
           {resolved.title}
         </span>
       </a>
@@ -756,6 +777,7 @@ function SubPageBlockView({
   const pageId = (node.attrs.pageId as string) || "";
   const { workspaceId, workspaceSlug, currentPageId } =
     extension.options as SubPageBlockOptions;
+  const router = useRouter();
 
   const [resolved, setResolved] = useState<{
     title: string;
@@ -765,14 +787,50 @@ function SubPageBlockView({
   const [loading, setLoading] = useState(true);
   const creatingRef = useRef(false);
   // Captured once on first render: was this block just inserted with no page
-  // yet? If so, Notion lets you type the new page's name right here the
-  // instant it's created, instead of forcing a trip into the page itself
-  // just to set a title.
+  // yet? If so, jump straight into the new page once it resolves — matches
+  // Notion, which navigates into the new page's own view instead of leaving
+  // an inline rename box in the parent document.
   const [isNew] = useState(() => !pageId);
-  const [renaming, setRenaming] = useState(false);
-  const [titleDraft, setTitleDraft] = useState("");
-  const renameStartedRef = useRef(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const redirectStartedRef = useRef(false);
+
+  // ── Hover preview card ────────────────────────────────────────────────────
+  // Matches Notion: hovering a page-reference block shows a small card with
+  // the icon, the parent page's title, the target's own title, and a preview
+  // of its first few blocks — all fetched lazily (and cached) only once the
+  // user actually lingers on the block.
+  const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
+  const [parentTitle, setParentTitle] = useState<string | null>(null);
+  const [previewBlocks, setPreviewBlocks] = useState<{ type: string; content?: unknown }[] | null>(null);
+  const previewFetchedRef = useRef(false);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const handlePreviewEnter = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const target = e.currentTarget;
+    clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = setTimeout(() => {
+      setPreviewRect(target.getBoundingClientRect());
+      if (!previewFetchedRef.current && currentPageId) {
+        previewFetchedRef.current = true;
+        fetch(`/api/pages/${currentPageId}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((page: { title: string | null } | null) => {
+            if (page) setParentTitle(page.title || "Untitled");
+          });
+        fetch(`/api/pages/${pageId}/blocks`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((blockRows: { type: string; content?: unknown; parentBlockId: string | null }[] | null) => {
+            if (blockRows) setPreviewBlocks(blockRows.filter((b) => !b.parentBlockId).slice(0, 5));
+          });
+      }
+    }, 400);
+  }, [currentPageId, pageId]);
+
+  const handlePreviewLeave = useCallback(() => {
+    clearTimeout(previewTimerRef.current);
+    setPreviewRect(null);
+  }, []);
+
+  useEffect(() => () => clearTimeout(previewTimerRef.current), []);
 
   // Notion creates the child page the instant the block is inserted —
   // there's no separate "name it, then click Create" step.
@@ -836,39 +894,37 @@ function SubPageBlockView({
     };
   }, [pageId]);
 
-  // Once the freshly-created page resolves, drop straight into rename mode —
+  // Resolved once above — without this, renaming this sub-page elsewhere
+  // (e.g. from its own H1) leaves this block showing its old title/icon for
+  // as long as it stays mounted here in the parent page's content.
+  useEffect(() => {
+    function onTitleChanged(e: Event) {
+      const detail = (e as CustomEvent<{ pageId: string; title?: string; icon?: string | null }>).detail;
+      if (!detail || detail.pageId !== pageId) return;
+      setResolved((prev) => prev && {
+        ...prev,
+        title: detail.title !== undefined ? (detail.title || "Untitled") : prev.title,
+        icon: detail.icon !== undefined ? detail.icon : prev.icon,
+      });
+    }
+    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    return () => window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+  }, [pageId]);
+
+  // Once the freshly-created page resolves, navigate straight into it —
   // only once, and only for a block that had no pageId at initial mount.
   useEffect(() => {
-    if (isNew && resolved && !renameStartedRef.current) {
-      renameStartedRef.current = true;
-      setTitleDraft("");
-      setRenaming(true);
+    if (isNew && resolved && !redirectStartedRef.current) {
+      redirectStartedRef.current = true;
+      router.push(`/app/${workspaceSlug}/${resolved.shortId}`);
     }
-  }, [isNew, resolved]);
+  }, [isNew, resolved, router, workspaceSlug]);
 
-  useEffect(() => {
-    if (renaming) {
-      inputRef.current?.focus();
-    }
-  }, [renaming]);
-
-  function commitTitle() {
-    const title = titleDraft.trim();
-    setRenaming(false);
-    if (!title || !pageId) {
-      return;
-    }
-    setResolved((r) => (r ? { ...r, title } : r));
-    fetch(`/api/pages/${pageId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    }).then(() => {
-      window.dispatchEvent(new CustomEvent("pages:refresh"));
-    });
-  }
-
-  if (!pageId || loading || !resolved) {
+  // A freshly-inserted block never shows the resolved link view — it only
+  // ever exists long enough to redirect, so rendering that view first would
+  // flash the finished block in the parent page for a frame before
+  // navigation actually swaps the page out.
+  if (!pageId || loading || !resolved || isNew) {
     return (
       <NodeViewWrapper contentEditable={false}>
         <div className="my-0.5 flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5">
@@ -879,53 +935,51 @@ function SubPageBlockView({
     );
   }
 
-  if (renaming) {
-    return (
-      <NodeViewWrapper contentEditable={false}>
-        <div className="my-0.5 flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5">
-          {resolved.icon ? (
-            <PageIcon icon={resolved.icon} size={18} />
-          ) : (
-            <FileText className="shrink-0 text-muted-foreground/60" size={18} />
-          )}
-          <input
-            className="min-w-40 border-b border-primary/40 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/40"
-            onBlur={commitTitle}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                commitTitle();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                setRenaming(false);
-              }
-            }}
-            placeholder="Untitled"
-            ref={inputRef}
-            value={titleDraft}
-          />
-        </div>
-      </NodeViewWrapper>
-    );
-  }
-
   return (
     <NodeViewWrapper contentEditable={false}>
       <a
-        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-foreground transition-colors hover:bg-accent"
+        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 transition-colors hover:bg-accent"
         href={`/app/${workspaceSlug}/${resolved.shortId}`}
         onClick={(e) => e.stopPropagation()}
+        onMouseEnter={handlePreviewEnter}
+        onMouseLeave={handlePreviewLeave}
       >
         {resolved.icon ? (
           <PageIcon icon={resolved.icon} size={18} />
         ) : (
           <FileText className="shrink-0 text-muted-foreground/60" size={18} />
         )}
-        <span className="text-sm font-medium underline decoration-border underline-offset-2 transition-colors group-hover:decoration-foreground/40">
+        <span className="text-sm font-medium text-primary underline decoration-primary/40 underline-offset-2 transition-colors group-hover:decoration-primary">
           {resolved.title}
         </span>
       </a>
+
+      {previewRect && typeof document !== "undefined" && createPortal(
+        <div
+          style={{ position: "fixed", top: previewRect.bottom + 6, left: previewRect.left, zIndex: 9999 }}
+          className="w-56 rounded-[var(--radius-md)] border border-border bg-popover p-3 shadow-lg pointer-events-none"
+        >
+          <div className="mb-2 flex size-8 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background">
+            {resolved.icon ? (
+              <PageIcon icon={resolved.icon} size={18} />
+            ) : (
+              <FileText size={18} className="text-muted-foreground/60" />
+            )}
+          </div>
+          {parentTitle && (
+            <p className="truncate text-xs text-muted-foreground/60">{parentTitle}</p>
+          )}
+          <p className="truncate text-sm font-semibold text-foreground">{resolved.title}</p>
+
+          {previewBlocks && previewBlocks.length > 0 && (
+            <div className="relative mt-3 max-h-24 overflow-hidden">
+              <MiniPageContent blocks={previewBlocks} />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-popover to-transparent" />
+            </div>
+          )}
+        </div>,
+        document.body,
+      )}
     </NodeViewWrapper>
   );
 }
@@ -982,6 +1036,7 @@ function InlineDatabaseView({
   const shortId = (node.attrs.shortId as string) || "";
   const { workspaceId, workspaceSlug, isEditor } =
     extension.options as InlineDatabaseOptions;
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   const [creating, setCreating] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -1204,7 +1259,8 @@ function InlineDatabaseView({
                 <button
                   className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
                   onMouseDown={handleDuplicate}
-                  title="Duplicate block"
+                  onMouseEnter={(e) => showTooltip("Duplicate block", e)}
+                  onMouseLeave={hideTooltip}
                 >
                   <svg
                     className="size-3.5"
@@ -1220,7 +1276,8 @@ function InlineDatabaseView({
                 <button
                   className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
                   onMouseDown={handleDelete}
-                  title="Delete block"
+                  onMouseEnter={(e) => showTooltip("Delete block", e)}
+                  onMouseLeave={hideTooltip}
                 >
                   <svg
                     className="size-3.5"
@@ -1272,6 +1329,10 @@ function InlineDatabaseView({
           />
         </div>
       </div>
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
+      )}
     </NodeViewWrapper>
   );
 }
@@ -1478,6 +1539,21 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
       cancelled = true;
     };
   }, [currentPageId]);
+
+  // The fetch above only runs once on mount — renaming any page in the chain
+  // (this one, or an ancestor) elsewhere would otherwise leave this block
+  // showing a stale title for as long as it stays mounted.
+  useEffect(() => {
+    function onTitleChanged(e: Event) {
+      const detail = (e as CustomEvent<{ pageId: string; title?: string; icon?: string | null }>).detail;
+      if (!detail) return;
+      setCrumbs((prev) => prev && prev.map((c) => c.id === detail.pageId
+        ? { ...c, title: detail.title !== undefined ? detail.title : c.title, icon: detail.icon !== undefined ? detail.icon : c.icon }
+        : c));
+    }
+    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    return () => window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+  }, []);
 
   return (
     <NodeViewWrapper contentEditable={false}>

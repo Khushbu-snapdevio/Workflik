@@ -108,6 +108,9 @@ export interface DbEntry {
   workspaceId: string;
   createdAt: string;
   updatedAt: string;
+  /** Open (unresolved) top-level comment count — undefined on entries created
+   *  client-side before their first real fetch (createEntry/duplicateEntry). */
+  commentCount?: number;
 }
 
 export interface DbPropertyValue {

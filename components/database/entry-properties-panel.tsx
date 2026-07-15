@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { Settings2, MessageSquare } from "lucide-react";
 import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
@@ -8,6 +10,8 @@ import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import type { DbProperty, DbPropertyValue } from "@/components/database/types";
 
 // Plain-text snapshot of a property's current value, frozen onto a comment at
@@ -24,7 +28,10 @@ function getPropertyValueText(prop: DbProperty, raw: unknown): string {
     case "email":    return String(v.email ?? "");
     case "phone":    return String(v.phone ?? "");
     case "checkbox": return v.checked ? "Yes" : "No";
-    case "person":   return String(v.name ?? "");
+    case "person": {
+      const members = (v._members as { name?: string; email?: string }[] | undefined) ?? [];
+      return members.map((m) => m.name || m.email).filter(Boolean).join(", ");
+    }
     case "date": {
       const d = v.date as string | undefined;
       return d ? new Date(`${d}T00:00:00`).toLocaleDateString() : "";
@@ -45,16 +52,19 @@ function getPropertyValueText(prop: DbProperty, raw: unknown): string {
 }
 
 interface EntryPropertiesPanelProps {
-  entryId:     string;
-  databaseId:  string;
-  workspaceId: string;
-  isEditor:    boolean;
+  entryId:       string;
+  entryShortId:  string;
+  databaseId:    string;
+  workspaceId:   string;
+  workspaceSlug: string;
+  isEditor:      boolean;
 }
 
 const INLINE_TYPES = new Set(["text", "number", "url", "email", "phone"]);
 const POPOVER_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
 
-export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEditor }: EntryPropertiesPanelProps) {
+export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, workspaceId, workspaceSlug, isEditor }: EntryPropertiesPanelProps) {
+  const router = useRouter();
   const [properties, setProperties] = useState<DbProperty[]>([]);
   const [values, setValues]         = useState<Map<string, unknown>>(new Map());
   const [loading, setLoading]       = useState(true);
@@ -74,6 +84,8 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
   // separate from the page-level Comments section further down the page.
   const [rowComments, setRowComments] = useState<Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }> | null>(null);
   const [commentPopover, setCommentPopover] = useState<{ propId: string; rect: DOMRect; propName: string; valueLabel: string } | null>(null);
+
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +153,24 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ value }),
     });
+    window.dispatchEvent(new CustomEvent("workflik:entry-value-changed", { detail: { entryId, propertyId: propId, value } }));
+    // Busts the Next.js client router cache so a page navigated to next (e.g.
+    // this entry's containing database view) re-fetches fresh server data
+    // instead of reusing whatever was cached before this edit.
+    router.refresh();
+  }, [entryId, router]);
+
+  // Values can also change from a database view's inline cell edit or the row
+  // context menu — neither shares state with this panel, so without this
+  // listener a value edited elsewhere only shows up here after a full reload.
+  useEffect(() => {
+    function onValueChanged(e: Event) {
+      const detail = (e as CustomEvent<{ entryId: string; propertyId: string; value: unknown }>).detail;
+      if (!detail || detail.entryId !== entryId) return;
+      setValues((prev) => new Map(prev).set(detail.propertyId, detail.value));
+    }
+    window.addEventListener("workflik:entry-value-changed", onValueChanged);
+    return () => window.removeEventListener("workflik:entry-value-changed", onValueChanged);
   }, [entryId]);
 
   const commitInline = useCallback((prop: DbProperty) => {
@@ -214,8 +244,9 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                 {isEditor && SELECT_TYPES.has(prop.type) && (
                   <button
                     type="button"
-                    title="Edit property"
                     onClick={(e) => setEditPropPanel({ propId: prop.id, anchorRect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+                    onMouseEnter={(e) => showTooltip("Edit property", e)}
+                    onMouseLeave={hideTooltip}
                     className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
                   >
                     <Settings2 size={12} />
@@ -320,7 +351,6 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                 return (
                   <button
                     type="button"
-                    title="Comment on this property"
                     data-property-comment-id={prop.id}
                     onClick={(e) => {
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -331,6 +361,8 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
                         valueLabel: getPropertyValueText(prop, val),
                       });
                     }}
+                    onMouseEnter={(e) => showTooltip("Comment on this property", e)}
+                    onMouseLeave={hideTooltip}
                     className={`mt-1 flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-muted-foreground/60 transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
                       count > 0 ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"
                     }`}
@@ -376,6 +408,8 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
         <CellCommentPopover
           pageId={entryId}
           workspaceId={workspaceId}
+          workspaceSlug={workspaceSlug}
+          entryShortId={entryShortId}
           anchorRect={commentPopover.rect}
           propertyId={commentPopover.propId}
           propertyName={commentPopover.propName}
@@ -383,6 +417,11 @@ export function EntryPropertiesPanel({ entryId, databaseId, workspaceId, isEdito
           onClose={() => setCommentPopover(null)}
           onCommentAdded={() => setRowComments((prev) => [...(prev ?? []), { blockId: null, deletedAt: null, propertyId: commentPopover.propId }])}
         />
+      )}
+
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
       )}
     </>
   );

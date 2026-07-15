@@ -12,6 +12,8 @@ import { X, ArrowLeft, Search, ChevronRight, GripVertical, Eye, EyeOff, Pin, Pin
 import { getOptionColor, STATUS_GROUPS, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { OptionSubmenu } from "@/components/database/option-submenu";
 import { Switch } from "@/components/ui/switch";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import type { DbProperty, SelectOption, StatusGroupKey } from "@/components/database/types";
 
 export type BoardSettings = {
@@ -59,6 +61,7 @@ export function GroupSettingsPanel({
   const [showSortPicker, setShowSortPicker] = useState(false);
   const [submenu, setSubmenu] = useState<{ optionId: string; rect: DOMRect } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   const config = groupProp.config ?? {};
   const options: SelectOption[] = config.options ?? [];
@@ -182,6 +185,7 @@ export function GroupSettingsPanel({
   if (typeof document === "undefined") return null;
 
   return createPortal(
+    <>
     <div
       ref={ref}
       data-edit-property-exempt
@@ -390,7 +394,8 @@ export function GroupSettingsPanel({
                     <button
                       type="button"
                       onClick={() => togglePinnedGroupKey(g.key)}
-                      title={isPinned ? "Unpin group" : "Pin group"}
+                      onMouseEnter={(e) => showTooltip(isPinned ? "Unpin group" : "Pin group", e)}
+                      onMouseLeave={hideTooltip}
                       className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground/60"}`}
                     >
                       {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
@@ -398,7 +403,8 @@ export function GroupSettingsPanel({
                     <button
                       type="button"
                       onClick={() => toggleHiddenGroupKey(g.key)}
-                      title={isHidden ? "Show group" : "Hide group"}
+                      onMouseEnter={(e) => showTooltip(isHidden ? "Show group" : "Hide group", e)}
+                      onMouseLeave={hideTooltip}
                       className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
                     >
                       {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -454,7 +460,9 @@ export function GroupSettingsPanel({
           onClose={() => setSubmenu(null)}
         />
       )}
-    </div>,
+    </div>
+    {tooltip && <IconTooltip rect={tooltip.rect} label={tooltip.label} />}
+    </>,
     document.body,
   );
 }
@@ -478,8 +486,10 @@ function SortableGroupRow({
     opacity: isDragging ? 0.4 : isHidden ? 0.5 : 1,
   };
   const color = getOptionColor(option.color);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   return (
+    <>
     <div ref={setNodeRef} style={style} className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
       <span
         {...(draggable ? attributes : {})}
@@ -501,7 +511,8 @@ function SortableGroupRow({
       <button
         type="button"
         onClick={onTogglePinned}
-        title={isPinned ? "Unpin group" : "Pin group"}
+        onMouseEnter={(e) => showTooltip(isPinned ? "Unpin group" : "Pin group", e)}
+        onMouseLeave={hideTooltip}
         className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground/60"}`}
       >
         {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
@@ -509,11 +520,17 @@ function SortableGroupRow({
       <button
         type="button"
         onClick={onToggleHidden}
-        title={isHidden ? "Show group" : "Hide group"}
+        onMouseEnter={(e) => showTooltip(isHidden ? "Show group" : "Hide group", e)}
+        onMouseLeave={hideTooltip}
         className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
       >
         {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
       </button>
     </div>
+    {tooltip && typeof document !== "undefined" && createPortal(
+      <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+      document.body,
+    )}
+    </>
   );
 }

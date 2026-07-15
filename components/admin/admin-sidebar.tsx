@@ -18,6 +18,14 @@ const NAV = [
     ),
   },
   {
+    href: "/orbit-admin/orbit/analytics", label: "Analytics", exact: false,
+    icon: (
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
+        <path d="M1 11l3.5-3.5 2.5 2.5 4.5-5.5"/>
+      </svg>
+    ),
+  },
+  {
     href: "/orbit-admin/orbit/users", label: "Users", exact: false,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
@@ -39,14 +47,6 @@ const NAV = [
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
         <rect x="1" y="1" width="12" height="12" rx="2"/><path d="M1 5h12M5 5v8"/>
-      </svg>
-    ),
-  },
-  {
-    href: "/orbit-admin/orbit/analytics", label: "Analytics", exact: false,
-    icon: (
-      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
-        <path d="M1 11l3.5-3.5 2.5 2.5 4.5-5.5"/>
       </svg>
     ),
   },

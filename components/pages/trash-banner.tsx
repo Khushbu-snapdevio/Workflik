@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 interface TrashBannerProps {
  pageId:    string;
  workspaceSlug: string;
+ parentShortId?: string | null;
 }
 
-export function TrashBanner({ pageId, workspaceSlug }: TrashBannerProps) {
+export function TrashBanner({ pageId, workspaceSlug, parentShortId }: TrashBannerProps) {
  const router = useRouter();
  const [confirming, setConfirming] = useState(false);
  const [restoring, setRestoring]  = useState(false);
@@ -29,7 +30,8 @@ export function TrashBanner({ pageId, workspaceSlug }: TrashBannerProps) {
   setDeleting(true);
   try {
    await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
-   router.push(`/app/${workspaceSlug}`);
+   // No parent → Library (lists every page), not workspace home (a dashboard).
+   router.push(parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`);
   } finally {
    setDeleting(false);
    setConfirming(false);

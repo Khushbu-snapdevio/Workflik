@@ -5,14 +5,13 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart2,
-  Check,
-  ChevronRight,
   Code2,
   DollarSign,
   LayoutGrid,
   Loader2,
   Megaphone,
   Search,
+  Tag,
   Trash2,
   X,
   Zap,
@@ -22,6 +21,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PageIcon } from "@/components/pages/page-icon";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { MINI_WIDTHS, MiniPageContent, blockText } from "@/components/editor/mini-page-content";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ type Template = {
   id: string;
   name: string;
   description: string | null;
-  category: string;
+  categoryId: string;
   isBuiltIn: boolean;
   workspaceId: string | null;
   createdBy: string | null;
@@ -59,16 +60,20 @@ type Template = {
   };
 };
 
-type CategoryDef = { key: string; label: string; Icon: LucideIcon };
+type TemplateCategoryRow = { id: string; key: string; label: string; orderIndex: number };
 
-const CATEGORIES: CategoryDef[] = [
-  { key: "all", label: "All templates", Icon: LayoutGrid },
-  { key: "productivity", label: "Productivity", Icon: Zap },
-  { key: "project_mgmt", label: "Project management", Icon: BarChart2 },
-  { key: "marketing", label: "Marketing & content", Icon: Megaphone },
-  { key: "engineering", label: "Engineering & docs", Icon: Code2 },
-  { key: "sales", label: "Sales & finance", Icon: DollarSign },
-];
+// Categories are admin-managed (not a fixed list), so icons are cycled from
+// a small palette by position rather than mapped per-key.
+const CATEGORY_ICON_CYCLE: LucideIcon[] = [Zap, BarChart2, Megaphone, Code2, DollarSign, Tag];
+
+function iconForCategory(categories: TemplateCategoryRow[], categoryId: string): LucideIcon {
+  const idx = categories.findIndex((c) => c.id === categoryId);
+  return idx === -1 ? LayoutGrid : CATEGORY_ICON_CYCLE[idx % CATEGORY_ICON_CYCLE.length]!;
+}
+
+function labelForCategory(categories: TemplateCategoryRow[], categoryId: string): string | undefined {
+  return categories.find((c) => c.id === categoryId)?.label;
+}
 
 const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
   gray: {
@@ -170,6 +175,7 @@ export function TemplatesPageClient({
 
   const [builtIn, setBuiltIn] = useState<Template[]>([]);
   const [workspace, setWorkspace] = useState<Template[]>([]);
+  const [categories, setCategories] = useState<TemplateCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
@@ -183,9 +189,11 @@ export function TemplatesPageClient({
       fetch(`/api/workspaces/${workspaceId}/templates`).then((r) =>
         r.ok ? r.json() : []
       ),
-    ]).then(([bi, ws]) => {
+      fetch("/api/templates/categories").then((r) => (r.ok ? r.json() : [])),
+    ]).then(([bi, ws, cats]) => {
       setBuiltIn(Array.isArray(bi) ? bi : []);
       setWorkspace(Array.isArray(ws) ? ws : []);
+      setCategories(Array.isArray(cats) ? cats : []);
     });
   }, [workspaceId]);
 
@@ -212,7 +220,7 @@ export function TemplatesPageClient({
     (!q ||
       t.name.toLowerCase().includes(q) ||
       (t.description ?? "").toLowerCase().includes(q)) &&
-    (activeTab === "all" || t.category === activeTab);
+    (activeTab === "all" || t.categoryId === activeTab);
 
   const filteredBuiltIn = builtIn.filter(matches);
   const filteredWorkspace = workspace.filter(matches);
@@ -221,7 +229,7 @@ export function TemplatesPageClient({
     if (key === "all") {
       return builtIn.length + workspace.length;
     }
-    return [...builtIn, ...workspace].filter((t) => t.category === key).length;
+    return [...builtIn, ...workspace].filter((t) => t.categoryId === key).length;
   }
 
   async function deleteTemplate(tpl: Template) {
@@ -271,7 +279,7 @@ export function TemplatesPageClient({
   return (
     <div className="@container flex h-full flex-col overflow-hidden bg-background">
       {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
-      <div className="flex h-11 shrink-0 items-center border-b border-border/60 bg-card px-3">
+      <div className="flex h-11 shrink-0 items-center bg-background px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
           <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground">
             <LayoutGrid className="shrink-0" size={13} />
@@ -303,9 +311,7 @@ export function TemplatesPageClient({
               <span className="mb-0.5 text-sm font-medium text-muted-foreground">
                 {activeTab === "all"
                   ? "templates"
-                  : CATEGORIES.find(
-                      (c) => c.key === activeTab
-                    )?.label.toLowerCase()}
+                  : labelForCategory(categories, activeTab)?.toLowerCase()}
               </span>
             </div>
           </div>
@@ -314,7 +320,6 @@ export function TemplatesPageClient({
           <div className="flex-1 overflow-y-auto px-3 py-3">
             {/* "All" — full-width prominent card */}
             {(() => {
-              const allCat = CATEGORIES[0]!;
               const allCnt = countForTab("all");
               const allActive = activeTab === "all";
               return (
@@ -334,7 +339,7 @@ export function TemplatesPageClient({
                         : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                     }`}
                   >
-                    <allCat.Icon size={15} />
+                    <LayoutGrid size={15} />
                   </span>
                   <span
                     className={`flex-1 text-sm ${allActive ? "font-semibold" : "font-medium"}`}
@@ -363,10 +368,10 @@ export function TemplatesPageClient({
 
             {/* Individual categories */}
             <div className="space-y-1">
-              {CATEGORIES.slice(1).map((cat) => {
-                const cnt = countForTab(cat.key);
-                const isActive = activeTab === cat.key;
-                const CatIcon = cat.Icon;
+              {categories.map((cat, i) => {
+                const cnt = countForTab(cat.id);
+                const isActive = activeTab === cat.id;
+                const CatIcon = CATEGORY_ICON_CYCLE[i % CATEGORY_ICON_CYCLE.length]!;
                 return (
                   <button
                     className={`group flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left transition-all duration-150 ${
@@ -374,8 +379,8 @@ export function TemplatesPageClient({
                         ? "bg-primary/10 text-primary"
                         : "text-sidebar-foreground/70 hover:bg-accent hover:text-foreground"
                     }`}
-                    key={cat.key}
-                    onClick={() => handleCategoryClick(cat.key)}
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.id)}
                     type="button"
                   >
                     <span
@@ -414,6 +419,7 @@ export function TemplatesPageClient({
         <GalleryView
           activeTab={activeTab}
           applyingId={applyingId}
+          categories={categories}
           currentUserId={currentUserId}
           deleteError={deleteError}
           filteredBuiltIn={filteredBuiltIn}
@@ -436,6 +442,7 @@ export function TemplatesPageClient({
       {previewTemplate && (
         <TemplatePreviewModal
           applying={applyingId === previewTemplate.id}
+          categories={categories}
           onApply={() => applyTemplate(previewTemplate)}
           onClose={() => setPreviewTemplate(null)}
           template={previewTemplate}
@@ -465,6 +472,7 @@ function GalleryView({
   currentUserId,
   isWorkspaceAdmin,
   deleteError,
+  categories,
 }: {
   searchRef: React.RefObject<HTMLInputElement | null>;
   search: string;
@@ -483,6 +491,7 @@ function GalleryView({
   currentUserId: string;
   isWorkspaceAdmin: boolean;
   deleteError: string;
+  categories: TemplateCategoryRow[];
 }) {
   const empty = filteredBuiltIn.length === 0 && filteredWorkspace.length === 0;
 
@@ -540,6 +549,7 @@ function GalleryView({
                   {filteredBuiltIn.map((tpl) => (
                     <TemplateCard
                       applying={applyingId === tpl.id}
+                      categories={categories}
                       disabled={applyingId === tpl.id}
                       key={tpl.id}
                       onPreview={() => onPreview(tpl)}
@@ -572,6 +582,7 @@ function GalleryView({
                     return (
                       <TemplateCard
                         applying={applyingId === tpl.id}
+                        categories={categories}
                         disabled={applyingId === tpl.id}
                         key={tpl.id}
                         onDelete={
@@ -595,16 +606,6 @@ function GalleryView({
 
 // ── Template card ──────────────────────────────────────────────────────────────
 
-const MINI_WIDTHS = [
-  "w-4/5",
-  "w-3/5",
-  "w-3/4",
-  "w-1/2",
-  "w-11/12",
-  "w-2/3",
-  "w-5/6",
-] as const;
-
 function TemplateCard({
   template,
   onUse,
@@ -612,6 +613,7 @@ function TemplateCard({
   onDelete,
   applying,
   disabled,
+  categories,
 }: {
   template: Template;
   onUse: () => void;
@@ -619,11 +621,12 @@ function TemplateCard({
   onDelete?: () => void;
   applying: boolean;
   disabled: boolean;
+  categories: TemplateCategoryRow[];
 }) {
-  const catDef = CATEGORIES.find((c) => c.key === template.category);
-  const CatIcon = catDef?.Icon ?? LayoutGrid;
+  const CatIcon = iconForCategory(categories, template.categoryId);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   async function handleDelete() {
     setDeleting(true);
@@ -644,7 +647,7 @@ function TemplateCard({
           if (!disabled) onPreview();
         }}
       >
-        <TemplateCardThumbnail template={template} />
+        <TemplateCardThumbnail categories={categories} template={template} />
 
         {/* Info */}
         <div className="flex flex-1 flex-col px-4 py-2.5">
@@ -705,7 +708,8 @@ function TemplateCard({
               e.stopPropagation();
               setDeleteOpen(true);
             }}
-            title="Delete template"
+            onMouseEnter={(e) => showTooltip("Delete template", e)}
+            onMouseLeave={hideTooltip}
             type="button"
           >
             <Trash2 size={13} />
@@ -774,6 +778,12 @@ function TemplateCard({
           </div>,
           document.body
         )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+          document.body,
+        )}
     </>
   );
 }
@@ -788,14 +798,16 @@ function TemplatePreviewModal({
   applying,
   onApply,
   onClose,
+  categories,
 }: {
   template: Template;
   applying: boolean;
   onApply: () => void;
   onClose: () => void;
+  categories: TemplateCategoryRow[];
 }) {
-  const catDef = CATEGORIES.find((c) => c.key === template.category);
-  const CatIcon = catDef?.Icon ?? LayoutGrid;
+  const catLabel = labelForCategory(categories, template.categoryId);
+  const CatIcon = iconForCategory(categories, template.categoryId);
   const blocks = template.pageSnapshot.blocks ?? [];
   const schema = template.pageSnapshot.database_schema;
   const [closeTooltipRect, setCloseTooltipRect] = useState<DOMRect | null>(
@@ -853,11 +865,11 @@ function TemplatePreviewModal({
             <h2 className="pr-6 text-base font-bold leading-snug text-foreground">
               {template.name}
             </h2>
-            {catDef && (
+            {catLabel && (
               <div className="mt-2">
                 <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                   <CatIcon size={9} />
-                  {catDef.label}
+                  {catLabel}
                 </span>
               </div>
             )}
@@ -1431,12 +1443,11 @@ function PreviewDbContent({ schema }: { schema: SchemaForPreview }) {
 
 // ── Template card thumbnail ────────────────────────────────────────────────────
 
-function TemplateCardThumbnail({ template }: { template: Template }) {
+function TemplateCardThumbnail({ template, categories }: { template: Template; categories: TemplateCategoryRow[] }) {
   const icon = template.pageSnapshot.icon;
   const schema = template.pageSnapshot.database_schema;
   const blocks = template.pageSnapshot.blocks ?? [];
-  const catDef = CATEGORIES.find((c) => c.key === template.category);
-  const CatIcon = catDef?.Icon ?? LayoutGrid;
+  const CatIcon = iconForCategory(categories, template.categoryId);
 
   return (
     <div className="relative h-36 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
@@ -1460,196 +1471,6 @@ function TemplateCardThumbnail({ template }: { template: Template }) {
           <MiniPageContent blocks={blocks} />
         )}
       </div>
-    </div>
-  );
-}
-
-// ── Mini page content ──────────────────────────────────────────────────────────
-
-// Extracts plain, joined text from a block's rich-text content shape
-// ({ text: [{ text, marks }] }) — falls back to "" for shapes with no text.
-function blockText(content: unknown): string {
-  if (content && typeof content === "object" && "text" in content) {
-    const arr = (content as { text?: { text: string }[] }).text;
-    if (Array.isArray(arr)) return arr.map((t) => t.text).join("");
-  }
-  return "";
-}
-
-function MiniPageContent({
-  blocks,
-}: {
-  blocks: { type: string; content?: unknown }[];
-}) {
-  const items = blocks.length > 0 ? blocks.slice(0, 8) : [];
-  if (items.length === 0) {
-    return (
-      <div className="space-y-1.5">
-        <div className="h-1.5 w-2/3 rounded-[var(--radius-xs)] bg-foreground/18" />
-        <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-muted-foreground/14" />
-        <div className="h-1 w-full rounded-[var(--radius-xs)] bg-muted-foreground/12" />
-        <div className="h-px bg-border/40 my-1" />
-        <div className="flex items-center gap-1.5 pl-1">
-          <div className="size-1 shrink-0 rounded-full bg-muted-foreground/30" />
-          <div className="h-1 w-3/5 rounded-[var(--radius-xs)] bg-muted-foreground/14" />
-        </div>
-        <div className="flex items-center gap-1.5 pl-1">
-          <div className="size-1 shrink-0 rounded-full bg-muted-foreground/30" />
-          <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-muted-foreground/12" />
-        </div>
-        <div className="flex items-center gap-1.5 pl-1">
-          <div className="size-1 shrink-0 rounded-full bg-muted-foreground/30" />
-          <div className="h-1 w-1/2 rounded-[var(--radius-xs)] bg-muted-foreground/10" />
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-1.5">
-      {items.map((b, i) => (
-        <MiniBlock
-          key={i}
-          type={b.type}
-          text={blockText(b.content)}
-          checked={(b.content as { checked?: boolean } | undefined)?.checked}
-          wCls={MINI_WIDTHS[i % MINI_WIDTHS.length]!}
-        />
-      ))}
-    </div>
-  );
-}
-
-function MiniBlock({
-  type,
-  text,
-  checked,
-  wCls,
-}: {
-  type: string;
-  text: string;
-  checked?: boolean;
-  wCls: string;
-}) {
-  // A block with no extractable text (e.g. an empty paragraph) falls back
-  // to a plain placeholder bar rather than rendering nothing.
-  if (!text && type !== "divider") {
-    return (
-      <div
-        className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/12`}
-      />
-    );
-  }
-
-  if (type === "divider") {
-    return <div className="h-px bg-border/50" />;
-  }
-
-  if (type === "h1") {
-    return (
-      <div className="truncate text-[8px] font-bold leading-tight text-foreground/70">
-        {text}
-      </div>
-    );
-  }
-  if (type === "h2") {
-    return (
-      <div className="truncate text-[7.5px] font-semibold leading-tight text-foreground/65">
-        {text}
-      </div>
-    );
-  }
-  if (type === "h3") {
-    return (
-      <div className="truncate text-[7px] font-semibold leading-tight text-foreground/60">
-        {text}
-      </div>
-    );
-  }
-
-  if (type === "bullet") {
-    return (
-      <div className="flex items-center gap-1.5 pl-2">
-        <div className="size-1 shrink-0 rounded-full bg-primary/45" />
-        <div className="truncate text-[7px] leading-tight text-muted-foreground/70">
-          {text}
-        </div>
-      </div>
-    );
-  }
-  if (type === "numbered") {
-    return (
-      <div className="flex items-center gap-1.5 pl-2">
-        <div className="size-1 shrink-0 rounded-[var(--radius-xs)] bg-primary/40" />
-        <div className="truncate text-[7px] leading-tight text-muted-foreground/70">
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "todo") {
-    return (
-      <div className="flex items-center gap-1.5">
-        <div
-          className={`flex size-2 shrink-0 items-center justify-center rounded-full border ${checked ? "border-primary bg-primary" : "border-border bg-background"}`}
-        >
-          {checked && (
-            <Check className="text-primary-foreground" size={6} strokeWidth={3.5} />
-          )}
-        </div>
-        <div
-          className={`truncate text-[7px] leading-tight ${checked ? "text-muted-foreground/40 line-through" : "text-muted-foreground/70"}`}
-        >
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "toggle") {
-    return (
-      <div className="flex items-center gap-1.5">
-        <ChevronRight className="shrink-0 text-primary/50" size={7} />
-        <div className="truncate text-[7px] font-medium leading-tight text-muted-foreground/70">
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "callout") {
-    return (
-      <div className="flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-warning/10 px-2 py-1">
-        <div className="size-1.5 shrink-0 rounded-full bg-warning/60" />
-        <div className="truncate text-[7px] leading-tight text-muted-foreground/70">
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "quote") {
-    return (
-      <div className="flex gap-1.5 pl-0.5">
-        <div className="w-0.5 shrink-0 self-stretch rounded-full bg-border" />
-        <div className="truncate text-[7px] italic leading-tight text-muted-foreground/60">
-          {text}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === "code") {
-    return (
-      <div className="truncate rounded-[var(--radius-xs)] bg-muted px-2 py-1 font-mono text-[7px] leading-tight text-muted-foreground/80">
-        {text}
-      </div>
-    );
-  }
-
-  return (
-    <div className="truncate text-[7px] leading-tight text-muted-foreground/60">
-      {text}
     </div>
   );
 }

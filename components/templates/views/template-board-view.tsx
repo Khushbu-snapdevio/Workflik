@@ -200,30 +200,29 @@ function CardShell({
  const valMap = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
  const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
- const [commentCount, setCommentCount]  = useState<number | null>(null);
+ const [commentCount, setCommentCount]  = useState<number | null>(entry.commentCount ?? null);
  const [tooltip, setTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
  const [editing, setEditing] = useState(false);
  const [editTitle, setEditTitle] = useState(entry.title ?? "");
  const [propEditor, setPropEditor] = useState<{ prop: DatabaseProperty; rect: DOMRect } | null>(null);
  const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
  const cardRef = useRef<HTMLDivElement>(null);
- const fetchedRef = useRef(false);
 
+ // entry.commentCount is batch-computed server-side (open, page-level
+ // threads only) — see components/database/board-view.tsx's CardShell for
+ // the same change. `onCommentAdded` below still bumps this instantly
+ // between fetches.
+ useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
+
+ // tooltip is a `position: fixed` portal anchored to a rect snapshotted once
+ // on hover — dismiss it on scroll instead of repositioning, since locking
+ // scroll on every card hover would hurt the board's own scrolling.
  useEffect(() => {
-  if (dragging || fetchedRef.current) return;
-  fetchedRef.current = true;
-  fetch(`/api/pages/${entry.id}/comments`)
-   .then((r) => (r.ok ? r.json() : null))
-   .then((data) => {
-    if (!data) return;
-    const list = data.comments as Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }>;
-    // Only count page-level threads (propertyId === null) — the badge opens the same
-    // page-level popover, and property-scoped comments (added from a table cell) aren't
-    // shown there, so counting them would show a badge that opens to nothing.
-    setCommentCount(list.filter((c) => !c.blockId && !c.deletedAt && c.propertyId === null).length);
-   })
-   .catch(() => {});
- }, [entry.id, dragging]);
+  if (!tooltip) return;
+  function handleScroll() { setTooltip(null); }
+  document.addEventListener("scroll", handleScroll, true);
+  return () => document.removeEventListener("scroll", handleScroll, true);
+ }, [tooltip]);
 
  useEffect(() => {
   if (!editing) return;
@@ -268,7 +267,10 @@ function CardShell({
      <input
       autoFocus
       value={editTitle}
-      onChange={(e) => setEditTitle(e.target.value)}
+      onChange={(e) => {
+       setEditTitle(e.target.value);
+       window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entry.id, title: e.target.value } }));
+      }}
       onClick={(e) => e.stopPropagation()}
       onBlur={commitTitle}
       onKeyDown={(e) => {
@@ -316,7 +318,8 @@ function CardShell({
         setCommentAnchor((e.currentTarget as HTMLElement).getBoundingClientRect());
        }}
        className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
-       title="View comments"
+       onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+       onMouseLeave={() => setTooltip(null)}
       >
        <MessageSquare size={11} />
        {commentCount}
@@ -429,6 +432,8 @@ function CardShell({
    <CellCommentPopover
     pageId={entry.id}
     workspaceId={workspaceId}
+    workspaceSlug={workspaceSlug}
+    entryShortId={entry.shortId}
     anchorRect={commentAnchor}
     onClose={() => setCommentAnchor(null)}
     onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
@@ -552,6 +557,16 @@ export function TemplateBoardView({
  const [deleteGroupTarget, setDeleteGroupTarget] = useState<{ id: string; name: string } | null>(null);
  const [draggingColKey, setDraggingColKey]     = useState<string | null>(null);
  const [pinTooltip, setPinTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
+
+ // pinTooltip is a `position: fixed` portal anchored to a rect snapshotted
+ // once on hover — dismiss it on scroll instead of repositioning, since
+ // locking scroll on every hover would hurt the board's own scrolling.
+ useEffect(() => {
+  if (!pinTooltip) return;
+  function handleScroll() { setPinTooltip(null); }
+  document.addEventListener("scroll", handleScroll, true);
+  return () => document.removeEventListener("scroll", handleScroll, true);
+ }, [pinTooltip]);
 
  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 

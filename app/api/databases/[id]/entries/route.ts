@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { databaseProperties, databaseViews, pages, propertyValues, workspaceMembers } from "@/lib/db/schema";
+import { comments, databaseProperties, databaseViews, pages, propertyValues, workspaceMembers } from "@/lib/db/schema";
 import { createPageWithClosure } from "@/lib/pages/closure";
 import { evaluateFormulaValue, runFormula, FormulaEvalError, type FormulaValue } from "@/lib/formula";
 
@@ -52,6 +52,26 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!entries.length) return Response.json({ entries: [], propertyValues: [] });
 
   const entryIds = entries.map((e) => e.id);
+
+  // Open (unresolved, undeleted, root-level, page-level — matching the
+  // topbar "Comments" badge's definition of "unresolved") comment count per
+  // entry, shown as a small chat-icon badge next to the entry's name across
+  // table/board/gallery views, Notion-style. Must exclude property-scoped
+  // comments (propertyId IS NOT NULL) — clicking the badge only opens the
+  // page-level thread list, so counting property comments here would show a
+  // number higher than what that popover actually displays.
+  const commentCountRows = await db
+    .select({ pageId: comments.pageId, count: sql<number>`count(*)::int` })
+    .from(comments)
+    .where(and(
+      inArray(comments.pageId, entryIds),
+      isNull(comments.parentId),
+      isNull(comments.propertyId),
+      eq(comments.isResolved, false),
+      isNull(comments.deletedAt),
+    ))
+    .groupBy(comments.pageId);
+  const commentCountMap = new Map(commentCountRows.map((r) => [r.pageId, r.count]));
 
   // Load all property values for these entries
   const values = await db
@@ -130,7 +150,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     });
   }
 
-  return Response.json({ entries: filtered, propertyValues: allValues });
+  const withCommentCounts = filtered.map((e) => ({ ...e, commentCount: commentCountMap.get(e.id) ?? 0 }));
+
+  return Response.json({ entries: withCommentCounts, propertyValues: allValues });
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {

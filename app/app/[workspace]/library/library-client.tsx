@@ -3,10 +3,15 @@
 import { AlertCircle, BookOpen, Check, Clock, FileText, Grid2X2, Loader2, Lock, PenOff, Search, Star, Trash2, X } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
+import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { TimeAgo } from "@/components/ui/time-ago";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 const PAGE_SIZE = 10;
 
@@ -53,34 +58,6 @@ function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
   return <FileText size={14} className="shrink-0 text-muted-foreground/40" />;
 }
 
-function timeAgo(iso: string) {
-  const diff  = Date.now() - new Date(iso).getTime();
-  const mins  = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
-  const weeks = Math.floor(days / 7);
-  if (mins < 1)   return "Just now";
-  if (mins < 60)  return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7)   return `${days}d ago`;
-  if (weeks < 5)  return `${weeks}w ago`;
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-// timeAgo() reads Date.now(), so it must not run during SSR — the value would
-// differ from the client's first render (a "just now" gap or a minute tick)
-// and trigger a hydration mismatch. Rendering null until mount keeps the
-// server/client markup identical, then fills in and keeps itself fresh.
-function TimeAgo({ iso }: { iso: string }) {
-  const [label, setLabel] = useState<string | null>(null);
-  useEffect(() => {
-    setLabel(timeAgo(iso));
-    const id = setInterval(() => setLabel(timeAgo(iso)), 60000);
-    return () => clearInterval(id);
-  }, [iso]);
-  return <>{label}</>;
-}
-
 export function LibraryClient({
   pages: initialPages,
   workspaceSlug,
@@ -91,6 +68,7 @@ export function LibraryClient({
   workspaceId: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pages, setPages]   = useState<PageRow[]>(initialPages);
 
   // Duplicating a page (via the row actions menu) triggers router.refresh()
@@ -108,7 +86,10 @@ export function LibraryClient({
     return () => window.removeEventListener("pages:refresh", onPagesRefresh);
   }, [router]);
 
-  const [tab, setTab]       = useState<Tab>("all");
+  const [tab, setTab]       = useState<Tab>(() => {
+    const initial = searchParams.get("tab");
+    return initial === "recents" || initial === "favorites" || initial === "private" ? initial : "all";
+  });
   const [search, setSearch]   = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore]   = useState(false);
@@ -119,6 +100,7 @@ export function LibraryClient({
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [deletingSelected, setDeletingSelected]      = useState(false);
   const [deleteErr, setDeleteErr]              = useState("");
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   function changeTab(next: Tab) {
     setTab(next);
@@ -219,7 +201,7 @@ export function LibraryClient({
     <div className="flex flex-1 flex-col overflow-hidden">
 
       {/* ── Tabs + search row ── */}
-      <div className="shrink-0 border-b border-border bg-card">
+      <div className="shrink-0 bg-background">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
             {TABS.map((t) => (
@@ -364,13 +346,6 @@ export function LibraryClient({
                     className="group/row relative grid items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
                     style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px 90px" }}
                   >
-                    {/* Full-row navigation link underneath */}
-                    <Link
-                      href={`/app/${workspaceSlug}/${page.shortId}`}
-                      className="absolute inset-0"
-                      aria-label={page.title || "Untitled"}
-                    />
-
                     {/* Row checkbox */}
                     <label className="relative z-10 flex cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
                       <input
@@ -427,6 +402,20 @@ export function LibraryClient({
                           </p>
                         </div>
                       </div>
+
+                      {/* Open — the only way to navigate into the page; raw
+                          row clicks are intentionally inert so a stray click
+                          doesn't yank the user out of Library. Matches the
+                          database table view's row-hover OPEN action. */}
+                      <Link
+                        href={`/app/${workspaceSlug}/${page.shortId}`}
+                        className="flex shrink-0 items-center gap-[3px] rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground/60 opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 hover:border-primary/40 hover:bg-muted/60 hover:text-foreground"
+                        onMouseEnter={(e) => showTooltip("Open full page", e)}
+                        onMouseLeave={hideTooltip}
+                      >
+                        <FileText size={9} />
+                        OPEN
+                      </Link>
                     </div>
 
                     {/* Created by */}
@@ -440,32 +429,34 @@ export function LibraryClient({
 
                     {/* Row actions */}
                     <span className="relative z-10 flex justify-end" onClick={(e) => e.stopPropagation()}>
-                      <PageActionsMenu
-                        pageId={page.id}
-                        isLocked={page.isLocked}
-                        isDeleted={false}
-                        workspaceSlug={workspaceSlug}
-                        workspaceId={workspaceId}
-                        pageShortId={page.shortId}
-                        pageTitle={page.title}
-                        pageKind={page.kind}
-                        parentShortId={page.parentShortId}
-                        iconOnly
-                        onDeleted={() => {
-                          setPages((prev) => prev.filter((p) => p.id !== page.id));
-                          setSelectedIds((prev) => {
-                            if (!prev.has(page.id)) return prev;
-                            const next = new Set(prev);
-                            next.delete(page.id);
-                            return next;
-                          });
-                          window.dispatchEvent(new CustomEvent("pages:refresh"));
-                        }}
-                        onDuplicated={() => {
-                          router.refresh();
-                          window.dispatchEvent(new CustomEvent("pages:refresh"));
-                        }}
-                      />
+                      <PagePrivacyProvider initialIsPrivate={page.isPrivate}>
+                        <PageActionsMenu
+                          pageId={page.id}
+                          isLocked={page.isLocked}
+                          isDeleted={false}
+                          workspaceSlug={workspaceSlug}
+                          workspaceId={workspaceId}
+                          pageShortId={page.shortId}
+                          pageTitle={page.title}
+                          pageKind={page.kind}
+                          parentShortId={page.parentShortId}
+                          iconOnly
+                          onDeleted={() => {
+                            setPages((prev) => prev.filter((p) => p.id !== page.id));
+                            setSelectedIds((prev) => {
+                              if (!prev.has(page.id)) return prev;
+                              const next = new Set(prev);
+                              next.delete(page.id);
+                              return next;
+                            });
+                            window.dispatchEvent(new CustomEvent("pages:refresh"));
+                          }}
+                          onDuplicated={() => {
+                            router.refresh();
+                            window.dispatchEvent(new CustomEvent("pages:refresh"));
+                          }}
+                        />
+                      </PagePrivacyProvider>
                     </span>
                   </div>
                   );
@@ -535,6 +526,11 @@ export function LibraryClient({
         loading={deletingSelected}
         onConfirm={handleDeleteSelected}
       />
+
+      {tooltip && typeof document !== "undefined" && createPortal(
+        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        document.body,
+      )}
     </div>
   );
 }

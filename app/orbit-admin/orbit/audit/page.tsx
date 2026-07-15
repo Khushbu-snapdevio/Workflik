@@ -4,6 +4,7 @@ import { platformAuditLog, users } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/utils";
 import Link from "next/link";
 import { PaginationControls } from "@/components/orbit/pagination-controls";
+import { AuditActionPill } from "@/components/orbit/audit-action-pill";
 
 export const metadata = { title: "Audit Trail – Orbit Admin" };
 
@@ -122,12 +123,12 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
        return (
         <div key={ev.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 px-5 py-3.5 transition-colors hover:bg-accent">
          <span className="w-44 min-w-0 shrink-0">
-          <span
-           title={meta ? undefined : ev.action}
-           className={`inline-flex max-w-full items-center truncate rounded-full border px-2 py-0.5 text-xs font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}
-          >
-           {meta?.label ?? humanizeAction(ev.action)}
-          </span>
+          <AuditActionPill
+           action={ev.action}
+           label={meta?.label ?? humanizeAction(ev.action)}
+           pillClass={meta?.pill ?? "bg-muted text-muted-foreground border-border"}
+           hasMeta={!!meta}
+          />
          </span>
          <div className="min-w-0 pl-4">
           <div className="flex items-center gap-2">

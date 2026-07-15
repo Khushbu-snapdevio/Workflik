@@ -1,13 +1,13 @@
 import { and, count, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { blocks, pages, templates } from "@/lib/db/schema";
+import { blocks, pages, templateCategories, templates } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
 const saveSchema = z.object({
   name:        z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
-  category:    z.enum(["productivity", "project_mgmt", "marketing", "engineering", "sales"]).default("productivity"),
+  categoryId:  z.string().uuid(),
   pageId:      z.string().uuid(),
 });
 
@@ -46,7 +46,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     const parsed = saveSchema.safeParse(body);
     if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
-    const { name, description, category, pageId } = parsed.data;
+    const { name, description, categoryId, pageId } = parsed.data;
+
+    const [cat] = await db
+      .select({ id: templateCategories.id })
+      .from(templateCategories)
+      .where(eq(templateCategories.id, categoryId))
+      .limit(1);
+    if (!cat) return apiError(400, "Unknown category");
 
     // Verify the page belongs to this workspace
     const [page] = await db
@@ -136,7 +143,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           workspaceId,
           name,
           description: description ?? null,
-          category,
+          categoryId,
           isBuiltIn: false,
           status: "published",
           createdBy: session.user.id,

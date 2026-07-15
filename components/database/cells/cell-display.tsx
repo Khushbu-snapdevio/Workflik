@@ -48,7 +48,7 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
     case "text": {
       const text = (v as { text?: string } | null)?.text ?? "";
       if (!text) return null;
-      return <span className="truncate text-xs text-foreground">{text}</span>;
+      return <span className="block min-w-0 truncate text-xs text-foreground">{text}</span>;
     }
 
     case "number": {

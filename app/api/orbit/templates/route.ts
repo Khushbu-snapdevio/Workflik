@@ -3,7 +3,7 @@ import { z } from "zod";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { templates, users } from "@/lib/db/schema";
+import { templates, templateCategories, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
 
@@ -22,7 +22,7 @@ async function requirePlatformAdmin() {
 const createSchema = z.object({
   name:        z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
-  category:    z.enum(["productivity", "project_mgmt", "marketing", "engineering", "sales"]),
+  categoryId:  z.string().uuid(),
   pageSnapshot: z.object({
     title:           z.string(),
     icon:            z.string().nullable().optional(),
@@ -58,14 +58,21 @@ export async function POST(req: Request) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
 
-  const { name, description, category, pageSnapshot } = parsed.data;
+  const { name, description, categoryId, pageSnapshot } = parsed.data;
+
+  const [cat] = await db
+    .select({ id: templateCategories.id })
+    .from(templateCategories)
+    .where(eq(templateCategories.id, categoryId))
+    .limit(1);
+  if (!cat) return apiError(400, "Unknown category");
 
   const [tpl] = await db
     .insert(templates)
     .values({
       name,
       description:  description ?? null,
-      category,
+      categoryId,
       isBuiltIn:    true,
       status:       "draft",
       workspaceId:  null,
@@ -79,7 +86,7 @@ export async function POST(req: Request) {
     action:     "template.created",
     targetType: "template",
     targetId:   tpl!.id,
-    metadata:   { name: tpl!.name, category: tpl!.category },
+    metadata:   { name: tpl!.name, categoryId: tpl!.categoryId },
   });
 
   return Response.json(tpl, { status: 201 });

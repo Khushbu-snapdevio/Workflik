@@ -3,10 +3,12 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { Slice, Fragment } from "@tiptap/pm/model";
+import { Slice, Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
-import { Copy, GripVertical, Trash2, MessageSquare } from "lucide-react";
+import { Copy, GripVertical, Plus, Trash2, MessageSquare } from "lucide-react";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 interface BlockInfo {
  top:   number;
@@ -15,46 +17,21 @@ interface BlockInfo {
  nodeSize: number;
 }
 
-// Resolve which top-level block the mouse is over.
-// Regular (contentEditable) blocks: posAtCoords works fine.
-// Atom blocks (image, video, audio, file — contentEditable=false): posAtCoords
-// returns null, so we fall back to elementFromPoint + DOM traversal.
+// Resolve which top-level block the mouse is over, via DOM traversal rather
+// than posAtCoords/posAtDOM. Both of those DOM->position APIs interpolate
+// from the nearest indexable *text* position — for atom/contentEditable=false
+// NodeViews (image, video, audio, file), which have no editable content of
+// their own, that resolution is ambiguous and in practice snaps forward into
+// the position just inside the *next* node instead of the atom itself. So
+// instead of asking "what position is under this DOM node", we go the other
+// way: walk the document's top-level children and ask the view for *their*
+// DOM node (view.nodeDOM), which is unambiguous for every block type,
+// including atoms, and stop at the one that matches what's under the cursor.
 function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
  const editorEl = editor.view.dom as HTMLElement;
  const er    = editorEl.getBoundingClientRect();
 
  try {
-  // ── Primary path: posAtCoords (works for text blocks) ──
-  const posObj = editor.view.posAtCoords({ left: e.clientX, top: e.clientY });
-
-  if (posObj) {
-   let $pos;
-   try { $pos = editor.state.doc.resolve(posObj.pos); } catch { /* skip */ }
-
-   if ($pos && $pos.depth >= 1) {
-    const nodePos = $pos.before(1);
-    const node  = editor.state.doc.nodeAt(nodePos);
-    if (node) {
-     const domInfo = editor.view.domAtPos(nodePos + 1);
-     let domNode  = domInfo.node as HTMLElement;
-     if (domNode.nodeType === Node.TEXT_NODE) domNode = domNode.parentElement!;
-     while (domNode.parentElement && domNode.parentElement !== editorEl) {
-      domNode = domNode.parentElement;
-     }
-     const br = domNode.getBoundingClientRect();
-     return {
-      top:   br.top + br.height / 2,
-      left:   er.left - 36,
-      nodePos,
-      nodeSize: node.nodeSize,
-     };
-    }
-   }
-
-   // posAtCoords returned something but depth was 0 — fall through to DOM path
-  }
-
-  // ── Fallback path: DOM traversal (works for atom/contentEditable=false blocks) ──
   let el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
   if (!el) return null;
 
@@ -64,17 +41,24 @@ function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
   }
   if (!el || el === editorEl) return null;
 
-  // posAtDOM gives the document position just before this DOM node's content
-  const rawPos = editor.view.posAtDOM(el, 0);
-  // rawPos is the position inside the node; nodePos = position before the node
-  const nodePos = Math.max(0, rawPos - 1);
-  const node  = editor.state.doc.nodeAt(nodePos);
-  if (!node) return null;
+  let nodePos = -1;
+  let node: PMNode | null = null;
+  let offset = 0;
+  for (let i = 0; i < editor.state.doc.childCount; i++) {
+   const child = editor.state.doc.child(i);
+   if (editor.view.nodeDOM(offset) === el) {
+    nodePos = offset;
+    node = child;
+    break;
+   }
+   offset += child.nodeSize;
+  }
+  if (nodePos === -1 || !node) return null;
 
   const br = el.getBoundingClientRect();
   return {
    top:   br.top + br.height / 2,
-   left:   er.left - 36,
+   left:   er.left - 58,
    nodePos,
    nodeSize: node.nodeSize,
   };
@@ -99,13 +83,14 @@ function getBlockRect(editor: Editor, nodePos: number): { top: number; left: num
    domNode = domNode.parentElement;
   }
   const br = domNode.getBoundingClientRect();
-  return { top: br.top + br.height / 2, left: er.left - 36 };
+  return { top: br.top + br.height / 2, left: er.left - 58 };
  } catch {
   return null;
  }
 }
 
 export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?: (nodePos: number, absoluteY: number) => void }) {
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [block, setBlock]    = useState<BlockInfo | null>(null);
  const [menuOpen, setMenuOpen] = useState(false);
 
@@ -227,6 +212,22 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
   });
  }, [editor, block]);
 
+ // Inserts a new empty paragraph below the block (or above, on Alt-click),
+ // then types "/" into it — reusing the existing slash-command menu instead
+ // of building a second block-type picker for this button.
+ const insertBlock = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+  if (!block) return;
+  const insertPos = e.altKey ? block.nodePos : block.nodePos + block.nodeSize;
+  editor
+   .chain()
+   .focus()
+   .insertContentAt(insertPos, { type: "paragraph" })
+   .setTextSelection(insertPos + 1)
+   .insertContent("/")
+   .run();
+  setBlock(null);
+ }, [editor, block]);
+
  const commentBlock = useCallback(() => {
   if (!block || !onComment) return;
   setMenuOpen(false);
@@ -285,6 +286,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
  if (!block || typeof document === "undefined") return null;
 
  return createPortal(
+  <>
   <div
    style={{
     position: "fixed",
@@ -296,6 +298,17 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
     alignItems: "center",
    }}
   >
+   {/* + — insert a new block below (Alt-click: above) */}
+   <button
+    type="button"
+    onClick={insertBlock}
+    onMouseEnter={(e) => showTooltip("Click to add below · Alt-click to add above", e)}
+    onMouseLeave={hideTooltip}
+    className="flex h-6 w-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+   >
+    <Plus size={14} />
+   </button>
+
    {/* ⠿ grip — drag to reorder, click to open block menu */}
    <button
     ref={triggerRef}
@@ -313,7 +326,8 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
      if (wasDragRef.current) return;
      setMenuOpen((v) => !v);
     }}
-    title="Drag to reorder · Click for options"
+    onMouseEnter={(e) => showTooltip("Drag to reorder · Click for options", e)}
+    onMouseLeave={hideTooltip}
     className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing"
    >
     <GripVertical size={14} />
@@ -363,7 +377,11 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
      </div>
     </div>
    )}
-  </div>,
+  </div>
+  {tooltip && (
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} />
+  )}
+  </>,
   document.body,
  );
 }

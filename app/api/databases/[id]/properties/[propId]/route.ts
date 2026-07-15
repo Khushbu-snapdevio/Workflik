@@ -7,7 +7,7 @@ import { databaseProperties, databaseViews, pages, propertyValues, workspaceMemb
 // constant in ../route.ts for why this is duplicated rather than shared.
 const VALID_PROPERTY_TYPES = new Set([
   "text", "number", "select", "multi_select", "status", "date",
-  "checkbox", "url", "email", "phone", "person", "relation", "rollup", "formula",
+  "checkbox", "url", "email", "phone", "person", "relation", "rollup", "formula", "created_by", "files",
 ]);
 
 async function guard(databaseId: string, userId: string) {

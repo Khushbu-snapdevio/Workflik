@@ -23,6 +23,13 @@ export function CellActionOverlay({
   const [tooltip, setTooltip] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
 
+  // Self-suppressing, regardless of caller: any open cell-editor popup
+  // (table view, Gantt's own property list, or any future view) flags
+  // `document.body` while mounted (see `CellEditorInner` in cell-editor.tsx)
+  // — bail out here rather than trusting every caller to correctly thread
+  // its own popup-open state into whatever triggers this overlay.
+  if (typeof document !== "undefined" && document.body.dataset.cellPopupOpen === "true") return null;
+
   const mutedIconColor = "color-mix(in srgb, var(--muted-foreground) 70%, transparent)";
 
   const btnBase: React.CSSProperties = {
@@ -61,7 +68,7 @@ export function CellActionOverlay({
           display: "flex",
           alignItems: "center",
           gap: 2,
-          paddingLeft: 32,
+          paddingLeft: 20,
           paddingRight: 6,
           background: "linear-gradient(to left, var(--muted) 50%, transparent)",
           zIndex: 200,

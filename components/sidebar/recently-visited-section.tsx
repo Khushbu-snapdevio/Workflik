@@ -69,7 +69,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
  }
 
  return (
-  <div className="px-2 py-2">
+  <div className="px-2">
    <button
     type="button"
     onClick={() => setExpanded((v) => !v)}

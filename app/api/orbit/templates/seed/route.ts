@@ -16,7 +16,7 @@ async function requirePlatformAdmin() {
 
 type PropOption = { name: string; color: string };
 type Prop = { name: string; type: string; multiple?: boolean; options?: PropOption[] };
-type View = { name: string; type: "table" | "board" | "calendar"; isDefault?: boolean; groupBy?: string; filterKey?: string; filterValue?: string; sortBy?: string; sortDir?: "asc" | "desc" };
+type View = { name: string; type: "table" | "board" | "calendar" | "gantt"; isDefault?: boolean; groupBy?: string; ganttStart?: string; ganttEnd?: string; filterKey?: string; filterValue?: string; sortBy?: string; sortDir?: "asc" | "desc" };
 type SampleRow = Record<string, string | number>;
 type DbSchema = { properties: Prop[]; views: View[]; sample_rows: SampleRow[] };
 
@@ -215,9 +215,9 @@ export const BUILT_IN_TEMPLATES: {
         { name: "My Tasks",   type: "table", filterKey: "Assignee", filterValue: "me" },
       ],
       sample_rows: [
-        { "Task name": "Improve website copy",       "Status": "Done",        "Due date": "2025-02-03", "Priority": "High",   "Task type": "Polish",          "Effort level": "Medium" },
-        { "Task name": "Update help center & FAQ",   "Status": "In progress", "Due date": "2025-02-20", "Priority": "Medium", "Task type": "Feature request", "Effort level": "Small"  },
-        { "Task name": "Publish release notes",      "Status": "Not started", "Due date": "2025-02-28", "Priority": "Low",    "Task type": "Feature request", "Effort level": "Small"  },
+        { "Task name": "Improve website copy",       "Status": "Done",        "Due date": "2025-02-03", "Priority": "High",   "Task type": "Polish",          "Description": "Update the homepage headline and button copy to better reflect our latest positioning.", "Effort level": "Medium" },
+        { "Task name": "Update help center & FAQ",   "Status": "In progress", "Due date": "2025-02-20", "Priority": "Medium", "Task type": "Feature request", "Description": "Refresh support articles and FAQ answers to reflect recent product changes.",           "Effort level": "Small"  },
+        { "Task name": "Publish release notes",      "Status": "Not started", "Due date": "2025-02-28", "Priority": "Low",    "Task type": "Feature request", "Description": "Write and publish release notes covering this month's product updates.",               "Effort level": "Small"  },
       ],
     }),
   },
@@ -305,26 +305,36 @@ export const BUILT_IN_TEMPLATES: {
     pageSnapshot: dbSnap("Projects", '{"type":"icon","name":"Briefcase","color":"#6366f1"}', "Manage and execute projects from start to finish.", {
       properties: [
         { name: "Project name", type: "title" },
+        { name: "Assignee", type: "person" },
         { name: "Status", type: "select", options: [
           { name: "Not started", color: "gray"  },
           { name: "In progress", color: "blue"  },
           { name: "Done",        color: "green" },
         ]},
+        { name: "Start date", type: "date" },
+        { name: "End date", type: "date" },
         { name: "Priority", type: "select", options: [
           { name: "High",   color: "red"    },
           { name: "Medium", color: "orange" },
           { name: "Low",    color: "gray"   },
         ]},
-        { name: "Owner", type: "person" },
+        { name: "Team", type: "select", options: [
+          { name: "Account Management", color: "purple" },
+          { name: "Human Resources",    color: "pink"   },
+          { name: "Product Design",     color: "green"  },
+          { name: "Engineering",        color: "blue"   },
+          { name: "Marketing",          color: "orange" },
+        ]},
+        { name: "Attach file", type: "files" },
       ],
       views: [
         { name: "By Status",    type: "board", isDefault: true, groupBy: "Status" },
         { name: "All Projects", type: "table" },
       ],
       sample_rows: [
-        { "Project name": "Quarterly sales planning",  "Status": "Not started", "Priority": "Medium" },
-        { "Project name": "Public launch of iOS app",  "Status": "In progress", "Priority": "High"   },
-        { "Project name": "Revamp new hire onboarding","Status": "Done",        "Priority": "Low"    },
+        { "Project name": "Quarterly sales planning",   "Status": "Not started", "Start date": "2025-03-24", "End date": "2025-03-28", "Priority": "Medium", "Team": "Account Management" },
+        { "Project name": "Public launch of iOS app",   "Status": "In progress", "Start date": "2025-04-09", "End date": "2025-04-30", "Priority": "High",   "Team": "Product Design" },
+        { "Project name": "Revamp new hire onboarding", "Status": "Done",        "Start date": "2025-01-20", "End date": "2025-02-04", "Priority": "Low",    "Team": "Human Resources" },
       ],
     }),
   },
@@ -701,9 +711,9 @@ export const BUILT_IN_TEMPLATES: {
         { name: "Active Deals",  type: "table" },
       ],
       sample_rows: [
-        { "Deal name": "Auto manufacturer",    "Deal Stage": "New",       "Priority": "High"   },
-        { "Deal name": "Software tech company","Deal Stage": "Discovery",  "Priority": "Low"    },
-        { "Deal name": "Consulting firm",      "Deal Stage": "Won",        "Priority": "Medium" },
+        { "Deal name": "Auto manufacturer",    "Deal Stage": "New",       "Priority": "High",   "Company": "Meridian Motors"          },
+        { "Deal name": "Software tech company","Deal Stage": "Discovery",  "Priority": "Low",    "Company": "Nimbus Software"          },
+        { "Deal name": "Consulting firm",      "Deal Stage": "Won",        "Priority": "Medium", "Company": "Vertex Consulting Group"  },
       ],
     }),
   },
@@ -733,9 +743,9 @@ export const BUILT_IN_TEMPLATES: {
         { name: "Won",            type: "table", filterKey: "Status", filterValue: "Won" },
       ],
       sample_rows: [
-        { "Investor name": "VC firm 1", "Status": "Won",     "Email": "contact@vcfirm1.com" },
-        { "Investor name": "VC firm 2", "Status": "Pitched", "Email": "contact@vcfirm2.com" },
-        { "Investor name": "VC firm 3", "Status": "Lost",    "Email": "contact@vcfirm3.com" },
+        { "Investor name": "VC firm 1", "Status": "Won",     "Email": "contact@vcfirm1.com", "Fund size": "$150M", "Notes": "Led our Series A round; strong follow-on interest for future rounds." },
+        { "Investor name": "VC firm 2", "Status": "Pitched", "Email": "contact@vcfirm2.com", "Fund size": "$80M",  "Notes": "Pitched last week; awaiting partner meeting feedback."                },
+        { "Investor name": "VC firm 3", "Status": "Lost",    "Email": "contact@vcfirm3.com", "Fund size": "$200M", "Notes": "Passed — said timing wasn't right for their fund's focus areas."      },
       ],
     }),
   },

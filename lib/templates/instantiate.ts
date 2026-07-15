@@ -18,7 +18,7 @@ export type SnapshotBlock = {
 
 export type SchemaPropOption = { name: string; color: string };
 export type SchemaProp       = { name: string; type: string; options?: SchemaPropOption[] };
-export type SchemaView       = { name: string; type: string; isDefault?: boolean; groupBy?: string };
+export type SchemaView       = { name: string; type: string; isDefault?: boolean; groupBy?: string; ganttStart?: string; ganttEnd?: string };
 
 export type DatabaseSchema = {
   properties:   SchemaProp[];
@@ -139,7 +139,7 @@ export async function createPageFromSnapshot(
 // Property types supported by WorkFlik's database engine
 const SUPPORTED_PROP_TYPES = new Set([
   "text", "number", "select", "multi_select", "date",
-  "checkbox", "url", "email", "phone", "person",
+  "checkbox", "url", "email", "phone", "person", "created_by", "files",
 ]);
 
 // Forks a database-template snapshot (properties + views + sample rows) into
@@ -232,11 +232,13 @@ export async function createDatabaseFromSnapshot(
 
   for (let vi = 0; vi < schema.views.length; vi++) {
     const v     = schema.views[vi];
-    const vtype = (["table", "board", "calendar", "gallery"].includes(v.type)
-      ? v.type : "table") as "table" | "board" | "calendar" | "gallery";
+    const vtype = (["table", "board", "calendar", "gallery", "gantt"].includes(v.type)
+      ? v.type : "table") as "table" | "board" | "calendar" | "gallery" | "gantt";
 
-    let groupByPropertyId:  string | null = null;
-    let calendarPropertyId: string | null = null;
+    let groupByPropertyId:    string | null = null;
+    let calendarPropertyId:   string | null = null;
+    let ganttStartPropertyId: string | null = null;
+    let ganttEndPropertyId:   string | null = null;
 
     if (vtype === "board" && v.groupBy) {
       groupByPropertyId = propLookup.get(v.groupBy)?.id ?? null;
@@ -244,6 +246,16 @@ export async function createDatabaseFromSnapshot(
     if (vtype === "calendar") {
       const dateProp = schema.properties.find((p) => p.type === "date");
       if (dateProp) calendarPropertyId = propLookup.get(dateProp.name)?.id ?? null;
+    }
+    if (vtype === "gantt") {
+      // Explicit template hints take priority; otherwise fall back to the
+      // first two Date properties declared, mirroring calendar's
+      // "first date property found" heuristic.
+      const dateProps = schema.properties.filter((p) => p.type === "date");
+      const startName = v.ganttStart ?? dateProps[0]?.name;
+      const endName   = v.ganttEnd   ?? dateProps.find((p) => p.name !== startName)?.name;
+      if (startName) ganttStartPropertyId = propLookup.get(startName)?.id ?? null;
+      if (endName)   ganttEndPropertyId   = propLookup.get(endName)?.id ?? null;
     }
 
     const [view] = await tx.insert(databaseViews).values({
@@ -253,6 +265,8 @@ export async function createDatabaseFromSnapshot(
       orderIndex:         vi,
       groupByPropertyId,
       calendarPropertyId,
+      ganttStartPropertyId,
+      ganttEndPropertyId,
     }).returning();
 
     if (v.isDefault || vi === 0) defaultViewId = defaultViewId ?? view.id;

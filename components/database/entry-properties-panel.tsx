@@ -6,13 +6,14 @@ import { createPortal } from "react-dom";
 import { Settings2, MessageSquare } from "lucide-react";
 import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
-import { CellEditorPopover } from "@/components/database/cells/cell-editor";
+import { CellEditorPopover, FilesPropertyValue } from "@/components/database/cells/cell-editor";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
+import { PageIcon } from "@/components/pages/page-icon";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
-import type { DbProperty, DbPropertyValue } from "@/components/database/types";
+import type { DbProperty, DbPropertyValue, FileItem } from "@/components/database/types";
 
 // Plain-text snapshot of a property's current value, frozen onto a comment at
 // creation time (mirrors the same helper in template-table-view.tsx) so a
@@ -47,6 +48,10 @@ function getPropertyValueText(prop: DbProperty, raw: unknown): string {
       const opts = config.options ?? [];
       return ids.map((id) => opts.find((o) => o.id === id)?.name ?? "").filter(Boolean).join(", ");
     }
+    case "files": {
+      const files = (v.files as { name?: string }[] | undefined) ?? [];
+      return files.map((f) => f.name).filter(Boolean).join(", ");
+    }
     default: return "";
   }
 }
@@ -61,7 +66,7 @@ interface EntryPropertiesPanelProps {
 }
 
 const INLINE_TYPES = new Set(["text", "number", "url", "email", "phone"]);
-const POPOVER_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
+const POPOVER_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation", "files"]);
 
 export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, workspaceId, workspaceSlug, isEditor }: EntryPropertiesPanelProps) {
   const router = useRouter();
@@ -236,7 +241,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
               {/* Label column */}
               <div className="flex w-[180px] shrink-0 items-center gap-2 pt-1">
                 <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border/60 bg-background text-muted-foreground">
-                  <TypeIcon size={12} />
+                  {prop.config?.icon ? <PageIcon icon={prop.config.icon} size={12} /> : <TypeIcon size={12} />}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                   {prop.name}
@@ -312,7 +317,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                       }}
                       className="flex min-h-[22px] w-full items-center text-left disabled:cursor-default"
                     >
-                      {val && <CellDisplay property={prop} value={val} />}
+                      {val && <CellDisplay property={prop} value={val} workspaceId={workspaceId} />}
                       {!val && (
                         <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
                           Empty
@@ -322,8 +327,23 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                   )
                 )}
 
-                {/* Popover types: select / multi_select / date / person / relation */}
-                {POPOVER_TYPES.has(prop.type) && (
+                {/* Files — a stack of thumbnail cards + a trailing "+ Add a
+                    file or image" row once at least one file exists, instead
+                    of the generic single-line button below. */}
+                {prop.type === "files" && !!(val as { files?: FileItem[] } | null)?.files?.length && (
+                  <FilesPropertyValue
+                    files={(val as { files?: FileItem[] }).files ?? []}
+                    isEditor={isEditor}
+                    onChange={(v) => saveValue(prop.id, v)}
+                    onAddClick={(e) => {
+                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setPopover({ propId: prop.id, rect });
+                    }}
+                  />
+                )}
+
+                {/* Popover types: select / multi_select / date / person / relation / empty files */}
+                {POPOVER_TYPES.has(prop.type) && !(prop.type === "files" && !!(val as { files?: FileItem[] } | null)?.files?.length) && (
                   <button
                     type="button"
                     disabled={!isEditor}
@@ -333,13 +353,27 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     }}
                     className="flex min-h-[22px] w-full items-center gap-1 text-left disabled:cursor-default"
                   >
-                    {val && <CellDisplay property={prop} value={val} />}
+                    {val && <CellDisplay property={prop} value={val} workspaceId={workspaceId} />}
                     {!val && (
                       <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
                         Empty
                       </span>
                     )}
                   </button>
+                )}
+
+                {/* Computed, read-only — same reasoning as Rollup/Formula:
+                    no click-to-edit popover, since there's nothing to pick. */}
+                {prop.type === "created_by" && (
+                  <div className="flex min-h-[22px] w-full items-center gap-1">
+                    {val ? (
+                      <CellDisplay property={prop} value={val} workspaceId={workspaceId} />
+                    ) : (
+                      <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
+                        Empty
+                      </span>
+                    )}
+                  </div>
                 )}
 
               </div>

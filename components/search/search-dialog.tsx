@@ -141,7 +141,11 @@ function FilterChip<T extends string>({
    {open && rect && typeof document !== "undefined" && createPortal(
     <div
      ref={menuRef}
-     className="fixed z-50 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1"
+     // z-[820] — above the search dialog panel (z-[810]) and its backdrop
+     // (z-[800]); the shadcn default z-50 rendered this portal-mounted menu
+     // invisible/unclickable behind the dialog's opaque surface instead of
+     // on top of it (see components/ui/select.tsx for the same fix).
+     className="fixed z-[820] min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1"
      style={{ top: getClampedTop(rect, 200, { gap: 4 }), left: getClampedLeft(rect, 160) }}
     >
      {options.map((opt) => (

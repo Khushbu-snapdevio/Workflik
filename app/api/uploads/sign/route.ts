@@ -13,7 +13,7 @@ import {
 } from "@/lib/storage";
 
 const signSchema = z.object({
-  kind:          z.enum(["page_cover", "page_icon", "block_media", "user_avatar", "workspace_icon"]),
+  kind:          z.enum(["page_cover", "page_icon", "block_media", "user_avatar", "workspace_icon", "database_file"]),
   mimeType:      z.string().min(1),
   fileSizeBytes: z.number().int().positive(),
   workspaceId:   z.string().uuid().optional(),

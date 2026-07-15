@@ -23,6 +23,7 @@ export async function registerHandlers(boss: PgBoss) {
     { handleNotifyStorageThreshold },
     { handleWorkspaceInviteSend },
     { handleGuestInviteSend },
+    { handleEntryReminderSend },
   ] = await Promise.all([
     import("@/lib/jobs/handlers/email-send"),
     import("@/lib/jobs/handlers/email-outbox-reap"),
@@ -42,6 +43,7 @@ export async function registerHandlers(boss: PgBoss) {
     import("@/lib/jobs/handlers/notify-storage-threshold"),
     import("@/lib/jobs/handlers/send-workspace-invite"),
     import("@/lib/jobs/handlers/send-guest-invite"),
+    import("@/lib/jobs/handlers/entry-reminder-send"),
   ]);
 
   await Promise.all([
@@ -63,6 +65,7 @@ export async function registerHandlers(boss: PgBoss) {
     boss.work(JOB_NAMES.NOTIFY_STORAGE_THRESHOLD,              { includeMetadata: true }, handleNotifyStorageThreshold),
     boss.work(JOB_NAMES.WORKSPACE_INVITE_SEND,                 { includeMetadata: true }, handleWorkspaceInviteSend),
     boss.work(JOB_NAMES.GUEST_INVITE_SEND,                     { includeMetadata: true }, handleGuestInviteSend),
+    boss.work(JOB_NAMES.ENTRY_REMINDER_SEND,                   { includeMetadata: true }, handleEntryReminderSend),
   ]);
 
   // Scheduled cron jobs
@@ -78,6 +81,7 @@ export async function registerHandlers(boss: PgBoss) {
   await boss.schedule(JOB_NAMES.NOTIFICATION_CLEANUP,               "0 5 * * *",     {}); // Daily 05:00 UTC
   await boss.schedule(JOB_NAMES.EXPIRE_INVITATIONS,                 "0 1 * * *",     {}); // Daily 01:00 UTC
   await boss.schedule(JOB_NAMES.NOTIFY_STORAGE_THRESHOLD,           "0 6 * * *",     {}); // Daily 06:00 UTC
+  await boss.schedule(JOB_NAMES.ENTRY_REMINDER_SEND,                "* * * * *",     {}); // Every minute
 
   // Seed built-in templates immediately on startup if none exist
   autoSeedTemplatesOnStartup().catch((err) =>

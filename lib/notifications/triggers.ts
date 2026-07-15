@@ -1,5 +1,5 @@
 import { and, eq, isNull, not } from "drizzle-orm";
-import { comments, notifications, pages } from "@/lib/db/schema";
+import { comments, notifications, pages, workspaceMembers } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
 import { extractMentionedUserIds, extractPlainText } from "@/lib/comments/mentions";
@@ -18,6 +18,7 @@ function snippet(content: Record<string, unknown>, max = 100): string {
 const CATEGORY_PREF_FIELD: Partial<Record<typeof notifications.$inferInsert["type"], string>> = {
   mention:          "notifyMentions",
   page_update:      "notifyPageUpdates",
+  page_created:     "notifyPageUpdates",
   workspace_invite: "notifyWorkspaceInvites",
   task_assigned:    "notifyTaskAssignments",
 };
@@ -331,6 +332,57 @@ export async function triggerPageUpdateNotification(
   });
 }
 
+// Broadcasts to every active workspace member, INCLUDING the creator
+// themselves (an intentional exception to the "never notify a user for
+// their own action" rule every other trigger in this file follows — the
+// user explicitly asked for a confirmation entry in their own Notifications
+// panel when they create a page). Still deliberately narrower than "every
+// page create": private pages aren't visible to anyone but their creator (a
+// notification linking to a page you can't open is worse than no
+// notification), and database entries are created far too often (every row
+// added to a tracker) to announce workspace-wide without becoming noise.
+export async function triggerPageCreatedNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId: string;
+    pageId:      string;
+    creatorId:   string;
+    pageTitle:   string;
+    isPrivate:   boolean;
+    kind:        string;
+  }
+): Promise<void> {
+  const { workspaceId, pageId, creatorId, isPrivate, kind } = params;
+  if (isPrivate || kind === "entry") return;
+
+  const members = await tx
+    .select({ userId: workspaceMembers.userId })
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        eq(workspaceMembers.status, "active"),
+        not(isNull(workspaceMembers.userId)),
+      )
+    );
+
+  for (const { userId } of members) {
+    if (!userId) continue;
+    // contentSnippet stays null — the page title is already shown via the
+    // pageId join (same reasoning as trash_warning above), so repeating it
+    // here just duplicated the same text in the notification card's UI.
+    await insertAndEnqueue(tx, {
+      workspaceId,
+      recipientId:    userId,
+      senderId:       creatorId,
+      type:           "page_created",
+      pageId,
+      sourceId:       pageId,
+      contentSnippet: null,
+    });
+  }
+}
+
 export async function triggerTaskAssignedNotification(
   tx: AnyTx,
   params: {
@@ -381,4 +433,26 @@ export async function triggerTrashWarningNotification(
       contentSnippet: null,
     });
   }
+}
+
+export async function triggerReminderNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId:  string;
+    pageId:       string;
+    recipientId:  string;
+    entryTitle:   string;
+    propertyName: string;
+  }
+): Promise<void> {
+  const { workspaceId, pageId, recipientId, entryTitle, propertyName } = params;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId,
+    senderId:       null,
+    type:           "reminder",
+    pageId,
+    sourceId:       pageId,
+    contentSnippet: `${propertyName}: ${entryTitle}`.slice(0, 100),
+  });
 }

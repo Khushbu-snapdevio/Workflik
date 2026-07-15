@@ -21,6 +21,7 @@ const OPERATORS: Record<string, { value: string; label: string }[]> = {
  phone:    [{ value: "contains", label: "contains" }, { value: "is_empty", label: "is empty" }],
  person:    [{ value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
  relation:   [{ value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
+ files:     [{ value: "is_empty", label: "is empty" }, { value: "is_not_empty", label: "is not empty" }],
 };
 
 const NO_VALUE_OPS = new Set(["is_empty", "is_not_empty", "is_checked", "is_not_checked"]);

@@ -27,6 +27,15 @@ export function AuthForm() {
   );
 }
 
+// better-auth's own request-validation errors (e.g. an invalid email format
+// caught by its Zod schema before the request even reaches our handler) come
+// back prefixed with the failing field path, like "[body.email] Invalid
+// email address" — strip that so users only ever see the human-readable part.
+function cleanAuthErrorMessage(message: string | null | undefined): string | undefined {
+  if (!message) return undefined;
+  return message.replace(/^\[[^\]]+\]\s*/, "");
+}
+
 function GoogleIcon() {
   return (
     <svg className="size-[18px] shrink-0" viewBox="0 0 24 24">
@@ -145,7 +154,7 @@ function AuthFormInner() {
 
     setSubmitting(false);
     if (result.error) {
-      setError(result.error.message ?? "Failed to send magic link.");
+      setError(cleanAuthErrorMessage(result.error.message) ?? "Failed to send magic link.");
       return;
     }
     setSent(true);
@@ -182,7 +191,7 @@ function AuthFormInner() {
 
     setSubmitting(false);
     if (result.error) {
-      setError(result.error.message ?? "Something went wrong. Please try again.");
+      setError(cleanAuthErrorMessage(result.error.message) ?? "Something went wrong. Please try again.");
       return;
     }
     router.replace(callbackURL);
@@ -198,7 +207,7 @@ function AuthFormInner() {
         disableRedirect: true,
       });
       if (result?.error) {
-        setError(result.error.message ?? "Google sign-in failed.");
+        setError(cleanAuthErrorMessage(result.error.message) ?? "Google sign-in failed.");
         return;
       }
       const rawUrl = (result?.data as { url?: string } | null)?.url;

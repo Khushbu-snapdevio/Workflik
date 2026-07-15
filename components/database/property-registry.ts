@@ -3,13 +3,13 @@
 
 import {
   Type, Hash, CircleDashed, Tag, CircleDot, Calendar, CheckSquare, Link,
-  Mail, Phone, User, ArrowLeftRight, Sigma, SquareFunction, type LucideIcon,
+  Mail, Phone, User, ArrowLeftRight, Sigma, SquareFunction, Paperclip, type LucideIcon,
 } from "lucide-react";
-import type { SelectOption, StatusGroupKey } from "@/components/database/types";
+import type { DateValue, SelectOption, StatusGroupKey } from "@/components/database/types";
 
 export type PropertyType =
   | "text" | "number" | "select" | "multi_select" | "status" | "date"
-  | "checkbox" | "url" | "email" | "phone" | "person" | "relation" | "rollup" | "formula";
+  | "checkbox" | "url" | "email" | "phone" | "person" | "relation" | "rollup" | "formula" | "created_by" | "files";
 
 export interface PropertyDefinition {
   type:        PropertyType;
@@ -136,6 +136,25 @@ export const PROPERTY_REGISTRY: Record<PropertyType, PropertyDefinition> = {
     sortable:   false,
     filterable: false,
   },
+  created_by: {
+    type:       "created_by",
+    label:      "Created by",
+    icon:       "👤",
+    // Computed server-side from the entry's own createdBy column on every
+    // read (see app/api/databases/[id]/entries/route.ts) — never written
+    // directly, same reasoning as Rollup/Formula.
+    emptyValue: null,
+    sortable:   false,
+    filterable: false,
+  },
+  files: {
+    type:       "files",
+    label:      "Files & media",
+    icon:       "📎",
+    emptyValue: { files: [] },
+    sortable:   false,
+    filterable: true,
+  },
 };
 
 export const PROPERTY_TYPES = Object.values(PROPERTY_REGISTRY);
@@ -159,6 +178,8 @@ export const PROPERTY_TYPE_ICON: Record<PropertyType, LucideIcon> = {
   relation:     ArrowLeftRight,
   rollup:       Sigma,
   formula:      SquareFunction,
+  created_by:   User,
+  files:        Paperclip,
 };
 
 // ── Select / Multi-select option colors ──────────────────────────────────────
@@ -240,4 +261,78 @@ export function formatDate(iso: string | null | undefined): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+const MONTH_LONG = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const MONTH_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+// Every branch is built manually (no toLocaleDateString) — relying on the
+// runtime's default locale/ICU data made "mdy" render unpadded ("7/15/2026")
+// while "dmy"/"ymd" happened to come out zero-padded from their locale's own
+// defaults, an inconsistency that could also differ between the server-
+// rendered and client-hydrated pass. Hardcoding the format removes both
+// problems and guarantees "07/15/2026"-style output every time.
+function formatSingleDate(dateStr: string, format: DateValue["dateFormat"] = "mdy"): string {
+  const d = new Date(`${dateStr.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "";
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  switch (format) {
+    case "full":  return `${MONTH_LONG[d.getMonth()]} ${d.getDate()}, ${yyyy}`;
+    case "short": return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+    case "dmy":   return `${dd}/${mm}/${yyyy}`;
+    case "ymd":   return `${yyyy}/${mm}/${dd}`;
+    case "relative": {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const days = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+      if (days === 0) return "Today";
+      if (days === 1) return "Tomorrow";
+      if (days === -1) return "Yesterday";
+      // Matches this app's own relative-timestamp convention (Hard Rule 36):
+      // relative wording for < 7 days out, absolute date beyond that — so a
+      // date a year away doesn't render as an absurd "510 days ago".
+      if (days > 1 && days < 7) return `In ${days} days`;
+      if (days < -1 && days > -7) return `${-days} days ago`;
+      return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}, ${yyyy}`;
+    }
+    case "mdy":
+    default:      return `${mm}/${dd}/${yyyy}`;
+  }
+}
+
+function formatSingleTime(time: string, format: DateValue["timeFormat"] = "12h"): string {
+  if (format === "hidden") return "";
+  const [h, m] = time.split(":").map(Number);
+  if (format === "24h") return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+// Single source of truth for rendering a `date`-type property's value —
+// range, chosen format, and optional time, used by every read-only display
+// site (cell-display, table/board/gallery views) so they all agree with what
+// the rich date editor lets you configure.
+export function formatDateValue(value: unknown): string {
+  const v = value as DateValue | null | undefined;
+  if (!v?.date) return "";
+
+  const startDate = formatSingleDate(v.date, v.dateFormat);
+  const startTime = v.includeTime && v.time ? formatSingleTime(v.time, v.timeFormat) : "";
+  const start = startTime ? `${startDate} ${startTime}` : startDate;
+
+  if (!v.endDate || v.endDate === v.date) return start;
+
+  const endDate = formatSingleDate(v.endDate, v.dateFormat);
+  const endTime = v.includeTime && v.endTime ? formatSingleTime(v.endTime, v.timeFormat) : "";
+  const end = endTime ? `${endDate} ${endTime}` : endDate;
+
+  return `${start} → ${end}`;
 }

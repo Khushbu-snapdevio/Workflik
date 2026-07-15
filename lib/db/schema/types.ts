@@ -70,6 +70,7 @@ export const viewType = pgEnum("view_type", [
   "board",
   "calendar",
   "gallery",
+  "gantt",
 ]);
 export const galleryCardSize = pgEnum("gallery_card_size", [
   "small",
@@ -97,6 +98,8 @@ export const propertyType = pgEnum("property_type", [
   "relation",
   "rollup",
   "formula",
+  "created_by",
+  "files",
 ]);
 
 export const accessLevel = pgEnum("access_level", [
@@ -128,6 +131,8 @@ export const notificationType = pgEnum("notification_type", [
   "trash_warning",
   "page_update",
   "task_assigned",
+  "reminder",
+  "page_created",
 ]);
 export const emailFrequency = pgEnum("email_frequency", [
   "realtime",
@@ -167,4 +172,5 @@ export const fileUploadKind = pgEnum("file_upload_kind", [
   "block_media",
   "user_avatar",
   "workspace_icon",
+  "database_file",
 ]);

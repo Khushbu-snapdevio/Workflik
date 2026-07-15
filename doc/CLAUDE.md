@@ -349,6 +349,7 @@ A user receives notifications for:
 - Receiving a reply on a comment thread they are part of
 - Being granted access to a page
 - A page they own approaching its 30-day Trash expiry
+- Another workspace member creating a new page or database (excludes private pages — not visible to others — and database entries, which are created too often to announce workspace-wide)
 
 Actions in the notification center:
 - Filter by type: All / Mentions / Comments / Updates

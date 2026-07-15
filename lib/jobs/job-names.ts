@@ -17,6 +17,7 @@ export const JOB_NAMES = {
   EXPIRE_INVITATIONS:             "workspace.expire-invitations",
   NOTIFY_STORAGE_THRESHOLD:       "storage.notify-threshold",
   GUEST_INVITE_SEND:              "guest.invite-send",
+  ENTRY_REMINDER_SEND:            "entry.reminder-send",
 } as const;
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES];
@@ -77,4 +78,5 @@ export type JobPayloads = {
   [JOB_NAMES.EXPIRE_INVITATIONS]:                   Record<string, never>;
   [JOB_NAMES.NOTIFY_STORAGE_THRESHOLD]:             Record<string, never>;
   [JOB_NAMES.GUEST_INVITE_SEND]:                    GuestInviteSendPayload;
+  [JOB_NAMES.ENTRY_REMINDER_SEND]:                  Record<string, never>;
 };

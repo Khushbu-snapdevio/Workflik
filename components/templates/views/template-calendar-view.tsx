@@ -238,6 +238,7 @@ function DraggableChip({
         compact
         resolvedDisplayAs={resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined)}
         resolvedWrapContent={resolveWrapContent(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined)}
+        workspaceId={workspaceId}
         onToggleCheckbox={() => {
          const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
          const next = prop.type === "multi_select" ? nextCheckboxMultiSelectValue(prop, raw) : nextCheckboxSelectValue(prop, raw);

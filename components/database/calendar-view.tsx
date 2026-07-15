@@ -22,6 +22,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntryContextMenu } from "@/components/database/entry-context-menu";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellDisplay } from "@/components/database/cells/cell-display";
+import { PageIcon } from "@/components/pages/page-icon";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 
 const DAYS   = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -103,7 +104,7 @@ function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps)
       onClick={onClick}
     >
       {entry.icon ? (
-        <span className="shrink-0 text-xs leading-none">{entry.icon}</span>
+        <PageIcon icon={entry.icon} size={13} className="shrink-0" />
       ) : (
         <FileText size={12} className="shrink-0 text-muted-foreground/60" />
       )}
@@ -167,7 +168,7 @@ function DraggableChip({
   const inner = (
     <>
       {entry.icon ? (
-        <span className="shrink-0 text-xs leading-none">{entry.icon}</span>
+        <PageIcon icon={entry.icon} size={13} className="shrink-0" />
       ) : (
         <FileText size={12} className="shrink-0 text-muted-foreground/60" />
       )}
@@ -241,6 +242,7 @@ function DraggableChip({
                   compact
                   resolvedDisplayAs={resolveDisplayAs(prop, activeView)}
                   resolvedWrapContent={resolveWrapContent(prop, activeView)}
+                  workspaceId={workspaceId}
                   onToggleCheckbox={() => {
                     const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
                     const next = prop.type === "multi_select" ? nextCheckboxMultiSelectValue(prop, raw) : nextCheckboxSelectValue(prop, raw);
@@ -401,9 +403,18 @@ export function CalendarView({
     const entryId = String(active.id);
     const entry = entries.find((e) => e.id === entryId);
     if (!entry) return;
-    const val = valueMap.get(entryId)?.get(calPropId) as { date?: string | null } | null;
+    const val = valueMap.get(entryId)?.get(calPropId) as { date?: string | null; endDate?: string | null } | null;
     if (newDate === val?.date) return;
-    onUpdateValue(entryId, calPropId, { date: newDate });
+    // Preserve every other field (time/timezone/format/reminder) and, for a
+    // ranged event, shift endDate by the same day delta so its length
+    // survives the move instead of collapsing to a single day.
+    let endDate = val?.endDate;
+    if (val?.date && val?.endDate) {
+      const deltaMs = new Date(`${newDate}T00:00:00`).getTime() - new Date(`${val.date}T00:00:00`).getTime();
+      const shifted = new Date(new Date(`${val.endDate}T00:00:00`).getTime() + deltaMs);
+      endDate = `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}-${String(shifted.getDate()).padStart(2, "0")}`;
+    }
+    onUpdateValue(entryId, calPropId, { ...val, date: newDate, endDate });
   }
 
   function openMorePopup(key: string, dayEntries: DbEntry[], e: React.MouseEvent) {

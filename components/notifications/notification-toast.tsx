@@ -21,6 +21,10 @@ const TYPE_LABEL: Record<string, string> = {
   workspace_invite_accepted: "accepted your workspace invite",
   guest_accepted:   "accepted your invitation",
   trash_warning:    "page will be deleted soon",
+  page_update:      "updated a page",
+  page_created:     "created a new page",
+  task_assigned:    "assigned you a task",
+  reminder:         "has a reminder due",
 };
 
 export function NotificationToast({ notification, onDismiss, onView }: Props) {

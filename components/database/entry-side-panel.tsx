@@ -5,25 +5,20 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
  X, ExternalLink as ArrowSquareOut, Trash2 as Trash, ArrowLeft,
- Type as TextT, Hash, CircleDashed, CircleDot, Tag, Calendar as CalendarBlank,
- CheckSquare, Link as LinkIcon, Mail as Envelope, Phone, User, ArrowLeftRight as ArrowsLeftRight,
+ Type as TextT,
  FileText, Pencil as PencilSimple,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CellDisplay } from "@/components/database/cells/cell-display";
-import { CellEditorPopover } from "@/components/database/cells/cell-editor";
+import { CellEditorPopover, FilesPropertyValue } from "@/components/database/cells/cell-editor";
 import { PageEditor } from "@/components/editor/editor";
+import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
+import { PageIcon } from "@/components/pages/page-icon";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
-import type { DbEntry, DbProperty } from "@/components/database/types";
+import type { DbEntry, DbProperty, FileItem } from "@/components/database/types";
 
-const PROP_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
- text: TextT, number: Hash, select: CircleDashed, status: CircleDot, multi_select: Tag,
- date: CalendarBlank, checkbox: CheckSquare, url: LinkIcon,
- email: Envelope, phone: Phone, person: User, relation: ArrowsLeftRight,
-};
-
-const POPUP_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
+const POPUP_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation", "files"]);
 const TEXT_TYPES = new Set(["text", "number", "url", "email", "phone"]);
 
 interface EntrySidePanelProps {
@@ -140,8 +135,8 @@ export function EntrySidePanel({
       {/* Icon */}
       <div className="mb-4">
        {entry.icon ? (
-        <span className="inline-block rounded-[var(--radius-lg)] bg-card p-2 text-4xl leading-none">
-         {entry.icon}
+        <span className="inline-block rounded-[var(--radius-lg)] bg-card p-2 leading-none">
+         <PageIcon icon={entry.icon} size={36} />
         </span>
        ) : (
         <div className="inline-flex size-12 items-center justify-center rounded-[var(--radius-lg)] border border-border/40 bg-card">
@@ -194,10 +189,11 @@ export function EntrySidePanel({
        {/* Property rows */}
        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/50 bg-card dark:bg-card/4">
         {visibleProps.map((prop, idx) => {
-         const Icon      = PROP_ICONS[prop.type] ?? TextT;
+         const Icon      = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
          const raw       = getVal(prop.id);
          const isInlineEditing = inlineEdit?.propId === prop.id;
          const hasValue    = raw != null;
+         const hasFiles    = prop.type === "files" && !!(raw as { files?: FileItem[] } | null)?.files?.length;
          const isLast     = idx === visibleProps.length - 1;
 
          return (
@@ -211,7 +207,7 @@ export function EntrySidePanel({
            {/* Property label */}
            <div className="flex w-[140px] shrink-0 items-center gap-2 px-3.5 py-2.5 text-xs font-medium text-muted-foreground">
             <div className="flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-muted-foreground/60">
-             <Icon size={11} />
+             {prop.config?.icon ? <PageIcon icon={prop.config.icon} size={11} /> : <Icon size={11} />}
             </div>
             <span className="truncate">{prop.name}</span>
            </div>
@@ -222,11 +218,13 @@ export function EntrySidePanel({
            {/* Value */}
            <div
             className={[
-             "flex min-h-[36px] flex-1 cursor-pointer items-center px-3.5 py-2.5 text-sm transition-colors duration-150",
-             isEditor ? "hover:bg-accent" : "cursor-default",
+             "flex min-h-[36px] flex-1 items-center px-3.5 py-2.5 text-sm transition-colors duration-150",
+             hasFiles ? "" : "cursor-pointer",
+             isEditor && !hasFiles ? "hover:bg-accent" : "",
+             !isEditor ? "cursor-default" : "",
              isInlineEditing ? "bg-accent border-l-2 border-primary/40" : "",
             ].join(" ")}
-            onClick={(e) => handleCellClick(prop, e)}
+            onClick={(e) => { if (hasFiles) return; handleCellClick(prop, e); }}
            >
             {isInlineEditing ? (
              <input
@@ -241,8 +239,18 @@ export function EntrySidePanel({
               }}
               className="w-full bg-transparent text-sm text-foreground focus:outline-none"
              />
+            ) : hasFiles ? (
+             <FilesPropertyValue
+              files={(raw as { files?: FileItem[] }).files ?? []}
+              isEditor={isEditor}
+              onChange={(v) => onUpdateValue(entry.id, prop.id, v)}
+              onAddClick={(e) => {
+               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+               setEditPop({ propId: prop.id, rect });
+              }}
+             />
             ) : hasValue ? (
-             <CellDisplay property={prop} value={raw} compact />
+             <CellDisplay property={prop} value={raw} compact workspaceId={workspaceId} />
             ) : (
              <span className="text-xs text-muted-foreground/60 opacity-0 transition-opacity group-hover/prop:opacity-100">
               {isEditor ? "Click to add" : "—"}

@@ -31,6 +31,8 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 import { NewPageButton } from "@/components/workspace/new-page-button";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { usePageTreeStream } from "@/lib/pages/use-page-tree-stream";
+import { getInitials } from "@/lib/utils";
 
 type PageItem = {
  id: string;
@@ -57,6 +59,12 @@ type Props = {
  initialUserImage: string | null;
  isAdmin?: boolean;
  initialPages: PageItem[];
+ // Database entries the current user created and marked private — kept
+ // separate from `initialPages` (which excludes all entries) since only the
+ // Private section shows them, not the general tree/Favorites/Recently
+ // Visited. See private-section.tsx for how the two lists are merged for
+ // display without mixing their update paths.
+ initialPrivateEntries: PageItem[];
  initialFavorites: FavoriteItem[];
  initialRecentlyVisited: { id: string; pageId: string; visitedAt: string }[];
  initialSidebarWidth: number;
@@ -74,6 +82,7 @@ export function Sidebar({
  initialUserImage,
  isAdmin = false,
  initialPages,
+ initialPrivateEntries,
  initialFavorites,
  initialRecentlyVisited,
  initialSidebarWidth,
@@ -86,6 +95,7 @@ export function Sidebar({
  const [collapsed, setCollapsed] = useState(initialSidebarCollapsed);
  const [filter] = useState("");
  const [pages, setPages] = useState<PageItem[]>(initialPages);
+ const [privateEntries, setPrivateEntries] = useState<PageItem[]>(initialPrivateEntries);
  const [pagesLoading, setPagesLoading] = useState(false);
  // Lets fetchPages check "do we already have pages?" without depending on
  // `pages` (which would redefine the callback, and the pages:refresh
@@ -126,6 +136,11 @@ export function Sidebar({
   window.addEventListener("pages:refresh", fetchPages);
   return () => window.removeEventListener("pages:refresh", fetchPages);
  }, [fetchPages]);
+
+ // Same-tab mutations refetch via the "pages:refresh" listener above; this
+ // catches everyone else's — another user (or another tab) creating,
+ // renaming, moving, or deleting a page in this workspace.
+ usePageTreeStream({ workspaceId, onChange: fetchPages });
 
  useEffect(() => {
   function h(e: Event) {
@@ -461,40 +476,46 @@ export function Sidebar({
 
     <div className="mx-2 border-t border-sidebar-border" />
 
-    {/* Favorites */}
-    <FavoritesSection
-     favorites={favorites}
-     onRemove={(pageId) => {
-      setFavorites((prev) => prev.filter((f) => f.pageId !== pageId));
-      fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" }).catch(() => {});
-     }}
-     onReorder={(ids) => {
-      fetch("/api/user/favorites/reorder", {
-       method: "PATCH",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({ ids }),
-      }).catch(() => {});
-     }}
-     pagesMap={pagesMap}
-     workspaceSlug={workspaceSlug}
-    />
+    {/* Favorites / Recently Visited / Private — one visual group bounded by
+        the dividers above and below, so it gets its own top/bottom breathing
+        room here rather than each section owning it individually. */}
+    <div className="py-2">
+     <FavoritesSection
+      favorites={favorites}
+      onRemove={(pageId) => {
+       setFavorites((prev) => prev.filter((f) => f.pageId !== pageId));
+       fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" }).catch(() => {});
+      }}
+      onReorder={(ids) => {
+       fetch("/api/user/favorites/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+       }).catch(() => {});
+      }}
+      pagesMap={pagesMap}
+      workspaceSlug={workspaceSlug}
+     />
 
-    {/* Recently Visited */}
-    <RecentlyVisitedSection
-     items={recentlyVisited}
-     pagesMap={pagesMap}
-     workspaceSlug={workspaceSlug}
-    />
+     {/* Recently Visited */}
+     <RecentlyVisitedSection
+      items={recentlyVisited}
+      pagesMap={pagesMap}
+      workspaceSlug={workspaceSlug}
+     />
 
-    {/* Private */}
-    <PrivateSection
-     pages={pages}
-     workspaceId={workspaceId}
-     workspaceSlug={workspaceSlug}
-     favoritePageIds={favoritePageIds}
-     onToggleFavorite={handleToggleFavorite}
-     onPagesChange={setPages}
-    />
+     {/* Private */}
+     <PrivateSection
+      pages={pages}
+      entries={privateEntries}
+      workspaceId={workspaceId}
+      workspaceSlug={workspaceSlug}
+      favoritePageIds={favoritePageIds}
+      onToggleFavorite={handleToggleFavorite}
+      onPagesChange={setPages}
+      onEntriesChange={setPrivateEntries}
+     />
+    </div>
 
     <div className="mx-2 border-t border-sidebar-border" />
 
@@ -568,7 +589,7 @@ export function Sidebar({
        <div className="flex items-center gap-3">
         <div className="relative shrink-0">
          <UserAvatar image={userImage} name={displayName} className="size-10 text-sm" />
-         <span className="absolute bottom-0 right-0 size-2.5 translate-x-1/3 translate-y-1/3 rounded-full border-2 border-popover bg-success" />
+         <span className="absolute bottom-0 right-0 z-10 size-2.5 rounded-full bg-success ring-2 ring-popover" />
         </div>
         <div className="min-w-0 flex-1">
          <p className="truncate text-sm font-semibold leading-tight text-foreground">
@@ -754,12 +775,6 @@ function formatEmailAsName(email: string): string {
  return email.split("@")[0].split(".").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-function initialsFromName(name: string): string {
- const words = name.trim().split(/\s+/).filter(Boolean);
- if (words.length === 0) return "";
- return words.length === 1 ? words[0][0].toUpperCase() : (words[0][0] + words[words.length - 1][0]).toUpperCase();
-}
-
 function UserAvatar({
  image,
  name,
@@ -784,7 +799,7 @@ function UserAvatar({
      onError={() => setFailed(true)}
     />
    ) : (
-    initialsFromName(name)
+    getInitials(name)
    )}
   </div>
  );

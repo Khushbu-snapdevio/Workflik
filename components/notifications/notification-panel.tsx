@@ -113,8 +113,10 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   }
 
   function handleClick(notification: NotificationItem) {
-    if (notification.pageShortId) {
-      closePanel();
+    closePanel();
+    if (notification.type === "trash_warning") {
+      router.push(`/app/${workspaceSlug}/trash`);
+    } else if (notification.pageShortId) {
       router.push(`/app/${workspaceSlug}/${notification.pageShortId}`);
     }
   }

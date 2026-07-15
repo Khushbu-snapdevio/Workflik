@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff as EyeSlash,
   Filter as Funnel,
+  GanttChartSquare,
   Kanban,
   type LucideIcon,
   Search as MagnifyingGlass,
@@ -31,6 +32,7 @@ import {
   PROPERTY_REGISTRY,
   PROPERTY_TYPE_ICON,
 } from "@/components/database/property-registry";
+import { PageIcon } from "@/components/pages/page-icon";
 import { isGroupableType } from "@/components/database/grouping";
 import { RelationDatabasePicker } from "@/components/database/relation-database-picker";
 import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
@@ -52,6 +54,7 @@ const VIEW_ICONS: Record<string, LucideIcon> = {
   board: Kanban,
   calendar: CalendarBlank,
   gallery: SquaresFour,
+  gantt: GanttChartSquare,
 };
 const VIEW_TYPES = ["table", "board", "calendar", "gallery"] as const;
 const VIEW_LABELS: Record<string, string> = {
@@ -59,6 +62,7 @@ const VIEW_LABELS: Record<string, string> = {
   board: "Board",
   calendar: "Calendar",
   gallery: "Gallery",
+  gantt: "Gantt",
 };
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -136,6 +140,7 @@ export function DatabaseToolbar({
   const [cardsRect, setCardsRect] = useState<DOMRect | null>(null);
   const [groupRect, setGroupRect] = useState<DOMRect | null>(null);
   const [dateRect, setDateRect] = useState<DOMRect | null>(null);
+  const [ganttPropRect, setGanttPropRect] = useState<{ field: "start" | "end"; rect: DOMRect } | null>(null);
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const addViewDropRef = useRef<HTMLDivElement>(null);
   const contextDropRef = useRef<HTMLDivElement>(null);
@@ -143,6 +148,7 @@ export function DatabaseToolbar({
   const cardsDropRef = useRef<HTMLDivElement>(null);
   const groupDropRef = useRef<HTMLDivElement>(null);
   const dateDropRef = useRef<HTMLDivElement>(null);
+  const ganttPropDropRef = useRef<HTMLDivElement>(null);
 
   const filterCount = ((activeView?.filters as FilterRule[] | undefined) ?? [])
     .length;
@@ -158,7 +164,8 @@ export function DatabaseToolbar({
       !!propsRect ||
       !!cardsRect ||
       !!groupRect ||
-      !!dateRect,
+      !!dateRect ||
+      !!ganttPropRect,
     (target) =>
       !!addViewDropRef.current?.contains(target) ||
       !!contextDropRef.current?.contains(target) ||
@@ -166,6 +173,7 @@ export function DatabaseToolbar({
       !!cardsDropRef.current?.contains(target) ||
       !!groupDropRef.current?.contains(target) ||
       !!dateDropRef.current?.contains(target) ||
+      !!ganttPropDropRef.current?.contains(target) ||
       !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')
   );
 
@@ -177,6 +185,7 @@ export function DatabaseToolbar({
     setCardsRect(null);
     setGroupRect(null);
     setDateRect(null);
+    setGanttPropRect(null);
   }
 
   // Close portals on outside click
@@ -212,6 +221,9 @@ export function DatabaseToolbar({
       }
       if (dateDropRef.current && !dateDropRef.current.contains(t)) {
         setDateRect(null);
+      }
+      if (ganttPropDropRef.current && !ganttPropDropRef.current.contains(t)) {
+        setGanttPropRect(null);
       }
     }
     document.addEventListener("mousedown", h);
@@ -512,6 +524,48 @@ export function DatabaseToolbar({
                 size={10}
               />
             </button>
+          </div>
+        )}
+
+        {/* ── Gantt start/end date properties ── */}
+        {activeView?.type === "gantt" && dateProps.length > 0 && (
+          <div className="flex shrink-0 items-center gap-1.5">
+            {(["start", "end"] as const).map((field) => {
+              const propId = field === "start" ? activeView.ganttStartPropertyId : activeView.ganttEndPropertyId;
+              return (
+                <div key={field} className="flex shrink-0 items-center gap-1.5">
+                  {!inline && (
+                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground/60 capitalize">
+                      {field}
+                    </span>
+                  )}
+                  <button
+                    className={[
+                      "flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-150",
+                      (ganttPropRect?.field === field) || propId
+                        ? "border-primary/30 bg-primary/8 text-primary"
+                        : "border-border bg-background text-foreground/70 hover:border-border hover:bg-accent",
+                    ].join(" ")}
+                    onClick={(e) => {
+                      if (ganttPropRect?.field === field) {
+                        setGanttPropRect(null);
+                        return;
+                      }
+                      closeAllLocalDropdowns();
+                      if (showFilterBar) onToggleFilterBar();
+                      if (showSortBar) onToggleSortBar();
+                      setGanttPropRect({ field, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    {propId ? (dateProps.find((p) => p.id === propId)?.name ?? field) : (
+                      <span className="text-muted-foreground">None</span>
+                    )}
+                    <ChevronDown className="shrink-0 text-muted-foreground" size={10} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -943,6 +997,7 @@ export function DatabaseToolbar({
               {groupableProps.map((p) => {
                 const isActive = activeView.groupByPropertyId === p.id;
                 const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON] ?? CircleDashed;
+                const propConfig = (p.config ?? {}) as { icon?: string };
                 return (
                   <button
                     className={[
@@ -958,10 +1013,14 @@ export function DatabaseToolbar({
                     }}
                   >
                     <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                      <TypeIcon
-                        className="text-muted-foreground/60"
-                        size={11}
-                      />
+                      {propConfig.icon ? (
+                        <PageIcon icon={propConfig.icon} size={11} />
+                      ) : (
+                        <TypeIcon
+                          className="text-muted-foreground/60"
+                          size={11}
+                        />
+                      )}
                     </span>
                     <span className="flex-1 truncate text-left">{p.name}</span>
                     {isActive && (
@@ -1067,6 +1126,80 @@ export function DatabaseToolbar({
           document.body
         )}
 
+      {/* ── Portal: Gantt start/end property dropdown ── */}
+      {ganttPropRect &&
+        activeView?.type === "gantt" &&
+        createPortal(
+          <div
+            className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+            ref={ganttPropDropRef}
+            style={{
+              position: "fixed",
+              top: getClampedTop(
+                ganttPropRect.rect,
+                Math.min(400, 46 + (dateProps.length + 1) * 36)
+              ),
+              left: getClampedLeft(ganttPropRect.rect, 192, { align: "start" }),
+              zIndex: 300,
+            }}
+          >
+            <p className="px-3 pb-1 pt-2.5 text-xs font-semibold capitalize tracking-wide text-muted-foreground">
+              {ganttPropRect.field} date property
+            </p>
+            <div className="p-1.5 pt-0.5">
+              <button
+                className={[
+                  "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
+                  (ganttPropRect.field === "start" ? activeView.ganttStartPropertyId : activeView.ganttEndPropertyId)
+                    ? "text-muted-foreground"
+                    : "font-semibold text-primary",
+                ].join(" ")}
+                onClick={() => {
+                  const patch = ganttPropRect.field === "start" ? { ganttStartPropertyId: null } : { ganttEndPropertyId: null };
+                  onUpdateView(activeView.id, patch);
+                  setGanttPropRect(null);
+                }}
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground">
+                  —
+                </span>
+                None
+              </button>
+              {dateProps.map((p) => {
+                const isActive = (ganttPropRect.field === "start" ? activeView.ganttStartPropertyId : activeView.ganttEndPropertyId) === p.id;
+                return (
+                  <button
+                    className={[
+                      "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
+                      isActive
+                        ? "font-semibold text-primary"
+                        : "text-foreground",
+                    ].join(" ")}
+                    key={p.id}
+                    onClick={() => {
+                      const patch = ganttPropRect.field === "start" ? { ganttStartPropertyId: p.id } : { ganttEndPropertyId: p.id };
+                      onUpdateView(activeView.id, patch);
+                      setGanttPropRect(null);
+                    }}
+                  >
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
+                      <CalendarBlank
+                        className="text-muted-foreground/60"
+                        size={11}
+                      />
+                    </span>
+                    <span className="flex-1 truncate text-left">{p.name}</span>
+                    {isActive && (
+                      <Check className="shrink-0 text-primary" size={12} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
+
       {tooltip &&
         typeof document !== "undefined" &&
         createPortal(
@@ -1143,6 +1276,7 @@ const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
               PROPERTY_TYPE_ICON[
                 prop.type as keyof typeof PROPERTY_TYPE_ICON
               ] ?? TextT;
+            const propConfig = (prop.config ?? {}) as { icon?: string };
             const on = selected.has(prop.id);
             return (
               <button
@@ -1160,7 +1294,7 @@ const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
                   {on ? <Eye size={12} /> : <EyeSlash size={12} />}
                 </span>
                 <span className="flex min-w-0 flex-1 items-center gap-2">
-                  <Icon size={12} />
+                  {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} /> : <Icon size={12} />}
                   <span
                     className={`truncate text-sm font-medium ${on ? "text-foreground" : "text-muted-foreground/70"}`}
                   >
@@ -1326,6 +1460,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
               PROPERTY_TYPE_ICON[
                 prop.type as keyof typeof PROPERTY_TYPE_ICON
               ] ?? TextT;
+            const propConfig = (prop.config ?? {}) as { icon?: string };
             const visible = !hiddenSet.has(prop.id);
             return (
               <button
@@ -1343,7 +1478,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
                   {visible ? <Eye size={12} /> : <EyeSlash size={12} />}
                 </span>
                 <span className="flex min-w-0 flex-1 items-center gap-2">
-                  <Icon size={12} />
+                  {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} /> : <Icon size={12} />}
                   <span
                     className={`truncate text-sm font-medium ${visible ? "text-foreground" : "text-muted-foreground/70"}`}
                   >

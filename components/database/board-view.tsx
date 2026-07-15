@@ -11,6 +11,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, horizontalLi
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, LayoutGrid, X, FileText, PanelLeft, PanelRight, Pencil, GripVertical, MoreHorizontal, MessageSquare, Pin } from "lucide-react";
 import { OPTION_COLORS, getOptionColor, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
+import { PageIcon } from "@/components/pages/page-icon";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
@@ -904,17 +905,24 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
      <div className="p-3.5">
       {/* Title row */}
       <div className="flex items-start gap-2">
-       {/* Grip icon — visual indicator only; the whole card is the drag handle */}
-       <GripVertical
-        size={13}
-        className="mt-0.5 shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-40 text-muted-foreground"
-       />
+       {/* h-5 matches the title's own line height (text-sm leading-snug) so
+           the grip and icon center against the title's first line instead of
+           sitting at a manually-guessed offset from the row's top. */}
+       <span className="flex h-5 shrink-0 items-center">
+        {/* Grip icon — visual indicator only; the whole card is the drag handle */}
+        <GripVertical
+         size={13}
+         className="shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-40 text-muted-foreground"
+        />
+       </span>
 
-       {entry.icon ? (
-        <span className="mt-0.5 shrink-0 text-base leading-none">{entry.icon}</span>
-       ) : (
-        <FileText size={12} className="mt-0.5 shrink-0 text-muted-foreground/60" />
-       )}
+       <span className="flex h-5 shrink-0 items-center">
+        {entry.icon ? (
+         <PageIcon icon={entry.icon} size={14} className="shrink-0" />
+        ) : (
+         <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+        )}
+       </span>
        {editing ? (
         <input
          autoFocus
@@ -930,14 +938,14 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           if (e.key === "Escape") { setEditTitle(entry.title ?? ""); setEditing(false); }
          }}
          placeholder="Untitled"
-         className="min-w-0 flex-1 bg-transparent text-sm font-semibold leading-snug text-foreground outline-none"
+         className="min-w-0 flex-1 overflow-hidden text-ellipsis bg-transparent text-sm font-semibold leading-snug text-foreground outline-none"
         />
        ) : (
         <button
          style={{ cursor: "pointer" }}
          onPointerDown={(e) => e.stopPropagation()}
          onClick={() => entryOpenMode === "side_panel" && onOpenEntry ? onOpenEntry(entry) : undefined}
-         className={`min-w-0 flex-1 text-left text-sm font-semibold leading-snug text-foreground transition-colors duration-150 ${
+         className={`min-w-0 flex-1 truncate text-left text-sm font-semibold leading-snug text-foreground transition-colors duration-150 ${
           entryOpenMode === "side_panel" && onOpenEntry ? "hover:text-muted-foreground" : "cursor-default"
          }`}
         >
@@ -945,9 +953,15 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
         </button>
        )}
 
-       {/* Action buttons — visible on hover */}
-       <div className="flex shrink-0 items-center gap-0.5 transition-opacity"
-        style={{ opacity: hovered || editing ? 1 : 0 }}>
+       {/* Action buttons — visible on hover. One shared bordered pill (not a
+           separate gray circle per icon) matching the same hover-action box
+           used by the comment thread's own action pill (comment-card.tsx) —
+           icons only highlight individually via hover:bg-accent, the box
+           itself carries the visible border/background. */}
+       <div
+        className="flex shrink-0 items-center gap-px rounded-[var(--radius-sm)] border border-border/60 bg-card px-0.5 py-0.5 transition-opacity"
+        style={{ opacity: hovered || editing ? 1 : 0 }}
+       >
         {isEditor && !editing ? (
          <button
           onPointerDown={(e) => e.stopPropagation()}
@@ -963,7 +977,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           onMouseEnter={(e) => setTooltip({ label: "Edit", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
           onMouseLeave={() => setTooltip(null)}
           style={{ cursor: "pointer" }}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
          >
           <Pencil size={12} />
          </button>
@@ -975,7 +989,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           onMouseEnter={(e) => setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
           onMouseLeave={() => setTooltip(null)}
           style={{ cursor: "pointer" }}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
          >
           <PanelRight size={12} />
          </Link>
@@ -991,7 +1005,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           onMouseEnter={(e) => setTooltip({ label: "More options", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
           onMouseLeave={() => setTooltip(null)}
           style={{ cursor: "pointer" }}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
          >
           <MoreHorizontal size={12} />
          </button>
@@ -1016,7 +1030,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            onClick={(e) => { e.stopPropagation(); setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
            className="min-w-0 shrink-0 rounded-[var(--radius-xs)] text-left hover:bg-accent"
           >
-           <CellDisplay property={prop} value={raw} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} />
+           <CellDisplay property={prop} value={raw} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} workspaceId={workspaceId} />
           </button>
          );
         })}
@@ -1043,6 +1057,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
        <div className="mt-2 flex flex-col gap-0.5 border-t border-border/50 pt-2">
         {emptyProps.map((prop) => {
          const TypeIcon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON];
+         const propConfig = (prop.config ?? {}) as { icon?: string };
          return (
           <button
            key={prop.id}
@@ -1054,7 +1069,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            }}
            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
           >
-           <TypeIcon size={12} className="shrink-0" />
+           {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" /> : <TypeIcon size={12} className="shrink-0" />}
            Add {prop.name}
           </button>
          );

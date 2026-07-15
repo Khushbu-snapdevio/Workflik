@@ -111,9 +111,6 @@ export default async function WorkspacePage({ params }: Props) {
   const firstName   = session.user.name?.split(" ")[0] ?? session.user.email.split("@")[0];
   const today       = new Date().toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" });
   const onboardingStepsDone = (pageCount >= 1 ? 1 : 0) + (memberCount > 1 ? 1 : 0);
-  // Show the ghost "New page" tile whenever there's room left in a 4-wide
-  // row, so a lone recent page is never presented as the only tile.
-  const showNewPageGhostTile = recentPages.length < 4;
 
   return (
     <div className="@container flex h-full flex-col overflow-hidden bg-background">
@@ -246,50 +243,28 @@ export default async function WorkspacePage({ params }: Props) {
                       View all <ChevronRight size={12} />
                     </Link>
                   </div>
-                  {/* Framed in a subtly tinted outer container (same pattern
-                      as "All Pages" below) so the row reads as one contained
-                      module even with just 1-2 tiles — floating unbordered
-                      tiles left the rest of the row looking like an
-                      unfinished gap. A proper grid (not flex-wrap with
-                      fixed-width tiles) keeps columns aligned instead of
-                      leaving an orphaned tile stranded on its own row, and
-                      each tile gets the same bordered-card + hover-lift
-                      treatment as "Quick actions" above for visual
-                      consistency across the dashboard. */}
-                  <div className="rounded-[var(--radius-lg)] border border-border bg-muted/20 p-3">
-                    <div className="grid grid-cols-2 gap-3 @[640px]:grid-cols-3 @[1024px]:grid-cols-5">
-                      {recentPages.map((page) => (
-                        <Link
-                          key={page.id}
-                          href={`/app/${slug}/${page.shortId}`}
-                          className="group flex flex-col gap-3 overflow-hidden rounded-[var(--radius-md)] border border-border/60 bg-card p-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
-                        >
-                          <div className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${chipColorFor(page.id)}`}>
-                            <PageIcon icon={page.icon} size="lg" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground leading-snug transition-colors duration-150 group-hover:text-primary">
-                              {page.title || "Untitled"}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground/50">{timeAgo(page.visitedAt)}</p>
-                          </div>
-                        </Link>
-                      ))}
-                      {/* Ghost "new page" tile — same grid cell as the real
-                          tiles, inside the same frame. */}
-                      {showNewPageGhostTile && (
-                        <NewPageButton
-                          workspaceId={ws.id}
-                          workspaceSlug={slug}
-                          className="group flex flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-border bg-card p-3 text-muted-foreground transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
-                        >
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted transition-colors duration-150 group-hover:bg-background">
-                            <Plus size={16} />
-                          </span>
-                          <span className="text-xs font-medium">New page</span>
-                        </NewPageButton>
-                      )}
-                    </div>
+                  {/* Framed in a subtly tinted outer container, full width to
+                      match the sections above/below. Fixed 5-column grid +
+                      capping at 5 tiles (below) means every cell is always
+                      filled — no wrapped, half-empty row inside the frame. */}
+                  <div className="grid grid-cols-5 gap-3 rounded-[var(--radius-lg)] border border-border bg-muted/20 p-3">
+                    {recentPages.slice(0, 5).map((page) => (
+                      <Link
+                        key={page.id}
+                        href={`/app/${slug}/${page.shortId}`}
+                        className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-[var(--radius-md)] border border-border/60 bg-card p-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
+                      >
+                        <div className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${chipColorFor(page.id)}`}>
+                          <PageIcon icon={page.icon} size="lg" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground leading-snug transition-colors duration-150 group-hover:text-primary">
+                            {page.title || "Untitled"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground/50">{timeAgo(page.visitedAt)}</p>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                 </section>
               )}

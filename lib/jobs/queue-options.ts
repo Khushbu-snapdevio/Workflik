@@ -107,6 +107,11 @@ export const QUEUE_OPTIONS: Record<
     retryLimit: 3,
     retryDelay: 60,
   },
+  [JOB_NAMES.ENTRY_REMINDER_SEND]: {
+    expireInSeconds: 60,
+    policy: "exclusive",
+    retryLimit: 1,
+  },
 };
 
 export async function ensureJobQueues(boss: PgBoss) {

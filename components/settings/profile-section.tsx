@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUpload } from "@/lib/storage/use-upload";
 import { changeEmail } from "@/lib/auth/client";
+import { getInitials } from "@/lib/utils";
 import { useSettingsUser } from "./settings-user-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -391,7 +392,7 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
 
  const displayImage = avatarPreview ?? currentImage;
  const displayName = name || user.email;
- const initials   = displayName.slice(0, 2).toUpperCase();
+ const initials   = getInitials(displayName);
  const bg      = avatarColor(displayName);
 
  return (

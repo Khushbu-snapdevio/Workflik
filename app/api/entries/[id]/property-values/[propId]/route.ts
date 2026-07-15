@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { databaseProperties, pages, propertyValues, workspaceMembers } from "@/lib/db/schema";
 import { triggerTaskAssignedNotification } from "@/lib/notifications/triggers";
+import { syncEntryReminder } from "@/lib/reminders/sync-entry-reminder";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; propId: string }> }) {
   const { id: entryId, propId } = await params;
@@ -34,6 +35,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // Update pages.updated_at + lastEditedBy
   await db.update(pages).set({ updatedAt: new Date(), lastEditedBy: session.user.id }).where(eq(pages.id, entryId));
+
+  // Keep the reminder schedule in sync with this date property's current value
+  if (prop.type === "date") {
+    await db.transaction(async (tx) => {
+      await syncEntryReminder(tx, {
+        entryId:     entryId,
+        propertyId:  propId,
+        workspaceId: entry.workspaceId,
+        recipientId: session.user.id,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        value:       body.value as any,
+      });
+    });
+  }
 
   // Notify the assigned user when a person property is set
   if (prop.type === "person" && body.value) {

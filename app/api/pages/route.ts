@@ -6,6 +6,7 @@ import { blocks, pages } from "@/lib/db/schema";
 import { insertPageWithClosure } from "@/lib/pages/closure";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
+import { triggerPageCreatedNotification } from "@/lib/notifications/triggers";
 
 const createPageSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -93,6 +94,15 @@ export async function POST(req: Request) {
         id:          page.id,
         workspaceId: page.workspaceId,
         title:       page.title,
+        kind:        page.kind,
+      });
+
+      await triggerPageCreatedNotification(tx, {
+        workspaceId: page.workspaceId,
+        pageId:      page.id,
+        creatorId:   session.user.id,
+        pageTitle:   page.title || "Untitled",
+        isPrivate:   page.isPrivate,
         kind:        page.kind,
       });
 

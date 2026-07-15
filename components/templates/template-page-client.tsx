@@ -6,17 +6,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
  Table2 as TableIcon, LayoutGrid as SquaresFourIcon, Calendar as CalendarIcon, Grid2X2 as GridFourIcon,
+ GanttChartSquare as GanttIcon,
  Filter as FunnelIcon, ArrowUpDown as SortAscendingIcon, Eye as EyeIcon,
  Plus as PlusIcon, Image as ImageIcon, Smile as SmileyStickerIcon,
  X as XIcon, Trash2 as TrashIcon, Check as CheckIcon, Home as HouseIcon,
- ChevronRight as CaretRightIcon, ExternalLink as ArrowSquareOutIcon,
- User as UserIcon, Tag as TagIcon,
- Link as LinkIcon, Type as TextTIcon, Hash as NumberCircleOneIcon,
- CheckSquare as CheckSquareIcon, List as ListBulletsIcon,
- MoreVertical as MoreVerticalIcon, Pencil as PencilIcon, Copy as CopyIcon, Settings2 as GearIcon,
+ ChevronRight as CaretRightIcon,
+ MoreVertical as MoreVerticalIcon, Pencil as PencilIcon, Copy as CopyIcon,
 } from "lucide-react";
 
-const CalendarBlankIcon = CalendarIcon;
 import { useUpload } from "@/lib/storage/use-upload";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
@@ -27,8 +24,8 @@ import { TemplateTableView }  from "./views/template-table-view";
 import { TemplateBoardView }  from "./views/template-board-view";
 import { TemplateCalendarView } from "./views/template-calendar-view";
 import { TemplateGalleryView } from "./views/template-gallery-view";
+import { TemplateGanttView } from "./views/template-gantt-view";
 import { ConfirmDialog }   from "@/components/ui/confirm-dialog";
-import { DatePicker }     from "@/components/ui/date-picker";
 import { ShareButton }     from "@/components/pages/share-button";
 import { CopyLinkButton }   from "@/components/pages/copy-link-button";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
@@ -37,9 +34,6 @@ import { FavoriteButton }    from "@/components/pages/favorite-button";
 import { PageActionsMenu }   from "@/components/pages/page-actions-menu";
 import { IconPicker }       from "@/components/pages/icon-picker";
 import { PageIcon }        from "@/components/pages/page-icon";
-import { getOptionColor, groupOptions } from "@/components/database/property-registry";
-import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
-import type { SelectOption, DbPropertyConfig, DbProperty } from "@/components/database/types";
 
 export type TemplateEntry = { id: string; shortId: string; title: string; orderIndex: number; icon?: string | null; updatedAt?: string | null; commentCount?: number };
 export type TemplateValue = { id: string; entryId: string; propertyId: string; value: unknown };
@@ -487,454 +481,6 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
  );
 }
 
-// ── Entry detail panel ────────────────────────────────────────────────────────
-
-// Option/config shapes are the shared, canonical ones (components/database/types.ts)
-// so colors, groups, and display settings render consistently across every view.
-type PPropOption = SelectOption;
-type PPropConfig = DbPropertyConfig;
-
-function PPill({ name, color, displayAs, wrap }: { name: string; color: string; displayAs?: "select" | "checkbox"; wrap?: boolean }) {
- const wrapCls = wrap ? "whitespace-normal break-words" : "truncate";
- if (displayAs === "checkbox") {
-  return (
-   <span className="flex size-4 items-center justify-center rounded border border-primary bg-primary">
-    <CheckIcon size={10} className="text-primary-foreground" />
-   </span>
-  );
- }
- const c = getOptionColor(color);
- return (
-  <span
-   className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium"
-   style={{ backgroundColor: c.bg, color: c.text }}
-  >
-   <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: c.dot }} />
-   <span className={wrapCls}>{name}</span>
-  </span>
- );
-}
-
-const PROP_TYPE_ICON: Record<string, React.ElementType> = {
- text:     TextTIcon,
- number:    NumberCircleOneIcon,
- date:     CalendarBlankIcon,
- email:    LinkIcon,
- url:     LinkIcon,
- phone:    LinkIcon,
- select:    TagIcon,
- multi_select: ListBulletsIcon,
- checkbox:   CheckSquareIcon,
- person:    UserIcon,
-};
-
-function PanelPropRow({
- prop, value, onSave, onEditProperty,
-}: {
- prop:  DatabaseProperty;
- value: unknown;
- onSave: (v: unknown) => void;
- onEditProperty?: (propId: string) => void;
-}) {
- const Icon  = PROP_TYPE_ICON[prop.type] ?? TextTIcon;
- const config = (prop.config ?? {}) as PPropConfig;
- const isSelectType = prop.type === "select" || prop.type === "multi_select";
- const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
-
- return (
-  <div className="group/proprow flex min-h-[32px] items-start gap-0 rounded-[var(--radius-sm)] transition-colors hover:bg-muted/30">
-   <div className="flex w-[160px] shrink-0 items-center gap-2 px-2 py-2">
-    {config.icon
-     ? <PageIcon icon={config.icon} size={13} className="shrink-0" />
-     : <Icon size={13} className="text-muted-foreground/60" />
-    }
-    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{prop.name}</span>
-    {isSelectType && onEditProperty && (
-     <button
-      type="button"
-      onMouseEnter={(e) => showTooltip("Edit property", e)}
-      onMouseLeave={hideTooltip}
-      onClick={() => onEditProperty(prop.id)}
-      className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/50 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/proprow:opacity-100"
-     >
-      <GearIcon size={11} />
-     </button>
-    )}
-   </div>
-   <div className="flex-1 px-2 py-[5px]">
-    <PanelPropValue type={prop.type} config={config} value={value} onSave={onSave} />
-   </div>
-   {tooltip && typeof document !== "undefined" && createPortal(
-    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-    document.body,
-   )}
-  </div>
- );
-}
-
-function PanelPropValue({
- type, config, value, onSave,
-}: {
- type:  string;
- config: PPropConfig;
- value: unknown;
- onSave: (v: unknown) => void;
-}) {
- const [editing, setEditing] = useState(false);
- const [draft,  setDraft]  = useState("");
- const [open,  setOpen]  = useState(false);
- // No view context on this standalone entry-detail panel (a page can be opened
- // outside any particular view) — resolves straight to the property's own
- // global config, same as reading config.displayAs/wrapContent directly.
- const resolvedDisplayAs  = resolveDisplayAs({ config } as unknown as DbProperty, undefined);
- const resolvedWrapContent = resolveWrapContent({ config } as unknown as DbProperty, undefined);
-
- // ── Checkbox ─────────────────────────────────────────────────────────────
- if (type === "checkbox") {
-  const checked = (value as { checked?: boolean } | null)?.checked ?? false;
-  return (
-   <button
-    onClick={() => onSave({ checked: !checked })}
-    className={`flex size-4 items-center justify-center rounded border transition-colors ${checked ? "border-primary bg-primary" : "border-border bg-background"}`}
-   >
-    {checked && <CheckIcon size={10} className="text-primary-foreground" />}
-   </button>
-  );
- }
-
- // ── Select ────────────────────────────────────────────────────────────────
- if (type === "select") {
-  const options   = config.options ?? [];
-  const selectedOpt = options.find((o) => o.id === (value as { optionId?: string } | null)?.optionId);
-  const sections   = groupOptions(options, !!config.groupedByStatus);
-  return (
-   <div className="relative">
-    <button
-     onClick={() => setOpen((p) => !p)}
-     className="flex min-h-[22px] w-full items-center text-left"
-    >
-     {selectedOpt
-      ? <PPill name={selectedOpt.name} color={selectedOpt.color} displayAs={resolvedDisplayAs} wrap={resolvedWrapContent} />
-      : resolvedDisplayAs === "checkbox"
-      ? <span className="flex size-4 items-center justify-center rounded border border-border bg-background" />
-      : <span className="text-xs text-muted-foreground/70">Empty</span>
-     }
-    </button>
-    {open && (
-     <div className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
-      {sections.map((section) => (
-       <div key={section.key}>
-        {section.label && (
-         <p className="mb-0.5 mt-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">{section.label}</p>
-        )}
-        {section.options.map((opt) => (
-         <button key={opt.id} onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
-          className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors">
-          <PPill name={opt.name} color={opt.color} />
-         </button>
-        ))}
-       </div>
-      ))}
-      {selectedOpt && (
-       <button onClick={() => { onSave(null); setOpen(false); }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors">
-        Clear
-       </button>
-      )}
-     </div>
-    )}
-   </div>
-  );
- }
-
- // ── Multi-select ──────────────────────────────────────────────────────────
- if (type === "multi_select") {
-  const options  = config.options ?? [];
-  const selectedIds = (value as { optionIds?: string[] } | null)?.optionIds ?? [];
-  return (
-   <div className="relative">
-    <button onClick={() => setOpen((p) => !p)} className="flex min-h-[22px] w-full flex-wrap items-center gap-1 text-left">
-     {selectedIds.length === 0
-      ? <span className="text-xs text-muted-foreground/70">Empty</span>
-      : selectedIds.map((id) => {
-        const opt = options.find((o) => o.id === id);
-        return opt ? (
-         <PPill key={id} name={opt.name} color={opt.color} displayAs={resolvedDisplayAs} wrap={resolvedWrapContent} />
-        ) : null;
-       })
-     }
-    </button>
-    {open && (
-     <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
-      {options.map((opt) => {
-       const isOn = selectedIds.includes(opt.id);
-       return (
-        <button key={opt.id}
-         onClick={() => {
-          const next = isOn ? selectedIds.filter((i) => i !== opt.id) : [...selectedIds, opt.id];
-          onSave(next.length ? { optionIds: next } : null);
-         }}
-         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors"
-        >
-         <span className={`flex size-3.5 items-center justify-center rounded border ${isOn ? "border-primary bg-primary" : "border-border"}`}>
-          {isOn && <CheckIcon size={9} className="text-primary-foreground" />}
-         </span>
-         <PPill name={opt.name} color={opt.color} />
-        </button>
-       );
-      })}
-     </div>
-    )}
-   </div>
-  );
- }
-
- // ── Person ────────────────────────────────────────────────────────────────
- if (type === "person") {
-  const name = (value as { name?: string } | null)?.name ?? "";
-  if (editing) {
-   return (
-    <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
-     onBlur={() => { setEditing(false); onSave(draft.trim() ? { name: draft.trim() } : null); }}
-     onKeyDown={(e) => {
-      if (e.key === "Enter") { setEditing(false); onSave(draft.trim() ? { name: draft.trim() } : null); }
-      if (e.key === "Escape") setEditing(false);
-     }}
-     className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
-    />
-   );
-  }
-  return (
-   <button onClick={() => { setDraft(name); setEditing(true); }}
-    className="flex min-h-[22px] w-full items-center gap-1.5 text-left text-xs hover:text-foreground transition-colors">
-    {name
-     ? <><span className="flex size-5 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">{name[0]?.toUpperCase()}</span><span className="text-foreground">{name}</span></>
-     : <span className="text-muted-foreground/70">Empty</span>
-    }
-   </button>
-  );
- }
-
- // ── Date ──────────────────────────────────────────────────────────────────
- if (type === "date") {
-  const dateStr = (value as { date?: string } | null)?.date ?? "";
-  if (editing) {
-   return (
-    <DatePicker
-     autoFocus
-     value={draft || null}
-     onChange={(v) => { setEditing(false); onSave(v ? { date: v } : null); }}
-     onOpenChange={(o) => { if (!o) setEditing(false); }}
-     className="h-[22px] gap-1.5 rounded border-primary/50 px-2 py-0.5 text-xs"
-    />
-   );
-  }
-  return (
-   <button onClick={() => { setDraft(dateStr); setEditing(true); }}
-    className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
-    {dateStr
-     ? <span className="text-foreground">{new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-     : <span className="text-muted-foreground/70">Empty</span>
-    }
-   </button>
-  );
- }
-
- // ── Number ────────────────────────────────────────────────────────────────
- if (type === "number") {
-  const num = (value as { number?: number } | null)?.number;
-  if (editing) {
-   return (
-    <input autoFocus type="number" value={draft} onChange={(e) => setDraft(e.target.value)}
-     onBlur={() => { setEditing(false); const n = Number(draft); onSave(isNaN(n) || draft === "" ? null : { number: n }); }}
-     onKeyDown={(e) => {
-      if (e.key === "Enter") { setEditing(false); const n = Number(draft); onSave(isNaN(n) || draft === "" ? null : { number: n }); }
-      if (e.key === "Escape") setEditing(false);
-     }}
-     className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
-    />
-   );
-  }
-  return (
-   <button onClick={() => { setDraft(num != null ? String(num) : ""); setEditing(true); }}
-    className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
-    {num != null ? <span className="text-foreground">{num}</span> : <span className="text-muted-foreground/70">Empty</span>}
-   </button>
-  );
- }
-
- // ── Text / email / url / phone (default) ─────────────────────────────────
- const fieldKey = type === "email" ? "email" : type === "url" ? "url" : type === "phone" ? "phone" : "text";
- const textVal = (value as Record<string, string> | null)?.[fieldKey] ?? "";
-
- if (editing) {
-  return (
-   <input autoFocus
-    type={type === "email" ? "email" : type === "url" ? "url" : "text"}
-    value={draft} onChange={(e) => setDraft(e.target.value)}
-    onBlur={() => { setEditing(false); onSave(draft.trim() ? { [fieldKey]: draft.trim() } : null); }}
-    onKeyDown={(e) => {
-     if (e.key === "Enter") { setEditing(false); onSave(draft.trim() ? { [fieldKey]: draft.trim() } : null); }
-     if (e.key === "Escape") setEditing(false);
-    }}
-    className="w-full rounded border border-primary/50 bg-background px-2 py-0.5 text-xs outline-none focus:border-primary"
-   />
-  );
- }
-
- if (type === "url" && textVal) {
-  const href = textVal.startsWith("http") ? textVal : `https://${textVal}`;
-  return (
-   <div className="flex items-center gap-1">
-    <a href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-     className="min-h-[22px] flex-1 truncate text-xs text-primary underline-offset-2 hover:underline">
-     {textVal}
-    </a>
-    <button onClick={() => { setDraft(textVal); setEditing(true); }}
-     className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
-     <TextTIcon size={11} />
-    </button>
-   </div>
-  );
- }
-
- return (
-  <button onClick={() => { setDraft(textVal); setEditing(true); }}
-   className="min-h-[22px] w-full text-left text-xs hover:text-foreground transition-colors">
-   {textVal ? <span className="text-foreground">{textVal}</span> : <span className="text-muted-foreground/70">Empty</span>}
-  </button>
- );
-}
-
-function EntryDetailPanel({
- entry,
- properties,
- entryValueMap,
- workspaceSlug,
- onClose,
- onDelete,
- onSaveTitle,
- onUpdatePropValue,
-}: {
- entry:       TemplateEntry;
- properties:    DatabaseProperty[];
- entryValueMap:   Map<string, Map<string, unknown>>;
- workspaceSlug:   string;
- onClose:      () => void;
- onDelete:     (id: string) => void;
- onSaveTitle:    (id: string, title: string) => void;
- onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
-}) {
- const [title, setTitle] = useState(entry.title || "");
- const [confirmDelete, setConfirmDelete] = useState(false);
- const valMap      = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
- const visibleProps   = properties.filter((p) => !p.isHidden);
- const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
-
- function commitTitle() {
-  const t = title.trim() || "Untitled";
-  if (t !== entry.title) onSaveTitle(entry.id, t);
- }
-
- return (
-  <>
-   {/* Backdrop */}
-   <div className="fixed inset-0 z-[580] bg-black/50 backdrop-blur-[3px]" onClick={onClose} />
-
-   {/* Centered modal */}
-   <div className="fixed left-1/2 top-1/2 z-[590] flex w-[680px] max-h-[82vh] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[var(--radius-lg)] border border-border bg-background overflow-hidden">
-
-    {/* Header */}
-    <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-5 py-3.5">
-     <button
-      onClick={onClose}
-      className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-     >
-      <XIcon size={15} />
-     </button>
-     <div className="flex items-center gap-1.5">
-      <Link
-       href={`/app/${workspaceSlug}/${entry.shortId}`}
-       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-      >
-       <ArrowSquareOutIcon size={13} />
-       Open page
-      </Link>
-      <button
-       onClick={() => setConfirmDelete(true)}
-       onMouseEnter={(e) => showTooltip("Delete entry", e)}
-       onMouseLeave={hideTooltip}
-       className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-      >
-       <TrashIcon size={14} />
-      </button>
-     </div>
-    </div>
-
-    {/* Body */}
-    <div className="flex-1 overflow-y-auto px-8 py-7">
-     {/* Editable title */}
-     <input
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-      onBlur={commitTitle}
-      onKeyDown={(e) => { if (e.key === "Enter") commitTitle(); }}
-      placeholder="Untitled"
-      className="mb-1 w-full bg-transparent text-3xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/25"
-     />
-     {/* "View details" link like Notion */}
-     <Link
-      href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="mb-6 inline-block text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-     >
-      View details
-     </Link>
-
-     {/* Properties */}
-     {visibleProps.length > 0 && (
-      <div className="mb-2">
-       <div className="space-y-0.5">
-        {visibleProps.map((prop) => (
-         <PanelPropRow
-          key={prop.id}
-          prop={prop}
-          value={valMap.get(prop.id) ?? null}
-          onSave={(v) => onUpdatePropValue(entry.id, prop.id, v)}
-         />
-        ))}
-       </div>
-      </div>
-     )}
-
-     {/* Divider + open full page */}
-     <div className="mt-6 border-t border-border/30 pt-5 text-center">
-      <p className="mb-3 text-xs text-muted-foreground/60">Open the full page to add content, comments, and more</p>
-      <Link
-       href={`/app/${workspaceSlug}/${entry.shortId}`}
-       className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-      >
-       <ArrowSquareOutIcon size={12} />
-       Open full page
-      </Link>
-     </div>
-    </div>
-   </div>
-   <ConfirmDialog
-    open={confirmDelete}
-    onOpenChange={setConfirmDelete}
-    title="Delete entry?"
-    description="This entry will be permanently deleted. This cannot be undone."
-    confirmLabel="Delete"
-    onConfirm={() => { onDelete(entry.id); setConfirmDelete(false); onClose(); }}
-   />
-   {tooltip && typeof document !== "undefined" && createPortal(
-    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-    document.body,
-   )}
-  </>
- );
-}
-
 // ── Main client ───────────────────────────────────────────────────────────────
 
 const VIEW_ICON: Record<string, React.ElementType> = {
@@ -942,6 +488,7 @@ const VIEW_ICON: Record<string, React.ElementType> = {
  board:  SquaresFourIcon,
  calendar: CalendarIcon,
  gallery: GridFourIcon,
+ gantt:  GanttIcon,
 };
 
 interface Props {
@@ -958,6 +505,9 @@ interface Props {
  workspaceName: string;
  workspaceId:  string;
  breadcrumbs:  { id: string; shortId: string; title: string }[];
+ /** Nearest other top-level item (previous, or next if this was first) —
+  *  used as the delete fallback destination when this page has no parent. */
+ rootFallbackShortId?: string | null;
  defaultViewId: string | null;
  currentUserId: string;
  currentUserName: string | null;
@@ -981,6 +531,7 @@ export function TemplatePageClient({
  workspaceName,
  workspaceId,
  breadcrumbs: initBreadcrumbs,
+ rootFallbackShortId,
  defaultViewId,
  currentUserId,
  currentUserName,
@@ -1124,7 +675,7 @@ export function TemplatePageClient({
  const [calendarHeight, setCalendarHeight] = useState<number | null>(null);
 
  useLayoutEffect(() => {
-  if (activeView?.type !== "calendar") return;
+  if (activeView?.type !== "calendar" && activeView?.type !== "gantt") return;
   const scrollEl = scrollAreaRef.current;
   const toolbarEl = viewToolbarRef.current;
   if (!scrollEl || !toolbarEl) return;
@@ -1287,6 +838,56 @@ export function TemplatePageClient({
    const vRes = await fetch(`/api/databases/${page.id}/views/${activeView!.id}`, {
     method: "PATCH", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ groupByPropertyId: selectProp!.id }),
+   });
+   if (!vRes.ok || cancelled) return;
+   const updated = await vRes.json() as DatabaseView;
+   if (cancelled) return;
+   setViews((prev) => prev.map((v) => v.id === updated.id ? updated : v));
+  }
+  wire();
+  return () => { cancelled = true; };
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [activeView?.id, activeView?.type]);
+
+ // ── Auto-wire gantt start/end properties ──────────────────────────────────
+ // When switching to a gantt view missing either date property, find or
+ // create two DISTINCT Date properties ("Start date"/"End date") — reusing
+ // the same property for both would collapse every bar to a single day.
+ useEffect(() => {
+  const view = activeView as unknown as { ganttStartPropertyId?: string | null; ganttEndPropertyId?: string | null } | null;
+  if (activeView?.type !== "gantt") return;
+  if (view?.ganttStartPropertyId && view?.ganttEndPropertyId) return;
+
+  let cancelled = false;
+  async function wire() {
+   const dateProps = properties.filter((p) => p.type === "date");
+   let startProp = dateProps[0] ?? null;
+   let endProp = dateProps.find((p) => p.id !== startProp?.id) ?? null;
+
+   if (!startProp) {
+    const pRes = await fetch(`/api/databases/${page.id}/properties`, {
+     method: "POST", headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ name: "Start date", type: "date", config: {} }),
+    });
+    if (!pRes.ok || cancelled) return;
+    startProp = await pRes.json() as DatabaseProperty;
+    if (cancelled) return;
+    setProperties((prev) => [...prev, startProp!]);
+   }
+   if (!endProp) {
+    const pRes = await fetch(`/api/databases/${page.id}/properties`, {
+     method: "POST", headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ name: "End date", type: "date", config: {} }),
+    });
+    if (!pRes.ok || cancelled) return;
+    endProp = await pRes.json() as DatabaseProperty;
+    if (cancelled) return;
+    setProperties((prev) => [...prev, endProp!]);
+   }
+
+   const vRes = await fetch(`/api/databases/${page.id}/views/${activeView!.id}`, {
+    method: "PATCH", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ganttStartPropertyId: startProp!.id, ganttEndPropertyId: endProp!.id }),
    });
    if (!vRes.ok || cancelled) return;
    const updated = await vRes.json() as DatabaseView;
@@ -1730,6 +1331,7 @@ export function TemplatePageClient({
        pageTitle={pageTitle}
        pageKind={page.kind}
        parentShortId={breadcrumbs[breadcrumbs.length - 1]?.shortId ?? null}
+       rootFallbackShortId={rootFallbackShortId}
        iconOnly
       />
      )}
@@ -2095,6 +1697,16 @@ export function TemplatePageClient({
          const day = isCurrentMonth ? now.getDate() : 1;
          defaultValues = { [calPropId]: { date: `${calYear}-${pad(calMonth + 1)}-${pad(day)}` } };
         }
+       } else if (activeView?.type === "gantt") {
+        const view = activeView as unknown as { ganttStartPropertyId?: string | null; ganttEndPropertyId?: string | null };
+        const startPropId = view.ganttStartPropertyId ?? properties.find((p) => p.type === "date")?.id;
+        const endPropId = view.ganttEndPropertyId ?? startPropId;
+        if (startPropId && endPropId) {
+         const now = new Date();
+         const pad = (n: number) => String(n).padStart(2, "0");
+         const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+         defaultValues = { [startPropId]: { date: today }, [endPropId]: { date: today } };
+        }
        }
        const entry = await addEntry(defaultValues);
        if (entry) router.push(`/app/${workspaceSlug}/${entry.shortId}`);
@@ -2135,14 +1747,14 @@ export function TemplatePageClient({
    <div
     ref={tableViewRef}
     className={`relative ${activeView?.type === "table" ? "overflow-x-auto" : ""}`}
-    style={activeView?.type === "calendar" ? { height: calendarHeight ?? "calc(100dvh - 6rem)" } : undefined}
+    style={activeView?.type === "calendar" || activeView?.type === "gantt" ? { height: calendarHeight ?? "calc(100dvh - 6rem)" } : undefined}
    >
     {viewSwitching && (
      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
       <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
      </div>
     )}
-    <div className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "calendar" ? "h-full" : ""}`}>
+    <div className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "h-full" : ""}`}>
     {activeView?.type === "board" ? (
      <TemplateBoardView
       entries={displayedEntries}
@@ -2203,6 +1815,24 @@ export function TemplatePageClient({
       onClickEntry={handleClickEntry}
       onSaveTitle={saveTitle}
       onUpdateEntryIcon={saveEntryIcon}
+      onUpdatePropValue={updatePropValue}
+      onUpdateProperty={updateProperty}
+      onUpdateView={updateView}
+     />
+    ) : activeView?.type === "gantt" ? (
+     <TemplateGanttView
+      entries={displayedEntries}
+      properties={properties}
+      activeView={activeView}
+      entryValueMap={entryValueMap}
+      databaseId={page.id}
+      workspaceId={workspaceId}
+      workspaceSlug={workspaceSlug}
+      onAddEntry={async (dv) => { await addEntry(dv); }}
+      onDeleteEntry={deleteEntry}
+      onDuplicateEntry={duplicateEntry}
+      onUpdateEntryIcon={saveEntryIcon}
+      onClickEntry={handleClickEntry}
       onUpdatePropValue={updatePropValue}
       onUpdateProperty={updateProperty}
       onUpdateView={updateView}

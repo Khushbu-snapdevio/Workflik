@@ -31,6 +31,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellDisplay } from "@/components/database/cells/cell-display";
+import { PageIcon } from "@/components/pages/page-icon";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { EntryContextMenu } from "@/components/database/entry-context-menu";
@@ -251,9 +252,8 @@ export function GalleryView({
                   {isEditor && (
                     <button
                       className={[
-                        "flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
+                        "flex h-full min-h-24 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
                         "text-muted-foreground/70 transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
-                        "h-24",
                       ].join(" ")}
                       onClick={() => {
                         const dv = groupProp && group.id ? defaultValueForGroup(groupProp, group.id) : undefined;
@@ -375,9 +375,8 @@ export function GalleryView({
               {isEditor && (
                 <button
                   className={[
-                    "flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
+                    "flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
                     "text-muted-foreground/70 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
-                    SIZE_COVER[cardSize],
                   ].join(" ")}
                   onClick={() => onCreateEntry()}
                 >
@@ -468,7 +467,7 @@ function SortableGalleryCard(props: SortableGalleryCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="h-full">
       <GalleryCard
         {...props}
         dragHandleProps={{
@@ -608,7 +607,7 @@ function GalleryCard({
     <>
       <div
         className={[
-          "relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card transition-colors duration-150",
+          "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card transition-colors duration-150",
           dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
         onMouseEnter={() => !dragging && setHovered(true)}
@@ -753,16 +752,16 @@ function GalleryCard({
         {/* Content */}
         <div className="flex flex-1 flex-col px-3.5 pt-3 pb-3.5">
           <div className="flex items-start gap-1.5">
-            {entry.icon ? (
-              <span className="mt-0.5 shrink-0 text-base leading-none">
-                {entry.icon}
-              </span>
-            ) : (
-              <FileText
-                className="mt-0.5 shrink-0 text-muted-foreground/60"
-                size={12}
-              />
-            )}
+            {/* h-5 matches the title's own line height (text-sm leading-snug)
+                so the icon centers against the title's first line instead of
+                sitting at a manually-guessed offset from the row's top. */}
+            <span className="flex h-5 shrink-0 items-center">
+              {entry.icon ? (
+                <PageIcon icon={entry.icon} size={14} className="shrink-0" />
+              ) : (
+                <FileText className="shrink-0 text-muted-foreground/60" size={12} />
+              )}
+            </span>
             {editing ? (
               <input
                 autoFocus
@@ -818,8 +817,12 @@ function GalleryCard({
             )}
           </div>
 
-          {(filledProps.length > 0 || !!commentCount) && (
-            <div className="mt-1.5 space-y-0.5">
+          {/* Always rendered (not just when there's a comment/filled property) —
+              reserves the same vertical slot on every card, including an
+              invisible placeholder for the comment badge below, so cards in
+              the same row land on identical natural heights instead of some
+              being visibly shorter with a dead gap at the bottom. */}
+          <div className="mt-1.5 space-y-0.5">
               {filledProps.map((prop) => {
                 const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
                 const resolvedDisplayAs = resolveDisplayAs(prop, activeView);
@@ -839,6 +842,7 @@ function GalleryCard({
                         value={raw}
                         resolvedDisplayAs={resolvedDisplayAs}
                         resolvedWrapContent={resolvedWrapContent}
+                        workspaceId={workspaceId}
                         onToggleCheckbox={() => {
                           const next = prop.type === "multi_select"
                             ? nextCheckboxMultiSelectValue(prop, raw)
@@ -858,30 +862,32 @@ function GalleryCard({
                       {prop.name}
                     </span>
                     <div className="min-w-0 flex-1 overflow-hidden">
-                      <CellDisplay compact property={prop} value={raw} resolvedDisplayAs={resolvedDisplayAs} resolvedWrapContent={resolvedWrapContent} />
+                      <CellDisplay compact property={prop} value={raw} resolvedDisplayAs={resolvedDisplayAs} resolvedWrapContent={resolvedWrapContent} workspaceId={workspaceId} />
                     </div>
                   </div>
                 );
               })}
-              {!!commentCount && (
-                <button
-                  className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCommentAnchor(
-                      (e.currentTarget as HTMLElement).getBoundingClientRect()
-                    );
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-                  onMouseLeave={() => setTooltip(null)}
-                >
-                  <MessageSquare size={11} />
-                  {commentCount}
-                </button>
-              )}
+              {/* Rendered even with 0 comments (just invisible) — reserves this
+                  row's height on every card so a card with no comments doesn't
+                  end up visibly shorter than one that has them. */}
+              <button
+                className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
+                tabIndex={commentCount ? 0 : -1}
+                aria-hidden={!commentCount}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCommentAnchor(
+                    (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  );
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <MessageSquare size={11} />
+                {commentCount || 0}
+              </button>
             </div>
-          )}
 
           {/* Quick-add empty properties — only while editing, matching board-view's
        inline card editor so gallery cards can be filled in without opening
@@ -893,6 +899,7 @@ function GalleryCard({
                   PROPERTY_TYPE_ICON[
                     prop.type as keyof typeof PROPERTY_TYPE_ICON
                   ];
+                const propConfig = (prop.config ?? {}) as { icon?: string };
                 return (
                   <button
                     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
@@ -909,7 +916,7 @@ function GalleryCard({
                     onPointerDown={(e) => e.stopPropagation()}
                     type="button"
                   >
-                    <TypeIcon className="shrink-0" size={12} />
+                    {propConfig.icon ? <PageIcon icon={propConfig.icon} className="shrink-0" size={12} /> : <TypeIcon className="shrink-0" size={12} />}
                     Add {prop.name}
                   </button>
                 );

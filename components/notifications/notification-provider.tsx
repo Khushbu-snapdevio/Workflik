@@ -126,7 +126,9 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug }: P
           onDismiss={() => dismissToast(t.id)}
           onView={() => {
             dismissToast(t.id);
-            if (t.pageShortId) {
+            if (t.type === "trash_warning") {
+              router.push(`/app/${workspaceSlug}/trash`);
+            } else if (t.pageShortId) {
               router.push(`/app/${workspaceSlug}/${t.pageShortId}`);
             } else {
               openPanel();

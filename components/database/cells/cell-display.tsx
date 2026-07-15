@@ -1,8 +1,13 @@
 "use client";
 
-import { getOptionColor, formatNumber, formatDate } from "@/components/database/property-registry";
+import { useState } from "react";
+import { useSession } from "@/lib/auth/client";
+import { File as FileIcon } from "lucide-react";
+import { getOptionColor, formatNumber, formatDateValue } from "@/components/database/property-registry";
 import type { NumberFormat } from "@/components/database/property-registry";
-import type { DbProperty, SelectOption } from "@/components/database/types";
+import type { DbProperty, FileItem, SelectOption } from "@/components/database/types";
+import { UserHoverCard } from "@/components/database/user-hover-card";
+import { ImageLightbox } from "@/components/editor/comment-card";
 
 interface CellDisplayProps {
   property: DbProperty;
@@ -21,6 +26,10 @@ interface CellDisplayProps {
    *  config when the caller doesn't pass these (keeps older call sites working). */
   resolvedDisplayAs?: "select" | "checkbox";
   resolvedWrapContent?: boolean;
+  /** Person/Created-by avatar chips show a Notion-style hover card (name,
+   *  role, local time) when this is supplied — every call site already has
+   *  it in scope, so omitting it is only ever a deliberate opt-out. */
+  workspaceId?: string;
 }
 
 // Same custom rounded-square glyph the checkbox-type property already uses in
@@ -39,10 +48,13 @@ function CheckboxGlyph({ checked }: { checked: boolean }) {
   );
 }
 
-export function CellDisplay({ property, value, compact, onToggleCheckbox, resolvedDisplayAs, resolvedWrapContent }: CellDisplayProps) {
+export function CellDisplay({ property, value, compact, onToggleCheckbox, resolvedDisplayAs, resolvedWrapContent, workspaceId }: CellDisplayProps) {
   const v = value as Record<string, unknown> | null;
   const displayAs = resolvedDisplayAs ?? property.config?.displayAs;
   const wrapContent = resolvedWrapContent ?? property.config?.wrapContent;
+  const { data: session } = useSession();
+  const [hoveredUser, setHoveredUser] = useState<{ userId: string; rect: DOMRect } | null>(null);
+  const [lightboxFile, setLightboxFile] = useState<FileItem | null>(null);
 
   switch (property.type) {
     case "text": {
@@ -144,9 +156,8 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
     }
 
     case "date": {
-      const date = (v as { date?: string | null } | null)?.date ?? null;
-      if (!date) return null;
-      return <span className="text-xs text-foreground">{formatDate(date)}</span>;
+      if (!(v as { date?: string | null } | null)?.date) return null;
+      return <span className="block min-w-0 truncate text-xs text-foreground">{formatDateValue(v)}</span>;
     }
 
     case "checkbox": {
@@ -198,7 +209,12 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
       );
     }
 
-    case "person": {
+    // "created_by" is computed server-side from the entry's own createdBy
+    // column (see app/api/databases/[id]/entries/route.ts) into the exact
+    // same { userIds, _members } shape "person" values are saved with, so it
+    // can share this rendering — it's just always a single, read-only user.
+    case "person":
+    case "created_by": {
       const userIds       = (v as { userIds?: string[] } | null)?.userIds ?? [];
       const cachedMembers = (v as { _members?: { id: string; name: string; email: string }[] } | null)?._members ?? [];
       if (!userIds.length) return null;
@@ -216,6 +232,8 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
               <span
                 key={id}
                 className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted pl-0.5 pr-2 py-0.5"
+                onMouseEnter={workspaceId ? (e) => setHoveredUser({ userId: id, rect: e.currentTarget.getBoundingClientRect() }) : undefined}
+                onMouseLeave={workspaceId ? () => setHoveredUser((cur) => (cur?.userId === id ? null : cur)) : undefined}
               >
                 <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                   {initial}
@@ -223,6 +241,16 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
                 <span className="max-w-[80px] truncate text-xs font-medium text-foreground">
                   {label}
                 </span>
+                {workspaceId && hoveredUser?.userId === id && (
+                  <UserHoverCard
+                    userId={id}
+                    workspaceId={workspaceId}
+                    currentUserId={session?.user?.id}
+                    cachedName={member?.name}
+                    cachedEmail={member?.email}
+                    rect={hoveredUser.rect}
+                  />
+                )}
               </span>
             );
           })}
@@ -240,6 +268,43 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
         <span className="text-xs text-muted-foreground">
           {entryIds.length} {entryIds.length === 1 ? "entry" : "entries"}
         </span>
+      );
+    }
+
+    case "files": {
+      const files = (v as { files?: FileItem[] } | null)?.files ?? [];
+      if (!files.length) return null;
+      const shown = compact ? files.slice(0, 4) : files;
+      return (
+        <div className={`flex items-center gap-1.5 py-1 ${compact ? "flex-nowrap overflow-hidden" : "flex-wrap"}`}>
+          {shown.map((f) => {
+            const isImage = f.mimeType.startsWith("image/");
+            return isImage ? (
+              <img
+                key={f.id}
+                src={f.url}
+                alt={f.name}
+                onClick={(e) => { e.stopPropagation(); setLightboxFile(f); }}
+                className="h-12 w-[76px] shrink-0 cursor-zoom-in rounded-[var(--radius-sm)] border border-border object-cover"
+              />
+            ) : (
+              <span
+                key={f.id}
+                title={f.name}
+                className="flex h-12 w-[76px] shrink-0 flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-1"
+              >
+                <FileIcon size={16} className="shrink-0 text-muted-foreground" />
+                <span className="w-full truncate text-center text-[10px] text-muted-foreground">{f.name}</span>
+              </span>
+            );
+          })}
+          {compact && files.length > 4 && (
+            <span className="text-xs text-muted-foreground">+{files.length - 4}</span>
+          )}
+          {lightboxFile && (
+            <ImageLightbox src={lightboxFile.url} alt={lightboxFile.name} onClose={() => setLightboxFile(null)} />
+          )}
+        </div>
       );
     }
 

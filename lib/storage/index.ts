@@ -31,6 +31,7 @@ export const SIZE_LIMITS: Record<string, number> = {
   user_avatar: 1 * 1024 * 1024, //   1 MB
   workspace_icon: 1 * 1024 * 1024, //   1 MB
   block_media: 100 * 1024 * 1024, // 100 MB ceiling (per-mime enforced below)
+  database_file: 50 * 1024 * 1024, //  50 MB
 };
 
 /** Per-mime caps that apply within block_media. */

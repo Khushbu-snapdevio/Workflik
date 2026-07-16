@@ -42,6 +42,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     [freshUser],
     dismissedHintsRows,
     initialPages,
+    initialPrivateEntries,
     initialFavorites,
     initialRecentlyVisited,
     [prefs],
@@ -73,6 +74,33 @@ export default async function WorkspaceLayout({ children, params }: Props) {
           eq(pages.isDeleted, false),
           ne(pages.kind, "entry"),
           or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id))
+        )
+      )
+      .orderBy(pages.orderIndex),
+    // Database entries are excluded from the query above (too numerous to
+    // show in the general page tree), but a private entry the current user
+    // created should still surface somewhere — the sidebar's Private section
+    // specifically, not the tree/Favorites/Recently-Visited. Scoped to
+    // isPrivate + own-created to keep this small (never "all entries").
+    db
+      .select({
+        id:         pages.id,
+        shortId:    pages.shortId,
+        parentId:   pages.parentId,
+        title:      pages.title,
+        icon:       pages.icon,
+        orderIndex: pages.orderIndex,
+        kind:       pages.kind,
+        isPrivate:  pages.isPrivate,
+      })
+      .from(pages)
+      .where(
+        and(
+          eq(pages.workspaceId, ws.id),
+          eq(pages.isDeleted, false),
+          eq(pages.kind, "entry"),
+          eq(pages.isPrivate, true),
+          eq(pages.createdBy, session.user.id)
         )
       )
       .orderBy(pages.orderIndex),
@@ -146,6 +174,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
                 workspaceId={ws.id}
                 workspaceSlug={ws.slug}
                 initialPages={initialPages}
+                initialPrivateEntries={initialPrivateEntries}
                 initialFavorites={initialFavorites}
                 initialRecentlyVisited={recentlyVisitedSerialized}
                 initialSidebarWidth={prefs?.sidebarWidth || 280}

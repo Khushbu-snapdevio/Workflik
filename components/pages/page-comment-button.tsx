@@ -19,8 +19,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CommentComposer } from "@/components/editor/comment-composer";
 import { EmojiPicker, SimpleDropdown, DropdownItem, DropdownSeparator, ImageAttachment, FileAttachment } from "@/components/editor/comment-card";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { onCommentsChanged, emitCommentsChanged } from "@/lib/comments/comment-events";
+import { formatReactionTooltip, formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
 
 interface CommentAuthor {
   id:    string | null;
@@ -147,12 +149,13 @@ interface DiscussionItemProps {
   workspaceId:   string;
   currentUserId: string;
   isAdmin:       boolean;
+  reactionUsers: Record<string, string | null>;
   onOpen:        () => void;
   onPatch:       (patch: Partial<CommentThread>) => void;
   onDeleted:     () => void;
 }
 
-function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, onOpen, onPatch, onDeleted }: DiscussionItemProps) {
+function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, reactionUsers, onOpen, onPatch, onDeleted }: DiscussionItemProps) {
   const [isEditing, setIsEditing]     = useState(false);
   const [isMuted, setIsMuted]         = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
@@ -390,6 +393,8 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, o
                         key={emoji}
                         type="button"
                         onClick={(e) => { e.stopPropagation(); void toggleReaction(emoji); }}
+                        onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
+                        onMouseLeave={hideTooltip}
                         className={`flex items-center gap-0.5 rounded-[var(--radius-xs)] border px-1.5 py-0.5 text-[10px] transition-colors duration-150 ${
                           iMine
                             ? "border-primary/30 bg-primary/10 text-primary"
@@ -423,7 +428,9 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, o
         onConfirm={handleDelete}
       />
       {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+        tooltip.emoji
+          ? <ReactionTooltip rect={tooltip.rect} emoji={tooltip.emoji} label={tooltip.label} who={tooltip.who} />
+          : <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
         document.body,
       )}
     </li>
@@ -440,6 +447,9 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [threads, setThreads] = useState<CommentThread[]>([]);
+  // Reactions only carry reactor user IDs — this resolves them to display
+  // names for the "X reacted with 😀" hover tooltip (see format-reaction-tooltip.ts).
+  const [reactionUsers, setReactionUsers] = useState<Record<string, string | null>>({});
   const [unresolvedCount, setUnresolvedCount] = useState<number | null>(null);
   const [tab, setTab] = useState<"open" | "resolved">("open");
   // Two loads can overlap (e.g. opening the sheet right as an emitCommentsChanged
@@ -457,6 +467,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
         if (!data || thisRequest !== requestId.current) return;
         const all = data.comments as CommentThread[];
         setThreads(all);
+        setReactionUsers(data.reactionUsers ?? {});
         setUnresolvedCount(all.filter((t) => !t.isResolved && !t.deletedAt).length);
       })
       .catch(() => {})
@@ -631,6 +642,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
                         workspaceId={workspaceId}
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
+                        reactionUsers={reactionUsers}
                         onOpen={() => openThread(thread)}
                         onPatch={(patch) => patchThread(thread.id, patch)}
                         onDeleted={() => removeThread(thread.id)}

@@ -28,6 +28,7 @@ import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { PageIcon } from "@/components/pages/page-icon";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { findRootFallback } from "@/lib/pages/root-sibling";
 
 const ROOT_VISIBLE_MAX = 4;
 
@@ -418,13 +419,18 @@ function PageTreeNode({
   setConfirmTrash(false);
   onPagesChange(pages.filter((p) => p.id !== node.id));
 
-  // Navigate away only if currently viewing the deleted page — otherwise the
-  // local onPagesChange update is enough; no full router.refresh() needed.
+  // Navigate away only if currently viewing the deleted page — otherwise
+  // router.refresh() below is enough to sync other routes (e.g. Home's
+  // page count / "Jump back in") with the deletion.
   const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(node.shortId);
   if (onDeletedPage || node.kind === "database") {
    const parentShortId = pages.find((p) => p.id === node.parentId)?.shortId;
-   // No parent → Library (lists every page), not workspace home (a dashboard).
-   window.location.replace(parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`);
+   // No parent → nearest other top-level item (sidebar order), or workspace
+   // home if this was the only one.
+   const fallbackShortId = parentShortId ?? findRootFallback(pages, node.id)?.shortId ?? null;
+   window.location.replace(fallbackShortId ? `/app/${workspaceSlug}/${fallbackShortId}` : `/app/${workspaceSlug}`);
+  } else {
+   router.refresh();
   }
  }
 

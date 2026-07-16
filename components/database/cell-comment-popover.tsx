@@ -12,8 +12,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
 import { ImageLightbox } from "@/components/editor/comment-card";
 import { emitCommentsChanged } from "@/lib/comments/comment-events";
+import { formatReactionTooltip, formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -204,6 +206,9 @@ export function CellCommentPopover({
   };
 
   const [threads, setThreads] = useState<CommentThread[]>([]);
+  // Reactions only carry reactor user IDs — this resolves them to display
+  // names for the "X reacted with 😀" hover tooltip (see format-reaction-tooltip.ts).
+  const [reactionUsers, setReactionUsers] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [text, setText] = useState("");
@@ -275,6 +280,7 @@ export function CellCommentPopover({
       if (res.ok) {
         const data = await res.json();
         setThreads(data.comments ?? []);
+        setReactionUsers(data.reactionUsers ?? {});
       }
     } catch {}
     setLoading(false);
@@ -997,6 +1003,8 @@ export function CellCommentPopover({
                                 <button
                                   key={emoji}
                                   onClick={() => toggleReaction(t.id, emoji)}
+                                  onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
+                                  onMouseLeave={hideTooltip}
                                   className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] border transition-colors ${reacted ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-muted/40 text-foreground/70 hover:border-primary/40 hover:bg-primary/5"}`}
                                 >
                                   {emoji}
@@ -1415,7 +1423,11 @@ export function CellCommentPopover({
         className="z-[10000]"
       />
 
-      {tooltip && <IconTooltip rect={tooltip.rect} label={tooltip.label} />}
+      {tooltip && (
+        tooltip.emoji
+          ? <ReactionTooltip rect={tooltip.rect} emoji={tooltip.emoji} label={tooltip.label} who={tooltip.who} />
+          : <IconTooltip rect={tooltip.rect} label={tooltip.label} />
+      )}
     </>,
     document.body,
   );

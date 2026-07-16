@@ -10,6 +10,7 @@ import { TableView } from "@/components/database/table-view";
 import { BoardView } from "@/components/database/board-view";
 import { CalendarView } from "@/components/database/calendar-view";
 import { GalleryView } from "@/components/database/gallery-view";
+import { GanttView } from "@/components/database/gantt-view";
 import type {
   DbView, DbProperty, DbEntry, DbPropertyValue,
   FilterRule, SortRule, SharedViewProps, DbPropertyConfig,
@@ -137,11 +138,12 @@ export function DatabasePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIds]);
 
-  // Lock parent <main> scroll when calendar view is active.
+  // Lock parent <main> scroll when calendar/gantt view is active — both
+  // manage their own internal scroll container.
   useEffect(() => {
     const mainEl = document.querySelector<HTMLElement>("main");
     if (!mainEl) return;
-    if (activeView?.type === "calendar") {
+    if (activeView?.type === "calendar" || activeView?.type === "gantt") {
       mainEl.style.setProperty("overflow", "hidden", "important");
       return () => { mainEl.style.removeProperty("overflow"); };
     } else {
@@ -328,8 +330,10 @@ export function DatabasePage({
         filters:            src.filters,
         sorts:              src.sorts,
         filterLogic:        src.filterLogic,
-        groupByPropertyId:  src.groupByPropertyId,
-        calendarPropertyId: src.calendarPropertyId,
+        groupByPropertyId:    src.groupByPropertyId,
+        calendarPropertyId:   src.calendarPropertyId,
+        ganttStartPropertyId: src.ganttStartPropertyId,
+        ganttEndPropertyId:   src.ganttEndPropertyId,
         cardDisplayProps:   src.cardDisplayProps,
         galleryCardSize:    src.galleryCardSize,
         entryOpenMode:      src.entryOpenMode,
@@ -498,8 +502,8 @@ export function DatabasePage({
       )}
 
       {/* ── View content ── */}
-      <div className={`min-h-0 flex-1 ${activeView?.type === "calendar" ? "overflow-hidden" : activeView?.type === "table" ? "" : "overflow-y-auto overflow-x-hidden"}`}>
-        <div className={activeView?.type === "calendar" || activeView?.type === "table" ? "h-full w-full" : "min-h-full w-full"}>
+      <div className={`min-h-0 flex-1 ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "overflow-hidden" : activeView?.type === "table" ? "" : "overflow-y-auto overflow-x-hidden"}`}>
+        <div className={activeView?.type === "calendar" || activeView?.type === "gantt" || activeView?.type === "table" ? "h-full w-full" : "min-h-full w-full"}>
           {!activeView && (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-muted-foreground">No views configured.</p>
@@ -509,6 +513,7 @@ export function DatabasePage({
           {activeView?.type === "board"    && <BoardView    {...sharedViewProps} />}
           {activeView?.type === "calendar" && <CalendarView {...sharedViewProps} />}
           {activeView?.type === "gallery"  && <GalleryView  {...sharedViewProps} />}
+          {activeView?.type === "gantt"    && <GanttView    {...sharedViewProps} />}
         </div>
       </div>
 

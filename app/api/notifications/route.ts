@@ -6,7 +6,7 @@ import { apiError, getSession } from "@/lib/workspaces/auth";
 const FILTER_MAP: Record<string, string[]> = {
   mentions:  ["mention"],
   comments:  ["comment", "reply", "resolved", "reopened"],
-  updates:   ["access_granted", "workspace_invite", "guest_accepted", "trash_warning", "page_update", "task_assigned"],
+  updates:   ["access_granted", "workspace_invite", "guest_accepted", "trash_warning", "page_update", "page_created", "task_assigned"],
 };
 
 export async function GET(req: Request) {

@@ -14,6 +14,7 @@ import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { NewPageButton } from "@/components/workspace/new-page-button";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { findRootFallback } from "@/lib/pages/root-sibling";
 
 const VISIBLE_MAX = 3;
 
@@ -30,11 +31,17 @@ type PageItem = {
 
 type Props = {
  pages:      PageItem[];
+ // Private database entries (kind "entry") — fetched and updated separately
+ // from `pages`, since entries never live in the general page tree / are
+ // never favorited/recently-visited the same way; this section is the one
+ // place they surface. See sidebar.tsx.
+ entries:     PageItem[];
  workspaceId:   string;
  workspaceSlug:  string;
  favoritePageIds: Set<string>;
  onToggleFavorite: (pageId: string, isFav: boolean) => void;
  onPagesChange:  (pages: PageItem[]) => void;
+ onEntriesChange: (entries: PageItem[]) => void;
 };
 
 // Mirrors recently-visited-section.tsx for the section shell (header, "N
@@ -43,7 +50,7 @@ type Props = {
 // (Favorite, Open, Add subpage, Duplicate, Copy link, Move to Trash), not a
 // new menu design.
 export function PrivateSection({
- pages, workspaceId, workspaceSlug, favoritePageIds, onToggleFavorite, onPagesChange,
+ pages, entries, workspaceId, workspaceSlug, favoritePageIds, onToggleFavorite, onPagesChange, onEntriesChange,
 }: Props) {
  const [expanded, setExpanded] = useState(true);
  const [popupOpen, setPopupOpen] = useState(false);
@@ -65,7 +72,10 @@ export function PrivateSection({
  useScrollLockWhileOpen(popupOpen, (target) =>
   !!popupRef.current?.contains(target) || !!moreRef.current?.contains(target));
 
- const privatePages = pages.filter((p) => p.isPrivate);
+ // Real pages first, then private entries appended — matches the order
+ // they'd naturally accumulate in (pages are usually created/marked private
+ // before someone starts privately using a database row).
+ const privatePages = [...pages.filter((p) => p.isPrivate), ...entries];
  if (privatePages.length === 0) return null;
 
  const visible = privatePages.slice(0, VISIBLE_MAX);
@@ -85,7 +95,7 @@ export function PrivateSection({
  }
 
  return (
-  <div className="px-2 py-2">
+  <div className="px-2">
    <div className="group/header mb-0.5 flex w-full items-center justify-between rounded-[var(--radius-md)] pr-1 transition-colors duration-150 hover:bg-sidebar-accent">
     <button
      type="button"
@@ -125,6 +135,10 @@ export function PrivateSection({
        isFav={favoritePageIds.has(page.id)}
        onToggleFavorite={onToggleFavorite}
        onPagesChange={onPagesChange}
+       // Entries live in a separate list from `pages` (see the Props
+       // comment above) — route their removal there instead of trying to
+       // filter them out of `pages`, which never contained them.
+       onRemove={page.kind === "entry" ? (id) => onEntriesChange(entries.filter((e) => e.id !== id)) : undefined}
       />
      ))}
      {hasMore && (
@@ -197,7 +211,7 @@ export function PrivateSection({
 // Same hover "+"/"···" actions as page-tree.tsx's PageTreeNode, just without
 // the drag-to-reorder/nesting UI — Private renders as a flat list.
 function PrivateRow({
- page, pages, workspaceId, workspaceSlug, isFav, onToggleFavorite, onPagesChange,
+ page, pages, workspaceId, workspaceSlug, isFav, onToggleFavorite, onPagesChange, onRemove,
 }: {
  page: PageItem;
  pages: PageItem[];
@@ -206,6 +220,9 @@ function PrivateRow({
  isFav: boolean;
  onToggleFavorite: (pageId: string, isFav: boolean) => void;
  onPagesChange: (pages: PageItem[]) => void;
+ /** Set for entry rows — removes from the separate private-entries list
+  *  instead of `pages` (which never contains entries) on delete. */
+ onRemove?: (id: string) => void;
 }) {
  const router = useRouter();
  const [menuOpen, setMenuOpen] = useState(false);
@@ -242,13 +259,19 @@ function PrivateRow({
   await fetch(`/api/pages/${page.id}`, { method: "DELETE" });
   setDeleting(false);
   setConfirmTrash(false);
-  onPagesChange(pages.filter((p) => p.id !== page.id));
+  if (onRemove) onRemove(page.id);
+  else onPagesChange(pages.filter((p) => p.id !== page.id));
 
   const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(page.shortId);
   if (onDeletedPage || page.kind === "database") {
    const parentShortId = pages.find((p) => p.id === page.parentId)?.shortId;
-   // No parent → Library (lists every page), not workspace home (a dashboard).
-   window.location.replace(parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`);
+   // No parent → nearest other top-level item (sidebar order), or workspace
+   // home if this was the only one.
+   const fallbackShortId = parentShortId ?? findRootFallback(pages, page.id)?.shortId ?? null;
+   window.location.replace(fallbackShortId ? `/app/${workspaceSlug}/${fallbackShortId}` : `/app/${workspaceSlug}`);
+  } else {
+   // Sync other routes (e.g. Home's page count / "Jump back in") with the deletion.
+   router.refresh();
   }
  }
 

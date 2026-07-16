@@ -2,19 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { format } from "date-fns";
-import { Check, Plus, Settings2, X, UserPlus, ChevronRight, Loader2, ArrowLeft, MoreHorizontal, GripVertical } from "lucide-react";
+import { Check, Plus, Settings2, X, UserPlus, ChevronRight, Loader2, ArrowLeft, MoreHorizontal, GripVertical, File as FileIcon, Paperclip, Maximize2, Download, ExternalLink, Trash2 } from "lucide-react";
+import { ImageLightbox } from "@/components/editor/comment-card";
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { OPTION_COLORS, getOptionColor, groupOptions } from "@/components/database/property-registry";
 import { OptionSubmenu } from "@/components/database/option-submenu";
-import { Calendar } from "@/components/ui/calendar";
-import type { DbProperty, DbPropertyConfig, SelectOption, StatusGroupKey, WorkspaceMember } from "@/components/database/types";
+import { DateValueEditor } from "@/components/database/date-value-editor";
+import type { DbProperty, DbPropertyConfig, FileItem, SelectOption, StatusGroupKey, WorkspaceMember } from "@/components/database/types";
 import { createId } from "@paralleldrive/cuid2";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useUpload } from "@/lib/storage/use-upload";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface CellEditorProps {
  property: DbProperty;
@@ -45,6 +50,23 @@ export function CellEditorPopover(props: CellEditorProps) {
 function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClose, onPropertyConfigChange, onEditProperty, zIndex = 200, hideSearch }: CellEditorProps) {
  const ref = useRef<HTMLDivElement>(null);
 
+ // A global (not per-view) "a cell popup is open somewhere" flag — read by
+ // CellActionOverlay so the hover comment/copy icon never renders over an
+ // open popup, no matter which view mounted this popup or whether that view
+ // remembered to thread its own open/closed state into its hover logic.
+ // Ref-counted since cascading flyouts can briefly mount a second instance.
+ useEffect(() => {
+  const el = document.body;
+  const count = Number(el.dataset.cellPopupCount ?? "0") + 1;
+  el.dataset.cellPopupCount = String(count);
+  el.dataset.cellPopupOpen = "true";
+  return () => {
+   const next = Math.max(0, Number(el.dataset.cellPopupCount ?? "1") - 1);
+   if (next === 0) { delete el.dataset.cellPopupOpen; delete el.dataset.cellPopupCount; }
+   else el.dataset.cellPopupCount = String(next);
+  };
+ }, []);
+
  const winH = window.innerHeight;
  const winW = window.innerWidth;
  const MARGIN = 8;
@@ -62,7 +84,12 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
  const top  = openBelow
   ? cellRect.bottom + 4
   : Math.max(MARGIN, cellRect.top - Math.min(maxH, spaceAbove) - 4);
- const left = Math.min(Math.max(MARGIN, cellRect.left), winW - 260 - MARGIN);
+ // Clamp against the popover's own max width (below), not a smaller magic
+ // number — anything narrower than that risks the box overflowing off the
+ // right edge of the screen for cells near it, exactly the cut-off bug this
+ // guards against.
+ const POPOVER_MAX_W = 320;
+ const left = Math.min(Math.max(MARGIN, cellRect.left), winW - POPOVER_MAX_W - MARGIN);
 
  useEffect(() => {
   function handler(e: MouseEvent) {
@@ -97,8 +124,12 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
   left,
   maxHeight: maxH,
   zIndex,
-  minWidth: 240,
-  maxWidth: 320,
+  // Files: fixed width so the Upload and Link tabs render at an identical
+  // size instead of each shrink-wrapping to its own content (a short button
+  // vs. a URL input made the popover visibly resize when switching tabs).
+  width: property.type === "files" ? 230 : undefined,
+  minWidth: property.type === "files" ? 230 : 240,
+  maxWidth: POPOVER_MAX_W,
   display: "flex",
   flexDirection: "column",
  };
@@ -125,6 +156,9 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
    )}
    {property.type === "relation" && (
     <RelationEditor value={value} property={property} onSave={onSave} />
+   )}
+   {property.type === "files" && (
+    <FileEditor value={value} workspaceId={workspaceId} onSave={onSave} onClose={onClose} />
    )}
   </div>
  );
@@ -443,36 +477,7 @@ interface DateEditorProps {
 }
 
 function DateEditor({ value, onSave, onClose }: DateEditorProps) {
- const raw = (value as { date?: string | null } | null)?.date ?? "";
- const selected = raw ? new Date(`${raw.slice(0, 10)}T00:00:00`) : undefined;
-
- function select(date: Date | undefined) {
-  onSave({ date: date ? format(date, "yyyy-MM-dd") : null });
-  onClose();
- }
-
- return (
-  <div className="flex flex-col">
-   <Calendar mode="single" selected={selected} onSelect={select} defaultMonth={selected ?? new Date()} autoFocus />
-   <div className="flex items-center justify-between border-t border-border/60 px-3 py-2">
-    <button
-     type="button"
-     disabled={!raw}
-     onClick={() => { onSave({ date: null }); onClose(); }}
-     className="text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-    >
-     Clear
-    </button>
-    <button
-     type="button"
-     onClick={() => select(new Date())}
-     className="text-xs font-medium text-primary transition-colors duration-150 hover:text-primary/80"
-    >
-     Today
-    </button>
-   </div>
-  </div>
- );
+ return <DateValueEditor value={value} onSave={onSave} onClose={onClose} />;
 }
 
 // ── Person ───────────────────────────────────────────────────────────────────
@@ -744,6 +749,395 @@ function RelationEditor({ value, property, onSave }: RelationEditorProps) {
      <p className="px-3 py-2 text-xs text-muted-foreground/60">No entries found</p>
     )}
    </div>
+  </div>
+ );
+}
+
+// ── Files ────────────────────────────────────────────────────────────────────
+
+interface FileEditorProps {
+ value: unknown;
+ workspaceId: string;
+ onSave: (value: unknown) => void;
+ /** Notion closes this popover the instant a file is added (upload or link)
+  *  rather than leaving it open — the newly added file then shows as an
+  *  inline thumbnail card wherever this property's value is displayed. */
+ onClose?: () => void;
+}
+
+function FileEditor({ value, workspaceId, onSave, onClose }: FileEditorProps) {
+ const files = (value as { files?: FileItem[] } | null)?.files ?? [];
+ const { upload, uploading, error } = useUpload({ kind: "database_file", workspaceId });
+ const [linkUrl, setLinkUrl] = useState("");
+ // Always opens on the compact "+ Add a file or image" row — whether the
+ // cell has never had a file, or just had its last one deleted. The full
+ // Upload/Link tabs only appear once that row is clicked. This also means
+ // deleting the last remaining file (via the "…" menu) can never leave the
+ // popup stuck in some in-between size/shape — there's only ever one empty
+ // appearance, not two.
+ const [showAddForm, setShowAddForm] = useState(false);
+ const fileInputRef = useRef<HTMLInputElement>(null);
+
+ function addFile(item: FileItem) {
+  onSave({ files: [...files, item] });
+  onClose?.();
+ }
+
+ function removeFile(id: string) {
+  onSave({ files: files.filter((f) => f.id !== id) });
+ }
+
+ async function uploadFile(file: File) {
+  const result = await upload(file);
+  if (!result) return;
+  addFile({ id: result.fileUploadId, url: result.fileUrl, name: file.name, mimeType: file.type, sizeBytes: file.size });
+ }
+
+ function onChangeFile(e: React.ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  e.target.value = "";
+  uploadFile(file);
+ }
+
+ function confirmLink() {
+  const raw = linkUrl.trim();
+  if (!raw) return;
+  const url = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
+  addFile({ id: createId(), url, name: raw.split("/").pop() || raw, mimeType: "", sizeBytes: 0 });
+  setLinkUrl("");
+ }
+
+ // Global (document-level) rather than scoped to a specific input — there's
+ // no dedicated "drop zone" element focused by default when this popover
+ // opens, so Ctrl+V needs to work as soon as the popover is on screen at all.
+ useEffect(() => {
+  function handlePaste(e: ClipboardEvent) {
+   const pasted = e.clipboardData?.files;
+   if (!pasted || !pasted.length) return;
+   const file = pasted[0];
+   if (!file.type.startsWith("image/")) return;
+   e.preventDefault();
+   uploadFile(file);
+  }
+  document.addEventListener("paste", handlePaste);
+  return () => document.removeEventListener("paste", handlePaste);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [files]);
+
+ const dragSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+ function handleDragEnd(event: DragEndEvent) {
+  const { active, over } = event;
+  if (!over || active.id === over.id) return;
+  const oldIndex = files.findIndex((f) => f.id === active.id);
+  const newIndex = files.findIndex((f) => f.id === over.id);
+  if (oldIndex === -1 || newIndex === -1) return;
+  onSave({ files: arrayMove(files, oldIndex, newIndex) });
+ }
+
+ return (
+  <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+   {files.length > 0 && (
+    <div className={`flex flex-col gap-2 p-2 ${showAddForm ? "border-b border-border" : ""}`}>
+     <DndContext sensors={dragSensors} onDragEnd={handleDragEnd}>
+      <SortableContext items={files.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+       {files.map((f) => (
+        <SortableFileRow key={f.id} file={f} onDelete={() => removeFile(f.id)} />
+       ))}
+      </SortableContext>
+     </DndContext>
+    </div>
+   )}
+   {showAddForm ? (
+    <>
+     <div className="flex items-center gap-1.5 px-3 pt-2.5 text-xs font-medium text-foreground">
+      <Paperclip size={12} className="text-muted-foreground" />
+      Add a file or image
+     </div>
+     <div className="p-3">
+      <Tabs defaultValue="upload">
+       <TabsList className="w-full" variant="line">
+        <TabsTrigger value="upload">Upload</TabsTrigger>
+        <TabsTrigger value="link">Link</TabsTrigger>
+       </TabsList>
+       <TabsContent className="mt-3" value="upload">
+        <Button
+         className="w-full"
+         disabled={uploading}
+         onClick={() => fileInputRef.current?.click()}
+         type="button"
+        >
+         {uploading ? "Uploading…" : "Choose a file"}
+        </Button>
+        <p className="mt-2 text-center text-xs text-muted-foreground/60">or Ctrl+V to paste an image</p>
+       </TabsContent>
+       <TabsContent className="mt-3 space-y-2" value="link">
+        <Input
+         autoFocus
+         value={linkUrl}
+         onChange={(e) => setLinkUrl(e.target.value)}
+         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmLink(); } }}
+         placeholder="Paste in https://…"
+         type="url"
+        />
+        <Button className="w-full" disabled={!linkUrl.trim()} onClick={confirmLink} type="button">
+         Link
+        </Button>
+       </TabsContent>
+      </Tabs>
+      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+      <input ref={fileInputRef} type="file" className="hidden" onChange={onChangeFile} />
+     </div>
+    </>
+   ) : (
+    <button
+     type="button"
+     onClick={() => setShowAddForm(true)}
+     className="flex w-full items-center gap-1.5 px-3 py-2.5 text-left text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+    >
+     <Paperclip size={12} />
+     Add a file or image
+    </button>
+   )}
+  </div>
+ );
+}
+
+// Drag-reorder wrapper around FileThumbnailCard, for the popup's file list —
+// same pattern as SortableOptionRow above (grip handle, hover-revealed).
+function SortableFileRow({ file, onDelete }: { file: FileItem; onDelete: () => void }) {
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: file.id });
+ const style: React.CSSProperties = {
+  transform: CSS.Transform.toString(transform),
+  transition,
+  opacity: isDragging ? 0.4 : 1,
+ };
+
+ return (
+  <div ref={setNodeRef} style={style} className="group/filerow flex items-center gap-1">
+   <span
+    {...attributes}
+    {...listeners}
+    style={{ touchAction: "none" }}
+    className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/40 opacity-0 group-hover/filerow:opacity-100 active:cursor-grabbing"
+   >
+    <GripVertical size={12} />
+   </span>
+   <div className="min-w-0 flex-1">
+    <FileThumbnailCard file={file} onDelete={onDelete} />
+   </div>
+  </div>
+ );
+}
+
+// ── Shared file thumbnail card ──────────────────────────────────────────────
+// Renders one FileItem as either an image preview or a name chip, with a
+// hover-revealed "…" menu (Full screen / Download / View original / Delete).
+// Used both inside FileEditor's popup list and inline in the entry panels
+// once the popup has auto-closed after an add, so the same card + menu +
+// (optional) click-to-select behavior is consistent everywhere.
+export interface FileThumbnailCardProps {
+ file: FileItem;
+ onDelete: () => void;
+ selected?: boolean;
+ onSelect?: () => void;
+ size?: "sm" | "md";
+}
+
+export function FileThumbnailCard({ file, onDelete, selected = false, onSelect, size = "sm" }: FileThumbnailCardProps) {
+ const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
+ const [lightbox, setLightbox] = useState(false);
+ const [confirmDelete, setConfirmDelete] = useState(false);
+ const isImage = file.mimeType.startsWith("image/");
+
+ return (
+  <div
+   data-file-menu
+   onClick={() => onSelect?.()}
+   className={`group/file relative overflow-hidden rounded-[var(--radius-sm)] border bg-muted/20 transition-colors duration-150 ${
+    selected ? "border-primary ring-2 ring-primary/40" : "border-border"
+   } ${onSelect ? "cursor-pointer" : ""}`}
+  >
+   {isImage ? (
+    <img
+     src={file.url}
+     alt={file.name}
+     onClick={(e) => { e.stopPropagation(); setLightbox(true); }}
+     className={`block w-full cursor-zoom-in object-cover ${size === "sm" ? "h-14" : "h-20"}`}
+    />
+   ) : (
+    <div className="flex items-center gap-2 px-2.5 py-2">
+     <FileIcon size={14} className="shrink-0 text-muted-foreground" />
+     <span className="min-w-0 flex-1 truncate text-xs text-foreground">{file.name}</span>
+    </div>
+   )}
+   <button
+    type="button"
+    onClick={(e) => {
+     e.stopPropagation();
+     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+     setMenuAnchor((cur) => (cur ? null : rect));
+    }}
+    className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-[var(--radius-xs)] bg-background/90 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground group-hover/file:opacity-100"
+    aria-label={`${file.name} options`}
+   >
+    <MoreHorizontal size={14} />
+   </button>
+   {menuAnchor && (
+    <FileThumbnailMenu
+     anchor={menuAnchor}
+     isImage={isImage}
+     fileUrl={file.url}
+     fileName={file.name}
+     onFullScreen={() => { setLightbox(true); setMenuAnchor(null); }}
+     onDismiss={() => setMenuAnchor(null)}
+     onDelete={() => { setMenuAnchor(null); setConfirmDelete(true); }}
+    />
+   )}
+   {lightbox && (
+    <ImageLightbox src={file.url} alt={file.name} onClose={() => setLightbox(false)} />
+   )}
+   <ConfirmDialog
+    open={confirmDelete}
+    onOpenChange={setConfirmDelete}
+    title="Delete this file?"
+    description={<><span className="font-semibold text-foreground">{file.name}</span> will be removed from this property. This action cannot be undone.</>}
+    confirmLabel="Delete"
+    onConfirm={() => { onDelete(); setConfirmDelete(false); }}
+   />
+  </div>
+ );
+}
+
+// Rendered in a portal, positioned from the "…" button's own bounding rect —
+// the popover it lives inside is `overflow-hidden` with a capped height, so
+// an absolutely-positioned menu nested inside it could get silently clipped
+// (and there was no way to scroll to reveal the rest). Portaling to
+// document.body with `position: fixed` escapes that entirely.
+interface FileThumbnailMenuProps {
+ anchor: DOMRect;
+ isImage: boolean;
+ fileUrl: string;
+ fileName: string;
+ onFullScreen: () => void;
+ onDismiss: () => void;
+ onDelete: () => void;
+}
+
+function FileThumbnailMenu({ anchor, isImage, fileUrl, fileName, onFullScreen, onDismiss, onDelete }: FileThumbnailMenuProps) {
+ const [mounted, setMounted] = useState(false);
+ useEffect(() => { setMounted(true); }, []);
+
+ useEffect(() => {
+  function handler(e: MouseEvent) {
+   const target = e.target as HTMLElement;
+   if (!target.closest?.("[data-file-menu]")) onDismiss();
+  }
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+ }, [onDismiss]);
+
+ if (!mounted) return null;
+
+ const MENU_W = 160;
+ const MARGIN = 4;
+ const top  = Math.min(anchor.bottom + MARGIN, window.innerHeight - 160);
+ const left = Math.min(Math.max(MARGIN, anchor.right - MENU_W), window.innerWidth - MENU_W - MARGIN);
+
+ return createPortal(
+  <div
+   data-file-menu
+   data-edit-property-exempt
+   style={{ position: "fixed", top, left, width: MENU_W, zIndex: 300 }}
+   className="rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
+   onClick={(e) => e.stopPropagation()}
+  >
+   {isImage && (
+    <button
+     type="button"
+     onClick={() => { onFullScreen(); }}
+     className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
+    >
+     <Maximize2 size={13} /> Full screen
+    </button>
+   )}
+   <a
+    href={fileUrl}
+    download={fileName}
+    onClick={onDismiss}
+    className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
+   >
+    <Download size={13} /> Download
+   </a>
+   <a
+    href={fileUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    onClick={onDismiss}
+    className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
+   >
+    <ExternalLink size={13} /> View original
+   </a>
+   <button
+    type="button"
+    onClick={onDelete}
+    className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-destructive hover:bg-destructive/10"
+   >
+    <Trash2 size={13} /> Delete
+   </button>
+  </div>,
+  document.body
+ );
+}
+
+// ── Inline files property value (entry panels) ──────────────────────────────
+// Once a files-type property has at least one file, panels render this
+// instead of the generic single-line CellDisplay button — a stack of
+// (selectable, menu-bearing) thumbnail cards plus a trailing "+ Add a file or
+// image" row, matching Notion's property-row layout after the add popover
+// (opened via `onAddClick`) has closed.
+export interface FilesPropertyValueProps {
+ files: FileItem[];
+ isEditor: boolean;
+ onChange: (value: unknown) => void;
+ onAddClick: (e: React.MouseEvent) => void;
+}
+
+export function FilesPropertyValue({ files, isEditor, onChange, onAddClick }: FilesPropertyValueProps) {
+ const [selectedId, setSelectedId] = useState<string | null>(null);
+
+ useEffect(() => {
+  if (!selectedId) return;
+  function handler(e: MouseEvent) {
+   const target = e.target as HTMLElement;
+   if (!target.closest?.("[data-file-menu]")) setSelectedId(null);
+  }
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+ }, [selectedId]);
+
+ return (
+  <div className="flex flex-col gap-1.5 py-1">
+   {files.map((f) => (
+    <FileThumbnailCard
+     key={f.id}
+     file={f}
+     size="md"
+     selected={selectedId === f.id}
+     onSelect={() => setSelectedId((cur) => (cur === f.id ? null : f.id))}
+     onDelete={() => onChange({ files: files.filter((x) => x.id !== f.id) })}
+    />
+   ))}
+   {isEditor && (
+    <button
+     type="button"
+     onClick={onAddClick}
+     className="flex items-center gap-1 self-start rounded-[var(--radius-xs)] px-1 py-0.5 text-xs font-medium text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+    >
+     <Plus size={12} /> Add a file or image
+    </button>
+   )}
   </div>
  );
 }

@@ -134,6 +134,41 @@
       "when": 1784025477726,
       "tag": "0018_whole_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784089578167,
+      "tag": "0019_tan_gambit",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784107482380,
+      "tag": "0020_powerful_scalphunter",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784109172165,
+      "tag": "0021_bright_mother_askani",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1784116177499,
+      "tag": "0022_yielding_jane_foster",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1784117150929,
+      "tag": "0023_awesome_veda",
+      "breakpoints": true
     }
   ]
 }

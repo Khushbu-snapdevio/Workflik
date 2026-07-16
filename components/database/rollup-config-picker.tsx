@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowLeftRight, Check } from "lucide-react";
 import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
+import { PageIcon } from "@/components/pages/page-icon";
 import { getClampedLeft, getClampedTop } from "@/lib/ui/clamp-to-viewport";
 import type { DbProperty, RollupAggregation } from "@/components/database/types";
 
@@ -124,6 +125,7 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
           )}
           {!loadingTargets && targetProps.map((p) => {
             const Icon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON] ?? ArrowLeftRight;
+            const propConfig = (p.config ?? {}) as { icon?: string };
             return (
               <button
                 key={p.id}
@@ -131,7 +133,7 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
                 onClick={() => setTargetProp(p)}
                 className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
               >
-                <Icon size={13} className="shrink-0 text-muted-foreground/60" />
+                {propConfig.icon ? <PageIcon icon={propConfig.icon} size={13} className="shrink-0" /> : <Icon size={13} className="shrink-0 text-muted-foreground/60" />}
                 <span className="min-w-0 flex-1 truncate">{p.name}</span>
               </button>
             );

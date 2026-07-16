@@ -1,7 +1,7 @@
 "use client";
 
 import {
- useEffect, useRef, useState, useCallback, type KeyboardEvent,
+ useEffect, useRef, useState, useCallback, type KeyboardEvent, type MouseEvent as ReactMouseEvent,
 } from "react";
 import {
  Plus as PlusIcon, MoreHorizontal as DotsThreeIcon, Trash2 as TrashIcon, Copy as CopyIcon,
@@ -25,12 +25,11 @@ import { createPortal } from "react-dom";
 import type { DatabaseProperty, DatabaseView } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { DatePicker } from "@/components/ui/date-picker";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellActionOverlay } from "@/components/database/cell-action-overlay";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { CellDisplay } from "@/components/database/cells/cell-display";
-import { getOptionColor, groupOptions, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
+import { getOptionColor, groupOptions, PROPERTY_TYPE_ICON, formatDateValue } from "@/components/database/property-registry";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { PageIcon } from "@/components/pages/page-icon";
@@ -44,9 +43,12 @@ import type { SelectOption, DbPropertyConfig, DbProperty, DbView, ViewPropertyOv
 
 type PropOption   = SelectOption;
 type PropConfig   = DbPropertyConfig;
-// Badge-style properties (colored pill values) intentionally get comment-only
-// hover actions — no copy-to-clipboard, unlike plain-value properties.
-const BADGE_TYPES = new Set(["select", "multi_select"]);
+// Badge-style properties (colored pill values) and Person (an avatar chip,
+// not really "text" a copy-to-clipboard makes sense for) intentionally get
+// comment-only hover actions — no copy-to-clipboard, unlike plain-value
+// properties. "created_by" doesn't need an entry here — it skips the hover
+// overlay entirely (see the createPortal call below).
+const BADGE_TYPES = new Set(["select", "multi_select", "person"]);
 type SelectVal   = { optionId?: string };
 type MultiSelectVal = { optionIds?: string[] };
 type CheckboxVal  = { checked?: boolean };
@@ -69,14 +71,12 @@ function getPropertyText(prop: DatabaseProperty, raw: unknown): string {
   case "email":  return String((v as EmailVal).email ?? "");
   case "phone":  return String((v as { phone?: string }).phone ?? "");
   case "checkbox": return (v as CheckboxVal).checked ? "Yes" : "No";
-  case "person": {
+  case "person":
+  case "created_by": {
    const members = ((v as PersonVal)._members) ?? [];
    return members.map((m) => m.name || m.email).filter(Boolean).join(", ");
   }
-  case "date": {
-   const d = (v as DateVal).date;
-   return d ? new Date(d + "T00:00:00").toLocaleDateString() : "";
-  }
+  case "date": return formatDateValue(v);
   case "select": {
    const optId = (v as SelectVal).optionId;
    if (!optId) return "";
@@ -97,7 +97,7 @@ function EditableCell({
  value, type, placeholder, onSave, onEditingChange,
 }: {
  value:    string | number | null | undefined;
- type:    "text" | "number" | "email" | "url" | "date";
+ type:    "text" | "number" | "email" | "url";
  placeholder: string;
  onSave:   (v: unknown) => void;
  onEditingChange: (editing: boolean) => void;
@@ -125,8 +125,6 @@ function EditableCell({
   const v = draft.trim();
   if (type === "number") {
    onSave(v === "" ? null : { number: Number(v) });
-  } else if (type === "date") {
-   onSave(v === "" ? null : { date: v });
   } else if (type === "email") {
    onSave(v === "" ? null : { email: v });
   } else if (type === "url") {
@@ -139,18 +137,6 @@ function EditableCell({
  function onKey(e: KeyboardEvent<HTMLInputElement>) {
   if (e.key === "Enter") commit();
   if (e.key === "Escape") setEditing(false);
- }
-
- if (editing && type === "date") {
-  return (
-   <DatePicker
-    autoFocus
-    value={draft || null}
-    onChange={(v) => { setEditing(false); onSave(v ? { date: v } : null); }}
-    onOpenChange={(o) => { if (!o) setEditing(false); }}
-    className="h-[22px] gap-1.5 rounded border-primary/60 px-2 py-0.5 text-sm"
-   />
-  );
  }
 
  if (editing) {
@@ -167,10 +153,7 @@ function EditableCell({
   );
  }
 
- const rawDisplay = value != null && value !== "" ? String(value) : null;
- const display = type === "date" && rawDisplay
-  ? new Date(rawDisplay + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-  : rawDisplay;
+ const display = value != null && value !== "" ? String(value) : null;
 
  // URL: show as clickable link with an edit pencil on hover
  if (type === "url" && display) {
@@ -481,6 +464,59 @@ function SelectPopoverCell({
  );
 }
 
+// ── Date cell ─────────────────────────────────────────────────────────────────
+// Uses the same shared CellDisplay (read) + CellEditorPopover (edit — range,
+// time/timezone, format, reminder) as every other database view, instead of
+// EditableCell's plain single-date DatePicker.
+function DateCell({
+ property, value, workspaceId, onSave, onEditingChange,
+}: {
+ property: DatabaseProperty;
+ value:  DateVal | null | undefined;
+ workspaceId: string;
+ onSave: (v: unknown) => void;
+ onEditingChange?: (editing: boolean) => void;
+}) {
+ const [rect, setRect] = useState<DOMRect | null>(null);
+ const hasValue = !!value?.date;
+
+ function open(e: ReactMouseEvent<HTMLButtonElement>) {
+  setRect((e.currentTarget as HTMLElement).getBoundingClientRect());
+  onEditingChange?.(true);
+ }
+ function close() {
+  setRect(null);
+  onEditingChange?.(false);
+ }
+
+ return (
+  <>
+   <button
+    type="button"
+    onClick={open}
+    className="flex min-h-[24px] w-full items-center rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
+   >
+    {hasValue ? (
+     <CellDisplay property={property as unknown as DbProperty} value={value} />
+    ) : (
+     <span className="text-xs text-muted-foreground/60">Pick date</span>
+    )}
+   </button>
+
+   {rect && (
+    <CellEditorPopover
+     property={property as unknown as DbProperty}
+     value={value ?? null}
+     cellRect={rect}
+     workspaceId={workspaceId}
+     onSave={onSave}
+     onClose={close}
+    />
+   )}
+  </>
+ );
+}
+
 // ── Checkbox cell ─────────────────────────────────────────────────────────────
 
 function CheckboxCell({ value, onSave }: { value: CheckboxVal | null | undefined; onSave: (v: unknown) => void }) {
@@ -521,12 +557,55 @@ function PersonCell({
     className="flex min-h-[24px] w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
    >
     {hasValue ? (
-     <CellDisplay property={property as unknown as DbProperty} value={value} />
+     <CellDisplay property={property as unknown as DbProperty} value={value} workspaceId={workspaceId} />
     ) : (
      <>
       <UserIcon size={12} className="shrink-0 text-muted-foreground/70" />
       <span className="text-xs text-muted-foreground/60">Empty</span>
      </>
+    )}
+   </button>
+
+   {rect && (
+    <CellEditorPopover
+     property={property as unknown as DbProperty}
+     value={value ?? null}
+     cellRect={rect}
+     workspaceId={workspaceId}
+     onSave={onSave}
+     onClose={() => setRect(null)}
+    />
+   )}
+  </>
+ );
+}
+
+// ── Files cell ───────────────────────────────────────────────────────────────
+// Same CellDisplay (read) + CellEditorPopover (edit, upload/link) pattern as
+// PersonCell above — keeps the template preview's editing behavior identical
+// to the live app's table-view.tsx instead of a second, divergent implementation.
+function FileCell({
+ property, value, workspaceId, onSave,
+}: {
+ property: DatabaseProperty;
+ value:  { files?: { id: string; url: string; name: string; mimeType: string; sizeBytes: number }[] } | null | undefined;
+ workspaceId: string;
+ onSave: (v: unknown) => void;
+}) {
+ const [rect, setRect] = useState<DOMRect | null>(null);
+ const hasValue = (value?.files?.length ?? 0) > 0;
+
+ return (
+  <>
+   <button
+    type="button"
+    onClick={(e) => setRect((e.currentTarget as HTMLElement).getBoundingClientRect())}
+    className="flex min-h-[24px] w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
+   >
+    {hasValue ? (
+     <CellDisplay property={property as unknown as DbProperty} value={value} compact workspaceId={workspaceId} />
+    ) : (
+     <span className="text-xs text-muted-foreground/60">Empty</span>
     )}
    </button>
 
@@ -650,7 +729,7 @@ function ColumnHeader({
           onClick={() => { setDraftName(prop.name); setRenaming(true); }}
           className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
          >
-          Rename
+          <PencilSimpleIcon size={13} /> Rename
          </button>
          {(prop.type === "select" || prop.type === "multi_select") && (
           <button
@@ -876,10 +955,8 @@ function CellContent({
    const nv = raw as NumberVal | null;
    return <EditableCell value={nv?.number} type="number" placeholder="—" onSave={onSave} onEditingChange={onEditingChange} />;
   }
-  case "date": {
-   const dv = raw as DateVal | null;
-   return <EditableCell value={dv?.date} type="date" placeholder="Pick date" onSave={onSave} onEditingChange={onEditingChange} />;
-  }
+  case "date":
+   return <DateCell property={prop} value={raw as DateVal | null} workspaceId={workspaceId} onSave={onSave} onEditingChange={onEditingChange} />;
   case "email": {
    const ev = raw as EmailVal | null;
    return <EditableCell value={ev?.email} type="email" placeholder="Empty" onSave={onSave} onEditingChange={onEditingChange} />;
@@ -934,6 +1011,22 @@ function CellContent({
    );
   case "person":
    return <PersonCell property={prop} value={raw as PersonVal | null} workspaceId={workspaceId} onSave={onSave} />;
+  case "files":
+   return <FileCell property={prop} value={raw as { files?: { id: string; url: string; name: string; mimeType: string; sizeBytes: number }[] } | null} workspaceId={workspaceId} onSave={onSave} />;
+  // Computed server-side from the entry's own creator, same as Rollup/Formula
+  // — read-only, no editor popover (there's nothing for a user to pick).
+  case "created_by": {
+   const pv = raw as PersonVal | null;
+   const hasValue = (pv?.userIds?.length ?? 0) > 0;
+   return (
+    <div className="flex min-h-[24px] w-full items-center px-1 py-0.5">
+     {hasValue
+      ? <CellDisplay property={prop as unknown as DbProperty} value={pv} workspaceId={workspaceId} />
+      : <span className="text-xs text-muted-foreground/60">Empty</span>
+     }
+    </div>
+   );
+  }
   case "phone": {
    const pv = raw as { phone?: string } | null;
    return <EditableCell value={pv?.phone} type="text" placeholder="Empty" onSave={(v) => onSave(v ? { phone: (v as { text: string }).text } : null)} onEditingChange={onEditingChange} />;
@@ -1204,7 +1297,11 @@ function SortableRow({
    {visibleProps.map((p) => (
     <td
      key={p.id}
-     className="group/cell relative overflow-hidden px-1 py-0.5 transition-colors hover:bg-accent/40"
+     // pr-7 (not px-1 on the right) reserves a gutter matching the hover
+     // CellActionOverlay's comment/copy icon zone — otherwise wide badge
+     // content truncates flush to the cell edge and the icons render
+     // directly on top of it on hover (same fix as table-view.tsx).
+     className="group/cell relative overflow-hidden pl-1 pr-7 py-0.5 transition-colors hover:bg-accent/40"
      onMouseEnter={(e) => {
       clearLeaveTimer();
       if (!commentPopover && editingPropId !== p.id) {
@@ -1235,8 +1332,11 @@ function SortableRow({
    <td />
   </tr>
 
-  {/* Portal overlay — comment + copy icons on cell hover */}
-  {hoveredCell && typeof document !== "undefined" && createPortal(
+  {/* Portal overlay — comment + copy icons on cell hover. Skipped entirely
+      for "created_by" — it's a computed, read-only value with nothing
+      meaningful to comment on or copy per-cell (same reasoning as it having
+      no click-to-edit interaction either). */}
+  {hoveredCell && hoveredCell.prop.type !== "created_by" && typeof document !== "undefined" && createPortal(
    <CellActionOverlay
     rect={hoveredCell.rect}
     canCopy={!BADGE_TYPES.has(hoveredCell.prop.type) && !!getPropertyText(hoveredCell.prop, hoveredCell.rawVal)}

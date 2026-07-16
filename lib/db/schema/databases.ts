@@ -20,6 +20,8 @@ import {
   viewType,
 } from "./types";
 import { pages } from "./pages";
+import { workspaces } from "./workspace";
+import { users } from "./auth";
 
 export const databaseViews = pgTable("database_views", {
   id:                 uuid("id").primaryKey().defaultRandom(),
@@ -28,6 +30,8 @@ export const databaseViews = pgTable("database_views", {
   type:               viewType("type").notNull(),
   groupByPropertyId:  uuid("group_by_property_id").references((): AnyPgColumn => databaseProperties.id, { onDelete: "set null" }),
   calendarPropertyId: uuid("calendar_property_id").references((): AnyPgColumn => databaseProperties.id, { onDelete: "set null" }),
+  ganttStartPropertyId: uuid("gantt_start_property_id").references((): AnyPgColumn => databaseProperties.id, { onDelete: "set null" }),
+  ganttEndPropertyId: uuid("gantt_end_property_id").references((): AnyPgColumn => databaseProperties.id, { onDelete: "set null" }),
   filters:            jsonb("filters").notNull().default(sql`'[]'::jsonb`),
   sorts:              jsonb("sorts").notNull().default(sql`'[]'::jsonb`),
   cardDisplayProps:   jsonb("card_display_props").notNull().default(sql`'[]'::jsonb`),
@@ -75,6 +79,25 @@ export const propertyValues = pgTable("property_values", {
   index("property_values_value_gin_idx").using("gin", t.value),
 ]);
 
+// One row per (entry, date-property) that currently has a reminder set — the
+// cron scan in entry-reminder-send.ts reads off `entry_reminders_due_idx`
+// instead of scanning every date-typed property_values row on every tick.
+export const entryReminders = pgTable("entry_reminders", {
+  id:          uuid("id").primaryKey().defaultRandom(),
+  entryId:     uuid("entry_id").notNull().references(() => pages.id, { onDelete: "cascade" }),
+  propertyId:  uuid("property_id").notNull().references(() => databaseProperties.id, { onDelete: "cascade" }),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  recipientId: uuid("recipient_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  remindAt:    timestamp("remind_at", { withTimezone: true }).notNull(),
+  notified:    boolean("notified").notNull().default(false),
+  createdAt:   timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:   updatedAt(),
+}, (t) => [
+  uniqueIndex("entry_reminders_entry_prop_idx").on(t.entryId, t.propertyId),
+  index("entry_reminders_due_idx").on(t.remindAt, t.notified),
+]);
+
 export type DatabaseView     = typeof databaseViews.$inferSelect;
 export type DatabaseProperty = typeof databaseProperties.$inferSelect;
 export type PropertyValue    = typeof propertyValues.$inferSelect;
+export type EntryReminder    = typeof entryReminders.$inferSelect;

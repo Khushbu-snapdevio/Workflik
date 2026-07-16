@@ -8,7 +8,7 @@ import {
  Plus, ExternalLink as ArrowSquareOut, Trash2 as Trash, EyeOff as EyeSlash, Type as TextT,
  ArrowUp as SortAscending, ArrowDown as SortDescending,
  Check, FileText, Table2, GripVertical, MessageSquare as MessageSquareIcon, Link2 as Link2Icon,
- Copy as CopyIcon, Settings2 as GearIcon,
+ Copy as CopyIcon, Settings2 as GearIcon, Pencil as PencilIcon,
 } from "lucide-react";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellActionOverlay } from "@/components/database/cell-action-overlay";
@@ -21,7 +21,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PROPERTY_REGISTRY, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
-import { getOptionColor } from "@/components/database/property-registry";
+import { getOptionColor, formatDateValue } from "@/components/database/property-registry";
+import { PageIcon } from "@/components/pages/page-icon";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
@@ -40,7 +41,7 @@ import { IconTooltip } from "@/components/ui/icon-tooltip";
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const TEXT_TYPES = new Set(["text", "number", "url", "email", "phone"]);
-const POPUP_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation"]);
+const POPUP_TYPES = new Set(["select", "status", "multi_select", "date", "person", "relation", "files"]);
 // Badge-style properties (colored pill values) intentionally get comment-only
 // hover actions — no copy-to-clipboard, unlike plain-value properties.
 const BADGE_TYPES = new Set(["select", "status", "multi_select"]);
@@ -56,10 +57,7 @@ function getPropertyText(prop: DbProperty, rawVal: unknown): string {
   case "email":  return String(v.email ?? "");
   case "phone":  return String(v.phone ?? "");
   case "checkbox": return (v as { checked?: boolean }).checked ? "Yes" : "No";
-  case "date": {
-   const d = (v as { date?: string | null }).date;
-   return d ? new Date(d).toLocaleDateString() : "";
-  }
+  case "date": return formatDateValue(v);
   case "select":
   case "status": {
    const optId = (v as { optionId?: string | null }).optionId;
@@ -177,8 +175,28 @@ function SortableTableRow({
    clearLeaveTimer();
    setHoveredCell(null);
   }
+  // Self-healing: `onMouseLeave` doesn't fire for every way the cursor can
+  // stop being over this cell (e.g. it can be skipped when the pointer jumps
+  // straight to a newly-mounted element, such as a popup, without crossing
+  // the cell's boundary in between) — left unchecked, `hoveredCell` (and its
+  // portal) gets stuck showing at its last position indefinitely. Validate
+  // against the real cursor position on every move and self-clear if it's
+  // drifted outside the snapshotted rect, instead of relying solely on the
+  // leave event.
+  const rect = hoveredCell.rect;
+  function handleMove(e: MouseEvent) {
+   const r = rect;
+   if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+    clearLeaveTimer();
+    setHoveredCell(null);
+   }
+  }
   document.addEventListener("scroll", handleScroll, true);
-  return () => document.removeEventListener("scroll", handleScroll, true);
+  document.addEventListener("mousemove", handleMove);
+  return () => {
+   document.removeEventListener("scroll", handleScroll, true);
+   document.removeEventListener("mousemove", handleMove);
+  };
   // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [hoveredCell]);
 
@@ -191,6 +209,17 @@ function SortableTableRow({
  useEffect(() => {
   if (activeCell?.entryId === entry.id) setHoveredCell(null);
  }, [activeCell, entry.id]);
+
+ // Same belt-and-suspenders reasoning as above, for the popup-editor case —
+ // an inline `onClick={() => { setHoveredCell(null); activateCell(...) }}`
+ // handles the common path, but Chromium can re-dispatch a synthetic
+ // mouseenter when the DOM under a stationary cursor changes shape after the
+ // click (e.g. once the popup portal mounts), re-setting hoveredCell after
+ // the inline clear already ran. A commit-phase effect clears it again on
+ // every render where a popup is open for this row, closing that race.
+ useEffect(() => {
+  if (editPop?.entryId === entry.id) setHoveredCell(null);
+ }, [editPop, entry.id]);
 
  function fetchRowComments() {
   if (commentsFetchedRef.current) return;
@@ -233,7 +262,7 @@ function SortableTableRow({
    {/* Drag handle + context menu (left column, Notion style) */}
    <div
     className="flex shrink-0 items-center justify-center gap-0"
-    style={{ width: DRAG_COL_W, minWidth: DRAG_COL_W, height: ROW_H, touchAction: "none", userSelect: "none" }}
+    style={{ width: DRAG_COL_W, minWidth: DRAG_COL_W, minHeight: ROW_H, touchAction: "none", userSelect: "none" }}
    >
     {isEditor && (
      <div
@@ -256,7 +285,7 @@ function SortableTableRow({
    {/* Checkbox / index */}
    <div
     className="flex shrink-0 items-center justify-center"
-    style={{ width: IDX_COL_W, minWidth: IDX_COL_W, height: ROW_H }}
+    style={{ width: IDX_COL_W, minWidth: IDX_COL_W, minHeight: ROW_H }}
    >
     {isEditor ? (
      <label className="relative flex size-5 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -290,10 +319,10 @@ function SortableTableRow({
    {/* Title cell */}
    <div
     className="flex shrink-0 items-center gap-2.5 px-3"
-    style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: ROW_H, borderRight: "1px solid var(--color-border)" }}
+    style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, minHeight: ROW_H, borderRight: "1px solid var(--color-border)" }}
    >
     {entry.icon ? (
-     <span className="shrink-0 text-base leading-none">{entry.icon}</span>
+     <PageIcon icon={entry.icon} size={14} className="shrink-0" />
     ) : (
      <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-border/40 bg-muted/20">
       <FileText size={11} className="text-muted-foreground/60" />
@@ -376,16 +405,25 @@ function SortableTableRow({
      <div
       key={prop.id}
       className={[
-       "relative flex min-w-0 shrink-0 cursor-pointer items-center overflow-hidden px-3 transition-colors duration-100",
+       // pr-8 (not px-3 on the right) reserves a gutter matching the hover
+       // CellActionOverlay's comment/copy icon zone (cell-action-overlay.tsx)
+       // — without it, wide badge/text content truncates flush to the cell's
+       // true edge and the icons render directly on top of it on hover.
+       "relative flex min-w-0 shrink-0 cursor-pointer items-center overflow-hidden pl-3 pr-8 transition-colors duration-100",
        isActive
         ? "bg-primary/5 border-l border-primary/30"
         : "hover:bg-muted/40",
       ].join(" ")}
-      style={{ width: colW(prop.id), minWidth: colW(prop.id), height: ROW_H }}
+      style={{ width: colW(prop.id), minWidth: colW(prop.id), minHeight: ROW_H }}
       onClick={(e) => { setHoveredCell(null); activateCell(entry.id, prop.id, e); }}
       onMouseEnter={(e) => {
        clearLeaveTimer();
-       if (!isActive && !(editPop?.entryId === entry.id && editPop?.propId === prop.id) && !commentPopover) {
+       // Suppressed while ANY cell popup is open, not just this exact cell —
+       // a popup can visually extend well past its own trigger cell (e.g.
+       // the files editor spans multiple rows once opened on a short row),
+       // so a hover overlay on a nearby cell could render on top of it
+       // regardless of z-index if the two ever raced on mount order.
+       if (!isActive && !editPop && !commentPopover) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         setHoveredCell({ propId: prop.id, prop, rawVal, rect });
         fetchRowComments();
@@ -407,10 +445,10 @@ function SortableTableRow({
         className="w-full bg-transparent text-sm text-foreground focus:outline-none"
        />
       ) : rawVal ? (
-       <CellDisplay property={prop} value={rawVal} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} />
+       <CellDisplay property={prop} value={rawVal} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} workspaceId={workspaceId} />
       ) : (
        <>
-        <CellDisplay property={prop} value={rawVal} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} />
+        <CellDisplay property={prop} value={rawVal} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} workspaceId={workspaceId} />
         {isEditor && TEXT_TYPES.has(prop.type) && (
          <span className="pointer-events-none select-none text-sm text-muted-foreground/60">Type…</span>
         )}
@@ -420,11 +458,15 @@ function SortableTableRow({
     );
    })}
 
-   {isEditor && <div className="shrink-0" style={{ width: addBtnW, height: ROW_H }} />}
+   {isEditor && <div className="shrink-0" style={{ width: addBtnW, minHeight: ROW_H }} />}
   </div>
 
-  {/* Portal overlay — rendered to document.body, completely outside table DOM */}
-  {hoveredCell && typeof document !== "undefined" && createPortal(
+  {/* Portal overlay — rendered to document.body, completely outside table DOM.
+      `!editPop` is a belt-and-suspenders guard here (not just in the
+      onMouseEnter handler that sets hoveredCell) — it doesn't matter how or
+      when hoveredCell got set, this overlay must never render while a cell
+      popup is open, since the popup can visually extend over other rows. */}
+  {hoveredCell && !editPop && typeof document !== "undefined" && createPortal(
    <CellActionOverlay
     rect={hoveredCell.rect}
     canCopy={!BADGE_TYPES.has(hoveredCell.prop.type) && !!getPropertyText(hoveredCell.prop, hoveredCell.rawVal)}
@@ -994,6 +1036,11 @@ export function TableView({
      onClose={() => setEditPop(null)}
      onPropertyConfigChange={(propId, config) => onUpdateProperty(propId, { config })}
      onEditProperty={(rect) => setEditPropPanel({ propId: editPop.propId, anchorRect: rect })}
+     // Same z-index override used elsewhere in this file — without it this
+     // shares CellActionOverlay's own z-index (200), so whichever mounted
+     // more recently wins the stack and a hovered comment/copy icon on a
+     // different row can render on top of this still-open popup.
+     zIndex={300}
     />
    )}
 
@@ -1051,6 +1098,7 @@ function SortableColumnHeader({ prop, width, isEditor, isRenaming, renameVal, on
   opacity: isDragging ? 0.4 : 1,
  };
  const Icon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
+ const propConfig = (prop.config ?? {}) as { icon?: string };
 
  return (
   <div ref={setNodeRef} style={style} className="group relative shrink-0">
@@ -1087,7 +1135,7 @@ function SortableColumnHeader({ prop, width, isEditor, isRenaming, renameVal, on
       </span>
      )}
      <span className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50">
-      <Icon size={10} />
+      {propConfig.icon ? <PageIcon icon={propConfig.icon} size={10} /> : <Icon size={10} />}
      </span>
      <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">{prop.name}</span>
     </button>
@@ -1272,7 +1320,7 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpda
       <div className="my-1 h-px bg-border/60" />
      </>
     )}
-    <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><TextT size={13} /> Rename</button>
+    <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><PencilIcon size={13} /> Rename</button>
     {isSelectType && (
      <button onClick={() => setEditingProperty(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><GearIcon size={13} /> Edit property</button>
     )}

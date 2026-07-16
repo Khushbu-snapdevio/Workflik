@@ -7,9 +7,13 @@ interface TrashBannerProps {
  pageId:    string;
  workspaceSlug: string;
  parentShortId?: string | null;
+ /** Nearest other top-level item (previous, or next if this was first) —
+  *  used as the fallback destination when this page has no parent. Ignored
+  *  when `parentShortId` is set. */
+ rootFallbackShortId?: string | null;
 }
 
-export function TrashBanner({ pageId, workspaceSlug, parentShortId }: TrashBannerProps) {
+export function TrashBanner({ pageId, workspaceSlug, parentShortId, rootFallbackShortId }: TrashBannerProps) {
  const router = useRouter();
  const [confirming, setConfirming] = useState(false);
  const [restoring, setRestoring]  = useState(false);
@@ -30,8 +34,10 @@ export function TrashBanner({ pageId, workspaceSlug, parentShortId }: TrashBanne
   setDeleting(true);
   try {
    await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
-   // No parent → Library (lists every page), not workspace home (a dashboard).
-   router.push(parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`);
+   // No parent → nearest other top-level item (sidebar order), or workspace
+   // home if this was the only one.
+   const fallbackShortId = parentShortId ?? rootFallbackShortId ?? null;
+   router.push(fallbackShortId ? `/app/${workspaceSlug}/${fallbackShortId}` : `/app/${workspaceSlug}`);
   } finally {
    setDeleting(false);
    setConfirming(false);

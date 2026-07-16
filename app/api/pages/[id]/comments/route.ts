@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { comments, pages, users } from "@/lib/db/schema";
@@ -158,7 +158,20 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     const unresolvedCount = shaped.filter((r) => !r.isResolved && !r.deletedAt).length;
 
-    return Response.json({ comments: shaped, totalCount: shaped.length, unresolvedCount });
+    // Reactions only store reactor user IDs (see comments.reactions) — resolve
+    // them to names in one batch query so the client can show "X reacted with
+    // 😀" on hover instead of just a count, without an N+1 lookup per emoji.
+    const reactorIds = new Set<string>();
+    for (const c of allComments) {
+      const reactions = (c.reactions as Record<string, string[]>) ?? {};
+      for (const ids of Object.values(reactions)) for (const id of ids) reactorIds.add(id);
+    }
+    const reactorRows = reactorIds.size
+      ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, [...reactorIds]))
+      : [];
+    const reactionUsers = Object.fromEntries(reactorRows.map((u) => [u.id, u.name]));
+
+    return Response.json({ comments: shaped, totalCount: shaped.length, unresolvedCount, reactionUsers });
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error("[GET /api/pages/:id/comments]", err);

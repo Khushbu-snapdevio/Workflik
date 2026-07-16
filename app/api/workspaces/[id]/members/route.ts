@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: Ctx) {
     const { id } = await params;
     const session = await getSession();
     await requireWorkspaceMember(id, session.user.id);
+    const workspace = await getWorkspace(id);
 
     const members = await db
       .select({
@@ -38,12 +39,19 @@ export async function GET(_req: Request, { params }: Ctx) {
         userName:     users.name,
         userEmail:    users.email,
         userImage:    users.image,
+        userTimezone: users.timezone,
       })
       .from(workspaceMembers)
       .leftJoin(users, eq(users.id, workspaceMembers.userId))
       .where(eq(workspaceMembers.workspaceId, id));
 
-    return Response.json(members);
+    // isOwner: the single workspace-creator concept (distinct from the
+    // "admin" role, which can be held by more than one member) — surfaced
+    // per-row so callers like the person hover card can label them
+    // "Workspace Owner" without a second request just to look this up.
+    const withOwner = members.map((m) => ({ ...m, isOwner: !!m.userId && m.userId === workspace.createdBy }));
+
+    return Response.json(withOwner);
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     return apiError(500, "Internal server error");

@@ -1,11 +1,47 @@
-export type ViewType = "table" | "board" | "calendar" | "gallery";
+export type ViewType = "table" | "board" | "calendar" | "gallery" | "gantt";
 
 export type PropertyType =
   | "text" | "number" | "select" | "multi_select" | "status" | "date"
-  | "checkbox" | "url" | "email" | "phone" | "person" | "relation" | "rollup" | "formula";
+  | "checkbox" | "url" | "email" | "phone" | "person" | "relation" | "rollup" | "formula" | "created_by" | "files";
 
 export type RollupAggregation =
   | "count" | "count_values" | "sum" | "average" | "min" | "max" | "range" | "earliest" | "latest";
+
+export type DateFormatOption = "full" | "short" | "mdy" | "dmy" | "ymd" | "relative";
+export type TimeFormatOption = "hidden" | "12h" | "24h";
+export type ReminderOption =
+  | "at_time" | "5m" | "10m" | "15m" | "30m" | "1h" | "2h" | "1d" | "2d";
+
+// Value shape for a `date`-type property. `date` is the only field every
+// pre-existing reader/writer knows about (board/gallery visibility checks,
+// calendar view, sort/filter, rollups) — everything else is additive and
+// only understood by the rich date editor and its display formatter.
+export interface DateValue {
+  date:         string | null;   // yyyy-MM-dd, start date
+  endDate?:     string | null;   // yyyy-MM-dd, only set when range is enabled
+  time?:        string | null;   // HH:mm 24h wall-clock in `timezone`, only set when includeTime
+  endTime?:     string | null;
+  includeTime?: boolean;
+  timezone?:    string | null;   // IANA zone, e.g. "Asia/Kolkata"; unset = browser default
+  dateFormat?:  DateFormatOption;
+  timeFormat?:  TimeFormatOption;
+  reminder?:    ReminderOption | null;
+}
+
+// Value shape for a `files`-type property. `id` is a `file_uploads.id` for
+// uploaded files, or a client-generated id for external links (which have no
+// backing `file_uploads` row — `mimeType`/`sizeBytes` are unknown for those).
+export interface FileItem {
+  id:        string;
+  url:       string;
+  name:      string;
+  mimeType:  string;
+  sizeBytes: number;
+}
+
+export interface FilesValue {
+  files: FileItem[];
+}
 
 export interface DbView {
   id: string;
@@ -14,6 +50,8 @@ export interface DbView {
   type: ViewType;
   groupByPropertyId: string | null;
   calendarPropertyId: string | null;
+  ganttStartPropertyId: string | null;
+  ganttEndPropertyId: string | null;
   filters: FilterRule[];
   sorts: SortRule[];
   filterLogic: "and" | "or";
@@ -139,6 +177,8 @@ export interface WorkspaceMember {
   userName: string | null;
   userEmail: string | null;
   userImage: string | null;
+  userTimezone?: string | null;
+  isOwner?: boolean;
 }
 
 export interface SharedViewProps {

@@ -3,10 +3,10 @@ import { db } from "@/lib/db";
 import { notifications, pages, users } from "@/lib/db/schema";
 import { apiError, getSession } from "@/lib/workspaces/auth";
 
-// Long-poll interval: poll every 10s, keeping connection alive with heartbeats every 25s.
+// Long-poll interval: poll every 3s, keeping connection alive with heartbeats every 25s.
 // NOTE: this requires a persistent-connection host (Railway/VM). On Vercel, connections will
 // be terminated by the serverless function timeout — the client auto-reconnects via EventSource.
-const POLL_INTERVAL_MS  = 10_000;
+const POLL_INTERVAL_MS  = 3_000;
 const HEARTBEAT_MS      = 25_000;
 const MAX_DURATION_MS   = 55_000; // stay under 60s to be safe on most hosts
 

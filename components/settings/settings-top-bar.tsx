@@ -4,6 +4,7 @@ import { Bell, ChevronRight, Home, Menu, Search, Settings, Shield, User, Users, 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
+import { getInitials } from "@/lib/utils";
 import { useSettingsUser } from "./settings-user-context";
 
 const AVATAR_BG_CLASSES = [
@@ -41,7 +42,7 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const displayName = user.name?.trim() || user.email;
-  const initials    = displayName.slice(0, 2).toUpperCase();
+  const initials    = getInitials(displayName);
   const bg          = avatarBgClass(displayName);
   const profileHref = `/app/${workspaceSlug}/settings/profile`;
 

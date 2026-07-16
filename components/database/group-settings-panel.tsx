@@ -10,6 +10,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { X, ArrowLeft, Search, ChevronRight, GripVertical, Eye, EyeOff, Pin, PinOff, Check } from "lucide-react";
 import { getOptionColor, STATUS_GROUPS, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
+import { PageIcon } from "@/components/pages/page-icon";
 import { OptionSubmenu } from "@/components/database/option-submenu";
 import { Switch } from "@/components/ui/switch";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
@@ -232,6 +233,7 @@ export function GroupSettingsPanel({
           <div className="flex flex-col gap-0.5 overflow-y-auto p-2 pt-0">
             {filteredSelectProps.map((p) => {
               const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON];
+              const propConfig = (p.config ?? {}) as { icon?: string };
               const isActive = p.id === groupProp.id;
               return (
                 <button
@@ -240,7 +242,7 @@ export function GroupSettingsPanel({
                   onClick={() => { onUpdateView({ groupByPropertyId: p.id }); setView("main"); setGroupBySearch(""); }}
                   className={`flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-sm transition-colors hover:bg-accent ${isActive ? "font-medium text-foreground" : "text-foreground"}`}
                 >
-                  <TypeIcon size={14} className="shrink-0 text-muted-foreground" />
+                  {propConfig.icon ? <PageIcon icon={propConfig.icon} size={14} className="shrink-0" /> : <TypeIcon size={14} className="shrink-0 text-muted-foreground" />}
                   <span className="flex-1 truncate text-left">{p.name}</span>
                   {isActive && <Check size={13} className="shrink-0 text-primary" />}
                 </button>

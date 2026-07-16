@@ -32,7 +32,9 @@ const TYPE_ACTION: Record<string, string> = {
   guest_accepted:   "accepted your workspace invitation",
   trash_warning:    "has a page that will be permanently deleted from Trash",
   page_update:      "updated a page",
+  page_created:     "created a new page",
   task_assigned:    "assigned you a task",
+  reminder:         "has a reminder due",
 };
 
 const TYPE_DOT_CLASS: Record<string, string> = {
@@ -47,7 +49,9 @@ const TYPE_DOT_CLASS: Record<string, string> = {
   guest_accepted:   "bg-success",
   trash_warning:    "bg-destructive",
   page_update:      "bg-muted-foreground",
+  page_created:     "bg-primary",
   task_assigned:    "bg-success",
+  reminder:         "bg-warning",
 };
 
 interface Props {

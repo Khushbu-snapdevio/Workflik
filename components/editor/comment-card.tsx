@@ -13,9 +13,11 @@ import { CommentComposer } from "@/components/editor/comment-composer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { emitCommentsChanged } from "@/lib/comments/comment-events";
+import { formatReactionTooltip, formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 // ---------- Types ----------
@@ -67,6 +69,9 @@ interface CommentsData {
  comments:    CommentThread[];
  totalCount:   number;
  unresolvedCount: number;
+ // Reactions only carry reactor user IDs — this resolves them to display
+ // names for the "X reacted with 😀" hover tooltip (see format-reaction-tooltip.ts).
+ reactionUsers?: Record<string, string | null>;
 }
 
 // ---------- Helpers ----------
@@ -601,6 +606,7 @@ export function CommentCard({
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         workspaceId={workspaceId}
+        reactionUsers={data?.reactionUsers ?? {}}
         onMutate={notifyChanged}
         onResolve={resolveThread}
         onReopen={reopenThread}
@@ -673,6 +679,7 @@ export function CommentCard({
       currentUserId={currentUserId}
       isAdmin={isAdmin}
       workspaceId={workspaceId}
+      reactionUsers={data?.reactionUsers ?? {}}
       onMutate={notifyChanged}
       onResolve={resolveThread}
       onReopen={reopenThread}
@@ -712,13 +719,14 @@ interface ThreadSectionProps {
  currentUserId: string;
  isAdmin:    boolean;
  workspaceId:  string;
+ reactionUsers: Record<string, string | null>;
  onMutate:   () => void;
  onResolve:   (id: string) => void;
  onReopen:   (id: string) => void;
  onReply:    (parentId: string, content: Record<string, unknown>) => Promise<void>;
 }
 
-function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, onResolve, onReopen, onReply }: ThreadSectionProps) {
+function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUsers, onMutate, onResolve, onReopen, onReply }: ThreadSectionProps) {
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [editingId,  setEditingId]  = useState<string | null>(null);
  const [replyKey,  setReplyKey]  = useState(0);
@@ -923,7 +931,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
          <button
           key={emoji}
           type="button"
-          onMouseEnter={(e) => showTooltip(iMine ? "Remove reaction" : "Add reaction", e)}
+          onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
           onMouseLeave={hideTooltip}
           onClick={() => { void toggleReaction(emoji); }}
           className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
@@ -952,6 +960,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
        currentUserId={currentUserId}
        isAdmin={isAdmin}
        workspaceId={workspaceId}
+       reactionUsers={reactionUsers}
        editingId={editingId}
        setEditingId={setEditingId}
        onMutate={onMutate}
@@ -982,7 +991,9 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, onMutate, 
     onConfirm={handleDeleteRoot}
    />
    {tooltip && typeof document !== "undefined" && createPortal(
-    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    tooltip.emoji
+     ? <ReactionTooltip rect={tooltip.rect} emoji={tooltip.emoji} label={tooltip.label} who={tooltip.who} />
+     : <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
     document.body,
    )}
   </div>
@@ -996,16 +1007,18 @@ interface ReplyRowProps {
  currentUserId: string;
  isAdmin:    boolean;
  workspaceId:  string;
+ reactionUsers: Record<string, string | null>;
  editingId:   string | null;
  setEditingId: (id: string | null) => void;
  onMutate:   () => void;
 }
 
-function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEditingId, onMutate }: ReplyRowProps) {
+function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, editingId, setEditingId, onMutate }: ReplyRowProps) {
  const isAuthor = reply.author?.id === currentUserId;
  const [pendingDelete, setPendingDelete] = useState(false);
  const [reactions, setReactions] = useState<Record<string, string[]>>(reply.reactions ?? {});
  const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  // Sync when the thread data refreshes (e.g. after onMutate's reload)
  useEffect(() => { setReactions(reply.reactions ?? {}); }, [reply.reactions]);
@@ -1089,6 +1102,8 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
         <button
          key={emoji}
          type="button"
+         onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
+         onMouseLeave={hideTooltip}
          onClick={() => { void toggleReaction(emoji); }}
          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
           iMine
@@ -1155,6 +1170,12 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, editingId, setEd
     description="This reply will be permanently deleted."
     onConfirm={handleDelete}
    />
+   {tooltip && typeof document !== "undefined" && createPortal(
+    tooltip.emoji
+     ? <ReactionTooltip rect={tooltip.rect} emoji={tooltip.emoji} label={tooltip.label} who={tooltip.who} />
+     : <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }

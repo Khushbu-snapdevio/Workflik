@@ -258,11 +258,16 @@ function CardShell({
    }}
   >
    <div className="flex items-start gap-1.5">
-    {entry.icon ? (
-     <PageIcon icon={entry.icon} size={13} className="mt-0.5 shrink-0" />
-    ) : (
-     <FileText size={12} className="mt-0.5 shrink-0 text-muted-foreground/60" />
-    )}
+    {/* h-5 matches the title's own line height (text-sm leading-snug) so the
+        icon centers against the title's first line instead of sitting at a
+        manually-guessed offset from the row's top. */}
+    <span className="flex h-5 shrink-0 items-center">
+     {entry.icon ? (
+      <PageIcon icon={entry.icon} size={13} className="shrink-0" />
+     ) : (
+      <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+     )}
+    </span>
     {editing ? (
      <input
       autoFocus
@@ -307,6 +312,7 @@ function CardShell({
         compact
         resolvedDisplayAs={resolveDisplayAs(dp as unknown as DbProperty, activeView as unknown as DbView)}
         resolvedWrapContent={resolveWrapContent(dp as unknown as DbProperty, activeView as unknown as DbView)}
+        workspaceId={workspaceId}
        />
       </button>
      ))}
@@ -328,9 +334,13 @@ function CardShell({
     </div>
    )}
 
-   {/* Card actions */}
+   {/* Card actions — one shared bordered pill (not a separate circle per
+       icon), matching the comment thread's own action pill (comment-card.tsx)
+       and the real Board view's card actions (board-view.tsx). Icons only
+       highlight individually via hover:bg-accent; the box itself carries the
+       visible border/background. */}
    <div
-    className={`absolute right-2 top-2 items-center gap-1 ${editing ? "flex" : "hidden group-hover:flex"}`}
+    className={`absolute right-2 top-2 items-center gap-px rounded-[var(--radius-sm)] border border-border/60 bg-card px-0.5 py-0.5 ${editing ? "flex" : "hidden group-hover:flex"}`}
     onClick={(e) => e.stopPropagation()}
    >
     {!editing ? (
@@ -347,7 +357,7 @@ function CardShell({
       }}
       onMouseEnter={(e) => setTooltip({ label: "Edit", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
       onMouseLeave={() => setTooltip(null)}
-      className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+      className="flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
      >
       <Pencil size={11} />
      </button>
@@ -357,7 +367,7 @@ function CardShell({
       onClick={(e) => { e.stopPropagation(); onClickEntry(entry.id); }}
       onMouseEnter={(e) => setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
       onMouseLeave={() => setTooltip(null)}
-      className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+      className="flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
      >
       <PanelRight size={11} />
      </button>
@@ -371,7 +381,7 @@ function CardShell({
      }}
      onMouseEnter={(e) => setTooltip({ label: "More options", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
      onMouseLeave={() => setTooltip(null)}
-     className="flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+     className="flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     >
      <MoreHorizontal size={11} />
     </button>
@@ -382,6 +392,7 @@ function CardShell({
     <div className="mt-2 flex flex-col gap-0.5 border-t border-border/50 pt-2">
      {displayProps.filter((dp) => !valMap.get(dp.id)).map((dp) => {
       const TypeIcon = PROPERTY_TYPE_ICON[dp.type as keyof typeof PROPERTY_TYPE_ICON];
+      const propConfig = (dp.config ?? {}) as { icon?: string };
       return (
        <button
         key={dp.id}
@@ -393,7 +404,7 @@ function CardShell({
         }}
         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
        >
-        <TypeIcon size={12} className="shrink-0" />
+        {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" /> : <TypeIcon size={12} className="shrink-0" />}
         Add {dp.name}
        </button>
       );

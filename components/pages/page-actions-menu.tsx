@@ -36,6 +36,10 @@ interface PageActionsMenuProps {
  pageTitle?:  string;
  pageKind?:   string;
  parentShortId?: string | null;
+ /** Nearest other top-level item (previous, or next if this was first) —
+  *  used as the fallback destination when this page has no parent. Ignored
+  *  when `parentShortId` is set. */
+ rootFallbackShortId?: string | null;
  /** Overrides the default "navigate away" behavior after a successful
   *  delete — pass this when the menu is used from a list/table row (e.g.
   *  Library) rather than on the page currently being viewed, so deleting a
@@ -63,6 +67,7 @@ export function PageActionsMenu({
  pageTitle,
  pageKind,
  parentShortId,
+ rootFallbackShortId,
  onDeleted,
  onDuplicated,
  iconOnly,
@@ -118,14 +123,19 @@ export function PageActionsMenu({
    // network error — treat as failed but still redirect for databases
   }
 
+  // Whether this was a first-time soft-delete or a permanent delete of an
+  // already-trashed page, the destination rule is the same: back to the
+  // parent; if this page had none, the nearest other top-level item
+  // (previous, or next if this was first); if it was the only top-level
+  // item, workspace home.
+  const fallbackShortId = parentShortId ?? rootFallbackShortId ?? null;
+
   // For databases: always navigate away — never call router.refresh() on the current
   // database URL after deletion (that re-renders the now-deleted page → 404).
   // Skipped when onDeleted is provided (list/table context — there's no
   // "current page" to redirect away from, the row just needs to disappear).
   if (pageKind === "database" && !onDeleted) {
-   window.location.replace(
-    parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`
-   );
+   window.location.replace(fallbackShortId ? `/app/${workspaceSlug}/${fallbackShortId}` : `/app/${workspaceSlug}`);
    return;
   }
 
@@ -137,15 +147,7 @@ export function PageActionsMenu({
     onDeleted();
     return;
    }
-   // Whether this was a first-time soft-delete ("soft") or a permanent
-   // delete of an already-trashed page ("permanent"), the destination rule
-   // is the same: back to the parent, or Library if this page had none —
-   // Library lists every page, so it's the sensible landing spot when
-   // there's no parent to return to (workspace home is a dashboard, not a
-   // page list).
-   window.location.replace(
-    parentShortId ? `/app/${workspaceSlug}/${parentShortId}` : `/app/${workspaceSlug}/library`
-   );
+   window.location.replace(fallbackShortId ? `/app/${workspaceSlug}/${fallbackShortId}` : `/app/${workspaceSlug}`);
   } else {
    router.refresh();
   }

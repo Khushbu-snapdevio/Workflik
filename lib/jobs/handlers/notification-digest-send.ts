@@ -48,6 +48,7 @@ async function processDigests() {
 const CATEGORY_PREF_FIELD: Partial<Record<string, keyof typeof notificationPreferences.$inferSelect>> = {
   mention:          "notifyMentions",
   page_update:      "notifyPageUpdates",
+  page_created:     "notifyPageUpdates",
   workspace_invite: "notifyWorkspaceInvites",
   task_assigned:    "notifyTaskAssignments",
 };

@@ -9,7 +9,7 @@ import { createId } from "@paralleldrive/cuid2";
 // 400 here instead of a raw Postgres driver error at insert time.
 const VALID_PROPERTY_TYPES = new Set([
   "text", "number", "select", "multi_select", "status", "date",
-  "checkbox", "url", "email", "phone", "person", "relation", "rollup", "formula",
+  "checkbox", "url", "email", "phone", "person", "relation", "rollup", "formula", "created_by", "files",
 ]);
 
 // Matches Notion's own default Status options/groups, so a brand-new Status

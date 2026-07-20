@@ -24,6 +24,8 @@ import { CopyLinkButton } from "@/components/pages/copy-link-button";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
 import { PagePrivacyPill } from "@/components/pages/page-privacy-pill";
+import { PageDraftProvider } from "@/components/pages/page-draft-context";
+import { PageDraftPill } from "@/components/pages/page-draft-pill";
 import { TrashBanner } from "@/components/pages/trash-banner";
 import { TemplatePageClient } from "@/components/templates/template-page-client";
 import { computeDerivedValues } from "@/lib/databases/compute-values";
@@ -252,6 +254,7 @@ export default async function PageEditorPage({ params }: Props) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background" data-page-id={page.id}>
+      <PageDraftProvider initialIsDraft={page.isDraft}>
       {/* ── Topbar ── */}
       <PagePrivacyProvider initialIsPrivate={page.isPrivate}>
       <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
@@ -267,6 +270,7 @@ export default async function PageEditorPage({ params }: Props) {
             initialIcon={page.icon}
           />
           <PagePrivacyPill />
+          <PageDraftPill />
         </div>
 
         {/* Actions */}
@@ -337,6 +341,7 @@ export default async function PageEditorPage({ params }: Props) {
         currentUserId={session.user.id}
         isAdmin={isAdmin}
       />
+      </PageDraftProvider>
     </div>
   );
 }

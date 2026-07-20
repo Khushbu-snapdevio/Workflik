@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { comments, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { resolveDisplayName } from "@/lib/users/display-name";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -56,7 +57,15 @@ export async function POST(req: Request, { params }: Ctx) {
       .where(eq(comments.id, id))
       .returning({ reactions: comments.reactions });
 
-    return Response.json({ reactions: saved?.reactions ?? {} });
+    // Include the reactor's own resolved name so the client can update its
+    // local reactionUsers map immediately — without this, a user's *first*
+    // reaction on a page shows "Former Member" (their id isn't in the map
+    // yet) until something else triggers a full comments refetch.
+    return Response.json({
+      reactions:   saved?.reactions ?? {},
+      reactorId:   userId,
+      reactorName: resolveDisplayName(session.user.name, session.user.email),
+    });
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error("[POST /api/comments/:id/react]", err);

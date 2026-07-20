@@ -5,6 +5,8 @@ import { blocks, comments, pages, pageVersions } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import type { Block } from "@/lib/db/schema";
 import { triggerPageUpdateNotification } from "@/lib/notifications/triggers";
+import { isMeaningfulTitle, isMeaningfulBlockContent } from "@/lib/pages/draft";
+import { promoteDraftPage } from "@/lib/pages/promote-draft";
 
 const blockUpsertSchema = z.object({
   id:            z.string().uuid().nullable(),   // null = new block
@@ -34,13 +36,14 @@ export async function POST(req: Request) {
 
     const { pageId, blocks: incoming, deletedIds, snapshotEvery } = parsed.data;
 
-    const [page] = await db.select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, title: pages.title, createdBy: pages.createdBy, lastEditedBy: pages.lastEditedBy })
+    const [page] = await db.select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, title: pages.title, createdBy: pages.createdBy, lastEditedBy: pages.lastEditedBy, isDraft: pages.isDraft })
       .from(pages).where(eq(pages.id, pageId)).limit(1);
     if (!page) return apiError(404, "Page not found");
     if (page.isDeleted) return apiError(400, "Page is in Trash");
     await requireWorkspaceMember(page.workspaceId, session.user.id);
 
     const savedBlocks: Pick<Block, "id" | "pageId" | "parentBlockId" | "type" | "content" | "orderIndex" | "schemaVersion">[] = [];
+    let promoted = false;
 
     await db.transaction(async (tx) => {
       // Delete removed blocks — mark their comments as orphaned FIRST,
@@ -92,7 +95,25 @@ export async function POST(req: Request) {
         .set({ lastEditedBy: session.user.id, updatedAt: new Date() })
         .where(eq(pages.id, pageId));
 
-      if (page.createdBy && session.user.id !== page.createdBy && session.user.id !== page.lastEditedBy) {
+      // Draft promotion — the first real content this page ever gets flips
+      // it out of draft state and fires the (single, shared) creation
+      // notification. Title-only promotion is handled by the PATCH route;
+      // this covers the content-only path (title left as "Untitled").
+      if (page.isDraft) {
+        const currentBlocks = await tx
+          .select({ type: blocks.type, content: blocks.content })
+          .from(blocks)
+          .where(eq(blocks.pageId, pageId));
+
+        if (isMeaningfulTitle(page.title) || isMeaningfulBlockContent(currentBlocks)) {
+          const result = await promoteDraftPage(tx, pageId);
+          promoted = result.promoted;
+        }
+      }
+
+      // No "page update" notification about a page collaborators don't know
+      // exists yet — it either just got promoted above, or is still a draft.
+      if (!page.isDraft && page.createdBy && session.user.id !== page.createdBy && session.user.id !== page.lastEditedBy) {
         await triggerPageUpdateNotification(tx, {
           workspaceId: page.workspaceId,
           pageId,
@@ -121,7 +142,7 @@ export async function POST(req: Request) {
       }
     });
 
-    return Response.json({ ok: true, blocks: savedBlocks });
+    return Response.json({ ok: true, blocks: savedBlocks, promoted });
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error(err);

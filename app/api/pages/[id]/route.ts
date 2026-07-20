@@ -5,6 +5,8 @@ import { pageClosure, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
 import { triggerTrashWarningNotification } from "@/lib/notifications/triggers";
+import { isMeaningfulTitle } from "@/lib/pages/draft";
+import { promoteDraftPage } from "@/lib/pages/promote-draft";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -50,7 +52,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted })
+      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, isDraft: pages.isDraft })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
@@ -66,11 +68,25 @@ export async function PATCH(req: Request, { params }: Ctx) {
       return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
     }
 
-    const [updated] = await db
-      .update(pages)
-      .set({ ...parsed.data, lastEditedBy: session.user.id, updatedAt: new Date() })
-      .where(eq(pages.id, id))
-      .returning();
+    const willPromote =
+      page.isDraft &&
+      parsed.data.title !== undefined &&
+      isMeaningfulTitle(parsed.data.title);
+
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(pages)
+        .set({ ...parsed.data, lastEditedBy: session.user.id, updatedAt: new Date() })
+        .where(eq(pages.id, id))
+        .returning();
+
+      if (willPromote) {
+        const { promoted, page: promotedPage } = await promoteDraftPage(tx, id);
+        if (promoted && promotedPage) row.isDraft = promotedPage.isDraft;
+      }
+
+      return row;
+    });
 
     // Keep search index current whenever title changes
     if (parsed.data.title !== undefined) {
@@ -100,7 +116,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, kind: pages.kind, createdBy: pages.createdBy, title: pages.title })
+      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, kind: pages.kind, createdBy: pages.createdBy, title: pages.title, isDraft: pages.isDraft })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
@@ -133,7 +149,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
       // Notify page creator (and whoever deleted it, if different) that the page
       // was moved to Trash and will be permanently deleted after 30 days.
-      if (page.createdBy) {
+      // Skipped for still-draft pages — a trash warning would leak the
+      // existence of a page collaborators were never told about.
+      if (page.createdBy && !page.isDraft) {
         await triggerTrashWarningNotification(tx, {
           workspaceId: page.workspaceId,
           pageId:      page.id,

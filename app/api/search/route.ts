@@ -55,6 +55,8 @@ export async function GET(req: Request) {
       eq(pages.isDeleted, false),
       // Exclude other users' private pages
       or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id)),
+      // Exclude other users' unpromoted drafts
+      or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id)),
     ];
     if (typeFilter)  conditions.push(typeFilter);
     if (dateFilter)  conditions.push(dateFilter);

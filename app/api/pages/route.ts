@@ -7,6 +7,7 @@ import { insertPageWithClosure } from "@/lib/pages/closure";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
 import { triggerPageCreatedNotification } from "@/lib/notifications/triggers";
+import { isMeaningfulTitle } from "@/lib/pages/draft";
 
 const createPageSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -57,6 +58,13 @@ export async function POST(req: Request) {
     const orderIndex = (maxOrder ?? -1) + 1;
     const shortId = createId().slice(0, 10);
 
+    // A blank "New Page" click starts as a silent draft — invisible to
+    // collaborators until it has a real title or real content. A caller
+    // that already supplies a meaningful title at creation time (duplicate,
+    // template) skips draft state entirely and notifies immediately, same
+    // as today.
+    const startsAsDraft = kind === "page" && !isMeaningfulTitle(title);
+
     const newPage = await db.transaction(async (tx) => {
       const [page] = await tx
         .insert(pages)
@@ -69,6 +77,7 @@ export async function POST(req: Request) {
           title: title || "Untitled",
           icon: icon ?? null,
           isPrivate,
+          isDraft: startsAsDraft,
           orderIndex,
           createdBy: session.user.id,
           lastEditedBy: session.user.id,
@@ -104,6 +113,7 @@ export async function POST(req: Request) {
         pageTitle:   page.title || "Untitled",
         isPrivate:   page.isPrivate,
         kind:        page.kind,
+        isDraft:     page.isDraft,
       });
 
       return page;

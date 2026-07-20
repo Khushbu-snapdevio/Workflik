@@ -11,6 +11,7 @@ import { EntryPropertiesPanel } from "@/components/database/entry-properties-pan
 import { PageCommentsSection } from "@/components/pages/page-comments-section";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { onCommentsChanged } from "@/lib/comments/comment-events";
+import { usePageDraft } from "@/components/pages/page-draft-context";
 
 interface PageClientProps {
  pageId:        string;
@@ -79,6 +80,8 @@ export function PageClient({
   pageId,
  });
 
+ const { setIsDraft } = usePageDraft();
+
  useEffect(() => {
   if (!didMount.current && titleRef.current) {
    titleRef.current.textContent = initialTitle || "";
@@ -92,11 +95,15 @@ export function PageClient({
   setSaveState("saving");
   if (savedTimer.current) clearTimeout(savedTimer.current);
   try {
-   await fetch(`/api/pages/${pageId}`, {
+   const res = await fetch(`/api/pages/${pageId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
    });
+   if (res.ok) {
+    const updated = await res.json();
+    if (updated.isDraft === false) setIsDraft(false);
+   }
    document.title = `${title} | WORKFLIK`;
    setSaveState("saved");
    savedTimer.current = setTimeout(() => setSaveState("idle"), 2000);
@@ -106,7 +113,7 @@ export function PageClient({
   } catch {
    setSaveState("idle");
   }
- }, [pageId, router]);
+ }, [pageId, router, setIsDraft]);
 
  const saveIcon = useCallback(async (emoji: string | null) => {
   setIcon(emoji);

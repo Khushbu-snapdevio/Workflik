@@ -21,6 +21,7 @@ import {
 } from "./types";
 import { users } from "./auth";
 import { workspaces } from "./workspace";
+import { DEFAULT_PAGE_TITLE } from "@/lib/pages/constants";
 
 export const pages = pgTable("pages", {
   id:           uuid("id").primaryKey().defaultRandom(),
@@ -31,7 +32,7 @@ export const pages = pgTable("pages", {
   databaseId:   uuid("database_id").references((): AnyPgColumn => pages.id, { onDelete: "cascade" }),
   defaultViewId: uuid("default_view_id"),
   orderIndex:   integer("order_index").notNull().default(0),
-  title:        text("title").notNull().default("Untitled"),
+  title:        text("title").notNull().default(DEFAULT_PAGE_TITLE),
   icon:         text("icon"),
   coverUrl:     text("cover_url"),
   coverPosition: real("cover_position").notNull().default(0.5),
@@ -40,6 +41,7 @@ export const pages = pgTable("pages", {
   isSmallText:  boolean("is_small_text").notNull().default(false),
   isLocked:     boolean("is_locked").notNull().default(false),
   isPrivate:    boolean("is_private").notNull().default(false),
+  isDraft:      boolean("is_draft").notNull().default(false),
   isDeleted:    boolean("is_deleted").notNull().default(false),
   deletedAt:    timestamp("deleted_at", { withTimezone: true }),
   deletedBy:    uuid("deleted_by").references(() => users.id, { onDelete: "set null" }),

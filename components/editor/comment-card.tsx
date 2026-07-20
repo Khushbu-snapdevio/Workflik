@@ -584,6 +584,14 @@ export function CommentCard({
   emitCommentsChanged(pageId);
  }
 
+ // A user's *first* reaction on a page won't be in reactionUsers yet (it's
+ // only populated from ids already seen in loaded comments) — merge in the
+ // reactor's resolved name the instant the react endpoint returns it, rather
+ // than waiting for some other mutation to trigger a full reload.
+ function mergeReactionUser(id: string, name: string | null) {
+  setData((prev) => (prev ? { ...prev, reactionUsers: { ...prev.reactionUsers, [id]: name } } : prev));
+ }
+
  // ── Inline variant — renders inside the Comments panel ───────────────────
  if (variant === "inline") {
   // Resolved threads are never shown inline here, regardless of count — same
@@ -607,6 +615,7 @@ export function CommentCard({
         isAdmin={isAdmin}
         workspaceId={workspaceId}
         reactionUsers={data?.reactionUsers ?? {}}
+        onReactionUserResolved={mergeReactionUser}
         onMutate={notifyChanged}
         onResolve={resolveThread}
         onReopen={reopenThread}
@@ -680,6 +689,7 @@ export function CommentCard({
       isAdmin={isAdmin}
       workspaceId={workspaceId}
       reactionUsers={data?.reactionUsers ?? {}}
+      onReactionUserResolved={mergeReactionUser}
       onMutate={notifyChanged}
       onResolve={resolveThread}
       onReopen={reopenThread}
@@ -720,13 +730,14 @@ interface ThreadSectionProps {
  isAdmin:    boolean;
  workspaceId:  string;
  reactionUsers: Record<string, string | null>;
+ onReactionUserResolved: (id: string, name: string | null) => void;
  onMutate:   () => void;
  onResolve:   (id: string) => void;
  onReopen:   (id: string) => void;
  onReply:    (parentId: string, content: Record<string, unknown>) => Promise<void>;
 }
 
-function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUsers, onMutate, onResolve, onReopen, onReply }: ThreadSectionProps) {
+function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUsers, onReactionUserResolved, onMutate, onResolve, onReopen, onReply }: ThreadSectionProps) {
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [editingId,  setEditingId]  = useState<string | null>(null);
  const [replyKey,  setReplyKey]  = useState(0);
@@ -762,8 +773,9 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
    body: JSON.stringify({ emoji }),
   });
   if (res.ok) {
-   const data = await res.json() as { reactions: Record<string, string[]> };
+   const data = await res.json() as { reactions: Record<string, string[]>; reactorId: string; reactorName: string | null };
    setReactions(data.reactions);
+   onReactionUserResolved(data.reactorId, data.reactorName);
   }
  }
 
@@ -961,6 +973,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
        isAdmin={isAdmin}
        workspaceId={workspaceId}
        reactionUsers={reactionUsers}
+       onReactionUserResolved={onReactionUserResolved}
        editingId={editingId}
        setEditingId={setEditingId}
        onMutate={onMutate}
@@ -1008,12 +1021,13 @@ interface ReplyRowProps {
  isAdmin:    boolean;
  workspaceId:  string;
  reactionUsers: Record<string, string | null>;
+ onReactionUserResolved: (id: string, name: string | null) => void;
  editingId:   string | null;
  setEditingId: (id: string | null) => void;
  onMutate:   () => void;
 }
 
-function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, editingId, setEditingId, onMutate }: ReplyRowProps) {
+function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, onReactionUserResolved, editingId, setEditingId, onMutate }: ReplyRowProps) {
  const isAuthor = reply.author?.id === currentUserId;
  const [pendingDelete, setPendingDelete] = useState(false);
  const [reactions, setReactions] = useState<Record<string, string[]>>(reply.reactions ?? {});
@@ -1042,8 +1056,9 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, e
    body: JSON.stringify({ emoji }),
   });
   if (res.ok) {
-   const data = await res.json() as { reactions: Record<string, string[]> };
+   const data = await res.json() as { reactions: Record<string, string[]>; reactorId: string; reactorName: string | null };
    setReactions(data.reactions);
+   onReactionUserResolved(data.reactorId, data.reactorName);
   }
  }
 

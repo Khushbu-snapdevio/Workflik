@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, ne, or } from "drizzle-orm";
 import { BookOpen, ChevronRight, Clock, FileText, LayoutGrid, LayoutTemplate, Plus, Settings, Star, UserPlus, Users } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import Link from "next/link";
@@ -85,7 +85,13 @@ export default async function WorkspacePage({ params }: Props) {
       .orderBy(desc(userRecentlyVisited.visitedAt))
       .limit(10),
     db.select({ memberCount: count() }).from(workspaceMembers).where(and(eq(workspaceMembers.workspaceId, ws.id), eq(workspaceMembers.status, "active"))),
-    db.select({ pageCount: count() }).from(pages).where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false))),
+    db.select({ pageCount: count() }).from(pages).where(and(
+      eq(pages.workspaceId, ws.id),
+      eq(pages.isDeleted, false),
+      // Other users' private/draft pages don't count toward the workspace total shown to everyone
+      or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id)),
+      or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id)),
+    )),
     db
       .select({ id: userFavorites.id, pageId: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon })
       .from(userFavorites)
@@ -99,10 +105,22 @@ export default async function WorkspacePage({ params }: Props) {
     db
       .select({ id: pages.id, shortId: pages.shortId, title: pages.title, icon: pages.icon, updatedAt: pages.updatedAt })
       .from(pages)
-      .where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false), ne(pages.kind, "entry")))
+      .where(and(
+        eq(pages.workspaceId, ws.id),
+        eq(pages.isDeleted, false),
+        ne(pages.kind, "entry"),
+        or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id)),
+        or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id)),
+      ))
       .orderBy(desc(pages.updatedAt))
       .limit(8),
-    db.select({ topPageCount: count() }).from(pages).where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false), ne(pages.kind, "entry"))),
+    db.select({ topPageCount: count() }).from(pages).where(and(
+      eq(pages.workspaceId, ws.id),
+      eq(pages.isDeleted, false),
+      ne(pages.kind, "entry"),
+      or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id)),
+      or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id)),
+    )),
   ]);
 
   const recentPages    = recentRaw.map((p) => ({ ...p, visitedAt: p.visitedAt.toISOString() }));

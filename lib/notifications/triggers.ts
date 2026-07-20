@@ -350,10 +350,11 @@ export async function triggerPageCreatedNotification(
     pageTitle:   string;
     isPrivate:   boolean;
     kind:        string;
+    isDraft:     boolean;
   }
 ): Promise<void> {
-  const { workspaceId, pageId, creatorId, isPrivate, kind } = params;
-  if (isPrivate || kind === "entry") return;
+  const { workspaceId, pageId, creatorId, isPrivate, kind, isDraft } = params;
+  if (isPrivate || kind === "entry" || isDraft) return;
 
   const members = await tx
     .select({ userId: workspaceMembers.userId })

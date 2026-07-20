@@ -8,6 +8,7 @@ import {
   triggerCommentNotifications,
   triggerMentionNotifications,
 } from "@/lib/notifications/triggers";
+import { resolveDisplayName } from "@/lib/users/display-name";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -27,53 +28,6 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     await requirePagePermission(session.user.id, pageId, "can_view");
 
-    // Load all roots (including soft-deleted) + their authors
-    const roots = await db
-      .select({
-        id:           comments.id,
-        blockId:      comments.blockId,
-        parentId:     comments.parentId,
-        threadNumber: comments.threadNumber,
-        anchorStart:  comments.anchorStart,
-        anchorEnd:    comments.anchorEnd,
-        isResolved:   comments.isResolved,
-        isOrphaned:   comments.isOrphaned,
-        content:      comments.content,
-        createdAt:    comments.createdAt,
-        editedAt:     comments.editedAt,
-        deletedAt:    comments.deletedAt,
-        authorId:     comments.authorId,
-        authorName:   users.name,
-        authorImage:  users.image,
-      })
-      .from(comments)
-      .leftJoin(users, eq(users.id, comments.authorId))
-      .where(and(eq(comments.pageId, pageId), isNull(comments.parentId)))
-      .orderBy(asc(comments.threadNumber));
-
-    // Load all replies
-    const replies = await db
-      .select({
-        id:          comments.id,
-        blockId:     comments.blockId,
-        parentId:    comments.parentId,
-        isResolved:  comments.isResolved,
-        isOrphaned:  comments.isOrphaned,
-        content:     comments.content,
-        createdAt:   comments.createdAt,
-        editedAt:    comments.editedAt,
-        deletedAt:   comments.deletedAt,
-        authorId:    comments.authorId,
-        authorName:  users.name,
-        authorImage: users.image,
-      })
-      .from(comments)
-      .leftJoin(users, eq(users.id, comments.authorId))
-      .where(and(eq(comments.pageId, pageId), isNull(isNull(comments.parentId))))
-      // filter: parent_id IS NOT NULL
-      .orderBy(asc(comments.createdAt));
-
-    // Re-query replies properly
     const allComments = await db
       .select({
         id:                 comments.id,
@@ -137,7 +91,7 @@ export async function GET(_req: Request, { params }: Ctx) {
       editedAt:           r.editedAt,
       deletedAt:          r.deletedAt,
       author:       r.authorId
-        ? { id: r.authorId, name: r.authorName, email: r.authorEmail, image: r.authorImage }
+        ? { id: r.authorId, name: resolveDisplayName(r.authorName, r.authorEmail), email: r.authorEmail, image: r.authorImage }
         : null,
       replies:      r.replies.map((rep) => ({
         id:         rep.id,
@@ -151,7 +105,7 @@ export async function GET(_req: Request, { params }: Ctx) {
         editedAt:   rep.editedAt,
         deletedAt:  rep.deletedAt,
         author:     rep.authorId
-          ? { id: rep.authorId, name: rep.authorName, email: rep.authorEmail, image: rep.authorImage }
+          ? { id: rep.authorId, name: resolveDisplayName(rep.authorName, rep.authorEmail), email: rep.authorEmail, image: rep.authorImage }
           : null,
       })),
     }));
@@ -167,9 +121,12 @@ export async function GET(_req: Request, { params }: Ctx) {
       for (const ids of Object.values(reactions)) for (const id of ids) reactorIds.add(id);
     }
     const reactorRows = reactorIds.size
-      ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, [...reactorIds]))
+      ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, [...reactorIds]))
       : [];
-    const reactionUsers = Object.fromEntries(reactorRows.map((u) => [u.id, u.name]));
+    // Absent from this map (rather than present with a null/empty value)
+    // means the id no longer belongs to any user — that's the only case
+    // formatReactorNames should show "Former Member" for.
+    const reactionUsers = Object.fromEntries(reactorRows.map((u) => [u.id, resolveDisplayName(u.name, u.email)]));
 
     return Response.json({ comments: shaped, totalCount: shaped.length, unresolvedCount, reactionUsers });
   } catch (err) {

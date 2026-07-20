@@ -10,7 +10,7 @@ import {
  Filter as FunnelIcon, ArrowUpDown as SortAscendingIcon, Eye as EyeIcon,
  Plus as PlusIcon, Image as ImageIcon, Smile as SmileyStickerIcon,
  X as XIcon, Trash2 as TrashIcon, Check as CheckIcon, Home as HouseIcon,
- ChevronRight as CaretRightIcon,
+ ChevronRight as CaretRightIcon, ChevronLeft as ChevronLeftIcon,
  MoreVertical as MoreVerticalIcon, Pencil as PencilIcon, Copy as CopyIcon,
 } from "lucide-react";
 
@@ -635,6 +635,7 @@ export function TemplatePageClient({
  const [showSort,    setShowSort]    = useState(false);
  const [showProperties, setShowProperties] = useState(false);
  const [showAddView,  setShowAddView]  = useState(false);
+ const [showLayoutPicker, setShowLayoutPicker] = useState(false);
  const [filterRules,  setFilterRules]  = useState<FilterRule[]>([]);
  const [sortRules,   setSortRules]   = useState<SortRule[]>([]);
 
@@ -647,6 +648,7 @@ export function TemplatePageClient({
   setShowAddView(false);
   setViewMenuTarget(null);
   setViewMenuRect(null);
+  setShowLayoutPicker(false);
  }
 
  const initView  = initViews.find((v) => v.id === defaultViewId) ?? initViews[0];
@@ -1196,6 +1198,22 @@ export function TemplatePageClient({
   await fetch(`/api/databases/${page.id}/views/${viewId}`, {
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body: JSON.stringify({ name: trimmed }),
+  });
+ }, [page.id]);
+
+ // Changes an EXISTING view's layout (e.g. Table → Board) — distinct from
+ // addView, which only ever creates a fresh one. Switching a view to "board"
+ // with no groupByPropertyId set is picked up automatically by the
+ // auto-wire-board-group effect above, which finds (or creates) a Select
+ // property for it — no extra step needed here.
+ const changeViewType = useCallback(async (viewId: string, type: string) => {
+  setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, type } as DatabaseView : v));
+  setShowLayoutPicker(false);
+  setViewMenuTarget(null);
+  setViewMenuRect(null);
+  await fetch(`/api/databases/${page.id}/views/${viewId}`, {
+   method: "PATCH", headers: { "Content-Type": "application/json" },
+   body: JSON.stringify({ type }),
   });
  }, [page.id]);
 
@@ -1872,11 +1890,62 @@ export function TemplatePageClient({
 
   {/* ── View context menu portal ── */}
   {viewMenuTarget && viewMenuRect && typeof document !== "undefined" && createPortal(
+   showLayoutPicker ? (
+    <div
+     ref={viewMenuRef}
+     style={{
+      position: "fixed",
+      top: getClampedTop(viewMenuRect, 200),
+      left: getClampedLeft(viewMenuRect, 320, { align: "start" }),
+      zIndex: 500,
+     }}
+     className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card"
+    >
+     <button
+      onClick={() => setShowLayoutPicker(false)}
+      className="flex w-full items-center gap-2 border-b border-border/50 px-4 py-3 text-left transition-colors hover:bg-accent"
+     >
+      <ChevronLeftIcon size={14} className="text-muted-foreground" />
+      <span className="truncate text-sm font-semibold text-foreground">Layout — {viewMenuTarget.name}</span>
+     </button>
+     <div className="grid grid-cols-4 gap-1.5 p-3">
+      {([
+       { type: "table",  label: "Table",  Icon: TableIcon },
+       { type: "board",  label: "Board",  Icon: SquaresFourIcon },
+       { type: "calendar", label: "Calendar", Icon: CalendarIcon },
+       { type: "gallery", label: "Gallery", Icon: GridFourIcon },
+      ] as const).map(({ type, label, Icon }) => {
+       const isActive = viewMenuTarget.type === type;
+       return (
+        <button
+         key={type}
+         onClick={() => changeViewType(viewMenuTarget.id, type)}
+         className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all hover:bg-primary/5 active:scale-[0.96]"
+        >
+         <div className={[
+          "flex size-12 items-center justify-center rounded-[var(--radius-md)] border transition-all",
+          isActive ? "border-primary/40 bg-primary/10" : "border-border/70 bg-muted/50 group-hover:border-primary/40 group-hover:bg-primary/10",
+         ].join(" ")}>
+          <Icon size={24} className={isActive ? "text-primary" : "text-foreground/70 transition-colors group-hover:text-primary"} />
+         </div>
+         <span className={[
+          "flex items-center gap-1 text-xs font-medium leading-tight transition-colors",
+          isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary",
+         ].join(" ")}>
+          {isActive && <CheckIcon size={10} />}
+          {label}
+         </span>
+        </button>
+       );
+      })}
+     </div>
+    </div>
+   ) : (
    <div
     ref={viewMenuRef}
     style={{
      position: "fixed",
-     top: getClampedTop(viewMenuRect, views.length > 1 ? 133 : 80),
+     top: getClampedTop(viewMenuRect, views.length > 1 ? 174 : 121),
      left: getClampedLeft(viewMenuRect, 192, { align: "start" }),
      zIndex: 500,
     }}
@@ -1891,6 +1960,12 @@ export function TemplatePageClient({
      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     >
      <PencilIcon size={13} className="shrink-0 text-muted-foreground" /> Rename
+    </button>
+    <button
+     onClick={() => setShowLayoutPicker(true)}
+     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+    >
+     <SquaresFourIcon size={13} className="shrink-0 text-muted-foreground" /> Layout
     </button>
     <button
      onClick={() => { duplicateView(viewMenuTarget.id); setViewMenuTarget(null); setViewMenuRect(null); }}
@@ -1909,7 +1984,8 @@ export function TemplatePageClient({
       </button>
      </>
     )}
-   </div>,
+   </div>
+   ),
    document.body
   )}
 

@@ -141,6 +141,11 @@ export function DatabaseToolbar({
   const [groupRect, setGroupRect] = useState<DOMRect | null>(null);
   const [dateRect, setDateRect] = useState<DOMRect | null>(null);
   const [ganttPropRect, setGanttPropRect] = useState<{ field: "start" | "end"; rect: DOMRect } | null>(null);
+  // "Layout" (change an existing view's type, e.g. Table → Board) — separate
+  // from the "Add a new view" grid (addViewRect), which only ever creates a
+  // fresh view and can't retarget one that already exists.
+  const [layoutView, setLayoutView] = useState<DbView | null>(null);
+  const [layoutRect, setLayoutRect] = useState<DOMRect | null>(null);
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const addViewDropRef = useRef<HTMLDivElement>(null);
   const contextDropRef = useRef<HTMLDivElement>(null);
@@ -149,6 +154,7 @@ export function DatabaseToolbar({
   const groupDropRef = useRef<HTMLDivElement>(null);
   const dateDropRef = useRef<HTMLDivElement>(null);
   const ganttPropDropRef = useRef<HTMLDivElement>(null);
+  const layoutDropRef = useRef<HTMLDivElement>(null);
 
   const filterCount = ((activeView?.filters as FilterRule[] | undefined) ?? [])
     .length;
@@ -165,7 +171,8 @@ export function DatabaseToolbar({
       !!cardsRect ||
       !!groupRect ||
       !!dateRect ||
-      !!ganttPropRect,
+      !!ganttPropRect ||
+      !!layoutRect,
     (target) =>
       !!addViewDropRef.current?.contains(target) ||
       !!contextDropRef.current?.contains(target) ||
@@ -174,6 +181,7 @@ export function DatabaseToolbar({
       !!groupDropRef.current?.contains(target) ||
       !!dateDropRef.current?.contains(target) ||
       !!ganttPropDropRef.current?.contains(target) ||
+      !!layoutDropRef.current?.contains(target) ||
       !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')
   );
 
@@ -186,6 +194,8 @@ export function DatabaseToolbar({
     setGroupRect(null);
     setDateRect(null);
     setGanttPropRect(null);
+    setLayoutView(null);
+    setLayoutRect(null);
   }
 
   // Close portals on outside click
@@ -224,6 +234,10 @@ export function DatabaseToolbar({
       }
       if (ganttPropDropRef.current && !ganttPropDropRef.current.contains(t)) {
         setGanttPropRect(null);
+      }
+      if (layoutDropRef.current && !layoutDropRef.current.contains(t)) {
+        setLayoutView(null);
+        setLayoutRect(null);
       }
     }
     document.addEventListener("mousedown", h);
@@ -895,6 +909,18 @@ export function DatabaseToolbar({
             <button
               className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors duration-100 hover:bg-accent"
               onClick={() => {
+                setLayoutView(contextView);
+                setLayoutRect(contextRect);
+                setContextView(null);
+                setContextRect(null);
+              }}
+            >
+              <Kanban className="shrink-0 text-muted-foreground" size={13} />{" "}
+              Layout
+            </button>
+            <button
+              className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors duration-100 hover:bg-accent"
+              onClick={() => {
                 onDuplicateView(contextView.id);
                 setContextView(null);
                 setContextRect(null);
@@ -917,6 +943,86 @@ export function DatabaseToolbar({
                   <Trash className="shrink-0" size={13} /> Delete view
                 </button>
               </>
+            )}
+          </div>,
+          document.body
+        )}
+
+      {/* ── Portal: Change view layout (type) ── */}
+      {layoutView &&
+        layoutRect &&
+        createPortal(
+          <div
+            ref={layoutDropRef}
+            className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              top: getClampedTop(layoutRect, 220),
+              left: getClampedLeft(layoutRect, 320, { align: "start" }),
+              zIndex: 500,
+            }}
+          >
+            <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
+              <Kanban className="text-primary" size={13} />
+              <p className="truncate text-sm font-semibold text-foreground">
+                Layout — {layoutView.name}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-4 gap-1.5 p-3">
+              {VIEW_TYPES.map((type) => {
+                const VIcon = VIEW_ICONS[type];
+                const isActive = layoutView.type === type;
+                return (
+                  <button
+                    className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-colors duration-150 hover:bg-accent"
+                    key={type}
+                    onClick={() => {
+                      if (type !== layoutView.type) {
+                        onUpdateView(layoutView.id, { type });
+                      }
+                      setLayoutView(null);
+                      setLayoutRect(null);
+                    }}
+                  >
+                    <div
+                      className={[
+                        "flex size-12 items-center justify-center rounded-[var(--radius-md)] border transition-colors duration-150",
+                        isActive
+                          ? "border-primary/40 bg-primary/10"
+                          : "border-border/70 bg-muted/50 group-hover:border-primary/40 group-hover:bg-primary/10",
+                      ].join(" ")}
+                    >
+                      <VIcon
+                        className={
+                          isActive
+                            ? "text-primary"
+                            : "text-foreground/70 transition-colors duration-150 group-hover:text-primary"
+                        }
+                        size={24}
+                      />
+                    </div>
+                    <span
+                      className={[
+                        "flex items-center gap-1 text-xs font-medium leading-tight transition-colors duration-150",
+                        isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary",
+                      ].join(" ")}
+                    >
+                      {isActive && <Check size={10} />}
+                      {VIEW_LABELS[type]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {layoutView.type === "board" && !layoutView.groupByPropertyId && (
+              <div className="border-t border-border/40 px-4 py-2.5">
+                <p className="text-xs text-muted-foreground">
+                  Next, use the <strong>Group by</strong> button in the toolbar to pick a Select, Status, Checkbox, or Person property to organize cards into columns.
+                </p>
+              </div>
             )}
           </div>,
           document.body

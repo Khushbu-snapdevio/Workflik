@@ -3,8 +3,9 @@
 import {
  forwardRef, useEffect, useImperativeHandle, useRef, useState,
 } from "react";
+import { exitSuggestion } from "@tiptap/suggestion";
 import { BLOCK_CATEGORIES, getBlocksByCategory, type BlockDefinition } from "./block-registry";
-import type { SlashSuggestionProps } from "./extensions/slash-commands";
+import { SLASH_COMMANDS_PLUGIN_KEY, type SlashSuggestionProps } from "./extensions/slash-commands";
 
 // ── Public handle so the TipTap extension can forward keyboard events ────────
 export interface SlashMenuHandle {
@@ -17,14 +18,28 @@ interface Props {
 
 export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
  function SlashMenu({ suggestionProps }, ref) {
-  const { items, command, query, clientRect } = suggestionProps;
+  const { items, command, query, clientRect, editor } = suggestionProps;
 
   const [selectedIdx, setSelectedIdx] = useState(0);
   const selectedIdxRef = useRef(selectedIdx);
   selectedIdxRef.current = selectedIdx;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset selection when item list changes
   useEffect(() => { setSelectedIdx(0); }, [items]);
+
+  // Same reasoning as MentionList: this popup is `position: fixed`, outside
+  // the editor's own DOM, so ProseMirror's Suggestion plugin never sees a
+  // click elsewhere on the page as a reason to re-evaluate and exit. Dispatch
+  // the plugin's own exit transaction directly instead of waiting for that.
+  useEffect(() => {
+   function handleMouseDown(e: MouseEvent) {
+    if (containerRef.current?.contains(e.target as Node)) return;
+    exitSuggestion(editor.view, SLASH_COMMANDS_PLUGIN_KEY);
+   }
+   document.addEventListener("mousedown", handleMouseDown);
+   return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [editor]);
 
   // Position the popup under the "/" character
   const pos = clientRect?.() ?? null;
@@ -69,6 +84,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
 
   return (
    <div
+    ref={containerRef}
     className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
     style={{ left: menuLeft, top: menuTop }}
    >

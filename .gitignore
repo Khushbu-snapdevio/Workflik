@@ -25,3 +25,5 @@ tsconfig.tsbuildinfo
 
 # Local file uploads (STORAGE_DRIVER=local)
 /uploads/
+
+.krova-postgres

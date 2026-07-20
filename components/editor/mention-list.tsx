@@ -8,7 +8,9 @@ import {
  useRef,
  useState,
 } from "react";
+import { exitSuggestion } from "@tiptap/suggestion";
 import type { MentionItem, MentionSuggestionProps } from "@/components/editor/extensions/mention-extension";
+import { MENTION_PLUGIN_KEY, PAGE_LINK_PLUGIN_KEY } from "@/components/editor/extensions/mention-extension";
 
 export interface MentionListHandle {
  onKeyDown: (event: KeyboardEvent) => boolean;
@@ -20,13 +22,34 @@ interface Props {
 
 export const MentionList = forwardRef<MentionListHandle, Props>(
  function MentionList({ suggestionProps }, ref) {
-  const { items, command, clientRect } = suggestionProps;
+  const { items, command, clientRect, editor } = suggestionProps;
   const typedItems = items as MentionItem[];
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selectedRef = useRef(selectedIndex);
   selectedRef.current = selectedIndex;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setSelectedIndex(0), [items]);
+
+  // This popup is `position: fixed`, entirely outside the editor's own DOM —
+  // ProseMirror's Suggestion plugin only re-evaluates whether it's still
+  // "active" on document/selection transactions inside the editor, so a
+  // click anywhere else on the page (sidebar, topbar, another panel) never
+  // triggers one and the popup would otherwise stay open forever. Dispatch
+  // the plugin's own exit transaction directly — the safe way to close a
+  // suggestion without touching the document (see exitSuggestion's own
+  // doc comment in @tiptap/suggestion). Both keys are exited unconditionally
+  // since this list is shared between the "@" and "[[" triggers and only
+  // one of them is ever actually active at a time.
+  useEffect(() => {
+   function handleMouseDown(e: MouseEvent) {
+    if (containerRef.current?.contains(e.target as Node)) return;
+    exitSuggestion(editor.view, MENTION_PLUGIN_KEY);
+    exitSuggestion(editor.view, PAGE_LINK_PLUGIN_KEY);
+   }
+   document.addEventListener("mousedown", handleMouseDown);
+   return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [editor]);
 
   useImperativeHandle(ref, () => ({
    onKeyDown(event: KeyboardEvent): boolean {
@@ -61,6 +84,7 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
 
   return (
    <div
+    ref={containerRef}
     style={{
      position: "fixed",
      top: pos.bottom + 4,

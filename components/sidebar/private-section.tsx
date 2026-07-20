@@ -27,6 +27,7 @@ type PageItem = {
  orderIndex: number;
  kind:   string;
  isPrivate: boolean;
+ isDraft: boolean;
 };
 
 type Props = {

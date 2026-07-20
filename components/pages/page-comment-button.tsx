@@ -150,12 +150,13 @@ interface DiscussionItemProps {
   currentUserId: string;
   isAdmin:       boolean;
   reactionUsers: Record<string, string | null>;
+  onReactionUserResolved: (id: string, name: string | null) => void;
   onOpen:        () => void;
   onPatch:       (patch: Partial<CommentThread>) => void;
   onDeleted:     () => void;
 }
 
-function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, reactionUsers, onOpen, onPatch, onDeleted }: DiscussionItemProps) {
+function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, reactionUsers, onReactionUserResolved, onOpen, onPatch, onDeleted }: DiscussionItemProps) {
   const [isEditing, setIsEditing]     = useState(false);
   const [isMuted, setIsMuted]         = useState(false);
   const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
@@ -180,8 +181,9 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
       body: JSON.stringify({ emoji }),
     });
     if (res.ok) {
-      const data = await res.json() as { reactions: Record<string, string[]> };
+      const data = await res.json() as { reactions: Record<string, string[]>; reactorId: string; reactorName: string | null };
       onPatch({ reactions: data.reactions });
+      onReactionUserResolved(data.reactorId, data.reactorName);
     }
   }
 
@@ -478,6 +480,14 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
     load(false);
   }, [pageId]);
 
+  // A user's *first* reaction on a page won't be in reactionUsers yet (it's
+  // only populated from ids already seen in loaded comments) — merge in the
+  // reactor's resolved name the instant the react endpoint returns it,
+  // rather than waiting on some other mutation to reload the whole list.
+  function mergeReactionUser(id: string, name: string | null) {
+    setReactionUsers((prev) => ({ ...prev, [id]: name }));
+  }
+
   // Any comment mutation anywhere on this page (block card, page-level
   // thread, property popover, or this panel's own items) re-fetches here too
   // — keeps the badge count and thread list live instead of only refreshing
@@ -643,6 +653,7 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
                         currentUserId={currentUserId}
                         isAdmin={isAdmin}
                         reactionUsers={reactionUsers}
+                        onReactionUserResolved={mergeReactionUser}
                         onOpen={() => openThread(thread)}
                         onPatch={(patch) => patchThread(thread.id, patch)}
                         onDeleted={() => removeThread(thread.id)}

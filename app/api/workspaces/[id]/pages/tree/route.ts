@@ -25,6 +25,7 @@ export async function GET(_req: Request, { params }: Ctx) {
         orderIndex:  pages.orderIndex,
         kind:        pages.kind,
         isPrivate:   pages.isPrivate,
+        isDraft:     pages.isDraft,
       })
       .from(pages)
       .where(
@@ -34,6 +35,10 @@ export async function GET(_req: Request, { params }: Ctx) {
           ne(pages.kind, "entry"),
           or(
             eq(pages.isPrivate, false),
+            eq(pages.createdBy, session.user.id)
+          ),
+          or(
+            eq(pages.isDraft, false),
             eq(pages.createdBy, session.user.id)
           )
         )

@@ -20,6 +20,7 @@ import { common, createLowlight } from "lowlight";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { usePageDraft } from "@/components/pages/page-draft-context";
 import { BlockHandle } from "./block-handle";
 import { CommentCard } from "./comment-card";
 import { CommentGutter } from "./comment-gutter";
@@ -300,6 +301,8 @@ export function PageEditor({
   const lastVersionAt = useRef<number>(0);
   const deletedIds = useRef<string[]>([]);
 
+  const { setIsDraft } = usePageDraft();
+
   const editable = isEditor && !isLocked && !isDeleted;
 
   // Load blocks on mount
@@ -351,10 +354,11 @@ export function PageEditor({
           throw new Error("save failed");
         }
 
-        const data = (await res.json()) as { ok: boolean; blocks?: DbBlock[] };
+        const data = (await res.json()) as { ok: boolean; blocks?: DbBlock[]; promoted?: boolean };
         if (data.blocks) {
           currentBlocksRef.current = data.blocks;
         }
+        if (data.promoted) setIsDraft(false);
 
         deletedIds.current = [];
         // No blockId sync-back needed: every node already carries a permanent,
@@ -369,7 +373,7 @@ export function PageEditor({
         setSaveState(navigator.onLine ? "idle" : "offline");
       }
     },
-    [pageId]
+    [pageId, setIsDraft]
   );
 
   const editor = useEditor(

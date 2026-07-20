@@ -41,6 +41,7 @@ type PageItem = {
  orderIndex: number;
  kind: string;
  isPrivate: boolean;
+ isDraft: boolean;
 };
 
 type TreeNode = PageItem & { children: TreeNode[] };
@@ -477,6 +478,11 @@ function PageTreeNode({
       <FileText size={14} className="shrink-0 text-sidebar-foreground/50" />
      )}
      <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
+     {node.isDraft && (
+      <span className="shrink-0 rounded-[var(--radius-xs)] bg-[#fef9c3] px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-[#92400e]">
+       Draft
+      </span>
+     )}
     </Link>
 
     {/* Hover actions */}

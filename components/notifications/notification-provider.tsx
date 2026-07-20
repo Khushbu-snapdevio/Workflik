@@ -30,9 +30,10 @@ interface Props {
   children:      React.ReactNode;
   workspaceId:   string;
   workspaceSlug: string;
+  currentUserId: string;
 }
 
-export function NotificationProvider({ children, workspaceId, workspaceSlug }: Props) {
+export function NotificationProvider({ children, workspaceId, workspaceSlug, currentUserId }: Props) {
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
   const [panelOpen, setPanelOpen]     = useState(false);
@@ -73,8 +74,16 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug }: P
 
       setUnreadCount((c) => c + freshItems.length);
       // Use ref so we always read the current panelOpen (never a stale closure)
+      // Your own actions (e.g. creating a page) still land here as a
+      // confirmation entry in the panel/bell count, but popping a toast for
+      // something you just did yourself — often before you've even renamed
+      // the page — is more startling than useful. Only toast notifications
+      // that originated from someone else.
       if (!panelOpenRef.current) {
-        setToasts((prev) => [...prev, ...freshItems].slice(-5)); // cap at 5 toasts
+        const toastable = freshItems.filter((n) => n.senderId !== currentUserId);
+        if (toastable.length > 0) {
+          setToasts((prev) => [...prev, ...toastable].slice(-5)); // cap at 5 toasts
+        }
       }
     },
   });

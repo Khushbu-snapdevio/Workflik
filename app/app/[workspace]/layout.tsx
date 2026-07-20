@@ -66,6 +66,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
         orderIndex: pages.orderIndex,
         kind:       pages.kind,
         isPrivate:  pages.isPrivate,
+        isDraft:    pages.isDraft,
       })
       .from(pages)
       .where(
@@ -73,7 +74,8 @@ export default async function WorkspaceLayout({ children, params }: Props) {
           eq(pages.workspaceId, ws.id),
           eq(pages.isDeleted, false),
           ne(pages.kind, "entry"),
-          or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id))
+          or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id)),
+          or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id))
         )
       )
       .orderBy(pages.orderIndex),
@@ -92,6 +94,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
         orderIndex: pages.orderIndex,
         kind:       pages.kind,
         isPrivate:  pages.isPrivate,
+        isDraft:    pages.isDraft,
       })
       .from(pages)
       .where(
@@ -162,7 +165,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
   return (
     <SearchProvider workspaceSlug={ws.slug} workspaceId={ws.id}>
-      <NotificationProvider workspaceId={ws.id} workspaceSlug={ws.slug}>
+      <NotificationProvider workspaceId={ws.id} workspaceSlug={ws.slug} currentUserId={session.user.id}>
         <HintProvider dismissed={dismissedHints}>
           <WorkspaceShell
             sidebar={

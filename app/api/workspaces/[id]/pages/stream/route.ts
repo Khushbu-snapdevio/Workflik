@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
@@ -35,7 +35,14 @@ export async function GET(req: Request, { params }: Ctx) {
       const [row] = await db
         .select({ maxUpdated: sql<string | null>`max(${pages.updatedAt})` })
         .from(pages)
-        .where(eq(pages.workspaceId, workspaceId));
+        .where(
+          and(
+            eq(pages.workspaceId, workspaceId),
+            // A creator's own draft edits still nudge their own other tabs;
+            // other users' still-drafts never trigger a refetch for anyone else.
+            or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id))
+          )
+        );
       return row?.maxUpdated ? new Date(row.maxUpdated).getTime() : 0;
     }
 

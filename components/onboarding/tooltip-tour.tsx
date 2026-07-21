@@ -161,6 +161,14 @@ export function TooltipTour({ tourCompleted }: Props) {
     setTargetRect(el ? el.getBoundingClientRect() : null);
   }, []);
 
+  // Lets the sidebar know a tour is in progress so it can suppress its own
+  // "current page" highlight — otherwise Home's active-route pill (lit up
+  // because onboarding lands users on the workspace root) reads as if it
+  // were part of the guided spotlight on Search/Notifications.
+  useEffect(() => {
+    document.dispatchEvent(new CustomEvent(active ? "workflik:tour-active" : "workflik:tour-inactive"));
+  }, [active]);
+
   useEffect(() => {
     if (!active || !mounted) return;
     measureTarget(step);

@@ -109,6 +109,7 @@ export function Sidebar({
  const [userMenu, setUserMenu] = useState(false);
  const [pagesExpanded, setPagesExpanded] = useState(true);
  const [searchOpen, setSearchOpen] = useState(false);
+ const [tourActive, setTourActive] = useState(false);
  const newMenuRef = useRef<HTMLDivElement>(null);
  const userMenuRef = useRef<HTMLDivElement>(null);
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
@@ -167,6 +168,21 @@ export function Sidebar({
   return () => {
    document.removeEventListener("workflik:open-search", open);
    document.removeEventListener("workflik:search-closed", close);
+  };
+ }, []);
+
+ // While the onboarding tour is running, suppress the "current page" active
+ // highlight on nav items — otherwise Home's route-active pill (lit up
+ // because onboarding lands users on the workspace root) looks like it's
+ // part of the guided spotlight on Search/Notifications.
+ useEffect(() => {
+  const onActive = () => setTourActive(true);
+  const onInactive = () => setTourActive(false);
+  document.addEventListener("workflik:tour-active", onActive);
+  document.addEventListener("workflik:tour-inactive", onInactive);
+  return () => {
+   document.removeEventListener("workflik:tour-active", onActive);
+   document.removeEventListener("workflik:tour-inactive", onInactive);
   };
  }, []);
 
@@ -401,15 +417,15 @@ export function Sidebar({
    {collapsed && (
     <>
      <nav className="flex w-full flex-col items-center gap-1 px-2 py-3">
-      <CollapsedNavItem href={`/app/${workspaceSlug}`} label="Home" active={pathname === `/app/${workspaceSlug}` && !searchOpen}>
+      <CollapsedNavItem href={`/app/${workspaceSlug}`} label="Home" active={pathname === `/app/${workspaceSlug}` && !searchOpen && !tourActive}>
        <Home size={18} />
       </CollapsedNavItem>
       <CollapsedSearchItem><Search size={18} /></CollapsedSearchItem>
       <NotificationBell workspaceSlug={workspaceSlug} workspaceId={workspaceId} collapsed />
-      <CollapsedNavItem href={`/app/${workspaceSlug}/library`} label="Library" active={pathname.startsWith(`/app/${workspaceSlug}/library`)}>
+      <CollapsedNavItem href={`/app/${workspaceSlug}/library`} label="Library" active={pathname.startsWith(`/app/${workspaceSlug}/library`) && !tourActive}>
        <BookOpen size={18} />
       </CollapsedNavItem>
-      <CollapsedNavItem href={`/app/${workspaceSlug}/templates`} label="Templates" active={pathname.startsWith(`/app/${workspaceSlug}/templates`)}>
+      <CollapsedNavItem href={`/app/${workspaceSlug}/templates`} label="Templates" active={pathname.startsWith(`/app/${workspaceSlug}/templates`) && !tourActive}>
        <LayoutGrid size={18} />
       </CollapsedNavItem>
       <div className="my-1 w-8 border-t border-sidebar-border/70" />
@@ -455,7 +471,7 @@ export function Sidebar({
       href={`/app/${workspaceSlug}`}
       icon={<Home size={15} />}
       label="Home"
-      active={pathname === `/app/${workspaceSlug}` && !searchOpen}
+      active={pathname === `/app/${workspaceSlug}` && !searchOpen && !tourActive}
      />
      <span data-tour="search"><SearchNavButton icon={<Search size={15} />} /></span>
      <span data-tour="notifications">
@@ -465,13 +481,13 @@ export function Sidebar({
       href={`/app/${workspaceSlug}/library`}
       icon={<BookOpen size={15} />}
       label="Library"
-      active={pathname.startsWith(`/app/${workspaceSlug}/library`)}
+      active={pathname.startsWith(`/app/${workspaceSlug}/library`) && !tourActive}
      />
      <NavButton
       href={`/app/${workspaceSlug}/templates`}
       icon={<LayoutGrid size={15} />}
       label="Templates"
-      active={pathname.startsWith(`/app/${workspaceSlug}/templates`)}
+      active={pathname.startsWith(`/app/${workspaceSlug}/templates`) && !tourActive}
      />
     </nav>
 

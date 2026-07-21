@@ -111,11 +111,7 @@ export function CommentComposer({
     };
   }, [attachment]);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-
+  function handleFile(file: File) {
     setAttachLoading(true);
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -125,6 +121,13 @@ export function CommentComposer({
     };
     reader.onerror = () => setAttachLoading(false);
     reader.readAsDataURL(file);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    handleFile(file);
   }
 
   const editor = useEditor({
@@ -192,6 +195,13 @@ export function CommentComposer({
           return true;
         }
         return false;
+      },
+      handlePaste(_view, event) {
+        const file = event.clipboardData?.files?.[0];
+        if (!file) return false;
+        event.preventDefault();
+        handleFile(file);
+        return true;
       },
     },
   });

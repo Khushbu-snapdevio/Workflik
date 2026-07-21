@@ -36,7 +36,7 @@ export default async function InvitePage({ params }: Props) {
     .limit(1);
 
   if (!member) {
-    return <InviteError message="This invite link is invalid." />;
+    return renderShareLinkInvite(token);
   }
 
   if (member.status === "expired" || (member.inviteExpires && member.inviteExpires < new Date())) {
@@ -113,6 +113,60 @@ export default async function InvitePage({ params }: Props) {
       workspaceName={member.workspaceName}
       workspaceIcon={member.workspaceIcon ?? null}
       role={member.role}
+    />
+  );
+}
+
+// Falls back to the workspace's shareable "invite link" (workspaces.inviteLinkToken)
+// when the token doesn't match any per-email invite in workspaceMembers.
+// Unlike an email invite, there's no invitedEmail restriction and no
+// pre-created member row — anyone who reaches this with an active link
+// token can join at the link's configured role.
+async function renderShareLinkInvite(token: string) {
+  const [ws] = await db
+    .select({
+      id:               workspaces.id,
+      slug:             workspaces.slug,
+      name:             workspaces.name,
+      icon:             workspaces.icon,
+      inviteLinkActive: workspaces.inviteLinkActive,
+      inviteLinkRole:   workspaces.inviteLinkRole,
+    })
+    .from(workspaces)
+    .where(eq(workspaces.inviteLinkToken, token))
+    .limit(1);
+
+  if (!ws || !ws.inviteLinkActive) {
+    return <InviteError message="This invite link is invalid." />;
+  }
+
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) {
+    redirect(`/auth/login?next=/invite/${token}`);
+  }
+
+  const [existing] = await db
+    .select({ id: workspaceMembers.id })
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, ws.id),
+        eq(workspaceMembers.userId, session.user.id),
+        eq(workspaceMembers.status, "active")
+      )
+    )
+    .limit(1);
+
+  if (existing) {
+    redirect(`/platform/post-auth`);
+  }
+
+  return (
+    <AcceptInviteClient
+      token={token}
+      workspaceName={ws.name}
+      workspaceIcon={ws.icon ?? null}
+      role={ws.inviteLinkRole}
     />
   );
 }

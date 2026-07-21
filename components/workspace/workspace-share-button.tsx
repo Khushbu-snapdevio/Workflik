@@ -3,18 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 interface Props {
+ workspaceId:   string;
  workspaceSlug: string;
  workspaceName: string;
 }
 
-export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
+type InviteLinkState = { inviteLinkToken: string | null; inviteLinkActive: boolean };
+
+export function WorkspaceShareButton({ workspaceId, workspaceSlug, workspaceName }: Props) {
  const [open, setOpen] = useState(false);
  const [anchor, setAnchor] = useState<DOMRect | null>(null);
  const [copied, setCopied] = useState(false);
+ const [copying, setCopying] = useState(false);
  const btnRef = useRef<HTMLButtonElement>(null);
  const panelRef = useRef<HTMLDivElement>(null);
 
@@ -31,10 +37,37 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
   setAnchor(null);
  }
 
- function copyLink() {
-  navigator.clipboard.writeText(window.location.href);
-  setCopied(true);
-  setTimeout(() => setCopied(false), 2000);
+ // The workspace's normal page URL (previously copied here by mistake)
+ // requires membership to view, so it's a dead end for anyone it's shared
+ // with — the actual joinable link is the invite-link token from
+ // /api/workspaces/:id/invite-link, the same one Settings → Workspace →
+ // General reads/writes, built into a /invite/{token} URL.
+ async function copyLink() {
+  setCopying(true);
+  try {
+   let res = await fetch(`/api/workspaces/${workspaceId}/invite-link`);
+   if (!res.ok) throw new Error();
+   let state: InviteLinkState = await res.json();
+
+   if (!state.inviteLinkActive || !state.inviteLinkToken) {
+    res = await fetch(`/api/workspaces/${workspaceId}/invite-link`, { method: "POST" });
+    if (!res.ok) {
+     toast.error(res.status === 403
+      ? "Ask a workspace admin to turn on the invite link"
+      : "Couldn't create invite link — please try again.");
+     return;
+    }
+    state = await res.json();
+   }
+
+   await navigator.clipboard.writeText(`${window.location.origin}/invite/${state.inviteLinkToken}`);
+   setCopied(true);
+   setTimeout(() => setCopied(false), 2000);
+  } catch {
+   toast.error("Couldn't copy invite link — please try again.");
+  } finally {
+   setCopying(false);
+  }
  }
 
  useEffect(() => {
@@ -114,10 +147,13 @@ export function WorkspaceShareButton({ workspaceSlug, workspaceName }: Props) {
         <button
          type="button"
          onClick={copyLink}
-         className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-2.5 text-left transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-[0.98]"
+         disabled={copying}
+         className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3.5 py-2.5 text-left transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-[0.98] disabled:opacity-70"
         >
          <div className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/60">
-          {copied ? (
+          {copying ? (
+           <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          ) : copied ? (
            <svg className="size-4 text-success" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
             <polyline points="20 6 9 17 4 12"/>
            </svg>

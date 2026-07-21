@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, workspaceMembers } from "@/lib/db/schema";
 import { triggerWorkspaceInviteAcceptedNotification } from "@/lib/notifications/triggers";
@@ -58,5 +58,37 @@ export async function acceptWorkspaceInviteTx(
       memberId,
       accepterName,
     });
+  }
+}
+
+// Adds a user who followed the workspace's shareable "invite link"
+// (workspaces.inviteLinkToken) — unlike a per-email invite, there's no
+// pre-created workspaceMembers row addressed to them, and no single inviter
+// to notify (the link isn't extended to any one person). If they already
+// have a non-active row (e.g. a pending email invite to the same address),
+// reuse it — the unique (workspaceId, userId) index forbids a second row —
+// keeping its originally-invited role rather than overwriting it with the
+// link's role.
+export async function joinWorkspaceViaLinkTx(
+  tx: AnyTx,
+  params: { workspaceId: string; userId: string; role: "admin" | "editor" | "viewer" }
+) {
+  const { workspaceId, userId, role } = params;
+
+  const [existing] = await tx
+    .select({ id: workspaceMembers.id })
+    .from(workspaceMembers)
+    .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, userId)))
+    .limit(1);
+
+  if (existing) {
+    await tx
+      .update(workspaceMembers)
+      .set({ status: "active", joinedAt: new Date(), inviteToken: null })
+      .where(eq(workspaceMembers.id, existing.id));
+  } else {
+    await tx
+      .insert(workspaceMembers)
+      .values({ workspaceId, userId, role, status: "active", joinedAt: new Date() });
   }
 }

@@ -35,7 +35,7 @@ export default async function PublicPage({ params }: Props) {
 
   // Not found or disabled
   if (!link || !link.isActive) {
-    return <NotPublicScreen />;
+    return <NotPublicScreen token={token} />;
   }
 
   // Load page data
@@ -53,7 +53,7 @@ export default async function PublicPage({ params }: Props) {
     .limit(1);
 
   if (!page || page.isDeleted) {
-    return <NotPublicScreen />;
+    return <NotPublicScreen token={token} />;
   }
 
   // Load blocks ordered
@@ -74,7 +74,7 @@ export default async function PublicPage({ params }: Props) {
           WORKFLIK
         </a>
         <a
-          href="/auth/login"
+          href={`/auth/login?next=${encodeURIComponent(`/p/${token}`)}`}
           className="rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Sign in to Workflik
@@ -124,7 +124,7 @@ export default async function PublicPage({ params }: Props) {
   );
 }
 
-function NotPublicScreen() {
+function NotPublicScreen({ token }: { token: string }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-page px-4 text-center">
       <div className="mb-4 text-5xl">🔒</div>
@@ -133,7 +133,7 @@ function NotPublicScreen() {
         The page you&apos;re looking for is either private or the public link has been disabled.
       </p>
       <a
-        href="/auth/login"
+        href={`/auth/login?next=${encodeURIComponent(`/p/${token}`)}`}
         className="mt-6 rounded-[var(--radius-sm)] bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
       >
         Sign in to Workflik

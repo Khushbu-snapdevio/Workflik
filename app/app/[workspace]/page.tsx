@@ -146,7 +146,7 @@ export default async function WorkspacePage({ params }: Props) {
         <div className="flex shrink-0 items-center gap-2">
           <div className="hidden sm:block"><SearchTrigger /></div>
           <div className="hidden h-5 w-px bg-border/60 sm:block" />
-          <div className="hidden sm:block"><WorkspaceShareButton workspaceSlug={slug} workspaceName={ws.name ?? ws.id} /></div>
+          <div className="hidden sm:block"><WorkspaceShareButton workspaceId={ws.id} workspaceSlug={slug} workspaceName={ws.name ?? ws.id} /></div>
           <div className="hidden h-5 w-px bg-border/60 sm:block" />
           <NewPageButton
             workspaceId={ws.id}

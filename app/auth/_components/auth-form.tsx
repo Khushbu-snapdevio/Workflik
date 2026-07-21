@@ -69,9 +69,9 @@ function AuthFormInner() {
 
   useEffect(() => {
     if (session) {
-      router.replace("/platform/post-auth");
+      router.replace(callbackURL);
     }
-  }, [router, session]);
+  }, [router, session, callbackURL]);
 
   useEffect(() => {
     fetch("/api/auth/methods")

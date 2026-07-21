@@ -16,6 +16,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableRow } from "@tiptap/extension-table-row";
 import { common, createLowlight } from "lowlight";
 import { Callout } from "@/components/editor/extensions/callout";
+import { MentionNode } from "@/components/editor/extensions/mention-node";
 import { Toggle, ToggleSummary } from "@/components/editor/extensions/toggle";
 import { ImageBlock, VideoBlock, AudioBlock, FileBlock } from "@/components/editor/extensions/media-blocks";
 import { LinkedPage, InlineDatabase, TemplateButton, TableOfContents, MathBlock, Columns } from "@/components/editor/extensions/reference-blocks";
@@ -48,6 +49,13 @@ export function PublicPageViewer({ blocks }: Props) {
       Callout,
       Toggle,
       ToggleSummary,
+      // Registers the "mention" node type so the schema recognizes it —
+      // without this, TipTap's nodeFromJSON throws on the very first
+      // mention it finds and silently blanks the ENTIRE document (not just
+      // that node). No workspaceSlug here: anonymous public viewers can't
+      // open a page mention's /app/{slug}/... link anyway (see mention-node.ts),
+      // so it renders as plain resolved text instead of a link.
+      MentionNode,
       ImageBlock,
       VideoBlock,
       AudioBlock,

@@ -2,6 +2,7 @@ import { Extension } from "@tiptap/react";
 import Suggestion from "@tiptap/suggestion";
 import type { SuggestionProps, SuggestionKeyDownProps } from "@tiptap/suggestion";
 import { PluginKey } from "@tiptap/pm/state";
+import { resolveDisplayName } from "@/lib/users/display-name";
 
 export type MentionItem =
   | { mentionType: "user"; id: string; label: string; image?: string | null }
@@ -31,18 +32,28 @@ async function fetchMentionItems(query: string, workspaceId: string): Promise<Me
   const q = query.trim().toLowerCase();
   const items: MentionItem[] = [];
 
-  // People
+  // People — GET /api/workspaces/:id/members doesn't take q/limit params (it
+  // always returns the full member list, active + invited), and its rows are
+  // shaped { userId, userName, userEmail, userImage, status, ... } rather
+  // than { id, name, image } — filtering/limiting here instead.
   try {
-    const res = await fetch(`/api/workspaces/${workspaceId}/members?q=${encodeURIComponent(query)}&limit=5`);
+    const res = await fetch(`/api/workspaces/${workspaceId}/members`);
     if (res.ok) {
       const data = await res.json();
-      const members: Array<{ userId?: string; id?: string; name?: string | null; image?: string | null }> =
-        data.members ?? data ?? [];
-      for (const m of members.slice(0, 5)) {
-        const id = m.userId ?? m.id;
-        if (id && m.name) {
-          items.push({ mentionType: "user", id, label: m.name, image: m.image });
-        }
+      const members: Array<{
+        userId?:  string | null;
+        status?:  string;
+        userName?: string | null;
+        userEmail?: string | null;
+        userImage?: string | null;
+      }> = data.members ?? data ?? [];
+      for (const m of members) {
+        if (items.length >= 5) break;
+        if (m.status !== "active" || !m.userId) continue;
+        const label = resolveDisplayName(m.userName, m.userEmail);
+        if (!label) continue;
+        if (q && !label.toLowerCase().includes(q)) continue;
+        items.push({ mentionType: "user", id: m.userId, label, image: m.userImage });
       }
     }
   } catch { /* ignore */ }

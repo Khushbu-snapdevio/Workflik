@@ -28,6 +28,7 @@ import { TemplateGanttView } from "./views/template-gantt-view";
 import { ConfirmDialog }   from "@/components/ui/confirm-dialog";
 import { ShareButton }     from "@/components/pages/share-button";
 import { CopyLinkButton }   from "@/components/pages/copy-link-button";
+import { PageSearchButton } from "@/components/pages/page-search-button";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
 import { PagePrivacyPill }   from "@/components/pages/page-privacy-pill";
 import { FavoriteButton }    from "@/components/pages/favorite-button";
@@ -1333,6 +1334,7 @@ export function TemplatePageClient({
       isEditor={isEditor}
      />
      <CopyLinkButton pageId={page.id} />
+     <PageSearchButton />
      <FavoriteButton
       pageId={page.id}
       workspaceId={workspaceId}

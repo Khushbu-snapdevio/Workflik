@@ -224,17 +224,36 @@ function rawToFormulaValue(prop: typeof databaseProperties.$inferSelect, raw: un
   }
 }
 
+// How many items a list-valued property holds — what count(prop("Name"))
+// resolves to. Unlike rawToFormulaValue, this never recurses into a
+// referenced Formula property: a formula's own output is always a scalar
+// (see FormulaValue), so there's no list left to count once one's involved.
+function rawToCount(prop: typeof databaseProperties.$inferSelect, raw: unknown): number {
+  const v = raw as Record<string, unknown> | null;
+  switch (prop.type) {
+    case "person":
+    case "created_by":
+      return ((v?._members as unknown[] | undefined) ?? []).length;
+    case "multi_select":
+      return ((v?.optionIds as unknown[] | undefined) ?? []).length;
+    case "relation":
+      return ((v?.entryIds as unknown[] | undefined) ?? []).length;
+    default:
+      throw new FormulaEvalError(`count() doesn't work on "${prop.name}" — only Person, Multi-select, and Relation properties have a count.`);
+  }
+}
+
 // `visiting` guards against a formula referencing itself (directly or via a
 // cycle through other formulas) — without it, two formulas that reference
 // each other would recurse until the stack overflows instead of failing with
 // a clear "Circular reference" error.
-function makeResolveProp(
+function makeFormulaResolvers(
   entryId: string,
   properties: (typeof databaseProperties.$inferSelect)[],
   valMap: Map<string, Map<string, unknown>>,
   visiting: Set<string>,
-): (name: string) => FormulaValue {
-  return (name: string) => {
+): { resolveProp: (name: string) => FormulaValue; resolveCount: (name: string) => number } {
+  function resolveProp(name: string): FormulaValue {
     const prop = properties.find((p) => p.name === name);
     if (!prop) throw new FormulaEvalError(`Unknown property "${name}"`);
 
@@ -243,7 +262,7 @@ function makeResolveProp(
       const expression = (prop.config as { expression?: string } | null)?.expression ?? "";
       visiting.add(prop.id);
       try {
-        const { value, error } = evaluateFormulaValue(expression, { resolveProp: makeResolveProp(entryId, properties, valMap, visiting) });
+        const { value, error } = evaluateFormulaValue(expression, makeFormulaResolvers(entryId, properties, valMap, visiting));
         if (error) throw new FormulaEvalError(error);
         return value;
       } finally {
@@ -253,7 +272,16 @@ function makeResolveProp(
 
     const raw = valMap.get(entryId)?.get(prop.id) ?? null;
     return rawToFormulaValue(prop, raw);
-  };
+  }
+
+  function resolveCount(name: string): number {
+    const prop = properties.find((p) => p.name === name);
+    if (!prop) throw new FormulaEvalError(`Unknown property "${name}"`);
+    const raw = valMap.get(entryId)?.get(prop.id) ?? null;
+    return rawToCount(prop, raw);
+  }
+
+  return { resolveProp, resolveCount };
 }
 
 function computeFormulaValues(
@@ -268,7 +296,7 @@ function computeFormulaValues(
   for (const fp of formulaProps) {
     const expression = (fp.config as { expression?: string } | null)?.expression ?? "";
     for (const entryId of entryIds) {
-      const { display, error } = runFormula(expression, { resolveProp: makeResolveProp(entryId, properties, valMap, new Set([fp.id])) });
+      const { display, error } = runFormula(expression, makeFormulaResolvers(entryId, properties, valMap, new Set([fp.id])));
       results.push({ propertyId: fp.id, entryId, value: { display: error ? null : display } });
     }
   }

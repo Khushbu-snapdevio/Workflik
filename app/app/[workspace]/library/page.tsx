@@ -14,6 +14,7 @@ import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { ChevronRight, Home } from "lucide-react";
 import { LibraryClient } from "./library-client";
 import { NewPageButton } from "@/components/workspace/new-page-button";
+import { PageSearchButton } from "@/components/pages/page-search-button";
 
 type Props = { params: Promise<{ workspace: string }> };
 
@@ -110,6 +111,7 @@ export default async function LibraryPage({ params }: Props) {
         </nav>
 
         <div className="ml-2 flex shrink-0 items-center gap-1">
+          <PageSearchButton />
           <NewPageButton
             workspaceId={ws.id}
             workspaceSlug={slug}

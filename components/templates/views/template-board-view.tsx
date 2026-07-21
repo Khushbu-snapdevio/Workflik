@@ -10,6 +10,8 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -207,6 +209,16 @@ function CardShell({
  const [propEditor, setPropEditor] = useState<{ prop: DatabaseProperty; rect: DOMRect } | null>(null);
  const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
  const cardRef = useRef<HTMLDivElement>(null);
+ const { data: session } = useSession();
+
+ // Vote-mode person: toggle the current viewer's own vote directly instead of
+ // opening the people picker — returns true if handled (caller skips the picker).
+ function handleVoteClick(prop: DatabaseProperty): boolean {
+  if (prop.type !== "person" || !(prop.config as { voteMode?: boolean } | null)?.voteMode) return false;
+  if (!session?.user?.id) return true;
+  onUpdatePropValue(entry.id, prop.id, toggleSelfVote(valMap.get(prop.id) as { userIds?: string[] } | null, session.user));
+  return true;
+ }
 
  // entry.commentCount is batch-computed server-side (open, page-level
  // threads only) — see components/database/board-view.tsx's CardShell for
@@ -303,7 +315,7 @@ function CardShell({
        key={dp.id}
        type="button"
        onPointerDown={(e) => e.stopPropagation()}
-       onClick={(e) => { e.stopPropagation(); setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
+       onClick={(e) => { e.stopPropagation(); if (handleVoteClick(dp)) return; setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
        className="min-w-0 shrink-0 rounded-[var(--radius-xs)] text-left hover:bg-accent"
       >
        <CellDisplay
@@ -400,12 +412,13 @@ function CardShell({
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
          e.stopPropagation();
+         if (handleVoteClick(dp)) return;
          setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
         }}
         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
        >
         {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" /> : <TypeIcon size={12} className="shrink-0" />}
-        Add {dp.name}
+        {dp.type === "person" && (dp.config as { voteMode?: boolean } | null)?.voteMode ? dp.name : `Add ${dp.name}`}
        </button>
       );
      })}
@@ -478,6 +491,8 @@ function CardShell({
     <EditPropertySidePanel
      key={panelProp.id}
      property={panelProp as unknown as DbProperty}
+     properties={properties as unknown as DbProperty[]}
+     workspaceId={workspaceId}
      getAnchorRect={() => {
       // Same convention as Calendar/Gallery: always hangs below the
       // toolbar's own "+New" button, not wherever the card happened to be

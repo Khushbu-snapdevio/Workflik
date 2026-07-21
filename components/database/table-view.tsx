@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import {
  Plus, ExternalLink as ArrowSquareOut, Trash2 as Trash, EyeOff as EyeSlash, Type as TextT,
  ArrowUp as SortAscending, ArrowDown as SortDescending,
@@ -560,6 +562,7 @@ export function TableView({
  const [localEntryOrder, setLocalEntryOrder] = useState<Map<string, string[]>>(new Map());
  const [draggingId, setDraggingId]      = useState<string | null>(null);
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+ const { data: session } = useSession();
 
  const hiddenIds = new Set((activeView?.hiddenPropertyIds ?? []) as string[]);
  const visible  = resolvePropertyOrder(properties.filter((p) => !p.isSystem && !hiddenIds.has(p.id)), activeView);
@@ -588,6 +591,15 @@ export function TableView({
   if (prop.type === "checkbox") {
    const cur = getRaw(entryId, propId) as { checked?: boolean } | null;
    onUpdateValue(entryId, propId, { checked: !(cur?.checked ?? false) });
+   return;
+  }
+  // Vote-mode person: toggle the current viewer's own vote directly, same
+  // as the checkbox case above — never opens the people picker, so there's
+  // no path from this cell to editing anyone else's vote. The server
+  // enforces the same self-only rule independently either way.
+  if (prop.type === "person" && prop.config?.voteMode) {
+   if (!session?.user?.id) return;
+   onUpdateValue(entryId, propId, toggleSelfVote(getRaw(entryId, propId) as { userIds?: string[] } | null, session.user));
    return;
   }
   if (TEXT_TYPES.has(prop.type)) {
@@ -1001,6 +1013,8 @@ export function TableView({
     <PropHeaderMenu
      menu={propMenu}
      prop={visible.find((p) => p.id === propMenu.propId)}
+     properties={properties}
+     workspaceId={workspaceId}
      onRename={(id) => { const p = visible.find((x) => x.id === id); if (p) { setRenamingProp(id); setRenameVal(p.name); } setPropMenu(null); }}
      onHide={(id) => { onUpdateView({ hiddenPropertyIds: [...((activeView?.hiddenPropertyIds ?? []) as string[]), id] }); setPropMenu(null); }}
      onDelete={async (id) => { await onDeleteProperty(id); setPropMenu(null); }}
@@ -1051,6 +1065,8 @@ export function TableView({
      <EditPropertySidePanel
       key={panelProp.id}
       property={panelProp}
+      properties={properties}
+      workspaceId={workspaceId}
       getAnchorRect={() => editPropPanel.anchorRect}
       canDelete={!panelProp.isSystem}
       onUpdateProperty={(patch) => onUpdateProperty(panelProp.id, patch)}
@@ -1238,6 +1254,8 @@ function RowContextMenu({ menu, workspaceSlug, onCommentClick, onDuplicate, onDe
 interface PropHeaderMenuProps {
  menu: PropMenuState;
  prop: DbProperty | undefined;
+ properties: DbProperty[];
+ workspaceId: string;
  onRename: (id: string) => void;
  onHide: (id: string) => void;
  onDelete: (id: string) => Promise<void>;
@@ -1249,7 +1267,7 @@ interface PropHeaderMenuProps {
  onUpdateView: (patch: Record<string, unknown>) => Promise<void>;
 }
 
-function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpdateProperty, onDuplicateProperty, onClose, activeView, onUpdateView }: PropHeaderMenuProps) {
+function PropHeaderMenu({ menu, prop, properties, workspaceId, onRename, onHide, onDelete, onSort, onUpdateProperty, onDuplicateProperty, onClose, activeView, onUpdateView }: PropHeaderMenuProps) {
  const ref = useRef<HTMLDivElement>(null);
  const [confirmDelete, setConfirmDelete] = useState(false);
  // "Edit property" replaces this same menu's content in place, at the same anchor.
@@ -1273,12 +1291,14 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpda
   !!ref.current?.contains(target) || !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]'));
 
  const sortable = prop && ["text", "number", "select", "status", "date", "checkbox"].includes(prop.type);
- const isSelectType = prop && (prop.type === "select" || prop.type === "status" || prop.type === "multi_select");
+ const canEditProperty = prop && !prop.isSystem;
 
  if (editingProperty && prop) {
   return (
    <EditPropertySidePanel
     property={prop}
+    properties={properties}
+    workspaceId={workspaceId}
     getAnchorRect={() => menu.rect}
     canDelete={!prop.isSystem}
     onUpdateProperty={(patch) => onUpdateProperty(menu.propId, patch)}
@@ -1296,7 +1316,7 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpda
   );
  }
 
- const itemCount = 3 + (sortable ? 2 : 0) + (isSelectType ? 1 : 0);
+ const itemCount = 3 + (sortable ? 2 : 0) + (canEditProperty ? 1 : 0);
  const dividerCount = 1 + (sortable ? 1 : 0);
  const menuHeight = itemCount * 32 + dividerCount * 9 + 8;
  const menuWidth = 192;
@@ -1321,7 +1341,7 @@ function PropHeaderMenu({ menu, prop, onRename, onHide, onDelete, onSort, onUpda
      </>
     )}
     <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><PencilIcon size={13} /> Rename</button>
-    {isSelectType && (
+    {canEditProperty && (
      <button onClick={() => setEditingProperty(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><GearIcon size={13} /> Edit property</button>
     )}
     <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>

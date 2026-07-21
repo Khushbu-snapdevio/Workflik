@@ -5,13 +5,10 @@ import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { TimeAgo } from "@/components/ui/time-ago";
-import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 
 const PAGE_SIZE = 10;
 
@@ -100,7 +97,6 @@ export function LibraryClient({
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [deletingSelected, setDeletingSelected]      = useState(false);
   const [deleteErr, setDeleteErr]              = useState("");
-  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   function changeTab(next: Tab) {
     setTab(next);
@@ -343,7 +339,8 @@ export function LibraryClient({
                   return (
                   <div
                     key={page.id}
-                    className="group/row relative grid items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
+                    onClick={() => router.push(`/app/${workspaceSlug}/${page.shortId}`)}
+                    className="group/row relative grid cursor-pointer items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
                     style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px 90px" }}
                   >
                     {/* Row checkbox */}
@@ -384,7 +381,7 @@ export function LibraryClient({
                       )}
 
                       {/* Favorite button with tooltip */}
-                      <div className="group/fav relative shrink-0">
+                      <div className="group/fav relative shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={() => toggleFavorite(page.id)}
@@ -402,20 +399,6 @@ export function LibraryClient({
                           </p>
                         </div>
                       </div>
-
-                      {/* Open — the only way to navigate into the page; raw
-                          row clicks are intentionally inert so a stray click
-                          doesn't yank the user out of Library. Matches the
-                          database table view's row-hover OPEN action. */}
-                      <Link
-                        href={`/app/${workspaceSlug}/${page.shortId}`}
-                        className="flex shrink-0 items-center gap-[3px] rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground/60 opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 hover:border-primary/40 hover:bg-muted/60 hover:text-foreground"
-                        onMouseEnter={(e) => showTooltip("Open full page", e)}
-                        onMouseLeave={hideTooltip}
-                      >
-                        <FileText size={9} />
-                        OPEN
-                      </Link>
                     </div>
 
                     {/* Created by */}
@@ -526,11 +509,6 @@ export function LibraryClient({
         loading={deletingSelected}
         onConfirm={handleDeleteSelected}
       />
-
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
     </div>
   );
 }

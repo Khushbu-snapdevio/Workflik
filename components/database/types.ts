@@ -121,6 +121,12 @@ export interface DbPropertyConfig {
   aggregation?: RollupAggregation;
   /** Formula only — the raw expression text (see lib/formula/). */
   expression?: string;
+  /** Person only — turns this property into a self-service vote: regular
+   *  members can only add/remove *their own* id (enforced server-side in
+   *  app/api/entries/[id]/property-values/[propId]/route.ts), and clicking
+   *  the cell toggles their own vote directly instead of opening the full
+   *  people picker. Admins keep full picker access for moderation. */
+  voteMode?: boolean;
 }
 
 export interface DbProperty {

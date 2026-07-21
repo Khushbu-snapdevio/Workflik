@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useSession } from "@/lib/auth/client";
-import { File as FileIcon } from "lucide-react";
+import { File as FileIcon, ThumbsUp } from "lucide-react";
 import { getOptionColor, formatNumber, formatDateValue } from "@/components/database/property-registry";
 import type { NumberFormat } from "@/components/database/property-registry";
 import type { DbProperty, FileItem, SelectOption } from "@/components/database/types";
 import { UserHoverCard } from "@/components/database/user-hover-card";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
 import { ImageLightbox } from "@/components/editor/comment-card";
 
 interface CellDisplayProps {
@@ -54,6 +57,7 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
   const wrapContent = resolvedWrapContent ?? property.config?.wrapContent;
   const { data: session } = useSession();
   const [hoveredUser, setHoveredUser] = useState<{ userId: string; rect: DOMRect } | null>(null);
+  const [voterTooltip, setVoterTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<FileItem | null>(null);
 
   switch (property.type) {
@@ -217,6 +221,50 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
     case "created_by": {
       const userIds       = (v as { userIds?: string[] } | null)?.userIds ?? [];
       const cachedMembers = (v as { _members?: { id: string; name: string; email: string }[] } | null)?._members ?? [];
+
+      // Vote-mode: a thumbs-up + count instead of the editable avatar list —
+      // the count is always userIds.length (never a separately-stored
+      // number), and the fill state reflects whether *this* viewer has voted.
+      // No onClick here — the click that toggles a vote is handled by each
+      // view's own cell-activation logic (table-view.tsx's activateCell and
+      // its equivalents), which calls back into this same person value; this
+      // component only ever renders what the current value looks like.
+      if (property.type === "person" && property.config?.voteMode) {
+        const hasVoted = !!session?.user?.id && userIds.includes(session.user.id);
+        // Voter names come straight from the value's own `_members` cache —
+        // no extra fetch. Reuses the comment-reaction name formatter
+        // ("Smit and S28", "X, Y, and N others") so "who voted" reads the
+        // same everywhere. `You` is substituted for the current user, since
+        // the badge is a self-service vote.
+        const nameById = Object.fromEntries(cachedMembers.map((m) => [m.id, m.name || m.email]));
+        const voterLabel = userIds.length
+          ? formatReactorNames(
+              userIds,
+              Object.fromEntries(userIds.map((id) => [id, id === session?.user?.id ? "You" : nameById[id] || "Former Member"])),
+            )
+          : "";
+        return (
+          <>
+            <span
+              onMouseEnter={userIds.length ? (e) => setVoterTooltip({ label: voterLabel, rect: e.currentTarget.getBoundingClientRect() }) : undefined}
+              onMouseLeave={userIds.length ? () => setVoterTooltip(null) : undefined}
+              className={`inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium transition-colors duration-150 ${
+                hasVoted
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              <ThumbsUp size={12} fill={hasVoted ? "currentColor" : "none"} />
+              {userIds.length}
+            </span>
+            {voterTooltip && typeof document !== "undefined" && createPortal(
+              <IconTooltip rect={voterTooltip.rect} label={voterTooltip.label} />,
+              document.body,
+            )}
+          </>
+        );
+      }
+
       if (!userIds.length) return null;
       const shown = userIds.slice(0, compact ? 2 : 3);
       return (

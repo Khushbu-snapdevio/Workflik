@@ -15,7 +15,7 @@ async function requirePlatformAdmin() {
 }
 
 type PropOption = { name: string; color: string };
-type Prop = { name: string; type: string; multiple?: boolean; options?: PropOption[] };
+type Prop = { name: string; type: string; multiple?: boolean; options?: PropOption[]; expression?: string; voteMode?: boolean };
 type View = { name: string; type: "table" | "board" | "calendar" | "gantt"; isDefault?: boolean; groupBy?: string; ganttStart?: string; ganttEnd?: string; filterKey?: string; filterValue?: string; sortBy?: string; sortDir?: "asc" | "desc" };
 type SampleRow = Record<string, string | number>;
 type DbSchema = { properties: Prop[]; views: View[]; sample_rows: SampleRow[] };
@@ -281,17 +281,16 @@ export const BUILT_IN_TEMPLATES: {
           { name: "Top of funnel", color: "green"  },
           { name: "Retention",     color: "purple" },
         ]},
-        { name: "Total votes", type: "number" },
-        { name: "Upvoted by",  type: "person", multiple: true },
+        { name: "Upvoted by",  type: "person", multiple: true, voteMode: true },
       ],
       views: [
         { name: "All Ideas",   type: "table", isDefault: true },
         { name: "By category", type: "board", groupBy: "Category" },
       ],
       sample_rows: [
-        { "Idea": "Launch back to school campaign",  "Priority": "High",   "Category": "Activation",    "Total votes": 0 },
-        { "Idea": "Simplify onboarding experience",  "Priority": "Medium", "Category": "Conversion",    "Total votes": 0 },
-        { "Idea": "Improve SEO",                     "Priority": "Low",    "Category": "Top of funnel", "Total votes": 0 },
+        { "Idea": "Launch back to school campaign",  "Priority": "High",   "Category": "Activation"    },
+        { "Idea": "Simplify onboarding experience",  "Priority": "Medium", "Category": "Conversion"    },
+        { "Idea": "Improve SEO",                     "Priority": "Low",    "Category": "Top of funnel" },
       ],
     }),
   },

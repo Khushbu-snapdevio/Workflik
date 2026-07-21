@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Settings2, MessageSquare } from "lucide-react";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover, FilesPropertyValue } from "@/components/database/cells/cell-editor";
@@ -70,6 +72,7 @@ const POPOVER_TYPES = new Set(["select", "status", "multi_select", "date", "pers
 
 export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, workspaceId, workspaceSlug, isEditor }: EntryPropertiesPanelProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [properties, setProperties] = useState<DbProperty[]>([]);
   const [values, setValues]         = useState<Map<string, unknown>>(new Map());
   const [loading, setLoading]       = useState(true);
@@ -223,7 +226,6 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
 
   const popoverProp = popover ? properties.find((p) => p.id === popover.propId) ?? null : null;
   const editPropProp = editPropPanel ? properties.find((p) => p.id === editPropPanel.propId) ?? null : null;
-  const SELECT_TYPES = new Set(["select", "multi_select"]);
 
   return (
     <>
@@ -246,7 +248,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                 <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                   {prop.name}
                 </span>
-                {isEditor && SELECT_TYPES.has(prop.type) && (
+                {isEditor && (
                   <button
                     type="button"
                     onClick={(e) => setEditPropPanel({ propId: prop.id, anchorRect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
@@ -342,8 +344,28 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                   />
                 )}
 
+                {/* Vote-mode person: clicking toggles the current viewer's own
+                    vote directly — never opens the full people picker, so
+                    there's no path from this row to editing anyone else's
+                    vote. The server enforces the same self-only rule
+                    independently (app/api/entries/[id]/property-values/[propId]/route.ts),
+                    this is purely about not offering the picker in the UI. */}
+                {prop.type === "person" && prop.config?.voteMode && (
+                  <button
+                    type="button"
+                    disabled={!isEditor || !session?.user?.id}
+                    onClick={() => {
+                      if (!session?.user?.id) return;
+                      saveValue(prop.id, toggleSelfVote(val as { userIds?: string[] } | null, session.user));
+                    }}
+                    className="flex min-h-[22px] w-fit items-center gap-1 text-left disabled:cursor-default"
+                  >
+                    {val ? <CellDisplay property={prop} value={val} workspaceId={workspaceId} /> : <CellDisplay property={prop} value={{ userIds: [] }} workspaceId={workspaceId} />}
+                  </button>
+                )}
+
                 {/* Popover types: select / multi_select / date / person / relation / empty files */}
-                {POPOVER_TYPES.has(prop.type) && !(prop.type === "files" && !!(val as { files?: FileItem[] } | null)?.files?.length) && (
+                {POPOVER_TYPES.has(prop.type) && !(prop.type === "person" && prop.config?.voteMode) && !(prop.type === "files" && !!(val as { files?: FileItem[] } | null)?.files?.length) && (
                   <button
                     type="button"
                     disabled={!isEditor}
@@ -429,6 +451,8 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
         <EditPropertySidePanel
           key={editPropProp.id}
           property={editPropProp}
+          properties={properties}
+          workspaceId={workspaceId}
           getAnchorRect={() => editPropPanel.anchorRect}
           canDelete={!editPropProp.isSystem}
           onUpdateProperty={(patch) => updatePropertyConfig(editPropProp.id, patch)}

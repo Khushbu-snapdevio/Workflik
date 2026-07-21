@@ -12,6 +12,7 @@ import { X, ArrowLeft, ChevronRight, Plus, GripVertical, Copy, Trash2, Check, Sq
 import { createId } from "@paralleldrive/cuid2";
 import { PROPERTY_REGISTRY, PROPERTY_TYPE_ICON, OPTION_COLORS, getOptionColor, groupOptions, inferStatusGroups } from "@/components/database/property-registry";
 import { OptionSubmenu } from "@/components/database/option-submenu";
+import { ChangePropertyTypePicker } from "@/components/database/change-property-type-picker";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ICON_REGISTRY, PageIcon } from "@/components/pages/page-icon";
@@ -21,6 +22,11 @@ import type { DbProperty, SelectOption, StatusGroupKey, ViewPropertyOverride } f
 
 interface EditPropertySidePanelProps {
   property:            DbProperty;
+  /** The database's full property list — needed only to hand to the "change
+   *  type" flow's Formula/Rollup sub-pickers (they let a user reference/
+   *  aggregate other properties by name). */
+  properties:          DbProperty[];
+  workspaceId:         string;
   /** Returns the current bounding rect of whatever this panel is anchored to. Called on
    *  open AND on every scroll/resize, so the panel tracks its anchor instead of freezing
    *  at whatever position it happened to open at (e.g. inside a sticky toolbar). */
@@ -48,11 +54,14 @@ interface EditPropertySidePanelProps {
 const PANEL_WIDTH = 288;
 
 export function EditPropertySidePanel({
-  property, getAnchorRect, onUpdateProperty, onDeleteProperty, onDuplicateProperty, canDelete, onClose, onBack, showCardToggle, viewContext,
+  property, properties, workspaceId, getAnchorRect, onUpdateProperty, onDeleteProperty, onDuplicateProperty, canDelete, onClose, onBack, showCardToggle, viewContext,
 }: EditPropertySidePanelProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const typeRowRef = useRef<HTMLButtonElement>(null);
   const [anchorRect, setAnchorRect] = useState<DOMRect>(getAnchorRect);
   const config = property.config ?? {};
+  const SELECT_TYPES = new Set(["select", "multi_select", "status"]);
+  const isSelectType = SELECT_TYPES.has(property.type);
   // A property literally named "Status" that has never been grouped yet auto-adopts
   // the 3-section grouped display, with existing options bucketed by name heuristic.
   const shouldAutoGroup = property.name.trim().toLowerCase() === "status"
@@ -66,6 +75,7 @@ export function EditPropertySidePanel({
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [submenu, setSubmenu] = useState<{ optionId: string; rect: DOMRect } | null>(null);
   const [showDisplayAs, setShowDisplayAs] = useState(false);
+  const [showTypePicker, setShowTypePicker] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   // Adding a new option: typing directly into an inline input at the insertion point
   // and pressing Enter commits it immediately — same as the search box's "Create …" flow.
@@ -312,13 +322,22 @@ export function EditPropertySidePanel({
             />
           </div>
 
-          {/* Type (locked) */}
-          <div className="flex items-center justify-between text-xs">
+          {/* Type */}
+          <button
+            ref={typeRowRef}
+            type="button"
+            onClick={() => setShowTypePicker(true)}
+            className="flex items-center justify-between rounded-[var(--radius-sm)] px-0.5 py-1 text-xs transition-colors duration-150 hover:bg-accent"
+          >
             <span className="text-muted-foreground">Type</span>
-            <span className="text-muted-foreground/60">{groupedByStatus ? "Status" : reg?.label ?? property.type}</span>
-          </div>
+            <span className="flex items-center gap-1 text-muted-foreground/60">
+              {groupedByStatus ? "Status" : reg?.label ?? property.type}
+              <ChevronRight size={12} className={`transition-transform duration-150 ${showTypePicker ? "rotate-90" : ""}`} />
+            </span>
+          </button>
 
           {/* Options, grouped or flat */}
+          {isSelectType && (
           <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
             <div className="flex flex-col gap-3">
               {sections.map((section) => (
@@ -395,6 +414,7 @@ export function EditPropertySidePanel({
               )}
             </div>
           </DndContext>
+          )}
         </div>
 
         {/* Wrap content / Display as / Duplicate / Delete — always visible,
@@ -418,6 +438,7 @@ export function EditPropertySidePanel({
           </div>
 
           {/* Display as */}
+          {isSelectType && (
           <div>
             <button
               type="button"
@@ -447,6 +468,7 @@ export function EditPropertySidePanel({
               </div>
             )}
           </div>
+          )}
 
           <div className="h-px bg-border" />
 
@@ -494,6 +516,19 @@ export function EditPropertySidePanel({
           />
         );
       })()}
+
+      {showTypePicker && typeRowRef.current && (
+        <ChangePropertyTypePicker
+          rect={typeRowRef.current.getBoundingClientRect()}
+          property={property}
+          properties={properties}
+          workspaceId={workspaceId}
+          onBack={() => setShowTypePicker(false)}
+          onClose={() => setShowTypePicker(false)}
+          onChanged={onClose}
+          onUpdateProperty={onUpdateProperty}
+        />
+      )}
 
       <ConfirmDialog
         open={confirmDelete}

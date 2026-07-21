@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { MentionNode } from "@/components/editor/extensions/mention-node";
 import { MentionCommands, type MentionSuggestionProps } from "@/components/editor/extensions/mention-extension";
 import { MentionList, type MentionListHandle } from "@/components/editor/mention-list";
+import { ImageLightbox } from "@/components/editor/comment-card";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 
@@ -95,6 +96,7 @@ export function CommentComposer({
   const [initial]                         = useState(() => extractInitialAttachment(initialContent));
   const [attachment, setAttachment]       = useState<Attachment | null>(initial.attachment);
   const [attachLoading, setAttachLoading] = useState(false);
+  const [previewOpen, setPreviewOpen]     = useState(false);
   const [editorEmpty, setEditorEmpty]     = useState(true);
 
   const mentionListRef = useRef<MentionListHandle>(null);
@@ -272,11 +274,17 @@ export function CommentComposer({
           ) : attachment ? (
             <div className="relative inline-block group">
               {attachment.preview.startsWith("data:image") ? (
-                <img
-                  src={attachment.preview}
-                  alt={attachment.name}
-                  className="max-w-full max-h-[180px] rounded-[var(--radius-sm)] border border-border object-cover"
-                />
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(true)}
+                  className="block focus:outline-none cursor-zoom-in"
+                >
+                  <img
+                    src={attachment.preview}
+                    alt={attachment.name}
+                    className="max-w-full max-h-[180px] rounded-[var(--radius-sm)] border border-border object-cover"
+                  />
+                </button>
               ) : (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] bg-muted border border-border">
                   <Paperclip size={14} className="text-muted-foreground" />
@@ -290,6 +298,13 @@ export function CommentComposer({
               >
                 <X size={9} />
               </button>
+              {previewOpen && (
+                <ImageLightbox
+                  src={attachment.preview}
+                  alt={attachment.name}
+                  onClose={() => setPreviewOpen(false)}
+                />
+              )}
             </div>
           ) : null}
         </div>

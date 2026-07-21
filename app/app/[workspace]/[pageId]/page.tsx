@@ -21,6 +21,7 @@ import { PageCommentButton } from "@/components/pages/page-comment-button";
 import { FavoriteButton } from "@/components/pages/favorite-button";
 import { ShareButton } from "@/components/pages/share-button";
 import { CopyLinkButton } from "@/components/pages/copy-link-button";
+import { PageSearchButton } from "@/components/pages/page-search-button";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
 import { PagePrivacyPill } from "@/components/pages/page-privacy-pill";
@@ -291,6 +292,7 @@ export default async function PageEditorPage({ params }: Props) {
             isEditor={isEditor}
           />
           <CopyLinkButton pageId={page.id} />
+          <PageSearchButton />
           <PageCommentButton
             pageId={page.id}
             workspaceId={ws.id}

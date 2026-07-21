@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
@@ -187,8 +189,19 @@ function GalleryCard({
     rect: DOMRect;
   } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { data: session } = useSession();
 
   const valMap = valueMap.get(entry.id) ?? new Map<string, unknown>();
+
+  // Vote-mode person: toggle the current viewer's own vote directly instead of
+  // opening the people picker — returns true if handled (caller skips the picker).
+  function handleVoteClick(prop: DatabaseProperty): boolean {
+    if (prop.type !== "person" || !(prop.config as { voteMode?: boolean } | null)?.voteMode) return false;
+    if (!session?.user?.id) return true;
+    onUpdatePropValue(entry.id, prop.id, toggleSelfVote(valMap.get(prop.id) as { userIds?: string[] } | null, session.user));
+    return true;
+  }
+
   const filledProps = displayProps.filter((prop) =>
     hasDisplayValue(prop, valMap.get(prop.id) ?? null, resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined))
   );
@@ -439,6 +452,21 @@ function GalleryCard({
                     </div>
                   );
                 }
+                // Vote-mode renders its own "👍 N" badge — a clickable wrapper
+                // that toggles the viewer's own vote, no "label: value" row.
+                if (prop.type === "person" && (prop.config as { voteMode?: boolean } | null)?.voteMode) {
+                  return (
+                    <button
+                      key={prop.id}
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); handleVoteClick(prop); }}
+                      className="overflow-hidden text-left"
+                    >
+                      <CellDisplay compact property={prop as unknown as DbProperty} value={raw} workspaceId={workspaceId} />
+                    </button>
+                  );
+                }
                 return (
                   <div
                     className="flex items-center gap-1.5 overflow-hidden"
@@ -506,6 +534,7 @@ function GalleryCard({
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (handleVoteClick(prop)) return;
                       setPropEditor({
                         prop,
                         rect: (
@@ -517,7 +546,7 @@ function GalleryCard({
                     type="button"
                   >
                     {propConfig.icon ? <PageIcon icon={propConfig.icon} className="shrink-0" size={12} /> : <TypeIcon className="shrink-0" size={12} />}
-                    Add {prop.name}
+                    {prop.type === "person" && (prop.config as { voteMode?: boolean } | null)?.voteMode ? prop.name : `Add ${prop.name}`}
                   </button>
                 );
               })}

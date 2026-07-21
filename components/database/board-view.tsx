@@ -10,6 +10,8 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, LayoutGrid, X, FileText, PanelLeft, PanelRight, Pencil, GripVertical, MoreHorizontal, MessageSquare, Pin } from "lucide-react";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import { OPTION_COLORS, getOptionColor, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { PageIcon } from "@/components/pages/page-icon";
 import { CellDisplay } from "@/components/database/cells/cell-display";
@@ -835,6 +837,18 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
  const [editTitle, setEditTitle] = useState(entry.title ?? "");
  const [propEditor, setPropEditor] = useState<{ prop: DbProperty; rect: DOMRect } | null>(null);
  const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
+ const { data: session } = useSession();
+
+ // Vote-mode person: toggles the current viewer's own vote directly instead
+ // of opening the full people picker — same rule as table-view.tsx's
+ // activateCell, enforced independently server-side either way. Returns
+ // true if it handled the click (caller should skip opening the picker).
+ function handleVoteClick(prop: DbProperty, entryId: string): boolean {
+  if (prop.type !== "person" || !prop.config?.voteMode) return false;
+  if (!session?.user?.id) return true;
+  onUpdateValue(entryId, prop.id, toggleSelfVote(valueMap.get(entryId)?.get(prop.id) as { userIds?: string[] } | null, session.user));
+  return true;
+ }
  const cardRef = useRef<HTMLDivElement>(null);
  const filledProps = cardProps.filter((prop) =>
   hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null)
@@ -1027,7 +1041,11 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            key={prop.id}
            type="button"
            onPointerDown={(e) => e.stopPropagation()}
-           onClick={(e) => { e.stopPropagation(); setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
+           onClick={(e) => {
+            e.stopPropagation();
+            if (handleVoteClick(prop, entry.id)) return;
+            setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+           }}
            className="min-w-0 shrink-0 rounded-[var(--radius-xs)] text-left hover:bg-accent"
           >
            <CellDisplay property={prop} value={raw} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} workspaceId={workspaceId} />
@@ -1065,6 +1083,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            onPointerDown={(e) => e.stopPropagation()}
            onClick={(e) => {
             e.stopPropagation();
+            if (handleVoteClick(prop, entry.id)) return;
             setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
            }}
            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
@@ -1146,6 +1165,8 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
     <EditPropertySidePanel
      key={panelProp.id}
      property={panelProp}
+     properties={properties}
+     workspaceId={workspaceId}
      getAnchorRect={() => {
       // Same convention as Calendar/Gallery: always hangs below the
       // toolbar's own "+New" button, not wherever the card happened to be

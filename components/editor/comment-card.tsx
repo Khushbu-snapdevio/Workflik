@@ -7,12 +7,14 @@ import {
  MoreHorizontal as DotsThreeIcon, MessageSquare as ChatTextIcon, X as XIcon,
  Mail as EnvelopeIcon, Pencil as PencilSimpleIcon, Link as LinkIcon,
  BellOff as BellSlashIcon, Trash2 as TrashIcon, MessageCircle as ChatDotsIcon,
- Paperclip, Reply as ReplyIcon,
+ Paperclip, Reply as ReplyIcon, FileText as FileIcon, ZoomOut, ZoomIn,
+ Download, ExternalLink,
 } from "lucide-react";
 import { CommentComposer } from "@/components/editor/comment-composer";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
@@ -96,34 +98,186 @@ function formatTime(iso: string): string {
 
 // ---------- Image Lightbox ----------
 
+const ZOOM_MIN = 25;
+const ZOOM_MAX = 400;
+const ZOOM_STEP = 25;
+const WHEEL_SENSITIVITY = 0.2; // zoom-percent per deltaY unit
+
+// Downloads via a temp <a download>. data: URIs are fetched into a blob first
+// — an <a download> pointed straight at a data: URI is blocked/ignored by
+// some browsers for large payloads, same reason FileAttachment below does it.
+function downloadImage(src: string, filename: string) {
+ if (src.startsWith("data:")) {
+  fetch(src)
+   .then((r) => r.blob())
+   .then((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+   });
+  return;
+ }
+ const a = document.createElement("a");
+ a.href = src;
+ a.download = filename;
+ a.click();
+}
+
+// Where a pan offset bottoms out at the current zoom — image edges are always
+// reachable but never draggable past, so panning can't strand part of the
+// image off-screen with no way back. Mirrors object-contain's own fit math
+// (min of width-fit/height-fit, never upscaling past natural size) so the
+// clamp lines up with what's actually rendered at zoom 100.
+function clampPan(
+ pan: { x: number; y: number },
+ zoomPct: number,
+ natural: { w: number; h: number } | null,
+ container: HTMLElement | null,
+): { x: number; y: number } {
+ if (!natural || !container) return { x: 0, y: 0 };
+ const rect = container.getBoundingClientRect();
+ const fitScale = Math.min(rect.width / natural.w, rect.height / natural.h, 1);
+ const scaledW = natural.w * fitScale * (zoomPct / 100);
+ const scaledH = natural.h * fitScale * (zoomPct / 100);
+ const maxX = Math.max(0, (scaledW - rect.width) / 2);
+ const maxY = Math.max(0, (scaledH - rect.height) / 2);
+ return {
+  x: Math.min(maxX, Math.max(-maxX, pan.x)),
+  y: Math.min(maxY, Math.max(-maxY, pan.y)),
+ };
+}
+
 export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+ const [zoom, setZoom]       = useState(100);
+ const [pan, setPan]         = useState({ x: 0, y: 0 });
+ const [dragging, setDragging] = useState(false);
+ const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+ const containerRef = useRef<HTMLDivElement>(null);
+ const dragStartRef  = useRef({ mouseX: 0, mouseY: 0, panX: 0, panY: 0 });
+
  useEffect(() => {
   function handler(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
   document.addEventListener("keydown", handler);
   return () => document.removeEventListener("keydown", handler);
  }, [onClose]);
 
+ // Locks page scroll behind the overlay for the same reason every other
+ // modal in this app does — but also doubles as what makes wheel-to-zoom
+ // safe: this listener's own preventDefault (passive: false) stops the
+ // native scroll, so the plain onWheel below never has to fight for it.
+ useScrollLockWhileOpen(true, () => false);
+
+ const filename = alt || "image";
+
+ function applyZoom(nextZoom: number) {
+  const clampedZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, nextZoom));
+  setZoom(clampedZoom);
+  setPan((p) => clampPan(p, clampedZoom, natural, containerRef.current));
+ }
+
+ function onWheel(e: React.WheelEvent) {
+  applyZoom(zoom - e.deltaY * WHEEL_SENSITIVITY);
+ }
+
+ function onPointerDown(e: React.PointerEvent<HTMLImageElement>) {
+  if (zoom <= 100) return;
+  e.currentTarget.setPointerCapture(e.pointerId);
+  setDragging(true);
+  dragStartRef.current = { mouseX: e.clientX, mouseY: e.clientY, panX: pan.x, panY: pan.y };
+ }
+
+ function onPointerMove(e: React.PointerEvent<HTMLImageElement>) {
+  if (!dragging) return;
+  const { mouseX, mouseY, panX, panY } = dragStartRef.current;
+  setPan(
+   clampPan(
+    { x: panX + (e.clientX - mouseX), y: panY + (e.clientY - mouseY) },
+    zoom,
+    natural,
+    containerRef.current,
+   ),
+  );
+ }
+
+ function onPointerUp(e: React.PointerEvent<HTMLImageElement>) {
+  if (!dragging) return;
+  e.currentTarget.releasePointerCapture(e.pointerId);
+  setDragging(false);
+ }
+
+ function onDoubleClick() {
+  if (zoom > 100) {
+   applyZoom(100);
+  } else {
+   setZoom(200);
+   setPan({ x: 0, y: 0 }); // double-click always re-centers before zooming in
+  }
+ }
+
  if (typeof document === "undefined") return null;
  return createPortal(
   <div
    data-comment-exempt
-   className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70"
+   className="fixed inset-0 z-[9999] flex flex-col bg-background"
    style={{ pointerEvents: "auto" }} // see EmojiPicker's comment — required inside a modal Sheet/Dialog
-   onClick={onClose}
   >
-   <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+   {/* Toolbar */}
+   <div className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+    <div className="flex min-w-0 items-center gap-2">
+     <FileIcon size={15} className="shrink-0 text-muted-foreground" />
+     <span className="truncate text-sm font-medium text-foreground">{filename}</span>
+    </div>
+    <div className="flex items-center gap-0.5">
+     <IconTooltipButton icon={<ZoomOut size={15} />} label="Zoom out" onClick={() => applyZoom(zoom - ZOOM_STEP)} />
+     <button
+      type="button"
+      onClick={() => applyZoom(100)}
+      className="min-w-[42px] rounded-[var(--radius-sm)] px-1.5 py-1.5 text-center text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+     >
+      {Math.round(zoom)}%
+     </button>
+     <IconTooltipButton icon={<ZoomIn size={15} />} label="Zoom in" onClick={() => applyZoom(zoom + ZOOM_STEP)} />
+     <div className="mx-1 h-5 w-px bg-border" />
+     <IconTooltipButton icon={<ArrowCounterClockwiseIcon size={14} />} label="Reset zoom" onClick={() => applyZoom(100)} />
+     <div className="mx-1 h-5 w-px bg-border" />
+     <IconTooltipButton icon={<Download size={15} />} label="Download" onClick={() => downloadImage(src, filename)} />
+     <IconTooltipButton
+      icon={<ExternalLink size={14} />}
+      label="Open in new tab"
+      onClick={() => window.open(src, "_blank", "noopener,noreferrer")}
+     />
+     <div className="mx-1 h-5 w-px bg-border" />
+     <IconTooltipButton icon={<XIcon size={15} />} label="Close" onClick={onClose} />
+    </div>
+   </div>
+
+   {/* Image */}
+   <div
+    ref={containerRef}
+    className="relative flex flex-1 items-center justify-center overflow-hidden"
+    onClick={onClose}
+    onWheel={onWheel}
+   >
     <img
      src={src}
      alt={alt}
-     className="max-w-[90vw] max-h-[90vh] rounded-[var(--radius-md)] object-contain"
+     draggable={false}
+     onClick={(e) => e.stopPropagation()}
+     onDoubleClick={(e) => { e.stopPropagation(); onDoubleClick(); }}
+     onLoad={(e) => setNatural({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
+     onPointerDown={onPointerDown}
+     onPointerMove={onPointerMove}
+     onPointerUp={onPointerUp}
+     className="max-h-full max-w-full select-none rounded-[var(--radius-sm)] object-contain"
+     style={{
+      transform:  `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`,
+      transition: dragging ? "none" : "transform 150ms ease-out",
+      cursor:     zoom > 100 ? (dragging ? "grabbing" : "grab") : "default",
+     }}
     />
-    <button
-     type="button"
-     onClick={onClose}
-     className="absolute -top-3 -right-3 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card border border-border text-foreground transition-colors duration-150 hover:bg-accent"
-    >
-     <XIcon size={14} />
-    </button>
    </div>
   </div>,
   document.body,

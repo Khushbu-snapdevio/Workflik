@@ -59,6 +59,23 @@ function rawToFormulaValue(prop: DbProperty, raw: unknown): FormulaValue {
   }
 }
 
+// Mirrors lib/databases/compute-values.ts's rawToCount — see rawToFormulaValue
+// above for why this file keeps its own copy instead of importing the server
+// version.
+function rawToCount(prop: DbProperty, raw: unknown): number {
+  const v = raw as Record<string, unknown> | null;
+  switch (prop.type) {
+    case "person":
+      return ((v?._members as unknown[] | undefined) ?? []).length;
+    case "multi_select":
+      return ((v?.optionIds as unknown[] | undefined) ?? []).length;
+    case "relation":
+      return ((v?.entryIds as unknown[] | undefined) ?? []).length;
+    default:
+      throw new Error(`count() doesn't work on "${prop.name}" — only Person, Multi-select, and Relation properties have a count.`);
+  }
+}
+
 export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onClose, onPick }: FormulaConfigPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -96,6 +113,11 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
         const prop = properties.find((p) => p.name === name);
         if (!prop) throw new Error(`Unknown property "${name}"`);
         return rawToFormulaValue(prop, sampleEntry.values.get(prop.id) ?? null);
+      },
+      resolveCount: (name) => {
+        const prop = properties.find((p) => p.name === name);
+        if (!prop) throw new Error(`Unknown property "${name}"`);
+        return rawToCount(prop, sampleEntry.values.get(prop.id) ?? null);
       },
     });
     if (error) return { display: "", error };

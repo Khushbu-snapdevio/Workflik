@@ -24,6 +24,39 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const body = await req.json() as { value: unknown };
 
+  // Computed properties are never stored directly — Formula/Rollup/Created-by
+  // are recalculated from other data on every read (lib/databases/compute-values.ts)
+  // and never consult property_values at all, so a direct write here would
+  // just sit as permanently-unreachable orphaned data. Reject outright rather
+  // than silently accepting a write nothing will ever read back.
+  if (prop.type === "formula" || prop.type === "rollup" || prop.type === "created_by") {
+    return Response.json({ error: "computed_property_readonly" }, { status: 400 });
+  }
+
+  // Vote-mode Person properties: a regular member may only add or remove
+  // *their own* id — never anyone else's, and never more than one id per
+  // request. Admins keep full read/write access here for moderation.
+  const isAdmin = member.role === "admin";
+  if (prop.type === "person" && (prop.config as { voteMode?: boolean } | null)?.voteMode && !isAdmin) {
+    const [existing] = await db
+      .select()
+      .from(propertyValues)
+      .where(and(eq(propertyValues.entryId, entryId), eq(propertyValues.propertyId, propId)))
+      .limit(1);
+    const oldIds = new Set(((existing?.value as { userIds?: string[] } | null)?.userIds) ?? []);
+    const newIds = new Set(((body.value as { userIds?: string[] } | null)?.userIds) ?? []);
+
+    const added   = [...newIds].filter((uid) => !oldIds.has(uid));
+    const removed = [...oldIds].filter((uid) => !newIds.has(uid));
+    const isSelfOnlyToggle =
+      (added.length === 1 && added[0] === session.user.id && removed.length === 0) ||
+      (removed.length === 1 && removed[0] === session.user.id && added.length === 0);
+
+    if (!isSelfOnlyToggle) {
+      return Response.json({ error: "vote_self_only" }, { status: 403 });
+    }
+  }
+
   const [val] = await db
     .insert(propertyValues)
     .values({ entryId, propertyId: propId, value: body.value })

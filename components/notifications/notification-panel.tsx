@@ -127,10 +127,19 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
   return createPortal(
     <>
-      {/* Backdrop */}
+      {/* Backdrop — dims whatever's underneath (matches the app's Sheet/Dialog
+          overlay convention, bg-black/20) so content that sits in the same
+          horizontal band as the panel, like the home page's topbar search
+          bar, reads as "behind an overlay" instead of just abruptly
+          clipped/half-hidden where the panel's left edge happens to fall. */}
       <div
-        className="fixed inset-0"
-        style={{ zIndex: 599, pointerEvents: animIn ? "auto" : "none" }}
+        className="fixed inset-0 bg-black/20"
+        style={{
+          zIndex:     599,
+          opacity:    animIn ? 1 : 0,
+          transition: "opacity 0.18s ease",
+          pointerEvents: animIn ? "auto" : "none",
+        }}
         onClick={closePanel}
       />
 
@@ -156,7 +165,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
               <div className="flex items-center gap-2">
                 <Bell size={14} className="shrink-0 text-primary" />
                 <h2 className="text-[15px] font-bold leading-none tracking-tight text-foreground">
-                  Inbox
+                  Notifications
                 </h2>
                 {unread > 0 && (
                   <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold leading-none text-white">
@@ -185,7 +194,10 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 <IconTooltipButton
                   icon={<Settings size={14} />}
                   label="Notification settings"
-                  href={`/app/${workspaceSlug}/settings/notifications`}
+                  onClick={() => {
+                    closePanel();
+                    router.push(`/app/${workspaceSlug}/settings/notifications`);
+                  }}
                   className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 />
                 <IconTooltipButton

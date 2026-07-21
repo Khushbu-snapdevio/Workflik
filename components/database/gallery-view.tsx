@@ -29,6 +29,8 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { PageIcon } from "@/components/pages/page-icon";
@@ -550,6 +552,18 @@ function GalleryCard({
     rect: DOMRect;
   } | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { data: session } = useSession();
+
+  // Vote-mode person: toggles the current viewer's own vote directly instead
+  // of opening the full people picker — same rule as table-view.tsx's
+  // activateCell, enforced independently server-side either way. Returns
+  // true if it handled the click (caller should skip opening the picker).
+  function handleVoteClick(prop: DbProperty): boolean {
+    if (prop.type !== "person" || !prop.config?.voteMode) return false;
+    if (!session?.user?.id) return true;
+    onUpdateValue(entry.id, prop.id, toggleSelfVote(valueMap.get(entry.id)?.get(prop.id) as { userIds?: string[] } | null, session.user));
+    return true;
+  }
 
   const filledProps = displayProps.filter((prop) =>
     hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null, resolveDisplayAs(prop, activeView))
@@ -853,6 +867,22 @@ function GalleryCard({
                     </div>
                   );
                 }
+                // Vote-mode already renders its own self-explanatory "👍 N"
+                // badge — same reasoning as checkbox-display above, no
+                // "label: value" row needed, just a clickable wrapper.
+                if (prop.type === "person" && prop.config?.voteMode) {
+                  return (
+                    <button
+                      key={prop.id}
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); handleVoteClick(prop); }}
+                      className="overflow-hidden text-left"
+                    >
+                      <CellDisplay compact property={prop} value={raw} workspaceId={workspaceId} />
+                    </button>
+                  );
+                }
                 return (
                   <div
                     className="flex items-center gap-1.5 overflow-hidden"
@@ -906,6 +936,7 @@ function GalleryCard({
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (handleVoteClick(prop)) return;
                       setPropEditor({
                         prop,
                         rect: (
@@ -917,7 +948,7 @@ function GalleryCard({
                     type="button"
                   >
                     {propConfig.icon ? <PageIcon icon={propConfig.icon} className="shrink-0" size={12} /> : <TypeIcon className="shrink-0" size={12} />}
-                    Add {prop.name}
+                    {prop.type === "person" && prop.config?.voteMode ? prop.name : `Add ${prop.name}`}
                   </button>
                 );
               })}

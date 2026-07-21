@@ -8,6 +8,8 @@ import {
  Type as TextT,
  FileText, Pencil as PencilSimple,
 } from "lucide-react";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover, FilesPropertyValue } from "@/components/database/cells/cell-editor";
@@ -38,6 +40,7 @@ export function EntrySidePanel({
  entry, properties, valueMap, workspaceSlug, workspaceId,
  isEditor, onClose, onUpdateTitle, onUpdateValue, onDeleteEntry,
 }: EntrySidePanelProps) {
+ const { data: session } = useSession();
  const [title, setTitle]         = useState(entry.title ?? "");
  const [editPop, setEditPop]       = useState<{ propId: string; rect: DOMRect } | null>(null);
  const [inlineEdit, setInlineEdit]    = useState<{ propId: string; value: string } | null>(null);
@@ -64,6 +67,12 @@ export function EntrySidePanel({
   if (prop.type === "checkbox") {
    const cur = getVal(prop.id) as { checked?: boolean } | null;
    onUpdateValue(entry.id, prop.id, { checked: !(cur?.checked ?? false) });
+   return;
+  }
+  // Vote-mode person: toggle the viewer's own vote directly, never the picker.
+  if (prop.type === "person" && prop.config?.voteMode) {
+   if (!session?.user?.id) return;
+   onUpdateValue(entry.id, prop.id, toggleSelfVote(getVal(prop.id) as { userIds?: string[] } | null, session.user));
    return;
   }
   if (POPUP_TYPES.has(prop.type)) { setEditPop({ propId: prop.id, rect }); return; }

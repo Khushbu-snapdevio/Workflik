@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageLightbox } from "@/components/editor/comment-card";
 import { useUpload } from "@/lib/storage/use-upload";
 
 // ── Shared URL / file picker ──────────────────────────────────────────────────
@@ -168,6 +169,7 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
   // Notion doesn't show a caption field under an image until you ask for one —
   // only pre-show it here if a caption was already saved.
   const [showCaption, setShowCaption] = useState(!!caption);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const changeRef = useRef<HTMLInputElement>(null);
   const captionRef = useRef<HTMLInputElement>(null);
 
@@ -221,7 +223,8 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
         <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-border bg-muted/20">
           <img
             alt={captionDraft || "Image"}
-            className="block w-full"
+            className="block w-full cursor-zoom-in"
+            onClick={() => setPreviewOpen(true)}
             onError={() => setPicking(true)}
             src={src}
             style={{ maxHeight: 520, objectFit: "contain" }}
@@ -238,6 +241,13 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
             ref={changeRef}
             type="file"
           />
+          {previewOpen && (
+            <ImageLightbox
+              src={src}
+              alt={captionDraft || "Image"}
+              onClose={() => setPreviewOpen(false)}
+            />
+          )}
         </div>
         {showCaption && (
           <input

@@ -38,8 +38,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const [existing] = await db.select().from(databaseProperties).where(eq(databaseProperties.id, propId)).limit(1);
   if (!existing || existing.databaseId !== id) return Response.json({ error: "not_found" }, { status: 404 });
 
-  // Destructive type change check
-  const destructiveTypes = ["relation", "person"];
+  // Destructive type change check — relation/person because converting to
+  // them can't reinterpret existing values as a relation/person reference;
+  // formula/rollup/created_by because those types are computed on every
+  // read and never consult property_values at all, so anything already
+  // stored under the old type would become permanently unreachable, not
+  // just stale.
+  const destructiveTypes = ["relation", "person", "formula", "rollup", "created_by"];
   if (body.type && body.type !== existing.type && destructiveTypes.includes(body.type) && !body.confirmDestructive) {
     const [{ affectedValueCount }] = await db
       .select({ affectedValueCount: db.$count(propertyValues, eq(propertyValues.propertyId, propId)) })

@@ -12,6 +12,15 @@ export interface FormulaEvalContext {
   // property that's itself a Formula (subject to that resolver's own
   // circular-reference guard, not this evaluator's concern).
   resolveProp: (name: string) => FormulaValue;
+  // Resolves `count(prop("Name"))` to how many items a list-valued property
+  // (Person, Multi-select, Relation) holds. Kept separate from resolveProp
+  // rather than folded into FormulaValue (a strict scalar union — see
+  // ./types.ts) because Person/Multi-select already have a meaningful scalar
+  // form there (joined names/labels) that existing formulas may depend on;
+  // count() is how a formula asks for the *list length* instead. Optional —
+  // callers that never expose list-valued properties (e.g. no sample entry
+  // loaded yet) can omit it and let count() raise its own clear error.
+  resolveCount?: (name: string) => number;
 }
 
 function asNumber(v: FormulaValue, op: string): number {
@@ -82,6 +91,21 @@ export function evaluateFormula(node: FormulaNode, ctx: FormulaEvalContext): For
     }
 
     case "call": {
+      // count() is special-cased rather than living in FORMULA_FUNCTIONS: it
+      // needs the raw property reference (to know which list to measure),
+      // not the already-coerced scalar every other function receives — by
+      // the time an argument reaches a normal function, resolveProp has
+      // already collapsed a Person/Multi-select/Relation property down to a
+      // string or number, and the list itself is gone.
+      if (node.name === "count") {
+        const arg = node.args[0];
+        if (node.args.length !== 1 || arg.type !== "prop") {
+          throw new FormulaEvalError('count() expects a single property reference, e.g. count(prop("Upvoted by"))');
+        }
+        if (!ctx.resolveCount) throw new FormulaEvalError("count() isn't available here");
+        return ctx.resolveCount(arg.name);
+      }
+
       const fn = FORMULA_FUNCTIONS[node.name];
       if (!fn) throw new FormulaEvalError(`Unknown function "${node.name}(...)"`);
       const args = node.args.map((a) => evaluateFormula(a, ctx));

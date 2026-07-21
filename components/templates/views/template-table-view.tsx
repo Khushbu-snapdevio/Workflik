@@ -22,6 +22,8 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import type { DatabaseProperty, DatabaseView } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -547,7 +549,25 @@ function PersonCell({
  onSave: (v: unknown) => void;
 }) {
  const [rect, setRect] = useState<DOMRect | null>(null);
+ const { data: session } = useSession();
  const hasValue = (value?.userIds?.length ?? 0) > 0;
+ const voteMode = !!(property.config as { voteMode?: boolean } | null)?.voteMode;
+
+ // Vote-mode: clicking toggles the current viewer's own vote directly, never
+ // opens the people picker — so there's no path here to editing anyone
+ // else's vote. Server enforces the same self-only rule independently.
+ if (voteMode) {
+  return (
+   <button
+    type="button"
+    disabled={!session?.user?.id}
+    onClick={() => { if (session?.user?.id) onSave(toggleSelfVote(value, session.user)); }}
+    className="flex min-h-[24px] w-fit items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60 disabled:cursor-default"
+   >
+    <CellDisplay property={property as unknown as DbProperty} value={value ?? { userIds: [] }} workspaceId={workspaceId} />
+   </button>
+  );
+ }
 
  return (
   <>
@@ -627,6 +647,8 @@ function FileCell({
 
 function ColumnHeader({
  prop,
+ properties,
+ workspaceId,
  onRename,
  onDelete,
  onUpdateProperty,
@@ -636,6 +658,8 @@ function ColumnHeader({
  onUpdateView,
 }: {
  prop:   DatabaseProperty;
+ properties: DatabaseProperty[];
+ workspaceId: string;
  onRename: (id: string, name: string) => void;
  onDelete: (id: string) => void;
  onUpdateProperty: (propId: string, patch: Record<string, unknown>) => void;
@@ -731,7 +755,7 @@ function ColumnHeader({
          >
           <PencilSimpleIcon size={13} /> Rename
          </button>
-         {(prop.type === "select" || prop.type === "multi_select") && (
+         {!prop.isSystem && (
           <button
            onClick={() => setEditingProperty(true)}
            className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
@@ -754,6 +778,8 @@ function ColumnHeader({
      {menuOpen && editingProperty && (
       <EditPropertySidePanel
        property={prop as unknown as DbProperty}
+       properties={properties as unknown as DbProperty[]}
+       workspaceId={workspaceId}
        getAnchorRect={getEditPropertyAnchorRect}
        canDelete={!prop.isSystem}
        onUpdateProperty={async (patch) => onUpdateProperty(prop.id, patch)}
@@ -1541,6 +1567,8 @@ export function TemplateTableView({
        <th key={p.id} className="group/col px-3 py-2.5 text-left">
         <ColumnHeader
          prop={p}
+         properties={properties}
+         workspaceId={workspaceId}
          onRename={onRenameProperty}
          onDelete={onDeleteProperty}
          onUpdateProperty={onUpdateProperty}
@@ -1650,6 +1678,8 @@ export function TemplateTableView({
     <EditPropertySidePanel
      key={panelProp.id}
      property={panelProp as unknown as DbProperty}
+     properties={properties as unknown as DbProperty[]}
+     workspaceId={workspaceId}
      getAnchorRect={getEditPropertyAnchorRect}
      canDelete={!panelProp.isSystem}
      onUpdateProperty={async (patch) => onUpdateProperty(panelProp.id, patch)}

@@ -17,7 +17,7 @@ export type SnapshotBlock = {
 };
 
 export type SchemaPropOption = { name: string; color: string };
-export type SchemaProp       = { name: string; type: string; options?: SchemaPropOption[] };
+export type SchemaProp       = { name: string; type: string; options?: SchemaPropOption[]; expression?: string; voteMode?: boolean };
 export type SchemaView       = { name: string; type: string; isDefault?: boolean; groupBy?: string; ganttStart?: string; ganttEnd?: string };
 
 export type DatabaseSchema = {
@@ -139,7 +139,7 @@ export async function createPageFromSnapshot(
 // Property types supported by WorkFlik's database engine
 const SUPPORTED_PROP_TYPES = new Set([
   "text", "number", "select", "multi_select", "date",
-  "checkbox", "url", "email", "phone", "person", "created_by", "files",
+  "checkbox", "url", "email", "phone", "person", "created_by", "files", "formula",
 ]);
 
 // Forks a database-template snapshot (properties + views + sample rows) into
@@ -203,6 +203,15 @@ export async function createDatabaseFromSnapshot(
         return { id: oid, name: opt.name, color: opt.color ?? "gray" };
       });
       config = { options };
+    } else if (p.type === "formula") {
+      // Referenced property names (e.g. count(prop("Upvoted by"))) are
+      // resolved by name against the database's full property set at read
+      // time (lib/databases/compute-values.ts), not at insert time here, so
+      // it doesn't matter whether this property is inserted before or after
+      // whatever it references.
+      config = { expression: p.expression ?? "" };
+    } else if (p.type === "person" && p.voteMode) {
+      config = { voteMode: true };
     }
 
     preparedProps.push({

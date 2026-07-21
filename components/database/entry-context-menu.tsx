@@ -472,6 +472,8 @@ function PropertyFlyout({
       <EditPropertySidePanel
         key={editPropProp.id}
         property={editPropProp}
+        properties={properties}
+        workspaceId={workspaceId}
         getAnchorRect={() => {
           const btn = document.querySelector("[data-new-entry-button]")?.getBoundingClientRect();
           if (!btn) return editPropPanel.anchorRect;

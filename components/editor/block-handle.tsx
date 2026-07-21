@@ -100,13 +100,34 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
  const hideTimer    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
  // Tracks whether the last interaction was a drag so we don't also open the menu.
  const wasDragRef   = useRef(false);
+ // Set the instant mousedown lands on the grip (not just once native dragstart
+ // fires) — see the mousemove effect below for why the earlier window matters.
+ const dragIntentRef = useRef(false);
 
  useEffect(() => { menuOpenRef.current = menuOpen; }, [menuOpen]);
+
+ // Native HTML5 drag requires the element that received mousedown to stay put
+ // — same DOM node, same position — until the browser commits to a drag and
+ // fires dragstart. There's a brief window between mousedown and that firing
+ // (the few pixels of movement the browser waits for) where this component's
+ // own mousemove tracking is still live; if the cursor crosses back over the
+ // editor during that window, `resolveBlock` can re-resolve to a different
+ // block and reposition (in React's eyes, just restyle, but to the browser's
+ // in-flight drag heuristic, moving the source element) the grip out from
+ // under the gesture, silently killing the drag before dragstart ever fires.
+ // Freezing tracking from mousedown (not just from confirmed dragstart) covers
+ // that whole window; a global mouseup resets it whether the interaction
+ // turned out to be a click, a completed drag, or an abandoned one.
+ useEffect(() => {
+  function onUp() { dragIntentRef.current = false; }
+  document.addEventListener("mouseup", onUp);
+  return () => document.removeEventListener("mouseup", onUp);
+ }, []);
 
  // ── Document mousemove ────────────────────────────────────────────────────
  useEffect(() => {
   const onMove = (e: MouseEvent) => {
-   if (menuOpenRef.current) return;
+   if (menuOpenRef.current || dragIntentRef.current) return;
 
    const editorEl = editor.view.dom as HTMLElement;
    const er    = editorEl.getBoundingClientRect();
@@ -152,7 +173,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
  // so listen with capture on document to catch scrolling on any ancestor.
  useEffect(() => {
   const onScroll = () => {
-   if (menuOpenRef.current) return;
+   if (menuOpenRef.current || dragIntentRef.current) return;
    setBlock((prev) => {
     if (!prev) return prev;
     const rect = getBlockRect(editor, prev.nodePos);
@@ -244,21 +265,27 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
 
   wasDragRef.current = true;
 
-  // Select the source node so ProseMirror's drop handler knows what to delete.
-  // The drop handler calls tr.deleteSelection() when move=true, so the selection
-  // must point at the block being dragged.
+  // Select the source node — mirrors what a real in-editor drag would leave
+  // selected — and re-focus the editor, since mousedown on the grip (rendered
+  // in a portal outside the editor DOM) steals browser focus away from it.
   const nodeSel = NodeSelection.create(view.state.doc, block.nodePos);
   view.dispatch(view.state.tr.setSelection(nodeSel).setMeta("addToHistory", false));
-
-  // Re-focus the editor: pressing mousedown on the grip button (rendered in a
-  // portal outside the editor DOM) steals browser focus. ProseMirror's drop
-  // handler only performs the source deletion when editorOwnsSelection() returns
-  // true, which requires view.hasFocus(). Without this the block gets copied
-  // instead of moved.
   view.dom.focus();
 
+  // `view.dragging` is what ProseMirror's own drop handler reads instead of
+  // firing its usual internal dragstart logic — needed because that logic
+  // only ever runs for drags that start on view.dom itself, never on this
+  // portal-rendered button. Its public type is just `{slice, move}`, but the
+  // handler also reads an optional `.node` (a NodeSelection) when present and,
+  // if so, deletes the source via `node.replace(tr)` — which maps the node's
+  // *own* captured position through the drop transaction — instead of
+  // `tr.deleteSelection()`, which deletes whatever `view.state.selection`
+  // happens to be *at drop time*. Passing `node` here removes any dependency
+  // on that selection still being our NodeSelection by the time the drop
+  // lands, which the focus dance above is trying to guarantee but a stray
+  // selection change during the drag would otherwise silently break.
   const slice = new Slice(Fragment.from(node), 0, 0);
-  (view as any).dragging = { slice, move: true };
+  (view as any).dragging = { slice, move: true, node: nodeSel };
 
   e.dataTransfer.effectAllowed = "move";
 
@@ -320,6 +347,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
      // Do NOT preventDefault here — it blocks the browser's dragstart sequence.
      // Editor focus is restored automatically after drag ends.
      e.stopPropagation();
+     dragIntentRef.current = true;
     }}
     onClick={() => {
      // Ignore click if it was the tail-end of a drag interaction.

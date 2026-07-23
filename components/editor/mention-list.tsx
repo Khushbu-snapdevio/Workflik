@@ -3,8 +3,10 @@
 import { Plus } from "lucide-react";
 import {
  forwardRef,
+ useCallback,
  useEffect,
  useImperativeHandle,
+ useLayoutEffect,
  useRef,
  useState,
 } from "react";
@@ -28,8 +30,81 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
   const selectedRef = useRef(selectedIndex);
   selectedRef.current = selectedIndex;
   const containerRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{
+   top: number;
+   left: number;
+   maxHeight: number;
+  } | null>(null);
 
   useEffect(() => setSelectedIndex(0), [items]);
+
+  // Position the popup relative to the caret, flipping it *above* the caret
+  // when there isn't enough room below (i.e. the cursor sits low in the
+  // viewport). Without this the list always opened downward with `top =
+  // pos.bottom`, so a tall list — e.g. People + Dates on a near-empty query —
+  // ran off the bottom of the screen. Caps the height so it scrolls instead of
+  // overflowing, and clamps left so it can't spill off the right edge.
+  const updatePosition = useCallback(() => {
+   const rect = clientRect?.();
+   const el = containerRef.current;
+   if (!rect || !el) return;
+   const MARGIN = 8;
+   const GAP = 4;
+   const menuH = el.offsetHeight;
+   const menuW = el.offsetWidth || 240;
+   const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
+   const spaceAbove = rect.top - MARGIN;
+
+   let top: number;
+   let maxHeight: number;
+   // Prefer below; flip above only when the list doesn't fit below AND there's
+   // more room above.
+   if (menuH + GAP <= spaceBelow || spaceBelow >= spaceAbove) {
+    top = rect.bottom + GAP;
+    maxHeight = spaceBelow;
+   } else {
+    maxHeight = spaceAbove;
+    top = rect.top - Math.min(menuH, maxHeight) - GAP;
+   }
+
+   let left = rect.left;
+   if (left + menuW > window.innerWidth - MARGIN) {
+    left = window.innerWidth - menuW - MARGIN;
+   }
+   if (left < MARGIN) left = MARGIN;
+
+   setCoords({ top, left, maxHeight: Math.max(0, maxHeight) });
+  }, [clientRect]);
+
+  // Reposition after layout (before paint, so there's no visible jump) whenever
+  // the query/items change.
+  useLayoutEffect(() => {
+   updatePosition();
+  }, [updatePosition, suggestionProps]);
+
+  // The popup is `position: fixed`, so scrolling the page (or any scroll
+  // container the editor lives in) moves the caret while the popup stays glued
+  // to the viewport — it would visibly detach from the "@". Close the
+  // suggestion on any scroll *outside* the popup (matches Notion), while still
+  // letting the popup's own capped-height list scroll internally. Resize just
+  // repositions. The scroll listener is capture-phase so it catches scrolls on
+  // any ancestor container, not only the window.
+  useEffect(() => {
+   function onScroll(e: Event) {
+    if (containerRef.current?.contains(e.target as Node)) return;
+    exitSuggestion(editor.view, MENTION_PLUGIN_KEY);
+    exitSuggestion(editor.view, PAGE_LINK_PLUGIN_KEY);
+   }
+   function onResize() {
+    updatePosition();
+   }
+   window.addEventListener("scroll", onScroll, true);
+   window.addEventListener("resize", onResize);
+   return () => {
+    window.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("resize", onResize);
+   };
+  }, [editor, updatePosition]);
 
   // This popup is `position: fixed`, entirely outside the editor's own DOM —
   // ProseMirror's Suggestion plugin only re-evaluates whether it's still
@@ -87,11 +162,14 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
     ref={containerRef}
     style={{
      position: "fixed",
-     top: pos.bottom + 4,
-     left: pos.left,
+     top: coords ? coords.top : pos.bottom + 4,
+     left: coords ? coords.left : pos.left,
+     maxHeight: coords ? coords.maxHeight : undefined,
+     overflowY: "auto",
+     overflowX: "hidden",
      zIndex: 400,
     }}
-    className="w-[240px] rounded-[var(--radius-md)] border border-border bg-popover overflow-hidden py-1"
+    className="w-[240px] rounded-[var(--radius-md)] border border-border bg-popover py-1"
    >
     {people.length > 0 && (
      <Section label="People">

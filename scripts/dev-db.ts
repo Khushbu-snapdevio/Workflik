@@ -25,6 +25,13 @@ const postgres = new EmbeddedPostgres({
   persistent: true,
   port,
   user,
+  // Force a UTF8 cluster with a C locale. On Windows, initdb otherwise
+  // inherits the OS locale (e.g. English_India.1252 → WIN1252 encoding),
+  // which cannot store emoji — template icons, page icons, and any emoji in
+  // block content all fail with "no equivalent in encoding WIN1252".
+  // (We intentionally don't touch --lc-messages: embedded-postgres sets it
+  // itself and relies on parsing initdb/postgres output in that locale.)
+  initdbFlags: ["--encoding=UTF8", "--lc-collate=C", "--lc-ctype=C"],
 });
 
 async function main() {

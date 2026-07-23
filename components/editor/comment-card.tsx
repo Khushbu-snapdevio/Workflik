@@ -672,6 +672,38 @@ export function CommentCard({
  // entirely and is only ever visible via the sidebar "Comments" panel.
  const activeVisible = nonOrphaned.filter((t) => !t.isResolved);
 
+ // Inline (page-level) variant: let the user back out of a freshly-opened
+ // "Add comment" composer with Escape or a click outside — matching the
+ // floating card — so someone who didn't actually want to comment isn't stuck
+ // with the box open. Guarded to the bare-composer state: only when there are
+ // no threads shown AND nothing has been typed/attached, so existing comments
+ // and in-progress drafts are never discarded.
+ useEffect(() => {
+  if (variant !== "inline") return;
+  if (activeVisible.length > 0 || orphaned.length > 0) return;
+  function composerIsEmpty() {
+   const ed = cardRef.current?.querySelector('[contenteditable="true"]');
+   const hasText = !!ed && (ed.textContent ?? "").trim() !== "";
+   const hasMedia = !!cardRef.current?.querySelector('[contenteditable="true"] img');
+   return !hasText && !hasMedia;
+  }
+  function onMouseDown(e: MouseEvent) {
+   const target = e.target as HTMLElement;
+   if (cardRef.current?.contains(target)) return;
+   if (target.closest("[data-comment-exempt]")) return;
+   if (composerIsEmpty()) onClose();
+  }
+  function onKey(e: KeyboardEvent) {
+   if (e.key === "Escape" && composerIsEmpty()) onClose();
+  }
+  document.addEventListener("mousedown", onMouseDown);
+  document.addEventListener("keydown", onKey);
+  return () => {
+   document.removeEventListener("mousedown", onMouseDown);
+   document.removeEventListener("keydown", onKey);
+  };
+ }, [variant, activeVisible.length, orphaned.length, onClose]);
+
  // Reload this card's own thread list AND tell the rest of the page (header
  // badge, sidebar panel, block gutter) that something changed — without this,
  // those only pick up new comments on their next mount/poll.

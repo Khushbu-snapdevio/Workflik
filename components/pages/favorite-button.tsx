@@ -17,6 +17,16 @@ export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: Fa
   const [pending, setPending]     = useState(false);
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
+  // The page header isn't remounted when navigating between pages (same
+  // component position, no key), so `useState(initial)` alone would keep the
+  // previously-viewed page's state — the star showing "one page behind". Re-sync
+  // to the server-provided value whenever the page (or its favorite state)
+  // changes. Only fires on real navigation / prop changes, so it never clobbers
+  // an in-page optimistic toggle (which leaves `initial` untouched).
+  useEffect(() => {
+    setFavorited(initial);
+  }, [pageId, initial]);
+
   useEffect(() => {
     function handler(e: Event) {
       const detail = (e as CustomEvent<{ pageId: string; isFavorited: boolean }>).detail;

@@ -277,6 +277,12 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  const [filterType, setFilterType] = useState<FilterType>("all");
  const [filterDate, setFilterDate] = useState<FilterDate>("any");
 
+ // A type/date filter is "active" when it's not the default. When one is active
+ // we browse (list matching items) even with an empty query, instead of falling
+ // back to the unfiltered recently-visited list — otherwise selecting a filter
+ // looks like it does nothing.
+ const hasFilter = filterType !== "all" || filterDate !== "any";
+
  const inputRef    = useRef<HTMLInputElement>(null);
  const listRef     = useRef<HTMLDivElement>(null);
  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -299,8 +305,8 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   try {
    await fetch(`/api/search/reindex?workspaceId=${workspaceId}`, { method: "POST" });
    setReindexDone(true);
-   // Re-run current search after indexing
-   if (query.trim()) runSearch(query, filterType, filterDate, titleOnly);
+   // Re-run current search/browse after indexing
+   if (query.trim() || hasFilter) runSearch(query, filterType, filterDate, titleOnly);
   } finally {
    setReindexing(false);
   }
@@ -326,7 +332,9 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
 
  // Debounced search
  const runSearch = useCallback(async (q: string, type: FilterType, date: FilterDate, titleOnlyMode: boolean) => {
-  if (!q.trim()) {
+  // Only bail on an empty query when there's also no active filter. With a
+  // filter active, an empty query is a valid "browse" request.
+  if (!q.trim() && type === "all" && date === "any") {
    if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current);
    requestIdRef.current++; // invalidate any in-flight request
    setResults([]);
@@ -377,7 +385,8 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
 
  useEffect(() => {
   if (debounceRef.current) clearTimeout(debounceRef.current);
-  if (!query.trim()) {
+  // No query AND no filter → nothing to search; show recently-visited.
+  if (!query.trim() && !hasFilter) {
    if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current);
    requestIdRef.current++; // invalidate any in-flight/pending search
    setIsPending(false);
@@ -392,12 +401,16 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    runSearch(query, filterType, filterDate, titleOnly);
   }, 200);
   return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
- }, [query, filterType, filterDate, titleOnly, runSearch]);
+ }, [query, filterType, filterDate, titleOnly, hasFilter, runSearch]);
 
  // Items list for keyboard nav
  const isQueryEmpty = !query.trim();
- const isSearching = !isQueryEmpty && (isPending || loading);
- const items = isQueryEmpty
+ // Recently-visited shows only in the true idle state (no query, no filter).
+ // With a filter active we browse; with a query we search — both show results.
+ const showRecent = isQueryEmpty && !hasFilter;
+ const browseMode = isQueryEmpty && hasFilter;
+ const isSearching = !showRecent && (isPending || loading);
+ const items = showRecent
   ? recent.map((r) => ({ type: "recent" as const, item: r }))
   : results.map((r) => ({ type: "result" as const, item: r }));
 
@@ -456,11 +469,13 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   el?.scrollIntoView({ block: "nearest" });
  }, [activeIndex]);
 
+ // NOTE: no "Comments" option — comment bodies aren't written to search_index
+ // anywhere yet, so a Comments filter could only ever return empty. Re-add it
+ // once comment indexing exists.
  const TYPE_OPTIONS: { value: FilterType; label: string }[] = [
   { value: "all",   label: "Any type" },
   { value: "page",  label: "Pages"   },
   { value: "entry",  label: "Entries"  },
-  { value: "comment", label: "Comments" },
  ];
 
  const DATE_OPTIONS: { value: FilterDate; label: string }[] = [
@@ -538,8 +553,8 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     {/* Results / recent */}
     <div ref={listRef} className="max-h-[420px] overflow-y-auto">
 
-     {/* No query — show recently visited */}
-     {isQueryEmpty && (
+     {/* Idle (no query, no filter) — show recently visited */}
+     {showRecent && (
       <div className="py-1">
        {recent.length > 0 ? (
         <>
@@ -574,13 +589,15 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       </div>
      )}
 
-     {/* Has query, search done, no results */}
-     {!isQueryEmpty && !isSearching && results.length === 0 && (
+     {/* Query/browse done, no results */}
+     {!showRecent && !isSearching && results.length === 0 && (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
        <MagnifyingGlassIcon size={28} className="text-muted-foreground/60" />
-       <p className="text-sm font-medium text-foreground">No results for &ldquo;{query}&rdquo;</p>
+       <p className="text-sm font-medium text-foreground">
+        {browseMode ? "Nothing matches these filters" : <>No results for &ldquo;{query}&rdquo;</>}
+       </p>
        <p className="text-xs text-muted-foreground/60">
-        Try different keywords or adjust filters
+        {browseMode ? "Try a different type or time range" : "Try different keywords or adjust filters"}
        </p>
        {!reindexDone && (
         <button
@@ -600,7 +617,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
      )}
 
      {/* Results — shown even while isSearching so old results stay visible during re-query */}
-     {!isQueryEmpty && results.length > 0 && (
+     {!showRecent && results.length > 0 && (
       <div className="py-1">
        {results.map((r, i) => (
         <div key={r.id} data-idx={i}>

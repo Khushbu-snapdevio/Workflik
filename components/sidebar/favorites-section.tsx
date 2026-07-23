@@ -30,6 +30,13 @@ type FavoriteItem = {
   id: string;
   pageId: string;
   orderIndex: number;
+  // Page metadata joined at the source (layout + favorites GET). Preferred over
+  // pagesMap so favorited pages that aren't in the sidebar tree — database
+  // entries, etc. — still show their real title/icon and a working link
+  // instead of "Untitled".
+  title?: string | null;
+  icon?: string | null;
+  shortId?: string | null;
 };
 
 type PageItem = {
@@ -119,6 +126,18 @@ export function FavoritesSection({
   const visible = localFavs.slice(0, VISIBLE_MAX);
   const hasMore = localFavs.length > VISIBLE_MAX;
 
+  // Prefer the metadata carried on the favorite itself (joined server-side);
+  // fall back to the page tree, then to safe defaults. This is what lets
+  // favorited database entries (never in pagesMap) render correctly.
+  function resolveFav(fav: FavoriteItem) {
+    const page = pagesMap[fav.pageId];
+    return {
+      title: fav.title ?? page?.title ?? "Untitled",
+      icon: fav.icon ?? page?.icon ?? null,
+      shortId: fav.shortId ?? page?.shortId ?? fav.pageId,
+    };
+  }
+
   return (
     <div className="px-2">
       {/* Section header */}
@@ -162,14 +181,14 @@ export function FavoritesSection({
                     strategy={verticalListSortingStrategy}
                   >
                     {visible.map((fav) => {
-                      const page = pagesMap[fav.pageId];
+                      const r = resolveFav(fav);
                       return (
                         <FavoriteRow
                           favoriteId={fav.pageId}
-                          icon={page?.icon ?? null}
+                          icon={r.icon}
                           key={fav.pageId}
-                          shortId={page?.shortId ?? fav.pageId}
-                          title={page?.title ?? "Untitled"}
+                          shortId={r.shortId}
+                          title={r.title}
                           workspaceSlug={workspaceSlug}
                         />
                       );
@@ -178,14 +197,14 @@ export function FavoritesSection({
                 </DndContext>
               ) : (
                 visible.map((fav) => {
-                  const page = pagesMap[fav.pageId];
+                  const r = resolveFav(fav);
                   return (
                     <FavoriteRow
                       favoriteId={fav.pageId}
-                      icon={page?.icon ?? null}
+                      icon={r.icon}
                       key={fav.pageId}
-                      shortId={page?.shortId ?? fav.pageId}
-                      title={page?.title ?? "Untitled"}
+                      shortId={r.shortId}
+                      title={r.title}
                       workspaceSlug={workspaceSlug}
                     />
                   );
@@ -226,20 +245,20 @@ export function FavoritesSection({
           {/* List */}
           <div className="max-h-64 overflow-y-auto py-1">
             {localFavs.map((fav) => {
-              const page = pagesMap[fav.pageId];
+              const r = resolveFav(fav);
               return (
                 <Link
                   key={fav.pageId}
-                  href={`/app/${workspaceSlug}/${page?.shortId ?? fav.pageId}`}
+                  href={`/app/${workspaceSlug}/${r.shortId}`}
                   onClick={() => setPopupOpen(false)}
                   className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
-                  {page?.icon ? (
-                    <PageIcon icon={page.icon} size={13} />
+                  {r.icon ? (
+                    <PageIcon icon={r.icon} size={13} />
                   ) : (
                     <FileText size={13} className="shrink-0 text-muted-foreground/70" />
                   )}
-                  <span className="min-w-0 truncate">{page?.title || "Untitled"}</span>
+                  <span className="min-w-0 truncate">{r.title || "Untitled"}</span>
                 </Link>
               );
             })}

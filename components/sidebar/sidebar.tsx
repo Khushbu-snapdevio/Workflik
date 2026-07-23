@@ -50,6 +50,12 @@ type FavoriteItem = {
  id: string;
  pageId: string;
  orderIndex: number;
+ // Page metadata joined server-side (and by the favorites GET) so favorites
+ // resolve even when the page isn't in the sidebar tree — e.g. database
+ // entries. Optional: an optimistic add fills these from pagesMap when known.
+ title?: string | null;
+ icon?: string | null;
+ shortId?: string | null;
 };
 
 type Props = {
@@ -274,9 +280,14 @@ export function Sidebar({
      toast.error("Couldn't remove favorite — please try again.");
     });
   } else {
-   // Optimistic add
+   // Optimistic add — carry the page's metadata (if we have it) so the row
+   // shows its real title/icon/shortId immediately, not "Untitled".
    const tempId = crypto.randomUUID();
-   setFavorites((prev) => [...prev, { id: tempId, pageId, orderIndex: prev.length }]);
+   const p = pages.find((pg) => pg.id === pageId);
+   setFavorites((prev) => [
+    ...prev,
+    { id: tempId, pageId, orderIndex: prev.length, title: p?.title, icon: p?.icon, shortId: p?.shortId },
+   ]);
    fetch("/api/user/favorites", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

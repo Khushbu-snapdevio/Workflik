@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { comments, databaseProperties, databaseViews, pages, propertyValues, workspaceMembers } from "@/lib/db/schema";
 import { createPageWithClosure } from "@/lib/pages/closure";
 import { computeDerivedValues } from "@/lib/databases/compute-values";
+import { upsertPageSearchIndex } from "@/lib/search/index-page";
 
 type SortRule   = { propertyId: string; direction: "asc" | "desc" };
 type FilterRule = { propertyId: string; operator: string; value: unknown };
@@ -166,6 +167,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       databaseId,
       parentId:    databaseId,
       createdBy:   session.user.id,
+    });
+
+    // Index the new entry so it's searchable (and matches the "Entries" type
+    // filter) immediately, not only after a manual reindex.
+    await upsertPageSearchIndex(tx, {
+      id:          newEntry.id,
+      workspaceId: dbPage.workspaceId,
+      title:       body.title ?? "",
+      kind:        "entry",
     });
 
     // Write default property values — always runs (not just when the caller

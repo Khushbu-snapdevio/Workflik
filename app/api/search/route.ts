@@ -33,11 +33,14 @@ export async function GET(req: Request) {
       .limit(1);
     if (!member) return apiError(403, "Not a member of this workspace");
 
-    // Date filter
+    // Date filter — by the page's real last-edited time (pages.updatedAt), not
+    // the index row's updatedAt. The index time is bumped to "now" for every
+    // row on a reindex, which made the date filter useless (everything looked
+    // recent) and never matched the "last edited" shown elsewhere.
     const dateFilter = (() => {
-      if (date === "24h") return sql`${searchIndex.updatedAt} >= NOW() - INTERVAL '24 hours'`;
-      if (date === "7d")  return sql`${searchIndex.updatedAt} >= NOW() - INTERVAL '7 days'`;
-      if (date === "30d") return sql`${searchIndex.updatedAt} >= NOW() - INTERVAL '30 days'`;
+      if (date === "24h") return sql`${pages.updatedAt} >= NOW() - INTERVAL '24 hours'`;
+      if (date === "7d")  return sql`${pages.updatedAt} >= NOW() - INTERVAL '7 days'`;
+      if (date === "30d") return sql`${pages.updatedAt} >= NOW() - INTERVAL '30 days'`;
       return null;
     })();
 
@@ -61,21 +64,37 @@ export async function GET(req: Request) {
     if (typeFilter)  conditions.push(typeFilter);
     if (dateFilter)  conditions.push(dateFilter);
 
-    if (!q) {
-      // Empty query — return nothing (recently visited handled separately)
+    // Browse mode: an empty query is allowed when a type/date filter is active,
+    // so selecting e.g. "Entries" lists matching items (newest first) instead of
+    // the client falling back to the unfiltered recently-visited list. With no
+    // query AND no filter there's nothing to browse — return empty and let the
+    // client show recently-visited.
+    if (!q && !typeFilter && !dateFilter) {
       return Response.json({ results: [], total: 0 });
     }
 
-    // Build tsquery — split words, join with & prefix matching
-    const words = q.split(/\s+/).filter(Boolean);
+    // Build tsquery — split words, join with & prefix matching (only when the
+    // user actually typed something).
+    const words = q ? q.split(/\s+/).filter(Boolean) : [];
     const tsQuery = words.map((w) => `${w.replace(/[^a-zA-Z0-9]/g, "")}:*`).join(" & ");
-    if (!tsQuery) return Response.json({ results: [], total: 0 });
+    // A non-empty query that reduces to an empty tsquery (all punctuation) matches nothing.
+    if (q && !tsQuery) return Response.json({ results: [], total: 0 });
 
-    const vectorCondition = titleOnly
-      ? sql`to_tsvector('english', coalesce(${searchIndex.title}, '')) @@ to_tsquery('english', ${tsQuery})`
-      : sql`${searchIndex.searchVector} @@ to_tsquery('english', ${tsQuery})`;
+    if (tsQuery) {
+      const vectorCondition = titleOnly
+        ? sql`to_tsvector('english', coalesce(${searchIndex.title}, '')) @@ to_tsquery('english', ${tsQuery})`
+        : sql`${searchIndex.searchVector} @@ to_tsquery('english', ${tsQuery})`;
+      conditions.push(vectorCondition);
+    }
 
-    conditions.push(vectorCondition);
+    // Rank by text relevance when searching; browse mode has no query, so rank
+    // is constant and results order purely by recency.
+    const rankExpr = tsQuery
+      ? sql<number>`ts_rank(${searchIndex.searchVector}, to_tsquery('english', ${tsQuery}))`
+      : sql<number>`0`;
+    const orderByCols = tsQuery
+      ? [desc(rankExpr), desc(pages.updatedAt)]
+      : [desc(pages.updatedAt)];
 
     const rows = await db
       .select({
@@ -84,19 +103,16 @@ export async function GET(req: Request) {
         sourceId:   searchIndex.sourceId,
         title:      searchIndex.title,
         pageId:     searchIndex.pageId,
-        updatedAt:  searchIndex.updatedAt,
+        updatedAt:  pages.updatedAt,
         shortId:    pages.shortId,
         icon:       pages.icon,
         kind:       pages.kind,
-        rank: sql<number>`ts_rank(${searchIndex.searchVector}, to_tsquery('english', ${tsQuery}))`,
+        rank:       rankExpr,
       })
       .from(searchIndex)
       .innerJoin(pages, eq(pages.id, searchIndex.pageId))
       .where(and(...conditions))
-      .orderBy(
-        desc(sql`ts_rank(${searchIndex.searchVector}, to_tsquery('english', ${tsQuery}))`),
-        desc(searchIndex.updatedAt),
-      )
+      .orderBy(...orderByCols)
       .limit(50);
 
     // For each result, build a breadcrumb path
@@ -151,10 +167,13 @@ export async function GET(req: Request) {
 
     // Fire-and-forget — powers the Orbit Analytics "search usage & no-result
     // rate" metrics. Never awaited/blocking: a logging failure must never
-    // affect the actual search response.
-    db.insert(searchQueryLog)
-      .values({ workspaceId, userId: session.user.id, query: q, resultCount: results.length })
-      .catch(() => {});
+    // affect the actual search response. Only real typed queries are logged;
+    // filter-only browse (empty q) isn't a "search" for analytics purposes.
+    if (q) {
+      db.insert(searchQueryLog)
+        .values({ workspaceId, userId: session.user.id, query: q, resultCount: results.length })
+        .catch(() => {});
+    }
 
     return Response.json({ results, total: results.length });
   } catch (err) {

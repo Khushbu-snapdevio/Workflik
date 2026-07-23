@@ -13,6 +13,7 @@ import {
   Headphones, Mic, Monitor, Paperclip, PieChart, Send, Truck, Wifi,
   ChevronRight, Pen, Eye, AlertCircle, Info, HelpCircle, Edit,
 } from "lucide-react";
+import { flagIconCode } from "@/lib/emoji-flags";
 
 export const ICON_REGISTRY: Record<string, LucideIcon> = {
   FileText, Folder, FolderOpen, Star, Heart, Bookmark, Flag, Bell,
@@ -61,6 +62,19 @@ export function PageIcon({ icon, size = 16, className = "" }: PageIconProps) {
   if (!parsed) return null;
 
   if (parsed.kind === "emoji") {
+    // Country/region flag emoji don't render on Windows (the system font shows
+    // the raw "TM"-style letter pair). Draw them with the flag-icons SVG set —
+    // the same one the emoji picker grid uses — so flags display everywhere.
+    const flagCode = flagIconCode(parsed.value);
+    if (flagCode) {
+      return (
+        <span
+          aria-hidden
+          className={`fi fi-${flagCode} fis shrink-0 rounded-[2px] ${className}`}
+          style={{ fontSize: size, lineHeight: 1 }}
+        />
+      );
+    }
     return (
       <span
         className={`leading-none select-none ${className}`}

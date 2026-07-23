@@ -129,20 +129,28 @@ export function LibraryClient({
       isFav ? next.delete(pageId) : next.add(pageId);
       return next;
     });
+    // Notify the sidebar only AFTER the write commits. Dispatching eagerly (as
+    // this did) made the sidebar's refetch race the POST/DELETE and read the
+    // pre-change state, so its Favorites list lagged one action behind.
+    const notify = () =>
+      window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
     if (isFav) {
-      fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" }).catch(() => {
-        setFavs((prev) => { const n = new Set(prev); n.add(pageId); return n; });
-      });
+      fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" })
+        .then(notify)
+        .catch(() => {
+          setFavs((prev) => { const n = new Set(prev); n.add(pageId); return n; });
+        });
     } else {
       fetch("/api/user/favorites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, workspaceId }),
-      }).catch(() => {
-        setFavs((prev) => { const n = new Set(prev); n.delete(pageId); return n; });
-      });
+      })
+        .then(notify)
+        .catch(() => {
+          setFavs((prev) => { const n = new Set(prev); n.delete(pageId); return n; });
+        });
     }
-    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
   }
 
   function toggleRow(id: string) {

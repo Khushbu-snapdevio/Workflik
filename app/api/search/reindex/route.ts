@@ -1,6 +1,7 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages, searchIndex } from "@/lib/db/schema";
+import { upsertPageSearchIndex } from "@/lib/search/index-page";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
 export const runtime = "nodejs";
@@ -22,27 +23,14 @@ export async function POST(req: Request) {
       .from(pages)
       .where(and(eq(pages.workspaceId, workspaceId), eq(pages.isDeleted, false)));
 
+    // Clean rebuild: drop the workspace's existing index rows first so that
+    // pages previously mis-classified (all as "page") are re-inserted with the
+    // correct sourceType. upsertPageSearchIndex derives the type from `kind`.
+    await db.delete(searchIndex).where(eq(searchIndex.workspaceId, workspaceId));
+
     let count = 0;
     for (const page of allPages) {
-      const title = page.title ?? "Untitled";
-      await db
-        .insert(searchIndex)
-        .values({
-          workspaceId:  page.workspaceId,
-          sourceType:   "page",
-          sourceId:     page.id,
-          pageId:       page.id,
-          title,
-          searchVector: sql`to_tsvector('english', ${title})`,
-        })
-        .onConflictDoUpdate({
-          target: [searchIndex.sourceType, searchIndex.sourceId],
-          set: {
-            title,
-            searchVector: sql`to_tsvector('english', ${title})`,
-            updatedAt:    new Date(),
-          },
-        });
+      await upsertPageSearchIndex(db, page);
       count++;
     }
 

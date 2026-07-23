@@ -1,7 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { userFavorites } from "@/lib/db/schema";
+import { pages, userFavorites } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 // GET /api/user/favorites?workspaceId=xxx
@@ -15,15 +15,25 @@ export async function GET(req: Request) {
       return apiError(400, "workspaceId is required");
     }
 
+    // Join the page so each favorite carries its title/icon/shortId. Favorited
+    // pages that aren't in the sidebar's page tree — database entries
+    // (kind = "entry"), etc. — otherwise have no metadata on the client and
+    // render as "Untitled" with a broken link. LEFT JOIN so a favorite whose
+    // page was hard-deleted still returns its row (with null metadata).
     const rows = await db
-      .select()
+      .select({
+        id:         userFavorites.id,
+        pageId:     userFavorites.pageId,
+        orderIndex: userFavorites.orderIndex,
+        title:      pages.title,
+        icon:       pages.icon,
+        shortId:    pages.shortId,
+      })
       .from(userFavorites)
+      .leftJoin(pages, eq(userFavorites.pageId, pages.id))
       .where(
         and(
-          eq(
-            userFavorites.userId,
-            workspaceId ? session.user.id : session.user.id
-          ),
+          eq(userFavorites.userId, session.user.id),
           eq(userFavorites.workspaceId, workspaceId)
         )
       )

@@ -6,6 +6,7 @@ import { Search, Shuffle, Clock } from "lucide-react";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { emojiMatches } from "@/lib/emoji-search";
+import { flagIconCode } from "@/lib/emoji-flags";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 
@@ -152,29 +153,8 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
   },
 ];
 
-// Country/region flags are two Unicode "regional indicator" characters (A–Z pairs)
-// that map 1:1 to an ISO 3166-1 alpha-2 code — Windows' system emoji font doesn't
-// draw these as colored flags (shows raw letter pairs instead), so in the picker
-// grid we render them via the flag-icons SVG set instead of the native glyph.
-const REGIONAL_INDICATOR_BASE = 0x1f1e6;
-const SUBDIVISION_FLAG_CODES: Record<string, string> = {
-  "🏴󠁧󠁢󠁥󠁮󠁧󠁿": "gb-eng",
-  "🏴󠁧󠁢󠁳󠁣󠁴󠁿": "gb-sct",
-  "🏴󠁧󠁢󠁷󠁬󠁳󠁿": "gb-wls",
-};
-
-function flagIconCode(emoji: string): string | null {
-  if (SUBDIVISION_FLAG_CODES[emoji]) return SUBDIVISION_FLAG_CODES[emoji];
-  const points = [...emoji];
-  if (points.length !== 2) return null;
-  let code = "";
-  for (const ch of points) {
-    const cp = ch.codePointAt(0)!;
-    if (cp < REGIONAL_INDICATOR_BASE || cp > REGIONAL_INDICATOR_BASE + 25) return null;
-    code += String.fromCharCode(cp - REGIONAL_INDICATOR_BASE + 65);
-  }
-  return code.toLowerCase();
-}
+// Country/region flags render via the flag-icons SVG set (see lib/emoji-flags)
+// because Windows' system emoji font shows raw letter pairs instead of flags.
 
 const RECENT_KEY = "wf_recent_emojis";
 const SKIN_TONE_KEY = "wf_skin_tone";

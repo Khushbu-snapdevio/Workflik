@@ -390,6 +390,7 @@ export function PageClient({
        currentUserId={currentUserId}
        isAdmin={isAdmin}
        onActiveCountChange={handleActiveCountChange}
+       onDismiss={() => setShowComments(false)}
        pageId={pageId}
        workspaceId={workspaceId}
       />

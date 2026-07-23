@@ -11,6 +11,9 @@ interface Props {
    *  instantly (no refetch, no blink) when resolving/reopening changes
    *  whether any active page-level thread remains. */
   onActiveCountChange?: (count: number) => void;
+  /** Called when the user dismisses a freshly-opened empty composer (Escape /
+   *  click outside) — the parent hides the whole section again. */
+  onDismiss?: () => void;
 }
 
 // Page-level (blockId-less) comments — matching Notion, which shows these
@@ -22,6 +25,7 @@ export function PageCommentsSection({
   currentUserId,
   isAdmin,
   onActiveCountChange,
+  onDismiss,
 }: Props) {
   return (
     <div
@@ -33,7 +37,7 @@ export function PageCommentsSection({
         currentUserId={currentUserId}
         isAdmin={isAdmin}
         onActiveCountChange={onActiveCountChange}
-        onClose={() => {}}
+        onClose={() => onDismiss?.()}
         pageId={pageId}
         variant="inline"
         workspaceId={workspaceId}

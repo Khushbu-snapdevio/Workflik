@@ -108,12 +108,20 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       )
       .orderBy(pages.orderIndex),
     db
+      // Join the page so favorites carry title/icon/shortId even when the page
+      // isn't in the sidebar tree (database entries, etc.); otherwise those
+      // render as "Untitled" with a broken link. Matches the GET in
+      // app/api/user/favorites/route.ts.
       .select({
         id:         userFavorites.id,
         pageId:     userFavorites.pageId,
         orderIndex: userFavorites.orderIndex,
+        title:      pages.title,
+        icon:       pages.icon,
+        shortId:    pages.shortId,
       })
       .from(userFavorites)
+      .leftJoin(pages, eq(userFavorites.pageId, pages.id))
       .where(
         and(
           eq(userFavorites.userId, session.user.id),

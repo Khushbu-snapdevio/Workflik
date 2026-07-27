@@ -137,6 +137,8 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug, cur
             dismissToast(t.id);
             if (t.type === "trash_warning") {
               router.push(`/app/${workspaceSlug}/trash`);
+            } else if (t.type === "workspace_invite" && t.inviteToken) {
+              router.push(`/invite/${t.inviteToken}`);
             } else if (t.pageShortId) {
               router.push(`/app/${workspaceSlug}/${t.pageShortId}`);
             } else {

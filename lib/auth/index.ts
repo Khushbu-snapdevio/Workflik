@@ -38,6 +38,22 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
     },
   },
+  // This app never runs a local email-verification flow (see
+  // `emailVerification` below), so `emailVerified` stays `false` on every
+  // account regardless of how it signed up. Better Auth's default account
+  // linking requires the existing local account to be email-verified before
+  // linking a new provider to it — with our accounts always unverified,
+  // that default would permanently block every invited/password user from
+  // ever using "Continue with Google". Trusting Google (which verifies
+  // emails itself) and dropping the local-verification requirement lets
+  // linking proceed instead.
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+      requireLocalEmailVerified: false,
+    },
+  },
   // The `enabled` flags below just make the endpoints exist — whether each
   // method is actually *offered* on this instance is an admin-configurable,
   // DB-backed toggle (lib/auth/settings.ts), enforced per-request in the

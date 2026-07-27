@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Plus, Settings2, X, UserPlus, ChevronRight, Loader2, ArrowLeft, MoreHorizontal, GripVertical, File as FileIcon, Paperclip, Maximize2, Download, ExternalLink, Trash2 } from "lucide-react";
 import { ImageLightbox } from "@/components/editor/comment-card";
@@ -67,6 +67,20 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
   };
  }, []);
 
+ // Real rendered height of the popover, kept in sync via ResizeObserver so
+ // short editors (e.g. FileEditor's collapsed one-line state) don't get
+ // anchored as if they were `maxH` tall — see `top` below.
+ const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
+ useLayoutEffect(() => {
+  const el = ref.current;
+  if (!el) return;
+  const update = () => setMeasuredHeight(el.getBoundingClientRect().height);
+  update();
+  const ro = new ResizeObserver(update);
+  ro.observe(el);
+  return () => ro.disconnect();
+ }, []);
+
  const winH = window.innerHeight;
  const winW = window.innerWidth;
  const MARGIN = 8;
@@ -81,9 +95,16 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
  // pinned `top` to ~0 regardless of the editor's real height, since `top` is
  // computed as if the editor WILL be `maxH` tall.
  const maxH = Math.min(Math.max(openBelow ? spaceBelow : spaceAbove, 160), 420);
+ // Above the trigger, anchor off the popover's *actual* measured height, not
+ // the capped `maxH` estimate — otherwise a short editor (e.g. FileEditor's
+ // collapsed state) renders far above the cell with a big empty gap between
+ // it and the cell it's editing, since `top` was computed assuming the box
+ // would fill all of `maxH`. Falls back to `maxH` for the very first paint,
+ // before the ResizeObserver has measured anything.
+ const openAboveHeight = Math.min(measuredHeight ?? maxH, maxH);
  const top  = openBelow
   ? cellRect.bottom + 4
-  : Math.max(MARGIN, cellRect.top - Math.min(maxH, spaceAbove) - 4);
+  : Math.max(MARGIN, cellRect.top - Math.min(openAboveHeight, spaceAbove) - 4);
  // Clamp against the popover's own max width (below), not a smaller magic
  // number — anything narrower than that risks the box overflowing off the
  // right edge of the screen for cells near it, exactly the cut-off bug this

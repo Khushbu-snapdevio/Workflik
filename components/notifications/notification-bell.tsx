@@ -53,7 +53,11 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
      <span className="relative shrink-0 transition-colors duration-150">
       <Bell size={15} className={panelOpen ? "text-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"} />
       {badge && (
-       <span className="absolute -top-1 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-white leading-none">
+       // Anchored by `left`, not `right` — the badge's left edge stays fixed
+       // at the icon's corner as content widens, so a 2-digit count ("10")
+       // grows outward to the right instead of extending further left and
+       // swallowing the 15px icon underneath it.
+       <span className="absolute -top-1 left-[9px] flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold text-white leading-none">
         {badge}
        </span>
       )}

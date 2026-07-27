@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageIcon } from "@/components/pages/page-icon";
@@ -83,7 +84,15 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          {/* Portaled to <body> — nested plain-DOM as a sibling here (rather
+              than a portal) left this "fixed inset-0" click-catcher clipped
+              to the sidebar's own width instead of the full viewport, so
+              clicking anywhere in the main content area never reached it
+              and the dropdown never closed. */}
+          {createPortal(
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />,
+            document.body
+          )}
           <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
 
             {/* Workspace list */}

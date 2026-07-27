@@ -25,6 +25,7 @@ const TYPE_LABEL: Record<string, string> = {
   page_created:     "created a new page",
   task_assigned:    "assigned you a task",
   reminder:         "has a reminder due",
+  role_changed:     "changed your role",
 };
 
 export function NotificationToast({ notification, onDismiss, onView }: Props) {

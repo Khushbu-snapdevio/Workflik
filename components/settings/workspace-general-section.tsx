@@ -8,6 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
+import {
+ AlertDialog,
+ AlertDialogAction,
+ AlertDialogCancel,
+ AlertDialogContent,
+ AlertDialogDescription,
+ AlertDialogFooter,
+ AlertDialogHeader,
+ AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { RoleSelect } from "@/components/ui/role-select";
@@ -518,29 +528,38 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
         <p className="mt-0.5 text-sm text-muted-foreground">Permanently deletes all pages, files, and member data. This cannot be undone.</p>
        </div>
       </div>
-      {!deleteOpen ? (
-       <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteOpen(true)} className="mt-4 active:scale-[0.97]">
-        Delete workspace…
-       </Button>
-      ) : (
-       <div className="mt-4 space-y-3">
-        <p className="text-sm text-foreground">
-         Type <strong className="font-semibold text-destructive">{workspace.name}</strong> to confirm:
-        </p>
-        <Input value={deleteName} onChange={e => setDeleteName(e.target.value)} placeholder={workspace.name}
-         className="w-full border-destructive/40 focus-visible:border-destructive" />
-        {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
-        <div className="flex gap-2">
-         <Button type="button" variant="outline" size="sm" onClick={() => { setDeleteOpen(false); setDeleteName(""); setDeleteError(""); }}>Cancel</Button>
-         <Button type="button" size="sm" onClick={handleDelete} disabled={deleting || deleteName !== workspace.name} className="border-transparent bg-destructive text-white hover:bg-destructive/85 active:scale-[0.97] disabled:bg-destructive/40 disabled:text-white/80 disabled:opacity-100 disabled:cursor-not-allowed disabled:pointer-events-none">
-          {deleting ? "Deleting…" : "Delete workspace"}
-         </Button>
-        </div>
-       </div>
-      )}
+      <Button type="button" variant="destructive" size="sm" onClick={() => setDeleteOpen(true)} className="mt-4 active:scale-[0.97]">
+       Delete workspace…
+      </Button>
      </div>
     </div>
    </div>
+
+   <AlertDialog open={deleteOpen} onOpenChange={(o) => { if (!deleting) { setDeleteOpen(o); if (!o) { setDeleteName(""); setDeleteError(""); } } }}>
+    <AlertDialogContent>
+     <AlertDialogHeader>
+      <AlertDialogTitle>Delete this workspace?</AlertDialogTitle>
+      <AlertDialogDescription>
+       This will permanently delete <strong className="text-foreground">{workspace.name}</strong> and all its pages, files, and member data. This cannot be undone.
+       <br /><br />
+       Type <strong className="text-foreground">{workspace.name}</strong> to confirm.
+      </AlertDialogDescription>
+     </AlertDialogHeader>
+     <Input value={deleteName} onChange={e => setDeleteName(e.target.value)} placeholder={workspace.name}
+      className="w-full border-destructive/40 focus-visible:border-destructive" />
+     {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+     <AlertDialogFooter>
+      <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+       onClick={(e) => { e.preventDefault(); handleDelete(); }}
+       disabled={deleting || deleteName !== workspace.name}
+       className="disabled:cursor-not-allowed disabled:opacity-40"
+      >
+       {deleting ? "Deleting…" : "Delete workspace"}
+      </AlertDialogAction>
+     </AlertDialogFooter>
+    </AlertDialogContent>
+   </AlertDialog>
 
    <ConfirmDialog
     open={regenerateOpen}

@@ -16,6 +16,7 @@ export interface StreamNotification {
   pageTitle:      string | null;
   pageIcon:       string | null;
   pageShortId:    string | null;
+  inviteToken:    string | null;
 }
 
 interface Options {

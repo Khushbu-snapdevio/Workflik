@@ -18,6 +18,7 @@ import {
  ChevronDown,
  Check,
 } from "lucide-react";
+import { PageIcon, parseIcon } from "@/components/pages/page-icon";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -73,8 +74,8 @@ function SourceIcon({ sourceType, kind, icon, size = 15 }: {
  icon:    string | null;
  size?:   number;
 }) {
- if (icon && icon.length <= 4) {
-  return <span style={{ fontSize: size - 2 }} className="leading-none">{icon}</span>;
+ if (parseIcon(icon)) {
+  return <PageIcon icon={icon} size={size - 2} />;
  }
  if (sourceType === "entry")  return <DatabaseIcon  size={size} className="shrink-0 text-primary" />;
  if (sourceType === "comment") return <ChatCircleIcon size={size} className="shrink-0 text-primary" />;
@@ -236,8 +237,8 @@ function RecentRow({
    ].join(" ")}
   >
    <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/60">
-    {item.page?.icon && item.page.icon.length <= 4
-     ? <span className="text-sm leading-none">{item.page.icon}</span>
+    {parseIcon(item.page?.icon)
+     ? <PageIcon icon={item.page?.icon} size={13} />
      : <FileTextIcon size={13} className="text-muted-foreground" />
     }
    </div>

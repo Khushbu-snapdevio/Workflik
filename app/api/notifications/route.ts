@@ -1,6 +1,7 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { notifications, pages, users } from "@/lib/db/schema";
+import { notifications, pages, users, workspaceMembers } from "@/lib/db/schema";
+import { notificationScope } from "@/lib/notifications/scope";
 import { apiError, getSession } from "@/lib/workspaces/auth";
 
 const FILTER_MAP: Record<string, string[]> = {
@@ -22,10 +23,7 @@ export async function GET(req: Request) {
     // Build type filter
     const typeFilter = FILTER_MAP[filter];
 
-    const conditions = [
-      eq(notifications.recipientId, session.user.id),
-      eq(notifications.workspaceId, workspaceId),
-    ];
+    const conditions = [notificationScope(session.user.id, workspaceId)];
     if (cursor) {
       conditions.push(gte(notifications.createdAt, new Date(cursor)));
     }
@@ -47,10 +45,16 @@ export async function GET(req: Request) {
         pageTitle:      pages.title,
         pageIcon:       pages.icon,
         pageShortId:    pages.shortId,
+        // Only populated for type "workspace_invite" — `sourceId` holds the
+        // workspaceMembers row id there, letting the notification deep-link
+        // straight to /invite/[token] (Accept/Decline) instead of just
+        // informing the recipient an invite exists somewhere.
+        inviteToken:    workspaceMembers.inviteToken,
       })
       .from(notifications)
       .leftJoin(users, eq(users.id, notifications.senderId))
       .leftJoin(pages, eq(pages.id, notifications.pageId))
+      .leftJoin(workspaceMembers, eq(workspaceMembers.id, notifications.sourceId))
       .where(and(...conditions))
       .orderBy(desc(notifications.createdAt))
       .limit(50);
@@ -63,8 +67,7 @@ export async function GET(req: Request) {
     const unreadCount = await db.$count(
       notifications,
       and(
-        eq(notifications.recipientId, session.user.id),
-        eq(notifications.workspaceId, workspaceId),
+        notificationScope(session.user.id, workspaceId),
         eq(notifications.isRead, false),
       )
     );

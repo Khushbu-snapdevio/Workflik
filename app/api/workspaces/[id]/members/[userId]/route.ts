@@ -11,6 +11,7 @@ import {
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import { triggerRoleChangedNotification } from "@/lib/notifications/triggers";
 
 type Ctx = { params: Promise<{ id: string; userId: string }> };
 
@@ -32,7 +33,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     }
 
     const [target] = await db
-      .select({ role: workspaceMembers.role })
+      .select()
       .from(workspaceMembers)
       .where(
         and(
@@ -69,16 +70,34 @@ export async function PATCH(req: Request, { params }: Ctx) {
       }
     }
 
-    const [updated] = await db
-      .update(workspaceMembers)
-      .set({ role: parsed.data.role })
-      .where(
-        and(
-          eq(workspaceMembers.workspaceId, id),
-          eq(workspaceMembers.userId, userId)
+    // Nothing actually changes — skip the write, audit log entry, and
+    // notification rather than recording a no-op role "change".
+    if (target.role === parsed.data.role) {
+      return Response.json(target);
+    }
+
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(workspaceMembers)
+        .set({ role: parsed.data.role })
+        .where(
+          and(
+            eq(workspaceMembers.workspaceId, id),
+            eq(workspaceMembers.userId, userId)
+          )
         )
-      )
-      .returning();
+        .returning();
+
+      await triggerRoleChangedNotification(tx, {
+        workspaceId:  id,
+        changerId:    session.user.id,
+        memberId:     userId,
+        previousRole: target.role,
+        newRole:      parsed.data.role,
+      });
+
+      return row;
+    });
 
     await writeAuditLog({
       actorId:    session.user.id,

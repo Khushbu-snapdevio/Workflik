@@ -18,6 +18,7 @@ export interface NotificationItem {
   pageTitle:      string | null;
   pageIcon:       string | null;
   pageShortId:    string | null;
+  inviteToken:    string | null;
 }
 
 const TYPE_ACTION: Record<string, string> = {
@@ -35,6 +36,7 @@ const TYPE_ACTION: Record<string, string> = {
   page_created:     "created a new page",
   task_assigned:    "assigned you a task",
   reminder:         "has a reminder due",
+  role_changed:     "changed your role",
 };
 
 const TYPE_DOT_CLASS: Record<string, string> = {
@@ -52,6 +54,7 @@ const TYPE_DOT_CLASS: Record<string, string> = {
   page_created:     "bg-primary",
   task_assigned:    "bg-success",
   reminder:         "bg-warning",
+  role_changed:     "bg-warning",
 };
 
 interface Props {

@@ -133,6 +133,7 @@ export const notificationType = pgEnum("notification_type", [
   "task_assigned",
   "reminder",
   "page_created",
+  "role_changed",
 ]);
 export const emailFrequency = pgEnum("email_frequency", [
   "realtime",

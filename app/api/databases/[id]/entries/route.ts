@@ -108,7 +108,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         const prop = propMap.get(rule.propertyId);
         if (!prop) return true;
         const val = valMap.get(entry.id)?.get(rule.propertyId);
-        return evaluateFilter(prop.type, val, rule.operator, rule.value);
+        return evaluateFilter(prop.type, val, rule.operator, rule.value, session.user.id);
       });
       return filterLogic === "or"
         ? results.some(Boolean)
@@ -228,7 +228,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function evaluateFilter(type: string, val: unknown, op: string, filterVal: unknown): boolean {
+function evaluateFilter(type: string, val: unknown, op: string, filterVal: unknown, currentUserId: string): boolean {
   // `{ files: [] }` has one key with an empty array — the generic Object.keys
   // check below would read that as "not empty", so files needs its own
   // array-length check rather than falling through to the generic one.
@@ -295,6 +295,18 @@ function evaluateFilter(type: string, val: unknown, op: string, filterVal: unkno
       if (op === "is")        return d === fv;
       if (op === "is_before") return d < fv;
       if (op === "is_after")  return d > fv;
+      break;
+    }
+    case "person":
+    case "created_by": {
+      const ids = (v as { userIds?: string[] } | null)?.userIds ?? [];
+      // "@me" is the same current-user sentinel entries/route.ts already
+      // resolves for a person property's default value on entry creation —
+      // reused here so a "My X" view (filterValue: "me" in the template
+      // seed) re-evaluates against whoever is actually viewing it.
+      const fv = filterVal === "@me" ? currentUserId : String(filterVal ?? "");
+      if (op === "is")     return ids.includes(fv);
+      if (op === "is_not") return !ids.includes(fv);
       break;
     }
   }

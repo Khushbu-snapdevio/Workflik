@@ -33,17 +33,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return Response.json({ error: "computed_property_readonly" }, { status: 400 });
   }
 
-  // Vote-mode Person properties: a regular member may only add or remove
-  // *their own* id — never anyone else's, and never more than one id per
-  // request. Admins keep full read/write access here for moderation.
-  const isAdmin = member.role === "admin";
-  if (prop.type === "person" && (prop.config as { voteMode?: boolean } | null)?.voteMode && !isAdmin) {
+  // Fetched once up front — reused below both for the vote-mode self-only
+  // check and (for a regular, non-vote-mode person property) to diff old vs.
+  // new assignees so a task-assignment notification only fires for someone
+  // *newly* added, not for every person already sitting in the value.
+  let existingPersonValue: { userIds?: string[] } | null = null;
+  if (prop.type === "person") {
     const [existing] = await db
       .select()
       .from(propertyValues)
       .where(and(eq(propertyValues.entryId, entryId), eq(propertyValues.propertyId, propId)))
       .limit(1);
-    const oldIds = new Set(((existing?.value as { userIds?: string[] } | null)?.userIds) ?? []);
+    existingPersonValue = (existing?.value as { userIds?: string[] } | null) ?? null;
+  }
+
+  // Vote-mode Person properties: a regular member may only add or remove
+  // *their own* id — never anyone else's, and never more than one id per
+  // request. Admins keep full read/write access here for moderation.
+  const isAdmin = member.role === "admin";
+  if (prop.type === "person" && (prop.config as { voteMode?: boolean } | null)?.voteMode && !isAdmin) {
+    const oldIds = new Set(existingPersonValue?.userIds ?? []);
     const newIds = new Set(((body.value as { userIds?: string[] } | null)?.userIds) ?? []);
 
     const added   = [...newIds].filter((uid) => !oldIds.has(uid));
@@ -83,11 +92,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
   }
 
-  // Notify the assigned user when a person property is set
-  if (prop.type === "person" && body.value) {
-    const assigneeIds = Array.isArray(body.value) ? body.value as string[] : [body.value as string];
-    for (const assigneeId of assigneeIds) {
-      if (typeof assigneeId === "string" && assigneeId !== session.user.id) {
+  // Notify newly-assigned users — person properties are stored as
+  // `{ userIds: string[] }` (see components/database/cells/cell-editor.tsx's
+  // PersonEditor), not a bare array/string, and only *newly added* ids
+  // should notify, or every unrelated save of an already-assigned person
+  // property would re-notify them.
+  if (prop.type === "person") {
+    const oldIds = new Set(existingPersonValue?.userIds ?? []);
+    const newIds = ((body.value as { userIds?: string[] } | null)?.userIds) ?? [];
+    const addedAssigneeIds = newIds.filter((uid) => !oldIds.has(uid));
+
+    for (const assigneeId of addedAssigneeIds) {
+      if (assigneeId !== session.user.id) {
         await db.transaction(async (tx) => {
           await triggerTaskAssignedNotification(tx, {
             workspaceId: entry.workspaceId,

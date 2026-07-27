@@ -211,7 +211,7 @@ export const BUILT_IN_TEMPLATES: {
       ],
       views: [
         { name: "All Tasks",  type: "table", isDefault: true },
-        { name: "By Status",  type: "table", groupBy: "Status" },
+        { name: "By Status",  type: "board", groupBy: "Status" },
         { name: "My Tasks",   type: "table", filterKey: "Assignee", filterValue: "me" },
       ],
       sample_rows: [
@@ -251,7 +251,7 @@ export const BUILT_IN_TEMPLATES: {
       ],
       views: [
         { name: "All Goals", type: "table", isDefault: true },
-        { name: "By Status", type: "table", groupBy: "Status" },
+        { name: "By Status", type: "board", groupBy: "Status" },
         { name: "My Goals",  type: "table", filterKey: "Owner", filterValue: "me" },
       ],
       sample_rows: [
@@ -532,7 +532,7 @@ export const BUILT_IN_TEMPLATES: {
       views: [
         { name: "Calendar",    type: "calendar", isDefault: true },
         { name: "All Content", type: "table" },
-        { name: "By Status",   type: "table", groupBy: "Status" },
+        { name: "By Status",   type: "board", groupBy: "Status" },
       ],
       sample_rows: [],
     }),
@@ -565,7 +565,7 @@ export const BUILT_IN_TEMPLATES: {
       views: [
         { name: "Calendar",   type: "calendar", isDefault: true },
         { name: "All Posts",  type: "table" },
-        { name: "By Status",  type: "table", groupBy: "Status" },
+        { name: "By Status",  type: "board", groupBy: "Status" },
       ],
       sample_rows: [],
     }),
@@ -599,7 +599,7 @@ export const BUILT_IN_TEMPLATES: {
       ],
       views: [
         { name: "All Events", type: "table", isDefault: true },
-        { name: "By Status",  type: "table", groupBy: "Status" },
+        { name: "By Status",  type: "board", groupBy: "Status" },
         { name: "Calendar",   type: "calendar" },
       ],
       sample_rows: [

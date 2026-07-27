@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { pageClosure, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
-import { triggerTrashWarningNotification } from "@/lib/notifications/triggers";
+import { triggerPageUpdateNotification, triggerTrashWarningNotification } from "@/lib/notifications/triggers";
 import { isMeaningfulTitle } from "@/lib/pages/draft";
 import { promoteDraftPage } from "@/lib/pages/promote-draft";
 
@@ -52,7 +52,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, isDraft: pages.isDraft })
+      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, isDraft: pages.isDraft, createdBy: pages.createdBy, lastEditedBy: pages.lastEditedBy, title: pages.title })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
@@ -83,6 +83,25 @@ export async function PATCH(req: Request, { params }: Ctx) {
       if (willPromote) {
         const { promoted, page: promotedPage } = await promoteDraftPage(tx, id);
         if (promoted && promotedPage) row.isDraft = promotedPage.isDraft;
+      }
+
+      // Metadata-only edits (title/icon/cover/etc.) go through this route
+      // instead of /api/blocks/batch, which has the equivalent notify-once
+      // logic for content saves — without this, an editor who only renames
+      // a page before ever touching its content would stamp `lastEditedBy`
+      // here without notifying anyone, then blocks/batch's own throttle
+      // (`session.user.id !== page.lastEditedBy`) would see itself already
+      // recorded and skip the notification too, silently dropping it.
+      // Skipped for drafts (still true above `willPromote`) — a page
+      // collaborators don't know exists yet shouldn't notify anyone.
+      if (!page.isDraft && page.createdBy && session.user.id !== page.createdBy && session.user.id !== page.lastEditedBy) {
+        await triggerPageUpdateNotification(tx, {
+          workspaceId: page.workspaceId,
+          pageId:      id,
+          editorId:    session.user.id,
+          createdBy:   page.createdBy,
+          pageTitle:   row.title ?? page.title ?? "Untitled",
+        });
       }
 
       return row;

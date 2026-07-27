@@ -72,18 +72,17 @@ export async function POST(req: Request, { params }: Ctx) {
     const token     = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Store transfer token in verifications table
-    await db
-      .insert(verifications)
-      .values({
-        identifier: `workspace-transfer:${id}:${targetUserId}`,
-        value:      token,
-        expiresAt,
-      })
-      .onConflictDoUpdate({
-        target:    [verifications.identifier],
-        set:       { value: token, expiresAt, updatedAt: new Date() },
-      });
+    // Store transfer token in verifications table. `identifier` has no
+    // unique constraint — it's a shared table better-auth itself writes to
+    // (magic links, password resets, email verification) and relies on
+    // allowing multiple rows per identifier, so an upsert isn't available
+    // here. Delete-then-insert instead, scoped to this feature's own
+    // namespaced identifier, which nothing else ever writes to.
+    const identifier = `workspace-transfer:${id}:${targetUserId}`;
+    await db.transaction(async (tx) => {
+      await tx.delete(verifications).where(eq(verifications.identifier, identifier));
+      await tx.insert(verifications).values({ identifier, value: token, expiresAt });
+    });
 
     const confirmUrl = `${env.NEXT_PUBLIC_APP_URL}/api/workspaces/${id}/transfer/confirm?token=${token}`;
 

@@ -18,7 +18,7 @@ export type SnapshotBlock = {
 
 export type SchemaPropOption = { name: string; color: string };
 export type SchemaProp       = { name: string; type: string; options?: SchemaPropOption[]; expression?: string; voteMode?: boolean };
-export type SchemaView       = { name: string; type: string; isDefault?: boolean; groupBy?: string; ganttStart?: string; ganttEnd?: string };
+export type SchemaView       = { name: string; type: string; isDefault?: boolean; groupBy?: string; ganttStart?: string; ganttEnd?: string; filterKey?: string; filterValue?: string };
 
 export type DatabaseSchema = {
   properties:   SchemaProp[];
@@ -267,6 +267,27 @@ export async function createDatabaseFromSnapshot(
       if (endName)   ganttEndPropertyId   = propLookup.get(endName)?.id ?? null;
     }
 
+    // A "My X" view (filterKey/filterValue in the seed, e.g. filterKey:
+    // "Owner", filterValue: "me") resolves into a real filter rule here.
+    // person/created_by properties get the "@me" sentinel — the same one
+    // entries/route.ts already resolves for default values — so the filter
+    // re-evaluates against whoever is actually viewing it, not whoever
+    // instantiated the template. select/multi_select properties resolve the
+    // option *name* from the seed into the option's generated id, since
+    // that's what evaluateFilter compares against.
+    let filters: { propertyId: string; operator: string; value: unknown }[] = [];
+    if (v.filterKey && v.filterValue !== undefined) {
+      const targetProp = propLookup.get(v.filterKey);
+      if (targetProp?.type === "person" || targetProp?.type === "created_by") {
+        if (v.filterValue === "me") {
+          filters = [{ propertyId: targetProp.id, operator: "is", value: "@me" }];
+        }
+      } else if (targetProp?.type === "select" || targetProp?.type === "multi_select") {
+        const optionId = targetProp.optionMap.get(v.filterValue);
+        if (optionId) filters = [{ propertyId: targetProp.id, operator: "is", value: optionId }];
+      }
+    }
+
     const [view] = await tx.insert(databaseViews).values({
       databaseId:         dbPage.id,
       name:               v.name,
@@ -276,6 +297,7 @@ export async function createDatabaseFromSnapshot(
       calendarPropertyId,
       ganttStartPropertyId,
       ganttEndPropertyId,
+      filters,
     }).returning();
 
     if (v.isDefault || vi === 0) defaultViewId = defaultViewId ?? view.id;

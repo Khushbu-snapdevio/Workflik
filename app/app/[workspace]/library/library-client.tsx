@@ -375,11 +375,11 @@ export function LibraryClient({
                         {page.title || "Untitled"}
                       </span>
                       {page.isPrivate && (
-                        <Lock size={11} className="shrink-0 text-muted-foreground/40" />
+                        <PenOff size={11} className="shrink-0 text-muted-foreground/40" />
                       )}
                       {page.isLocked && (
                         <div className="group/locked relative shrink-0">
-                          <PenOff size={11} className="text-warning/70" />
+                          <Lock size={11} className="text-warning/70" />
                           <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/locked:opacity-100">
                             <p className="text-xs font-semibold text-popover-foreground">
                               Locked — editing disabled

@@ -116,6 +116,8 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
     closePanel();
     if (notification.type === "trash_warning") {
       router.push(`/app/${workspaceSlug}/trash`);
+    } else if (notification.type === "workspace_invite" && notification.inviteToken) {
+      router.push(`/invite/${notification.inviteToken}`);
     } else if (notification.pageShortId) {
       router.push(`/app/${workspaceSlug}/${notification.pageShortId}`);
     }

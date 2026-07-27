@@ -1,6 +1,7 @@
 import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { notifications, pages, users } from "@/lib/db/schema";
+import { notifications, pages, users, workspaceMembers } from "@/lib/db/schema";
+import { notificationScope } from "@/lib/notifications/scope";
 import { apiError, getSession } from "@/lib/workspaces/auth";
 
 // Long-poll interval: poll every 3s, keeping connection alive with heartbeats every 25s.
@@ -69,14 +70,15 @@ export async function GET(req: Request) {
                 pageTitle:      pages.title,
                 pageIcon:       pages.icon,
                 pageShortId:    pages.shortId,
+                inviteToken:    workspaceMembers.inviteToken,
               })
               .from(notifications)
               .leftJoin(users, eq(users.id, notifications.senderId))
               .leftJoin(pages, eq(pages.id, notifications.pageId))
+              .leftJoin(workspaceMembers, eq(workspaceMembers.id, notifications.sourceId))
               .where(
                 and(
-                  eq(notifications.recipientId, session.user.id),
-                  eq(notifications.workspaceId, workspaceId),
+                  notificationScope(session.user.id, workspaceId),
                   gt(notifications.createdAt, lastSeen),
                 )
               )

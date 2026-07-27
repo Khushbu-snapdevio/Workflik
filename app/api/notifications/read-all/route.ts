@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
+import { notificationScope } from "@/lib/notifications/scope";
 import { apiError, getSession } from "@/lib/workspaces/auth";
 
 export async function POST(req: Request) {
@@ -15,8 +16,7 @@ export async function POST(req: Request) {
       .set({ isRead: true, readAt: new Date() })
       .where(
         and(
-          eq(notifications.recipientId, session.user.id),
-          eq(notifications.workspaceId, workspaceId),
+          notificationScope(session.user.id, workspaceId),
           eq(notifications.isRead, false),
         )
       );

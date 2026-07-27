@@ -7,6 +7,15 @@ import { extractMentionedUserIds, extractPlainText } from "@/lib/comments/mentio
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTx = any;
 
+// Mirrors the labels shown in the workspace members list/invite screens
+// (components/settings/workspace-members-section.tsx) — "editor" reads as
+// "Member" everywhere in the UI, so the notification should match.
+const ROLE_LABEL: Record<string, string> = {
+  admin:  "Admin",
+  editor: "Member",
+  viewer: "Viewer",
+};
+
 function snippet(content: Record<string, unknown>, max = 100): string {
   const text = extractPlainText(content);
   return text.length > max ? text.slice(0, max - 1) + "…" : text;
@@ -434,6 +443,29 @@ export async function triggerTrashWarningNotification(
       contentSnippet: null,
     });
   }
+}
+
+export async function triggerRoleChangedNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId:  string;
+    changerId:    string;
+    memberId:     string;
+    previousRole: string;
+    newRole:      string;
+  }
+): Promise<void> {
+  const { workspaceId, changerId, memberId, previousRole, newRole } = params;
+  if (changerId === memberId) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId:    memberId,
+    senderId:       changerId,
+    type:           "role_changed",
+    pageId:         null,
+    sourceId:       null,
+    contentSnippet: `${ROLE_LABEL[previousRole] ?? previousRole} → ${ROLE_LABEL[newRole] ?? newRole}`,
+  });
 }
 
 export async function triggerReminderNotification(

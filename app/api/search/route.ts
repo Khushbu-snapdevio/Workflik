@@ -1,6 +1,6 @@
-import { and, desc, eq, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { pages, pageClosure, searchIndex, searchQueryLog, workspaceMembers } from "@/lib/db/schema";
+import { pageClosure, pages, searchIndex, searchQueryLog, templateCategories, templates, workspaceMembers } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
     const q           = (searchParams.get("q") ?? "").trim();
     const workspaceId = searchParams.get("workspaceId") ?? "";
-    const type        = searchParams.get("type") ?? "all";          // all | page | entry | comment
+    const type        = searchParams.get("type") ?? "all";          // all | page | entry | comment | template
     const date        = searchParams.get("date") ?? "any";          // any | 24h | 7d | 30d
     const titleOnly   = searchParams.get("titleOnly") === "true";
 
@@ -51,6 +51,11 @@ export async function GET(req: Request) {
       if (type === "comment") return eq(searchIndex.sourceType, "comment");
       return null;
     })();
+    // Templates live in their own table, not search_index — "template" is
+    // handled as an entirely separate query below, so the page/entry/comment
+    // query must return nothing when it's the only type selected.
+    const isTemplateOnly = type === "template";
+    const includeTemplates = type === "all" || isTemplateOnly;
 
     // Build conditions
     const conditions = [
@@ -69,7 +74,7 @@ export async function GET(req: Request) {
     // the client falling back to the unfiltered recently-visited list. With no
     // query AND no filter there's nothing to browse — return empty and let the
     // client show recently-visited.
-    if (!q && !typeFilter && !dateFilter) {
+    if (!q && !typeFilter && !isTemplateOnly && !dateFilter) {
       return Response.json({ results: [], total: 0 });
     }
 
@@ -96,7 +101,10 @@ export async function GET(req: Request) {
       ? [desc(rankExpr), desc(pages.updatedAt)]
       : [desc(pages.updatedAt)];
 
-    const rows = await db
+    // "template" is an exclusive filter handled entirely by the templates
+    // query below — search_index has no rows for templates, so skip this
+    // query rather than run it just to join zero rows.
+    const rows = isTemplateOnly ? [] : await db
       .select({
         id:         searchIndex.id,
         sourceType: searchIndex.sourceType,
@@ -151,7 +159,21 @@ export async function GET(req: Request) {
       }
     }
 
-    const results = rows.map((r) => ({
+    type ResultRow = {
+      id: string;
+      sourceType: "page" | "entry" | "comment" | "template";
+      sourceId: string;
+      title: string;
+      pageId: string;
+      shortId: string;
+      icon: string | null;
+      kind: string;
+      breadcrumb: string;
+      updatedAt: Date;
+      rank: number;
+    };
+
+    const pageResults: ResultRow[] = rows.map((r) => ({
       id:         r.id,
       sourceType: r.sourceType,
       sourceId:   r.sourceId,
@@ -164,6 +186,75 @@ export async function GET(req: Request) {
       updatedAt:  r.updatedAt,
       rank:       r.rank,
     }));
+
+    // Templates aren't page-shaped (no owner/ancestor/isDeleted concept) and
+    // live outside search_index entirely, so they get their own lightweight
+    // ILIKE query here instead of being folded into the tsvector pipeline
+    // above, then merged into the same ranked result list.
+    let templateResults: ResultRow[] = [];
+    if (includeTemplates) {
+      const templateDateFilter = (() => {
+        if (date === "24h") return sql`${templates.updatedAt} >= NOW() - INTERVAL '24 hours'`;
+        if (date === "7d")  return sql`${templates.updatedAt} >= NOW() - INTERVAL '7 days'`;
+        if (date === "30d") return sql`${templates.updatedAt} >= NOW() - INTERVAL '30 days'`;
+        return null;
+      })();
+
+      const templateConditions = [
+        eq(templates.status, "published"),
+        // Built-in templates (workspaceId null) plus this workspace's own.
+        or(eq(templates.workspaceId, workspaceId), isNull(templates.workspaceId)),
+      ];
+      if (templateDateFilter) templateConditions.push(templateDateFilter);
+      if (q) {
+        const nameMatch = ilike(templates.name, `%${q}%`);
+        templateConditions.push(
+          titleOnly ? nameMatch : or(nameMatch, ilike(templates.description, `%${q}%`)),
+        );
+      }
+
+      const templateRows = await db
+        .select({
+          id:            templates.id,
+          name:          templates.name,
+          pageSnapshot:  templates.pageSnapshot,
+          updatedAt:     templates.updatedAt,
+          categoryLabel: templateCategories.label,
+        })
+        .from(templates)
+        .leftJoin(templateCategories, eq(templateCategories.id, templates.categoryId))
+        .where(and(...templateConditions))
+        .orderBy(desc(templates.updatedAt))
+        .limit(20);
+
+      const needle = q.toLowerCase();
+      templateResults = templateRows.map((t) => {
+        const name = t.name.toLowerCase();
+        const rank = !q ? 0
+          : name === needle        ? 1
+          : name.startsWith(needle) ? 0.8
+          : name.includes(needle)  ? 0.5
+          : 0.2; // matched only via description
+        const snapshot = t.pageSnapshot as { icon?: string | null } | null;
+        return {
+          id:         t.id,
+          sourceType: "template" as const,
+          sourceId:   t.id,
+          title:      t.name || "Untitled",
+          pageId:     "",
+          shortId:    "",
+          icon:       snapshot?.icon ?? null,
+          kind:       "template",
+          breadcrumb: t.categoryLabel ?? "",
+          updatedAt:  t.updatedAt,
+          rank,
+        };
+      });
+    }
+
+    const results = [...pageResults, ...templateResults]
+      .sort((a, b) => (b.rank - a.rank) || (new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
+      .slice(0, 50);
 
     // Fire-and-forget — powers the Orbit Analytics "search usage & no-result
     // rate" metrics. Never awaited/blocking: a logging failure must never

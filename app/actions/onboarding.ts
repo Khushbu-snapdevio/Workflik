@@ -13,6 +13,8 @@ import { getOrCreateInviteeUser } from "@/lib/workspaces/invites";
 
 export type InviteEntry = { email: string; role: "admin" | "editor" | "viewer" };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 interface OnboardingData {
   kind:          "personal" | "team";
   workspaceName: string;
@@ -114,7 +116,7 @@ export async function completeOnboardingAction(data: OnboardingData) {
 
   // Enqueue invite emails for valid team invites (async via pg-boss)
   const validInvites = data.invites.filter(
-    (inv) => inv.email.trim() && inv.email.includes("@"),
+    (inv) => EMAIL_REGEX.test(inv.email.trim()),
   );
   for (const inv of validInvites) {
     const email        = inv.email.trim().toLowerCase();

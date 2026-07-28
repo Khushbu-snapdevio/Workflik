@@ -202,18 +202,23 @@ export function TemplatesPageClient({
   }, [refetchTemplates]);
 
   // Deep-link support: /templates?open=<name> opens that template's preview
-  // directly (used by the home page's quick-start template chips) instead of
-  // landing on the plain gallery grid.
+  // directly (used by the home page's quick-start template chips), and
+  // /templates?openId=<id> does the same by id (used by global search
+  // results, since names aren't guaranteed unique across workspace templates)
+  // — instead of landing on the plain gallery grid.
   useEffect(() => {
+    const openId = searchParams.get("openId");
     const openName = searchParams.get("open");
-    if (!openName || builtIn.length === 0) return;
-    const match = builtIn.find(
-      (t) => t.name.toLowerCase() === openName.toLowerCase()
-    );
+    if (!openId && !openName) return;
+    if (builtIn.length === 0 && workspace.length === 0) return;
+    const all = [...builtIn, ...workspace];
+    const match = openId
+      ? all.find((t) => t.id === openId)
+      : all.find((t) => t.name.toLowerCase() === openName!.toLowerCase());
     if (match) setPreviewTemplate(match);
     router.replace(`/app/${workspaceSlug}/templates`, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [builtIn]);
+  }, [builtIn, workspace]);
 
   const q = search.toLowerCase().trim();
   const matches = (t: Template) =>

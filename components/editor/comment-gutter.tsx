@@ -156,10 +156,14 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
  // mouse from a block toward its badge doesn't hide it before it's clickable.
  useEffect(() => {
   const hideTimer = { current: undefined as ReturnType<typeof setTimeout> | undefined };
+  // Last real cursor position — scrolling moves content under a stationary
+  // cursor without ever firing mousemove, so re-checking hover on scroll
+  // needs a remembered point to re-resolve from.
+  const lastPoint = { current: null as { x: number; y: number } | null };
 
-  function resolveHoveredBlockId(e: MouseEvent): string | null {
+  function resolveHoveredBlockId(x: number, y: number): string | null {
    const editorEl = editor.view.dom as HTMLElement;
-   let el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+   let el = document.elementFromPoint(x, y) as HTMLElement | null;
    if (!el) return null;
    while (el && el.parentElement !== editorEl) el = el.parentElement;
    if (!el || el === editorEl) return null;
@@ -174,14 +178,14 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
    return null;
   }
 
-  function onMove(e: MouseEvent) {
+  function updateHoverFromPoint(x: number, y: number) {
    const editorEl = editor.view.dom as HTMLElement;
    const er = editorEl.getBoundingClientRect();
    const inSafeZone = (
-    e.clientX >= er.left &&
-    e.clientX <= er.right + INDICATOR_WIDTH + 32 &&
-    e.clientY >= er.top - 10 &&
-    e.clientY <= er.bottom + 10
+    x >= er.left &&
+    x <= er.right + INDICATOR_WIDTH + 32 &&
+    y >= er.top - 10 &&
+    y <= er.bottom + 10
    );
    if (!inSafeZone) {
     clearTimeout(hideTimer.current);
@@ -191,18 +195,50 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
    clearTimeout(hideTimer.current);
 
    const overEditor = (
-    e.clientX >= er.left && e.clientX <= er.right &&
-    e.clientY >= er.top && e.clientY <= er.bottom
+    x >= er.left && x <= er.right &&
+    y >= er.top && y <= er.bottom
    );
    if (!overEditor) return; // hovering the gutter itself — keep last block active
 
-   const id = resolveHoveredBlockId(e);
+   const id = resolveHoveredBlockId(x, y);
    if (id) setHoveredBlockId(id);
   }
 
+  function onMove(e: MouseEvent) {
+   lastPoint.current = { x: e.clientX, y: e.clientY };
+   updateHoverFromPoint(e.clientX, e.clientY);
+  }
+
+  // Re-resolve on scroll from the last known cursor position — otherwise the
+  // badge for whatever block happened to be under the cursor before the
+  // scroll just rides along with that block's new position indefinitely,
+  // looking "stuck" even though the cursor isn't over it anymore.
+  let scrollRafId = 0;
+  function onScroll() {
+   cancelAnimationFrame(scrollRafId);
+   scrollRafId = requestAnimationFrame(() => {
+    if (lastPoint.current) updateHoverFromPoint(lastPoint.current.x, lastPoint.current.y);
+   });
+  }
+
+  // The cursor can leave the browser window entirely (e.g. onto the OS
+  // taskbar) without ever firing another mousemove inside it — mouseleave on
+  // <html> is the reliable signal for that; the safe-zone/mousemove logic
+  // above never re-fires once the cursor is gone, so the badge stayed
+  // visible forever until the mouse came back and moved again.
+  function onWindowLeave() {
+   clearTimeout(hideTimer.current);
+   setHoveredBlockId(null);
+  }
+
   document.addEventListener("mousemove", onMove);
+  window.addEventListener("scroll", onScroll, { passive: true });
+  document.documentElement.addEventListener("mouseleave", onWindowLeave);
   return () => {
    document.removeEventListener("mousemove", onMove);
+   window.removeEventListener("scroll", onScroll);
+   document.documentElement.removeEventListener("mouseleave", onWindowLeave);
+   cancelAnimationFrame(scrollRafId);
    clearTimeout(hideTimer.current);
   };
  }, [editor, blocksRef]);

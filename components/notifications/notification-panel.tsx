@@ -182,71 +182,77 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
               </p>
             </div>
 
-            {/* Right: icon actions + clear all */}
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
-              <div className="flex items-center gap-0.5">
-                {unread > 0 && (
-                  <IconTooltipButton
-                    icon={<MailReadIcon />}
-                    label="Mark all as read"
-                    onClick={handleMarkAllRead}
-                    className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-                  />
-                )}
+            {/* Right: icon actions — content actions (mark-all-read, settings)
+                grouped together, separated from Close since it dismisses the
+                whole panel rather than acting on its content. Previously this
+                also stacked "Clear all" underneath in its own row, which made
+                the header two uneven tiers tall; that action now lives
+                inline with the filter tabs below instead. */}
+            <div className="flex shrink-0 items-center gap-0.5">
+              {unread > 0 && (
                 <IconTooltipButton
-                  icon={<Settings size={14} />}
-                  label="Notification settings"
-                  onClick={() => {
-                    closePanel();
-                    router.push(`/app/${workspaceSlug}/settings/notifications`);
-                  }}
+                  icon={<MailReadIcon />}
+                  label="Mark all as read"
+                  onClick={handleMarkAllRead}
                   className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 />
-                <IconTooltipButton
-                  icon={<X size={14} />}
-                  label="Close"
-                  onClick={closePanel}
-                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground"
-                />
-              </div>
-              {items.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmClearAll(true)}
-                  className="flex h-6 items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-destructive/40 hover:bg-destructive/5 hover:text-destructive"
-                >
-                  <Trash2 size={11} />
-                  Clear all
-                </button>
               )}
+              <IconTooltipButton
+                icon={<Settings size={14} />}
+                label="Notification settings"
+                onClick={() => {
+                  closePanel();
+                  router.push(`/app/${workspaceSlug}/settings/notifications`);
+                }}
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              />
+              <div className="mx-1 h-4 w-px bg-border" />
+              <IconTooltipButton
+                icon={<X size={14} />}
+                label="Close"
+                onClick={closePanel}
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              />
             </div>
           </div>
         </div>
 
         {/* ── Filter tabs ── */}
         <div className="shrink-0 border-b border-border px-3 py-2">
-          <div className="flex items-center gap-0.5">
-            {FILTERS.map(({ key, label }) => (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-0.5">
+              {FILTERS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={`relative flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-all duration-150 ${
+                    filter === key
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                  {key === "all" && unread > 0 && (
+                    <span className={`inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none ${
+                      filter === key ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                    }`}>
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+            {items.length > 0 && (
               <button
-                key={key}
                 type="button"
-                onClick={() => setFilter(key)}
-                className={`relative flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-all duration-150 ${
-                  filter === key
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                }`}
+                onClick={() => setConfirmClearAll(true)}
+                className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-destructive/5 hover:text-destructive"
               >
-                {label}
-                {key === "all" && unread > 0 && (
-                  <span className={`inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none ${
-                    filter === key ? "bg-primary text-white" : "bg-muted text-muted-foreground"
-                  }`}>
-                    {unread > 99 ? "99+" : unread}
-                  </span>
-                )}
+                <Trash2 size={11} />
+                Clear all
               </button>
-            ))}
+            )}
           </div>
         </div>
 

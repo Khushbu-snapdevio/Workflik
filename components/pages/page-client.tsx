@@ -10,6 +10,7 @@ import { useUpload } from "@/lib/storage/use-upload";
 import { EntryPropertiesPanel } from "@/components/database/entry-properties-panel";
 import { PageCommentsSection } from "@/components/pages/page-comments-section";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { SaveStatusIndicator } from "@/components/ui/save-status";
 import { onCommentsChanged } from "@/lib/comments/comment-events";
 import { usePageDraft } from "@/components/pages/page-draft-context";
 
@@ -358,11 +359,9 @@ export function PageClient({
        editable ? "cursor-text" : "cursor-default select-text",
       ].join(" ")}
      />
-     {saveState !== "idle" && (
-      <span className={`absolute -top-5 right-0 text-[11px] transition-opacity duration-300 ${saveState === "saved" ? "text-muted-foreground/50" : "animate-pulse text-muted-foreground/40"}`}>
-       {saveState === "saving" ? "Saving…" : "Saved"}
-      </span>
-     )}
+     <div className="absolute -top-7 right-0">
+      <SaveStatusIndicator state={saveState} />
+     </div>
     </div>
 
     {/* Database entry properties — shown above comments for entries opened

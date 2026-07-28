@@ -17,12 +17,14 @@ import {
  ArrowDown as ArrowDownIcon,
  ChevronDown,
  Check,
+ LayoutTemplate as LayoutTemplateIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { PageIcon, parseIcon } from "@/components/pages/page-icon";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type SourceType = "page" | "entry" | "comment";
+type SourceType = "page" | "entry" | "comment" | "template";
 
 interface SearchResult {
  id:     string;
@@ -50,7 +52,7 @@ interface RecentPage {
  };
 }
 
-type FilterType = "all" | "page" | "entry" | "comment";
+type FilterType = "all" | "page" | "entry" | "comment" | "template";
 type FilterDate = "any" | "24h" | "7d" | "30d";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -79,6 +81,7 @@ function SourceIcon({ sourceType, kind, icon, size = 15 }: {
  }
  if (sourceType === "entry")  return <DatabaseIcon  size={size} className="shrink-0 text-primary" />;
  if (sourceType === "comment") return <ChatCircleIcon size={size} className="shrink-0 text-primary" />;
+ if (sourceType === "template") return <LayoutTemplateIcon size={size} className="shrink-0 text-primary" />;
  if (kind === "database")   return <DatabaseIcon  size={size} className="shrink-0 text-primary" />;
  return <FileTextIcon size={size} className="shrink-0 text-muted-foreground" />;
 }
@@ -86,6 +89,7 @@ function SourceIcon({ sourceType, kind, icon, size = 15 }: {
 function sourceLabel(sourceType: SourceType, kind: string): string {
  if (sourceType === "entry")  return "Entry";
  if (sourceType === "comment") return "Comment";
+ if (sourceType === "template") return "Template";
  if (kind === "database")   return "Database";
  return "Page";
 }
@@ -322,7 +326,9 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  useEffect(() => {
   fetch(`/api/user/recently-visited?workspaceId=${workspaceId}`)
    .then((r) => r.json())
-   .then((data: RecentPage[]) => setRecent(data))
+   // Guard against orphaned entries (e.g. a page removed after this list was
+   // cached) rendering as a dead, indistinguishable "Untitled" row.
+   .then((data: RecentPage[]) => setRecent(data.filter((r) => r.page)))
    .catch(() => {});
  }, [workspaceId]);
 
@@ -416,6 +422,16 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   : results.map((r) => ({ type: "result" as const, item: r }));
 
  function navigate(item: SearchResult | RecentPage) {
+  // Templates aren't pages — they have no shortId route, so a match opens
+  // the templates gallery with that template's preview pre-opened instead.
+  if ("sourceType" in item && item.sourceType === "template") {
+   if (backdropRef.current) backdropRef.current.style.display = "none";
+   if (dialogRef.current) dialogRef.current.style.display = "none";
+   flushSync(() => { onClose(); });
+   router.push(`/app/${workspaceSlug}/templates?openId=${item.sourceId}`);
+   return;
+  }
+
   let shortId: string | undefined;
   if ("shortId" in item) {
    shortId = item.shortId;
@@ -432,6 +448,8 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    // to briefly re-appear (the visible "blink").
    flushSync(() => { onClose(); });
    router.push(`/app/${workspaceSlug}/${shortId}`);
+  } else {
+   toast.error("This page could not be opened — it may have been deleted.");
   }
  }
 
@@ -477,6 +495,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   { value: "all",   label: "Any type" },
   { value: "page",  label: "Pages"   },
   { value: "entry",  label: "Entries"  },
+  { value: "template", label: "Templates" },
  ];
 
  const DATE_OPTIONS: { value: FilterDate; label: string }[] = [

@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pages } from "@/lib/db/schema";
+import { pageClosure, pages } from "@/lib/db/schema";
 import { movePageWithClosure } from "@/lib/pages/closure";
 import {
   ApiError,
@@ -43,6 +43,23 @@ export async function PATCH(req: Request, { params }: Ctx) {
     }
 
     await requireWorkspaceMember(page.workspaceId, session.user.id, "editor");
+
+    if (parentId) {
+      if (parentId === pageId) {
+        return apiError(400, "A page can't be moved into itself");
+      }
+      // A page can't be moved into its own subtree — page_closure already
+      // has a row for every (ancestor, descendant) pair, so a page is a
+      // descendant of itself iff a row (pageId -> parentId) exists.
+      const [cycle] = await db
+        .select({ ancestorId: pageClosure.ancestorId })
+        .from(pageClosure)
+        .where(and(eq(pageClosure.ancestorId, pageId), eq(pageClosure.descendantId, parentId)))
+        .limit(1);
+      if (cycle) {
+        return apiError(400, "Can't move a page into one of its own subpages");
+      }
+    }
 
     const updated = await db.transaction(async (tx) => {
       const [updatedPage] = await tx

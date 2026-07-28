@@ -1,7 +1,6 @@
 "use client";
 
 import {
- RotateCcw as ClockCounterClockwiseIcon,
  Copy as CopyIcon,
  ClipboardCopy as CopySimpleIcon,
  MoreHorizontal as DotsThreeIcon,
@@ -16,15 +15,14 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import { SaveAsTemplateModal } from "@/components/templates/save-as-template-modal";
-import { PageHistoryPanel } from "@/components/pages/page-history-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { usePagePrivacy } from "@/components/pages/page-privacy-context";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
-const MENU_HEIGHT    = 360;
-const HISTORY_HEIGHT = 460;
+const MENU_HEIGHT = 360;
 
 interface PageActionsMenuProps {
  pageId:    string;
@@ -79,7 +77,6 @@ export function PageActionsMenu({
  const [confirmTrash, setConfirmTrash]  = useState(false);
  const [deleting, setDeleting]      = useState(false);
  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
- const [historyAnchor, setHistoryAnchor] = useState<{ top: number; right: number } | null>(null);
  const buttonRef = useRef<HTMLButtonElement>(null);
  const dropdownRef = useRef<HTMLDivElement>(null);
  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
@@ -208,12 +205,10 @@ export function PageActionsMenu({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ format }),
    });
-
-   if (res.status === 501) {
-    alert("PDF export is coming soon.");
+   if (!res.ok) {
+    toast.error(`Couldn't export as ${format === "pdf" ? "PDF" : format} — please try again.`);
     return;
    }
-   if (!res.ok) return;
 
    const blob = await res.blob();
    const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -295,23 +290,6 @@ export function PageActionsMenu({
         </button>
        )}
 
-       {pageKind !== "database" && (
-        <button
-         type="button"
-         onClick={() => {
-          setOpen(false);
-          if (buttonRef.current) {
-           const r = buttonRef.current.getBoundingClientRect();
-           setHistoryAnchor({ top: getClampedTop(r, HISTORY_HEIGHT), right: window.innerWidth - r.right });
-          }
-         }}
-         className={menuItemClass}
-        >
-         <ClockCounterClockwiseIcon size={14} />
-         Page history
-        </button>
-       )}
-
        <div className="mx-2 my-1 border-t border-border" />
 
        <div className="px-3 pb-0.5 pt-1">
@@ -378,13 +356,6 @@ export function PageActionsMenu({
      onClose={() => setSaveAsTemplate(false)}
     />
    )}
-
-   <PageHistoryPanel
-    pageId={pageId}
-    open={historyAnchor !== null}
-    anchorPos={historyAnchor}
-    onClose={() => setHistoryAnchor(null)}
-   />
   </>
  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, BookOpen, Check, ChevronDown, ChevronRight, Clock, FileText, Grid2X2, Loader2, Lock, PenOff, Search, Star, Trash2, X } from "lucide-react";
+import { AlertCircle, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, EyeOff, FileText, Grid2X2, Loader2, Lock, Search, Star, Trash2, X } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
@@ -9,8 +9,7 @@ import { TimeAgo } from "@/components/ui/time-ago";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-const PAGE_SIZE = 10;
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, getPageNumbers } from "@/lib/ui/pagination";
 
 type PageRow = {
   id:          string;
@@ -121,8 +120,13 @@ export function LibraryClient({
     return initial === "recents" || initial === "favorites" || initial === "private" ? initial : "all";
   });
   const [search, setSearch]   = useState("");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [loadingMore, setLoadingMore]   = useState(false);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  // Decoupled from `pageSize` so the field can be freely typed into (cleared,
+  // mid-edit) without a controlled-input value snapping back on every
+  // keystroke — only reconciled on blur/Enter/stepper click.
+  const [pageSizeInput, setPageSizeInput] = useState(String(DEFAULT_PAGE_SIZE));
+  const [currentPage, setCurrentPage] = useState(1);
+  const [goToPageInput, setGoToPageInput] = useState("");
   const [favs, setFavs]     = useState<Set<string>>(
     () => new Set(initialPages.filter((p) => p.isFavorited).map((p) => p.id))
   );
@@ -134,26 +138,36 @@ export function LibraryClient({
 
   function changeTab(next: Tab) {
     setTab(next);
-    setVisibleCount(PAGE_SIZE);
+    setCurrentPage(1);
     setSelectedIds(new Set());
   }
 
   function changeSearch(val: string) {
     setSearch(val);
-    setVisibleCount(PAGE_SIZE);
+    setCurrentPage(1);
     setSelectedIds(new Set());
   }
 
-  function loadMore() {
-    setLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount((c) => c + PAGE_SIZE);
-      setLoadingMore(false);
-    }, 600);
+  function changePageSize(next: number) {
+    const clamped = Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, next));
+    setPageSize(clamped);
+    setPageSizeInput(String(clamped));
+    setCurrentPage(1);
   }
 
-  function showLess() {
-    setVisibleCount(PAGE_SIZE);
+  function submitPageSizeInput() {
+    const n = Number.parseInt(pageSizeInput, 10);
+    changePageSize(Number.isFinite(n) ? n : pageSize);
+  }
+
+  function goToPage(p: number, totalPages: number) {
+    setCurrentPage(Math.min(totalPages, Math.max(1, p)));
+  }
+
+  function submitGoToPage(totalPages: number) {
+    const n = Number.parseInt(goToPageInput, 10);
+    if (Number.isFinite(n)) goToPage(n, totalPages);
+    setGoToPageInput("");
   }
 
   function toggleFavorite(pageId: string) {
@@ -185,6 +199,26 @@ export function LibraryClient({
           setFavs((prev) => { const n = new Set(prev); n.delete(pageId); return n; });
         });
     }
+  }
+
+  function togglePrivate(row: PageRow) {
+    const next = !row.isPrivate;
+    setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isPrivate: next } : p)));
+    fetch(`/api/pages/${row.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPrivate: next }),
+    }).catch(() => {
+      setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isPrivate: !next } : p)));
+    });
+  }
+
+  function toggleLocked(row: PageRow) {
+    const next = !row.isLocked;
+    setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isLocked: next } : p)));
+    fetch(`/api/pages/${row.id}/lock`, { method: "POST" }).catch(() => {
+      setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isLocked: !next } : p)));
+    });
   }
 
   function toggleCollapse(id: string) {
@@ -236,7 +270,11 @@ export function LibraryClient({
       if (tab === "private")   return p.isPrivate;
       return true;
     })
-    .filter((p) => !search || p.title.toLowerCase().includes(search.toLowerCase()));
+    .filter((p) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return p.title.toLowerCase().includes(q) || p.creatorName.toLowerCase().includes(q);
+    });
 
   // Nesting only makes sense for the unfiltered "All Pages" list — Recents /
   // Favorites / Private are arbitrary subsets that can include a child page
@@ -247,7 +285,9 @@ export function LibraryClient({
     ? buildDisplayRows(filtered, collapsedIds)
     : filtered.map((p) => ({ ...p, depth: 0, hasChildren: false }));
 
-  const visibleRows  = displayRows.slice(0, visibleCount);
+  const totalPages = Math.max(1, Math.ceil(displayRows.length / pageSize));
+  const page     = Math.min(currentPage, totalPages);
+  const visibleRows  = displayRows.slice((page - 1) * pageSize, page * pageSize);
   const visibleIds   = visibleRows.map((p) => p.id);
   const allSelected  = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
   const someSelected = !allSelected && visibleIds.some((id) => selectedIds.has(id));
@@ -316,7 +356,7 @@ export function LibraryClient({
               <Search size={13} className="shrink-0 text-muted-foreground/50" />
               <input
                 className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
-                placeholder="Search pages…"
+                placeholder="Search by page name or creator…"
                 value={search}
                 onChange={(e) => changeSearch(e.target.value)}
                 type="text"
@@ -439,19 +479,45 @@ export function LibraryClient({
                       <span className={`min-w-0 flex-1 truncate text-sm text-foreground ${page.depth > 0 ? "font-normal" : "font-medium"}`}>
                         {page.title || "Untitled"}
                       </span>
-                      {page.isPrivate && (
-                        <PenOff size={11} className="shrink-0 text-muted-foreground/40" />
-                      )}
-                      {page.isLocked && (
-                        <div className="group/locked relative shrink-0">
-                          <Lock size={11} className="text-warning/70" />
-                          <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/locked:opacity-100">
-                            <p className="text-xs font-semibold text-popover-foreground">
-                              Locked — editing disabled
-                            </p>
-                          </div>
+                      {/* Private toggle — same hover-reveal-when-off pattern as the favorite star */}
+                      <div className="group/private relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => togglePrivate(page)}
+                          className={`flex size-6 items-center justify-center rounded transition-all duration-150 ${
+                            page.isPrivate
+                              ? "text-muted-foreground/60 hover:text-foreground"
+                              : "text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 hover:text-foreground"
+                          }`}
+                        >
+                          <EyeOff size={12} />
+                        </button>
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/private:opacity-100">
+                          <p className="text-xs font-semibold text-popover-foreground">
+                            {page.isPrivate ? "Private — only you and invited people can access" : "Make private"}
+                          </p>
                         </div>
-                      )}
+                      </div>
+
+                      {/* Lock toggle — same hover-reveal-when-off pattern as the favorite star */}
+                      <div className="group/locked relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => toggleLocked(page)}
+                          className={`flex size-6 items-center justify-center rounded transition-all duration-150 ${
+                            page.isLocked
+                              ? "text-warning/70 hover:text-warning"
+                              : "text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 hover:text-foreground"
+                          }`}
+                        >
+                          <Lock size={12} />
+                        </button>
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/locked:opacity-100">
+                          <p className="text-xs font-semibold text-popover-foreground">
+                            {page.isLocked ? "Locked — editing disabled" : "Lock page"}
+                          </p>
+                        </div>
+                      </div>
 
                       {/* Favorite button with tooltip */}
                       <div className="group/fav relative shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -519,51 +585,101 @@ export function LibraryClient({
                 })}
               </div>
 
-              {/* Footer: count + load more / show less */}
-              <div className="flex items-center justify-between border-t border-border/40 px-5 py-3">
-                <p className="text-xs text-muted-foreground/50">
-                  Showing {Math.min(visibleCount, displayRows.length)} of {displayRows.length} page{displayRows.length !== 1 ? "s" : ""}
-                  {search && ` matching "${search}"`}
-                </p>
+              {/* Footer: rows per page · go to page · prev/numbered/next */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 px-5 py-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <span>Rows per page</span>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={pageSizeInput}
+                      onChange={(e) => setPageSizeInput(e.target.value)}
+                      onBlur={submitPageSizeInput}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                      className="w-12 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+                    />
+                    <div className="absolute right-1 flex flex-col">
+                      <button
+                        type="button"
+                        aria-label="Increase rows per page"
+                        onClick={() => changePageSize(pageSize + 5)}
+                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                      >
+                        <ChevronUp size={10} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Decrease rows per page"
+                        onClick={() => changePageSize(pageSize - 5)}
+                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                      >
+                        <ChevronDown size={10} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-                <div className="flex items-center gap-2">
-                  {/* Show less — only when showing more than one page of results */}
-                  {visibleCount > PAGE_SIZE && (
-                    <button
-                      type="button"
-                      onClick={showLess}
-                      className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="18 15 12 9 6 15"/>
-                      </svg>
-                      Show less
-                    </button>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <span>Go to page</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={goToPageInput}
+                    placeholder={`1–${totalPages}`}
+                    onChange={(e) => setGoToPageInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(totalPages); }}
+                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => submitGoToPage(totalPages)}
+                    disabled={!goToPageInput}
+                    className="rounded-[var(--radius-sm)] border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
+                  >
+                    GO
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => goToPage(page - 1, totalPages)}
+                    disabled={page <= 1}
+                    className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    <ChevronLeft size={12} />
+                    Previous
+                  </button>
+
+                  {getPageNumbers(page, totalPages).map((p, i) =>
+                    p === "…" ? (
+                      <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground/50">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => goToPage(p, totalPages)}
+                        className={`flex size-6 items-center justify-center rounded-[var(--radius-sm)] border text-xs font-medium transition-colors duration-150 ${
+                          p === page
+                            ? "border-primary/50 bg-primary/10 text-primary"
+                            : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
                   )}
 
-                  {/* Load more — only when there are hidden rows */}
-                  {displayRows.length > visibleCount && (
-                    <button
-                      type="button"
-                      onClick={loadMore}
-                      disabled={loadingMore}
-                      className="flex items-center gap-2 rounded-[var(--radius-sm)] bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity duration-150 hover:opacity-90 disabled:opacity-60"
-                    >
-                      {loadingMore ? (
-                        <>
-                          <Loader2 size={12} className="animate-spin" />
-                          Loading…
-                        </>
-                      ) : (
-                        <>
-                          Load more
-                          <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
-                            +{Math.min(PAGE_SIZE, displayRows.length - visibleCount)}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => goToPage(page + 1, totalPages)}
+                    disabled={page >= totalPages}
+                    className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    Next
+                    <ChevronRight size={12} />
+                  </button>
                 </div>
               </div>
 

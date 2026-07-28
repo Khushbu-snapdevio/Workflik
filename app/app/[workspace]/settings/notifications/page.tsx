@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Check, Loader2, Mail } from "lucide-react";
+import { Check, Loader2, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -40,6 +40,9 @@ export default function NotificationSettingsPage() {
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
   const [saveError, setSaveError] = useState("");
+  // Snapshot of the last loaded/saved values, so the Save button can stay
+  // disabled until something actually changes rather than just "not saving".
+  const [savedSnapshot, setSavedSnapshot] = useState("");
 
   useEffect(() => {
     fetch("/api/user/notification-preferences")
@@ -47,19 +50,26 @@ export default function NotificationSettingsPage() {
       .then(d => {
         if (!d) return;
         const freq: Frequency = d.emailFrequency ?? "daily";
-        setEmailOn(freq !== "off");
-        setFrequency(freq === "off" ? "daily" : freq);
-        setWeeklyDay(d.weeklyDigestDay ?? 1);
-        setEvents({
+        const nextEmailOn  = freq !== "off";
+        const nextFrequency = freq === "off" ? "daily" : freq;
+        const nextWeeklyDay = d.weeklyDigestDay ?? 1;
+        const nextEvents: Record<EventKey, boolean> = {
           notifyMentions:         d.notifyMentions         ?? true,
           notifyPageUpdates:      d.notifyPageUpdates      ?? true,
           notifyWorkspaceInvites: d.notifyWorkspaceInvites ?? true,
           notifyTaskAssignments:  d.notifyTaskAssignments  ?? true,
-        });
+        };
+        setEmailOn(nextEmailOn);
+        setFrequency(nextFrequency);
+        setWeeklyDay(nextWeeklyDay);
+        setEvents(nextEvents);
+        setSavedSnapshot(JSON.stringify({ emailOn: nextEmailOn, frequency: nextFrequency, weeklyDay: nextWeeklyDay, events: nextEvents }));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const isDirty = savedSnapshot !== JSON.stringify({ emailOn, frequency, weeklyDay, events });
 
   async function save() {
     setSaving(true); setSaved(false); setSaveError("");
@@ -76,6 +86,7 @@ export default function NotificationSettingsPage() {
         minSpinner,
       ]);
       if (res.ok) {
+        setSavedSnapshot(JSON.stringify({ emailOn, frequency, weeklyDay, events }));
         setSaved(true); setTimeout(() => setSaved(false), 3000);
       } else {
         setSaveError("Failed to save — please try again.");
@@ -103,18 +114,7 @@ export default function NotificationSettingsPage() {
   return (
     <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
-      {/* ── Page header ── */}
-      <div className="flex items-center gap-4">
-        <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-primary">
-          <Bell size={22} className="text-primary-foreground" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
-          <p className="text-sm text-muted-foreground">Control how and when you get notified.</p>
-        </div>
-      </div>
-
-      <p className="mt-4 rounded-[var(--radius-md)] border border-border/60 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+      <p className="rounded-[var(--radius-md)] border border-border/60 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
         These preferences are per-account, not per-workspace — they apply the same way across every workspace you&apos;re a member of.
       </p>
 
@@ -244,7 +244,7 @@ export default function NotificationSettingsPage() {
           type="button"
           size="sm"
           onClick={save}
-          disabled={saving}
+          disabled={saving || !isDirty}
           >
           {saving && <Loader2 size={13} className="animate-spin" />}
           {saving ? "Saving…" : "Save preferences"}

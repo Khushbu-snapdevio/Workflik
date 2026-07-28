@@ -133,15 +133,6 @@ Shown in the dialog when the search input is empty.
 
 ---
 
-## Title-Only Mode
-
-Toggle: `"Title only"` button next to the filter row.
-- Restricts results to title matches only (ignores block content and property values)
-- Useful when looking for a specific page by name
-- State is session-only (resets when the dialog is closed)
-
----
-
 ## Keyboard Navigation
 
 | Key | Action |

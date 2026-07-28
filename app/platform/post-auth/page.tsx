@@ -91,6 +91,14 @@ export default async function PostAuthPage() {
     const [ws] = await db
       .select({ slug: workspaces.slug })
       .from(workspaces)
+      .innerJoin(
+        workspaceMembers,
+        and(
+          eq(workspaceMembers.workspaceId, workspaces.id),
+          eq(workspaceMembers.userId, session.user.id),
+          eq(workspaceMembers.status, "active")
+        )
+      )
       .where(eq(workspaces.id, prefs.lastWorkspaceId))
       .limit(1);
     if (ws) {

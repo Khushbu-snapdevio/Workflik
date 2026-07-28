@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Camera, Check, ChevronDown, Clock, Globe, Loader2, Search, ShieldAlert, User, X } from "lucide-react";
+import { ArrowRight, Camera, Check, ChevronDown, Clock, Globe, Loader2, Search, ShieldAlert, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -397,17 +397,6 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
 
  return (
   <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
-
-   {/* ── Header — matches all other settings pages ── */}
-   <div className="mb-8 flex items-center gap-4">
-    <div className="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary">
-     <User size={22} className="text-primary-foreground" />
-    </div>
-    <div>
-     <h1 className="text-2xl font-bold text-foreground">My profile</h1>
-     <p className="text-sm text-muted-foreground">Manage your name, photo, and personal details.</p>
-    </div>
-   </div>
 
    {emailChangedBanner && (
     <div className="mb-6 flex items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-success/30 bg-success/5 px-4 py-3">

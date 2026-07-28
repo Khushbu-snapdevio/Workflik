@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PRODUCT_NAME } from "@/config/platform";
+import { env } from "@/lib/env";
 import { getCurrentSession } from "@/lib/authz";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
@@ -95,6 +96,7 @@ const USE_CASES = [
 export default async function HomePage() {
   const session = await getCurrentSession();
   if (session) redirect("/platform/post-auth");
+  if (!env.NEXT_PUBLIC_SHOW_LANDING_PAGE) redirect("/auth/login");
 
   return (
     <div id="top" className="min-h-screen bg-page pt-14 text-foreground antialiased">

@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { workspaceMembers, workspaces } from "@/lib/db/schema";
+import { userPreferences, workspaceMembers, workspaces } from "@/lib/db/schema";
 import {
   apiError,
   ApiError,
@@ -167,6 +167,19 @@ export async function DELETE(_req: Request, { params }: Ctx) {
         .update(workspaces)
         .set({ inviteLinkToken: crypto.randomUUID(), updatedAt: new Date() })
         .where(eq(workspaces.id, id));
+
+      // Clear the removed user's "last active workspace" pointer if it
+      // pointed here, so their next post-auth redirect doesn't try to send
+      // them back into a workspace they no longer belong to.
+      await tx
+        .update(userPreferences)
+        .set({ lastWorkspaceId: null })
+        .where(
+          and(
+            eq(userPreferences.userId, userId),
+            eq(userPreferences.lastWorkspaceId, id)
+          )
+        );
     });
 
     await writeAuditLog({

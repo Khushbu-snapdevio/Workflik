@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, pages } from "@/lib/db/schema";
-import { BlockRow, renderMarkdown, renderHtml } from "@/lib/jobs/handlers/export-page";
+import { BlockRow, renderMarkdown, renderHtml, renderPdf } from "@/lib/jobs/handlers/export-page";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
 const exportSchema = z.object({
@@ -39,10 +39,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const { format } = parsed.data;
 
-    if (format === "pdf") {
-      return apiError(501, "PDF export is coming in Phase 7");
-    }
-
     const allBlocks = await db
       .select({ type: blocks.type, content: blocks.content, orderIndex: blocks.orderIndex })
       .from(blocks)
@@ -67,12 +63,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       });
     }
 
-    // html
-    const content = renderHtml(page.title, rows);
-    return new Response(content, {
+    if (format === "html") {
+      const content = renderHtml(page.title, rows);
+      return new Response(content, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Content-Disposition": `attachment; filename="${filename}.html"`,
+        },
+      });
+    }
+
+    // pdf
+    let pdf: Buffer;
+    try {
+      pdf = await renderPdf(page.title, rows);
+    } catch (err) {
+      console.error("[export] PDF generation failed:", err);
+      return apiError(500, "Couldn't generate the PDF — please try again.");
+    }
+    return new Response(new Uint8Array(pdf), {
       headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${filename}.html"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${filename}.pdf"`,
       },
     });
   } catch (err) {

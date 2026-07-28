@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DbProperty, SortRule } from "./types";
 
 const SORTABLE = new Set(["text", "number", "select", "status", "date", "checkbox", "url", "email", "phone"]);
@@ -17,12 +18,20 @@ interface SortBarProps {
 
 export function SortBar({ properties, sorts, onChange }: SortBarProps) {
  const usable = properties.filter((p) => !p.isSystem && SORTABLE.has(p.type));
- const atLimit = sorts.length >= MAX_SORTS;
+ const atLimit = sorts.length >= MAX_SORTS || sorts.length >= usable.length;
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+
+ // Properties already used by OTHER rules — excluded from a row's own
+ // dropdown (except its current selection) so the same property can't be
+ // picked twice, and from `add`'s default pick.
+ function usedElsewhere(excludeIdx?: number) {
+  return new Set(sorts.filter((_, i) => i !== excludeIdx).map((s) => s.propertyId));
+ }
 
  function add() {
   if (atLimit) return;
-  const first = usable[0];
+  const used = usedElsewhere();
+  const first = usable.find((p) => !used.has(p.id));
   if (!first) return;
   onChange([...sorts, { propertyId: first.id, direction: "asc" }]);
  }
@@ -40,23 +49,30 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
    <div className="flex items-center justify-between">
     <p className="text-xs font-semibold tracking-wide text-muted-foreground/60">Sort</p>
     {atLimit && (
-     <span className="text-xs text-muted-foreground">Max {MAX_SORTS} sort rules</span>
+     <span className="text-xs text-muted-foreground">
+      {sorts.length >= MAX_SORTS ? `Max ${MAX_SORTS} sort rules` : "All properties sorted"}
+     </span>
     )}
    </div>
 
-   {sorts.map((sort, idx) => (
+   {sorts.map((sort, idx) => {
+    const used = usedElsewhere(idx);
+    return (
     <div key={idx} className="flex items-center gap-2 text-xs">
      <span className="w-14 shrink-0 text-right text-muted-foreground">
       {idx === 0 ? "Sort by" : "Then by"}
      </span>
 
-     <select
-      value={sort.propertyId}
-      onChange={(e) => update(idx, { propertyId: e.target.value })}
-      className="rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground focus:border-primary/50 focus:outline-none"
-     >
-      {usable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-     </select>
+     <Select value={sort.propertyId} onValueChange={(v) => update(idx, { propertyId: v })}>
+      <SelectTrigger size="sm" className="min-w-32">
+       <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+       {usable.filter((p) => !used.has(p.id)).map((p) => (
+        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+       ))}
+      </SelectContent>
+     </Select>
 
      <div className="flex items-center rounded-[var(--radius-sm)] border border-border bg-muted/40 p-0.5">
       {(["asc", "desc"] as const).map((dir) => (
@@ -82,12 +98,16 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
       <X size={11} />
      </button>
     </div>
-   ))}
+    );
+   })}
 
    <button
     onClick={add}
     disabled={atLimit || usable.length === 0}
-    onMouseEnter={(e) => { if (atLimit) showTooltip(`Maximum ${MAX_SORTS} sort rules`, e); }}
+    onMouseEnter={(e) => {
+     if (sorts.length >= MAX_SORTS) showTooltip(`Maximum ${MAX_SORTS} sort rules`, e);
+     else if (atLimit) showTooltip("All sortable properties are already used", e);
+    }}
     onMouseLeave={hideTooltip}
     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
    >

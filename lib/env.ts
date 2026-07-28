@@ -15,6 +15,12 @@ const envSchema = z.object({
       "APP_SECRET is still set to the .env.example placeholder — generate a real one with: openssl rand -base64 32"
     ),
   NEXT_PUBLIC_APP_URL: z.url(),
+  // Marketing landing page at "/". Defaults to false so self-hosted/open-source
+  // instances go straight to login instead of showing a public marketing page.
+  NEXT_PUBLIC_SHOW_LANDING_PAGE: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -28,6 +34,12 @@ const envSchema = z.object({
   EMAIL_WEBHOOK_SECRET: optionalString,
   GOOGLE_CLIENT_ID: optionalString,
   GOOGLE_CLIENT_SECRET: optionalString,
+
+  // ── PDF export ─────────────────────────────────────────────────────────────
+  // Path to a Chromium/Chrome executable used to render page PDFs. Optional —
+  // falls back to auto-detecting common install locations when unset (see
+  // lib/jobs/handlers/export-page.ts).
+  PUPPETEER_EXECUTABLE_PATH: optionalString,
 
   // ── File storage ───────────────────────────────────────────────────────────
   // STORAGE_DRIVER: "local" (default) saves to UPLOAD_DIR and serves via API.

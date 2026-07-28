@@ -35,7 +35,6 @@ export function SettingsRightPanel({ workspaceSlug, isAdmin }: Props) {
   }
 
   const visibleSections   = SECTIONS.filter(s => !s.adminOnly || isAdmin);
-  const activeSection     = visibleSections.find(s => isActive(s.key)) ?? visibleSections[0];
   const accountSections   = visibleSections.filter(s => s.group === "account");
   const workspaceSections = visibleSections.filter(s => s.group === "workspace");
 
@@ -49,19 +48,8 @@ export function SettingsRightPanel({ workspaceSlug, isAdmin }: Props) {
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
 
-        {/* Active section card — matches "All templates" card style */}
-        <Link
-          href={`${base}/${activeSection.key}`}
-          className="group mb-3 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border border-primary/25 bg-primary/10 px-3.5 py-3 text-left text-primary transition-all duration-150 hover:bg-primary/10"
-        >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/15 text-primary">
-            {activeSection.icon}
-          </span>
-          <span className="flex-1 text-sm font-semibold">{activeSection.label}</span>
-        </Link>
-
         {/* Account group */}
-        <div className="mb-2.5 mt-3 px-1">
+        <div className="mb-2.5 px-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary/60">Account</p>
         </div>
         <div className="space-y-0.5">

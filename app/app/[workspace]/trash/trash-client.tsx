@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, FileText, Loader2, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FileText, Loader2, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, getPageNumbers } from "@/lib/ui/pagination";
 
 type TrashedPage = {
   id:            string;
@@ -65,9 +66,48 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
   const [localPages, setLocalPages]       = useState(pages);
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
 
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  // Decoupled from `pageSize` so the field can be freely typed into (cleared,
+  // mid-edit) without a controlled-input value snapping back on every
+  // keystroke — only reconciled on blur/Enter/stepper click.
+  const [pageSizeInput, setPageSizeInput] = useState(String(DEFAULT_PAGE_SIZE));
+  const [currentPage, setCurrentPage] = useState(1);
+  const [goToPageInput, setGoToPageInput] = useState("");
+
   const filtered = localPages.filter((p) =>
     !search || (p.title || "Untitled").toLowerCase().includes(search.toLowerCase())
   );
+
+  function changeSearch(val: string) {
+    setSearch(val);
+    setCurrentPage(1);
+  }
+
+  function changePageSize(next: number) {
+    const clamped = Math.min(MAX_PAGE_SIZE, Math.max(MIN_PAGE_SIZE, next));
+    setPageSize(clamped);
+    setPageSizeInput(String(clamped));
+    setCurrentPage(1);
+  }
+
+  function submitPageSizeInput() {
+    const n = Number.parseInt(pageSizeInput, 10);
+    changePageSize(Number.isFinite(n) ? n : pageSize);
+  }
+
+  function goToPage(p: number, totalPages: number) {
+    setCurrentPage(Math.min(totalPages, Math.max(1, p)));
+  }
+
+  function submitGoToPage(totalPages: number) {
+    const n = Number.parseInt(goToPageInput, 10);
+    if (Number.isFinite(n)) goToPage(n, totalPages);
+    setGoToPageInput("");
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const page       = Math.min(currentPage, totalPages);
+  const visibleRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const allSelected   = filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
   const someSelected  = filtered.some((p) => selectedIds.has(p.id));
@@ -205,11 +245,11 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                 className="w-44 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
                 placeholder="Search trash…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => changeSearch(e.target.value)}
                 type="text"
               />
               {search && (
-                <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/50 transition-colors hover:text-foreground">
+                <button type="button" onClick={() => changeSearch("")} className="text-muted-foreground/50 transition-colors hover:text-foreground">
                   <X size={12} />
                 </button>
               )}
@@ -271,7 +311,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
 
               {/* Rows */}
               <div className="divide-y divide-border/40">
-                {filtered.map((page) => {
+                {visibleRows.map((page) => {
                   const left     = page.deletedAt ? daysLeft(page.deletedAt) : 30;
                   const urgent   = left <= 7;
                   const isChecked = selectedIds.has(page.id);
@@ -351,6 +391,104 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Footer: rows per page · go to page · prev/numbered/next */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 px-5 py-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <span>Rows per page</span>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={pageSizeInput}
+                      onChange={(e) => setPageSizeInput(e.target.value)}
+                      onBlur={submitPageSizeInput}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                      className="w-12 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+                    />
+                    <div className="absolute right-1 flex flex-col">
+                      <button
+                        type="button"
+                        aria-label="Increase rows per page"
+                        onClick={() => changePageSize(pageSize + 5)}
+                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                      >
+                        <ChevronUp size={10} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Decrease rows per page"
+                        onClick={() => changePageSize(pageSize - 5)}
+                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                      >
+                        <ChevronDown size={10} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <span>Go to page</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={goToPageInput}
+                    placeholder={`1–${totalPages}`}
+                    onChange={(e) => setGoToPageInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(totalPages); }}
+                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => submitGoToPage(totalPages)}
+                    disabled={!goToPageInput}
+                    className="rounded-[var(--radius-sm)] border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
+                  >
+                    GO
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => goToPage(page - 1, totalPages)}
+                    disabled={page <= 1}
+                    className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    <ChevronLeft size={12} />
+                    Previous
+                  </button>
+
+                  {getPageNumbers(page, totalPages).map((p, i) =>
+                    p === "…" ? (
+                      <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground/50">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => goToPage(p, totalPages)}
+                        className={`flex size-6 items-center justify-center rounded-[var(--radius-sm)] border text-xs font-medium transition-colors duration-150 ${
+                          p === page
+                            ? "border-primary/50 bg-primary/10 text-primary"
+                            : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => goToPage(page + 1, totalPages)}
+                    disabled={page >= totalPages}
+                    className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    Next
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
               </div>
             </div>
           )}

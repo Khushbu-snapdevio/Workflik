@@ -10,7 +10,6 @@ export async function registerHandlers(boss: PgBoss) {
     { handleScaffoldHealthcheck },
     { handleAutoDeleteExpiredTrash },
     { handleWarnExpiringTrash },
-    { handleAutoDeleteExpiredVersions },
     { handleExportPage },
     { handleCleanupStaleUploads },
     { handleCleanupOrphanedMedia },
@@ -30,7 +29,6 @@ export async function registerHandlers(boss: PgBoss) {
     import("@/lib/jobs/handlers/scaffold-healthcheck"),
     import("@/lib/jobs/handlers/auto-delete-expired-trash"),
     import("@/lib/jobs/handlers/warn-expiring-trash"),
-    import("@/lib/jobs/handlers/auto-delete-expired-versions"),
     import("@/lib/jobs/handlers/export-page"),
     import("@/lib/jobs/handlers/cleanup-stale-uploads"),
     import("@/lib/jobs/handlers/cleanup-orphaned-media"),
@@ -52,7 +50,6 @@ export async function registerHandlers(boss: PgBoss) {
     boss.work(JOB_NAMES.SCAFFOLD_HEALTHCHECK,                  { includeMetadata: true }, handleScaffoldHealthcheck),
     boss.work(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_TRASH,        { includeMetadata: true }, handleAutoDeleteExpiredTrash),
     boss.work(JOB_NAMES.PAGE_WARN_EXPIRING_TRASH,              { includeMetadata: true }, handleWarnExpiringTrash),
-    boss.work(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS,     { includeMetadata: true }, handleAutoDeleteExpiredVersions),
     boss.work(JOB_NAMES.PAGE_EXPORT,                           { includeMetadata: true }, handleExportPage),
     boss.work(JOB_NAMES.STORAGE_CLEANUP_STALE_UPLOADS,         { includeMetadata: true }, handleCleanupStaleUploads),
     boss.work(JOB_NAMES.STORAGE_CLEANUP_ORPHANED_MEDIA,        { includeMetadata: true }, handleCleanupOrphanedMedia),
@@ -73,7 +70,6 @@ export async function registerHandlers(boss: PgBoss) {
   await boss.schedule(JOB_NAMES.SCAFFOLD_HEALTHCHECK,               "*/10 * * * *",  {});
   await boss.schedule(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_TRASH,     "0 2 * * *",     {}); // Daily 02:00 UTC
   await boss.schedule(JOB_NAMES.PAGE_WARN_EXPIRING_TRASH,           "0 2 * * *",     {}); // Daily 02:00 UTC
-  await boss.schedule(JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS,  "0 3 * * *",     {}); // Daily 03:00 UTC
   await boss.schedule(JOB_NAMES.STORAGE_CLEANUP_STALE_UPLOADS,      "*/30 * * * *",  {}); // Every 30 minutes
   await boss.schedule(JOB_NAMES.STORAGE_CLEANUP_ORPHANED_MEDIA,     "0 4 * * *",     {}); // Daily 04:00 UTC
   await boss.schedule(JOB_NAMES.STORAGE_SYNC_USAGE,                 "0 4 * * *",     {}); // Daily 04:00 UTC

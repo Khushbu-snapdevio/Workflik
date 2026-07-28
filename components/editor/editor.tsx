@@ -73,8 +73,6 @@ import { SlashMenu, type SlashMenuHandle } from "./slash-menu";
 
 const lowlight = createLowlight(common);
 
-const VERSION_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
-
 // The "/", "@", and "[[" trigger characters (plus whatever query text follows
 // them) are real, live paragraph text until a menu item is chosen — not a
 // placeholder. Saving while one of these suggestion popups is open would
@@ -307,7 +305,6 @@ export function PageEditor({
   const editorRef = useRef<Editor | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef<string>("");
-  const lastVersionAt = useRef<number>(0);
   const deletedIds = useRef<string[]>([]);
 
   const { setIsDraft } = usePageDraft();
@@ -337,12 +334,6 @@ export function PageEditor({
 
       setSaveState("saving");
       try {
-        const now = Date.now();
-        const snapshot = now - lastVersionAt.current > VERSION_INTERVAL_MS;
-        if (snapshot) {
-          lastVersionAt.current = now;
-        }
-
         const outgoing = tiptapDocToBlocks(
           docJson as { content?: never[] },
           pageId
@@ -355,7 +346,6 @@ export function PageEditor({
             pageId,
             blocks: outgoing,
             deletedIds: deletedIds.current,
-            snapshotEvery: snapshot,
           }),
         });
 
@@ -748,6 +738,14 @@ export function PageEditor({
           const CARD_GAP = 20;
           const editorRect = editor.view.dom.getBoundingClientRect();
 
+          // The left margin only has real free space past the app sidebar's
+          // own right edge — editorRect.left alone overstates it, since part
+          // of that span is the sidebar itself, not empty page. Previously
+          // this measured spaceLeft from x=0, so a left-anchored card could
+          // land partly underneath the sidebar (and get visually hidden by
+          // it — the sidebar's stacking context sits above this card's).
+          const sidebarRight = document.getElementById("workspace-sidebar")?.getBoundingClientRect().right ?? 0;
+
           // Prefer the right margin, then the left margin, and only fall back
           // to centering over the page when neither margin has room. Simply
           // clamping a right-anchored position (the old behavior) had no such
@@ -755,7 +753,7 @@ export function PageEditor({
           // editor, the clamp pulled it left until it sat directly on top of
           // — visually merged with — the editor's own text column.
           const spaceRight = window.innerWidth - editorRect.right - VIEWPORT_MARGIN;
-          const spaceLeft = editorRect.left - VIEWPORT_MARGIN;
+          const spaceLeft = editorRect.left - sidebarRight - VIEWPORT_MARGIN;
           let left: number;
           if (spaceRight >= CARD_WIDTH + CARD_GAP) {
            left = editorRect.right + CARD_GAP;
@@ -765,7 +763,7 @@ export function PageEditor({
            left = (window.innerWidth - CARD_WIDTH) / 2;
           }
           left = Math.min(left, window.innerWidth - CARD_WIDTH - VIEWPORT_MARGIN);
-          left = Math.max(left, VIEWPORT_MARGIN);
+          left = Math.max(left, sidebarRight + VIEWPORT_MARGIN);
 
           const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - CARD_MAX_HEIGHT - VIEWPORT_MARGIN);
           const top = Math.min(Math.max(VIEWPORT_MARGIN, commentCard.blockY), maxTop);
@@ -776,7 +774,7 @@ export function PageEditor({
                   gives the outside-click-to-close handler an obvious target */}
               <div
                 className="fixed inset-0 bg-black/5 dark:bg-black/20"
-                style={{ zIndex: 399 }}
+                style={{ zIndex: 580 }}
               />
               <div
                 ref={commentCardRef}
@@ -784,7 +782,7 @@ export function PageEditor({
                   position: "fixed",
                   left,
                   top,
-                  zIndex: 400,
+                  zIndex: 590,
                 }}
               >
                 <CommentCard

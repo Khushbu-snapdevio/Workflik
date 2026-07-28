@@ -54,6 +54,17 @@ interface RecentPage {
 
 type FilterType = "all" | "page" | "entry" | "comment" | "template";
 type FilterDate = "any" | "24h" | "7d" | "30d";
+type FilterLocation = "all" | "shared" | "private";
+// "me_created" / "me_edited" scope to the current user; any other value is a
+// specific workspace member's user id, picked from the dropdown below.
+type FilterAuthor = "any" | "me_created" | "me_edited" | (string & {});
+type SortOption = "relevance" | "edited" | "created";
+
+interface WorkspaceMemberOption {
+ userId:  string;
+ userName: string | null;
+ userEmail: string;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -150,7 +161,7 @@ function FilterChip<T extends string>({
      // (z-[800]); the shadcn default z-50 rendered this portal-mounted menu
      // invisible/unclickable behind the dialog's opaque surface instead of
      // on top of it (see components/ui/select.tsx for the same fix).
-     className="fixed z-[820] min-w-[160px] rounded-[var(--radius-md)] border border-border bg-popover p-1"
+     className="fixed z-[820] max-h-64 min-w-[160px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1"
      style={{ top: getClampedTop(rect, 200, { gap: 4 }), left: getClampedLeft(rect, 160) }}
     >
      {options.map((opt) => (
@@ -275,18 +286,22 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  const [isPending,  setIsPending]  = useState(false); // debounce queued but not fired yet
  const [total,    setTotal]    = useState(0);
  const [activeIndex, setActiveIndex] = useState(0);
- const [titleOnly,  setTitleOnly]  = useState(false);
  const [reindexing, setReindexing] = useState(false);
  const [reindexDone, setReindexDone] = useState(false);
 
  const [filterType, setFilterType] = useState<FilterType>("all");
  const [filterDate, setFilterDate] = useState<FilterDate>("any");
+ const [filterLocation, setFilterLocation] = useState<FilterLocation>("all");
+ const [filterAuthor, setFilterAuthor] = useState<FilterAuthor>("any");
+ const [sortBy, setSortBy] = useState<SortOption>("relevance");
+ const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
 
- // A type/date filter is "active" when it's not the default. When one is active
- // we browse (list matching items) even with an empty query, instead of falling
+ // A filter is "active" when it's not the default. When one is active we
+ // browse (list matching items) even with an empty query, instead of falling
  // back to the unfiltered recently-visited list — otherwise selecting a filter
- // looks like it does nothing.
- const hasFilter = filterType !== "all" || filterDate !== "any";
+ // looks like it does nothing. Sort has no effect on this — it only reorders
+ // an existing result set, so it never triggers browse mode on its own.
+ const hasFilter = filterType !== "all" || filterDate !== "any" || filterLocation !== "all" || filterAuthor !== "any";
 
  const inputRef    = useRef<HTMLInputElement>(null);
  const listRef     = useRef<HTMLDivElement>(null);
@@ -311,7 +326,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    await fetch(`/api/search/reindex?workspaceId=${workspaceId}`, { method: "POST" });
    setReindexDone(true);
    // Re-run current search/browse after indexing
-   if (query.trim() || hasFilter) runSearch(query, filterType, filterDate, titleOnly);
+   if (query.trim() || hasFilter) runSearch(query, filterType, filterDate, filterLocation, filterAuthor, sortBy);
   } finally {
    setReindexing(false);
   }
@@ -332,16 +347,30 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    .catch(() => {});
  }, [workspaceId]);
 
+ // Load workspace members on open — powers the "Specific member" entries in
+ // the Author filter. Only active members can author/edit content.
+ useEffect(() => {
+  fetch(`/api/workspaces/${workspaceId}/members`)
+   .then((r) => r.json())
+   .then((data: { userId: string; userName: string | null; userEmail: string; status: string }[]) => {
+    setMembers(data.filter((m) => m.status === "active"));
+   })
+   .catch(() => {});
+ }, [workspaceId]);
+
  // Cancel any pending empty-result hold if the dialog itself closes
  useEffect(() => {
   return () => { if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current); };
  }, []);
 
  // Debounced search
- const runSearch = useCallback(async (q: string, type: FilterType, date: FilterDate, titleOnlyMode: boolean) => {
+ const runSearch = useCallback(async (
+  q: string, type: FilterType, date: FilterDate,
+  location: FilterLocation, author: FilterAuthor, sort: SortOption,
+ ) => {
   // Only bail on an empty query when there's also no active filter. With a
   // filter active, an empty query is a valid "browse" request.
-  if (!q.trim() && type === "all" && date === "any") {
+  if (!q.trim() && type === "all" && date === "any" && location === "all" && author === "any") {
    if (emptyHoldRef.current) clearTimeout(emptyHoldRef.current);
    requestIdRef.current++; // invalidate any in-flight request
    setResults([]);
@@ -357,7 +386,9 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     workspaceId,
     type,
     date,
-    titleOnly: String(titleOnlyMode),
+    location,
+    author,
+    sort,
    });
    const res = await fetch(`/api/search?${params}`);
    if (!res.ok) throw new Error("Search failed");
@@ -405,10 +436,10 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   // debounce fires or the API responds
   setIsPending(true);
   debounceRef.current = setTimeout(() => {
-   runSearch(query, filterType, filterDate, titleOnly);
+   runSearch(query, filterType, filterDate, filterLocation, filterAuthor, sortBy);
   }, 200);
   return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
- }, [query, filterType, filterDate, titleOnly, hasFilter, runSearch]);
+ }, [query, filterType, filterDate, filterLocation, filterAuthor, sortBy, hasFilter, runSearch]);
 
  // Items list for keyboard nav
  const isQueryEmpty = !query.trim();
@@ -505,6 +536,25 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   { value: "30d", label: "Past 30 days" },
  ];
 
+ const LOCATION_OPTIONS: { value: FilterLocation; label: string }[] = [
+  { value: "all",   label: "All locations" },
+  { value: "shared", label: "Shared pages"  },
+  { value: "private", label: "Private pages" },
+ ];
+
+ const AUTHOR_OPTIONS: { value: FilterAuthor; label: string }[] = [
+  { value: "any",     label: "Any author"     },
+  { value: "me_created", label: "Created by me"   },
+  { value: "me_edited", label: "Last edited by me" },
+  ...members.map((m) => ({ value: m.userId, label: m.userName || m.userEmail })),
+ ];
+
+ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "relevance", label: "Best match"    },
+  { value: "edited",  label: "Last edited"    },
+  { value: "created", label: "Recently created" },
+ ];
+
  return (
   <>
    {/* Backdrop */}
@@ -541,7 +591,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     </div>
 
     {/* Filter bar */}
-    <div className="flex items-center gap-2 border-b border-border/40 bg-muted/20 px-4 py-2.5">
+    <div className="flex flex-wrap items-center gap-2 border-b border-border/40 bg-muted/20 px-4 py-2.5">
      <FilterChip
       label="Any type"
       options={TYPE_OPTIONS}
@@ -554,20 +604,24 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       value={filterDate}
       onChange={(v) => { setFilterDate(v); setActiveIndex(0); }}
      />
-
-     <div className="ml-auto">
-      <button
-       onClick={() => setTitleOnly((p) => !p)}
-       className={[
-        "rounded-[var(--radius-sm)] border px-3 py-1 text-xs font-medium transition-colors duration-150",
-        titleOnly
-         ? "border-primary/40 bg-primary/10 text-primary"
-         : "border-border bg-transparent text-muted-foreground hover:text-foreground",
-       ].join(" ")}
-      >
-       Title only
-      </button>
-     </div>
+     <FilterChip
+      label="All locations"
+      options={LOCATION_OPTIONS}
+      value={filterLocation}
+      onChange={(v) => { setFilterLocation(v); setActiveIndex(0); }}
+     />
+     <FilterChip
+      label="Any author"
+      options={AUTHOR_OPTIONS}
+      value={filterAuthor}
+      onChange={(v) => { setFilterAuthor(v); setActiveIndex(0); }}
+     />
+     <FilterChip
+      label="Best match"
+      options={SORT_OPTIONS}
+      value={sortBy}
+      onChange={(v) => { setSortBy(v); setActiveIndex(0); }}
+     />
     </div>
 
     {/* Results / recent */}

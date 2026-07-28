@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Check, ChevronDown } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import type { DbProperty, FilterRule } from "./types";
 import type { SelectOption } from "./types";
@@ -119,9 +122,20 @@ interface FilterBarProps {
 
 export function FilterBar({ properties, filters, filterLogic, onChange, onFilterLogicChange }: FilterBarProps) {
  const usable = properties.filter((p) => !p.isSystem);
+ const atLimit = filters.length >= usable.length;
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+
+ // Properties already used by OTHER rules — excluded from a row's own
+ // dropdown (except its current selection) so the same property can't be
+ // picked twice, and from `add`'s default pick.
+ function usedElsewhere(excludeIdx?: number) {
+  return new Set(filters.filter((_, i) => i !== excludeIdx).map((f) => f.propertyId));
+ }
 
  function add() {
-  const first = usable[0];
+  if (atLimit) return;
+  const used = usedElsewhere();
+  const first = usable.find((p) => !used.has(p.id));
   if (!first) return;
   const ops = OPERATORS[first.type] ?? OPERATORS.text;
   onChange([...filters, { propertyId: first.id, operator: ops[0].value, value: "" }]);
@@ -167,6 +181,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
     const prop = usable.find((p) => p.id === filter.propertyId);
     const ops = OPERATORS[prop?.type ?? "text"] ?? OPERATORS.text;
     const needsValue = !NO_VALUE_OPS.has(filter.operator);
+    const used = usedElsewhere(idx);
 
     const isMultiVal = MULTI_VAL_OPS.has(filter.operator) && (prop?.type === "select" || prop?.type === "status");
 
@@ -187,25 +202,35 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
        )}
       </span>
 
-      <select
+      <Select
        value={filter.propertyId}
-       onChange={(e) => {
-        const np = usable.find((p) => p.id === e.target.value);
+       onValueChange={(v) => {
+        const np = usable.find((p) => p.id === v);
         const nops = OPERATORS[np?.type ?? "text"] ?? OPERATORS.text;
-        update(idx, { propertyId: e.target.value, operator: nops[0].value, value: "" });
+        update(idx, { propertyId: v, operator: nops[0].value, value: "" });
        }}
-       className="rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground focus:border-primary/50 focus:outline-none"
       >
-       {usable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
+       <SelectTrigger size="sm" className="min-w-28">
+        <SelectValue />
+       </SelectTrigger>
+       <SelectContent>
+        {usable.filter((p) => !used.has(p.id)).map((p) => (
+         <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+        ))}
+       </SelectContent>
+      </Select>
 
-      <select
+      <Select
        value={filter.operator}
-       onChange={(e) => update(idx, { operator: e.target.value, value: MULTI_VAL_OPS.has(e.target.value) ? [] : "" })}
-       className="rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+       onValueChange={(v) => update(idx, { operator: v, value: MULTI_VAL_OPS.has(v) ? [] : "" })}
       >
-       {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
-      </select>
+       <SelectTrigger size="sm" className="min-w-28">
+        <SelectValue />
+       </SelectTrigger>
+       <SelectContent>
+        {ops.map((op) => <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>)}
+       </SelectContent>
+      </Select>
 
       {needsValue && isMultiVal && (
        <MultiOptionPicker
@@ -246,10 +271,17 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
 
    <button
     onClick={add}
-    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground"
+    disabled={atLimit}
+    onMouseEnter={(e) => { if (atLimit) showTooltip("All properties already have a filter", e); }}
+    onMouseLeave={hideTooltip}
+    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
    >
     + Add filter
    </button>
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }

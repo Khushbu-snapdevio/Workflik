@@ -17,6 +17,12 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
+# Chromium, for the PAGE_EXPORT job's PDF branch (puppeteer-core drives it —
+# see lib/jobs/handlers/export-page.ts). Matches the app container's Dockerfile.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends chromium \
+  && rm -rf /var/lib/apt/lists/*
+
 RUN corepack enable \
   && groupadd --system --gid 1001 workflik \
   && useradd --system --uid 1001 --gid workflik workflik

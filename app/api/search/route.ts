@@ -5,7 +5,7 @@ import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 export const runtime = "nodejs";
 
-// GET /api/search?q=&workspaceId=&type=&date=&titleOnly=
+// GET /api/search?q=&workspaceId=&type=&date=&location=&author=&sort=
 export async function GET(req: Request) {
   try {
     const session = await getSession();
@@ -15,7 +15,9 @@ export async function GET(req: Request) {
     const workspaceId = searchParams.get("workspaceId") ?? "";
     const type        = searchParams.get("type") ?? "all";          // all | page | entry | comment | template
     const date        = searchParams.get("date") ?? "any";          // any | 24h | 7d | 30d
-    const titleOnly   = searchParams.get("titleOnly") === "true";
+    const location     = searchParams.get("location") ?? "all";      // all | shared | private
+    const author      = searchParams.get("author") ?? "any";        // any | me_created | me_edited | <userId>
+    const sort        = searchParams.get("sort") ?? "relevance";      // relevance | edited | created
 
     if (!workspaceId) return apiError(400, "workspaceId is required");
 
@@ -57,6 +59,25 @@ export async function GET(req: Request) {
     const isTemplateOnly = type === "template";
     const includeTemplates = type === "all" || isTemplateOnly;
 
+    // Location filter — "Shared" / "Private" map directly onto pages.isPrivate.
+    // Other users' private pages are already excluded below regardless of this
+    // filter, so "Private" here effectively means "my own private pages."
+    const locationFilter = (() => {
+      if (location === "shared")  return eq(pages.isPrivate, false);
+      if (location === "private") return eq(pages.isPrivate, true);
+      return null;
+    })();
+
+    // Author filter — "me_created"/"me_edited" scope to the current user;
+    // anything else is treated as a specific member's user id (from the
+    // picker), matched against who authored the page.
+    const authorFilter = (() => {
+      if (author === "me_created") return eq(pages.createdBy, session.user.id);
+      if (author === "me_edited")  return eq(pages.lastEditedBy, session.user.id);
+      if (author !== "any")     return eq(pages.createdBy, author);
+      return null;
+    })();
+
     // Build conditions
     const conditions = [
       eq(searchIndex.workspaceId, workspaceId),
@@ -66,15 +87,18 @@ export async function GET(req: Request) {
       // Exclude other users' unpromoted drafts
       or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id)),
     ];
-    if (typeFilter)  conditions.push(typeFilter);
-    if (dateFilter)  conditions.push(dateFilter);
+    if (typeFilter)   conditions.push(typeFilter);
+    if (dateFilter)   conditions.push(dateFilter);
+    if (locationFilter) conditions.push(locationFilter);
+    if (authorFilter)  conditions.push(authorFilter);
 
-    // Browse mode: an empty query is allowed when a type/date filter is active,
-    // so selecting e.g. "Entries" lists matching items (newest first) instead of
-    // the client falling back to the unfiltered recently-visited list. With no
-    // query AND no filter there's nothing to browse — return empty and let the
-    // client show recently-visited.
-    if (!q && !typeFilter && !isTemplateOnly && !dateFilter) {
+    // Browse mode: an empty query is allowed when any filter is active, so
+    // selecting e.g. "Entries" or "Created by me" lists matching items (newest
+    // first) instead of the client falling back to the unfiltered
+    // recently-visited list. With no query AND no filter there's nothing to
+    // browse — return empty and let the client show recently-visited.
+    const hasAnyFilter = !!typeFilter || isTemplateOnly || !!dateFilter || !!locationFilter || !!authorFilter;
+    if (!q && !hasAnyFilter) {
       return Response.json({ results: [], total: 0 });
     }
 
@@ -85,21 +109,25 @@ export async function GET(req: Request) {
     // A non-empty query that reduces to an empty tsquery (all punctuation) matches nothing.
     if (q && !tsQuery) return Response.json({ results: [], total: 0 });
 
+    // 'simple' config — must match how index-page.ts builds searchVector (see
+    // the comment there for why: 'english' drops stop words like
+    // "just"/"the"/"and" to zero lexemes, silently making titles that are or
+    // contain one unsearchable).
     if (tsQuery) {
-      const vectorCondition = titleOnly
-        ? sql`to_tsvector('english', coalesce(${searchIndex.title}, '')) @@ to_tsquery('english', ${tsQuery})`
-        : sql`${searchIndex.searchVector} @@ to_tsquery('english', ${tsQuery})`;
-      conditions.push(vectorCondition);
+      conditions.push(sql`${searchIndex.searchVector} @@ to_tsquery('simple', ${tsQuery})`);
     }
 
     // Rank by text relevance when searching; browse mode has no query, so rank
-    // is constant and results order purely by recency.
+    // is constant and results order purely by recency. An explicit "Last
+    // edited" / "Created date" sort overrides relevance entirely.
     const rankExpr = tsQuery
-      ? sql<number>`ts_rank(${searchIndex.searchVector}, to_tsquery('english', ${tsQuery}))`
+      ? sql<number>`ts_rank(${searchIndex.searchVector}, to_tsquery('simple', ${tsQuery}))`
       : sql<number>`0`;
-    const orderByCols = tsQuery
-      ? [desc(rankExpr), desc(pages.updatedAt)]
-      : [desc(pages.updatedAt)];
+    const orderByCols = (() => {
+      if (sort === "created") return [desc(pages.createdAt)];
+      if (sort === "edited")  return [desc(pages.updatedAt)];
+      return tsQuery ? [desc(rankExpr), desc(pages.updatedAt)] : [desc(pages.updatedAt)];
+    })();
 
     // "template" is an exclusive filter handled entirely by the templates
     // query below — search_index has no rows for templates, so skip this
@@ -112,6 +140,7 @@ export async function GET(req: Request) {
         title:      searchIndex.title,
         pageId:     searchIndex.pageId,
         updatedAt:  pages.updatedAt,
+        createdAt:  pages.createdAt,
         shortId:    pages.shortId,
         icon:       pages.icon,
         kind:       pages.kind,
@@ -170,6 +199,7 @@ export async function GET(req: Request) {
       kind: string;
       breadcrumb: string;
       updatedAt: Date;
+      createdAt: Date;
       rank: number;
     };
 
@@ -184,15 +214,20 @@ export async function GET(req: Request) {
       kind:       r.kind,
       breadcrumb: breadcrumbMap.get(r.pageId) ?? "",
       updatedAt:  r.updatedAt,
+      createdAt:  r.createdAt,
       rank:       r.rank,
     }));
 
-    // Templates aren't page-shaped (no owner/ancestor/isDeleted concept) and
-    // live outside search_index entirely, so they get their own lightweight
-    // ILIKE query here instead of being folded into the tsvector pipeline
-    // above, then merged into the same ranked result list.
+    // Templates aren't page-shaped (no owner/ancestor/isDeleted concept) —
+    // location (shared/private) has no meaning for them, and "last edited by"
+    // isn't tracked, so both exclude templates from the result set entirely
+    // rather than silently ignoring the active filter. They live outside
+    // search_index entirely, so they get their own lightweight ILIKE query
+    // here instead of being folded into the tsvector pipeline above, then
+    // merged into the same ranked result list.
+    const includeTemplatesForFilters = includeTemplates && !locationFilter && author !== "me_edited";
     let templateResults: ResultRow[] = [];
-    if (includeTemplates) {
+    if (includeTemplatesForFilters) {
       const templateDateFilter = (() => {
         if (date === "24h") return sql`${templates.updatedAt} >= NOW() - INTERVAL '24 hours'`;
         if (date === "7d")  return sql`${templates.updatedAt} >= NOW() - INTERVAL '7 days'`;
@@ -206,11 +241,10 @@ export async function GET(req: Request) {
         or(eq(templates.workspaceId, workspaceId), isNull(templates.workspaceId)),
       ];
       if (templateDateFilter) templateConditions.push(templateDateFilter);
+      if (author === "me_created")   templateConditions.push(eq(templates.createdBy, session.user.id));
+      else if (author !== "any")   templateConditions.push(eq(templates.createdBy, author));
       if (q) {
-        const nameMatch = ilike(templates.name, `%${q}%`);
-        templateConditions.push(
-          titleOnly ? nameMatch : or(nameMatch, ilike(templates.description, `%${q}%`)),
-        );
+        templateConditions.push(or(ilike(templates.name, `%${q}%`), ilike(templates.description, `%${q}%`)));
       }
 
       const templateRows = await db
@@ -219,6 +253,7 @@ export async function GET(req: Request) {
           name:          templates.name,
           pageSnapshot:  templates.pageSnapshot,
           updatedAt:     templates.updatedAt,
+          createdAt:     templates.createdAt,
           categoryLabel: templateCategories.label,
         })
         .from(templates)
@@ -247,13 +282,24 @@ export async function GET(req: Request) {
           kind:       "template",
           breadcrumb: t.categoryLabel ?? "",
           updatedAt:  t.updatedAt,
+          createdAt:  t.createdAt,
           rank,
         };
       });
     }
 
+    // "Last edited" / "Created date" sort overrides relevance ranking outright;
+    // default (relevance) keeps the existing rank-then-recency ordering. This
+    // final in-memory sort is what actually determines display order (pages
+    // and templates come from two separate queries and get merged here), so
+    // it has to mirror whichever `sort` mode orderByCols used above.
+    const compareResults = (a: ResultRow, b: ResultRow) => {
+      if (sort === "created") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sort === "edited")  return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      return (b.rank - a.rank) || (new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    };
     const results = [...pageResults, ...templateResults]
-      .sort((a, b) => (b.rank - a.rank) || (new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
+      .sort(compareResults)
       .slice(0, 50);
 
     // Fire-and-forget — powers the Orbit Analytics "search usage & no-result

@@ -61,6 +61,7 @@ export function InviteMembersModal({ workspaceId, isOwner = false, onClose }: Pr
   setSending(true);
   setError("");
   const failed: string[] = [];
+  let lastReason = "";
 
   for (const email of list) {
    try {
@@ -69,9 +70,14 @@ export function InviteMembersModal({ workspaceId, isOwner = false, onClose }: Pr
      headers: { "Content-Type": "application/json" },
      body:  JSON.stringify({ email, role }),
     });
-    if (!res.ok) failed.push(email);
+    if (!res.ok) {
+     failed.push(email);
+     const body = await res.json().catch(() => null);
+     lastReason = body?.error || `HTTP ${res.status}`;
+    }
    } catch {
     failed.push(email);
+    lastReason = "Network error";
    }
   }
 
@@ -87,7 +93,7 @@ export function InviteMembersModal({ workspaceId, isOwner = false, onClose }: Pr
   }
 
   if (failed.length > 0) {
-   setError(`Couldn't invite: ${failed.join(", ")}`);
+   setError(`Couldn't invite ${failed.join(", ")}: ${lastReason}`);
    if (sent === 0) return;
   }
 

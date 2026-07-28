@@ -75,6 +75,7 @@ function SelectContent({
           // default) rendered this invisible/unclickable behind such
           // surfaces — it wasn't "not opening", just opening underneath.
           "relative z-[600] max-h-[var(--radix-select-content-available-height)] min-w-[var(--radix-select-trigger-width)] overflow-hidden",
+          "origin-(--radix-select-content-transform-origin)",
           "rounded-[var(--radius-md)] border border-border bg-popover text-popover-foreground",
           "shadow-[var(--shadow-float)]",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",

@@ -69,6 +69,12 @@ const TEMPLATE_SOLO  = 5;
 
 const EMPTY_INVITE: InviteEntry = { email: "", role: "editor" };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isInviteEmailInvalid(email: string) {
+ const trimmed = email.trim();
+ return trimmed.length > 0 && !EMAIL_REGEX.test(trimmed);
+}
+
 /* ─── Component ─────────────────────────────────────────────────── */
 
 interface Props { initialName: string; smtpConfigured: boolean }
@@ -83,6 +89,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
   { ...EMPTY_INVITE }, { ...EMPTY_INVITE }, { ...EMPTY_INVITE },
  ]);
  const [templateKey,   setTemplateKey]  = useState("blank");
+ const [invitesTouched, setInvitesTouched] = useState([false, false, false]);
  const [pending, startTransition]       = useTransition();
  const [pendingRemoveIndex, setPendingRemoveIndex] = useState<number | null>(null);
 
@@ -123,12 +130,21 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
   setInvites((prev) => prev.map((inv, idx) => idx === i ? { ...inv, role } : inv));
  }
 
+ function touchInviteEmail(i: number) {
+  setInvitesTouched((prev) => prev.map((t, idx) => idx === i ? true : t));
+ }
+
  function addInviteRow() {
-  if (invites.length < 8) setInvites((prev) => [...prev, { ...EMPTY_INVITE }]);
+  if (invites.length < 8) {
+   setInvites((prev) => [...prev, { ...EMPTY_INVITE }]);
+   setInvitesTouched((prev) => [...prev, false]);
+  }
  }
 
  function removeInviteRow(i: number) {
-  setInvites((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
+  if (invites.length <= 1) return;
+  setInvites((prev) => prev.filter((_, idx) => idx !== i));
+  setInvitesTouched((prev) => prev.filter((_, idx) => idx !== i));
  }
 
  function handleContinue() {
@@ -140,7 +156,14 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
    return;
   }
   if (isNameStep) { setStep(isTeam ? INVITE_STEP : TEMPLATE_SOLO); return; }
-  if (isInviteStep) { setStep(TEMPLATE_TEAM); return; }
+  if (isInviteStep) {
+   if (invites.some((inv) => isInviteEmailInvalid(inv.email))) {
+    setInvitesTouched((prev) => prev.map(() => true));
+    return;
+   }
+   setStep(TEMPLATE_TEAM);
+   return;
+  }
   if (isTemplateStep) { finish(); }
  }
 
@@ -187,6 +210,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
   if (isProfileStep)  return displayName.trim().length > 0;
   if (isQuestionStep) return !!selections[step - 1];
   if (isNameStep)     return workspaceName.trim().length > 0;
+  if (isInviteStep)   return !invites.some((inv) => isInviteEmailInvalid(inv.email));
   return true;
  })();
 
@@ -347,38 +371,50 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
       </p>
 
       <div className="mb-3 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-       {invites.map((inv, i) => (
-        <div key={i} className={`flex items-center gap-0 ${i > 0 ? "border-t border-border" : ""}`}>
-         <input
-          type="text"
-          inputMode="email"
-          autoComplete="new-password"
-          name={`invite_member_${i}`}
-          placeholder={`teammate${i + 1}@company.com`}
-          value={inv.email}
-          onChange={(e) => updateInviteEmail(i, e.target.value)}
-          className="h-11 flex-1 bg-transparent px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
-         />
-         <div className="h-6 w-px bg-border" />
-         <div className="px-2">
-          <RoleSelect
-           value={inv.role}
-           options={INVITE_ROLE_OPTIONS}
-           onChange={(v) => updateInviteRole(i, v as "admin" | "editor" | "viewer")}
+       {invites.map((inv, i) => {
+        const showInviteError = invitesTouched[i] && isInviteEmailInvalid(inv.email);
+        return (
+        <div key={i} className={i > 0 ? "border-t border-border" : ""}>
+         <div className="flex items-center gap-0">
+          <input
+           type="text"
+           inputMode="email"
+           autoComplete="new-password"
+           name={`invite_member_${i}`}
+           placeholder={`teammate${i + 1}@company.com`}
+           value={inv.email}
+           onChange={(e) => updateInviteEmail(i, e.target.value)}
+           onBlur={() => touchInviteEmail(i)}
+           aria-invalid={showInviteError}
+           className={`h-11 flex-1 bg-transparent px-4 text-sm placeholder:text-muted-foreground/40 focus:outline-none ${
+            showInviteError ? "text-destructive" : "text-foreground"
+           }`}
           />
+          <div className="h-6 w-px bg-border" />
+          <div className="px-2">
+           <RoleSelect
+            value={inv.role}
+            options={INVITE_ROLE_OPTIONS}
+            onChange={(v) => updateInviteRole(i, v as "admin" | "editor" | "viewer")}
+           />
+          </div>
+          {invites.length > 1 && (
+           <button
+            type="button"
+            onClick={() => setPendingRemoveIndex(i)}
+            aria-label="Remove this invite"
+            className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+           >
+            <X size={14} />
+           </button>
+          )}
          </div>
-         {invites.length > 1 && (
-          <button
-           type="button"
-           onClick={() => setPendingRemoveIndex(i)}
-           aria-label="Remove this invite"
-           className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
-          >
-           <X size={14} />
-          </button>
+         {showInviteError && (
+          <p className="px-4 pb-2 text-xs text-destructive">Please enter a valid email address.</p>
          )}
         </div>
-       ))}
+        );
+       })}
       </div>
 
       <ConfirmDialog

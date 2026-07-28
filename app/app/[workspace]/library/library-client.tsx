@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, BookOpen, Check, Clock, FileText, Grid2X2, Loader2, Lock, PenOff, Search, Star, Trash2, X } from "lucide-react";
+import { AlertCircle, BookOpen, Check, ChevronDown, ChevronRight, Clock, FileText, Grid2X2, Loader2, Lock, PenOff, Search, Star, Trash2, X } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
@@ -20,6 +20,7 @@ type PageRow = {
   kind:        string;
   isPrivate:   boolean;
   isLocked:    boolean;
+  parentId:    string | null;
   parentShortId: string | null;
   createdAt:   string;
   updatedAt:   string;
@@ -28,6 +29,38 @@ type PageRow = {
   isRecent:    boolean;
   isFavorited: boolean;
 };
+
+type DisplayRow = PageRow & { depth: number; hasChildren: boolean };
+
+// Nests sub-pages under their parent (in the same relative order `rows`
+// already has — most-recently-updated first) instead of listing every page
+// flat, which made a top-level page and a deeply-nested one indistinguishable.
+// A page whose parent isn't present in `rows` (filtered out, or genuinely a
+// root) is treated as a root itself, so the tree never silently drops rows.
+function buildDisplayRows(rows: PageRow[], collapsed: Set<string>): DisplayRow[] {
+  const idSet = new Set(rows.map((p) => p.id));
+  const childrenByParent = new Map<string, PageRow[]>();
+  const roots: PageRow[] = [];
+  for (const p of rows) {
+    if (p.parentId && idSet.has(p.parentId)) {
+      if (!childrenByParent.has(p.parentId)) childrenByParent.set(p.parentId, []);
+      childrenByParent.get(p.parentId)!.push(p);
+    } else {
+      roots.push(p);
+    }
+  }
+
+  const out: DisplayRow[] = [];
+  function walk(list: PageRow[], depth: number) {
+    for (const p of list) {
+      const kids = childrenByParent.get(p.id) ?? [];
+      out.push({ ...p, depth, hasChildren: kids.length > 0 });
+      if (kids.length > 0 && !collapsed.has(p.id)) walk(kids, depth + 1);
+    }
+  }
+  walk(roots, 0);
+  return out;
+}
 
 type Tab = "all" | "recents" | "favorites" | "private";
 
@@ -94,6 +127,7 @@ export function LibraryClient({
     () => new Set(initialPages.filter((p) => p.isFavorited).map((p) => p.id))
   );
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
+  const [collapsedIds, setCollapsedIds]   = useState<Set<string>>(new Set());
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [deletingSelected, setDeletingSelected]      = useState(false);
   const [deleteErr, setDeleteErr]              = useState("");
@@ -153,6 +187,14 @@ export function LibraryClient({
     }
   }
 
+  function toggleCollapse(id: string) {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
   function toggleRow(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -196,7 +238,16 @@ export function LibraryClient({
     })
     .filter((p) => !search || p.title.toLowerCase().includes(search.toLowerCase()));
 
-  const visibleRows  = filtered.slice(0, visibleCount);
+  // Nesting only makes sense for the unfiltered "All Pages" list — Recents /
+  // Favorites / Private are arbitrary subsets that can include a child page
+  // without its parent, and a search match's ancestors may not themselves
+  // match, so both fall back to the previous flat rendering.
+  const nestingActive = tab === "all" && !search;
+  const displayRows: DisplayRow[] = nestingActive
+    ? buildDisplayRows(filtered, collapsedIds)
+    : filtered.map((p) => ({ ...p, depth: 0, hasChildren: false }));
+
+  const visibleRows  = displayRows.slice(0, visibleCount);
   const visibleIds   = visibleRows.map((p) => p.id);
   const allSelected  = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
   const someSelected = !allSelected && visibleIds.some((id) => selectedIds.has(id));
@@ -367,11 +418,25 @@ export function LibraryClient({
                     </label>
 
                     {/* Page name cell */}
-                    <div className="relative z-10 flex min-w-0 items-center gap-2.5 pr-4">
+                    <div
+                      className="relative z-10 flex min-w-0 items-center gap-2.5 pr-4"
+                      style={{ paddingLeft: page.depth * 22 }}
+                    >
+                      {page.hasChildren ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleCollapse(page.id); }}
+                          className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                        >
+                          {collapsedIds.has(page.id) ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                        </button>
+                      ) : page.depth > 0 ? (
+                        <span className="size-4 shrink-0" />
+                      ) : null}
                       <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background">
                         <PageIcon icon={page.icon} kind={page.kind} />
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                      <span className={`min-w-0 flex-1 truncate text-sm text-foreground ${page.depth > 0 ? "font-normal" : "font-medium"}`}>
                         {page.title || "Untitled"}
                       </span>
                       {page.isPrivate && (
@@ -457,7 +522,7 @@ export function LibraryClient({
               {/* Footer: count + load more / show less */}
               <div className="flex items-center justify-between border-t border-border/40 px-5 py-3">
                 <p className="text-xs text-muted-foreground/50">
-                  Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} page{filtered.length !== 1 ? "s" : ""}
+                  Showing {Math.min(visibleCount, displayRows.length)} of {displayRows.length} page{displayRows.length !== 1 ? "s" : ""}
                   {search && ` matching "${search}"`}
                 </p>
 
@@ -477,7 +542,7 @@ export function LibraryClient({
                   )}
 
                   {/* Load more — only when there are hidden rows */}
-                  {filtered.length > visibleCount && (
+                  {displayRows.length > visibleCount && (
                     <button
                       type="button"
                       onClick={loadMore}
@@ -493,7 +558,7 @@ export function LibraryClient({
                         <>
                           Load more
                           <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
-                            +{Math.min(PAGE_SIZE, filtered.length - visibleCount)}
+                            +{Math.min(PAGE_SIZE, displayRows.length - visibleCount)}
                           </span>
                         </>
                       )}

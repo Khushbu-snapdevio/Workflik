@@ -21,6 +21,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { usePageDraft } from "@/components/pages/page-draft-context";
+import { SaveStatusIndicator } from "@/components/ui/save-status";
 import { BlockHandle } from "./block-handle";
 import { CommentCard } from "./comment-card";
 import { CommentGutter } from "./comment-gutter";
@@ -183,6 +184,14 @@ export function PageEditor({
   const [saveState, setSaveState] = useState<
     "idle" | "saving" | "saved" | "offline"
   >("idle");
+  // "Saved" used to stay on screen forever once shown — the title-save
+  // indicator elsewhere (page-client.tsx) already auto-hides after a beat;
+  // this matches that instead of leaving a stale confirmation up permanently.
+  useEffect(() => {
+    if (saveState !== "saved") return;
+    const t = setTimeout(() => setSaveState("idle"), 2500);
+    return () => clearTimeout(t);
+  }, [saveState]);
   const [initialBlocks, setInitialBlocks] = useState<DbBlock[] | null>(null);
   const [slashProps, setSlashProps] = useState<SlashSuggestionProps | null>(
     null
@@ -642,19 +651,9 @@ export function PageEditor({
 
   return (
     <div className="relative">
-      {saveState !== "idle" && (
-        <div className="absolute -top-7 right-0 text-xs text-muted-foreground select-none">
-          {saveState === "saving" && (
-            <span className="animate-pulse">Saving…</span>
-          )}
-          {saveState === "saved" && <span>Saved</span>}
-          {saveState === "offline" && (
-            <span className="text-warning">
-              Offline — changes will sync when reconnected
-            </span>
-          )}
-        </div>
-      )}
+      <div className="absolute -top-8 right-0">
+        <SaveStatusIndicator state={saveState} />
+      </div>
 
       {/* Inline formatting toolbar (BubbleMenu) — includes Comment button */}
       {editor && editable && (
@@ -746,9 +745,25 @@ export function PageEditor({
           const CARD_WIDTH = 380;
           const CARD_MAX_HEIGHT = 550; // header + capped thread list + composer
           const VIEWPORT_MARGIN = 16;
+          const CARD_GAP = 20;
           const editorRect = editor.view.dom.getBoundingClientRect();
 
-          let left = editorRect.right + 20;
+          // Prefer the right margin, then the left margin, and only fall back
+          // to centering over the page when neither margin has room. Simply
+          // clamping a right-anchored position (the old behavior) had no such
+          // fallback: on a viewport too narrow to fit the card beside the
+          // editor, the clamp pulled it left until it sat directly on top of
+          // — visually merged with — the editor's own text column.
+          const spaceRight = window.innerWidth - editorRect.right - VIEWPORT_MARGIN;
+          const spaceLeft = editorRect.left - VIEWPORT_MARGIN;
+          let left: number;
+          if (spaceRight >= CARD_WIDTH + CARD_GAP) {
+           left = editorRect.right + CARD_GAP;
+          } else if (spaceLeft >= CARD_WIDTH + CARD_GAP) {
+           left = editorRect.left - CARD_GAP - CARD_WIDTH;
+          } else {
+           left = (window.innerWidth - CARD_WIDTH) / 2;
+          }
           left = Math.min(left, window.innerWidth - CARD_WIDTH - VIEWPORT_MARGIN);
           left = Math.max(left, VIEWPORT_MARGIN);
 

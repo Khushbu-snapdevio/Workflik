@@ -14,6 +14,7 @@ import {
  FileText,
  Database,
  Shield,
+ Star,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +25,7 @@ import { toast } from "sonner";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { FavoritesSection } from "@/components/sidebar/favorites-section";
 import { PageTree } from "@/components/sidebar/page-tree";
+import { PageIcon } from "@/components/pages/page-icon";
 import { PrivateSection } from "@/components/sidebar/private-section";
 import { RecentlyVisitedSection } from "@/components/sidebar/recently-visited-section";
 import { WorkspaceSwitcher } from "@/components/sidebar/workspace-switcher";
@@ -31,6 +33,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 import { NewPageButton } from "@/components/workspace/new-page-button";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { usePageTreeStream } from "@/lib/pages/use-page-tree-stream";
 import { getInitials } from "@/lib/utils";
 
@@ -439,6 +442,7 @@ export function Sidebar({
       <CollapsedNavItem href={`/app/${workspaceSlug}/templates`} label="Templates" active={pathname.startsWith(`/app/${workspaceSlug}/templates`) && !tourActive}>
        <LayoutGrid size={18} />
       </CollapsedNavItem>
+      <CollapsedFavoritesItem favorites={favorites} pagesMap={pagesMap} workspaceSlug={workspaceSlug} />
       <div className="my-1 w-8 border-t border-sidebar-border/70" />
       <div className="group relative w-full">
        <NewPageButton
@@ -574,11 +578,12 @@ export function Sidebar({
       </div>
      </div>
     </div>
+   </div>}
 
-    <div className="mx-2 border-t border-sidebar-border" />
-
-    {/* Trash */}
-    <div className="px-2 py-1.5">
+   {/* Trash — kept out of the scrollable tree above so it stays put
+       above the user footer instead of scrolling away with long page lists. */}
+   {!collapsed && (
+    <div className="shrink-0 border-t border-sidebar-border px-2 py-1.5">
      <NavButton
       href={`/app/${workspaceSlug}/trash`}
       icon={<Trash2 size={15} />}
@@ -586,7 +591,7 @@ export function Sidebar({
       active={pathname.startsWith(`/app/${workspaceSlug}/trash`)}
      />
     </div>
-   </div>}
+   )}
 
    {/* ── Expanded: admin nav + user footer ── */}
    {!collapsed && isAdmin && (
@@ -764,6 +769,133 @@ function CollapsedSearchItem({ children }: { children: React.ReactNode }) {
    <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
     <p className="text-xs font-semibold text-popover-foreground">Search</p>
    </div>
+  </div>
+ );
+}
+
+// Collapsed rail has no room for a full Favorites section (list + drag
+// reorder), so it's one icon that opens the same "N more" flyout
+// favorites-section.tsx already uses for overflow — showing every favorite,
+// not just the first few, since this popup IS the collapsed view's only
+// access to favorites.
+function CollapsedFavoritesItem({
+ favorites,
+ pagesMap,
+ workspaceSlug,
+}: {
+ favorites: FavoriteItem[];
+ pagesMap: Record<string, PageItem>;
+ workspaceSlug: string;
+}) {
+ const [open, setOpen] = useState(false);
+ const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+ const btnRef = useRef<HTMLButtonElement>(null);
+ const popupRef = useRef<HTMLDivElement>(null);
+
+ useEffect(() => {
+  if (!open) return;
+  function handleClick(e: MouseEvent) {
+   if (btnRef.current?.contains(e.target as Node)) return;
+   if (popupRef.current?.contains(e.target as Node)) return;
+   setOpen(false);
+  }
+  document.addEventListener("mousedown", handleClick);
+  return () => document.removeEventListener("mousedown", handleClick);
+ }, [open]);
+
+ useScrollLockWhileOpen(open, (target) =>
+  !!popupRef.current?.contains(target) || !!btnRef.current?.contains(target));
+
+ function toggle() {
+  if (btnRef.current) {
+   const r = btnRef.current.getBoundingClientRect();
+   const POPUP_MAX_H = 360;
+   const POPUP_W = 288;
+   const top = Math.max(8, Math.min(r.top, window.innerHeight - POPUP_MAX_H - 8));
+   let left = r.right + 8;
+   if (left + POPUP_W > window.innerWidth - 8) left = Math.max(8, r.left - 8 - POPUP_W);
+   setPos({ top, left });
+  }
+  setOpen((v) => !v);
+ }
+
+ function resolveFav(fav: FavoriteItem) {
+  const page = pagesMap[fav.pageId];
+  return {
+   title: fav.title ?? page?.title ?? "Untitled",
+   icon: fav.icon ?? page?.icon ?? null,
+   shortId: fav.shortId ?? page?.shortId ?? fav.pageId,
+  };
+ }
+
+ return (
+  <div className="group relative w-full">
+   <button
+    ref={btnRef}
+    type="button"
+    onClick={toggle}
+    className={`flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
+     open
+      ? "bg-primary/[0.2] text-primary"
+      : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    }`}
+   >
+    <Star size={18} />
+   </button>
+   <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2.5 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+    <p className="text-xs font-semibold text-popover-foreground">Favorites</p>
+   </div>
+
+   {open && pos && typeof document !== "undefined" && createPortal(
+    <div
+     ref={popupRef}
+     className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+     style={{ top: pos.top, left: pos.left }}
+    >
+     <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
+      <span className="text-sm font-semibold text-white">Favorites</span>
+      <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{favorites.length}</span>
+     </div>
+     <div className="max-h-64 overflow-y-auto py-1">
+      {favorites.length === 0 ? (
+       <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+        Star a page to add it here.
+       </p>
+      ) : (
+       favorites.map((fav) => {
+        const r = resolveFav(fav);
+        return (
+         <Link
+          key={fav.pageId}
+          href={`/app/${workspaceSlug}/${r.shortId}`}
+          onClick={() => setOpen(false)}
+          className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+         >
+          {r.icon ? (
+           <PageIcon icon={r.icon} size={13} />
+          ) : (
+           <FileText size={13} className="shrink-0 text-muted-foreground/70" />
+          )}
+          <span className="min-w-0 truncate">{r.title || "Untitled"}</span>
+         </Link>
+        );
+       })
+      )}
+     </div>
+     <div className="mx-1 h-px bg-border/60" />
+     <div className="px-3 py-2">
+      <Link
+       href={`/app/${workspaceSlug}/library`}
+       onClick={() => setOpen(false)}
+       className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
+      >
+       <BookOpen size={13} />
+       Browse in Library
+      </Link>
+     </div>
+    </div>,
+    document.body,
+   )}
   </div>
  );
 }

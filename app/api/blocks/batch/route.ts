@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { blocks, comments, pages, pageVersions } from "@/lib/db/schema";
+import { blocks, comments, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 import type { Block } from "@/lib/db/schema";
 import { triggerPageUpdateNotification } from "@/lib/notifications/triggers";
@@ -19,10 +19,9 @@ const blockUpsertSchema = z.object({
 });
 
 const batchSchema = z.object({
-  pageId:        z.string().uuid(),
-  blocks:        z.array(blockUpsertSchema),
-  deletedIds:    z.array(z.string().uuid()).default([]),
-  snapshotEvery: z.boolean().default(false),  // true = also write a page_version snapshot
+  pageId:     z.string().uuid(),
+  blocks:     z.array(blockUpsertSchema),
+  deletedIds: z.array(z.string().uuid()).default([]),
 });
 
 // POST /api/blocks/batch — auto-save: upsert changed blocks, delete removed blocks
@@ -34,7 +33,7 @@ export async function POST(req: Request) {
     const parsed = batchSchema.safeParse(body);
     if (!parsed.success) return apiError(400, "Invalid batch payload");
 
-    const { pageId, blocks: incoming, deletedIds, snapshotEvery } = parsed.data;
+    const { pageId, blocks: incoming, deletedIds } = parsed.data;
 
     const [page] = await db.select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, title: pages.title, createdBy: pages.createdBy, lastEditedBy: pages.lastEditedBy, isDraft: pages.isDraft })
       .from(pages).where(eq(pages.id, pageId)).limit(1);
@@ -120,24 +119,6 @@ export async function POST(req: Request) {
           editorId:  session.user.id,
           createdBy: page.createdBy,
           pageTitle: page.title ?? "Untitled",
-        });
-      }
-
-      // Write page_version snapshot (one per 10-min window per user — caller decides)
-      if (snapshotEvery) {
-        const snapshot = savedBlocks.map((b) => ({
-          id:            b.id,
-          parentBlockId: b.parentBlockId,
-          type:          b.type,
-          content:       b.content,
-          orderIndex:    b.orderIndex,
-          schemaVersion: b.schemaVersion,
-        }));
-        await tx.insert(pageVersions).values({
-          pageId,
-          contentSnapshot: { blocks: snapshot },
-          schemaVersion:   1,
-          createdBy:       session.user.id,
         });
       }
     });

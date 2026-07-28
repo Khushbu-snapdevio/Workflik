@@ -18,3 +18,11 @@ Bridging an external native drag into ProseMirror's internal drop handling is in
 `npx tsc --noEmit` passed with no new errors. `biome check` reports the same finding count on this file before and after (38, confirmed via `git stash`) — no new issues introduced.
 
 Not verified live in a real drag gesture — the local dev instance is invite-only with no test credentials available in this environment, so this is reviewed against ProseMirror's actual installed source (`prosemirror-view@1.41.9`) rather than click-tested. Please confirm block drag-reorder now works as expected.
+
+## Update — 2026-07-28: a residual gap in the same mousedown→drop window
+
+Reported again: dragging still failed unless started from inside a block's text instead of the grip. The `dragIntentRef` guard above only stopped *new* repositioning from being scheduled while true — it didn't cancel a hide-timer that was already scheduled *before* `mousedown` landed (e.g. the cursor briefly left the handle's "safe zone" while approaching it, arming a 600ms hide timeout). That timer could still fire mid-gesture, unmount the floating grip via `setBlock(null)`, and silently cancel the drag through `handleDragStart`'s existing `if (!block) e.preventDefault()` guard.
+
+**Fix** (`components/editor/block-handle.tsx`): the hide-timer's own callback now also checks `dragIntentRef.current` before nulling `block`, and `mousedown` on the grip clears any already-pending hide-timer immediately, not just future ones.
+
+`npx tsc --noEmit` passed with no new errors.

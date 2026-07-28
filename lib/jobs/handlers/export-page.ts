@@ -1,11 +1,14 @@
+import { existsSync } from "node:fs";
 import { eq } from "drizzle-orm";
 import type { Job } from "pg-boss";
+import puppeteer from "puppeteer-core";
 import { db } from "@/lib/db";
 import { blocks, pages } from "@/lib/db/schema";
 import type { PageExportPayload } from "@/lib/jobs/job-names";
 
-// Handles page export jobs. Markdown and HTML are rendered here by the worker.
-// PDF rendering via Puppeteer will be added in Phase 7 (file storage).
+// Handles page export jobs. Markdown, HTML, and PDF are rendered here by the
+// worker. Uploading the result to S3 and delivering a download link is still
+// TODO Phase 7 (file storage) — for now this only logs, matching markdown/html.
 export async function handleExportPage(jobs: Job<PageExportPayload>[]) {
   const job = jobs[0];
   if (!job) return;
@@ -50,8 +53,9 @@ export async function handleExportPage(jobs: Job<PageExportPayload>[]) {
   }
 
   if (format === "pdf") {
-    // TODO Phase 7: use Puppeteer to render HTML → PDF, upload to S3, deliver link
-    console.log(`[export-page] PDF export queued for page ${pageId} — user ${userId}`);
+    // TODO Phase 7: upload to S3 and deliver download link to user
+    const pdf = await renderPdf(page.title, rows);
+    console.log(`[export-page] PDF export for page ${pageId} (${pdf.length} bytes) — user ${userId}`);
   }
 }
 
@@ -95,6 +99,58 @@ export function renderHtml(title: string, blockRows: BlockRow[]): string {
     }
   }).join("\n");
   return `<!DOCTYPE html><html><head><title>${title}</title></head><body><h1>${title}</h1>${body}</body></html>`;
+}
+
+// Common install locations for a system Chromium/Chrome — checked in order
+// so self-hosted deploys (apt-installed `chromium` in Docker) and local dev
+// (a regular Chrome/Chromium install) both work without extra config. Set
+// PUPPETEER_EXECUTABLE_PATH to override when the binary lives elsewhere.
+const CHROMIUM_CANDIDATES = [
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/google-chrome",
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+];
+
+function resolveChromiumExecutable(): string {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  const found = CHROMIUM_CANDIDATES.find((path) => existsSync(path));
+  if (!found) {
+    throw new Error(
+      "No Chromium/Chrome executable found for PDF export. Install Chromium " +
+      "(e.g. `apt-get install chromium` in Docker, `brew install chromium` " +
+      "locally) or set PUPPETEER_EXECUTABLE_PATH to your browser's binary path."
+    );
+  }
+  return found;
+}
+
+export async function renderPdf(title: string, blockRows: BlockRow[]): Promise<Buffer> {
+  const browser = await puppeteer.launch({
+    executablePath: resolveChromiumExecutable(),
+    headless: true,
+    // Runs as a non-root, already-sandboxed Docker container user with no
+    // CAP_SYS_ADMIN — Chromium's own sandbox needs a setuid helper this
+    // setup doesn't have, so it's disabled the same way most containerized
+    // headless-Chromium setups do.
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(renderHtml(title, blockRows), { waitUntil: "load" });
+    const pdf = await page.pdf({
+      format: "a4",
+      printBackground: true,
+      margin: { top: "20mm", right: "15mm", bottom: "20mm", left: "15mm" },
+    });
+    return Buffer.from(pdf);
+  } finally {
+    await browser.close();
+  }
 }
 
 function inlineText(nodes: unknown[]): string {

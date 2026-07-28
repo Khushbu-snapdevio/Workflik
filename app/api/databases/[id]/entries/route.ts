@@ -127,7 +127,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         }
         const va = valMap.get(a.id)?.get(rule.propertyId);
         const vb = valMap.get(b.id)?.get(rule.propertyId);
-        const cmp = compareValues(va, vb);
+        const prop   = propMap.get(rule.propertyId);
+        const config = (prop?.config ?? {}) as { options?: { id: string; name: string }[] };
+        const cmp = compareValues(va, vb, prop?.type ?? "text", config.options);
         if (cmp !== 0) return rule.direction === "asc" ? cmp : -cmp;
       }
       return 0;
@@ -274,6 +276,10 @@ function evaluateFilter(type: string, val: unknown, op: string, filterVal: unkno
     }
     case "select":
     case "status": {
+      // No option chosen ("Any") — the filter row exists but doesn't yet
+      // constrain anything, so it shouldn't exclude every row via a literal
+      // `optionId === ""` comparison that can never be true.
+      if ((op === "is" || op === "is_not") && !filterVal) return true;
       const id = (v as { optionId?: string } | null)?.optionId ?? null;
       if (op === "is")         return id === filterVal;
       if (op === "is_not")     return id !== filterVal;
@@ -313,11 +319,36 @@ function evaluateFilter(type: string, val: unknown, op: string, filterVal: unkno
   return true;
 }
 
-function compareValues(a: unknown, b: unknown): number {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-  const sa = String(JSON.stringify(a)).toLowerCase();
-  const sb = String(JSON.stringify(b)).toLowerCase();
-  return sa.localeCompare(sb);
+// Pulls the actual sortable key out of a property's stored value shape —
+// e.g. a select's value is `{ optionId }`, which sorts by an arbitrary
+// generated id unless resolved to the option's label first.
+function sortKeyFor(value: unknown, type: string, options?: { id: string; name: string }[]): string | number | boolean | null {
+  if (value == null) return null;
+  switch (type) {
+    case "number":
+      return (value as { number?: number } | null)?.number ?? null;
+    case "checkbox":
+      return (value as { checked?: boolean } | null)?.checked ?? false;
+    case "date":
+      return (value as { date?: string } | null)?.date ?? null;
+    case "select":
+    case "status": {
+      const optId = (value as { optionId?: string } | null)?.optionId ?? null;
+      if (!optId) return null;
+      return options?.find((o) => o.id === optId)?.name ?? optId;
+    }
+    default:
+      return (value as { text?: string } | null)?.text ?? null;
+  }
+}
+
+function compareValues(a: unknown, b: unknown, type: string, options?: { id: string; name: string }[]): number {
+  const ka = sortKeyFor(a, type, options);
+  const kb = sortKeyFor(b, type, options);
+  if (ka == null && kb == null) return 0;
+  if (ka == null) return 1;
+  if (kb == null) return -1;
+  if (typeof ka === "number" && typeof kb === "number") return ka - kb;
+  if (typeof ka === "boolean" && typeof kb === "boolean") return ka === kb ? 0 : ka ? 1 : -1;
+  return String(ka).toLowerCase().localeCompare(String(kb).toLowerCase());
 }

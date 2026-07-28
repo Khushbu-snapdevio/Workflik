@@ -78,6 +78,7 @@
     "nodemailer": "^8.0.11",
     "pg-boss": "^12.19.1",
     "postgres": "^3.4.9",
+    "puppeteer-core": "^25.3.0",
     "radix-ui": "^1.5.0",
     "react": "^19.2.7",
     "react-day-picker": "^10.0.1",

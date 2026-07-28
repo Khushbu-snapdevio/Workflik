@@ -54,14 +54,6 @@ export default async function SettingsLayout({ children, params }: Props) {
 function SettingsPageSkeleton() {
   return (
     <div className="mx-auto max-w-[700px] animate-pulse px-4 py-6 sm:px-6 md:px-10 md:py-10">
-      {/* Header */}
-      <div className="mb-8 flex items-center gap-4">
-        <div className="size-12 shrink-0 rounded-[var(--radius-md)] bg-muted" />
-        <div className="flex flex-col gap-2">
-          <div className="h-5 w-40 rounded-[var(--radius-sm)] bg-muted" />
-          <div className="h-3.5 w-56 rounded-[var(--radius-sm)] bg-muted/60" />
-        </div>
-      </div>
       {/* Card 1 */}
       <div className="mb-5 rounded-[var(--radius-lg)] border border-border/60 bg-card p-5">
         <div className="mb-4 h-3 w-24 rounded bg-muted/60" />

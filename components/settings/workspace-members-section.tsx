@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, ArrowLeftRight, Users, X } from "lucide-react";
+import { AlertCircle, ArrowLeftRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -171,17 +171,6 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
 
  return (
   <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
-
-   {/* ── Header ── */}
-   <div className="mb-8 flex items-center gap-4">
-    <div className="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary">
-     <Users size={22} className="text-primary-foreground" />
-    </div>
-    <div>
-     <h1 className="text-2xl font-bold text-foreground">Members</h1>
-     <p className="text-sm text-muted-foreground">Manage who has access to this workspace.</p>
-    </div>
-   </div>
 
    {/* ── Stats strip ── */}
    <div className="mb-7 grid grid-cols-3 gap-3">

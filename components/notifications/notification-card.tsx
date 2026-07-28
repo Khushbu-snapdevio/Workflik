@@ -1,6 +1,21 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import {
+  AtSign,
+  Check,
+  Clock,
+  FilePlus,
+  ListChecks,
+  Mail,
+  MessageSquare,
+  Pencil,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+  UserCog,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 
 export interface NotificationItem {
@@ -57,6 +72,24 @@ const TYPE_DOT_CLASS: Record<string, string> = {
   role_changed:     "bg-warning",
 };
 
+const TYPE_ICON: Record<string, LucideIcon> = {
+  mention:          AtSign,
+  comment:          MessageSquare,
+  reply:            MessageSquare,
+  resolved:         Check,
+  reopened:         RotateCcw,
+  access_granted:   ShieldCheck,
+  workspace_invite: Mail,
+  workspace_invite_accepted: Check,
+  guest_accepted:   Check,
+  trash_warning:    Trash2,
+  page_update:      Pencil,
+  page_created:     FilePlus,
+  task_assigned:    ListChecks,
+  reminder:         Clock,
+  role_changed:     UserCog,
+};
+
 interface Props {
   notification:  NotificationItem;
   workspaceSlug: string;
@@ -80,6 +113,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
   const isSystem = !notification.senderId;
   const isUnread = !notification.isRead;
   const dotClass = !isSystem ? TYPE_DOT_CLASS[notification.type] : undefined;
+  const DotIcon  = !isSystem ? TYPE_ICON[notification.type] : undefined;
 
   function handleCardClick() {
     if (isUnread) onMarkRead(notification.id);
@@ -120,10 +154,12 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
             {initials}
           </div>
         )}
-        {dotClass && (
+        {dotClass && DotIcon && (
           <span
-            className={`absolute bottom-0 right-0 size-2.5 rounded-full border border-card ${dotClass}`}
-          />
+            className={`absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-card ${dotClass}`}
+          >
+            <DotIcon className="size-2.5 text-white" strokeWidth={2.5} />
+          </span>
         )}
       </div>
 

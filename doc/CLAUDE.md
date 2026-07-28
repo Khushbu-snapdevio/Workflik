@@ -168,7 +168,6 @@ Pages are the core unit. Everything in WorkFlik is a page or lives inside one.
 - "Empty Trash" scope: Admins empty the entire workspace Trash; non-Admins empty only the pages they personally have permission to permanently delete
 
 **Additional page actions:**
-- Three-dot → "Version history" → side panel shows auto-saved snapshots with timestamps → click any to preview → "Restore this version" to roll back
 - Three-dot → "Export" → choose format: Markdown, PDF, or HTML → file downloads
 - Star icon on hover in sidebar → adds to personal Favorites (top of sidebar, visible only to that user; not shared)
 
@@ -384,7 +383,6 @@ Global search covers all pages, database entries, block content, and comments th
 - **Type:** Pages / Database entries / Comments
 - **Location:** All workspace / Shared pages / Private pages / Inside a specific page
 - **Date:** Last 7 days / Last 30 days / Custom date range
-- **Title only toggle:** Matches only page titles — ignores body content
 
 **Sort options:** Default order is relevance (title exact match first, title contains second, content matches third). Can also sort by: Last edited, Created date.
 

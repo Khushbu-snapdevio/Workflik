@@ -43,11 +43,6 @@ export const QUEUE_OPTIONS: Record<
     policy: "exclusive",
     retryLimit: 1,
   },
-  [JOB_NAMES.PAGE_AUTO_DELETE_EXPIRED_VERSIONS]: {
-    expireInSeconds: 600,
-    policy: "exclusive",
-    retryLimit: 1,
-  },
   [JOB_NAMES.PAGE_EXPORT]: {
     expireInSeconds: 300,
     policy: "standard",

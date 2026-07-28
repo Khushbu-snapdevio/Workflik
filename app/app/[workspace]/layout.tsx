@@ -35,7 +35,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) {
-    redirect("/auth/login");
+    redirect("/platform/post-auth");
   }
 
   const [

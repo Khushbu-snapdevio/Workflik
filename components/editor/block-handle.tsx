@@ -142,7 +142,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
    if (!inSafeZone) {
     clearTimeout(hideTimer.current);
     hideTimer.current = setTimeout(() => {
-     if (!menuOpenRef.current) setBlock(null);
+     if (!menuOpenRef.current && !dragIntentRef.current) setBlock(null);
     }, 600);
     return;
    }
@@ -348,6 +348,11 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
      // Editor focus is restored automatically after drag ends.
      e.stopPropagation();
      dragIntentRef.current = true;
+     // A hide timer may already be pending from just before mousedown (e.g. the
+     // cursor briefly left the safe zone while approaching the grip). Clear it
+     // here too — the guard above only stops *new* timers, not one already in
+     // flight — otherwise it can still fire mid-gesture and unmount this button.
+     clearTimeout(hideTimer.current);
     }}
     onClick={() => {
      // Ignore click if it was the tail-end of a drag interaction.

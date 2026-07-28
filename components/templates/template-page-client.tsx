@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
  Table2 as TableIcon, LayoutGrid as SquaresFourIcon, Calendar as CalendarIcon, Grid2X2 as GridFourIcon,
  GanttChartSquare as GanttIcon,
@@ -18,6 +18,7 @@ import { useUpload } from "@/lib/storage/use-upload";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { TimeAgo } from "@/components/ui/time-ago";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
 import { TemplateTableView }  from "./views/template-table-view";
@@ -68,6 +69,10 @@ function applyFilter(rawVal: unknown, rule: FilterRule, propType: string): boole
    break;
   }
   case "select": {
+   // No option chosen ("Any") — the filter row exists but doesn't yet
+   // constrain anything, so it shouldn't exclude every row via a literal
+   // `optionId === ""` comparison that can never be true.
+   if (!rule.value) return true;
    const optId = (v as { optionId?: string } | null)?.optionId ?? null;
    if (rule.operator === "is")   return optId === rule.value;
    if (rule.operator === "is_not") return optId !== rule.value;
@@ -91,11 +96,37 @@ function applyFilter(rawVal: unknown, rule: FilterRule, propType: string): boole
  return true;
 }
 
-function compareVals(a: unknown, b: unknown): number {
- if (a == null && b == null) return 0;
- if (a == null) return 1;
- if (b == null) return -1;
- return JSON.stringify(a).localeCompare(JSON.stringify(b));
+// Pulls the actual sortable key out of a property's stored value shape —
+// e.g. a select's value is `{ optionId }`, which sorts by an arbitrary
+// generated id unless resolved to the option's label first.
+function sortKeyFor(value: unknown, type: string, options?: { id: string; name: string }[]): string | number | boolean | null {
+ if (value == null) return null;
+ switch (type) {
+  case "number":
+   return (value as { number?: number } | null)?.number ?? null;
+  case "checkbox":
+   return (value as { checked?: boolean } | null)?.checked ?? false;
+  case "date":
+   return (value as { date?: string } | null)?.date ?? null;
+  case "select": {
+   const optId = (value as { optionId?: string } | null)?.optionId ?? null;
+   if (!optId) return null;
+   return options?.find((o) => o.id === optId)?.name ?? optId;
+  }
+  default:
+   return (value as { text?: string } | null)?.text ?? null;
+ }
+}
+
+function compareVals(a: unknown, b: unknown, type: string, options?: { id: string; name: string }[]): number {
+ const ka = sortKeyFor(a, type, options);
+ const kb = sortKeyFor(b, type, options);
+ if (ka == null && kb == null) return 0;
+ if (ka == null) return 1;
+ if (kb == null) return -1;
+ if (typeof ka === "number" && typeof kb === "number") return ka - kb;
+ if (typeof ka === "boolean" && typeof kb === "boolean") return ka === kb ? 0 : ka ? 1 : -1;
+ return String(ka).localeCompare(String(kb));
 }
 
 function getOperators(type: string): { value: string; label: string }[] {
@@ -282,6 +313,7 @@ function CoverPicker({
 // ── Filter panel ──────────────────────────────────────────────────────────────
 
 const SYSTEM_TYPES = new Set(["title","created_by","created_time","last_edited_by","last_edited_time"]);
+const ANY_OPTION = "__any__";
 
 function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
  properties: DatabaseProperty[];
@@ -291,9 +323,20 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
  onClose:  () => void;
 }) {
  const props = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
+ const atLimit = filters.length >= props.length;
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+
+ // Properties already used by OTHER rules — excluded from a row's own
+ // dropdown (except its current selection) so the same property can't be
+ // picked twice, and from `addRule`'s default pick.
+ function usedElsewhere(excludeId?: string) {
+  return new Set(filters.filter((f) => f.id !== excludeId).map((f) => f.propertyId));
+ }
 
  function addRule() {
-  const p = props[0];
+  if (atLimit) return;
+  const used = usedElsewhere();
+  const p = props.find((pr) => !used.has(pr.id));
   if (!p) return;
   const ops = getOperators(p.type);
   onChange([...filters, { id: crypto.randomUUID(), propertyId: p.id, operator: ops[0].value, value: "" }]);
@@ -320,35 +363,50 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
      const ops   = getOperators(prop?.type ?? "text");
      const config = (prop?.config ?? {}) as { options?: { id: string; name: string }[] };
      const needsVal = !["is_empty","is_not_empty","is_checked","is_not_checked"].includes(f.operator);
+     const used  = usedElsewhere(f.id);
      return (
       <div key={f.id} className="flex flex-wrap items-center gap-1.5">
-       <select
+       <Select
         value={f.propertyId}
-        onChange={(e) => {
-         const np = props.find((p) => p.id === e.target.value);
+        onValueChange={(v) => {
+         const np = props.find((p) => p.id === v);
          const ops2 = getOperators(np?.type ?? "text");
-         update(f.id, { propertyId: e.target.value, operator: ops2[0].value, value: "" });
+         update(f.id, { propertyId: v, operator: ops2[0].value, value: "" });
         }}
-        className="rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
        >
-        {props.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-       </select>
-       <select
-        value={f.operator}
-        onChange={(e) => update(f.id, { operator: e.target.value, value: "" })}
-        className="rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
-       >
-        {ops.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-       </select>
+        <SelectTrigger size="sm" className="w-auto min-w-24">
+         <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+         {props.filter((p) => !used.has(p.id)).map((p) => (
+          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+         ))}
+        </SelectContent>
+       </Select>
+       <Select value={f.operator} onValueChange={(v) => update(f.id, { operator: v, value: "" })}>
+        <SelectTrigger size="sm" className="w-auto min-w-24">
+         <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+         {ops.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+        </SelectContent>
+       </Select>
        {needsVal && prop?.type === "select" && (
-        <select
-         value={String(f.value ?? "")}
-         onChange={(e) => update(f.id, { value: e.target.value })}
-         className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
+        // Radix Select items can't have an empty-string value (reserved for
+        // "unset"), so "Any" — the "no specific option required" choice —
+        // uses a sentinel that's translated back to "" on select/read.
+        <Select
+         value={String(f.value ?? "") || ANY_OPTION}
+         onValueChange={(v) => update(f.id, { value: v === ANY_OPTION ? "" : v })}
         >
-         <option value="">Any</option>
-         {config.options?.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-        </select>
+         <SelectTrigger size="sm" className="flex-1">
+          <SelectValue />
+         </SelectTrigger>
+         <SelectContent>
+          <SelectItem value={ANY_OPTION}>Any</SelectItem>
+          {config.options?.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+         </SelectContent>
+        </Select>
        )}
        {needsVal && prop?.type !== "select" && prop?.type !== "checkbox" && (
         <input
@@ -367,7 +425,13 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
     })}
    </div>
    <div className="flex items-center gap-2 border-t border-border/40 px-4 py-3">
-    <button onClick={addRule} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+    <button
+     onClick={addRule}
+     disabled={atLimit}
+     onMouseEnter={(e) => { if (atLimit) showTooltip("All properties already have a filter", e); }}
+     onMouseLeave={hideTooltip}
+     className="flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80 disabled:cursor-not-allowed disabled:opacity-40"
+    >
      <PlusIcon size={12} /> Add filter
     </button>
     {filters.length > 0 && (
@@ -376,6 +440,10 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
      </button>
     )}
    </div>
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }
@@ -390,9 +458,19 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
  onClose:  () => void;
 }) {
  const props = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
+ const atLimit = sorts.length >= props.length;
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+
+ // Properties already used by OTHER rules — excluded from a row's own
+ // dropdown (except its current selection) so the same property can't be
+ // picked twice, and from `addSort`'s default pick.
+ function usedElsewhere(excludeId?: string) {
+  return new Set(sorts.filter((s) => s.id !== excludeId).map((s) => s.propertyId));
+ }
 
  function addSort() {
-  const p = props[0];
+  const used = usedElsewhere();
+  const p = props.find((pr) => !used.has(pr.id));
   if (!p) return;
   onChange([...sorts, { id: crypto.randomUUID(), propertyId: p.id, direction: "asc" }]);
  }
@@ -413,31 +491,44 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
     {sorts.length === 0 && (
      <p className="py-4 text-center text-xs text-muted-foreground">No sorts applied.</p>
     )}
-    {sorts.map((s) => (
+    {sorts.map((s) => {
+     const used = usedElsewhere(s.id);
+     return (
      <div key={s.id} className="flex items-center gap-2">
-      <select
-       value={s.propertyId}
-       onChange={(e) => update(s.id, { propertyId: e.target.value })}
-       className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
-      >
-       {props.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-      </select>
-      <select
-       value={s.direction}
-       onChange={(e) => update(s.id, { direction: e.target.value as "asc" | "desc" })}
-       className="rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
-      >
-       <option value="asc">A → Z</option>
-       <option value="desc">Z → A</option>
-      </select>
+      <Select value={s.propertyId} onValueChange={(v) => update(s.id, { propertyId: v })}>
+       <SelectTrigger size="sm" className="flex-1">
+        <SelectValue />
+       </SelectTrigger>
+       <SelectContent>
+        {props.filter((p) => !used.has(p.id)).map((p) => (
+         <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+        ))}
+       </SelectContent>
+      </Select>
+      <Select value={s.direction} onValueChange={(v) => update(s.id, { direction: v as "asc" | "desc" })}>
+       <SelectTrigger size="sm" className="w-24">
+        <SelectValue />
+       </SelectTrigger>
+       <SelectContent>
+        <SelectItem value="asc">A → Z</SelectItem>
+        <SelectItem value="desc">Z → A</SelectItem>
+       </SelectContent>
+      </Select>
       <button onClick={() => remove(s.id)} className="text-muted-foreground hover:text-destructive transition-colors">
        <XIcon size={13} />
       </button>
      </div>
-    ))}
+     );
+    })}
    </div>
    <div className="flex items-center gap-2 border-t border-border/40 px-4 py-3">
-    <button onClick={addSort} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+    <button
+     onClick={addSort}
+     disabled={atLimit}
+     onMouseEnter={(e) => { if (atLimit) showTooltip("All properties are already sorted", e); }}
+     onMouseLeave={hideTooltip}
+     className="flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80 disabled:cursor-not-allowed disabled:opacity-40"
+    >
      <PlusIcon size={12} /> Add sort
     </button>
     {sorts.length > 0 && (
@@ -446,6 +537,10 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
      </button>
     )}
    </div>
+   {tooltip && typeof document !== "undefined" && createPortal(
+    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+    document.body,
+   )}
   </div>
  );
 }
@@ -583,6 +678,7 @@ export function TemplatePageClient({
  }, []);
 
  const router = useRouter();
+ const searchParams = useSearchParams();
  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
@@ -652,7 +748,11 @@ export function TemplatePageClient({
   setShowLayoutPicker(false);
  }
 
- const initView  = initViews.find((v) => v.id === defaultViewId) ?? initViews[0];
+ // The URL's ?view= param (kept in sync by switchView below) takes priority over the
+ // database's stored default so that returning via browser back lands on the tab the
+ // user was actually looking at, not always the first-created view.
+ const urlView  = initViews.find((v) => v.id === searchParams.get("view"));
+ const initView  = urlView ?? initViews.find((v) => v.id === defaultViewId) ?? initViews[0];
  const [activeViewId, setActiveViewId] = useState(initView?.id ?? "");
  const [viewSwitching, setViewSwitching] = useState(false);
  const activeView = views.find((v) => v.id === activeViewId) ?? views[0];
@@ -711,10 +811,28 @@ export function TemplatePageClient({
 
  // Filter / Sort / Properties toolbar popups — close on outside click, same
  // pattern as the "Add view" popup above (they were missing this entirely).
+ //
+ // Radix `Select` (used for the property/operator/value/direction pickers
+ // inside these panels) portals its open dropdown to document.body — a
+ // sibling of the panel's own DOM subtree, not a descendant — so a click on
+ // an option is never `contains`ed by filterPanelRef/sortPanelRef. Since
+ // mousedown fires before Radix's own click-based selection commits, this
+ // handler was closing (unmounting) the whole panel out from under the
+ // click before the value change could apply, which looked like "picking an
+ // option just closes the dropdown without selecting anything." Excluding
+ // clicks inside a Select's portaled content (`data-slot="select-content"`,
+ // set in components/ui/select.tsx) fixes it without needing to special-case
+ // every future portal-based control the same way.
+ function isInsideSelectPortal(target: Node) {
+  return target instanceof HTMLElement && !!target.closest('[data-slot="select-content"]');
+ }
+
  useEffect(() => {
   if (!showFilter) return;
   function h(e: MouseEvent) {
-   if (filterPanelRef.current && !filterPanelRef.current.contains(e.target as Node)) setShowFilter(false);
+   const target = e.target as Node;
+   if (isInsideSelectPortal(target)) return;
+   if (filterPanelRef.current && !filterPanelRef.current.contains(target)) setShowFilter(false);
   }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
@@ -723,7 +841,9 @@ export function TemplatePageClient({
  useEffect(() => {
   if (!showSort) return;
   function h(e: MouseEvent) {
-   if (sortPanelRef.current && !sortPanelRef.current.contains(e.target as Node)) setShowSort(false);
+   const target = e.target as Node;
+   if (isInsideSelectPortal(target)) return;
+   if (sortPanelRef.current && !sortPanelRef.current.contains(target)) setShowSort(false);
   }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
@@ -944,9 +1064,13 @@ export function TemplatePageClient({
   if (sortRules.length > 0) {
    result.sort((a, b) => {
     for (const rule of sortRules) {
+     const prop = properties.find((p) => p.id === rule.propertyId);
+     const config = (prop?.config ?? {}) as { options?: { id: string; name: string }[] };
      const cmp = compareVals(
       entryValueMap.get(a.id)?.get(rule.propertyId),
       entryValueMap.get(b.id)?.get(rule.propertyId),
+      prop?.type ?? "text",
+      config.options,
      );
      if (cmp !== 0) return rule.direction === "asc" ? cmp : -cmp;
     }
@@ -964,6 +1088,9 @@ export function TemplatePageClient({
   setFilterRules([]);
   setSortRules([]);
   setViewSwitching(true);
+  const url = new URL(window.location.href);
+  url.searchParams.set("view", viewId);
+  router.replace(url.pathname + url.search, { scroll: false });
   try {
    const res = await fetch(`/api/databases/${page.id}/entries?viewId=${viewId}`);
    if (res.ok) {

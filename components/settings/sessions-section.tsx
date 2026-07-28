@@ -88,17 +88,6 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
  return (
   <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
-   {/* ── Header ── */}
-   <div className="mb-8 flex items-center gap-4">
-    <div className="flex size-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary">
-     <Shield size={22} className="text-primary-foreground" />
-    </div>
-    <div>
-     <h1 className="text-2xl font-bold text-foreground">Security & sessions</h1>
-     <p className="text-sm text-muted-foreground">Manage devices signed in to your account.</p>
-    </div>
-   </div>
-
    {/* ── Current session ── */}
    {current && (
     <div className="mb-7">

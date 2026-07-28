@@ -34,6 +34,13 @@ export async function upsertPageSearchIndex(
       sourceId:     page.id,
       pageId:       page.id,
       title,
-      searchVector: sql`to_tsvector('english', ${title})`,
+      // 'simple' config, not 'english' — 'english' silently drops stop words
+      // ("just", "the", "and", ...) to zero lexemes, so a page titled e.g.
+      // "JUst" indexed nothing and could never match any search for its own
+      // title. Titles are short identifiers, not prose, so the stemming
+      // 'english' would otherwise provide isn't worth losing stop words for;
+      // prefix matching (`:*` in the search route) already covers most of
+      // what stemming would (e.g. "run:*" matches "running").
+      searchVector: sql`to_tsvector('simple', ${title})`,
     });
 }

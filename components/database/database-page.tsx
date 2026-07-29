@@ -11,6 +11,7 @@ import { BoardView } from "@/components/database/board-view";
 import { CalendarView } from "@/components/database/calendar-view";
 import { GalleryView } from "@/components/database/gallery-view";
 import { GanttView } from "@/components/database/gantt-view";
+import { EntrySidePanel } from "@/components/database/entry-side-panel";
 import type {
   DbView, DbProperty, DbEntry, DbPropertyValue,
   FilterRule, SortRule, SharedViewProps, DbPropertyConfig,
@@ -42,6 +43,7 @@ export function DatabasePage({
   const [loading, setLoading]           = useState(true);
   const [showFilterBar, setShowFilterBar] = useState(false);
   const [showSortBar, setShowSortBar]     = useState(false);
+  const [panelEntryId, setPanelEntryId]   = useState<string | null>(null);
 
   // Search + selection
   const [searchQuery, setSearchQuery]     = useState("");
@@ -306,7 +308,13 @@ export function DatabasePage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
-  }, [databaseId]);
+    // Changing a property's type reshapes its stored value (or, for
+    // formula/rollup/created_by, drops storage entirely in favor of a value
+    // computed on every read) — the client's cached rawValues still hold the
+    // old shape until refetched, so cells for this property would otherwise
+    // render blank until the next full page load.
+    if (patch.type && activeViewId) await loadEntries(activeViewId);
+  }, [databaseId, activeViewId, loadEntries]);
 
   const deleteProperty = useCallback(async (propId: string) => {
     const res = await fetch(`/api/databases/${databaseId}/properties/${propId}`, { method: "DELETE" });
@@ -384,8 +392,14 @@ export function DatabasePage({
   // ── Shared view props ─────────────────────────────────────────────────────
 
   const openEntry = useCallback((entry: DbEntry) => {
+    if (activeView?.entryOpenMode === "side_panel") {
+      setPanelEntryId(entry.id);
+      return;
+    }
     router.push(`/app/${workspaceSlug}/${entry.shortId}`);
-  }, [router, workspaceSlug]);
+  }, [router, workspaceSlug, activeView]);
+
+  const panelEntry = panelEntryId ? entries.find((e) => e.id === panelEntryId) ?? null : null;
 
   const sharedViewProps: SharedViewProps = {
     databaseId,
@@ -534,6 +548,21 @@ export function DatabasePage({
           {activeView?.type === "gantt"    && <GanttView    {...sharedViewProps} />}
         </div>
       </div>
+
+      {panelEntry && (
+        <EntrySidePanel
+          entry={panelEntry}
+          properties={properties}
+          valueMap={valueMap}
+          workspaceSlug={workspaceSlug}
+          workspaceId={workspaceId}
+          isEditor={isEditor}
+          onClose={() => setPanelEntryId(null)}
+          onUpdateTitle={updateTitle}
+          onUpdateValue={updateValue}
+          onDeleteEntry={deleteEntry}
+        />
+      )}
 
     </div>
   );

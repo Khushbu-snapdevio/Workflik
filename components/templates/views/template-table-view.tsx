@@ -39,6 +39,8 @@ import { FormulaConfigPicker } from "@/components/database/formula-config-picker
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { PageIcon } from "@/components/pages/page-icon";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import type { SelectOption, DbPropertyConfig, DbProperty, DbView, ViewPropertyOverride } from "@/components/database/types";
 
@@ -694,6 +696,7 @@ function ColumnHeader({
    if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
     setMenuOpen(false);
     setEditingProperty(false);
+    setRenaming(false);
    }
   }
   document.addEventListener("mousedown", h);
@@ -824,8 +827,9 @@ function ColumnHeader({
 const PROP_TYPES = Object.values(PROPERTY_REGISTRY);
 
 function AddPropertyPanel({
- properties, workspaceId, databaseId, onAdd, onClose,
+ rect, properties, workspaceId, databaseId, onAdd, onClose,
 }: {
+ rect:     DOMRect;
  properties:  DbProperty[];
  workspaceId: string;
  databaseId:  string;
@@ -865,6 +869,7 @@ function AddPropertyPanel({
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
  }, [onClose, pickingRelation, pickingRollup, pickingFormula]);
+ useScrollLockWhileOpen(true, (target) => !!ref.current?.contains(target));
 
  function submit(type: string, config?: Record<string, unknown>, twoWay?: boolean) {
   const n = name.trim();
@@ -873,12 +878,12 @@ function AddPropertyPanel({
   onClose();
  }
 
- const rect = pickerRect ?? new DOMRect(0, 0, 0, 0);
+ const subPickerRect = pickerRect ?? new DOMRect(0, 0, 0, 0);
 
  if (pickingRelation) {
   return (
    <RelationDatabasePicker
-    rect={rect}
+    rect={subPickerRect}
     workspaceId={workspaceId}
     onBack={() => setPickingRelation(false)}
     onClose={onClose}
@@ -889,7 +894,7 @@ function AddPropertyPanel({
  if (pickingRollup) {
   return (
    <RollupConfigPicker
-    rect={rect}
+    rect={subPickerRect}
     properties={properties}
     onBack={() => setPickingRollup(false)}
     onClose={onClose}
@@ -900,7 +905,7 @@ function AddPropertyPanel({
  if (pickingFormula) {
   return (
    <FormulaConfigPicker
-    rect={rect}
+    rect={subPickerRect}
     databaseId={databaseId}
     properties={properties}
     onBack={() => setPickingFormula(false)}
@@ -910,10 +915,20 @@ function AddPropertyPanel({
   );
  }
 
- return (
+ const panelWidth = 240;
+ const panelHeight = step === "name" ? 140 : 340;
+
+ return createPortal(
   <div
    ref={ref}
-   className="absolute right-0 top-full z-[500] mt-1 w-[240px] rounded-[var(--radius-md)] border border-border bg-popover"
+   style={{
+    position: "fixed",
+    top: getClampedTop(rect, panelHeight),
+    left: getClampedLeft(rect, panelWidth, { align: "end" }),
+    zIndex: 500,
+    width: panelWidth,
+   }}
+   className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
   >
    {step === "name" ? (
     <>
@@ -974,7 +989,8 @@ function AddPropertyPanel({
      </div>
     </>
    )}
-  </div>
+  </div>,
+  document.body
  );
 }
 
@@ -1556,7 +1572,7 @@ export function TemplateTableView({
  onUpdateView,
  locked = false,
 }: Props) {
- const [showAddProp, setShowAddProp] = useState(false);
+ const [addPropRect, setAddPropRect] = useState<DOMRect | null>(null);
  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
  const [deletingEntry, setDeletingEntry] = useState(false);
  const [localOrder, setLocalOrder] = useState<string[]>([]);
@@ -1660,21 +1676,22 @@ export function TemplateTableView({
        {!locked && (
        <div className="relative">
         <button
-         onClick={() => setShowAddProp((p) => !p)}
+         onClick={(e) => setAddPropRect(addPropRect ? null : (e.currentTarget as HTMLElement).getBoundingClientRect())}
          className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         >
          <PlusIcon size={12} /> Add property
         </button>
-        {showAddProp && (
+        {addPropRect && (
          <AddPropertyPanel
+          rect={addPropRect}
           properties={properties as unknown as DbProperty[]}
           workspaceId={workspaceId}
           databaseId={databaseId}
           onAdd={(name, type, config, twoWay) => {
            onAddProperty(name, type, config, twoWay);
-           setShowAddProp(false);
+           setAddPropRect(null);
           }}
-          onClose={() => setShowAddProp(false)}
+          onClose={() => setAddPropRect(null)}
          />
         )}
        </div>

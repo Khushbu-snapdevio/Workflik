@@ -2,7 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { requirePagePermission } from "@/lib/permissions/resolver";
 
 async function resolveBlock(blockId: string, userId: string) {
   const [block] = await db.select().from(blocks).where(eq(blocks.id, blockId)).limit(1);
@@ -13,7 +14,7 @@ async function resolveBlock(blockId: string, userId: string) {
   if (!page) throw new ApiError(404, "Page not found");
   if (page.isDeleted) throw new ApiError(400, "Page is in Trash");
 
-  await requireWorkspaceMember(page.workspaceId, userId);
+  await requirePagePermission(userId, block.pageId, "can_edit");
   return block;
 }
 

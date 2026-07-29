@@ -141,6 +141,7 @@ export function DatabaseToolbar({
   const [groupRect, setGroupRect] = useState<DOMRect | null>(null);
   const [dateRect, setDateRect] = useState<DOMRect | null>(null);
   const [ganttPropRect, setGanttPropRect] = useState<{ field: "start" | "end"; rect: DOMRect } | null>(null);
+  const [creatingQuickProp, setCreatingQuickProp] = useState(false);
   // "Layout" (change an existing view's type, e.g. Table → Board) — separate
   // from the "Add a new view" grid (addViewRect), which only ever creates a
   // fresh view and can't retarget one that already exists.
@@ -271,6 +272,26 @@ export function DatabaseToolbar({
   );
   const dateProps = properties.filter((p) => p.type === "date" && !p.isSystem);
 
+  // Quick-create a property directly from the Group/Date/Gantt pickers so a
+  // brand-new database (no Select/Status/Date properties yet) isn't a dead
+  // end — without this, those pickers' empty-state copy ("pick a Select
+  // property", "pick a Date property") pointed at options that didn't exist.
+  async function handleQuickCreateProp(
+    type: "status" | "date",
+    name: string,
+    assign: (propId: string) => void
+  ) {
+    if (creatingQuickProp) {
+      return;
+    }
+    setCreatingQuickProp(true);
+    const prop = (await onAddProperty(name, type)) as DbProperty | undefined;
+    setCreatingQuickProp(false);
+    if (prop) {
+      assign(prop.id);
+    }
+  }
+
   // ── Bulk actions bar ──────────────────────────────────────────────────────
 
   if (selectedCount > 0) {
@@ -319,9 +340,12 @@ export function DatabaseToolbar({
 
   return (
     <>
-      <div className="flex h-[46px] shrink-0 items-center overflow-x-auto border-b border-border bg-background pr-4 sm:pr-8 lg:pr-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex h-[46px] shrink-0 items-center border-b border-border bg-background">
         {/* ── View tabs ── */}
-        <div className="flex shrink-0 self-stretch items-stretch pl-4 sm:pl-8 lg:pl-16">
+        {/* This strip owns its own horizontal scroll (min-w-0 lets it shrink
+            below content width) so a growing number of views never pushes
+            the always-visible actions cluster below off the right edge. */}
+        <div className="flex min-w-0 flex-1 items-stretch self-stretch overflow-x-auto pl-4 sm:pl-8 lg:pl-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {views.map((view) => {
             const ViewIcon = VIEW_ICONS[view.type] ?? Table;
             const isActive = view.id === activeViewId;
@@ -408,10 +432,10 @@ export function DatabaseToolbar({
 
           {/* ── Add view button ── */}
           {isEditor && (
-            <div className="flex items-center pl-2 pr-1">
+            <div className="flex shrink-0 items-center pl-2 pr-1">
               <button
                 className={[
-                  "flex h-[26px] items-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
+                  "flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
                   addViewRect
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border/70 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
@@ -441,13 +465,17 @@ export function DatabaseToolbar({
           )}
         </div>
 
+        {/* ── Actions cluster ── */}
+        {/* Always fully visible — the view-tabs strip above shrinks and
+            scrolls internally instead, so Filter/Sort/Properties/New never
+            get clipped off the edge of a narrow (e.g. inline) container. */}
+        <div className="flex shrink-0 items-center pr-4 sm:pr-8 lg:pr-16">
         <div className="mx-2 h-4 w-px shrink-0 bg-border/60" />
 
         {/* ── Group by (board / table / gallery) ── */}
         {(activeView?.type === "board" ||
           activeView?.type === "table" ||
-          activeView?.type === "gallery") &&
-          groupableProps.length > 0 && (
+          activeView?.type === "gallery") && (
             <div className="flex shrink-0 items-center gap-1.5">
               {!inline && (
                 <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground/60">
@@ -495,7 +523,7 @@ export function DatabaseToolbar({
           )}
 
         {/* ── Calendar date property ── */}
-        {activeView?.type === "calendar" && dateProps.length > 0 && (
+        {activeView?.type === "calendar" && (
           <div className="flex shrink-0 items-center gap-1.5">
             {!inline && (
               <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground/60">
@@ -542,7 +570,7 @@ export function DatabaseToolbar({
         )}
 
         {/* ── Gantt start/end date properties ── */}
-        {activeView?.type === "gantt" && dateProps.length > 0 && (
+        {activeView?.type === "gantt" && (
           <div className="flex shrink-0 items-center gap-1.5">
             {(["start", "end"] as const).map((field) => {
               const propId = field === "start" ? activeView.ganttStartPropertyId : activeView.ganttEndPropertyId;
@@ -819,6 +847,7 @@ export function DatabaseToolbar({
             {!inline && "New"}
           </button>
         )}
+        </div>
       </div>
 
       {/* ── Portal: Add view dropdown (Notion-style grid) ── */}
@@ -1073,7 +1102,7 @@ export function DatabaseToolbar({
               position: "fixed",
               top: getClampedTop(
                 groupRect,
-                Math.min(400, 46 + (groupableProps.length + 1) * 36)
+                Math.min(400, 46 + (groupableProps.length + 2) * 36)
               ),
               left: getClampedLeft(groupRect, 192, { align: "start" }),
               zIndex: 300,
@@ -1135,6 +1164,21 @@ export function DatabaseToolbar({
                   </button>
                 );
               })}
+              <div className="my-1 h-px bg-border/60" />
+              <button
+                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={creatingQuickProp}
+                onClick={() =>
+                  handleQuickCreateProp("status", "Status", (propId) =>
+                    onUpdateView(activeView.id, { groupByPropertyId: propId })
+                  ).then(() => setGroupRect(null))
+                }
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
+                  <Plus className="text-muted-foreground/60" size={11} />
+                </span>
+                New property
+              </button>
             </div>
           </div>,
           document.body
@@ -1171,7 +1215,7 @@ export function DatabaseToolbar({
               position: "fixed",
               top: getClampedTop(
                 dateRect,
-                Math.min(400, 46 + (dateProps.length + 1) * 36)
+                Math.min(400, 46 + (dateProps.length + 2) * 36)
               ),
               left: getClampedLeft(dateRect, 192, { align: "start" }),
               zIndex: 300,
@@ -1227,6 +1271,21 @@ export function DatabaseToolbar({
                   </button>
                 );
               })}
+              <div className="my-1 h-px bg-border/60" />
+              <button
+                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={creatingQuickProp}
+                onClick={() =>
+                  handleQuickCreateProp("date", "Date", (propId) =>
+                    onUpdateView(activeView.id, { calendarPropertyId: propId })
+                  ).then(() => setDateRect(null))
+                }
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
+                  <Plus className="text-muted-foreground/60" size={11} />
+                </span>
+                New property
+              </button>
             </div>
           </div>,
           document.body
@@ -1243,7 +1302,7 @@ export function DatabaseToolbar({
               position: "fixed",
               top: getClampedTop(
                 ganttPropRect.rect,
-                Math.min(400, 46 + (dateProps.length + 1) * 36)
+                Math.min(400, 46 + (dateProps.length + 2) * 36)
               ),
               left: getClampedLeft(ganttPropRect.rect, 192, { align: "start" }),
               zIndex: 300,
@@ -1301,6 +1360,30 @@ export function DatabaseToolbar({
                   </button>
                 );
               })}
+              <div className="my-1 h-px bg-border/60" />
+              <button
+                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={creatingQuickProp}
+                onClick={() => {
+                  const field = ganttPropRect.field;
+                  handleQuickCreateProp(
+                    "date",
+                    field === "start" ? "Start date" : "End date",
+                    (propId) =>
+                      onUpdateView(
+                        activeView.id,
+                        field === "start"
+                          ? { ganttStartPropertyId: propId }
+                          : { ganttEndPropertyId: propId }
+                      )
+                  ).then(() => setGanttPropRect(null));
+                }}
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
+                  <Plus className="text-muted-foreground/60" size={11} />
+                </span>
+                New property
+              </button>
             </div>
           </div>,
           document.body

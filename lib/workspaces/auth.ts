@@ -2,7 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { workspaces, workspaceMembers } from "@/lib/db/schema";
+import { workspaces, workspaceMembers, pagePermissions, pages } from "@/lib/db/schema";
 import type { WorkspaceRole } from "@/lib/permissions/resolver";
 
 export class ApiError extends Error {
@@ -40,6 +40,28 @@ export async function getWorkspaceMember(
     )
     .limit(1);
   return member ?? null;
+}
+
+// A page-only guest (doc/CLAUDE.md "Guest bypass") never gets a
+// workspaceMembers row — their access lives entirely in pagePermissions.
+// Used to let them through the workspace layout without granting them the
+// full member sidebar/page tree.
+export async function hasWorkspaceGuestAccess(
+  workspaceId: string,
+  userId: string
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: pagePermissions.id })
+    .from(pagePermissions)
+    .innerJoin(pages, eq(pages.id, pagePermissions.pageId))
+    .where(
+      and(
+        eq(pages.workspaceId, workspaceId),
+        eq(pagePermissions.userId, userId)
+      )
+    )
+    .limit(1);
+  return !!row;
 }
 
 export async function requireWorkspaceMember(

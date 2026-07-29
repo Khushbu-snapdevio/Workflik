@@ -3,6 +3,8 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const appUrl = new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Produces a self-contained `.next/standalone` server bundle (minimal
@@ -10,6 +12,16 @@ const nextConfig = {
   output: "standalone",
   turbopack: {
     root: resolve(__dirname),
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: appUrl.protocol.replace(":", ""),
+        hostname: appUrl.hostname,
+        port: appUrl.port,
+        pathname: "/api/uploads/files/**",
+      },
+    ],
   },
   async redirects() {
     return [

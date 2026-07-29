@@ -3,8 +3,8 @@ import { Extension } from "@tiptap/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
 import Suggestion from "@tiptap/suggestion";
 import {
-  BLOCK_REGISTRY,
   type BlockDefinition,
+  getMenuBlocks,
   searchBlocks,
 } from "../block-registry";
 
@@ -46,7 +46,7 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
 
         // Returns block items filtered by the user's query
         items: ({ query }) =>
-          query.trim() ? searchBlocks(query) : Object.values(BLOCK_REGISTRY),
+          query.trim() ? searchBlocks(query) : getMenuBlocks(),
 
         // Called by the menu when the user picks a block.
         // `range` is plugin-maintained and always points at "/" … cursor.

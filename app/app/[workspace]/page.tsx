@@ -13,6 +13,7 @@ import {
   workspaceMembers,
   workspaces,
 } from "@/lib/db/schema";
+import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { WorkspaceGreeting } from "@/components/workspace/workspace-greeting";
 import { WorkspaceShareButton } from "@/components/workspace/workspace-share-button";
 import { HomeFavoritesSection } from "@/components/workspace/home-favorites-section";
@@ -75,6 +76,13 @@ export default async function WorkspacePage({ params }: Props) {
     .where(eq(workspaces.slug, slug))
     .limit(1);
   if (!ws) notFound();
+
+  // Not part of the [pageId] route (which page-only guests are allowed
+  // through via getEffectivePermission) — this dashboard queries workspace-
+  // wide data unconditionally, so it needs its own membership guard rather
+  // than relying solely on WorkspaceLayout's redirect.
+  const member = await getWorkspaceMember(ws.id, session.user.id);
+  if (!member) notFound();
 
   const [recentRaw, [{ memberCount }], [{ pageCount }], favRaw, workspacePagesRaw, [{ topPageCount }]] = await Promise.all([
     db

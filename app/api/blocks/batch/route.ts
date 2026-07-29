@@ -2,7 +2,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, comments, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { requirePagePermission } from "@/lib/permissions/resolver";
 import type { Block } from "@/lib/db/schema";
 import { triggerPageUpdateNotification } from "@/lib/notifications/triggers";
 import { isMeaningfulTitle, isMeaningfulBlockContent } from "@/lib/pages/draft";
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
       .from(pages).where(eq(pages.id, pageId)).limit(1);
     if (!page) return apiError(404, "Page not found");
     if (page.isDeleted) return apiError(400, "Page is in Trash");
-    await requireWorkspaceMember(page.workspaceId, session.user.id);
+    await requirePagePermission(session.user.id, pageId, "can_edit");
 
     const savedBlocks: Pick<Block, "id" | "pageId" | "parentBlockId" | "type" | "content" | "orderIndex" | "schemaVersion">[] = [];
     let promoted = false;

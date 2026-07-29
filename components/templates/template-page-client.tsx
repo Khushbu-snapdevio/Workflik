@@ -118,6 +118,16 @@ function sortKeyFor(value: unknown, type: string, options?: { id: string; name: 
    if (!optId) return null;
    return options?.find((o) => o.id === optId)?.name ?? optId;
   }
+  case "person":
+  case "created_by": {
+   const v = value as { userIds?: string[]; _members?: { id: string; name: string; email: string }[] } | null;
+   const userIds = v?.userIds ?? [];
+   if (!userIds.length) return null;
+   const members = v?._members ?? [];
+   return userIds
+    .map((id) => { const m = members.find((m) => m.id === id); return m?.name || m?.email || id; })
+    .join(", ");
+  }
   default:
    return (value as { text?: string } | null)?.text ?? null;
  }
@@ -373,7 +383,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
      // AND (see displayedEntries) — surface that so it isn't silent.
      const isOr = i > 0 && filters.slice(0, i).some((other) => other.propertyId === f.propertyId);
      return (
-      <div key={f.id} className="flex flex-wrap items-center gap-1.5">
+      <div key={f.id} className="flex items-center gap-1.5">
        {i > 0 && (
         <span className={`shrink-0 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-bold tracking-wide ${
          isOr ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
@@ -389,7 +399,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
          update(f.id, { propertyId: v, operator: ops2[0].value, value: "" });
         }}
        >
-        <SelectTrigger size="sm" className="w-auto min-w-24">
+        <SelectTrigger size="sm" className="w-auto min-w-24 shrink-0">
          <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -402,7 +412,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
         value={f.operator}
         onValueChange={(v) => update(f.id, { operator: v, value: (v === "is_any_of" || v === "is_none_of") ? [] : "" })}
        >
-        <SelectTrigger size="sm" className="w-auto min-w-24">
+        <SelectTrigger size="sm" className="w-auto min-w-24 shrink-0">
          <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -424,8 +434,8 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
          value={String(f.value ?? "") || ANY_OPTION}
          onValueChange={(v) => update(f.id, { value: v === ANY_OPTION ? "" : v })}
         >
-         <SelectTrigger size="sm" className="flex-1">
-          <SelectValue />
+         <SelectTrigger size="sm" className="min-w-0 flex-1">
+          <SelectValue className="truncate" />
          </SelectTrigger>
          <SelectContent>
           <SelectItem value={ANY_OPTION}>Any</SelectItem>
@@ -439,10 +449,10 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
          value={String(f.value ?? "")}
          onChange={(e) => update(f.id, { value: e.target.value })}
          placeholder="Value…"
-         className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
+         className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
         />
        )}
-       <button onClick={() => remove(f.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+       <button onClick={() => remove(f.id)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors">
         <XIcon size={13} />
        </button>
       </div>
@@ -816,8 +826,18 @@ export function TemplatePageClient({
  const [showProperties, setShowProperties] = useState(false);
  const [showAddView,  setShowAddView]  = useState(false);
  const [showLayoutPicker, setShowLayoutPicker] = useState(false);
- const [filterRules,  setFilterRules]  = useState<FilterRule[]>([]);
- const [sortRules,   setSortRules]   = useState<SortRule[]>([]);
+ // Hydrated from the view's own stored `filters`/`sorts` (same lookup
+ // `initView` below repeats) so filters/sort applied before a refresh are
+ // still there after one — computed inline here since `initView` isn't
+ // declared until after this state, and state initializers must be
+ // self-contained.
+ function initViewFor() {
+  return initViews.find((v) => v.id === searchParams.get("view"))
+   ?? initViews.find((v) => v.id === defaultViewId)
+   ?? initViews[0];
+ }
+ const [filterRules,  setFilterRules]  = useState<FilterRule[]>(() => (initViewFor()?.filters as unknown as FilterRule[] | undefined) ?? []);
+ const [sortRules,   setSortRules]   = useState<SortRule[]>(() => (initViewFor()?.sorts as unknown as SortRule[] | undefined) ?? []);
 
  // Only one toolbar popup (Filter / Sort / Properties / Add view / view "⋮" menu)
  // should ever be open at once — call before opening any of them.
@@ -858,15 +878,29 @@ export function TemplatePageClient({
  // (calc(100dvh-Nrem) can't do this accurately since the cover/title/description
  // above the toolbar are variable height). Re-measured on any size change of either
  // the scroll container or the toolbar (e.g. its row wraps on a narrow window).
- const [calendarHeight, setCalendarHeight] = useState<number | null>(null);
+ const [viewHeight, setViewHeight] = useState<number | null>(null);
 
  useLayoutEffect(() => {
-  if (activeView?.type !== "calendar" && activeView?.type !== "gantt") return;
+  if (!["calendar", "gantt", "board"].includes(activeView?.type ?? "")) return;
   const scrollEl = scrollAreaRef.current;
   const toolbarEl = viewToolbarRef.current;
   if (!scrollEl || !toolbarEl) return;
   function measure() {
-   setCalendarHeight(scrollEl!.clientHeight - toolbarEl!.offsetHeight);
+   // Distance from the top of the *scrollable content* (not just the
+   // toolbar's own height) down to where the toolbar ends — covers
+   // breadcrumb/cover/title/description too, whatever their combined
+   // height happens to be, so the view gets exactly what's left over
+   // with nothing to scroll. getBoundingClientRect() deltas are
+   // viewport-relative (change with scroll position), so scrollTop is
+   // added back to get the absolute offset within the scrollable content.
+   const headerBottom = toolbarEl!.getBoundingClientRect().bottom
+    - scrollEl!.getBoundingClientRect().top
+    + scrollEl!.scrollTop;
+   // Floor so a very short viewport (header alone taller than the visible
+   // area) still gets a usable board instead of collapsing to 0/negative —
+   // the page falls back to scrolling past that point, same as it would
+   // for any other view type at that size.
+   setViewHeight(Math.max(240, scrollEl!.clientHeight - headerBottom));
   }
   measure();
   const ro = new ResizeObserver(measure);
@@ -1177,8 +1211,9 @@ export function TemplatePageClient({
  async function switchView(viewId: string) {
   setActiveViewId(viewId);
   setSelectedIds(new Set());
-  setFilterRules([]);
-  setSortRules([]);
+  const targetView = views.find((v) => v.id === viewId);
+  setFilterRules((targetView?.filters as unknown as FilterRule[] | undefined) ?? []);
+  setSortRules((targetView?.sorts as unknown as SortRule[] | undefined) ?? []);
   setViewSwitching(true);
   const url = new URL(window.location.href);
   url.searchParams.set("view", viewId);
@@ -1372,7 +1407,27 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify(patch),
   });
- }, [page.id, locked]);
+  // Changing a property's type reshapes its stored value (or, for
+  // formula/rollup/created_by, drops storage entirely in favor of a value
+  // computed on every read) — the client's cached `values` still hold the
+  // old shape until refetched, so cells for this property would otherwise
+  // render blank until the next full page load.
+  if (patch.type && activeView) {
+   try {
+    const res = await fetch(`/api/databases/${page.id}/entries?viewId=${activeView.id}`);
+    if (res.ok) {
+     const data = await res.json() as {
+      entries:    { id: string; shortId: string; title: string; orderIndex: number; icon: string | null; updatedAt: string | null; commentCount?: number }[];
+      propertyValues: TemplateValue[];
+     };
+     setEntries(data.entries.map((e) => ({
+      id: e.id, shortId: e.shortId, title: e.title, orderIndex: e.orderIndex, icon: e.icon, updatedAt: e.updatedAt, commentCount: e.commentCount,
+     })));
+     setValues(data.propertyValues);
+    }
+   } catch { /* keep current data */ }
+  }
+ }, [page.id, locked, activeView]);
 
  const deleteProperty = useCallback(async (propId: string) => {
   if (locked) return;
@@ -1940,8 +1995,8 @@ export function TemplatePageClient({
        <FilterPanel
         properties={properties}
         filters={filterRules}
-        onChange={setFilterRules}
-        onClear={() => setFilterRules([])}
+        onChange={(next) => { setFilterRules(next); updateView({ filters: next }); }}
+        onClear={() => { setFilterRules([]); updateView({ filters: [] }); }}
         onClose={() => setShowFilter(false)}
        />
       )}
@@ -1960,8 +2015,8 @@ export function TemplatePageClient({
        <SortPanel
         properties={properties}
         sorts={sortRules}
-        onChange={setSortRules}
-        onClear={() => setSortRules([])}
+        onChange={(next) => { setSortRules(next); updateView({ sorts: next }); }}
+        onClear={() => { setSortRules([]); updateView({ sorts: [] }); }}
         onClose={() => setShowSort(false)}
        />
       )}
@@ -2050,8 +2105,8 @@ export function TemplatePageClient({
 
    {/* View */}
    <div
-    className="relative"
-    style={activeView?.type === "calendar" || activeView?.type === "gantt" ? { height: calendarHeight ?? "calc(100dvh - 6rem)" } : undefined}
+    className={`relative ${activeView?.type === "board" ? "flex flex-col overflow-hidden" : ""}`}
+    style={["calendar", "gantt", "board"].includes(activeView?.type ?? "") ? { height: viewHeight ?? "calc(100dvh - 6rem)" } : undefined}
    >
     {viewSwitching && (
      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
@@ -2060,7 +2115,7 @@ export function TemplatePageClient({
     )}
     <div
      ref={tableViewRef}
-     className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "table" ? "overflow-x-auto template-hscroll" : ""} ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "h-full" : ""}`}
+     className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "table" ? "overflow-x-auto template-hscroll" : ""} ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "h-full" : ""} ${activeView?.type === "board" ? "flex min-h-0 flex-1 flex-col" : ""}`}
     >
     {activeView?.type === "board" ? (
      <TemplateBoardView

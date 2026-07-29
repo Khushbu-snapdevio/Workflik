@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus, PanelRight, Pencil, MoreHorizontal, MessageSquare, Pin, FileText, Settings2 } from "lucide-react";
 import { PageIcon } from "@/components/pages/page-icon";
@@ -138,7 +138,13 @@ function InlineCardInput({
 
 function ColumnDropZone({ colKey, children }: { colKey: string; children: React.ReactNode }) {
  const { setNodeRef } = useDroppable({ id: "col-" + colKey });
- return <div ref={setNodeRef} className="flex flex-col gap-2 px-2 pt-2">{children}</div>;
+ // The scrollable region of the column — bounded by the column's own
+ // height (set on SortableColumn's wrapper) so a column with many cards
+ // scrolls internally instead of growing the whole page. overflow-x-hidden
+ // is required, not decorative — same spec quirk as the row's overflow-x
+ // fix, mirrored on this axis: `overflow-y: auto` alone silently upgrades
+ // overflow-x from its default `visible` to `auto` too.
+ return <div ref={setNodeRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-2 pt-2">{children}</div>;
 }
 
 // ── Sortable column ────────────────────────────────────────────────────────────
@@ -148,11 +154,12 @@ function ColumnDropZone({ colKey, children }: { colKey: string; children: React.
 // dragging a card inside never gets mistaken for dragging the column itself.
 
 function SortableColumn({
- colKey, draggable, isDragging, children,
+ colKey, draggable, isDragging, maxHeight, children,
 }: {
  colKey:   string;
  draggable: boolean;
  isDragging: boolean;
+ maxHeight: number | null;
  children: (handleProps: Record<string, unknown> | null) => React.ReactElement;
 }) {
  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: "colhandle-" + colKey, disabled: !draggable });
@@ -160,11 +167,18 @@ function SortableColumn({
   transform: CSS.Transform.toString(transform),
   transition,
   opacity: isDragging ? 0.4 : 1,
+  // Explicit pixel max-height (measured from the row's own rendered size),
+  // not CSS `max-h-full` — a column with few cards still hugs its own
+  // content height below this; it only caps out (and its own card list
+  // scrolls) once content would exceed it. Board columns sit in a
+  // horizontally-scrolling flex row (not a wrapping grid) so many status
+  // options stay in one row instead of wrapping to a second row.
+  maxHeight: maxHeight ?? undefined,
  };
  const handleProps = draggable ? { ...attributes, ...listeners } : null;
 
  return (
-  <div ref={setNodeRef} style={style}>
+  <div ref={setNodeRef} style={style} className="w-[260px] shrink-0">
    {children(handleProps)}
   </div>
  );
@@ -591,6 +605,35 @@ export function TemplateBoardView({
  const [draggingColKey, setDraggingColKey]     = useState<string | null>(null);
  const [pinTooltip, setPinTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
 
+ // Measured directly rather than via CSS `max-h-full` — percentage heights
+ // only resolve if every ancestor in the chain already has a genuinely
+ // definite height, which is fragile through several levels of nested flex
+ // containers. Measuring the row's own rendered height in JS and applying
+ // it to each column as an explicit pixel max-height sidesteps that
+ // entirely, the same way the page-level view height is already measured.
+ const rowRef = useRef<HTMLDivElement>(null);
+ const [colMaxHeight, setColMaxHeight] = useState<number | null>(null);
+
+ useLayoutEffect(() => {
+  const rowEl = rowRef.current;
+  if (!rowEl) return;
+  function measure() {
+   // clientHeight is the row's own padding-box height — it includes the
+   // row's `p-6` padding, but columns render inside that padded area, so
+   // their actual available height is clientHeight minus the row's own
+   // top+bottom padding. Without this, the last bit of a tall column
+   // (e.g. the "Add card" button) renders past the row's real boundary
+   // and gets clipped instead of fitting.
+   const cs = getComputedStyle(rowEl!);
+   const verticalPadding = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+   setColMaxHeight(rowEl!.clientHeight - verticalPadding);
+  }
+  measure();
+  const ro = new ResizeObserver(measure);
+  ro.observe(rowEl);
+  return () => ro.disconnect();
+ }, []);
+
  // pinTooltip is a `position: fixed` portal anchored to a rect snapshotted
  // once on hover — dismiss it on scroll instead of repositioning, since
  // locking scroll on every hover would hurt the board's own scrolling.
@@ -809,7 +852,7 @@ export function TemplateBoardView({
  }
 
  return (
-  <>
+  <div className="flex min-h-0 flex-1 flex-col">
   {/* Always rendered when there's a groupable property — independent of any
       column being visible, unlike the per-column "⋯" menu's own "Edit
       groups" entry. Without this, hiding every group (or the last one) left
@@ -817,7 +860,7 @@ export function TemplateBoardView({
       with a toggle to restore them — was only ever reachable from a visible
       column's own menu. */}
   {groupProp && statusBy === "option" && (
-   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-6 py-2">
+   <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/40 px-6 py-2">
     <div className="flex flex-wrap items-center gap-2">
      {pinnedColumns.length > 0 && (
       <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -876,22 +919,31 @@ export function TemplateBoardView({
   )}
   <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
    <SortableContext items={draggableColumnKeys} strategy={horizontalListSortingStrategy}>
-    <div className="grid items-start gap-3 p-6" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+    {/* overflow-y-hidden is required, not decorative — per spec, `overflow-x:
+        auto` with `overflow-y` left at its default `visible` gets silently
+        upgraded to `overflow-y: auto` too, turning this row into a SECOND
+        vertical scroll container (scrolling headers and all) instead of
+        each column scrolling independently via its own overflow-y-auto. */}
+    <div ref={rowRef} className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto overflow-y-hidden p-6">
      {visibleColumns.map((col) => {
       const style    = colorColumns ? getStyle(col.color) : { ...getStyle("gray"), dot: getStyle(col.color).dot };
       const colKey   = col.optionId ?? "none";
       const isAddingHere = addingTo === colKey;
 
       return (
-       <SortableColumn key={colKey} colKey={colKey} draggable={col.optionId !== null && statusBy === "option" && sortDirection === "manual" && !locked} isDragging={draggingColKey === col.optionId}>
+       <SortableColumn key={colKey} colKey={colKey} draggable={col.optionId !== null && statusBy === "option" && sortDirection === "manual" && !locked} isDragging={draggingColKey === col.optionId} maxHeight={colMaxHeight}>
         {(handleProps) => (
-        <div className="flex flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden" data-col-id={colKey}>
+        <div
+         className="flex flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden"
+         style={{ maxHeight: colMaxHeight ?? undefined }}
+         data-col-id={colKey}
+        >
          {/* Column header — doubles as the drag handle for reordering the whole column */}
          <div
           {...handleProps}
           suppressHydrationWarning
           style={{ touchAction: handleProps ? "none" : undefined }}
-          className={`flex items-center justify-between border-b px-3 py-2.5 ${style.header} ${handleProps ? "cursor-grab" : ""}`}
+          className={`flex shrink-0 items-center justify-between border-b px-3 py-2.5 ${style.header} ${handleProps ? "cursor-grab" : ""}`}
          >
           <div className="flex min-w-0 items-center gap-2">
            <span className={`size-2 flex-shrink-0 rounded-full ${style.dot}`} />
@@ -974,7 +1026,7 @@ export function TemplateBoardView({
          {!isAddingHere && !locked && (
           <button
            onClick={() => setAddingTo(colKey)}
-           className="mx-2 mb-2 flex items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed border-border/60 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
+           className="mx-2 mb-2 flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed border-border/60 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
           >
            <Plus size={12} />
            Add card
@@ -1064,6 +1116,6 @@ export function TemplateBoardView({
    confirmLabel="Delete"
    onConfirm={() => { if (deleteGroupTarget) deleteGroupOption(deleteGroupTarget.id); setDeleteGroupTarget(null); }}
   />
-  </>
+  </div>
  );
 }

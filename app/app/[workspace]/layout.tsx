@@ -11,7 +11,7 @@ import { TooltipTour } from "@/components/onboarding/tooltip-tour";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { pages, userFavorites, userHintStates, userPreferences, userRecentlyVisited, users, workspaces } from "@/lib/db/schema";
-import { getWorkspaceMember } from "@/lib/workspaces/auth";
+import { getWorkspaceMember, hasWorkspaceGuestAccess } from "@/lib/workspaces/auth";
 import { ADMIN_ROLE } from "@/config/platform";
 
 type Props = {
@@ -35,7 +35,25 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) {
-    redirect("/platform/post-auth");
+    // Page-only guest (doc/CLAUDE.md "Guest bypass"): they have no workspace
+    // seat, only an explicit page_permissions grant. Give them a minimal
+    // shell instead of the full member sidebar — that sidebar's page tree,
+    // favorites, etc. are workspace-wide and would leak content the guest
+    // isn't supposed to see. The actual per-page access check still happens
+    // in the [pageId] route; every other route under this layout keeps its
+    // own membership guard, so a guest can't wander past the page they were
+    // invited to.
+    const isPageGuest = await hasWorkspaceGuestAccess(ws.id, session.user.id);
+    if (!isPageGuest) {
+      redirect("/platform/post-auth");
+    }
+
+    return (
+      <>
+        <main className="h-screen overflow-y-auto overflow-x-hidden">{children}</main>
+        <Toaster position="bottom-right" closeButton={false} />
+      </>
+    );
   }
 
   const [

@@ -2,7 +2,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { pageClosure, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { requirePagePermission } from "@/lib/permissions/resolver";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
 import { triggerPageUpdateNotification, triggerTrashWarningNotification } from "@/lib/notifications/triggers";
 import { isMeaningfulTitle } from "@/lib/pages/draft";
@@ -24,7 +25,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     if (!page) return apiError(404, "Page not found");
 
-    await requireWorkspaceMember(page.workspaceId, session.user.id);
+    await requirePagePermission(session.user.id, id, "can_view");
 
     return Response.json(page);
   } catch (err) {
@@ -60,7 +61,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (!page) return apiError(404, "Page not found");
     if (page.isDeleted) return apiError(404, "Page is in Trash");
 
-    await requireWorkspaceMember(page.workspaceId, session.user.id, "editor");
+    await requirePagePermission(session.user.id, id, "can_edit");
 
     const body = await req.json();
     const parsed = patchSchema.safeParse(body);
@@ -142,7 +143,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
     if (!page) return apiError(404, "Page not found");
 
-    await requireWorkspaceMember(page.workspaceId, session.user.id, "editor");
+    await requirePagePermission(session.user.id, id, "can_edit");
 
     // Databases and already-trashed pages are permanently deleted immediately.
     // ON DELETE CASCADE on databaseId removes all entries; pageClosure/blocks cascade too.

@@ -202,7 +202,25 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
-  }, [databaseId]);
+    // Changing a property's type reshapes its stored value (or, for
+    // formula/rollup/created_by, drops storage entirely in favor of a value
+    // computed on every read) — `values` still holds the old shape until
+    // refetched, so this row would otherwise render blank until reload.
+    if (patch.type) {
+      const valsRes = await fetch(`/api/entries/${entryId}/property-values`);
+      if (valsRes.ok) {
+        const vals = await valsRes.json() as DbPropertyValue[];
+        const map  = new Map<string, unknown>();
+        for (const v of vals) map.set(v.propertyId, v.value);
+        setValues(map);
+      }
+    }
+    // Busts the Next.js client router cache — same reasoning as saveValue
+    // above — so navigating to this entry's containing database view
+    // re-fetches fresh server data (including the new property type/shape)
+    // instead of reusing whatever table state was cached before this edit.
+    router.refresh();
+  }, [databaseId, entryId, router]);
 
   const deletePropertyLocal = useCallback(async (propId: string) => {
     const res = await fetch(`/api/databases/${databaseId}/properties/${propId}`, { method: "DELETE" });
@@ -387,6 +405,19 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                 {/* Computed, read-only — same reasoning as Rollup/Formula:
                     no click-to-edit popover, since there's nothing to pick. */}
                 {prop.type === "created_by" && (
+                  <div className="flex min-h-[22px] w-full items-center gap-1">
+                    {val ? (
+                      <CellDisplay property={prop} value={val} workspaceId={workspaceId} />
+                    ) : (
+                      <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
+                        Empty
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Computed, read-only — same reasoning as Created by above. */}
+                {(prop.type === "formula" || prop.type === "rollup") && (
                   <div className="flex min-h-[22px] w-full items-center gap-1">
                     {val ? (
                       <CellDisplay property={prop} value={val} workspaceId={workspaceId} />

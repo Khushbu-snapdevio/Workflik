@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import {
  X, Check, Globe, Lock, Building2,
  UserPlus, Link2, ChevronDown,
@@ -87,14 +86,15 @@ function avatarBgClass(name: string): string {
 }
 
 function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
- if (image) {
+ const [failed, setFailed] = useState(false);
+ useEffect(() => { setFailed(false); }, [image]);
+ if (image && !failed) {
   return (
-   <Image
+   <img
     src={image}
     alt={name ?? ""}
-    width={28}
-    height={28}
     className="size-7 shrink-0 rounded-full object-cover"
+    onError={() => setFailed(true)}
    />
   );
  }

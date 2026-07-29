@@ -2,13 +2,15 @@ import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { requirePagePermission } from "@/lib/permissions/resolver";
+import type { AccessLevel } from "@/lib/permissions/resolver";
 
-async function resolvePage(pageId: string, userId: string) {
+async function resolvePage(pageId: string, userId: string, minLevel: AccessLevel) {
   const [page] = await db.select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted })
     .from(pages).where(eq(pages.id, pageId)).limit(1);
   if (!page) throw new ApiError(404, "Page not found");
-  await requireWorkspaceMember(page.workspaceId, userId);
+  await requirePagePermission(userId, pageId, minLevel);
   return page;
 }
 
@@ -17,7 +19,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   try {
     const { id } = await params;
     const session = await getSession();
-    await resolvePage(id, session.user.id);
+    await resolvePage(id, session.user.id, "can_view");
 
     const rows = await db
       .select()
@@ -45,7 +47,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     const { id } = await params;
     const session = await getSession();
-    const page = await resolvePage(id, session.user.id);
+    const page = await resolvePage(id, session.user.id, "can_edit");
     if (page.isDeleted) return apiError(400, "Page is in Trash");
 
     const body = await req.json();

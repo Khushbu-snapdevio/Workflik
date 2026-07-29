@@ -314,7 +314,13 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
                   onMouseEnter={() => setSelectedIndex(i)}
                   type="button"
                 >
-                  <span className="w-5 shrink-0 text-center text-base">{r.icon || "📄"}</span>
+                  <span className="flex w-5 shrink-0 items-center justify-center">
+                    {r.icon ? (
+                      <PageIcon icon={r.icon} size={16} />
+                    ) : (
+                      <FileText className="shrink-0 text-muted-foreground/60" size={16} />
+                    )}
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-foreground">{r.title}</span>
                     {r.breadcrumb && (
@@ -353,7 +359,11 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
         href={`/app/${workspaceSlug}/${resolved.shortId}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="text-base leading-none">{resolved.icon || "📄"}</span>
+        {resolved.icon ? (
+          <PageIcon icon={resolved.icon} size={18} />
+        ) : (
+          <FileText className="shrink-0 text-muted-foreground/60" size={18} />
+        )}
         <span className="text-sm font-medium text-primary underline decoration-primary/40 underline-offset-2 transition-colors group-hover:decoration-primary">
           {resolved.title}
         </span>
@@ -1588,7 +1598,7 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
                     <BreadcrumbItem>
                       {isLast ? (
                         <BreadcrumbPage className="flex items-center gap-1">
-                          {c.icon && <span>{c.icon}</span>}
+                          {c.icon && <PageIcon icon={c.icon} size={14} />}
                           {c.title || "Untitled"}
                         </BreadcrumbPage>
                       ) : (
@@ -1597,7 +1607,7 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
                             className="flex items-center gap-1"
                             href={`/app/${workspaceSlug}/${c.shortId}`}
                           >
-                            {c.icon && <span>{c.icon}</span>}
+                            {c.icon && <PageIcon icon={c.icon} size={14} />}
                             {c.title || "Untitled"}
                           </NextLink>
                         </BreadcrumbLink>

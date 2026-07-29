@@ -367,7 +367,11 @@ export function BoardView({
    </div>
   <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
    <SortableContext items={draggableColumnKeys} strategy={horizontalListSortingStrategy}>
-   <div className="grid items-start gap-3 px-6 py-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+   {/* overflow-y-hidden is required, not decorative — per spec, `overflow-x:
+       auto` with `overflow-y` left at its default `visible` gets silently
+       upgraded to `overflow-y: auto` too, turning this row into a second
+       vertical scroll container instead of each column scrolling on its own. */}
+   <div className="flex items-start gap-3 overflow-x-auto overflow-y-hidden px-6 py-4">
 
     {/* ── Columns ── */}
     {visibleColumns.map((col) => {
@@ -384,7 +388,7 @@ export function BoardView({
      }
 
      return (
-      <SortableColumn key={colKey} colKey={colKey} draggable={col.id !== null && !isCollapsed && sortDirection === "manual" && groupsEditable} isDragging={draggingColKey === col.id}>
+      <SortableColumn key={colKey} colKey={colKey} draggable={col.id !== null && !isCollapsed && sortDirection === "manual" && groupsEditable} isDragging={draggingColKey === col.id} isCollapsed={isCollapsed}>
       {(handleProps) => (
       <SortableContext
        id={colKey}
@@ -543,7 +547,7 @@ export function BoardView({
     {/* ── Add option column — select/status only; checkbox/person's columns
         are derived, not a user-managed option list to add to. ── */}
     {isEditor && groupsEditable && (
-     <div ref={addOptRef}>
+     <div ref={addOptRef} className="w-[260px] shrink-0">
       {!addingOption ? (
        <button
         onClick={() => {
@@ -764,11 +768,12 @@ export function BoardView({
 // dragging a card inside never gets mistaken for dragging the column itself.
 
 function SortableColumn({
- colKey, draggable, isDragging, children,
+ colKey, draggable, isDragging, isCollapsed, children,
 }: {
  colKey:   string;
  draggable: boolean;
  isDragging: boolean;
+ isCollapsed: boolean;
  children: (handleProps: Record<string, unknown> | null) => React.ReactElement;
 }) {
  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: "colhandle-" + colKey, disabled: !draggable });
@@ -779,8 +784,12 @@ function SortableColumn({
  };
  const handleProps = draggable ? { ...attributes, ...listeners } : null;
 
+ // Board columns now sit in a horizontally-scrolling flex row (not a
+ // wrapping grid) so a workspace with many status options stays in one
+ // row instead of pushing later columns onto a second row far below the
+ // fold — flex items need an explicit width, unlike grid's `1fr` tracks.
  return (
-  <div ref={setNodeRef} style={style}>
+  <div ref={setNodeRef} style={style} className={`shrink-0 ${isCollapsed ? "w-12" : "w-[260px]"}`}>
    {children(handleProps)}
   </div>
  );

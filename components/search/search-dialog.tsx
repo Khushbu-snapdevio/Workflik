@@ -347,6 +347,12 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    .catch(() => {});
  }, [workspaceId]);
 
+ function clearRecent() {
+  setRecent([]);
+  setActiveIndex(0);
+  fetch(`/api/user/recently-visited?workspaceId=${workspaceId}`, { method: "DELETE" }).catch(() => {});
+ }
+
  // Load workspace members on open — powers the "Specific member" entries in
  // the Author filter. Only active members can author/edit content.
  useEffect(() => {
@@ -632,9 +638,18 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       <div className="py-1">
        {recent.length > 0 ? (
         <>
-         <p className="px-4 pb-1 pt-3 text-xs font-semibold tracking-wide text-muted-foreground/60">
-          Recently visited
-         </p>
+         <div className="flex items-center justify-between px-4 pb-1 pt-3">
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground/60">
+           Recently visited
+          </p>
+          <button
+           type="button"
+           onClick={clearRecent}
+           className="text-xs font-medium text-muted-foreground/60 hover:text-foreground"
+          >
+           Clear all
+          </button>
+         </div>
          {recent.map((r, i) => (
           <div key={r.id} data-idx={i}>
            <RecentRow

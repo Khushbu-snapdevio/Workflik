@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth/client";
 
 interface InvitationData {
  id:     string;
@@ -21,12 +22,23 @@ const ACCESS_LABELS: Record<string, string> = {
 export default function GuestInvitePage() {
  const { token } = useParams<{ token: string }>();
  const router  = useRouter();
+ const { data: session, isPending: sessionPending } = useSession();
 
  const [state, setState]    = useState<"loading" | "ready" | "accepting" | "error" | "expired" | "accepted">("loading");
  const [invitation, setInvitation] = useState<InvitationData | null>(null);
  const [errorMsg, setErrorMsg] = useState("");
 
+ // Guest bypass (doc/CLAUDE.md Onboarding): an unauthenticated visitor must
+ // sign in first — otherwise "Accept" 401s against the API with no way to
+ // recover. Route them through login and straight back here.
  useEffect(() => {
+  if (!sessionPending && !session) {
+   router.replace(`/auth/login?next=${encodeURIComponent(`/invite/guest/${token}`)}`);
+  }
+ }, [sessionPending, session, token, router]);
+
+ useEffect(() => {
+  if (sessionPending || !session) return;
   fetch(`/api/invite/guest/${token}`)
    .then((r) => r.json())
    .then((data) => {
@@ -41,7 +53,7 @@ export default function GuestInvitePage() {
     setState("ready");
    })
    .catch(() => { setErrorMsg("Could not load invitation."); setState("error"); });
- }, [token]);
+ }, [token, sessionPending, session]);
 
  async function accept() {
   setState("accepting");
@@ -52,7 +64,7 @@ export default function GuestInvitePage() {
    setState("error");
    return;
   }
-  router.push(`/app/${data.shortId ?? ""}`);
+  router.push(`/app/${data.workspaceSlug}/${data.shortId}`);
  }
 
  return (

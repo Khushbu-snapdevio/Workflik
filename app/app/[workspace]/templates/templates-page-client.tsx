@@ -819,6 +819,23 @@ function TemplatePreviewModal({
     null
   );
 
+  // Shared between the left panel's "Views" pills and the right preview
+  // panel's tabs so they always show the same selected view, not two
+  // independently-tracked (and easily-inconsistent) states.
+  const [activeViewName, setActiveViewName] = useState(() => {
+    const dv = schema?.views.find((v) => v.isDefault) ?? schema?.views[0];
+    return dv?.name ?? "";
+  });
+
+  // Reset back to the default view whenever a different template is
+  // previewed — otherwise switching templates could leave this on a tab
+  // name that doesn't exist in the new template's views.
+  useEffect(() => {
+    const dv = schema?.views.find((v) => v.isDefault) ?? schema?.views[0];
+    setActiveViewName(dv?.name ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schema]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -887,7 +904,11 @@ function TemplatePreviewModal({
 
           <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5">
             {schema ? (
-              <PreviewDbSchemaList schema={schema} />
+              <PreviewDbSchemaList
+                schema={schema}
+                activeViewName={activeViewName}
+                onSelectView={setActiveViewName}
+              />
             ) : blocks.length > 0 ? (
               <div>
                 <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
@@ -959,7 +980,11 @@ function TemplatePreviewModal({
                   </p>
                 )}
                 {schema ? (
-                  <PreviewDbContent schema={schema} />
+                  <PreviewDbContent
+                    schema={schema}
+                    activeViewName={activeViewName}
+                    onSelectView={setActiveViewName}
+                  />
                 ) : (
                   <div className="space-y-2">
                     {blocks.slice(0, 16).map((b, i, arr) => (
@@ -1130,7 +1155,15 @@ function PreviewDocBlock({
   );
 }
 
-function PreviewDbSchemaList({ schema }: { schema: SchemaForPreview }) {
+function PreviewDbSchemaList({
+  schema,
+  activeViewName,
+  onSelectView,
+}: {
+  schema: SchemaForPreview;
+  activeViewName: string;
+  onSelectView: (name: string) => void;
+}) {
   return (
     <div className="mt-5 space-y-5">
       <div>
@@ -1139,18 +1172,20 @@ function PreviewDbSchemaList({ schema }: { schema: SchemaForPreview }) {
         </p>
         <div className="flex flex-wrap gap-1.5">
           {schema.views.map((v) => (
-            <span
+            <button
+              type="button"
+              onClick={() => onSelectView(v.name)}
               className={[
-                "inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-xs font-medium",
-                v.isDefault
+                "inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-xs font-medium transition-colors duration-150",
+                v.name === activeViewName
                   ? "border-primary/20 bg-primary/10 text-primary"
-                  : "border-border/50 bg-muted/30 text-muted-foreground",
+                  : "border-border/50 bg-muted/30 text-muted-foreground hover:bg-accent hover:text-foreground",
               ].join(" ")}
               key={v.name}
             >
               {v.type === "board" ? "⊞" : v.type === "calendar" ? "📅" : "☰"}{" "}
               {v.name}
-            </span>
+            </button>
           ))}
         </div>
       </div>
@@ -1204,31 +1239,43 @@ function PreviewDbSchemaList({ schema }: { schema: SchemaForPreview }) {
 
 function PreviewViewTabs({
   views,
-  defaultName,
+  activeName,
+  onSelect,
 }: {
   views: DbView[];
-  defaultName: string;
+  activeName: string;
+  onSelect: (name: string) => void;
 }) {
   return (
     <div className="mb-3 flex items-center gap-1 overflow-x-auto border-b border-border/40 pb-2">
       {views.map((v) => (
-        <span
+        <button
+          type="button"
+          onClick={() => onSelect(v.name)}
           className={[
-            "shrink-0 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium",
-            v.name === defaultName
+            "shrink-0 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium transition-colors duration-150",
+            v.name === activeName
               ? "bg-accent text-foreground font-semibold"
-              : "text-muted-foreground/50",
+              : "text-muted-foreground/50 hover:bg-accent/50 hover:text-foreground",
           ].join(" ")}
           key={v.name}
         >
           {v.name}
-        </span>
+        </button>
       ))}
     </div>
   );
 }
 
-function PreviewDbTable({ schema }: { schema: SchemaForPreview }) {
+function PreviewDbTable({
+  schema,
+  activeViewName,
+  onSelectView,
+}: {
+  schema: SchemaForPreview;
+  activeViewName: string;
+  onSelectView: (name: string) => void;
+}) {
   const visibleProps = schema.properties
     .filter(
       (p) =>
@@ -1240,12 +1287,11 @@ function PreviewDbTable({ schema }: { schema: SchemaForPreview }) {
         ].includes(p.type)
     )
     .slice(0, 5);
-  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
   const rows = schema.sample_rows ?? [];
 
   return (
     <div className="mt-3">
-      <PreviewViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
+      <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
       <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
         <div className="flex border-b border-border/40 bg-muted/30">
           {visibleProps.map((p) => (
@@ -1299,9 +1345,18 @@ function PreviewDbTable({ schema }: { schema: SchemaForPreview }) {
   );
 }
 
-function PreviewDbBoard({ schema }: { schema: SchemaForPreview }) {
-  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
-  const groupByName = defaultView?.groupBy;
+function PreviewDbBoard({
+  schema,
+  activeViewName,
+  onSelectView,
+}: {
+  schema: SchemaForPreview;
+  activeViewName: string;
+  onSelectView: (name: string) => void;
+}) {
+  const activeView =
+    schema.views.find((v) => v.name === activeViewName) ?? schema.views[0];
+  const groupByName = activeView?.groupBy;
   const groupByProp =
     schema.properties.find((p) => p.name === groupByName) ??
     schema.properties.find((p) => p.type === "select");
@@ -1314,7 +1369,7 @@ function PreviewDbBoard({ schema }: { schema: SchemaForPreview }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PreviewViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
+      <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
       <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-[var(--radius-lg)] border border-border/40 bg-background">
         {columns.map((col, ci) => {
           const colRows = groupByProp
@@ -1378,11 +1433,18 @@ function PreviewDbBoard({ schema }: { schema: SchemaForPreview }) {
   );
 }
 
-function PreviewDbCalendar({ schema }: { schema: SchemaForPreview }) {
-  const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
+function PreviewDbCalendar({
+  schema,
+  activeViewName,
+  onSelectView,
+}: {
+  schema: SchemaForPreview;
+  activeViewName: string;
+  onSelectView: (name: string) => void;
+}) {
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
-      <PreviewViewTabs defaultName={defaultView?.name ?? ""} views={schema.views} />
+      <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
       <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/40">
         <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
           <span className="text-xs font-semibold text-foreground/70">
@@ -1435,15 +1497,27 @@ function PreviewDbCalendar({ schema }: { schema: SchemaForPreview }) {
   );
 }
 
-function PreviewDbContent({ schema }: { schema: SchemaForPreview }) {
+function PreviewDbContent({
+  schema,
+  activeViewName,
+  onSelectView,
+}: {
+  schema: SchemaForPreview;
+  activeViewName: string;
+  onSelectView: (name: string) => void;
+}) {
   const defaultView = schema.views.find((v) => v.isDefault) ?? schema.views[0];
-  if (defaultView?.type === "board") {
-    return <PreviewDbBoard schema={schema} />;
+  const activeView =
+    schema.views.find((v) => v.name === activeViewName) ?? defaultView;
+
+  const previewProps = { schema, activeViewName, onSelectView };
+  if (activeView?.type === "board") {
+    return <PreviewDbBoard {...previewProps} />;
   }
-  if (defaultView?.type === "calendar") {
-    return <PreviewDbCalendar schema={schema} />;
+  if (activeView?.type === "calendar") {
+    return <PreviewDbCalendar {...previewProps} />;
   }
-  return <PreviewDbTable schema={schema} />;
+  return <PreviewDbTable {...previewProps} />;
 }
 
 // ── Template card thumbnail ────────────────────────────────────────────────────

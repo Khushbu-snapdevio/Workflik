@@ -14,6 +14,7 @@ import {
   workspaces,
 } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
+import { getEffectivePermission } from "@/lib/permissions/resolver";
 import { isPageNavSource } from "@/lib/pages/navigation-source";
 import { PageClient } from "@/components/pages/page-client";
 import { PageBreadcrumbs } from "@/components/pages/page-breadcrumbs";
@@ -60,8 +61,12 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
     .limit(1);
   if (!ws) notFound();
 
+  // No `if (!member) notFound()` here — a page-only guest (doc/CLAUDE.md
+  // "Guest bypass") has no workspaceMembers row at all. getEffectivePermission
+  // below already resolves guest access via their explicit page_permissions
+  // grant, so it's the sole gate; `member` stays null for guests everywhere
+  // else in this file.
   const member = await getWorkspaceMember(ws.id, session.user.id);
-  if (!member) notFound();
 
   const [page] = await db
     .select()
@@ -69,6 +74,13 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
     .where(and(eq(pages.shortId, shortId), eq(pages.workspaceId, ws.id)))
     .limit(1);
   if (!page) notFound();
+
+  // Enforce per-page permission (Hard Rule 3) — workspace membership alone is
+  // not enough: private pages and per-page permission ceilings/downgrades
+  // must gate access here too, not just on the ancillary permission/share
+  // endpoints. A denied page is indistinguishable from a nonexistent one.
+  const effectiveLevel = await getEffectivePermission(session.user.id, page.id);
+  if (!effectiveLevel) notFound();
 
   // Record visit (fire-and-forget)
   db.insert(userRecentlyVisited)
@@ -125,8 +137,8 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
     }
   }
 
-  const isEditor = member.role === "admin" || member.role === "editor";
-  const isAdmin  = member.role === "admin";
+  const isEditor = effectiveLevel === "can_edit" || effectiveLevel === "full_access";
+  const isAdmin  = member?.role === "admin";
 
   // Check if page is in user's favorites
   const [favRow] = await db

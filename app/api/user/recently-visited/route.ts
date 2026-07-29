@@ -48,6 +48,36 @@ export async function GET(req: Request) {
   }
 }
 
+// DELETE /api/user/recently-visited?workspaceId=xxx
+// Clears all recently-visited entries for the user in the given workspace.
+export async function DELETE(req: Request) {
+  try {
+    const session = await getSession();
+    const { searchParams } = new URL(req.url);
+    const workspaceId = searchParams.get("workspaceId");
+
+    if (!workspaceId) {
+      return apiError(400, "workspaceId is required");
+    }
+
+    await db
+      .delete(userRecentlyVisited)
+      .where(
+        and(
+          eq(userRecentlyVisited.userId, session.user.id),
+          eq(userRecentlyVisited.workspaceId, workspaceId)
+        )
+      );
+
+    return new Response(null, { status: 204 });
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
+    return apiError(500, "Internal server error");
+  }
+}
+
 const postSchema = z.object({
   pageId: z.string().uuid(),
   workspaceId: z.string().uuid(),

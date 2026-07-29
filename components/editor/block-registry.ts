@@ -40,6 +40,9 @@ export interface BlockDefinition {
   mdShortcut?: string; // markdown shortcut hint
   slashCmd: string; // what user types after /
   type: BlockType;
+  // Kept in the registry (icon/label lookups for existing blocks still need
+  // it) but excluded from the "/" menu — see getBlocksByCategory/searchBlocks.
+  hidden?: boolean;
 }
 
 export const BLOCK_REGISTRY: Record<BlockType, BlockDefinition> = {
@@ -284,6 +287,7 @@ export const BLOCK_REGISTRY: Record<BlockType, BlockDefinition> = {
     icon: "⚡",
     category: "reference",
     slashCmd: "template-button",
+    hidden: true,
   },
 };
 
@@ -299,15 +303,19 @@ export const BLOCK_CATEGORIES: {
   { label: "Reference", key: "reference" },
 ];
 
+export function getMenuBlocks(): BlockDefinition[] {
+  return Object.values(BLOCK_REGISTRY).filter((b) => !b.hidden);
+}
+
 export function getBlocksByCategory(
   category: BlockDefinition["category"]
 ): BlockDefinition[] {
-  return Object.values(BLOCK_REGISTRY).filter((b) => b.category === category);
+  return getMenuBlocks().filter((b) => b.category === category);
 }
 
 export function searchBlocks(query: string): BlockDefinition[] {
   const q = query.toLowerCase();
-  return Object.values(BLOCK_REGISTRY).filter(
+  return getMenuBlocks().filter(
     (b) =>
       b.label.toLowerCase().includes(q) || b.slashCmd.toLowerCase().includes(q)
   );

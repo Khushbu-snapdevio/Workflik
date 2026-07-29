@@ -3,7 +3,8 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { blocks, pages, propertyValues } from "@/lib/db/schema";
 import { insertPageWithClosure } from "@/lib/pages/closure";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { requirePagePermission } from "@/lib/permissions/resolver";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -117,7 +118,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (!page) return apiError(404, "Page not found");
     if (page.isDeleted) return apiError(404, "Page is in Trash");
 
-    await requireWorkspaceMember(page.workspaceId, session.user.id, "editor");
+    await requirePagePermission(session.user.id, id, "can_edit");
 
     const newPage = await db.transaction(async (tx) => {
       const newId = await duplicateTree(

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { guestInvitations, pagePermissions, pages } from "@/lib/db/schema";
+import { guestInvitations, pagePermissions, pages, users, workspaces } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 import { triggerGuestAcceptedNotification } from "@/lib/notifications/triggers";
 
@@ -74,6 +74,14 @@ export async function POST(_req: Request, { params }: Ctx) {
       .where(eq(pages.id, inv.pageId))
       .limit(1);
 
+    const [ws] = page?.workspaceId
+      ? await db
+          .select({ slug: workspaces.slug })
+          .from(workspaces)
+          .where(eq(workspaces.id, page.workspaceId))
+          .limit(1)
+      : [];
+
     await db.transaction(async (tx) => {
       // Mark accepted
       await tx
@@ -96,6 +104,14 @@ export async function POST(_req: Request, { params }: Ctx) {
           set:    { accessLevel: inv.accessLevel, updatedAt: new Date() },
         });
 
+      // Page-only guests never go through the onboarding wizard (doc/CLAUDE.md
+      // "Guest bypass") — mark it done so /platform/post-auth never sends them
+      // there if they land on a route that doesn't have a page-scoped guard.
+      await tx
+        .update(users)
+        .set({ onboardingCompleted: true })
+        .where(eq(users.id, session.user.id));
+
       // Notify the original inviter that their guest accepted
       if (inv.invitedBy && page?.workspaceId) {
         await triggerGuestAcceptedNotification(tx, {
@@ -109,7 +125,7 @@ export async function POST(_req: Request, { params }: Ctx) {
       }
     });
 
-    return Response.json({ ok: true, pageId: inv.pageId, shortId: page?.shortId });
+    return Response.json({ ok: true, pageId: inv.pageId, shortId: page?.shortId, workspaceSlug: ws?.slug });
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error(err);

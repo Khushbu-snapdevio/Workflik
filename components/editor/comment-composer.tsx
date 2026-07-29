@@ -243,7 +243,7 @@ export function CommentComposer({
 
   const containerCls = mode === "edit"
     ? "border-primary/40 bg-primary/5 focus-within:border-primary/60"
-    : "border-transparent bg-muted/50 focus-within:border-border focus-within:bg-card";
+    : "border-transparent bg-card focus-within:border-border";
 
   return (
     <div className={`relative rounded-[var(--radius-md)] border transition-colors duration-150 ${containerCls}`}>

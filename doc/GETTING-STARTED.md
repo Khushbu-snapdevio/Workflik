@@ -29,11 +29,8 @@ Workspace
 | PostgreSQL | v16+ | Primary data store, full-text search, AND job queue (pg-boss) |
 | pnpm | latest | Package manager |
 | Git | any | Version control |
-| Headless Chromium | bundled | PDF export renders via **Puppeteer** (see §4). **pnpm v10+ blocks dependency build scripts by default**, so Puppeteer's Chromium download is skipped until you approve it (`pnpm approve-builds`, or add `puppeteer` to `onlyBuiltDependencies` in `package.json`). On Linux you also need its system libraries (`libnss3`, `libatk`, `libgbm`, etc. — `pnpm exec puppeteer browsers install chrome` reports what's missing) |
 
 You do **not** need Redis, Elasticsearch, or a separate message broker — PostgreSQL covers search (tsvector) and the job queue (pg-boss).
-
-> **Deployment note:** PDF export needs a real Chromium process. On serverless platforms (e.g. Vercel) the bundled Chromium does not fit the function size limit — use `@sparticuz/chromium` + `puppeteer-core`, or run export on a long-lived server (Railway). Decide this before building the export feature.
 
 ---
 
@@ -141,7 +138,6 @@ MAXMIND_LICENSE_KEY=<optional — session-list geolocation>
 | Email | **Nodemailer** (SMTP) | Transactional email |
 | Styling | **Tailwind CSS** | Utility-first |
 | Math | **KaTeX** | LaTeX equation blocks |
-| PDF Export | **Puppeteer** (headless Chromium) | Server-side render of pages to PDF |
 | Code blocks | **Shiki / lowlight** | Syntax highlighting (50+ languages) |
 | Emoji picker | **emoji-mart** (or similar) | Page/workspace icon emoji selection |
 | Offline queue | **IndexedDB** (via `idb`) | Editor offline edit buffer + auto-sync |
@@ -188,7 +184,7 @@ MAXMIND_LICENSE_KEY=<optional — session-list geolocation>
 - Move / duplicate / delete / restore from trash
 - Layout options: full-width toggle · small text · font family (default / serif / mono)
 - Favorites · page lock · version history
-- Export to **Markdown, PDF, HTML** · public link sharing
+- Export to **Markdown, HTML** · public link sharing
 
 ### 5.6 Editor (block-based — every element is a block)
 
@@ -376,7 +372,6 @@ workflik/
 ```bash
 # 1. Install dependencies
 pnpm install
-#    → run `pnpm approve-builds` so Puppeteer downloads Chromium (pnpm v10+ blocks build scripts by default)
 
 # 2. Set up environment
 cp .env.example .env.local
@@ -511,7 +506,7 @@ Build in this exact sequence — each step depends on the ones before it.
 | **2** | **Authentication** | Magic-link sign-in / sign-up (passwordless) · database-backed sessions · session list + revoke · account settings (name, avatar) · account deletion + `delete-user-private-pages` job · auth middleware (redirect unauthenticated users) | Foundation |
 | **3** | **Workspace + Members** | Workspace CRUD (create, rename, delete) · roles: Admin / Editor / Viewer · invite by email + invite link · member management + role change · ownership transfer · workspace switcher in sidebar | Auth |
 | **4** | **Navigation + Sidebar** | Collapsible resizable sidebar · hierarchical page tree using **closure table** (build now — permissions need it later) · drag-and-drop reorder · favorites · recently visited (last 10) · sidebar filter · trash section | Workspace |
-| **5** | **Pages** | Page CRUD + unlimited subpage hierarchy · breadcrumbs · icons (emoji + image) · cover banner · move / duplicate · trash + restore · page lock · layout options (full-width / small text / font) · **version history** (7-day) · export: Markdown + HTML + PDF · trash auto-delete + version pruning pg-boss jobs | Navigation |
+| **5** | **Pages** | Page CRUD + unlimited subpage hierarchy · breadcrumbs · icons (emoji + image) · cover banner · move / duplicate · trash + restore · page lock · layout options (full-width / small text / font) · **version history** (7-day) · export: Markdown + HTML · trash auto-delete + version pruning pg-boss jobs | Navigation |
 | **6** | **Block Editor** | TipTap (ProseMirror) · all block types: Paragraph, H1/H2/H3, Bulleted List, Numbered List, Toggle, Quote, Callout, Divider, To-Do, Image, Video, Audio, File, Table of Contents, Simple Table, Columns, Code Block, Equation, Linked Page, Inline Database · `/` slash command · floating inline toolbar · Markdown shortcuts · block drag-and-drop · multi-block select · continuous auto-save · IndexedDB offline queue · 200-step undo · `tsvector` PostgreSQL triggers on block content changes (feeds Step 10 search) | Pages |
 | **7** | **File Storage** | S3 pre-signed upload flow (`/api/uploads/sign` → `/api/uploads/confirm`) · per-type size limits + 5 GB workspace quota enforced at sign step · CDN URLs · storage usage UI in workspace settings · `cleanup-stale-uploads` + `cleanup-orphaned-media` + `sync-storage-usage` jobs · `email_outbox` table (created here; used in Step 13) | Editor (media blocks need S3) |
 | **8** | **Databases + Properties + Views** | Database schema extending pages · **all 11 property types** (Text, Number, Select, Multi-Select, Date, Checkbox, URL, Email, Phone, Person, Relation) + system properties · **4 views**: Table → Board → Calendar → Gallery · AND/OR filters · up to 5 sort rules · grouping by Select · multiple named views · inline + full-page modes · every database entry is itself a full page | Pages + Editor |

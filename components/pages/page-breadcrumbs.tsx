@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, FileText, Home } from "lucide-react";
 import { PageIcon } from "@/components/pages/page-icon";
+import { pageNavSourceHref, pageNavSourceLabel, type PageNavSource } from "@/lib/pages/navigation-source";
 
 export interface BreadcrumbAncestor {
   id:      string;
@@ -18,6 +19,7 @@ interface PageBreadcrumbsProps {
   currentPageId: string;
   initialTitle:  string | null;
   initialIcon:   string | null;
+  navSource?:    PageNavSource;
 }
 
 // Server-fetched ancestor titles/icons and the current page's own title/icon
@@ -28,7 +30,7 @@ interface PageBreadcrumbsProps {
 // handler in the app) keeps every crumb live without a server round-trip.
 export function PageBreadcrumbs({
   workspaceSlug, workspaceName, ancestors: initialAncestors,
-  currentPageId, initialTitle, initialIcon,
+  currentPageId, initialTitle, initialIcon, navSource,
 }: PageBreadcrumbsProps) {
   const [ancestors, setAncestors] = useState(initialAncestors);
   const [title, setTitle] = useState(initialTitle);
@@ -60,6 +62,28 @@ export function PageBreadcrumbs({
         <Home size={13} className="shrink-0" />
         <span className="font-medium">{workspaceName}</span>
       </a>
+
+      {navSource && (() => {
+        const label = pageNavSourceLabel(navSource);
+        const href  = pageNavSourceHref(navSource, workspaceSlug);
+        return (
+          <span className="flex min-w-0 items-center gap-0.5">
+            <ChevronRight size={12} className="shrink-0 text-foreground/30" />
+            {href ? (
+              <a
+                href={href}
+                className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              >
+                {label}
+              </a>
+            ) : (
+              <span className="max-w-[120px] truncate px-2 py-1 text-muted-foreground/70">
+                {label}
+              </span>
+            )}
+          </span>
+        );
+      })()}
 
       {ancestors.map((crumb) => (
         <span key={crumb.id} className="flex min-w-0 items-center gap-0.5">

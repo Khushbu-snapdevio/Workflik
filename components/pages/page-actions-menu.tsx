@@ -198,7 +198,7 @@ export function PageActionsMenu({
   setOpen(false);
  }
 
- async function handleExport(format: "markdown" | "html" | "pdf") {
+ async function handleExport(format: "markdown" | "html") {
   await run(`export-${format}`, async () => {
    const res = await fetch(`/api/pages/${pageId}/export`, {
     method: "POST",
@@ -206,7 +206,7 @@ export function PageActionsMenu({
     body: JSON.stringify({ format }),
    });
    if (!res.ok) {
-    toast.error(`Couldn't export as ${format === "pdf" ? "PDF" : format} — please try again.`);
+    toast.error(`Couldn't export as ${format} — please try again.`);
     return;
    }
 
@@ -295,7 +295,7 @@ export function PageActionsMenu({
        <div className="px-3 pb-0.5 pt-1">
         <p className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground">Export</p>
        </div>
-       {(["markdown", "html", "pdf"] as const).map((fmt) => (
+       {(["markdown", "html"] as const).map((fmt) => (
         <button
          key={fmt}
          type="button"

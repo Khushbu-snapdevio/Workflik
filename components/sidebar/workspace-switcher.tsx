@@ -40,6 +40,28 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
       .catch(() => setLoading(false));
   }, [open]);
 
+  // Icon/name changes are saved from Settings → General, a sibling route
+  // under the same persistent [workspace] layout — this switcher never
+  // remounts on that navigation, and its only refetch trigger otherwise is
+  // opening the dropdown, so without these it kept showing the stale icon/
+  // name until a hard reload.
+  useEffect(() => {
+    function onIconChanged(e: Event) {
+      const { workspaceId, icon } = (e as CustomEvent<{ workspaceId: string; icon: string | null }>).detail;
+      setWorkspaces((prev) => prev.map((w) => (w.id === workspaceId ? { ...w, icon } : w)));
+    }
+    function onNameChanged(e: Event) {
+      const { workspaceId, name } = (e as CustomEvent<{ workspaceId: string; name: string }>).detail;
+      setWorkspaces((prev) => prev.map((w) => (w.id === workspaceId ? { ...w, name } : w)));
+    }
+    window.addEventListener("workflik:workspace-icon-changed", onIconChanged);
+    window.addEventListener("workflik:workspace-name-changed", onNameChanged);
+    return () => {
+      window.removeEventListener("workflik:workspace-icon-changed", onIconChanged);
+      window.removeEventListener("workflik:workspace-name-changed", onNameChanged);
+    };
+  }, []);
+
   const current =
     workspaces.find((w) => w.slug === currentSlug) ?? workspaces[0];
 

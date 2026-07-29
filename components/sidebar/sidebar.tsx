@@ -461,7 +461,7 @@ export function Sidebar({
      <nav className="flex w-full flex-col items-center gap-1 border-t border-sidebar-border px-2 py-3">
       <CollapsedNavItem href={`/app/${workspaceSlug}/trash`} label="Trash"><Trash2 size={18} /></CollapsedNavItem>
       {isAdmin && (
-       <CollapsedNavItem href="/orbit-admin/orbit" label="Orbit Admin">
+       <CollapsedNavItem href="/orbit-admin/orbit" label="Admin Panel">
         <Shield size={18} />
        </CollapsedNavItem>
       )}
@@ -599,7 +599,7 @@ export function Sidebar({
      <NavButton
       href="/orbit-admin/orbit"
       icon={<Shield size={15} />}
-      label="Orbit Admin"
+      label="Admin Panel"
       active={pathname.startsWith("/orbit-admin")}
      />
     </div>
@@ -867,7 +867,7 @@ function CollapsedFavoritesItem({
         return (
          <Link
           key={fav.pageId}
-          href={`/app/${workspaceSlug}/${r.shortId}`}
+          href={`/app/${workspaceSlug}/${r.shortId}?from=favorites`}
           onClick={() => setOpen(false)}
           className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
          >

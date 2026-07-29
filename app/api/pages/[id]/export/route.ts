@@ -2,11 +2,11 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, pages } from "@/lib/db/schema";
-import { BlockRow, renderMarkdown, renderHtml, renderPdf } from "@/lib/jobs/handlers/export-page";
+import { BlockRow, renderMarkdown, renderHtml } from "@/lib/jobs/handlers/export-page";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
 const exportSchema = z.object({
-  format: z.enum(["markdown", "html", "pdf"]),
+  format: z.enum(["markdown", "html"]),
 });
 
 function slugify(title: string): string {
@@ -63,28 +63,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       });
     }
 
-    if (format === "html") {
-      const content = renderHtml(page.title, rows);
-      return new Response(content, {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Content-Disposition": `attachment; filename="${filename}.html"`,
-        },
-      });
-    }
-
-    // pdf
-    let pdf: Buffer;
-    try {
-      pdf = await renderPdf(page.title, rows);
-    } catch (err) {
-      console.error("[export] PDF generation failed:", err);
-      return apiError(500, "Couldn't generate the PDF — please try again.");
-    }
-    return new Response(new Uint8Array(pdf), {
+    // html
+    const content = renderHtml(page.title, rows);
+    return new Response(content, {
       headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}.pdf"`,
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}.html"`,
       },
     });
   } catch (err) {

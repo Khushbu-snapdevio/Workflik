@@ -14,13 +14,16 @@ import {
  MoreVertical as MoreVerticalIcon, Pencil as PencilIcon, Copy as CopyIcon,
 } from "lucide-react";
 
+import { toast } from "sonner";
 import { useUpload } from "@/lib/storage/use-upload";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { TimeAgo } from "@/components/ui/time-ago";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiOptionPicker } from "@/components/database/filter-bar";
 import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import type { DatabaseView, DatabaseProperty } from "@/lib/db/schema";
+import { pageNavSourceHref, pageNavSourceLabel, type PageNavSource } from "@/lib/pages/navigation-source";
 import { TemplateTableView }  from "./views/template-table-view";
 import { TemplateBoardView }  from "./views/template-board-view";
 import { TemplateCalendarView } from "./views/template-calendar-view";
@@ -69,11 +72,13 @@ function applyFilter(rawVal: unknown, rule: FilterRule, propType: string): boole
    break;
   }
   case "select": {
+   const optId = (v as { optionId?: string } | null)?.optionId ?? null;
+   if (rule.operator === "is_any_of")  return Array.isArray(rule.value) && rule.value.includes(optId);
+   if (rule.operator === "is_none_of") return Array.isArray(rule.value) && !rule.value.includes(optId);
    // No option chosen ("Any") — the filter row exists but doesn't yet
    // constrain anything, so it shouldn't exclude every row via a literal
    // `optionId === ""` comparison that can never be true.
    if (!rule.value) return true;
-   const optId = (v as { optionId?: string } | null)?.optionId ?? null;
    if (rule.operator === "is")   return optId === rule.value;
    if (rule.operator === "is_not") return optId !== rule.value;
    break;
@@ -153,8 +158,10 @@ function getOperators(type: string): { value: string; label: string }[] {
    ];
   case "select":
    return [
-    { value: "is",   label: "is"   },
-    { value: "is_not", label: "is not" },
+    { value: "is",      label: "is"      },
+    { value: "is_not",    label: "is not"    },
+    { value: "is_any_of",  label: "is any of"  },
+    { value: "is_none_of", label: "is none of" },
     ...common,
    ];
   case "checkbox":
@@ -323,20 +330,15 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
  onClose:  () => void;
 }) {
  const props = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
- const atLimit = filters.length >= props.length;
+ const atLimit = props.length === 0;
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
- // Properties already used by OTHER rules — excluded from a row's own
- // dropdown (except its current selection) so the same property can't be
- // picked twice, and from `addRule`'s default pick.
- function usedElsewhere(excludeId?: string) {
-  return new Set(filters.filter((f) => f.id !== excludeId).map((f) => f.propertyId));
- }
-
+ // The same property can be picked more than once — rows sharing a property
+ // OR together (see displayedEntries), which is how "Priority is Medium OR
+ // High" is expressed as two separate rows instead of requiring "is any of".
  function addRule() {
   if (atLimit) return;
-  const used = usedElsewhere();
-  const p = props.find((pr) => !used.has(pr.id));
+  const p = props[0];
   if (!p) return;
   const ops = getOperators(p.type);
   onChange([...filters, { id: crypto.randomUUID(), propertyId: p.id, operator: ops[0].value, value: "" }]);
@@ -358,14 +360,27 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
     {filters.length === 0 && (
      <p className="py-4 text-center text-xs text-muted-foreground">No filters applied. Add one below.</p>
     )}
-    {filters.map((f) => {
+    {filters.map((f, i) => {
      const prop  = props.find((p) => p.id === f.propertyId);
      const ops   = getOperators(prop?.type ?? "text");
      const config = (prop?.config ?? {}) as { options?: { id: string; name: string }[] };
      const needsVal = !["is_empty","is_not_empty","is_checked","is_not_checked"].includes(f.operator);
-     const used  = usedElsewhere(f.id);
+     // "is any of" / "is none of" lets ONE rule match several values of the
+     // same select property. Alternatively, two separate rows on the same
+     // property (below) OR together instead — see displayedEntries.
+     const isMultiVal = prop?.type === "select" && (f.operator === "is_any_of" || f.operator === "is_none_of");
+     // Rows sharing a property with an earlier row OR together instead of
+     // AND (see displayedEntries) — surface that so it isn't silent.
+     const isOr = i > 0 && filters.slice(0, i).some((other) => other.propertyId === f.propertyId);
      return (
       <div key={f.id} className="flex flex-wrap items-center gap-1.5">
+       {i > 0 && (
+        <span className={`shrink-0 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-bold tracking-wide ${
+         isOr ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
+        }`}>
+         {isOr ? "or" : "and"}
+        </span>
+       )}
        <Select
         value={f.propertyId}
         onValueChange={(v) => {
@@ -378,12 +393,15 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
          <SelectValue />
         </SelectTrigger>
         <SelectContent>
-         {props.filter((p) => !used.has(p.id)).map((p) => (
+         {props.map((p) => (
           <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
          ))}
         </SelectContent>
        </Select>
-       <Select value={f.operator} onValueChange={(v) => update(f.id, { operator: v, value: "" })}>
+       <Select
+        value={f.operator}
+        onValueChange={(v) => update(f.id, { operator: v, value: (v === "is_any_of" || v === "is_none_of") ? [] : "" })}
+       >
         <SelectTrigger size="sm" className="w-auto min-w-24">
          <SelectValue />
         </SelectTrigger>
@@ -391,7 +409,14 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
          {ops.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>
        </Select>
-       {needsVal && prop?.type === "select" && (
+       {needsVal && isMultiVal && (
+        <MultiOptionPicker
+         options={config.options ?? []}
+         value={Array.isArray(f.value) ? f.value as string[] : []}
+         onChange={(ids) => update(f.id, { value: ids })}
+        />
+       )}
+       {needsVal && !isMultiVal && prop?.type === "select" && (
         // Radix Select items can't have an empty-string value (reserved for
         // "unset"), so "Any" — the "no specific option required" choice —
         // uses a sentinel that's translated back to "" on select/read.
@@ -428,7 +453,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
     <button
      onClick={addRule}
      disabled={atLimit}
-     onMouseEnter={(e) => { if (atLimit) showTooltip("All properties already have a filter", e); }}
+     onMouseEnter={(e) => { if (atLimit) showTooltip("No filterable properties on this database", e); }}
      onMouseLeave={hideTooltip}
      className="flex items-center gap-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80 disabled:cursor-not-allowed disabled:opacity-40"
     >
@@ -601,6 +626,7 @@ interface Props {
  workspaceName: string;
  workspaceId:  string;
  breadcrumbs:  { id: string; shortId: string; title: string }[];
+ navSource?:  PageNavSource;
  /** Nearest other top-level item (previous, or next if this was first) —
   *  used as the delete fallback destination when this page has no parent. */
  rootFallbackShortId?: string | null;
@@ -615,6 +641,7 @@ interface Props {
  isAdmin:    boolean;
  isLocked:   boolean;
  isDeleted:   boolean;
+ lockedBanner?: React.ReactNode;
 }
 
 export function TemplatePageClient({
@@ -627,6 +654,7 @@ export function TemplatePageClient({
  workspaceName,
  workspaceId,
  breadcrumbs: initBreadcrumbs,
+ navSource,
  rootFallbackShortId,
  defaultViewId,
  currentUserId,
@@ -639,7 +667,9 @@ export function TemplatePageClient({
  isAdmin,
  isLocked,
  isDeleted,
+ lockedBanner,
 }: Props) {
+ const locked = isLocked && !isDeleted;
  const [properties, setProperties] = useState<DatabaseProperty[]>(initProps);
  const [views, setViews]      = useState<DatabaseView[]>(initViews);
  const [entries,  setEntries]  = useState<TemplateEntry[]>(initEntries);
@@ -678,6 +708,57 @@ export function TemplatePageClient({
  }, []);
 
  const router = useRouter();
+
+ // This whole component is seeded once from server-rendered props —
+ // useState(initEntries)/useState(initValues)/useState(initProps) above only
+ // ever read their argument on mount. The value-changed listener further up
+ // only catches edits made while THIS instance stayed mounted (e.g. an
+ // inline cell edit); it does nothing for a value saved on an entry's own,
+ // separately-mounted page, since that page's dispatch fires after this
+ // instance (and its listener) already unmounted on navigating away. So
+ // navigating back here can show whatever was true at the moment this
+ // instance last mounted, missing anything changed elsewhere in between.
+ // router.refresh() alone doesn't fix this either — it re-renders the
+ // Server Component tree above, but new props flowing into an
+ // already-mounted client component don't retroactively feed a useState
+ // that already ran its initializer. An explicit fetch + setState — the
+ // same mechanism components/database/database-page.tsx uses for its own
+ // live refresh — sidesteps both problems.
+ useEffect(() => {
+  if (page.kind !== "database") return;
+  let cancelled = false;
+  async function refetch() {
+   const [entriesRes, propsRes] = await Promise.all([
+    fetch(`/api/databases/${page.id}/entries`),
+    fetch(`/api/databases/${page.id}/properties`),
+   ]);
+   if (cancelled) return;
+   if (entriesRes.ok) {
+    const data = await entriesRes.json() as { entries: TemplateEntry[]; propertyValues: TemplateValue[] };
+    if (!cancelled) { setEntries(data.entries); setValues(data.propertyValues); }
+   }
+   if (propsRes.ok) {
+    const props = await propsRes.json() as DatabaseProperty[];
+    if (!cancelled) setProperties(props);
+   }
+  }
+  // Runs once right away too — not just on visibility/pageshow — because a
+  // plain forward navigation (clicking the breadcrumb back to this database)
+  // is neither a visibility change nor a bfcache restore, yet can still land
+  // on this mount with server props served from Next's router/prefetch
+  // cache rather than a genuinely fresh request.
+  refetch();
+  function onVisibilityChange() { if (document.visibilityState === "visible") refetch(); }
+  function onPageShow(e: PageTransitionEvent) { if (e.persisted) refetch(); }
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  window.addEventListener("pageshow", onPageShow);
+  return () => {
+   cancelled = true;
+   document.removeEventListener("visibilitychange", onVisibilityChange);
+   window.removeEventListener("pageshow", onPageShow);
+  };
+ }, [page.id, page.kind]);
+
  const searchParams = useSearchParams();
  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set());
  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
@@ -699,6 +780,8 @@ export function TemplatePageClient({
  const [pageIcon,   setPageIcon]   = useState<string | null>(page.icon);
  const [pageCoverUrl, setPageCoverUrl] = useState<string | null>(page.coverUrl);
  const [removeCoverConfirm, setRemoveCoverConfirm] = useState(false);
+ const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
+ const [deletingSelected, setDeletingSelected] = useState(false);
 
  const descKey = `page-desc:${page.id}`;
  const [pageDescription,  setPageDescription]  = useState<string>("");
@@ -827,11 +910,27 @@ export function TemplatePageClient({
   return target instanceof HTMLElement && !!target.closest('[data-slot="select-content"]');
  }
 
+ // While a Radix `Select` inside these panels is open, it sets
+ // `document.body.style.pointerEvents = "none"` (its `disableOutsidePointerEvents`
+ // behavior — not exposed as an opt-out `modal` prop the way Popover/Dialog
+ // have one) so every other element, including the panel's own DOM under
+ // filterPanelRef/sortPanelRef, stops hit-testing. A click meant to close
+ // that Select (its trigger again, or empty space elsewhere in the panel)
+ // then resolves `e.target` to `<html>`/`document` instead of anything
+ // `contains`ed by the panel's ref, so the plain outside-click check below
+ // wrongly reads it as "outside the panel" and closes the whole thing.
+ // Radix's own pointerdown listener already handles dismissing just the
+ // Select correctly — bailing out here while pointer-events are disabled
+ // leaves that alone and stops it from also closing the panel.
+ function isRadixModalLayerOpen() {
+  return document.body.style.pointerEvents === "none";
+ }
+
  useEffect(() => {
   if (!showFilter) return;
   function h(e: MouseEvent) {
    const target = e.target as Node;
-   if (isInsideSelectPortal(target)) return;
+   if (isInsideSelectPortal(target) || isRadixModalLayerOpen()) return;
    if (filterPanelRef.current && !filterPanelRef.current.contains(target)) setShowFilter(false);
   }
   document.addEventListener("mousedown", h);
@@ -842,7 +941,7 @@ export function TemplatePageClient({
   if (!showSort) return;
   function h(e: MouseEvent) {
    const target = e.target as Node;
-   if (isInsideSelectPortal(target)) return;
+   if (isInsideSelectPortal(target) || isRadixModalLayerOpen()) return;
    if (sortPanelRef.current && !sortPanelRef.current.contains(target)) setShowSort(false);
   }
   document.addEventListener("mousedown", h);
@@ -1022,23 +1121,6 @@ export function TemplatePageClient({
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [activeView?.id, activeView?.type]);
 
- // ── Table view: pin the horizontal scrollbar to the viewport bottom ──────
- useEffect(() => {
-  const el = tableViewRef.current;
-  if (!el) return;
-  if (activeView?.type !== "table") {
-   el.style.minHeight = "";
-   return;
-  }
-  const measure = () => {
-   const rect = el.getBoundingClientRect();
-   el.style.minHeight = `${Math.max(120, window.innerHeight - rect.top)}px`;
-  };
-  measure();
-  window.addEventListener("resize", measure);
-  return () => window.removeEventListener("resize", measure);
- }, [activeView?.type, pageCoverUrl]);
-
  // ── Value map ──────────────────────────────────────────────────────────────
 
  const entryValueMap = useMemo(() => {
@@ -1053,11 +1135,21 @@ export function TemplatePageClient({
  const displayedEntries = useMemo(() => {
   let result = [...entries];
   if (filterRules.length > 0) {
+   // Grouped by property: rules on the SAME property OR together (so
+   // "Priority is Medium" + "Priority is High" as two separate rows shows
+   // entries matching either, not neither — two ANDed conditions on one
+   // property could never both be true at once), rules on DIFFERENT
+   // properties still AND together as before.
+   const groups = new Map<string, FilterRule[]>();
+   for (const rule of filterRules) {
+    const group = groups.get(rule.propertyId);
+    if (group) group.push(rule); else groups.set(rule.propertyId, [rule]);
+   }
    result = result.filter((entry) => {
     const valMap = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
-    return filterRules.every((rule) => {
-     const prop = properties.find((p) => p.id === rule.propertyId);
-     return applyFilter(valMap.get(rule.propertyId), rule, prop?.type ?? "text");
+    return [...groups.entries()].every(([propertyId, rules]) => {
+     const prop = properties.find((p) => p.id === propertyId);
+     return rules.some((rule) => applyFilter(valMap.get(propertyId), rule, prop?.type ?? "text"));
     });
    });
   }
@@ -1110,12 +1202,22 @@ export function TemplatePageClient({
  // ── Entry actions ──────────────────────────────────────────────────────────
 
  const addEntry = useCallback(async (defaultValues?: Record<string, unknown>, title?: string) => {
+  if (locked) return;
   const t = title?.trim() ?? "";
-  const res = await fetch(`/api/databases/${page.id}/entries`, {
-   method: "POST", headers: { "Content-Type": "application/json" },
-   body:  JSON.stringify({ title: t, defaultValues }),
-  });
-  if (!res.ok) return;
+  let res: Response;
+  try {
+   res = await fetch(`/api/databases/${page.id}/entries`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body:  JSON.stringify({ title: t, defaultValues }),
+   });
+  } catch {
+   toast.error("Failed to add entry — network error");
+   return;
+  }
+  if (!res.ok) {
+   toast.error("Failed to add entry");
+   return;
+  }
   const e = await res.json() as { id: string; shortId: string; title: string; orderIndex: number; propertyValues: { entryId: string; propertyId: string; value: unknown }[] };
   setEntries((prev) => [...prev, { id: e.id, shortId: e.shortId, title: t, orderIndex: e.orderIndex }]);
   // Mirrors EVERY value the server actually wrote — not just what this caller
@@ -1134,9 +1236,10 @@ export function TemplatePageClient({
   // Only enter inline title-edit mode when no title was pre-supplied (table/calendar add)
   if (!t) setEditingTitleId(e.id);
   return { id: e.id, shortId: e.shortId };
- }, [page.id]);
+ }, [page.id, locked]);
 
  const saveTitle = useCallback(async (entryId: string, title: string) => {
+  if (locked) return;
   const t = title.trim() || "Untitled";
   setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, title: t } : e));
   setEditingTitleId(null);
@@ -1147,9 +1250,10 @@ export function TemplatePageClient({
   window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, title: t } }));
   window.dispatchEvent(new CustomEvent("pages:refresh"));
   router.refresh();
- }, [router]);
+ }, [router, locked]);
 
  const savePanelTitle = useCallback(async (entryId: string, title: string) => {
+  if (locked) return;
   const t = title.trim() || "Untitled";
   setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, title: t } : e));
   await fetch(`/api/pages/${entryId}`, {
@@ -1159,9 +1263,10 @@ export function TemplatePageClient({
   window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, title: t } }));
   window.dispatchEvent(new CustomEvent("pages:refresh"));
   router.refresh();
- }, [router]);
+ }, [router, locked]);
 
  const saveEntryIcon = useCallback(async (entryId: string, icon: string) => {
+  if (locked) return;
   setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, icon } : e));
   await fetch(`/api/pages/${entryId}`, {
    method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -1170,22 +1275,31 @@ export function TemplatePageClient({
   window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entryId, icon } }));
   window.dispatchEvent(new CustomEvent("pages:refresh"));
   router.refresh();
- }, [router]);
+ }, [router, locked]);
 
  const deleteEntry = useCallback(async (entryId: string) => {
+  if (locked) return;
   setEntries((prev) => prev.filter((e) => e.id !== entryId));
   setSelectedIds((prev) => { const n = new Set(prev); n.delete(entryId); return n; });
   await fetch(`/api/pages/${entryId}`, { method: "DELETE" });
- }, []);
+ }, [locked]);
 
  const deleteSelected = useCallback(async () => {
+  if (locked) return;
   const ids = [...selectedIds];
-  setEntries((prev) => prev.filter((e) => !selectedIds.has(e.id)));
-  setSelectedIds(new Set());
-  await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
- }, [selectedIds]);
+  setDeletingSelected(true);
+  try {
+   await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
+   setEntries((prev) => prev.filter((e) => !selectedIds.has(e.id)));
+   setSelectedIds(new Set());
+  } finally {
+   setDeletingSelected(false);
+   setConfirmDeleteSelected(false);
+  }
+ }, [selectedIds, locked]);
 
  const duplicateEntry = useCallback(async (entryId: string) => {
+  if (locked) return;
   const res = await fetch(`/api/pages/${entryId}/duplicate`, { method: "POST" });
   if (!res.ok) return;
   const dup = await res.json() as { id: string; shortId: string; title: string; orderIndex: number; icon: string | null; updatedAt: string | null };
@@ -1194,9 +1308,10 @@ export function TemplatePageClient({
    .filter((v) => v.entryId === entryId)
    .map((v) => ({ ...v, id: crypto.randomUUID(), entryId: dup.id }));
   if (dupValues.length) setValues((prev) => [...prev, ...dupValues]);
- }, [values]);
+ }, [values, locked]);
 
  const updatePropValue = useCallback(async (entryId: string, propId: string, value: unknown) => {
+  if (locked) return;
   setValues((prev) => {
    const idx = prev.findIndex((v) => v.entryId === entryId && v.propertyId === propId);
    if (idx >= 0) { const n = [...prev]; n[idx] = { ...n[idx], value }; return n; }
@@ -1211,7 +1326,7 @@ export function TemplatePageClient({
   // this entry's own page) re-fetches fresh server data instead of reusing
   // whatever was cached before this edit.
   router.refresh();
- }, [router]);
+ }, [router, locked]);
 
  // ── Selection ──────────────────────────────────────────────────────────────
 
@@ -1229,40 +1344,45 @@ export function TemplatePageClient({
 
  // ── Property actions ───────────────────────────────────────────────────────
 
- const addProperty = useCallback(async (name: string, type: string, config?: Record<string, unknown>) => {
+ const addProperty = useCallback(async (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => {
+  if (locked) return;
   const resolvedConfig = config ?? ((type === "select" || type === "multi_select") ? { options: [] } : {});
   const res = await fetch(`/api/databases/${page.id}/properties`, {
    method: "POST", headers: { "Content-Type": "application/json" },
-   body:  JSON.stringify({ name, type, config: resolvedConfig }),
+   body:  JSON.stringify({ name, type, config: resolvedConfig, twoWay }),
   });
   if (!res.ok) return;
   const prop = await res.json() as DatabaseProperty;
   setProperties((prev) => [...prev, prop]);
- }, [page.id]);
+ }, [page.id, locked]);
 
  const renameProperty = useCallback(async (propId: string, name: string) => {
+  if (locked) return;
   setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, name } : p));
   await fetch(`/api/databases/${page.id}/properties/${propId}`, {
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ name }),
   });
- }, [page.id]);
+ }, [page.id, locked]);
 
  const updateProperty = useCallback(async (propId: string, patch: Record<string, unknown>) => {
+  if (locked) return;
   setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, ...patch } as DatabaseProperty : p));
   await fetch(`/api/databases/${page.id}/properties/${propId}`, {
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify(patch),
   });
- }, [page.id]);
+ }, [page.id, locked]);
 
  const deleteProperty = useCallback(async (propId: string) => {
+  if (locked) return;
   setProperties((prev) => prev.filter((p) => p.id !== propId));
   setValues((prev) => prev.filter((v) => v.propertyId !== propId));
   await fetch(`/api/databases/${page.id}/properties/${propId}`, { method: "DELETE" });
- }, [page.id]);
+ }, [page.id, locked]);
 
  const updateView = useCallback(async (patch: Record<string, unknown>) => {
+  if (locked) return;
   if (!activeView) return;
   const viewId = activeView.id;
   setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, ...patch } as DatabaseView : v));
@@ -1270,9 +1390,10 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify(patch),
   });
- }, [page.id, activeView]);
+ }, [page.id, activeView, locked]);
 
  const addView = useCallback(async (name: string, type: string) => {
+  if (locked) return;
   let calendarPropertyId: string | null = null;
 
   if (type === "calendar") {
@@ -1299,9 +1420,10 @@ export function TemplatePageClient({
   const view = await res.json() as DatabaseView;
   setViews((prev) => [...prev, view]);
   setActiveViewId(view.id);
- }, [page.id, properties]);
+ }, [page.id, properties, locked]);
 
  const deleteView = useCallback(async (viewId: string) => {
+  if (locked) return;
   setDeletingView(true);
   const remaining = views.filter((v) => v.id !== viewId);
   setViews(remaining);
@@ -1316,9 +1438,10 @@ export function TemplatePageClient({
    setDeleteViewTarget(null);
   }
  // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [page.id, views, activeViewId]);
+ }, [page.id, views, activeViewId, locked]);
 
  const renameView = useCallback(async (viewId: string, name: string) => {
+  if (locked) return;
   const trimmed = name.trim();
   if (!trimmed) return;
   setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, name: trimmed } : v));
@@ -1327,7 +1450,7 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body: JSON.stringify({ name: trimmed }),
   });
- }, [page.id]);
+ }, [page.id, locked]);
 
  // Changes an EXISTING view's layout (e.g. Table → Board) — distinct from
  // addView, which only ever creates a fresh one. Switching a view to "board"
@@ -1335,6 +1458,7 @@ export function TemplatePageClient({
  // auto-wire-board-group effect above, which finds (or creates) a Select
  // property for it — no extra step needed here.
  const changeViewType = useCallback(async (viewId: string, type: string) => {
+  if (locked) return;
   setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, type } as DatabaseView : v));
   setShowLayoutPicker(false);
   setViewMenuTarget(null);
@@ -1343,9 +1467,10 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body: JSON.stringify({ type }),
   });
- }, [page.id]);
+ }, [page.id, locked]);
 
  const duplicateView = useCallback(async (viewId: string) => {
+  if (locked) return;
   const view = views.find((v) => v.id === viewId);
   if (!view) return;
   const res = await fetch(`/api/databases/${page.id}/views`, {
@@ -1356,19 +1481,21 @@ export function TemplatePageClient({
   const newView = await res.json() as DatabaseView;
   setViews((prev) => [...prev, newView]);
   setActiveViewId(newView.id);
- }, [page.id, views]);
+ }, [page.id, views, locked]);
 
  const togglePropertyVisibility = useCallback(async (propId: string, hidden: boolean) => {
+  if (locked) return;
   setProperties((prev) => prev.map((p) => p.id === propId ? { ...p, isHidden: hidden } : p));
   await fetch(`/api/databases/${page.id}/properties/${propId}`, {
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify({ isHidden: hidden }),
   });
- }, [page.id]);
+ }, [page.id, locked]);
 
  // ── Page meta ──────────────────────────────────────────────────────────────
 
  async function savePageTitle(title: string) {
+  if (locked) return;
   const t = title.trim() || "Untitled";
   setPageTitle(t);
   setEditingPageTitle(false);
@@ -1382,6 +1509,7 @@ export function TemplatePageClient({
  }
 
  async function savePageIcon(icon: string) {
+  if (locked) return;
   setPageIcon(icon || null);
   await fetch(`/api/pages/${page.id}`, {
    method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -1393,6 +1521,7 @@ export function TemplatePageClient({
  }
 
  async function savePageCover(coverUrl: string) {
+  if (locked) return;
   setPageCoverUrl(coverUrl || null);
   await fetch(`/api/pages/${page.id}`, {
    method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -1421,6 +1550,28 @@ export function TemplatePageClient({
       <HouseIcon size={13} />
       <span className="font-medium">{workspaceName}</span>
      </Link>
+
+     {navSource && (() => {
+      const label = pageNavSourceLabel(navSource);
+      const href  = pageNavSourceHref(navSource, workspaceSlug);
+      return (
+       <span className="flex min-w-0 items-center gap-0.5">
+        <CaretRightIcon size={11} className="shrink-0 text-foreground/30" />
+        {href ? (
+         <Link
+          href={href}
+          className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+         >
+          {label}
+         </Link>
+        ) : (
+         <span className="max-w-[120px] truncate px-2 py-1 text-xs text-muted-foreground/70">
+          {label}
+         </span>
+        )}
+       </span>
+      );
+     })()}
 
      {breadcrumbs.map((crumb) => (
       <span key={crumb.shortId} className="flex min-w-0 items-center gap-0.5">
@@ -1497,6 +1648,7 @@ export function TemplatePageClient({
       // eslint-disable-next-line @next/next/no-img-element
       : <img src={pageCoverUrl} alt="" className="h-full w-full object-cover" />
      }
+     {!locked && (
      <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-0 transition-opacity group-hover/cover:opacity-100">
       <div className="relative">
        <button
@@ -1520,15 +1672,18 @@ export function TemplatePageClient({
        Remove
       </button>
      </div>
+     )}
     </div>
    )}
 
    {/* Page header */}
    <div className="relative mx-auto w-full max-w-[1100px] px-8 pb-2 pt-6">
 
+    {lockedBanner}
+
     {/* Subtle action buttons row (Add icon / Add cover) */}
     <div className="mb-2 flex items-center gap-1">
-     {!pageIcon && (
+     {!pageIcon && !locked && (
       <div className="relative">
        <button
         onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
@@ -1547,7 +1702,7 @@ export function TemplatePageClient({
        )}
       </div>
      )}
-     {!pageCoverUrl && (
+     {!pageCoverUrl && !locked && (
       <div className="relative">
        <button
         onClick={() => { setShowCoverPicker((p) => !p); setShowIconPicker(false); }}
@@ -1573,7 +1728,7 @@ export function TemplatePageClient({
      {pageIcon && (
       <div className="relative mt-1 shrink-0">
        <button
-        onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
+        onClick={() => { if (locked) return; setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
         className="flex size-12 items-center justify-center rounded-[var(--radius-md)] transition-all hover:bg-muted/50"
        >
         <PageIcon icon={pageIcon} size={48} />
@@ -1611,8 +1766,8 @@ export function TemplatePageClient({
        />
       ) : (
        <h1
-        onClick={() => setEditingPageTitle(true)}
-        className="-mx-1 cursor-text rounded px-1 text-4xl font-bold tracking-tight text-foreground hover:bg-muted/30 transition-colors"
+        onClick={() => { if (!locked) setEditingPageTitle(true); }}
+        className={`-mx-1 rounded px-1 text-4xl font-bold tracking-tight text-foreground transition-colors ${locked ? "" : "cursor-text hover:bg-muted/30"}`}
        >
         {pageTitle || <span className="text-muted-foreground/60">Untitled</span>}
        </h1>
@@ -1723,6 +1878,7 @@ export function TemplatePageClient({
      })}
 
      {/* Add a view */}
+     {!locked && (
      <div ref={addViewRef} className="relative mb-1 ml-1">
       <button
        onClick={() => { const next = !showAddView; closeAllToolbarPopups(); setShowAddView(next); }}
@@ -1767,6 +1923,7 @@ export function TemplatePageClient({
        </div>
       )}
      </div>
+     )}
     </div>
 
     <div className="mb-1 flex shrink-0 items-center gap-0.5">
@@ -1858,7 +2015,8 @@ export function TemplatePageClient({
        const entry = await addEntry(defaultValues);
        if (entry) router.push(`/app/${workspaceSlug}/${entry.shortId}`);
       }}
-      className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+      disabled={locked}
+      className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
      >
       <PlusIcon size={12} />
       New
@@ -1875,7 +2033,7 @@ export function TemplatePageClient({
       {selectedIds.size} {selectedIds.size === 1 ? "row" : "rows"} selected
      </span>
      <button
-      onClick={deleteSelected}
+      onClick={() => setConfirmDeleteSelected(true)}
       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
      >
       <TrashIcon size={12} /> Delete
@@ -1892,8 +2050,7 @@ export function TemplatePageClient({
 
    {/* View */}
    <div
-    ref={tableViewRef}
-    className={`relative ${activeView?.type === "table" ? "overflow-x-auto" : ""}`}
+    className="relative"
     style={activeView?.type === "calendar" || activeView?.type === "gantt" ? { height: calendarHeight ?? "calc(100dvh - 6rem)" } : undefined}
    >
     {viewSwitching && (
@@ -1901,7 +2058,10 @@ export function TemplatePageClient({
       <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
      </div>
     )}
-    <div className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "h-full" : ""}`}>
+    <div
+     ref={tableViewRef}
+     className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "table" ? "overflow-x-auto template-hscroll" : ""} ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "h-full" : ""}`}
+    >
     {activeView?.type === "board" ? (
      <TemplateBoardView
       entries={displayedEntries}
@@ -1911,7 +2071,8 @@ export function TemplatePageClient({
       databaseId={page.id}
       workspaceSlug={workspaceSlug}
       workspaceId={workspaceId}
-      onAddEntry={async (dv) => { await addEntry(dv); }}
+      locked={locked}
+      onAddEntry={async (dv, t) => addEntry(dv, t)}
       onDeleteEntry={deleteEntry}
       onDuplicateEntry={duplicateEntry}
       onClickEntry={handleClickEntry}
@@ -1933,6 +2094,7 @@ export function TemplatePageClient({
       databaseId={page.id}
       workspaceId={workspaceId}
       workspaceSlug={workspaceSlug}
+      locked={locked}
       year={calYear}
       month={calMonth}
       onYearChange={setCalYear}
@@ -1956,6 +2118,7 @@ export function TemplatePageClient({
       entryValueMap={entryValueMap}
       workspaceSlug={workspaceSlug}
       workspaceId={workspaceId}
+      locked={locked}
       onAddEntry={async (dv) => { await addEntry(dv); }}
       onDeleteEntry={deleteEntry}
       onDuplicateEntry={duplicateEntry}
@@ -1975,6 +2138,7 @@ export function TemplatePageClient({
       databaseId={page.id}
       workspaceId={workspaceId}
       workspaceSlug={workspaceSlug}
+      locked={locked}
       onAddEntry={async (dv) => { await addEntry(dv); }}
       onDeleteEntry={deleteEntry}
       onDuplicateEntry={duplicateEntry}
@@ -1991,6 +2155,8 @@ export function TemplatePageClient({
       entryValueMap={entryValueMap}
       workspaceSlug={workspaceSlug}
       workspaceId={workspaceId}
+      databaseId={page.id}
+      locked={locked}
       selectedIds={selectedIds}
       editingTitleId={editingTitleId}
       onToggleSelect={toggleSelect}
@@ -2138,6 +2304,18 @@ export function TemplatePageClient({
    confirmLoadingLabel="Deleting…"
    loading={deletingView}
    onConfirm={() => { if (deleteViewTarget) deleteView(deleteViewTarget.id); }}
+  />
+
+  {/* ── Delete selected entries confirmation ── */}
+  <ConfirmDialog
+   open={confirmDeleteSelected}
+   onOpenChange={(o) => !o && setConfirmDeleteSelected(false)}
+   title={`Delete ${selectedIds.size} ${selectedIds.size === 1 ? "entry" : "entries"}?`}
+   description="They will be moved to Trash and permanently deleted after 30 days."
+   confirmLabel="Delete"
+   confirmLoadingLabel="Deleting…"
+   loading={deletingSelected}
+   onConfirm={deleteSelected}
   />
   {tooltip && typeof document !== "undefined" && createPortal(
    <IconTooltip rect={tooltip.rect} label={tooltip.label} />,

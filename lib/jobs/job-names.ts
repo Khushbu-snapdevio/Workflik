@@ -37,7 +37,7 @@ export interface WorkspaceInviteSendPayload {
 export interface PageExportPayload {
   pageId:    string;
   userId:    string;
-  format:    "markdown" | "html" | "pdf";
+  format:    "markdown" | "html";
 }
 
 export interface NotificationEmailSendPayload {

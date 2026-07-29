@@ -14,6 +14,7 @@ import {
   workspaces,
 } from "@/lib/db/schema";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
+import { isPageNavSource } from "@/lib/pages/navigation-source";
 import { PageClient } from "@/components/pages/page-client";
 import { PageBreadcrumbs } from "@/components/pages/page-breadcrumbs";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
@@ -31,7 +32,10 @@ import { TrashBanner } from "@/components/pages/trash-banner";
 import { TemplatePageClient } from "@/components/templates/template-page-client";
 import { computeDerivedValues } from "@/lib/databases/compute-values";
 
-type Props = { params: Promise<{ workspace: string; pageId: string }> };
+type Props = {
+  params:       Promise<{ workspace: string; pageId: string }>;
+  searchParams: Promise<{ from?: string }>;
+};
 
 export async function generateMetadata({ params }: Props) {
   const { pageId } = await params;
@@ -43,8 +47,10 @@ export async function generateMetadata({ params }: Props) {
   return { title: page?.title ?? "Page" };
 }
 
-export default async function PageEditorPage({ params }: Props) {
+export default async function PageEditorPage({ params, searchParams }: Props) {
   const { workspace: slug, pageId: shortId } = await params;
+  const { from } = await searchParams;
+  const navSource = isPageNavSource(from) ? from : undefined;
   const session = await requireSession();
 
   const [ws] = await db
@@ -199,8 +205,22 @@ export default async function PageEditorPage({ params }: Props) {
       : [];
     const commentCountMap = new Map(commentCountRows.map((r) => [r.pageId, r.count]));
 
+    const lockedBanner = page.isLocked && (
+      <div className="mb-5 flex items-center gap-3 rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+        This page is <strong className="ml-1">locked</strong> — editing is disabled.
+      </div>
+    );
+
     return (
       <TemplatePageClient
+        // Forces a full remount on every navigation between two database
+        // pages (not just entry ↔ database) — this component seeds all its
+        // state once via useState(initEntries)/useState(initProps)/etc, which
+        // only reads its argument on mount, so reusing the same instance
+        // across a client-side navigation would keep showing whatever was
+        // true when it first mounted rather than picking up fresh server data.
+        key={page.id}
+        lockedBanner={lockedBanner}
         page={{
           id:       page.id,
           shortId:  page.shortId,
@@ -218,6 +238,7 @@ export default async function PageEditorPage({ params }: Props) {
         workspaceName={ws.name}
         workspaceId={ws.id}
         breadcrumbs={breadcrumbs}
+        navSource={navSource}
         rootFallbackShortId={rootFallbackShortId}
         defaultViewId={page.defaultViewId ?? null}
         currentUserId={session.user.id}
@@ -269,6 +290,7 @@ export default async function PageEditorPage({ params }: Props) {
             currentPageId={page.id}
             initialTitle={page.title}
             initialIcon={page.icon}
+            navSource={navSource}
           />
           <PagePrivacyPill />
           <PageDraftPill />

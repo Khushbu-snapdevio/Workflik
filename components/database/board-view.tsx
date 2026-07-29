@@ -9,7 +9,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, LayoutGrid, X, FileText, PanelLeft, PanelRight, Pencil, GripVertical, MoreHorizontal, MessageSquare, Pin } from "lucide-react";
+import { Plus, LayoutGrid, X, FileText, PanelLeft, PanelRight, Pencil, GripVertical, MoreHorizontal, MessageSquare, Pin, Settings2 } from "lucide-react";
 import { useSession } from "@/lib/auth/client";
 import { toggleSelfVote } from "@/lib/databases/vote";
 import { OPTION_COLORS, getOptionColor, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
@@ -91,6 +91,7 @@ export function BoardView({
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const addOptRef            = useRef<HTMLDivElement>(null);
  const addOptInputRef         = useRef<HTMLInputElement>(null);
+ const editGroupsButtonRef      = useRef<HTMLButtonElement>(null);
 
  const groupPropId = activeView?.groupByPropertyId;
  const groupProp  = properties.find((p) => p.id === groupPropId && isGroupableType(p.type));
@@ -303,12 +304,20 @@ export function BoardView({
 
  return (
   <>
-  {pinnedColumns.length > 0 && (
-   <div className="flex flex-wrap items-center gap-2 border-b border-border/40 px-6 py-2">
-    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
-     <Pin size={11} /> Pinned groups
-    </span>
-    {pinnedColumns.map((col) => {
+  {/* Always rendered when there's a groupable property — independent of any
+      column being visible, unlike the per-column "⋯" menu's own "Edit
+      groups" entry. Without this, hiding every group (or the last one) left
+      no way back in: GroupSettingsPanel — which already lists hidden groups
+      with a toggle to restore them — was only ever reachable from a visible
+      column's own menu. */}
+  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-6 py-2">
+    <div className="flex flex-wrap items-center gap-2">
+     {pinnedColumns.length > 0 && (
+      <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
+       <Pin size={11} /> Pinned groups
+      </span>
+     )}
+     {pinnedColumns.map((col) => {
      const color = getOptionColor(col.color);
      const colKey = col.id ?? "no-group";
      return (
@@ -340,8 +349,22 @@ export function BoardView({
       </div>
      );
     })}
+    </div>
+    <button
+     ref={editGroupsButtonRef}
+     type="button"
+     onClick={() => setEditingGroupsAnchor(editGroupsButtonRef.current)}
+     className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+    >
+     <Settings2 size={12} />
+     Edit groups
+     {hiddenGroupOptionIds.length > 0 && (
+      <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+       {hiddenGroupOptionIds.length} hidden
+      </span>
+     )}
+    </button>
    </div>
-  )}
   <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
    <SortableContext items={draggableColumnKeys} strategy={horizontalListSortingStrategy}>
    <div className="grid items-start gap-3 px-6 py-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>

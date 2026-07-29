@@ -1,27 +1,27 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import {
-  pages,
-  userFavorites,
-  userRecentlyVisited,
-  users,
-  workspaces,
-} from "@/lib/db/schema";
+import { workspaces } from "@/lib/db/schema";
+import { getLibraryPage } from "@/lib/pages/library";
+import { DEFAULT_PAGE_SIZE } from "@/lib/ui/pagination";
 import { getWorkspaceMember } from "@/lib/workspaces/auth";
 import { ChevronRight, Home } from "lucide-react";
 import { LibraryClient } from "./library-client";
 import { NewPageButton } from "@/components/workspace/new-page-button";
 import { PageSearchButton } from "@/components/pages/page-search-button";
 
-type Props = { params: Promise<{ workspace: string }> };
+type Props = {
+  params:    Promise<{ workspace: string }>;
+  searchParams: Promise<{ tab?: string }>;
+};
 
 export const metadata = { title: "Library" };
 
-export default async function LibraryPage({ params }: Props) {
+export default async function LibraryPage({ params, searchParams }: Props) {
   const { workspace: slug } = await params;
+  const { tab: initialTab } = await searchParams;
   const session = await requireSession();
 
   const [ws] = await db
@@ -34,64 +34,12 @@ export default async function LibraryPage({ params }: Props) {
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) notFound();
 
-  const allPages = await db
-    .select({
-      id:           pages.id,
-      shortId:      pages.shortId,
-      title:        pages.title,
-      icon:         pages.icon,
-      kind:         pages.kind,
-      isPrivate:    pages.isPrivate,
-      isLocked:     pages.isLocked,
-      parentId:     pages.parentId,
-      createdBy:    pages.createdBy,
-      lastEditedBy: pages.lastEditedBy,
-      createdAt:    pages.createdAt,
-      updatedAt:    pages.updatedAt,
-    })
-    .from(pages)
-    .where(and(eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false)))
-    .orderBy(desc(pages.updatedAt));
-
-  const creatorIds = [...new Set(allPages.flatMap((p) => [p.createdBy, p.lastEditedBy].filter(Boolean) as string[]))];
-  const userRows = creatorIds.length > 0
-    ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(inArray(users.id, creatorIds))
-    : [];
-  const usersMap = Object.fromEntries(userRows.map((u) => [u.id, u.name || u.email || "Unknown"]));
-
-  // Parent pages aren't otherwise fetched — PageActionsMenu needs the
-  // parent's shortId to know where to redirect after a page is trashed.
-  const parentIds = [...new Set(allPages.map((p) => p.parentId).filter(Boolean) as string[])];
-  const parentRows = parentIds.length > 0
-    ? await db.select({ id: pages.id, shortId: pages.shortId }).from(pages).where(inArray(pages.id, parentIds))
-    : [];
-  const parentShortIdMap = Object.fromEntries(parentRows.map((p) => [p.id, p.shortId]));
-
-  const recentRows = await db
-    .select({ pageId: userRecentlyVisited.pageId, visitedAt: userRecentlyVisited.visitedAt })
-    .from(userRecentlyVisited)
-    .where(and(eq(userRecentlyVisited.userId, session.user.id), eq(userRecentlyVisited.workspaceId, ws.id)))
-    .orderBy(desc(userRecentlyVisited.visitedAt))
-    .limit(50);
-  const recentPageIds = new Set(recentRows.map((r) => r.pageId));
-  const visitedAtMap = Object.fromEntries(recentRows.map((r) => [r.pageId, r.visitedAt.toISOString()]));
-
-  const favRows = await db
-    .select({ pageId: userFavorites.pageId })
-    .from(userFavorites)
-    .where(and(eq(userFavorites.userId, session.user.id), eq(userFavorites.workspaceId, ws.id)));
-  const favPageIds = new Set(favRows.map((f) => f.pageId));
-
-  const enriched = allPages.map((p) => ({
-    ...p,
-    createdAt:   p.createdAt.toISOString(),
-    updatedAt:   p.updatedAt.toISOString(),
-    creatorName:  p.createdBy ? (usersMap[p.createdBy] || "Unknown") : "—",
-    visitedAt:   visitedAtMap[p.id] ?? null,
-    isRecent:    recentPageIds.has(p.id),
-    isFavorited: favPageIds.has(p.id),
-    parentShortId: p.parentId ? (parentShortIdMap[p.parentId] ?? null) : null,
-  }));
+  // Only the first page of whichever tab was linked to (e.g. the sidebar's
+  // "/library?tab=private" link — defaults to "All Pages") is fetched here;
+  // every tab switch, search, page-size change, or page navigation after
+  // this initial render goes through GET /api/workspaces/:id/pages/library
+  // instead of re-fetching the whole workspace (see lib/pages/library.ts).
+  const initial = await getLibraryPage(ws.id, session.user.id, { tab: initialTab, page: 1, pageSize: DEFAULT_PAGE_SIZE });
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
@@ -125,7 +73,7 @@ export default async function LibraryPage({ params }: Props) {
         </div>
       </div>
 
-      <LibraryClient pages={enriched} workspaceSlug={slug} workspaceId={ws.id} />
+      <LibraryClient initial={initial} workspaceSlug={slug} workspaceId={ws.id} />
     </div>
   );
 }

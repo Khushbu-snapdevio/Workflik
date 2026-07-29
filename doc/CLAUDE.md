@@ -168,7 +168,7 @@ Pages are the core unit. Everything in WorkFlik is a page or lives inside one.
 - "Empty Trash" scope: Admins empty the entire workspace Trash; non-Admins empty only the pages they personally have permission to permanently delete
 
 **Additional page actions:**
-- Three-dot → "Export" → choose format: Markdown, PDF, or HTML → file downloads
+- Three-dot → "Export" → choose format: Markdown or HTML → file downloads
 - Star icon on hover in sidebar → adds to personal Favorites (top of sidebar, visible only to that user; not shared)
 
 ---

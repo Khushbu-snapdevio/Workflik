@@ -6,36 +6,18 @@ import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TimeAgo } from "@/components/ui/time-ago";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, getPageNumbers } from "@/lib/ui/pagination";
-
-type PageRow = {
-  id:          string;
-  shortId:     string;
-  title:       string;
-  icon:        string | null;
-  kind:        string;
-  isPrivate:   boolean;
-  isLocked:    boolean;
-  parentId:    string | null;
-  parentShortId: string | null;
-  createdAt:   string;
-  updatedAt:   string;
-  creatorName: string;
-  visitedAt:   string | null;
-  isRecent:    boolean;
-  isFavorited: boolean;
-};
+import type { LibraryPageResult, LibraryPageRow as PageRow } from "@/lib/pages/library";
 
 type DisplayRow = PageRow & { depth: number; hasChildren: boolean };
 
 // Nests sub-pages under their parent (in the same relative order `rows`
 // already has — most-recently-updated first) instead of listing every page
 // flat, which made a top-level page and a deeply-nested one indistinguishable.
-// A page whose parent isn't present in `rows` (filtered out, or genuinely a
-// root) is treated as a root itself, so the tree never silently drops rows.
+// A page whose parent isn't present in `rows` (not on this page, or genuinely
+// a root) is treated as a root itself, so the tree never silently drops rows.
 function buildDisplayRows(rows: PageRow[], collapsed: Set<string>): DisplayRow[] {
   const idSet = new Set(rows.map((p) => p.id));
   const childrenByParent = new Map<string, PageRow[]>();
@@ -88,38 +70,25 @@ function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
 }
 
 export function LibraryClient({
-  pages: initialPages,
+  initial,
   workspaceSlug,
   workspaceId,
 }: {
-  pages: PageRow[];
+  initial: LibraryPageResult;
   workspaceSlug: string;
   workspaceId: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [pages, setPages]   = useState<PageRow[]>(initialPages);
 
-  // Duplicating a page (via the row actions menu) triggers router.refresh()
-  // rather than navigating away — this syncs local state once the server
-  // component re-runs and hands down fresh props with the new row included.
-  useEffect(() => { setPages(initialPages); }, [initialPages]);
-
-  // Pick up page mutations made OUTSIDE this table too (e.g. deleting or
-  // duplicating from the sidebar's own row menu) — those dispatch the same
-  // "pages:refresh" event the sidebar listens for, but this table only ever
-  // re-synced from its own row actions, so it went stale for anyone else's.
-  useEffect(() => {
-    function onPagesRefresh() { router.refresh(); }
-    window.addEventListener("pages:refresh", onPagesRefresh);
-    return () => window.removeEventListener("pages:refresh", onPagesRefresh);
-  }, [router]);
-
-  const [tab, setTab]       = useState<Tab>(() => {
-    const initial = searchParams.get("tab");
-    return initial === "recents" || initial === "favorites" || initial === "private" ? initial : "all";
+  const [tab, setTab] = useState<Tab>(() => {
+    const initialTab = searchParams.get("tab");
+    return initialTab === "recents" || initialTab === "favorites" || initialTab === "private" ? initialTab : "all";
   });
   const [search, setSearch]   = useState("");
+  // Applied 250ms after typing stops — this now drives a real network
+  // request per change, unlike the old instant client-side filter.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   // Decoupled from `pageSize` so the field can be freely typed into (cleared,
   // mid-edit) without a controlled-input value snapping back on every
@@ -127,25 +96,98 @@ export function LibraryClient({
   const [pageSizeInput, setPageSizeInput] = useState(String(DEFAULT_PAGE_SIZE));
   const [currentPage, setCurrentPage] = useState(1);
   const [goToPageInput, setGoToPageInput] = useState("");
-  const [favs, setFavs]     = useState<Set<string>>(
-    () => new Set(initialPages.filter((p) => p.isFavorited).map((p) => p.id))
-  );
+
+  // `initial` is only ever the FIRST page's data (fetched server-side for
+  // whichever tab the URL requested) — every tab switch, search, page-size
+  // change, or page navigation after this re-fetches its own page from
+  // GET /api/workspaces/:id/pages/library instead of ever holding the whole
+  // workspace in memory.
+  const [rows, setRows]       = useState<PageRow[]>(initial.pages);
+  const [totalCount, setTotalCount] = useState(initial.totalCount);
+  const [nestingActive, setNestingActive] = useState(initial.nestingActive);
+  const [tabCounts, setTabCounts] = useState(initial.tabCounts);
+  const [loading, setLoading]   = useState(false);
+
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
   const [collapsedIds, setCollapsedIds]   = useState<Set<string>>(new Set());
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [deletingSelected, setDeletingSelected]      = useState(false);
   const [deleteErr, setDeleteErr]              = useState("");
 
+  const requestIdRef    = useRef(0);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didMountRef    = useRef(false);
+
+  async function fetchLibrary(t: Tab, q: string, p: number, size: number) {
+    const myRequestId = ++requestIdRef.current;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ tab: t, search: q, page: String(p), pageSize: String(size) });
+      const res = await fetch(`/api/workspaces/${workspaceId}/pages/library?${params}`);
+      if (!res.ok) throw new Error("Failed to load");
+      const data = await res.json() as LibraryPageResult;
+      if (myRequestId !== requestIdRef.current) return; // superseded by a newer request
+      setRows(data.pages);
+      setTotalCount(data.totalCount);
+      setNestingActive(data.nestingActive);
+      setTabCounts(data.tabCounts);
+    } catch {
+      // Keep whatever was previously on screen rather than clearing to empty.
+    } finally {
+      if (myRequestId === requestIdRef.current) setLoading(false);
+    }
+  }
+
+  function refetch() {
+    fetchLibrary(tab, debouncedSearch, currentPage, pageSize);
+  }
+
+  // Skip the very first run — page.tsx's server-rendered `initial` already
+  // covers page 1 of whichever tab the URL requested, so firing again here
+  // on mount would just repeat the same request.
+  useEffect(() => {
+    if (!didMountRef.current) { didMountRef.current = true; return; }
+    fetchLibrary(tab, debouncedSearch, currentPage, pageSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, debouncedSearch, currentPage, pageSize]);
+
+  // Pick up page mutations made OUTSIDE this table too (e.g. deleting or
+  // duplicating from the sidebar's own row menu) — those dispatch the same
+  // "pages:refresh" event the sidebar listens for.
+  useEffect(() => {
+    function onPagesRefresh() { refetch(); }
+    window.addEventListener("pages:refresh", onPagesRefresh);
+    return () => window.removeEventListener("pages:refresh", onPagesRefresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, debouncedSearch, currentPage, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // If a mutation (e.g. deleting the last row on the last page) shrinks the
+  // dataset below the page currently being viewed, snap back to the new last
+  // page — this also re-fires the fetch effect above to reload it.
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
   function changeTab(next: Tab) {
     setTab(next);
     setCurrentPage(1);
     setSelectedIds(new Set());
+    // Avoid flashing the previous tab's rows under the new tab's label while
+    // its own data loads.
+    setRows([]);
   }
 
   function changeSearch(val: string) {
     setSearch(val);
-    setCurrentPage(1);
-    setSelectedIds(new Set());
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearch(val);
+      setCurrentPage(1);
+      setSelectedIds(new Set());
+      setRows([]);
+    }, 250);
   }
 
   function changePageSize(next: number) {
@@ -153,6 +195,7 @@ export function LibraryClient({
     setPageSize(clamped);
     setPageSizeInput(String(clamped));
     setCurrentPage(1);
+    setRows([]);
   }
 
   function submitPageSizeInput() {
@@ -160,64 +203,68 @@ export function LibraryClient({
     changePageSize(Number.isFinite(n) ? n : pageSize);
   }
 
-  function goToPage(p: number, totalPages: number) {
+  function goToPage(p: number) {
     setCurrentPage(Math.min(totalPages, Math.max(1, p)));
   }
 
-  function submitGoToPage(totalPages: number) {
+  function submitGoToPage() {
     const n = Number.parseInt(goToPageInput, 10);
-    if (Number.isFinite(n)) goToPage(n, totalPages);
+    if (Number.isFinite(n)) goToPage(n);
     setGoToPageInput("");
   }
 
   function toggleFavorite(pageId: string) {
-    const isFav = favs.has(pageId);
-    setFavs((prev) => {
-      const next = new Set(prev);
-      isFav ? next.delete(pageId) : next.add(pageId);
-      return next;
-    });
-    // Notify the sidebar only AFTER the write commits. Dispatching eagerly (as
-    // this did) made the sidebar's refetch race the POST/DELETE and read the
-    // pre-change state, so its Favorites list lagged one action behind.
-    const notify = () =>
-      window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
-    if (isFav) {
-      fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" })
-        .then(notify)
-        .catch(() => {
-          setFavs((prev) => { const n = new Set(prev); n.add(pageId); return n; });
-        });
+    const row = rows.find((r) => r.id === pageId);
+    if (!row) return;
+    const wasFav = row.isFavorited;
+    // Un-favoriting while viewing the Favorites tab drops the row
+    // immediately, matching the old client-side filter's behavior.
+    if (tab === "favorites" && wasFav) {
+      setRows((prev) => prev.filter((r) => r.id !== pageId));
     } else {
-      fetch("/api/user/favorites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId, workspaceId }),
-      })
-        .then(notify)
-        .catch(() => {
-          setFavs((prev) => { const n = new Set(prev); n.delete(pageId); return n; });
-        });
+      setRows((prev) => prev.map((r) => (r.id === pageId ? { ...r, isFavorited: !wasFav } : r)));
     }
+    setTabCounts((prev) => ({ ...prev, favorites: prev.favorites + (wasFav ? -1 : 1) }));
+
+    // Notify the sidebar only AFTER the write commits. Dispatching eagerly
+    // made the sidebar's refetch race the POST/DELETE and read the
+    // pre-change state, so its Favorites list lagged one action behind.
+    const notify = () => window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+    const req = wasFav
+      ? fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" })
+      : fetch("/api/user/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pageId, workspaceId }),
+        });
+    // On failure, just resync from the server rather than trying to hand-
+    // reconstruct exactly which optimistic change (patch vs. row removal) to
+    // undo.
+    req.then(notify).catch(refetch);
   }
 
   function togglePrivate(row: PageRow) {
     const next = !row.isPrivate;
-    setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isPrivate: next } : p)));
+    // Un-privating while viewing the Private tab drops the row immediately,
+    // matching the old client-side filter's behavior.
+    if (tab === "private" && !next) {
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+    } else {
+      setRows((prev) => prev.map((p) => (p.id === row.id ? { ...p, isPrivate: next } : p)));
+    }
+    setTabCounts((prev) => ({ ...prev, private: prev.private + (next ? 1 : -1) }));
     fetch(`/api/pages/${row.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isPrivate: next }),
-    }).catch(() => {
-      setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isPrivate: !next } : p)));
-    });
+    }).catch(refetch);
   }
 
   function toggleLocked(row: PageRow) {
     const next = !row.isLocked;
-    setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isLocked: next } : p)));
+    setRows((prev) => prev.map((p) => (p.id === row.id ? { ...p, isLocked: next } : p)));
     fetch(`/api/pages/${row.id}/lock`, { method: "POST" }).catch(() => {
-      setPages((prev) => prev.map((p) => (p.id === row.id ? { ...p, isLocked: !next } : p)));
+      setRows((prev) => prev.map((p) => (p.id === row.id ? { ...p, isLocked: !next } : p)));
     });
   }
 
@@ -249,46 +296,22 @@ export function LibraryClient({
       const results  = await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
       const failed  = results.filter((r) => !r.ok).length;
       const removed  = new Set(ids.filter((_, i) => results[i]!.ok));
-      setPages((prev) => prev.filter((p) => !removed.has(p.id)));
+      setRows((prev) => prev.filter((p) => !removed.has(p.id)));
       setSelectedIds(new Set());
-      if (removed.size > 0) window.dispatchEvent(new CustomEvent("pages:refresh"));
+      if (removed.size > 0) {
+        window.dispatchEvent(new CustomEvent("pages:refresh"));
+        refetch(); // reconcile totals/tab counts and refill this page from what's left
+      }
       if (failed > 0) setDeleteErr(`Failed to delete ${failed} page${failed !== 1 ? "s" : ""}`);
     } catch { setDeleteErr("Network error"); }
     finally { setDeletingSelected(false); setConfirmDeleteSelected(false); }
   }
 
-  const tabCount = (id: Tab) =>
-    id === "all"       ? pages.length :
-    id === "recents"   ? pages.filter((p) => p.isRecent).length :
-    id === "favorites" ? pages.filter((p) => favs.has(p.id)).length :
-                         pages.filter((p) => p.isPrivate).length;
-
-  const filtered = pages
-    .filter((p) => {
-      if (tab === "recents")   return p.isRecent;
-      if (tab === "favorites") return favs.has(p.id);
-      if (tab === "private")   return p.isPrivate;
-      return true;
-    })
-    .filter((p) => {
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return p.title.toLowerCase().includes(q) || p.creatorName.toLowerCase().includes(q);
-    });
-
-  // Nesting only makes sense for the unfiltered "All Pages" list — Recents /
-  // Favorites / Private are arbitrary subsets that can include a child page
-  // without its parent, and a search match's ancestors may not themselves
-  // match, so both fall back to the previous flat rendering.
-  const nestingActive = tab === "all" && !search;
   const displayRows: DisplayRow[] = nestingActive
-    ? buildDisplayRows(filtered, collapsedIds)
-    : filtered.map((p) => ({ ...p, depth: 0, hasChildren: false }));
+    ? buildDisplayRows(rows, collapsedIds)
+    : rows.map((p) => ({ ...p, depth: 0, hasChildren: false }));
 
-  const totalPages = Math.max(1, Math.ceil(displayRows.length / pageSize));
-  const page     = Math.min(currentPage, totalPages);
-  const visibleRows  = displayRows.slice((page - 1) * pageSize, page * pageSize);
-  const visibleIds   = visibleRows.map((p) => p.id);
+  const visibleIds   = displayRows.map((p) => p.id);
   const allSelected  = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
   const someSelected = !allSelected && visibleIds.some((id) => selectedIds.has(id));
 
@@ -315,10 +338,13 @@ export function LibraryClient({
                 <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-semibold ${
                   tab === t.id ? "bg-accent text-foreground" : "bg-muted text-muted-foreground"
                 }`}>
-                  {tabCount(t.id)}
+                  {tabCounts[t.id]}
                 </span>
               </button>
             ))}
+            {loading && (
+              <Loader2 size={13} className="ml-2 shrink-0 animate-spin text-muted-foreground/50" />
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -386,7 +412,11 @@ export function LibraryClient({
             </p>
           )}
 
-          {filtered.length === 0 ? (
+          {loading && rows.length === 0 ? (
+            <div className="flex items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card py-16">
+              <Loader2 size={20} className="animate-spin text-muted-foreground/40" />
+            </div>
+          ) : rows.length === 0 ? (
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
               <div className="flex flex-col items-center py-16 text-center">
                 <div className="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-muted">
@@ -432,13 +462,13 @@ export function LibraryClient({
               </div>
 
               {/* Rows */}
-              <div className="divide-y divide-border/40">
-                {visibleRows.map((page) => {
+              <div className={`divide-y divide-border/40 transition-opacity duration-150 ${loading ? "opacity-60" : ""}`}>
+                {displayRows.map((page) => {
                   const isChecked = selectedIds.has(page.id);
                   return (
                   <div
                     key={page.id}
-                    onClick={() => router.push(`/app/${workspaceSlug}/${page.shortId}`)}
+                    onClick={() => router.push(`/app/${workspaceSlug}/${page.shortId}?from=library`)}
                     className="group/row relative grid cursor-pointer items-center px-5 py-2.5 transition-colors duration-150 hover:bg-accent"
                     style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px 90px" }}
                   >
@@ -525,16 +555,16 @@ export function LibraryClient({
                           type="button"
                           onClick={() => toggleFavorite(page.id)}
                           className={`flex size-6 items-center justify-center rounded transition-all duration-150 ${
-                            favs.has(page.id)
+                            page.isFavorited
                               ? "text-warning"
                               : "text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 hover:text-warning"
                           }`}
                         >
-                          <Star size={13} fill={favs.has(page.id) ? "currentColor" : "none"} />
+                          <Star size={13} fill={page.isFavorited ? "currentColor" : "none"} />
                         </button>
                         <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/fav:opacity-100">
                           <p className="text-xs font-semibold text-popover-foreground">
-                            {favs.has(page.id) ? "Remove from favorites" : "Add to favorites"}
+                            {page.isFavorited ? "Remove from favorites" : "Add to favorites"}
                           </p>
                         </div>
                       </div>
@@ -564,7 +594,7 @@ export function LibraryClient({
                           parentShortId={page.parentShortId}
                           iconOnly
                           onDeleted={() => {
-                            setPages((prev) => prev.filter((p) => p.id !== page.id));
+                            setRows((prev) => prev.filter((p) => p.id !== page.id));
                             setSelectedIds((prev) => {
                               if (!prev.has(page.id)) return prev;
                               const next = new Set(prev);
@@ -572,9 +602,10 @@ export function LibraryClient({
                               return next;
                             });
                             window.dispatchEvent(new CustomEvent("pages:refresh"));
+                            refetch(); // reconcile totals/tab counts and refill this page
                           }}
                           onDuplicated={() => {
-                            router.refresh();
+                            refetch();
                             window.dispatchEvent(new CustomEvent("pages:refresh"));
                           }}
                         />
@@ -628,12 +659,12 @@ export function LibraryClient({
                     value={goToPageInput}
                     placeholder={`1–${totalPages}`}
                     onChange={(e) => setGoToPageInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(totalPages); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(); }}
                     className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:outline-none"
                   />
                   <button
                     type="button"
-                    onClick={() => submitGoToPage(totalPages)}
+                    onClick={() => submitGoToPage()}
                     disabled={!goToPageInput}
                     className="rounded-[var(--radius-sm)] border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
                   >
@@ -644,24 +675,24 @@ export function LibraryClient({
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => goToPage(page - 1, totalPages)}
-                    disabled={page <= 1}
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage <= 1}
                     className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                   >
                     <ChevronLeft size={12} />
                     Previous
                   </button>
 
-                  {getPageNumbers(page, totalPages).map((p, i) =>
+                  {getPageNumbers(currentPage, totalPages).map((p, i) =>
                     p === "…" ? (
                       <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground/50">…</span>
                     ) : (
                       <button
                         key={p}
                         type="button"
-                        onClick={() => goToPage(p, totalPages)}
+                        onClick={() => goToPage(p)}
                         className={`flex size-6 items-center justify-center rounded-[var(--radius-sm)] border text-xs font-medium transition-colors duration-150 ${
-                          p === page
+                          p === currentPage
                             ? "border-primary/50 bg-primary/10 text-primary"
                             : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                         }`}
@@ -673,8 +704,8 @@ export function LibraryClient({
 
                   <button
                     type="button"
-                    onClick={() => goToPage(page + 1, totalPages)}
-                    disabled={page >= totalPages}
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
                     className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                   >
                     Next

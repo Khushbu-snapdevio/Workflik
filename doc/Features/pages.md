@@ -172,12 +172,11 @@ Available from `···` → `"Export"`
 | Format | Includes |
 |--------|---------|
 | Markdown | All text blocks, headings, lists; images as links |
-| PDF | Full visual render including cover image and formatting |
 | HTML | Clean HTML with inline styles |
 
 - Subpages are NOT included in a single-page export
 - Databases export as flat CSV (separate option from the database menu)
-- **Export is asynchronous for PDF** — a pg-boss `export-page` job is enqueued and the download link is delivered when ready (per Rule 2: slow IO must not block a Next.js request). Markdown and HTML are rendered synchronously and returned directly. **PDF implementation:** Rendered by the worker using **Puppeteer** (headless Chromium) via the browser's print pipeline.
+- Markdown and HTML are rendered synchronously and returned directly from the export API route.
 
 ---
 

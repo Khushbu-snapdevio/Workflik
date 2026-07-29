@@ -292,8 +292,6 @@ Then visit `/orbit`. Run this again with any other email to add more admins late
 
 **Known first-run quirk — empty template gallery:** built-in templates aren't part of the database migrations; they're seeded separately, either by a background job that runs every ~10 minutes, or on-demand. On a brand-new instance, "Browse templates" can show **nothing** for up to ~10 minutes after your first `docker compose up` / `pnpm worker` start. To skip the wait: sign in (you're auto-promoted to admin as the first account, §8) and the empty gallery itself now shows a one-click **"Seed default templates"** button right there for admins — no need to navigate to `/orbit/templates` first, though that page's own seed button still works too. This is a one-time step per fresh install, not something you'll hit again afterward.
 
-**Known limitation today:** PDF export is not fully wired up yet (Markdown/HTML export work; PDF is a documented TODO in `lib/jobs/handlers/export-page.ts`).
-
 ---
 
 ## 11. Environment variables — full reference

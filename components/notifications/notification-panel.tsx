@@ -119,7 +119,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
     } else if (notification.type === "workspace_invite" && notification.inviteToken) {
       router.push(`/invite/${notification.inviteToken}`);
     } else if (notification.pageShortId) {
-      router.push(`/app/${workspaceSlug}/${notification.pageShortId}`);
+      router.push(`/app/${workspaceSlug}/${notification.pageShortId}?from=notifications`);
     }
   }
 
@@ -147,7 +147,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
       {/* Panel */}
       <div
-        className="fixed top-0 right-0 flex h-full w-full sm:w-[360px] flex-col border-l border-border bg-card"
+        className="fixed top-0 right-0 flex h-full w-full sm:w-[420px] flex-col border-l border-border bg-card"
         style={{
           zIndex:     600,
           transform:  animIn ? "translateX(0)" : "translateX(20px)",

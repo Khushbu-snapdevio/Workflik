@@ -32,8 +32,8 @@ const MULTI_VAL_OPS = new Set(["is_any_of", "is_none_of"]);
 
 // ── Multi-option picker for is_any_of / is_none_of ───────────────────────────
 
-function MultiOptionPicker({ options, value, onChange }: {
- options: SelectOption[];
+export function MultiOptionPicker({ options, value, onChange }: {
+ options: { id: string; name: string }[];
  value:  string[];
  onChange: (ids: string[]) => void;
 }) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Plus, PanelRight, Pencil, MoreHorizontal, MessageSquare, Pin, FileText } from "lucide-react";
+import { Plus, PanelRight, Pencil, MoreHorizontal, MessageSquare, Pin, FileText, Settings2 } from "lucide-react";
 import { PageIcon } from "@/components/pages/page-icon";
 import {
  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
@@ -193,11 +193,12 @@ interface CardShellProps {
  activeView:     DatabaseView;
  onUpdateView:    (patch: Record<string, unknown>) => Promise<void>;
  dragging?:       boolean;
+ locked?:       boolean;
 }
 
 function CardShell({
  entry, displayProps, properties, entryValueMap, databaseId, workspaceSlug, workspaceId, onClickEntry, onDeleteRequest, onDuplicateEntry,
- onSaveTitle, onUpdatePropValue, onUpdateProperty, onUpdateEntryIcon, activeView, onUpdateView, dragging,
+ onSaveTitle, onUpdatePropValue, onUpdateProperty, onUpdateEntryIcon, activeView, onUpdateView, dragging, locked,
 }: CardShellProps) {
  const valMap = entryValueMap.get(entry.id) ?? new Map<string, unknown>();
  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -215,6 +216,7 @@ function CardShell({
  // opening the people picker — returns true if handled (caller skips the picker).
  function handleVoteClick(prop: DatabaseProperty): boolean {
   if (prop.type !== "person" || !(prop.config as { voteMode?: boolean } | null)?.voteMode) return false;
+  if (locked) return true;
   if (!session?.user?.id) return true;
   onUpdatePropValue(entry.id, prop.id, toggleSelfVote(valMap.get(prop.id) as { userIds?: string[] } | null, session.user));
   return true;
@@ -248,6 +250,7 @@ function CardShell({
  }, [editing, menuPos, commentAnchor, propEditor]);
 
  function commitTitle() {
+  if (locked) return;
   const trimmed = editTitle.trim();
   if (trimmed !== (entry.title ?? "")) onSaveTitle(entry.id, trimmed);
  }
@@ -315,7 +318,7 @@ function CardShell({
        key={dp.id}
        type="button"
        onPointerDown={(e) => e.stopPropagation()}
-       onClick={(e) => { e.stopPropagation(); if (handleVoteClick(dp)) return; setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
+       onClick={(e) => { e.stopPropagation(); if (locked) return; if (handleVoteClick(dp)) return; setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
        className="min-w-0 shrink-0 rounded-[var(--radius-xs)] text-left hover:bg-accent"
       >
        <CellDisplay
@@ -360,6 +363,7 @@ function CardShell({
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => {
        e.stopPropagation();
+       if (locked) return;
        // The icon swaps to the side-peek icon in the same spot the cursor is
        // already resting on, so no fresh hover event will fire to update the
        // tooltip — set it directly instead of clearing it to null.
@@ -412,6 +416,7 @@ function CardShell({
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
          e.stopPropagation();
+         if (locked) return;
          if (handleVoteClick(dp)) return;
          setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
         }}
@@ -442,14 +447,14 @@ function CardShell({
    forcePos={menuPos}
    entryRect={cardRef.current?.getBoundingClientRect() ?? null}
    onClose={() => setMenuPos(null)}
-   onIconChange={(icon) => onUpdateEntryIcon?.(entry.id, icon)}
-   onDelete={() => onDeleteRequest(entry.id)}
-   onDuplicate={() => onDuplicateEntry(entry.id)}
+   onIconChange={(icon) => { if (locked) return; onUpdateEntryIcon?.(entry.id, icon); }}
+   onDelete={() => { if (locked) return; onDeleteRequest(entry.id); }}
+   onDuplicate={locked ? undefined : () => onDuplicateEntry(entry.id)}
    onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
-   onValueChange={(propId, value) => onUpdatePropValue(entry.id, propId, value)}
-   onPropertyConfigChange={onUpdateProperty}
+   onValueChange={locked ? undefined : (propId, value) => onUpdatePropValue(entry.id, propId, value)}
+   onPropertyConfigChange={locked ? undefined : onUpdateProperty}
    activeView={activeView as unknown as DbView | null}
-   onUpdateView={onUpdateView}
+   onUpdateView={locked ? undefined : onUpdateView}
   />
 
   {commentAnchor && (
@@ -529,17 +534,18 @@ function CardShell({
 }
 
 function SortableCard(props: CardShellProps) {
- const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.entry.id });
+ const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.entry.id, disabled: props.locked });
  const style: React.CSSProperties = {
   transform: CSS.Transform.toString(transform),
   transition,
   opacity:    isDragging ? 0.4 : 1,
   touchAction: "none",
   userSelect:  "none",
-  cursor:    "grab",
+  cursor:    props.locked ? "default" : "grab",
  };
+ const dragProps = props.locked ? {} : { ...attributes, ...listeners };
  return (
-  <div ref={setNodeRef} style={style} {...attributes} {...listeners} suppressHydrationWarning>
+  <div ref={setNodeRef} style={style} {...dragProps} suppressHydrationWarning>
    <CardShell {...props} />
   </div>
  );
@@ -555,7 +561,8 @@ interface Props {
  databaseId:     string;
  workspaceSlug:   string;
  workspaceId:    string;
- onAddEntry:     (defaultValues?: Record<string, unknown>, title?: string) => void;
+ locked?:       boolean;
+ onAddEntry:     (defaultValues?: Record<string, unknown>, title?: string) => Promise<{ id: string; shortId: string } | undefined>;
  onDeleteEntry:   (entryId: string) => void;
  onDuplicateEntry: (entryId: string) => void;
  onClickEntry:    (entryId: string) => void;
@@ -570,7 +577,7 @@ interface Props {
 }
 
 export function TemplateBoardView({
- entries, properties, activeView, entryValueMap, databaseId, workspaceSlug, workspaceId,
+ entries, properties, activeView, entryValueMap, databaseId, workspaceSlug, workspaceId, locked,
  onAddEntry, onDeleteEntry, onDuplicateEntry, onClickEntry, onSaveTitle, onUpdatePropValue,
  onUpdateProperty, onUpdateEntryIcon, onUpdateView, onAddProperty, onDeleteProperty, getEditPropertyAnchorRect,
 }: Props) {
@@ -689,7 +696,7 @@ export function TemplateBoardView({
   return true;
  });
  // The 3 status super-groups are in a fixed order (matches Notion) — never draggable.
- const draggableColumnKeys = statusBy === "option" && sortDirection === "manual"
+ const draggableColumnKeys = statusBy === "option" && sortDirection === "manual" && !locked
   ? visibleColumns.filter((c) => c.optionId !== null).map((c) => "colhandle-" + c.optionId)
   : [];
 
@@ -717,6 +724,7 @@ export function TemplateBoardView({
  }
 
  function onDragEnd({ active, over }: DragEndEvent) {
+  if (locked) return;
   const activeId = String(active.id);
 
   // Whole-column reordering — distinct id prefix so it never collides with card ids.
@@ -786,25 +794,37 @@ export function TemplateBoardView({
  }
 
  async function handleAddCard(optionId: string | null, title: string) {
-  setAddingTo(null);
   const defaultValues: Record<string, unknown> = {};
   if (groupProp && optionId) {
    defaultValues[groupProp.id] = { optionId };
   }
-  await onAddEntry(
+  const created = await onAddEntry(
    Object.keys(defaultValues).length ? defaultValues : undefined,
    title.trim() || undefined,
   );
+  // Only close the inline input on success — on failure (already toasted by
+  // onAddEntry) leave it open with whatever the user typed still in it,
+  // instead of silently discarding both the input and their text.
+  if (created) setAddingTo(null);
  }
 
  return (
   <>
-  {pinnedColumns.length > 0 && (
-   <div className="flex flex-wrap items-center gap-2 border-b border-border/40 px-6 py-2">
-    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
-     <Pin size={11} /> Pinned groups
-    </span>
-    {pinnedColumns.map((col) => {
+  {/* Always rendered when there's a groupable property — independent of any
+      column being visible, unlike the per-column "⋯" menu's own "Edit
+      groups" entry. Without this, hiding every group (or the last one) left
+      no way back in: GroupSettingsPanel — which already lists hidden groups
+      with a toggle to restore them — was only ever reachable from a visible
+      column's own menu. */}
+  {groupProp && statusBy === "option" && (
+   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-6 py-2">
+    <div className="flex flex-wrap items-center gap-2">
+     {pinnedColumns.length > 0 && (
+      <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
+       <Pin size={11} /> Pinned groups
+      </span>
+     )}
+     {pinnedColumns.map((col) => {
      const style = getStyle(col.color);
      return (
       <div
@@ -822,18 +842,36 @@ export function TemplateBoardView({
         {col.label}
         <span className="text-muted-foreground">{col.entries.length}</span>
        </button>
-       <button
-        type="button"
-        onClick={() => unpinColumn(col.optionId!)}
-        onMouseEnter={(e) => setPinTooltip({ label: "Unpin group", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-        onMouseLeave={() => setPinTooltip(null)}
-        className="flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background/60"
-       >
-        <Pin size={10} className="shrink-0" />
-       </button>
+       {!locked && (
+        <button
+         type="button"
+         onClick={() => unpinColumn(col.optionId!)}
+         onMouseEnter={(e) => setPinTooltip({ label: "Unpin group", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
+         onMouseLeave={() => setPinTooltip(null)}
+         className="flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background/60"
+        >
+         <Pin size={10} className="shrink-0" />
+        </button>
+       )}
       </div>
      );
     })}
+    </div>
+    {!locked && (
+     <button
+      type="button"
+      onClick={() => setEditingGroups(true)}
+      className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+     >
+      <Settings2 size={12} />
+      Edit groups
+      {hiddenGroupOptionIds.length > 0 && (
+       <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+        {hiddenGroupOptionIds.length} hidden
+       </span>
+      )}
+     </button>
+    )}
    </div>
   )}
   <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -845,7 +883,7 @@ export function TemplateBoardView({
       const isAddingHere = addingTo === colKey;
 
       return (
-       <SortableColumn key={colKey} colKey={colKey} draggable={col.optionId !== null && statusBy === "option" && sortDirection === "manual"} isDragging={draggingColKey === col.optionId}>
+       <SortableColumn key={colKey} colKey={colKey} draggable={col.optionId !== null && statusBy === "option" && sortDirection === "manual" && !locked} isDragging={draggingColKey === col.optionId}>
         {(handleProps) => (
         <div className="flex flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden" data-col-id={colKey}>
          {/* Column header — doubles as the drag handle for reordering the whole column */}
@@ -871,7 +909,7 @@ export function TemplateBoardView({
            {/* Status-super-group columns aren't a single real option, so the per-option
                "⋯" menu (hide/delete this option) doesn't apply — manage visibility for
                those via "Edit groups" instead. */}
-           {col.optionId !== null && statusBy === "option" && (
+           {col.optionId !== null && statusBy === "option" && !locked && (
             <button
              onPointerDown={(e) => e.stopPropagation()}
              onClick={(e) => setGroupMenu({ optionId: col.optionId!, triggerEl: e.currentTarget as HTMLElement })}
@@ -880,13 +918,15 @@ export function TemplateBoardView({
              <MoreHorizontal size={13} />
             </button>
            )}
-           <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => setAddingTo(colKey)}
-            className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground transition-colors"
-           >
-            <Plus size={13} />
-           </button>
+           {!locked && (
+            <button
+             onPointerDown={(e) => e.stopPropagation()}
+             onClick={() => setAddingTo(colKey)}
+             className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-background/60 hover:text-foreground transition-colors"
+            >
+             <Plus size={13} />
+            </button>
+           )}
           </div>
          </div>
 
@@ -912,11 +952,12 @@ export function TemplateBoardView({
              onUpdateEntryIcon={onUpdateEntryIcon}
              activeView={activeView}
              onUpdateView={onUpdateView}
+             locked={locked}
             />
            ))}
 
            {/* Inline add card input */}
-           {isAddingHere && (
+           {isAddingHere && !locked && (
             <InlineCardInput
              onConfirm={(title) => handleAddCard(col.representativeOptionId !== undefined ? col.representativeOptionId : col.optionId, title)}
              onCancel={() => setAddingTo(null)}
@@ -930,7 +971,7 @@ export function TemplateBoardView({
          </SortableContext>
 
          {/* Add card button at bottom */}
-         {!isAddingHere && (
+         {!isAddingHere && !locked && (
           <button
            onClick={() => setAddingTo(colKey)}
            className="mx-2 mb-2 flex items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed border-border/60 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
@@ -966,6 +1007,7 @@ export function TemplateBoardView({
       onUpdateEntryIcon={onUpdateEntryIcon}
       activeView={activeView}
       onUpdateView={onUpdateView}
+      locked={locked}
       dragging
      />
     )}

@@ -49,6 +49,7 @@ interface Props {
  databaseId: string;
  workspaceId: string;
  workspaceSlug: string;
+ locked?: boolean;
  onAddEntry: (defaultValues?: Record<string, unknown>) => void;
  onDeleteEntry: (entryId: string) => void;
  onDuplicateEntry?: (entryId: string) => void;
@@ -70,9 +71,10 @@ interface GanttBarProps {
  onShift: (deltaDays: number) => void;
  onResizeStart: (deltaDays: number) => void;
  onResizeEnd: (deltaDays: number) => void;
+ locked?: boolean;
 }
 
-function GanttBar({ entry, startDate, endDate, rangeStart, dayWidth, onClick, onShift, onResizeStart, onResizeEnd }: GanttBarProps) {
+function GanttBar({ entry, startDate, endDate, rangeStart, dayWidth, onClick, onShift, onResizeStart, onResizeEnd, locked }: GanttBarProps) {
  const [dragMode, setDragMode] = useState<"move" | "resize-start" | "resize-end" | null>(null);
  const [previewDelta, setPreviewDelta] = useState(0);
  const dragOriginX = useRef(0);
@@ -104,6 +106,7 @@ function GanttBar({ entry, startDate, endDate, rangeStart, dayWidth, onClick, on
 
  function startDrag(mode: "move" | "resize-start" | "resize-end", e: React.PointerEvent) {
   e.stopPropagation();
+  if (locked) return;
   dragOriginX.current = e.clientX;
   movedRef.current = false;
   setPreviewDelta(0);
@@ -118,8 +121,8 @@ function GanttBar({ entry, startDate, endDate, rangeStart, dayWidth, onClick, on
  return (
   <div
    className="group/bar absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-[var(--radius-xs)] bg-primary px-1.5 shadow-sm"
-   style={{ left, width, height: 24, cursor: dragMode === "move" ? "grabbing" : "grab" }}
-   onPointerDown={(e) => startDrag("move", e)}
+   style={{ left, width, height: 24, cursor: locked ? "pointer" : dragMode === "move" ? "grabbing" : "grab" }}
+   onPointerDown={(e) => { if (locked) { onClick(); return; } startDrag("move", e); }}
   >
    {entry.icon ? (
     <PageIcon icon={entry.icon} size={11} className="shrink-0" />
@@ -127,20 +130,24 @@ function GanttBar({ entry, startDate, endDate, rangeStart, dayWidth, onClick, on
     <FileText size={10} className="shrink-0 text-primary-foreground/70" />
    )}
    <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-primary-foreground">{entry.title || "Untitled"}</span>
-   <div
-    className="absolute left-0 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100"
-    onPointerDown={(e) => startDrag("resize-start", e)}
-   />
-   <div
-    className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100"
-    onPointerDown={(e) => startDrag("resize-end", e)}
-   />
+   {!locked && (
+    <div
+     className="absolute left-0 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100"
+     onPointerDown={(e) => startDrag("resize-start", e)}
+    />
+   )}
+   {!locked && (
+    <div
+     className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover/bar:opacity-100"
+     onPointerDown={(e) => startDrag("resize-end", e)}
+    />
+   )}
   </div>
  );
 }
 
 export function TemplateGanttView({
- entries, properties, activeView, entryValueMap, databaseId, workspaceId, workspaceSlug,
+ entries, properties, activeView, entryValueMap, databaseId, workspaceId, workspaceSlug, locked,
  onAddEntry, onDeleteEntry, onDuplicateEntry, onUpdateEntryIcon, onClickEntry, onUpdatePropValue, onUpdateProperty, onUpdateView,
 }: Props) {
  const [scale, setScale] = useState<Scale>("week");
@@ -208,14 +215,17 @@ export function TemplateGanttView({
  }
 
  function commitShift(entryId: string, start: Date, end: Date, deltaDays: number) {
+  if (locked) return;
   onUpdatePropValue(entryId, startProp!.id, { date: toISODate(addDays(start, deltaDays)) });
   onUpdatePropValue(entryId, endProp!.id, { date: toISODate(addDays(end, deltaDays)) });
  }
  function commitResizeStart(entryId: string, start: Date, end: Date, deltaDays: number) {
+  if (locked) return;
   const next = addDays(start, deltaDays);
   onUpdatePropValue(entryId, startProp!.id, { date: toISODate(next <= end ? next : end) });
  }
  function commitResizeEnd(entryId: string, start: Date, end: Date, deltaDays: number) {
+  if (locked) return;
   const next = addDays(end, deltaDays);
   onUpdatePropValue(entryId, endProp!.id, { date: toISODate(next >= start ? next : start) });
  }
@@ -317,6 +327,7 @@ export function TemplateGanttView({
             endDate={bar.end}
             rangeStart={rangeStart}
             dayWidth={dayWidth}
+            locked={locked}
             onClick={() => onClickEntry(entry.id)}
             onShift={(d) => commitShift(entry.id, bar.start, bar.end, d)}
             onResizeStart={(d) => commitResizeStart(entry.id, bar.start, bar.end, d)}
@@ -328,21 +339,23 @@ export function TemplateGanttView({
        );
       })}
 
-      <div className="flex" style={{ height: ROW_H }}>
-       <div className="sticky left-0 z-10 flex shrink-0 items-center border-r border-border/60 bg-background px-2.5" style={{ width: SIDEBAR_W }}>
-        <button
-         onClick={() => onAddEntry({
-          [startProp.id]: { date: toISODate(todayMidnight) },
-          [endProp.id]: { date: toISODate(todayMidnight) },
-         })}
-         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        >
-         <Plus size={12} />
-         New
-        </button>
+      {!locked && (
+       <div className="flex" style={{ height: ROW_H }}>
+        <div className="sticky left-0 z-10 flex shrink-0 items-center border-r border-border/60 bg-background px-2.5" style={{ width: SIDEBAR_W }}>
+         <button
+          onClick={() => onAddEntry({
+           [startProp.id]: { date: toISODate(todayMidnight) },
+           [endProp.id]: { date: toISODate(todayMidnight) },
+          })}
+          className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+         >
+          <Plus size={12} />
+          New
+         </button>
+        </div>
+        <div style={{ width: timelineWidth }} />
        </div>
-       <div style={{ width: timelineWidth }} />
-      </div>
+      )}
      </div>
     </div>
    </div>
@@ -359,13 +372,13 @@ export function TemplateGanttView({
      forcePos={{ x: rowMenu.rect.left, y: rowMenu.rect.bottom }}
      entryRect={rowMenu.rect}
      onClose={() => setRowMenu(null)}
-     onIconChange={(icon) => onUpdateEntryIcon?.(rowMenu.entry.id, icon)}
-     onDelete={() => setDeleteTarget(rowMenu.entry.id)}
-     onDuplicate={onDuplicateEntry ? () => onDuplicateEntry(rowMenu.entry.id) : undefined}
-     onValueChange={(propId, value) => onUpdatePropValue(rowMenu.entry.id, propId, value)}
-     onPropertyConfigChange={onUpdateProperty}
+     onIconChange={locked ? () => {} : (icon) => onUpdateEntryIcon?.(rowMenu.entry.id, icon)}
+     onDelete={locked ? () => {} : () => setDeleteTarget(rowMenu.entry.id)}
+     onDuplicate={!locked && onDuplicateEntry ? () => onDuplicateEntry(rowMenu.entry.id) : undefined}
+     onValueChange={locked ? () => {} : (propId, value) => onUpdatePropValue(rowMenu.entry.id, propId, value)}
+     onPropertyConfigChange={locked ? () => {} : onUpdateProperty}
      activeView={activeView as unknown as DbView | null}
-     onUpdateView={onUpdateView}
+     onUpdateView={locked ? undefined : onUpdateView}
     />
    )}
 

@@ -249,7 +249,7 @@ export function FavoritesSection({
               return (
                 <Link
                   key={fav.pageId}
-                  href={`/app/${workspaceSlug}/${r.shortId}`}
+                  href={`/app/${workspaceSlug}/${r.shortId}?from=favorites`}
                   onClick={() => setPopupOpen(false)}
                   className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 >
@@ -313,7 +313,7 @@ function FavoriteRow({
     >
       <Link
         className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors hover:text-sidebar-accent-foreground"
-        href={`/app/${workspaceSlug}/${shortId}`}
+        href={`/app/${workspaceSlug}/${shortId}?from=favorites`}
         {...listeners}
       >
         {icon ? (

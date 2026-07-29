@@ -109,6 +109,7 @@ interface Props {
   databaseId: string;
   entries: TemplateEntry[];
   entryValueMap: Map<string, Map<string, unknown>>;
+  locked?: boolean;
   onAddEntry: (defaultValues?: Record<string, unknown>) => void;
   onClickEntry: (entryId: string) => void;
   onDeleteEntry: (entryId: string) => void;
@@ -141,6 +142,7 @@ interface GalleryCardProps {
     ref: (el: HTMLElement | null) => void;
   } & Record<string, unknown>;
   entry: TemplateEntry;
+  locked?: boolean;
   onClickEntry: (id: string) => void;
   onDeleteRequest: (id: string) => void;
   onDuplicateEntry: (id: string) => void;
@@ -162,6 +164,7 @@ function GalleryCard({
   valueMap,
   workspaceSlug,
   workspaceId,
+  locked,
   onClickEntry,
   onDeleteRequest,
   onDuplicateEntry,
@@ -197,6 +200,7 @@ function GalleryCard({
   // opening the people picker — returns true if handled (caller skips the picker).
   function handleVoteClick(prop: DatabaseProperty): boolean {
     if (prop.type !== "person" || !(prop.config as { voteMode?: boolean } | null)?.voteMode) return false;
+    if (locked) return true;
     if (!session?.user?.id) return true;
     onUpdatePropValue(entry.id, prop.id, toggleSelfVote(valMap.get(prop.id) as { userIds?: string[] } | null, session.user));
     return true;
@@ -308,6 +312,7 @@ function GalleryCard({
               className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
+                if (locked) return;
                 setTooltip({
                   label: "Open full page",
                   rect: (
@@ -443,6 +448,7 @@ function GalleryCard({
                         resolvedWrapContent={resolvedWrapContent}
                         workspaceId={workspaceId}
                         onToggleCheckbox={() => {
+                          if (locked) return;
                           const next = prop.type === "multi_select"
                             ? nextCheckboxMultiSelectValue(prop, raw)
                             : nextCheckboxSelectValue(prop, raw);
@@ -534,6 +540,7 @@ function GalleryCard({
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (locked) return;
                       if (handleVoteClick(prop)) return;
                       setPropEditor({
                         prop,
@@ -572,13 +579,17 @@ function GalleryCard({
         onClose={() => setMenuPos(null)}
         onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
         onDelete={() => {
+          if (locked) return;
           setHovered(false);
           onDeleteRequest(entry.id);
         }}
-        onDuplicate={() => onDuplicateEntry(entry.id)}
-        onIconChange={(icon) => onUpdateEntryIcon?.(entry.id, icon)}
-        onPropertyConfigChange={onUpdateProperty}
-        onValueChange={(propId, value) =>
+        onDuplicate={locked ? undefined : () => onDuplicateEntry(entry.id)}
+        onIconChange={(icon) => {
+          if (locked) return;
+          onUpdateEntryIcon?.(entry.id, icon);
+        }}
+        onPropertyConfigChange={locked ? () => {} : onUpdateProperty}
+        onValueChange={locked ? () => {} : (propId, value) =>
           onUpdatePropValue(entry.id, propId, value)
         }
         updatedAt={entry.updatedAt ?? null}
@@ -631,7 +642,7 @@ function SortableGalleryCard(props: GalleryCardProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: props.entry.id });
+  } = useSortable({ id: props.entry.id, disabled: props.locked });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -643,7 +654,7 @@ function SortableGalleryCard(props: GalleryCardProps) {
     <div ref={setNodeRef} style={style} className="h-full">
       <GalleryCard
         {...props}
-        dragHandleProps={{
+        dragHandleProps={props.locked ? undefined : {
           ref: setActivatorNodeRef,
           ...attributes,
           ...listeners,
@@ -663,6 +674,7 @@ export function TemplateGalleryView({
   entryValueMap,
   workspaceSlug,
   workspaceId,
+  locked,
   onAddEntry,
   onDeleteEntry,
   onDuplicateEntry,
@@ -709,10 +721,12 @@ export function TemplateGalleryView({
     : null;
 
   function handleDragStart(event: DragStartEvent) {
+    if (locked) return;
     setDraggingId(String(event.active.id));
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    if (locked) return;
     const { active, over } = event;
     setDraggingId(null);
     if (!over || active.id === over.id) {
@@ -748,6 +762,7 @@ export function TemplateGalleryView({
                   displayProps={displayProps}
                   entry={entry}
                   key={entry.id}
+                  locked={locked}
                   onClickEntry={onClickEntry}
                   onDeleteRequest={setDeleteTarget}
                   onDuplicateEntry={onDuplicateEntry}
@@ -764,13 +779,15 @@ export function TemplateGalleryView({
               ))}
 
               {/* New page card — outside SortableContext items */}
-              <button
-                className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border/50 text-muted-foreground/70 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
-                onClick={() => onAddEntry()}
-              >
-                <Plus size={18} />
-                <span className="text-sm font-medium">New page</span>
-              </button>
+              {!locked && (
+                <button
+                  className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border/50 text-muted-foreground/70 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
+                  onClick={() => onAddEntry()}
+                >
+                  <Plus size={18} />
+                  <span className="text-sm font-medium">New page</span>
+                </button>
+              )}
             </div>
           </SortableContext>
         </div>
@@ -782,6 +799,7 @@ export function TemplateGalleryView({
               displayProps={displayProps}
               dragging
               entry={draggingEntry}
+              locked={locked}
               onClickEntry={() => {}}
               onDeleteRequest={() => {}}
               onDuplicateEntry={() => {}}

@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowRight, Camera, Check, ChevronDown, Clock, Globe, Loader2, Search, ShieldAlert, X } from "lucide-react";
+import { ArrowRight, Camera, Check, ChevronDown, Clock, Globe, KeyRound, Loader2, Search, ShieldAlert, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUpload } from "@/lib/storage/use-upload";
-import { changeEmail } from "@/lib/auth/client";
+import { changeEmail, changePassword } from "@/lib/auth/client";
 import { getInitials } from "@/lib/utils";
 import { useSettingsUser } from "./settings-user-context";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,9 @@ interface Props {
   *  emails are only logged server-side, so the UI needs to say so instead
   *  of implying an inbox delivery that won't happen. */
  smtpConfigured: boolean;
+ /** Whether a "credential" (email+password) account row already exists —
+  *  false for a user who only ever signed in via Google. */
+ hasPassword: boolean;
 }
 interface PendingEmailChange { newEmail: string; sentAt: number }
 
@@ -199,7 +202,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
 }
 
 /* ── ProfileSection ───────────────────────────────────────── */
-export function ProfileSection({ user, smtpConfigured }: Props) {
+export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPassword }: Props) {
  const [name,     setName]     = useState(user.name ?? "");
  const [jobTitle,   setJobTitle]   = useState(user.jobTitle ?? "");
  const [timezone,   setTimezone]   = useState(user.timezone ?? "UTC");
@@ -225,6 +228,24 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
  const [emailError,   setEmailError]   = useState("");
  const [pendingEmail,  setPendingEmail]  = useState<PendingEmailChange | null>(null);
  const [emailChangedBanner, setEmailChangedBanner] = useState(false);
+
+ // ── Set / change password ── — "Set password" (no currentPassword needed)
+ // for Google-only accounts with no credential row yet, "Change password"
+ // (requires currentPassword) once one exists.
+ const [hasPassword,    setHasPassword]    = useState(initialHasPassword);
+ const [editingPassword,  setEditingPassword]  = useState(false);
+ const [currentPassword,  setCurrentPassword]  = useState("");
+ const [newPassword,    setNewPassword]    = useState("");
+ const [confirmPassword,  setConfirmPassword]  = useState("");
+ const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+ const [passwordError,   setPasswordError]   = useState("");
+ const [passwordSetDone,  setPasswordSetDone]  = useState(false);
+
+ function closePasswordForm() {
+  setEditingPassword(false);
+  setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
+  setPasswordError("");
+ }
 
  const nameRef = useRef(name); nameRef.current = name;
  const jobRef = useRef(jobTitle); jobRef.current = jobTitle;
@@ -299,6 +320,51 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
  function handleDismissPending() {
   localStorage.removeItem(pendingEmailKey);
   setPendingEmail(null);
+ }
+
+ async function handleSubmitPassword() {
+  if (hasPassword && !currentPassword) {
+   setPasswordError("Enter your current password.");
+   return;
+  }
+  if (newPassword.length < 8) {
+   setPasswordError("New password must be at least 8 characters.");
+   return;
+  }
+  if (newPassword !== confirmPassword) {
+   setPasswordError("Passwords don't match.");
+   return;
+  }
+  setPasswordError("");
+  setPasswordSubmitting(true);
+  try {
+   if (hasPassword) {
+    const result = await changePassword({ currentPassword, newPassword, revokeOtherSessions: false });
+    if (result.error) {
+     setPasswordError(result.error.message ?? "Something went wrong. Please try again.");
+     return;
+    }
+   } else {
+    const res = await fetch("/api/user/set-password", {
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify({ newPassword }),
+    });
+    if (!res.ok) {
+     const d = await res.json().catch(() => ({}));
+     setPasswordError(d.error ?? "Something went wrong. Please try again.");
+     return;
+    }
+    setHasPassword(true);
+   }
+   closePasswordForm();
+   setPasswordSetDone(true);
+   setTimeout(() => setPasswordSetDone(false), 4000);
+  } catch {
+   setPasswordError("Network error — please try again.");
+  } finally {
+   setPasswordSubmitting(false);
+  }
  }
 
  useEffect(() => {
@@ -594,6 +660,102 @@ export function ProfileSection({ user, smtpConfigured }: Props) {
          Dismiss
         </button>
        </div>
+      </div>
+     )}
+    </div>
+   </div>
+
+   {/* ── Password ── */}
+   <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Password</p>
+   <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="px-5 py-4">
+     <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0 flex items-start gap-3">
+       <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50">
+        <KeyRound size={14} className="text-muted-foreground" />
+       </div>
+       <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">
+         {hasPassword ? "Password" : "No password set"}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+         {hasPassword
+          ? "You can sign in with either Google or your email and password."
+          : "You currently sign in with Google only. Add a password to also sign in with your email."}
+        </p>
+       </div>
+      </div>
+      {!editingPassword && (
+       <Button
+        variant="outline"
+        size="sm"
+        type="button"
+        onClick={() => { setEditingPassword(true); setPasswordError(""); }}
+        className="shrink-0"
+       >
+        {hasPassword ? "Change password" : "Set password"}
+       </Button>
+      )}
+     </div>
+
+     {editingPassword && (
+      <div className="mt-4 space-y-3 border-t border-border/50 pt-4">
+       <div className="flex flex-col gap-2">
+        {hasPassword && (
+         <Input
+          type="password"
+          value={currentPassword}
+          onChange={e => setCurrentPassword(e.target.value)}
+          placeholder="Current password"
+          autoFocus
+          className="w-[280px] focus-visible:border-primary"
+         />
+        )}
+        <Input
+         type="password"
+         value={newPassword}
+         onChange={e => setNewPassword(e.target.value)}
+         placeholder="New password"
+         autoFocus={!hasPassword}
+         className="w-[280px] focus-visible:border-primary"
+        />
+        <Input
+         type="password"
+         value={confirmPassword}
+         onChange={e => setConfirmPassword(e.target.value)}
+         placeholder="Confirm new password"
+         className="w-[280px] focus-visible:border-primary"
+        />
+       </div>
+       {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
+       <div className="flex gap-2">
+        <Button
+         size="sm"
+         type="button"
+         onClick={handleSubmitPassword}
+         disabled={passwordSubmitting || !newPassword || !confirmPassword || (hasPassword && !currentPassword)}
+        >
+         {passwordSubmitting && <Loader2 size={13} className="animate-spin" />}
+         {passwordSubmitting ? "Saving…" : "Save password"}
+        </Button>
+        <Button
+         variant="outline"
+         size="sm"
+         type="button"
+         onClick={closePasswordForm}
+        >
+         Cancel
+        </Button>
+       </div>
+      </div>
+     )}
+
+     {passwordSetDone && (
+      <div className="mt-4 flex items-center gap-1.5 border-t border-border/50 pt-3">
+       <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-success">
+        <Check size={9} strokeWidth={3} className="text-white" />
+       </span>
+       <p className="text-xs font-medium text-success">Password saved.</p>
       </div>
      )}
     </div>

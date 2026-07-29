@@ -724,6 +724,11 @@ export function CommentCard({
    }),
   });
   notifyChanged();
+  // Closes the card after posting — unlike a reply (createReply below),
+  // which deliberately stays open since it's the middle of an ongoing
+  // thread conversation, submitting from this card's own top-level composer
+  // is a one-off "leave a comment and move on" action.
+  onClose();
  }
 
  async function createReply(parentId: string, content: Record<string, unknown>) {

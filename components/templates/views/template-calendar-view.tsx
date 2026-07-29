@@ -90,6 +90,7 @@ interface Props {
  databaseId:  string;
  workspaceId: string;
  workspaceSlug: string;
+ locked?:    boolean;
  year:     number;
  month:     number;
  onYearChange: (y: number) => void;
@@ -113,9 +114,10 @@ interface MorePopupEntryRowProps {
  entry: TemplateEntry;
  onClick: () => void;
  onDelete: () => void;
+ locked?: boolean;
 }
 
-function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps) {
+function MorePopupEntryRow({ entry, onClick, onDelete, locked }: MorePopupEntryRowProps) {
  // entry.commentCount is batch-computed server-side (open, page-level
  // threads only) — see components/database/board-view.tsx's CardShell for
  // the same change.
@@ -140,12 +142,14 @@ function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps)
      {commentCount}
     </span>
    )}
-   <button
-    onClick={(ev) => { ev.stopPropagation(); onDelete(); }}
-    className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
-   >
-    <Trash2 size={11} />
-   </button>
+   {!locked && (
+    <button
+     onClick={(ev) => { ev.stopPropagation(); onDelete(); }}
+     className="hidden size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive group-hover/pe:flex transition-colors"
+    >
+     <Trash2 size={11} />
+    </button>
+   )}
   </div>
  );
 }
@@ -156,6 +160,7 @@ interface DraggableChipProps {
  databaseId: string;
  workspaceId: string;
  workspaceSlug: string;
+ locked?: boolean;
  cardProps: DatabaseProperty[];
  valueMap: Map<string, Map<string, unknown>>;
  onClickEntry: (id: string) => void;
@@ -169,11 +174,12 @@ interface DraggableChipProps {
 }
 
 function DraggableChip({
- entry, databaseId, workspaceId, workspaceSlug, cardProps, valueMap, onClickEntry, onDeleteEntry, onDuplicateEntry, onUpdateEntryIcon, onUpdatePropValue, onUpdateProperty,
+ entry, databaseId, workspaceId, workspaceSlug, locked, cardProps, valueMap, onClickEntry, onDeleteEntry, onDuplicateEntry, onUpdateEntryIcon, onUpdatePropValue, onUpdateProperty,
  activeView, onUpdateView,
 }: DraggableChipProps) {
  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
   id: entry.id,
+  disabled: locked,
  });
  const style = transform ? { transform: CSS.Translate.toString(transform) } : {};
  const [commentCount, setCommentCount] = useState<number | null>(entry.commentCount ?? null);
@@ -195,7 +201,7 @@ function DraggableChip({
   <>
   <div
    ref={(el) => { setNodeRef(el); chipRef.current = el; }}
-   style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none", cursor: "grab" }}
+   style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none", cursor: locked ? "pointer" : "grab" }}
    {...attributes}
    {...listeners}
    className="group/event flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
@@ -240,6 +246,7 @@ function DraggableChip({
         resolvedWrapContent={resolveWrapContent(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined)}
         workspaceId={workspaceId}
         onToggleCheckbox={() => {
+         if (locked) return;
          const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
          const next = prop.type === "multi_select" ? nextCheckboxMultiSelectValue(prop, raw) : nextCheckboxSelectValue(prop, raw);
          onUpdatePropValue(entry.id, prop.id, next);
@@ -274,14 +281,14 @@ function DraggableChip({
    forcePos={menuPos}
    entryRect={chipRef.current?.getBoundingClientRect() ?? null}
    onClose={() => setMenuPos(null)}
-   onIconChange={(icon) => onUpdateEntryIcon?.(entry.id, icon)}
-   onDelete={() => onDeleteEntry(entry.id)}
-   onDuplicate={onDuplicateEntry ? () => onDuplicateEntry(entry.id) : undefined}
+   onIconChange={(icon) => { if (locked) return; onUpdateEntryIcon?.(entry.id, icon); }}
+   onDelete={() => { if (locked) return; onDeleteEntry(entry.id); }}
+   onDuplicate={!locked && onDuplicateEntry ? () => onDuplicateEntry(entry.id) : undefined}
    onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
-   onValueChange={(propId, value) => onUpdatePropValue(entry.id, propId, value)}
-   onPropertyConfigChange={onUpdateProperty}
+   onValueChange={(propId, value) => { if (locked) return; onUpdatePropValue(entry.id, propId, value); }}
+   onPropertyConfigChange={locked ? () => {} : onUpdateProperty}
    activeView={activeView as unknown as DbView | null}
-   onUpdateView={onUpdateView}
+   onUpdateView={locked ? undefined : onUpdateView}
   />
   </>
  );
@@ -310,7 +317,7 @@ function DroppableDateCell({ dateKey, isOver, children, className, ...props }: D
 }
 
 export function TemplateCalendarView({
- entries, properties, activeView, entryValueMap, databaseId, workspaceId, workspaceSlug,
+ entries, properties, activeView, entryValueMap, databaseId, workspaceId, workspaceSlug, locked,
  year, month, onYearChange, onMonthChange,
  onAddEntry, onDeleteEntry, onDuplicateEntry, onUpdateEntryIcon, onClickEntry, onUpdateEntryDate, onUpdatePropValue, onUpdateProperty,
  onUpdateView,
@@ -320,9 +327,8 @@ export function TemplateCalendarView({
  const [draggingEntryId, setDraggingEntryId] = useState<string | null>(null);
  const [overDate, setOverDate] = useState<string | null>(null);
 
- const sensors = useSensors(
-  useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
- );
+ const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } });
+ const sensors = useSensors(...(locked ? [] : [pointerSensor]));
 
  // Fall back to first date property if the view doesn't have one pinned yet
  const calProp = properties.find((p) => p.id === activeView.calendarPropertyId)
@@ -374,6 +380,7 @@ export function TemplateCalendarView({
  function goToday() { onYearChange(today.getFullYear()); onMonthChange(today.getMonth()); }
 
  function handleAddOnDate(day: number) {
+  if (locked) return;
   if (!calProp) { onAddEntry(); return; }
   onAddEntry({ [calProp.id]: { date: dateKey(year, month, day) } });
  }
@@ -392,7 +399,7 @@ export function TemplateCalendarView({
   setDraggingEntryId(null);
   setOverDate(null);
 
-  if (!over || !calProp) return;
+  if (locked || !over || !calProp) return;
   const newDate = String(over.id);
 
   // Find the entry's current date
@@ -524,12 +531,14 @@ export function TemplateCalendarView({
         ].join(" ")}>
          {day}
         </span>
-        <button
-         onClick={(e) => { e.stopPropagation(); handleAddOnDate(day); }}
-         className="hidden size-5 items-center justify-center rounded text-muted-foreground hover:bg-primary/10 hover:text-primary group-hover:flex transition-colors"
-        >
-         <Plus size={11} />
-        </button>
+        {!locked && (
+         <button
+          onClick={(e) => { e.stopPropagation(); handleAddOnDate(day); }}
+          className="hidden size-5 items-center justify-center rounded text-muted-foreground hover:bg-primary/10 hover:text-primary group-hover:flex transition-colors"
+         >
+          <Plus size={11} />
+         </button>
+        )}
        </div>
 
        {/* Events */}
@@ -541,6 +550,7 @@ export function TemplateCalendarView({
           databaseId={databaseId}
           workspaceId={workspaceId}
           workspaceSlug={workspaceSlug}
+          locked={locked}
           cardProps={cardProps}
           valueMap={entryValueMap}
           onClickEntry={onClickEntry}
@@ -610,6 +620,7 @@ export function TemplateCalendarView({
          <MorePopupEntryRow
           key={e.id}
           entry={e}
+          locked={locked}
           onClick={() => { onClickEntry(e.id); setMorePopup(null); }}
           onDelete={() => { setDeleteTarget(e.id); setMorePopup(null); }}
          />
@@ -639,7 +650,7 @@ export function TemplateCalendarView({
    title="Delete entry?"
    description="This entry will be permanently deleted. This cannot be undone."
    confirmLabel="Delete"
-   onConfirm={() => { if (deleteTarget) { onDeleteEntry(deleteTarget); setDeleteTarget(null); } }}
+   onConfirm={() => { if (locked || !deleteTarget) return; onDeleteEntry(deleteTarget); setDeleteTarget(null); }}
   />
   </>
  );

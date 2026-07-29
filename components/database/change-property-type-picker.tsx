@@ -72,7 +72,16 @@ export function ChangePropertyTypePicker({
 
   function pickType(type: string, config?: Record<string, unknown>) {
     if (type === property.type) { onClose(); return; }
-    if (DESTRUCTIVE_TARGET_TYPES.has(type)) { setPendingChange({ type, config }); return; }
+    if (DESTRUCTIVE_TARGET_TYPES.has(type)) {
+      // Fall out of whichever sub-picker (Relation/Rollup/Formula) got us here —
+      // the confirm dialog below lives outside those early-return branches, so
+      // without this it would set pendingChange but never actually render.
+      setPickingRelation(false);
+      setPickingRollup(false);
+      setPickingFormula(false);
+      setPendingChange({ type, config });
+      return;
+    }
     commit(type, config);
   }
 

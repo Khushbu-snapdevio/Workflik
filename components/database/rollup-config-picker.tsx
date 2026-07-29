@@ -82,7 +82,8 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
   return createPortal(
     <div
       ref={ref}
-      style={{ position: "fixed", top: getClampedTop(rect, height), left: getClampedLeft(rect, width, { align: "end" }), zIndex: 300, width }}
+      data-edit-property-exempt
+      style={{ position: "fixed", top: getClampedTop(rect, height), left: getClampedLeft(rect, width, { align: "end" }), zIndex: 500, width }}
       className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
       <div className="flex items-center gap-1.5 border-b border-border/60 px-2.5 py-2">

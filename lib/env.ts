@@ -35,12 +35,6 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: optionalString,
   GOOGLE_CLIENT_SECRET: optionalString,
 
-  // ── PDF export ─────────────────────────────────────────────────────────────
-  // Path to a Chromium/Chrome executable used to render page PDFs. Optional —
-  // falls back to auto-detecting common install locations when unset (see
-  // lib/jobs/handlers/export-page.ts).
-  PUPPETEER_EXECUTABLE_PATH: optionalString,
-
   // ── File storage ───────────────────────────────────────────────────────────
   // STORAGE_DRIVER: "local" (default) saves to UPLOAD_DIR and serves via API.
   //                 "s3" or "r2" uses presigned PUT URLs with the AWS SDK.

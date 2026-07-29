@@ -12,7 +12,7 @@ WorkFlik runs as **two processes against one PostgreSQL database**:
 
 | Process | Entry point | Does | Never does |
 | --- | --- | --- | --- |
-| **Web** | Next.js (`next start`) | Serves UI, API routes, server actions; reads/writes the DB; **enqueues** background jobs | Slow work inline (email, PDF render, large copies, S3 transfers) |
+| **Web** | Next.js (`next start`) | Serves UI, API routes, server actions; reads/writes the DB; **enqueues** background jobs | Slow work inline (email, large copies, S3 transfers) |
 | **Worker** | `worker/index.ts` (`pnpm worker`) | Boots pg-boss, registers handlers, runs scheduled + on-demand jobs | Serve HTTP |
 
 **Invariant:** slow, retryable, or scheduled work goes through the worker via a
@@ -70,7 +70,7 @@ exactly one place.
 | **Jobs** | `lib/jobs/` | pg-boss queue names, enqueue helpers, handler registration (see [background-jobs.md](background-jobs.md)) |
 | **Storage** | `lib/storage/` | Pre-signed PUT/GET URL helpers for S3; per-type size-limit enforcement |
 | **Email** | `lib/email/` | Nodemailer SMTP transport + templated transactional emails |
-| **Export** | `lib/export/` | Markdown / PDF / HTML renderers for pages and workspaces |
+| **Export** | `lib/jobs/handlers/export-page.ts` | Markdown / HTML renderers for pages |
 | **Members & invites** | `lib/workspace/` | Membership, roles, invite + guest-access flows, ownership transfer |
 | **DB** | `lib/db/` | Drizzle instance, schema, query helpers |
 | **Env** | `lib/env.ts` | Validated environment variables — fail fast on missing/invalid config |

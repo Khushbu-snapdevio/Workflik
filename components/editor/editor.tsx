@@ -746,22 +746,18 @@ export function PageEditor({
           // it — the sidebar's stacking context sits above this card's).
           const sidebarRight = document.getElementById("workspace-sidebar")?.getBoundingClientRect().right ?? 0;
 
-          // Prefer the right margin, then the left margin, and only fall back
-          // to centering over the page when neither margin has room. Simply
-          // clamping a right-anchored position (the old behavior) had no such
-          // fallback: on a viewport too narrow to fit the card beside the
-          // editor, the clamp pulled it left until it sat directly on top of
-          // — visually merged with — the editor's own text column.
+          // Always anchor beside the editor column — prefer whichever margin
+          // (right or left) has more room, then clamp into the viewport.
+          // There's deliberately no centered fallback: centering the card
+          // over the page whenever neither margin fit the full CARD_WIDTH
+          // made its position look inconsistent from one open to the next
+          // (beside the block sometimes, dead-center other times) instead of
+          // always reading as "a margin comment next to this block."
           const spaceRight = window.innerWidth - editorRect.right - VIEWPORT_MARGIN;
           const spaceLeft = editorRect.left - sidebarRight - VIEWPORT_MARGIN;
-          let left: number;
-          if (spaceRight >= CARD_WIDTH + CARD_GAP) {
-           left = editorRect.right + CARD_GAP;
-          } else if (spaceLeft >= CARD_WIDTH + CARD_GAP) {
-           left = editorRect.left - CARD_GAP - CARD_WIDTH;
-          } else {
-           left = (window.innerWidth - CARD_WIDTH) / 2;
-          }
+          let left = spaceRight >= spaceLeft
+           ? editorRect.right + CARD_GAP
+           : editorRect.left - CARD_GAP - CARD_WIDTH;
           left = Math.min(left, window.innerWidth - CARD_WIDTH - VIEWPORT_MARGIN);
           left = Math.max(left, sidebarRight + VIEWPORT_MARGIN);
 

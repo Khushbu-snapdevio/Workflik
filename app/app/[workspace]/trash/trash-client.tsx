@@ -63,6 +63,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
   const [confirmDelete, setConfirmDelete] = useState<TrashedPage | null>(null);
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [deletingSelected, setDeletingSelected] = useState(false);
+  const [restoringSelected, setRestoringSelected] = useState(false);
   const [localPages, setLocalPages]       = useState(pages);
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
 
@@ -161,6 +162,19 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
     }
   }
 
+  async function handleRestoreSelected() {
+    setRestoringSelected(true);
+    const ids = [...selectedIds];
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/pages/${id}/restore`, { method: "POST" })));
+      setLocalPages((prev) => prev.filter((p) => !ids.includes(p.id)));
+      setSelectedIds(new Set());
+      router.refresh();
+    } finally {
+      setRestoringSelected(false);
+    }
+  }
+
   async function handleDeleteSelected() {
     setDeletingSelected(true);
     setConfirmDeleteSelected(false);
@@ -175,7 +189,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
     }
   }
 
-  const busy = deletingSelected || !!restoring || !!deleting;
+  const busy = deletingSelected || restoringSelected || !!restoring || !!deleting;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -209,6 +223,18 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                 >
                   <X size={12} />
                   Clear
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleRestoreSelected}
+                  className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-card px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                >
+                  {restoringSelected ? (
+                    <><Loader2 size={12} className="animate-spin" />Restoring…</>
+                  ) : (
+                    <><RotateCcw size={12} />Restore selected ({selectedCount})</>
+                  )}
                 </button>
                 <button
                   type="button"

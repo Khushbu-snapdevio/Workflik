@@ -50,14 +50,6 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-# Chromium, for PDF page export (puppeteer-core drives it — see
-# lib/jobs/handlers/export-page.ts). The `chromium` apt package pulls in all
-# the shared libraries it needs to actually launch, which a bare Puppeteer
-# install wouldn't get for free in a slim image like this one.
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends chromium \
-  && rm -rf /var/lib/apt/lists/*
-
 RUN groupadd --system --gid 1001 workflik \
   && useradd --system --uid 1001 --gid workflik workflik
 

@@ -90,7 +90,7 @@ Universal content container — everything lives on a page.
 
 - Page icon (emoji or image) and cover banner; unlimited subpage nesting; breadcrumb navigation
 - Move, duplicate, delete, restore from trash; favorites and page lock
-- Export (Markdown, PDF, HTML); page version history; public link sharing
+- Export (Markdown, HTML); page version history; public link sharing
 
 See [Features/pages.md](Features/pages.md).
 

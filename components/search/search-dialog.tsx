@@ -478,7 +478,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    // triggers a layout re-render while open is still true, causing the dialog
    // to briefly re-appear (the visible "blink").
    flushSync(() => { onClose(); });
-   router.push(`/app/${workspaceSlug}/${shortId}`);
+   router.push(`/app/${workspaceSlug}/${shortId}?from=search`);
   } else {
    toast.error("This page could not be opened — it may have been deleted.");
   }

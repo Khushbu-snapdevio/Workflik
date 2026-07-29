@@ -268,6 +268,20 @@ body {
   display: none;
 }
 
+/* Wide, horizontally-scrollable content (e.g. the template table preview) —
+   a visible track makes it obvious there's more to the right, instead of
+   the default hairline thumb-on-transparent-track that's easy to miss. */
+.template-hscroll {
+  scrollbar-color: var(--border) var(--muted);
+}
+.template-hscroll::-webkit-scrollbar {
+  height: 8px;
+}
+.template-hscroll::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 99px;
+}
+
 /* ── Button hover effects ────────────────────────────────────────────────── */
 @layer components {
 

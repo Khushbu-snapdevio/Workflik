@@ -188,6 +188,24 @@ export function DatabasePage({
     return () => window.removeEventListener("workflik:entry-value-changed", onValueChanged);
   }, []);
 
+  // Catches edits made elsewhere that the event listener above can't see —
+  // browser back/forward restoring this page from bfcache (no remount, no
+  // re-run of the mount effect) or an already-open tab regaining focus after
+  // a value was changed on an entry's own full page in a different tab.
+  // Without this, either scenario keeps showing whatever `rawValues` held at
+  // the moment this page was last actually fetched.
+  useEffect(() => {
+    function refetch() { if (activeViewId) loadEntries(activeViewId); }
+    function onVisibilityChange() { if (document.visibilityState === "visible") refetch(); }
+    function onPageShow(e: PageTransitionEvent) { if (e.persisted) refetch(); }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [activeViewId, loadEntries]);
+
   const updateTitle = useCallback(async (entryId: string, title: string) => {
     setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, title } : e));
     await fetch(`/api/pages/${entryId}`, {

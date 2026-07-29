@@ -278,6 +278,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
    });
    if (res.ok) {
     setSaved("name"); setTimeout(() => setSaved(null), 2500);
+    window.dispatchEvent(new CustomEvent("workflik:workspace-name-changed", { detail: { workspaceId: workspace.id, name: trimmed } }));
     if (newSlug !== workspace.slug) {
      router.replace(`/app/${newSlug}/settings/general`);
     }
@@ -289,7 +290,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
   finally { setSaving(null); }
  }
 
- async function patchWs(patch: Record<string, unknown>, rollback?: () => void) {
+ async function patchWs(patch: Record<string, unknown>, rollback?: () => void, onSuccess?: () => void) {
   const field = Object.keys(patch)[0]!;
   setSaving(field); setSaved(null); setPatchError(null);
   try {
@@ -298,6 +299,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
    });
    if (res.ok) {
     setSaved(field); setTimeout(() => setSaved(null), 2500);
+    onSuccess?.();
    } else {
     rollback?.();
     const d = await res.json().catch(() => ({}));
@@ -342,7 +344,12 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
 
  function changeIcon(v: string) {
   const prev = icon; setIcon(v);
-  patchWs({ icon: v || null }, () => setIcon(prev));
+  // Notify the sidebar workspace switcher only AFTER the write commits —
+  // it self-fetches once on mount and otherwise has no reason to refresh,
+  // so without this it kept showing the old icon until a hard reload.
+  patchWs({ icon: v || null }, () => setIcon(prev), () => {
+   window.dispatchEvent(new CustomEvent("workflik:workspace-icon-changed", { detail: { workspaceId: workspace.id, icon: v || null } }));
+  });
  }
 
  const origin  = mounted ? window.location.origin : "";

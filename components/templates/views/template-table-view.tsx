@@ -31,8 +31,11 @@ import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellActionOverlay } from "@/components/database/cell-action-overlay";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { CellDisplay } from "@/components/database/cells/cell-display";
-import { getOptionColor, groupOptions, PROPERTY_TYPE_ICON, formatDateValue } from "@/components/database/property-registry";
+import { getOptionColor, groupOptions, PROPERTY_TYPE_ICON, PROPERTY_REGISTRY, formatDateValue } from "@/components/database/property-registry";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
+import { RelationDatabasePicker } from "@/components/database/relation-database-picker";
+import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
+import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { PageIcon } from "@/components/pages/page-icon";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
@@ -656,6 +659,7 @@ function ColumnHeader({
  getEditPropertyAnchorRect,
  activeView,
  onUpdateView,
+ locked,
 }: {
  prop:   DatabaseProperty;
  properties: DatabaseProperty[];
@@ -667,6 +671,7 @@ function ColumnHeader({
  getEditPropertyAnchorRect: () => DOMRect;
  activeView?: DatabaseView | null;
  onUpdateView?: (patch: Record<string, unknown>) => Promise<void>;
+ locked?: boolean;
 }) {
  const [menuOpen, setMenuOpen] = useState(false);
  const [renaming, setRenaming] = useState(false);
@@ -723,6 +728,7 @@ function ColumnHeader({
     </div>
 
     <div ref={menuRef} className="relative shrink-0">
+     {!locked && (
      <button
       ref={triggerRef}
       onClick={() => setMenuOpen((p) => !p)}
@@ -730,6 +736,7 @@ function ColumnHeader({
      >
       <DotsThreeIcon size={14} />
      </button>
+     )}
 
      {menuOpen && !editingProperty && (
       <div className="absolute right-0 top-full z-[500] mt-0.5 w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
@@ -814,44 +821,93 @@ function ColumnHeader({
 
 // ── Add property panel ────────────────────────────────────────────────────────
 
-const PROP_TYPES = [
- { type: "text",     label: "Text",     Icon: TextTIcon      },
- { type: "number",    label: "Number",    Icon: NumberCircleOneIcon },
- { type: "select",    label: "Select",    Icon: ListBulletsIcon   },
- { type: "multi_select", label: "Multi-select", Icon: TagIcon       },
- { type: "date",     label: "Date",     Icon: CalendarBlankIcon  },
- { type: "checkbox",   label: "Checkbox",   Icon: CheckSquareIcon   },
- { type: "url",     label: "URL",      Icon: LinkIcon      },
- { type: "email",    label: "Email",     Icon: LinkIcon      },
-];
+const PROP_TYPES = Object.values(PROPERTY_REGISTRY);
 
 function AddPropertyPanel({
- onAdd, onClose,
+ properties, workspaceId, databaseId, onAdd, onClose,
 }: {
- onAdd:  (name: string, type: string) => void;
- onClose: () => void;
+ properties:  DbProperty[];
+ workspaceId: string;
+ databaseId:  string;
+ onAdd:    (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => void;
+ onClose:   () => void;
 }) {
  const [name,  setName]  = useState("");
- const [selType, setSelType] = useState("text");
  const [step,  setStep]  = useState<"name" | "type">("name");
- const inputRef       = useRef<HTMLInputElement>(null);
- const ref          = useRef<HTMLDivElement>(null);
+ const [pickingRelation, setPickingRelation] = useState(false);
+ const [pickingRollup, setPickingRollup]   = useState(false);
+ const [pickingFormula, setPickingFormula]  = useState(false);
+ // Captured once, at the moment a sub-picker opens — this panel's own div
+ // (which `ref` points at) unmounts as soon as we switch to rendering a
+ // sub-picker instead, so recomputing the rect from `ref.current` on every
+ // render would go stale (or collapse to 0,0) the moment anything inside
+ // the sub-picker causes a re-render.
+ const [pickerRect, setPickerRect] = useState<DOMRect | null>(null);
+ const inputRef = useRef<HTMLInputElement>(null);
+ const ref    = useRef<HTMLDivElement>(null);
+
+ function openSubPicker(setter: (v: boolean) => void) {
+  setPickerRect(ref.current?.getBoundingClientRect() ?? null);
+  setter(true);
+ }
 
  useEffect(() => { inputRef.current?.focus(); }, []);
 
  useEffect(() => {
   function h(e: MouseEvent) {
+   // Sub-pickers (Relation/Rollup/Formula) replace this panel's own JSX
+   // entirely and render as their own portal — without this guard, the very
+   // click that opens one (or any interaction inside it) reads as "outside"
+   // this panel's own ref and closes everything before it can be used.
+   if (pickingRelation || pickingRollup || pickingFormula) return;
    if (!ref.current?.contains(e.target as Node)) onClose();
   }
   document.addEventListener("mousedown", h);
   return () => document.removeEventListener("mousedown", h);
- }, [onClose]);
+ }, [onClose, pickingRelation, pickingRollup, pickingFormula]);
 
- function submit(type: string) {
+ function submit(type: string, config?: Record<string, unknown>, twoWay?: boolean) {
   const n = name.trim();
   if (!n) return;
-  onAdd(n, type);
+  onAdd(n, type, config, twoWay);
   onClose();
+ }
+
+ const rect = pickerRect ?? new DOMRect(0, 0, 0, 0);
+
+ if (pickingRelation) {
+  return (
+   <RelationDatabasePicker
+    rect={rect}
+    workspaceId={workspaceId}
+    onBack={() => setPickingRelation(false)}
+    onClose={onClose}
+    onPick={(relatedDatabaseId, twoWay) => submit("relation", { relatedDatabaseId }, twoWay)}
+   />
+  );
+ }
+ if (pickingRollup) {
+  return (
+   <RollupConfigPicker
+    rect={rect}
+    properties={properties}
+    onBack={() => setPickingRollup(false)}
+    onClose={onClose}
+    onPick={(config) => submit("rollup", config)}
+   />
+  );
+ }
+ if (pickingFormula) {
+  return (
+   <FormulaConfigPicker
+    rect={rect}
+    databaseId={databaseId}
+    properties={properties}
+    onBack={() => setPickingFormula(false)}
+    onClose={onClose}
+    onPick={(expression) => submit("formula", { expression })}
+   />
+  );
  }
 
  return (
@@ -896,17 +952,25 @@ function AddPropertyPanel({
       </button>
       <span className="text-sm font-semibold">Choose type</span>
      </div>
-     <div className="p-2">
-      {PROP_TYPES.map(({ type, label, Icon }) => (
-       <button
-        key={type}
-        onClick={() => { setSelType(type); submit(type); }}
-        className={`flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm hover:bg-accent transition-colors ${selType === type ? "bg-muted font-medium" : ""}`}
-       >
-        <Icon size={14} className="shrink-0 text-muted-foreground" />
-        {label}
-       </button>
-      ))}
+     <div className="max-h-72 overflow-y-auto p-2">
+      {PROP_TYPES.map((def) => {
+       const Icon = PROPERTY_TYPE_ICON[def.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextTIcon;
+       return (
+        <button
+         key={def.type}
+         onClick={() => {
+          if (def.type === "relation") openSubPicker(setPickingRelation);
+          else if (def.type === "rollup") openSubPicker(setPickingRollup);
+          else if (def.type === "formula") openSubPicker(setPickingFormula);
+          else submit(def.type);
+         }}
+         className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm hover:bg-accent transition-colors"
+        >
+         <Icon size={14} className="shrink-0 text-muted-foreground" />
+         {def.label}
+        </button>
+       );
+      })}
      </div>
     </>
    )}
@@ -1082,15 +1146,16 @@ interface SortableRowProps {
  onDuplicateEntry:  (id: string) => void;
  onEditProperty:   (propId: string, rect: DOMRect) => void;
  onUpdateProperty:  (propId: string, patch: Record<string, unknown>) => void;
+ locked?:      boolean;
 }
 
 function SortableRow({
  entry, visibleProps, entryValueMap, workspaceSlug, workspaceId, selectedIds, editingTitleId,
  deleteTarget, activeView, onToggleSelect, onSaveTitle, onClickEntry, onUpdatePropValue,
- onSetDeleteTarget, onDuplicateEntry, onEditProperty, onUpdateProperty,
+ onSetDeleteTarget, onDuplicateEntry, onEditProperty, onUpdateProperty, locked,
 }: SortableRowProps) {
  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-  useSortable({ id: entry.id });
+  useSortable({ id: entry.id, disabled: locked });
  const [rowHovered, setRowHovered] = useState(false);
  const [menuOpen, setMenuOpen]   = useState(false);
  // Comment popover — tracks which cell (propId) it was opened from, plus a
@@ -1235,6 +1300,8 @@ function SortableRow({
        >
         <Link2Icon size={13} /> Copy link
        </button>
+       {!locked && (
+       <>
        <button
         onClick={() => { onDuplicateEntry(entry.id); setMenuOpen(false); }}
         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
@@ -1248,6 +1315,8 @@ function SortableRow({
        >
         <TrashIcon size={13} /> Delete
        </button>
+       </>
+       )}
       </div>
      )}
     </div>
@@ -1328,6 +1397,7 @@ function SortableRow({
      // content truncates flush to the cell edge and the icons render
      // directly on top of it on hover (same fix as table-view.tsx).
      className="group/cell relative overflow-hidden pl-1 pr-7 py-0.5 transition-colors hover:bg-accent/40"
+     onClickCapture={(e) => { if (locked) e.stopPropagation(); }}
      onMouseEnter={(e) => {
       clearLeaveTimer();
       if (!commentPopover && editingPropId !== p.id) {
@@ -1436,6 +1506,7 @@ interface Props {
  entryValueMap:   Map<string, Map<string, unknown>>;
  workspaceSlug:   string;
  workspaceId:    string;
+ databaseId:    string;
  selectedIds:    Set<string>;
  editingTitleId:  string | null;
  onToggleSelect:  (id: string) => void;
@@ -1447,7 +1518,7 @@ interface Props {
  onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
  onDeleteEntry:   (entryId: string) => void;
  onDuplicateEntry: (entryId: string) => void;
- onAddProperty:   (name: string, type: string, config?: Record<string, unknown>) => void;
+ onAddProperty:   (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => void;
  onRenameProperty: (propId: string, name: string) => void;
  onUpdateProperty: (propId: string, patch: Record<string, unknown>) => void;
  onDeleteProperty: (propId: string) => void;
@@ -1455,6 +1526,7 @@ interface Props {
  getEditPropertyAnchorRect: () => DOMRect;
  activeView?: DatabaseView | null;
  onUpdateView?: (patch: Record<string, unknown>) => Promise<void>;
+ locked?: boolean;
 }
 
 export function TemplateTableView({
@@ -1463,6 +1535,7 @@ export function TemplateTableView({
  entryValueMap,
  workspaceSlug,
  workspaceId,
+ databaseId,
  selectedIds,
  editingTitleId,
  onToggleSelect,
@@ -1481,6 +1554,7 @@ export function TemplateTableView({
  getEditPropertyAnchorRect,
  activeView,
  onUpdateView,
+ locked = false,
 }: Props) {
  const [showAddProp, setShowAddProp] = useState(false);
  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -1576,12 +1650,14 @@ export function TemplateTableView({
          getEditPropertyAnchorRect={getEditPropertyAnchorRect}
          activeView={activeView}
          onUpdateView={onUpdateView}
+         locked={locked}
         />
        </th>
       ))}
 
       {/* Add property */}
       <th className="px-2 py-2.5 text-left">
+       {!locked && (
        <div className="relative">
         <button
          onClick={() => setShowAddProp((p) => !p)}
@@ -1591,14 +1667,18 @@ export function TemplateTableView({
         </button>
         {showAddProp && (
          <AddPropertyPanel
-          onAdd={(name, type) => {
-           onAddProperty(name, type);
+          properties={properties as unknown as DbProperty[]}
+          workspaceId={workspaceId}
+          databaseId={databaseId}
+          onAdd={(name, type, config, twoWay) => {
+           onAddProperty(name, type, config, twoWay);
            setShowAddProp(false);
           }}
           onClose={() => setShowAddProp(false)}
          />
         )}
        </div>
+       )}
       </th>
      </tr>
     </thead>
@@ -1626,6 +1706,7 @@ export function TemplateTableView({
        onDuplicateEntry={onDuplicateEntry}
        onEditProperty={(propId) => setEditPropPanel({ propId })}
        onUpdateProperty={onUpdateProperty}
+       locked={locked}
       />
      ))}
 

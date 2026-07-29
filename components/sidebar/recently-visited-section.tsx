@@ -92,7 +92,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
       return (
        <Link
         key={item.id}
-        href={`/app/${workspaceSlug}/${page.shortId}`}
+        href={`/app/${workspaceSlug}/${page.shortId}?from=recent`}
         className="flex min-w-0 items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
        >
         {page.icon ? (
@@ -140,7 +140,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
        return (
         <Link
          key={item.id}
-         href={`/app/${workspaceSlug}/${page.shortId}`}
+         href={`/app/${workspaceSlug}/${page.shortId}?from=recent`}
          onClick={() => setPopupOpen(false)}
          className="flex items-center gap-2.5 px-3 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
         >

@@ -21,6 +21,14 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  // Self-hosted instances are invite-only by default: only the very first
+  // account (which bootstraps the instance) may self-register; every
+  // account after that must come through an admin's workspace invite. Set
+  // to "true" to keep public self-serve signup open indefinitely instead.
+  ALLOW_PUBLIC_REGISTRATION: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),

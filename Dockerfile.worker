@@ -15,10 +15,12 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-RUN corepack enable \
-  && groupadd --system --gid 1001 workflik \
+# No corepack/pnpm at runtime. Corepack would try to download & initialize the
+# package manager into ~/.cache on first `pnpm` call, which fails for the
+# non-root user on a fresh host (EACCES). Everything needed is already baked
+# into node_modules at build time, so we run the bundled `tsx` binary directly.
+RUN groupadd --system --gid 1001 workflik \
   && useradd --system --uid 1001 --gid workflik workflik
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -40,4 +42,4 @@ USER workflik
 HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
   CMD test -f /tmp/worker-heartbeat && [ $(( $(date +%s) - $(stat -c %Y /tmp/worker-heartbeat) )) -lt 60 ]
 
-CMD ["pnpm", "worker:start"]
+CMD ["/app/node_modules/.bin/tsx", "scripts/worker.ts"]

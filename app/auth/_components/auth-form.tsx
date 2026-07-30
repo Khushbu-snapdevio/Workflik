@@ -17,6 +17,7 @@ interface AuthMethods {
   google: boolean;
   smtpConfigured: boolean;
   isBootstrap: boolean;
+  allowPublicRegistration: boolean;
 }
 
 export function AuthForm() {
@@ -34,6 +35,27 @@ export function AuthForm() {
 function cleanAuthErrorMessage(message: string | null | undefined): string | undefined {
   if (!message) return undefined;
   return message.replace(/^\[[^\]]+\]\s*/, "");
+}
+
+// Better Auth redirects here with `?error=<code>` when a magic-link verify
+// or OAuth callback is rejected (e.g. registration disabled) instead of
+// failing inline like the password/magic-link-request paths do. Only
+// "registration_disabled" is ours (thrown as REGISTRATION_DISABLED in
+// lib/auth/index.ts, lowercased by Better Auth's redirect handling). The
+// other two are Better Auth's own generic redirect codes for a blocked
+// user-creation attempt — implementation details of the library, not part
+// of our API contract, kept only as a compatibility fallback so a future
+// better-auth upgrade degrades to a slightly different friendly message
+// instead of a raw code leaking to the user.
+const REGISTRATION_ERROR_MESSAGES: Record<string, string> = {
+  registration_disabled: "This instance is invite-only. Ask an administrator for an invitation.",
+  failed_to_create_user: "This instance is invite-only. Ask an administrator for an invitation.",
+  unable_to_create_user: "This instance is invite-only. Ask an administrator for an invitation.",
+};
+
+function mapAuthErrorParam(code: string | null): string | null {
+  if (!code) return null;
+  return REGISTRATION_ERROR_MESSAGES[code] ?? "Something went wrong. Please try again.";
 }
 
 function GoogleIcon() {
@@ -55,12 +77,15 @@ function AuthFormInner() {
   const [methods, setMethods] = useState<AuthMethods | null>(null);
   const [methodsError, setMethodsError] = useState(false);
   const [view, setView] = useState<"password" | "magic-link">("password");
+  // Only meaningful once bootstrap is done and ALLOW_PUBLIC_REGISTRATION is
+  // on — lets a returning-instance login page also offer self-serve signup.
+  const [wantsSignup, setWantsSignup] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState(searchParams.get("hint") ?? "");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => mapAuthErrorParam(searchParams.get("error")));
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -136,8 +161,12 @@ function AuthFormInner() {
   const activeView = canSwitchCredentialView ? view : showPassword ? "password" : "magic-link";
   // Self-serve signup only ever exists to create that first account — once
   // it exists, this instance is invite-only (an admin invites you, you set
-  // your password via the emailed link, then sign in here).
-  const passwordMode: "signin" | "signup" = methods.isBootstrap ? "signup" : "signin";
+  // your password via the emailed link, then sign in here) unless
+  // ALLOW_PUBLIC_REGISTRATION keeps signup available, in which case the
+  // toggle below lets a returning visitor switch into it.
+  const canToggleSignup = !methods.isBootstrap && methods.allowPublicRegistration;
+  const passwordMode: "signin" | "signup" =
+    methods.isBootstrap || (canToggleSignup && wantsSignup) ? "signup" : "signin";
 
   async function onMagicLinkSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -150,7 +179,14 @@ function AuthFormInner() {
 
     setSubmitting(true);
 
-    const result = await signIn.magicLink({ callbackURL, email: email.trim().toLowerCase() });
+    const result = await signIn.magicLink({
+      callbackURL,
+      email: email.trim().toLowerCase(),
+      // Without this, a rejected verify (e.g. registration disabled)
+      // redirects to `callbackURL` instead of back here — the error would
+      // never reach the user.
+      errorCallbackURL: "/auth/login",
+    });
 
     setSubmitting(false);
     if (result.error) {
@@ -204,6 +240,10 @@ function AuthFormInner() {
       const result = await signIn.social({
         provider: "google",
         callbackURL,
+        // Without this, a rejected callback (e.g. registration disabled)
+        // redirects to `callbackURL` instead of back here — the error
+        // would never reach the user.
+        errorCallbackURL: "/auth/login",
         disableRedirect: true,
       });
       if (result?.error) {
@@ -285,6 +325,8 @@ function AuthFormInner() {
                     ? "Sign in with a magic link"
                     : methods.isBootstrap
                     ? "Create the instance admin account"
+                    : passwordMode === "signup"
+                    ? "Create your account"
                     : "Welcome back"}
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -292,6 +334,8 @@ function AuthFormInner() {
                     ? "We'll email you a link to sign in — no password needed."
                     : methods.isBootstrap
                     ? `You'll manage this entire ${PRODUCT_NAME} instance as its instance admin.`
+                    : passwordMode === "signup"
+                    ? `Get started with ${PRODUCT_NAME}.`
                     : `Sign in to your ${PRODUCT_NAME} workspace`}
                 </p>
               </div>
@@ -382,6 +426,18 @@ function AuthFormInner() {
                       ? passwordMode === "signup" ? "Creating account…" : "Signing in…"
                       : passwordMode === "signup" ? "Create account" : "Sign in"}
                   </Button>
+
+                  {canToggleSignup && (
+                    <button
+                      type="button"
+                      onClick={() => { setWantsSignup((v) => !v); setError(null); }}
+                      className="w-full text-center text-xs font-medium text-muted-foreground underline underline-offset-2 transition-colors duration-150 hover:text-primary"
+                    >
+                      {passwordMode === "signup"
+                        ? "Already have an account? Sign in"
+                        : "New here? Create an account"}
+                    </button>
+                  )}
                 </form>
               )}
 

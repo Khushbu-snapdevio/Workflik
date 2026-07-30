@@ -206,7 +206,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
                 initialPrivateEntries={initialPrivateEntries}
                 initialFavorites={initialFavorites}
                 initialRecentlyVisited={recentlyVisitedSerialized}
-                initialSidebarWidth={prefs?.sidebarWidth || 280}
+                initialSidebarWidth={prefs?.sidebarWidth || 300}
                 initialSidebarCollapsed={prefs?.sidebarCollapsed ?? false}
               />
             }

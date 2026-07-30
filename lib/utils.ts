@@ -17,6 +17,23 @@ export function getInitials(name: string): string {
     : (words[0]!.charAt(0) + words[words.length - 1]!.charAt(0)).toUpperCase()
 }
 
+// Fixed palette of semantic bg-* tokens (UI Rule 26) — never random, and
+// the single source of truth every avatar fallback across the app must use.
+// Previously each caller hand-rolled its own hash/palette; they drifted out
+// of sync (different palette sizes, different hash-to-index math, some
+// even hashing user id instead of name), so the same person's avatar could
+// show a different color in different parts of the app.
+const AVATAR_BG_CLASSES = [
+  "bg-primary", "bg-destructive", "bg-success", "bg-warning",
+  "bg-muted-foreground", "bg-primary/70", "bg-destructive/70", "bg-success/70",
+] as const
+
+export function getAvatarColor(seed: string): string {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
+  return AVATAR_BG_CLASSES[h % AVATAR_BG_CLASSES.length]!
+}
+
 export function formatDateTime(value: Date | string | null | undefined) {
   if (!value) {
     return "Never"

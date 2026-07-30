@@ -34,6 +34,22 @@ export async function PATCH(
     .limit(1);
   if (!tpl) return apiError(404, "Template not found");
 
+  if (!tpl.name.trim()) return apiError(400, "Template needs a name before publishing");
+  if (!tpl.categoryId) return apiError(400, "Template needs a category before publishing");
+
+  const snapshot = tpl.pageSnapshot as {
+    blocks?: { type?: string; content?: { text?: { text?: string }[] } | null }[];
+    database_schema?: unknown;
+  } | null;
+  const hasContent =
+    !!snapshot?.database_schema ||
+    (snapshot?.blocks ?? []).some(
+      (b) =>
+        b.type !== "paragraph" ||
+        (b.content?.text ?? []).some((t) => (t.text ?? "").trim().length > 0)
+    );
+  if (!hasContent) return apiError(400, "Template needs some content before publishing");
+
   const [updated] = await db
     .update(templates)
     .set({ status: "published" })

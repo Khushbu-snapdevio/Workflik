@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUpload } from "@/lib/storage/use-upload";
 import { changeEmail, changePassword } from "@/lib/auth/client";
-import { getInitials } from "@/lib/utils";
+import { getAvatarColor, getInitials } from "@/lib/utils";
 import { useSettingsUser } from "./settings-user-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,15 +52,6 @@ const TIMEZONES = [
  "Asia/Shanghai","Asia/Tokyo","Asia/Seoul",
  "Australia/Sydney","Pacific/Auckland","Pacific/Honolulu",
 ];
-
-const AVATAR_BG_CLASSES = [
- "bg-primary", "bg-destructive", "bg-success", "bg-warning",
- "bg-muted-foreground", "bg-primary/70", "bg-destructive/70", "bg-success/70",
-];
-function avatarColor(s: string): string {
- let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
- return AVATAR_BG_CLASSES[Math.abs(h) % AVATAR_BG_CLASSES.length]!;
-}
 
 function timeInZone(tz: string): string {
  try {
@@ -459,7 +450,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
  const displayImage = avatarPreview ?? currentImage;
  const displayName = name || user.email;
  const initials   = getInitials(displayName);
- const bg      = avatarColor(displayName);
+ const bg      = getAvatarColor(displayName);
 
  return (
   <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">

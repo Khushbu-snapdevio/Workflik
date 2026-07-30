@@ -1,5 +1,6 @@
 import { PluginKey } from "@tiptap/pm/state";
 import { Extension } from "@tiptap/react";
+import type { Editor } from "@tiptap/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
 import Suggestion from "@tiptap/suggestion";
 import {
@@ -21,6 +22,158 @@ export interface SlashCommandsOptions {
   onUpdate: (props: SlashSuggestionProps | null) => void;
 }
 
+// ProseMirror node each block type resolves to, for the block types inserted
+// via a built-in command rather than an explicit node shape. Paired with
+// CUSTOM_NODES below, this covers every entry in the block registry.
+const NATIVE_NODE_NAME: Record<string, string> = {
+  paragraph: "paragraph",
+  h1: "heading",
+  h2: "heading",
+  h3: "heading",
+  bullet: "bulletList",
+  numbered: "orderedList",
+  todo: "taskList",
+  quote: "blockquote",
+  code: "codeBlock",
+  table: "table",
+};
+
+const CUSTOM_NODES: Partial<Record<string, { type: string } & Record<string, unknown>>> = {
+  divider: { type: "horizontalRule" },
+    callout: {
+      type: "callout",
+      attrs: { icon: "💡", color: "" },
+      content: [{ type: "paragraph" }],
+    },
+    toggle: {
+      type: "toggle",
+      attrs: { open: true },
+      content: [
+        { type: "toggleSummary", content: [] },
+        { type: "paragraph" },
+      ],
+    },
+    image: {
+      type: "imageBlock",
+      attrs: { src: "", caption: "", width: 720 },
+    },
+    video: { type: "videoBlock", attrs: { src: "", caption: "" } },
+    audio: { type: "audioBlock", attrs: { src: "", caption: "" } },
+    file: { type: "fileBlock", attrs: { src: "", caption: "" } },
+    pdf: { type: "pdfBlock", attrs: { src: "", caption: "" } },
+    toc: { type: "tableOfContents" },
+    equation: { type: "mathBlock", attrs: { expression: "" } },
+    columns: {
+      type: "columns",
+      attrs: { columnCount: 2 },
+      content: [{ type: "paragraph" }, { type: "paragraph" }],
+    },
+    breadcrumb: { type: "breadcrumbBlock" },
+    synced_block: {
+      type: "syncedBlock",
+      attrs: { sourceBlockId: "" },
+      content: [{ type: "paragraph" }],
+    },
+    linked_page: { type: "linkedPage", attrs: { pageId: "" } },
+    sub_page: { type: "subPageBlock", attrs: { pageId: "" } },
+    database: {
+      type: "inlineDatabase",
+      attrs: { databaseId: "", defaultViewId: "" },
+    },
+    template_button: {
+      type: "templateButton",
+      attrs: {
+        label: "New Entry",
+        insertLocation: "below_button",
+        templateBlocks: [{ type: "paragraph", text: "" }],
+      },
+    },
+  embed: { type: "embedBlock", attrs: { url: "" } },
+  bookmark: { type: "bookmarkBlock", attrs: { url: "" } },
+};
+
+// Whether this editor instance can actually insert the block — i.e. whether
+// the extension backing it is registered. Editors that register a subset of
+// the block set (the Orbit template editor) would otherwise list blocks in the
+// "/" menu that silently do nothing when picked. Derived from the schema
+// rather than a per-editor list so it can't drift as extensions change.
+export function isBlockAvailable(editor: Editor, type: string): boolean {
+  const nodeName = NATIVE_NODE_NAME[type] ?? CUSTOM_NODES[type]?.type;
+  if (!nodeName) return true;
+  return !!editor.schema.nodes[nodeName];
+}
+
+// Block-type → editor command. Exported so quick-insert affordances (the
+// toolbar row and the empty-state buttons) insert blocks through the exact
+// same path as the "/" menu instead of re-deriving node shapes per caller.
+//
+// `range` is the suggestion range covering the typed "/query" and is only
+// passed by the slash menu; button callers omit it since there's nothing to
+// delete.
+export function insertBlockType(
+  editor: Editor,
+  type: string,
+  range?: { from: number; to: number }
+): void {
+  const chain = () => (range ? editor.chain().deleteRange(range) : editor.chain().focus());
+
+  const native: Partial<Record<string, () => boolean>> = {
+    paragraph: () => chain().setParagraph().run(),
+    h1: () => chain().setHeading({ level: 1 }).run(),
+    h2: () => chain().setHeading({ level: 2 }).run(),
+    h3: () => chain().setHeading({ level: 3 }).run(),
+    bullet: () => chain().toggleBulletList().run(),
+    numbered: () => chain().toggleOrderedList().run(),
+    todo: () => chain().toggleTaskList().run(),
+    quote: () => chain().setBlockquote().run(),
+    code: () => chain().setCodeBlock().run(),
+    table: () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+  };
+
+  if (native[type]) {
+    native[type]!();
+    return;
+  }
+
+  const content = CUSTOM_NODES[type];
+  if (!content) return;
+
+  // Button path: there's no "/query" to consume, and the caret may sit inside
+  // real prose — replacing the whole node there would silently destroy it, so
+  // only replace when the current block is empty and otherwise insert.
+  if (!range) {
+    const { $from } = editor.state.selection;
+    if ($from.parent.content.size > 0) {
+      editor.chain().focus().insertContent(content).run();
+      return;
+    }
+  }
+
+  // Single atomic transaction: delete "/" and replace the entire paragraph
+  // node with the new block in one step so no intermediate state (empty
+  // paragraph or orphaned "/") is ever saved to the DB.
+  const insertChain = editor.chain().focus();
+  if (range) insertChain.deleteRange(range);
+  insertChain
+    .command(({ tr, state }) => {
+      const { $from } = state.selection;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const node = state.schema.nodeFromJSON(content as any);
+        tr.replaceRangeWith(
+          $from.before($from.depth),
+          $from.after($from.depth),
+          node
+        );
+        return true;
+      } catch {
+        // Fallback: plain insert if schema rejects the node shape.
+        return false;
+      }
+    })
+    .run();
+}
+
 export const SlashCommands = Extension.create<SlashCommandsOptions>({
   name: "slashCommands",
 
@@ -35,134 +188,27 @@ export const SlashCommands = Extension.create<SlashCommandsOptions>({
     // Capture options in a local ref so the render callbacks always call the
     // latest React setters without recreating the plugin on every render.
     const opts = this.options;
+    const editor = this.editor;
 
     return [
       Suggestion<BlockDefinition>({
         pluginKey: SLASH_COMMANDS_PLUGIN_KEY,
-        editor: this.editor,
+        editor,
         char: "/",
         startOfLine: false,
         allowSpaces: false,
 
-        // Returns block items filtered by the user's query
+        // Returns block items filtered by the user's query, minus any whose
+        // extension this editor doesn't register (see isBlockAvailable).
         items: ({ query }) =>
-          query.trim() ? searchBlocks(query) : getMenuBlocks(),
+          (query.trim() ? searchBlocks(query) : getMenuBlocks()).filter((def) =>
+            isBlockAvailable(editor, def.type)
+          ),
 
         // Called by the menu when the user picks a block.
         // `range` is plugin-maintained and always points at "/" … cursor.
         command: ({ editor, range, props: def }) => {
-          const native: Partial<Record<string, () => boolean>> = {
-            paragraph: () =>
-              editor.chain().deleteRange(range).setParagraph().run(),
-            h1: () =>
-              editor.chain().deleteRange(range).setHeading({ level: 1 }).run(),
-            h2: () =>
-              editor.chain().deleteRange(range).setHeading({ level: 2 }).run(),
-            h3: () =>
-              editor.chain().deleteRange(range).setHeading({ level: 3 }).run(),
-            bullet: () =>
-              editor.chain().deleteRange(range).toggleBulletList().run(),
-            numbered: () =>
-              editor.chain().deleteRange(range).toggleOrderedList().run(),
-            todo: () =>
-              editor.chain().deleteRange(range).toggleTaskList().run(),
-            quote: () =>
-              editor.chain().deleteRange(range).setBlockquote().run(),
-            code: () => editor.chain().deleteRange(range).setCodeBlock().run(),
-            table: () =>
-              editor
-                .chain()
-                .deleteRange(range)
-                .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                .run(),
-          };
-
-          if (native[def.type]) {
-            native[def.type]!();
-            return;
-          }
-
-          const custom: Partial<Record<string, object>> = {
-            divider: { type: "horizontalRule" },
-            callout: {
-              type: "callout",
-              attrs: { icon: "💡", color: "" },
-              content: [{ type: "paragraph" }],
-            },
-            toggle: {
-              type: "toggle",
-              attrs: { open: true },
-              content: [
-                { type: "toggleSummary", content: [] },
-                { type: "paragraph" },
-              ],
-            },
-            image: {
-              type: "imageBlock",
-              attrs: { src: "", caption: "", width: 720 },
-            },
-            video: { type: "videoBlock", attrs: { src: "", caption: "" } },
-            audio: { type: "audioBlock", attrs: { src: "", caption: "" } },
-            file: { type: "fileBlock", attrs: { src: "", caption: "" } },
-            pdf: { type: "pdfBlock", attrs: { src: "", caption: "" } },
-            toc: { type: "tableOfContents" },
-            equation: { type: "mathBlock", attrs: { expression: "" } },
-            columns: {
-              type: "columns",
-              attrs: { columnCount: 2 },
-              content: [{ type: "paragraph" }, { type: "paragraph" }],
-            },
-            breadcrumb: { type: "breadcrumbBlock" },
-            synced_block: {
-              type: "syncedBlock",
-              attrs: { sourceBlockId: "" },
-              content: [{ type: "paragraph" }],
-            },
-            linked_page: { type: "linkedPage", attrs: { pageId: "" } },
-            sub_page: { type: "subPageBlock", attrs: { pageId: "" } },
-            database: {
-              type: "inlineDatabase",
-              attrs: { databaseId: "", defaultViewId: "" },
-            },
-            template_button: {
-              type: "templateButton",
-              attrs: {
-                label: "New Entry",
-                insertLocation: "below_button",
-                templateBlocks: [{ type: "paragraph", text: "" }],
-              },
-            },
-            embed: { type: "embedBlock", attrs: { url: "" } },
-            bookmark: { type: "bookmarkBlock", attrs: { url: "" } },
-          };
-
-          const content = custom[def.type];
-          if (content) {
-            // Single atomic transaction: delete "/" and replace the entire
-            // paragraph node with the new block in one step so no intermediate
-            // state (empty paragraph or orphaned "/") is ever saved to the DB.
-            editor
-              .chain()
-              .focus()
-              .deleteRange(range)
-              .command(({ tr, state }) => {
-                const { $from } = state.selection;
-                try {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const node = state.schema.nodeFromJSON(content as any);
-                  tr.replaceRangeWith(
-                    $from.before($from.depth),
-                    $from.after($from.depth),
-                    node
-                  );
-                  return true;
-                } catch {
-                  // Fallback: plain insert if schema rejects the node shape.
-                  return false;
-                }
-              })
-              .run();
-          }
+          insertBlockType(editor, def.type, range);
         },
 
         render: () => ({

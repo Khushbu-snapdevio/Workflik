@@ -4,20 +4,13 @@ import { ArrowRight } from "lucide-react";
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { users as usersTable } from "@/lib/db/schema";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, getAvatarColor } from "@/lib/utils";
 import { AdminSearchBox } from "@/components/orbit/admin-search-box";
 import { PaginationControls } from "@/components/orbit/pagination-controls";
 
 export const metadata = { title: "Users – Orbit Admin" };
 
 const PAGE_SIZE = 25;
-
-function avatarColor(str: string) {
- const colors = ["bg-primary","bg-destructive","bg-success","bg-warning","bg-muted-foreground","bg-secondary-foreground"];
- let h = 0;
- for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
- return colors[h % colors.length]!;
-}
 
 interface Props {
  searchParams: Promise<{ q?: string; page?: string }>;
@@ -103,7 +96,7 @@ export default async function OrbitUsersPage({ searchParams }: Props) {
        {users.map(u => {
         const displayName = u.name?.trim() || u.email || "?";
         const avatarChar  = displayName[0]!.toUpperCase();
-        const bg = avatarColor(u.id);
+        const bg = getAvatarColor(displayName);
         return (
          <tr key={u.id} className="group transition-colors hover:bg-accent">
           <td className="px-5 py-3">

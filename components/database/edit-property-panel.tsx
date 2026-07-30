@@ -269,11 +269,18 @@ export function EditPropertySidePanel({
     : Math.min(anchorRect.left, winW - PANEL_WIDTH - MARGIN);
   const spaceBelow = winH - anchorRect.bottom - MARGIN;
   const spaceAbove = anchorRect.top - MARGIN;
-  const openBelow = spaceBelow >= 260 || spaceBelow >= spaceAbove;
+  // Open whichever side actually has more room. A fixed "prefer below past
+  // some threshold" rule used to pick the smaller side whenever a trigger sat
+  // in the lower half of a tall page (e.g. a column header inside an inline
+  // database further down the page) — spaceBelow would clear the threshold
+  // while spaceAbove had far more room, capping maxHeight to the smaller
+  // side and squeezing the Name/Type section into its own inner scrollbar
+  // even though the panel's actual content easily fit in the room above.
+  const openBelow = spaceBelow >= spaceAbove;
   // Capped, not just floored — when the trigger sits near the top of a tall
   // viewport, `spaceBelow` alone would stretch this to nearly full-viewport
   // height even though the panel's actual content is a fixed, modest size.
-  const maxHeight = Math.min(Math.max(openBelow ? spaceBelow : spaceAbove, 220), 480);
+  const maxHeight = Math.min(Math.max(openBelow ? spaceBelow : spaceAbove, 220), 560);
   const top = openBelow
     ? anchorRect.bottom + 4
     : Math.max(MARGIN, anchorRect.top - Math.min(maxHeight, spaceAbove) - 4);

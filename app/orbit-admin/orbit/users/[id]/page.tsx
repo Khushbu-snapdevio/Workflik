@@ -5,7 +5,7 @@ import { BanButton, ImpersonateButton, RevokeSessionsButton } from "@/components
 import { PaginationControls } from "@/components/orbit/pagination-controls";
 import { db } from "@/lib/db";
 import { sessions, users, workspaceMembers, workspaces } from "@/lib/db/schema";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, getAvatarColor } from "@/lib/utils";
 
 export const metadata = { title: "User Detail – Orbit Admin" };
 
@@ -18,13 +18,6 @@ function ago(d: Date | null | undefined) {
  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
  return `${Math.floor(s / 86400)}d ago`;
-}
-
-function avatarColor(str: string) {
- const colors = ["bg-primary","bg-destructive","bg-success","bg-warning","bg-muted-foreground","bg-secondary-foreground"];
- let h = 0;
- for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
- return colors[h % colors.length]!;
 }
 
 interface Props {
@@ -69,7 +62,7 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
  const isAdmin        = user.isPlatformAdmin;
  const displayName    = user.name?.trim() || user.email || "?";
  const avatarChar     = displayName[0]!.toUpperCase();
- const avatarBg       = avatarColor(user.id);
+ const avatarBg       = getAvatarColor(displayName);
 
  return (
   <div>

@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
+import { getAvatarColor } from "@/lib/utils";
 
 export interface NotificationItem {
   id:             string;
@@ -149,7 +150,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
           />
         ) : (
           <div
-            className={`flex size-9 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border/40 select-none ${avatarBgClass(who)}`}
+            className={`flex size-9 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border/40 select-none ${getAvatarColor(who)}`}
           >
             {initials}
           </div>
@@ -239,18 +240,3 @@ function relativeTime(iso: string): string {
   } catch { return ""; }
 }
 
-const AVATAR_BG_CLASSES = [
-  "bg-primary",
-  "bg-destructive",
-  "bg-success",
-  "bg-warning",
-  "bg-muted-foreground",
-  "bg-primary/70",
-  "bg-destructive/70",
-  "bg-success/70",
-];
-function avatarBgClass(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return AVATAR_BG_CLASSES[h % AVATAR_BG_CLASSES.length]!;
-}

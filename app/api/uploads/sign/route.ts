@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
-import { fileUploads, workspaceStorageUsage } from "@/lib/db/schema";
+import { fileUploads, users, workspaceStorageUsage } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 import {
   getStorage,
@@ -13,7 +13,7 @@ import {
 } from "@/lib/storage";
 
 const signSchema = z.object({
-  kind:          z.enum(["page_cover", "page_icon", "block_media", "user_avatar", "workspace_icon", "database_file"]),
+  kind:          z.enum(["page_cover", "page_icon", "block_media", "user_avatar", "workspace_icon", "database_file", "template_cover"]),
   mimeType:      z.string().min(1),
   fileSizeBytes: z.number().int().positive(),
   workspaceId:   z.string().uuid().optional(),
@@ -33,9 +33,20 @@ export async function POST(req: Request) {
     const { kind, mimeType, fileSizeBytes, workspaceId, pageId, blockId } = parsed.data;
 
     // ── MIME type validation ───────────────────────────────────────────────
-    const imageOnlyKinds = new Set(["page_cover", "page_icon", "user_avatar", "workspace_icon"]);
+    const imageOnlyKinds = new Set(["page_cover", "page_icon", "user_avatar", "workspace_icon", "template_cover"]);
     if (imageOnlyKinds.has(kind) && !IMAGE_MIME_TYPES.has(mimeType)) {
       return apiError(400, `${kind} only accepts image/jpeg, image/png, image/webp, or image/gif`);
+    }
+
+    // Built-in template covers are workspace-less, so they escape the
+    // per-workspace quota below — restrict them to platform admins.
+    if (kind === "template_cover") {
+      const [user] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, session.user.id))
+        .limit(1);
+      if (!user || user.role !== "admin") return apiError(403, "Forbidden");
     }
 
     // ── Size validation ────────────────────────────────────────────────────
@@ -71,7 +82,9 @@ export async function POST(req: Request) {
     const objectKey =
       kind === "user_avatar"
         ? `users/${session.user.id}/${fileId}.${ext}`
-        : `${workspaceId ?? "shared"}/${pageId ?? fileId}/${fileId}.${ext}`;
+        : kind === "template_cover"
+          ? `templates/${fileId}.${ext}`
+          : `${workspaceId ?? "shared"}/${pageId ?? fileId}/${fileId}.${ext}`;
 
     // ── Insert unconfirmed file_uploads row ────────────────────────────────
     const storage = getStorage();
@@ -80,7 +93,7 @@ export async function POST(req: Request) {
     const [fileUpload] = await db
       .insert(fileUploads)
       .values({
-        workspaceId:   kind === "user_avatar" ? null : workspaceId ?? null,
+        workspaceId:   kind === "user_avatar" || kind === "template_cover" ? null : workspaceId ?? null,
         kind,
         pageId:        pageId ?? null,
         blockId:       blockId ?? null,

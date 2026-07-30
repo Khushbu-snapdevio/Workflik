@@ -7,6 +7,15 @@ import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Sign up" };
 
+// Registration state (bootstrap / ALLOW_PUBLIC_REGISTRATION / invite-only)
+// can change at any time and must be read fresh on every request — without
+// this, Next.js has no request-scoped signal (no cookies/headers used
+// below) to know this page can't be statically prerendered, so it would
+// evaluate isRegistrationAllowed() once at build time instead: baking in a
+// stale answer, and requiring database access during `next build` (which
+// fails outright in a DB-less build environment, e.g. Docker CI).
+export const dynamic = "force-dynamic";
+
 // There is no standalone signup form — self-serve account creation only
 // ever happens through the merged form at /auth/login (bootstrap, or
 // ALLOW_PUBLIC_REGISTRATION=true). This route exists purely so a direct

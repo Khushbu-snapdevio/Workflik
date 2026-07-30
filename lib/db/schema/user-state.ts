@@ -17,7 +17,7 @@ export const userPreferences = pgTable("user_preferences", {
   id:               uuid("id").primaryKey().defaultRandom(),
   userId:           uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   lastWorkspaceId:  uuid("last_workspace_id").references(() => workspaces.id, { onDelete: "set null" }),
-  sidebarWidth:     integer("sidebar_width").notNull().default(240),
+  sidebarWidth:     integer("sidebar_width").notNull().default(300),
   sidebarCollapsed: boolean("sidebar_collapsed").notNull().default(false),
   createdAt:        timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt:        updatedAt(),

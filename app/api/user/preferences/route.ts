@@ -34,7 +34,7 @@ export async function GET() {
 }
 
 const patchSchema = z.object({
-  sidebarWidth: z.number().int().min(200).max(480).optional(),
+  sidebarWidth: z.number().int().min(300).max(480).optional(),
   sidebarCollapsed: z.boolean().optional(),
   lastWorkspaceId: z.string().uuid().nullable().optional(),
 });

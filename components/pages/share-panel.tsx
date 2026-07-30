@@ -11,6 +11,7 @@ import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { getAvatarColor } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -75,15 +76,6 @@ interface SharePanelProps {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const AVATAR_BG_CLASSES = [
- "bg-primary", "bg-destructive", "bg-success", "bg-warning",
- "bg-muted-foreground", "bg-primary/70", "bg-destructive/70", "bg-success/70",
-];
-function avatarBgClass(name: string): string {
- let h = 0;
- for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
- return AVATAR_BG_CLASSES[h % AVATAR_BG_CLASSES.length]!;
-}
 
 function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
  const [failed, setFailed] = useState(false);
@@ -100,7 +92,7 @@ function Avatar({ name, image }: { name?: string | null; image?: string | null }
  }
  return (
   <div
-   className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white select-none ${avatarBgClass(name ?? "?")}`}
+   className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white select-none ${getAvatarColor(name ?? "?")}`}
   >
    {name?.[0]?.toUpperCase() ?? "?"}
   </div>

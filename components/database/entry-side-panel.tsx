@@ -309,13 +309,13 @@ export function EntrySidePanel({
     <div className="shrink-0 border-t border-border/60 bg-card px-4 pb-5 pt-3">
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="group inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-primary/90"
+      className="group inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold !text-white transition-colors duration-150 hover:bg-primary/90"
      >
-      <FileText size={14} className="text-white" />
+      <FileText size={14} className="!text-white" />
       Open full page
       <ArrowSquareOut
        size={13}
-       className="shrink-0 text-white/70"
+       className="shrink-0 !text-white/70"
       />
      </Link>
     </div>

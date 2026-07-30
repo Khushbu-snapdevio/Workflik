@@ -152,7 +152,7 @@ export const emailOutboxType = pgEnum("email_outbox_type", [
   "digest_email",
 ]);
 
-export const templateStatus = pgEnum("template_status", ["draft", "published"]);
+export const templateStatus = pgEnum("template_status", ["draft", "published", "archived"]);
 
 export const searchSourceType = pgEnum("search_source_type", [
   "page",
@@ -174,4 +174,8 @@ export const fileUploadKind = pgEnum("file_upload_kind", [
   "user_avatar",
   "workspace_icon",
   "database_file",
+  // Built-in template assets are platform-level, not workspace-owned: the URL
+  // is copied into every page created from the template, so it must survive
+  // any single workspace being deleted.
+  "template_cover",
 ]);

@@ -339,6 +339,20 @@ export function PageEditor({
           pageId
         );
 
+        // tiptapDocToBlocks only walks the current (possibly smaller) doc, so
+        // a block removed from it — via Backspace, a block's own delete
+        // button, etc. — just stops being upserted; nothing else flags it for
+        // server-side deletion. Diff against the last-persisted set so its id
+        // actually reaches deletedIds instead of leaving the orphaned row
+        // to reappear on the next load.
+        const outgoingIds = new Set(outgoing.map((b) => b.id).filter((id): id is string => !!id));
+        const missingIds = currentBlocksRef.current
+          .map((b) => b.id)
+          .filter((id) => !outgoingIds.has(id));
+        if (missingIds.length > 0) {
+          deletedIds.current = Array.from(new Set([...deletedIds.current, ...missingIds]));
+        }
+
         const res = await fetch("/api/blocks/batch", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -390,12 +404,21 @@ export function PageEditor({
           listItem: false,
         }),
         Placeholder.configure({
-          placeholder: ({ node }) => {
+          placeholder: ({ editor, node, pos }) => {
             if (node.type.name === "heading") {
               return "Heading";
             }
             if (node.type.name === "toggleSummary") {
               return "Toggle";
+            }
+            // Table cells share this callback via includeChildren, but a
+            // paragraph inside a <td>/<th> shouldn't show the doc-level hint.
+            const resolved = editor.state.doc.resolve(pos);
+            for (let depth = resolved.depth; depth >= 0; depth--) {
+              const ancestorType = resolved.node(depth).type.name;
+              if (ancestorType === "tableCell" || ancestorType === "tableHeader") {
+                return "";
+              }
             }
             return "Start writing, or press / to insert a block…";
           },

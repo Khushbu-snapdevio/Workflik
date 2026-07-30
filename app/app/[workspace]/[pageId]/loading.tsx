@@ -1,6 +1,6 @@
 export default function PageLoading() {
   return (
-    <div className="flex h-full flex-col bg-background animate-pulse">
+    <div className="flex h-full flex-col bg-card animate-pulse">
       {/* Topbar / breadcrumb skeleton */}
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-6">
         <div className="h-3 w-20 rounded bg-muted/60" />

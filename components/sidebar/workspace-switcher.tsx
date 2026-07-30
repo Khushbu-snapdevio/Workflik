@@ -94,7 +94,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
           {current?.name ?? "Select workspace"}
         </span>
         <svg
-          className={`size-4 shrink-0 text-sidebar-foreground/60 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`size-4 shrink-0 text-sidebar-foreground/80 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth={2}

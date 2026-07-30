@@ -272,7 +272,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     onClick={(e) => setEditPropPanel({ propId: prop.id, anchorRect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
                     onMouseEnter={(e) => showTooltip("Edit property", e)}
                     onMouseLeave={hideTooltip}
-                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/80 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
                   >
                     <Settings2 size={12} />
                   </button>
@@ -299,7 +299,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                         <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                       </svg>
                     ) : (
-                      <svg className="size-4 text-muted-foreground/60" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="size-4 text-muted-foreground/80" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
                         <rect x="2.5" y="2.5" width="15" height="15" rx="3.5" />
                       </svg>
                     )}
@@ -339,7 +339,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     >
                       {val && <CellDisplay property={prop} value={val} workspaceId={workspaceId} />}
                       {!val && (
-                        <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
+                        <span className="text-sm text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100">
                           Empty
                         </span>
                       )}
@@ -395,7 +395,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                   >
                     {val && <CellDisplay property={prop} value={val} workspaceId={workspaceId} />}
                     {!val && (
-                      <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
+                      <span className="text-sm text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100">
                         Empty
                       </span>
                     )}
@@ -409,7 +409,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     {val ? (
                       <CellDisplay property={prop} value={val} workspaceId={workspaceId} />
                     ) : (
-                      <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
+                      <span className="text-sm text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100">
                         Empty
                       </span>
                     )}
@@ -422,7 +422,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     {val ? (
                       <CellDisplay property={prop} value={val} workspaceId={workspaceId} />
                     ) : (
-                      <span className="text-sm text-muted-foreground/70 opacity-0 transition-opacity group-hover/row:opacity-100">
+                      <span className="text-sm text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100">
                         Empty
                       </span>
                     )}
@@ -450,12 +450,12 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     }}
                     onMouseEnter={(e) => showTooltip("Comment on this property", e)}
                     onMouseLeave={hideTooltip}
-                    className={`mt-1 flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-muted-foreground/60 transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
+                    className={`mt-1 flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-muted-foreground/80 transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
                       count > 0 ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"
                     }`}
                   >
                     <MessageSquare size={12} />
-                    {count > 0 && <span className="text-[10px] font-bold leading-none">{count}</span>}
+                    {count > 0 && <span className="text-xs font-bold leading-none">{count}</span>}
                   </button>
                 );
               })()}

@@ -13,7 +13,7 @@ export function WorkspaceShell({ sidebar, children }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-page">
+    <div className="flex h-dvh overflow-hidden bg-card">
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
         <button
@@ -47,7 +47,7 @@ export function WorkspaceShell({ sidebar, children }: Props) {
       {/* Main content */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Mobile-only top bar */}
-        <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-page px-4 md:hidden">
+        <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-card px-4 md:hidden">
           <button
             type="button"
             aria-label="Open sidebar"

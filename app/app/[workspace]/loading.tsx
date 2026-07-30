@@ -1,8 +1,8 @@
 export default function WorkspaceHomeLoading() {
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background animate-pulse">
+    <div className="flex h-full flex-col overflow-hidden bg-card animate-pulse">
       {/* Topbar skeleton */}
-      <div className="shrink-0 bg-background">
+      <div className="shrink-0 bg-card">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-2">
             <div className="h-3 w-24 rounded-[var(--radius-sm)] bg-muted" />

@@ -430,7 +430,7 @@ export function CalendarView({
   return (
     <>
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden bg-card">
 
       {/* ── Navigation header ── */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-2">

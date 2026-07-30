@@ -728,7 +728,7 @@ export function TableView({
  }
 
  return (
-  <div className="flex h-full flex-col bg-background isolate">
+  <div className="flex h-full flex-col bg-card isolate">
 
    {/* ═══════════ HEADER — fixed at top, clipped, synced horizontally ═══════════ */}
    <div

@@ -13,7 +13,7 @@ export function AdminShell({ sidebar, children }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-page">
+    <div className="flex h-dvh overflow-hidden bg-card">
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
         <button

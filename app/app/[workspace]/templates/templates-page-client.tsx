@@ -282,9 +282,9 @@ export function TemplatesPageClient({
   }
 
   return (
-    <div className="@container flex h-full flex-col overflow-hidden bg-background">
+    <div className="@container flex h-full flex-col overflow-hidden bg-card">
       {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
-      <div className="flex h-11 shrink-0 items-center bg-background px-3">
+      <div className="flex h-11 shrink-0 items-center bg-card px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
           <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground">
             <LayoutGrid className="shrink-0" size={13} />

@@ -288,7 +288,7 @@ export function PageClient({
         type="button"
         onClick={() => coverInput.current?.click()}
         disabled={coverUploading}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
        >
         <ImageIcon size={13} />
         {coverUploading ? "Uploading…" : "Add cover"}
@@ -299,7 +299,7 @@ export function PageClient({
         <button
          type="button"
          onClick={() => setShowPicker(true)}
-         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
         >
          <Smile size={13} />
          Add icon
@@ -319,7 +319,7 @@ export function PageClient({
        <button
         type="button"
         onClick={revealComments}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
        >
         <MessageCircle size={13} />
         Add comment
@@ -355,7 +355,7 @@ export function PageClient({
       data-placeholder="Untitled"
       className={[
        "w-full break-words text-[2.5rem] font-bold leading-[1.2] tracking-tight text-foreground outline-none",
-       "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/50",
+       "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
        editable ? "cursor-text" : "cursor-default select-text",
       ].join(" ")}
      />

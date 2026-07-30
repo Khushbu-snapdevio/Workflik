@@ -1,6 +1,6 @@
 export default function TrashLoading() {
   return (
-    <div className="flex h-full flex-col bg-background animate-pulse">
+    <div className="flex h-full flex-col bg-card animate-pulse">
       {/* Topbar skeleton */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6">
         <div className="h-5 w-16 rounded-[var(--radius-sm)] bg-muted" />

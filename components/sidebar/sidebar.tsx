@@ -669,7 +669,7 @@ export function Sidebar({
       </div>
       <ChevronDown
        size={13}
-       className={`shrink-0 text-sidebar-foreground/60 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
+       className={`shrink-0 text-sidebar-foreground/80 transition-transform duration-200 ${userMenu ? "rotate-180" : ""}`}
       />
      </button>
     </div>
@@ -711,11 +711,11 @@ function NavButton({
    className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
     active
      ? "bg-primary/[0.2] text-primary"
-     : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
    }`}
    href={href}
   >
-   <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`}>{icon}</span>
+   <span className={`shrink-0 transition-colors duration-150 ${active ? "text-primary" : "text-sidebar-foreground/70 group-hover:text-sidebar-accent-foreground"}`}>{icon}</span>
    <span className={`flex-1 ${active ? "font-semibold" : ""}`}>{label}</span>
    {shortcut && (
     <kbd className="shrink-0 rounded bg-muted px-1 py-0.5 text-xs font-medium text-muted-foreground">
@@ -744,7 +744,7 @@ function CollapsedNavItem({
     className={`flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
      active
       ? "bg-primary/[0.2] text-primary"
-      : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     }`}
    >
     {children}
@@ -837,7 +837,7 @@ function CollapsedFavoritesItem({
     className={`flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
      open
       ? "bg-primary/[0.2] text-primary"
-      : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     }`}
    >
     <Star size={18} />
@@ -921,10 +921,10 @@ function SearchNavButton({ icon }: { icon: React.ReactNode }) {
    className={`group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
     searchOpen
      ? "bg-primary/[0.2] text-primary font-semibold"
-     : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
    }`}
   >
-   <span className={`shrink-0 transition-colors duration-150 ${searchOpen ? "text-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`}>{icon}</span>
+   <span className={`shrink-0 transition-colors duration-150 ${searchOpen ? "text-primary" : "text-sidebar-foreground/70 group-hover:text-sidebar-accent-foreground"}`}>{icon}</span>
    <span className="flex-1 text-left">Search</span>
    <kbd className="shrink-0 rounded-[var(--radius-xs)] bg-sidebar-accent px-1 py-0.5 text-xs font-medium text-sidebar-foreground/70">Ctrl+K</kbd>
   </button>
@@ -980,12 +980,12 @@ function SectionLabel({
    <button
     type="button"
     onClick={onToggle}
-    className="flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-sidebar-accent-foreground"
+    className="flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 group-hover:text-sidebar-accent-foreground"
    >
     <span className="truncate">{label}</span>
     <ChevronDown
      size={14}
-     className={`shrink-0 text-sidebar-foreground/60 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
+     className={`shrink-0 text-sidebar-foreground/80 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
     />
    </button>
    {workspaceId && workspaceSlug && (
@@ -994,7 +994,7 @@ function SectionLabel({
      workspaceSlug={workspaceSlug}
      title="Add a page"
      onBeforeCreate={onBeforeAdd}
-     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 transition-colors duration-150 hover:bg-primary/10 hover:text-sidebar-accent-foreground disabled:opacity-60"
+     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 transition-colors duration-150 hover:bg-primary/10 hover:text-sidebar-accent-foreground disabled:opacity-60"
     >
      <Plus size={14} />
     </NewPageButton>

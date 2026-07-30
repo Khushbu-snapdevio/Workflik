@@ -42,10 +42,10 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   const initial = await getLibraryPage(ws.id, session.user.id, { tab: initialTab, page: 1, pageSize: DEFAULT_PAGE_SIZE });
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden bg-card">
 
       {/* ── Topbar — matches page editor breadcrumb style ── */}
-      <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
+      <div className="flex h-11 shrink-0 items-center justify-between bg-card px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
           <Link
             href={`/app/${slug}`}

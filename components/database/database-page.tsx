@@ -493,7 +493,7 @@ export function DatabasePage({
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden bg-background isolate">
+    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden bg-card isolate">
 
       {/* ── Page title / icon (hidden in inline/embedded mode) ── */}
       {!inline && (

@@ -40,7 +40,7 @@ export default async function SettingsLayout({ children, params }: Props) {
             workspaceSlug={ws.slug}
             isAdmin={member.role === "admin"}
           />
-          <div className="flex-1 overflow-y-auto bg-page">
+          <div className="flex-1 overflow-y-auto bg-card">
             <Suspense fallback={<SettingsPageSkeleton />}>
               {children}
             </Suspense>

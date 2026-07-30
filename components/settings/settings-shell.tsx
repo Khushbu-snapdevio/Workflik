@@ -29,7 +29,7 @@ export function SettingsShell({ children }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) close(); }}
     >
       <div
-        className={`relative mt-10 flex h-[calc(100vh-60px)] w-full max-w-[1200px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background text-foreground transition-all duration-200 ${
+        className={`relative mt-10 flex h-[calc(100vh-60px)] w-full max-w-[1200px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card text-foreground transition-all duration-200 ${
           visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
         }`}
       >

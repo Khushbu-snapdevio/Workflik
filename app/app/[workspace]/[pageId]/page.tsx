@@ -287,11 +287,11 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-background" data-page-id={page.id}>
+    <div className="flex h-full flex-col overflow-hidden bg-card" data-page-id={page.id}>
       <PageDraftProvider initialIsDraft={page.isDraft}>
       {/* ── Topbar ── */}
       <PagePrivacyProvider initialIsPrivate={page.isPrivate}>
-      <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
+      <div className="flex h-11 shrink-0 items-center justify-between bg-card px-3">
 
         {/* Breadcrumbs */}
         <div className="flex min-w-0 items-center">
@@ -311,7 +311,7 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
         {/* Actions */}
         <div className="ml-2 flex shrink-0 items-center gap-1">
           {page.updatedAt && (
-            <span className="mr-1.5 whitespace-nowrap text-xs text-muted-foreground/70">
+            <span className="mr-1.5 whitespace-nowrap text-xs text-muted-foreground">
               Edited <TimeAgo iso={new Date(page.updatedAt).toISOString()} />
             </span>
           )}

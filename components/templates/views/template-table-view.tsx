@@ -1632,7 +1632,7 @@ export function TemplateTableView({
     </colgroup>
 
     {/* Header */}
-    <thead className="sticky top-0 z-[200] bg-background">
+    <thead className="sticky top-0 z-[200] bg-card">
      <tr className="border-b border-border/60">
       {/* Drag handle column header (empty) */}
       <th className="w-6 px-0.5 py-2.5" />

@@ -54,7 +54,7 @@ export function PageBreadcrumbs({
   }, [currentPageId]);
 
   return (
-    <nav className="flex min-w-0 items-center gap-0.5 text-xs">
+    <nav className="flex min-w-0 items-center gap-0.5 text-sm">
       <a
         href={`/app/${workspaceSlug}`}
         className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
@@ -68,7 +68,7 @@ export function PageBreadcrumbs({
         const href  = pageNavSourceHref(navSource, workspaceSlug);
         return (
           <span className="flex min-w-0 items-center gap-0.5">
-            <ChevronRight size={12} className="shrink-0 text-foreground/30" />
+            <ChevronRight size={12} className="shrink-0 text-foreground/50" />
             {href ? (
               <a
                 href={href}
@@ -77,7 +77,7 @@ export function PageBreadcrumbs({
                 {label}
               </a>
             ) : (
-              <span className="max-w-[120px] truncate px-2 py-1 text-muted-foreground/70">
+              <span className="max-w-[120px] truncate px-2 py-1 text-muted-foreground">
                 {label}
               </span>
             )}
@@ -87,7 +87,7 @@ export function PageBreadcrumbs({
 
       {ancestors.map((crumb) => (
         <span key={crumb.id} className="flex min-w-0 items-center gap-0.5">
-          <ChevronRight size={12} className="shrink-0 text-foreground/30" />
+          <ChevronRight size={12} className="shrink-0 text-foreground/50" />
           <a
             href={`/app/${workspaceSlug}/${crumb.shortId}`}
             className="flex max-w-[120px] items-center gap-1.5 truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
@@ -102,8 +102,8 @@ export function PageBreadcrumbs({
       ))}
 
       <span className="flex min-w-0 items-center gap-0.5">
-        <ChevronRight size={12} className="shrink-0 text-foreground/30" />
-        <span className="flex max-w-[240px] items-center gap-1.5 truncate px-2 py-1 text-xs font-semibold text-foreground/80">
+        <ChevronRight size={12} className="shrink-0 text-foreground/50" />
+        <span className="flex max-w-[240px] items-center gap-1.5 truncate px-2 py-1 text-sm font-semibold text-foreground">
           {icon
             ? <PageIcon icon={icon} size={12} />
             : <FileText size={12} className="shrink-0 text-muted-foreground" />

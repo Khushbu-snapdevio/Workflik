@@ -139,10 +139,10 @@ export default async function WorkspacePage({ params }: Props) {
   const onboardingStepsDone = (pageCount >= 1 ? 1 : 0) + (memberCount > 1 ? 1 : 0);
 
   return (
-    <div className="@container flex h-full flex-col overflow-hidden bg-background">
+    <div className="@container flex h-full flex-col overflow-hidden bg-card">
 
       {/* ── Topbar ── */}
-      <div className="flex h-11 shrink-0 items-center justify-between bg-background px-3">
+      <div className="flex h-11 shrink-0 items-center justify-between bg-card px-3">
         <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden text-xs">
           <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-foreground">
             <LayoutGrid size={13} className="shrink-0 text-primary" />
@@ -168,7 +168,7 @@ export default async function WorkspacePage({ params }: Props) {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex-1 overflow-y-auto bg-muted/30">
+      <div className="flex-1 overflow-y-auto bg-white">
 
         {/* ── Hero card: greeting + stat strip in one unit ── */}
         <div className="mx-auto w-full max-w-[1200px] px-4 pt-6 sm:px-6 lg:px-8">

@@ -101,7 +101,7 @@ export function PrivateSection({
     <button
      type="button"
      onClick={() => setExpanded((v) => !v)}
-     className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 group-hover/header:text-sidebar-accent-foreground"
+     className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 group-hover/header:text-sidebar-accent-foreground"
     >
      <Lock size={15} className="shrink-0 text-muted-foreground group-hover/header:text-sidebar-accent-foreground" />
      <span className="truncate text-left">Private</span>
@@ -116,7 +116,7 @@ export function PrivateSection({
      isPrivate
      title="Add a page"
      onBeforeCreate={() => setExpanded(true)}
-     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 opacity-0 transition-colors duration-150 group-hover/header:opacity-100 hover:bg-primary/10 hover:text-sidebar-accent-foreground disabled:opacity-60"
+     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 opacity-0 transition-colors duration-150 group-hover/header:opacity-100 hover:bg-primary/10 hover:text-sidebar-accent-foreground disabled:opacity-60"
     >
      <Plus size={14} />
     </NewPageButton>
@@ -147,7 +147,7 @@ export function PrivateSection({
        ref={moreRef}
        type="button"
        onClick={openPopup}
-       className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+       className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
        <MoreHorizontal size={12} />
        {privatePages.length - VISIBLE_MAX} more
@@ -298,12 +298,12 @@ function PrivateRow({
   <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
    <Link
     href={`/app/${workspaceSlug}/${page.shortId}`}
-    className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-2.5 text-xs text-sidebar-foreground/60 hover:text-sidebar-accent-foreground"
+    className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-2.5 text-xs text-sidebar-foreground/80 hover:text-sidebar-accent-foreground"
    >
     {page.icon ? (
      <PageIcon icon={page.icon} size={13} />
     ) : (
-     <FileText size={12} className="shrink-0 text-sidebar-foreground/50" />
+     <FileText size={12} className="shrink-0 text-sidebar-foreground/70" />
     )}
     <span className="min-w-0 truncate">{page.title || "Untitled"}</span>
    </Link>
@@ -316,7 +316,7 @@ function PrivateRow({
      parentId={page.id}
      isPrivate
      title="Add a page inside"
-     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
+     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
     >
      <Plus size={12} />
     </NewPageButton>
@@ -339,7 +339,7 @@ function PrivateRow({
      }}
      onMouseEnter={(e) => showTooltip("Options", e)}
      onMouseLeave={hideTooltip}
-     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/60 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
+     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
     >
      <MoreHorizontal size={14} />
     </button>

@@ -352,7 +352,7 @@ export function LibraryClient({
     <div className="flex flex-1 flex-col overflow-hidden">
 
       {/* ── Tabs + search row ── */}
-      <div className="shrink-0 bg-background">
+      <div className="shrink-0 bg-card">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
             {TABS.map((t) => (

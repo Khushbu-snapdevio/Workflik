@@ -1592,7 +1592,7 @@ export function TemplatePageClient({
 
  return (
   <>
-  <div className={"flex h-full flex-col overflow-hidden bg-background"}>
+  <div className={"flex h-full flex-col overflow-hidden bg-card"}>
 
    {/* Breadcrumbs + actions */}
    <PagePrivacyProvider initialIsPrivate={isPrivate}>
@@ -1860,7 +1860,7 @@ export function TemplatePageClient({
    </div>
 
    {/* View tabs + toolbar — sticky so it stays visible as cover/header scroll away */}
-   <div ref={viewToolbarRef} className="sticky top-0 z-20 bg-background">
+   <div ref={viewToolbarRef} className="sticky top-0 z-20 bg-card">
    <div className="mx-auto flex max-w-[1100px] items-end justify-between border-b border-border/60 px-8">
     <div className="flex items-end self-stretch">
      {views.map((view) => {

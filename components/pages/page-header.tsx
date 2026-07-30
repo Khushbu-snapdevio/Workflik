@@ -103,7 +103,7 @@ export function PageHeader({
           <button
             type="button"
             onClick={() => setShowPicker(true)}
-            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground/60 opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-muted-foreground"
+            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-sm text-muted-foreground opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-foreground"
           >
             <Smile size={13} />
             Add icon
@@ -163,7 +163,7 @@ export function PageHeader({
       </div>
 
       {saving && (
-        <span className="absolute -top-6 right-0 text-xs text-muted-foreground/70 animate-pulse">
+        <span className="absolute -top-6 right-0 text-xs text-muted-foreground animate-pulse">
           Saving…
         </span>
       )}

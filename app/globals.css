@@ -312,7 +312,7 @@ body {
   outline: none;
   box-shadow: none;
   word-break: break-word;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--foreground);
   font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "lnum" 1, "locl" 1;
@@ -374,7 +374,7 @@ body {
   color: var(--primary);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   line-height: 1.6;
 }
 
@@ -446,7 +446,7 @@ body {
 .ProseMirror ul[data-type="taskList"] > li > div > p {
   margin: 0;
   line-height: 1.6;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   color: var(--foreground);
 }
 .ProseMirror ul[data-type="taskList"] > li[data-checked="true"] > div > p {
@@ -542,7 +542,7 @@ body {
   padding: 2px 4px 2px 0;
   border-radius: var(--radius-sm);
   font-weight: 400;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   color: var(--foreground);
   line-height: 1.5;
   background: transparent !important;
@@ -599,7 +599,7 @@ body {
 .ProseMirror details > summary.is-empty::after {
   content: "Toggle";
   color: var(--muted-foreground);
-  opacity: 0.4;
+  opacity: 0.75;
   pointer-events: none;
   font-style: normal;
 }
@@ -633,7 +633,7 @@ body {
 .ProseMirror details[open] > p.is-empty:first-of-type::before {
   content: "Empty toggle. Click or drop blocks inside." !important;
   color: var(--muted-foreground);
-  opacity: 0.5;
+  opacity: 0.75;
   pointer-events: none;
   font-style: italic;
 }
@@ -659,7 +659,7 @@ body {
 .ProseMirror div[data-type="callout"] p {
   margin: 0;
   line-height: 1.6;
-  font-size: 0.9375rem;
+  font-size: 1rem;
 }
 
 /* Horizontal rule / Divider */
@@ -687,7 +687,7 @@ body {
   content: attr(data-placeholder);
   float: left;
   color: var(--muted-foreground);
-  opacity: 0.4;
+  opacity: 0.75;
   pointer-events: none;
   height: 0;
 }
@@ -760,7 +760,7 @@ body {
 }
 .ProseMirror table td,
 .ProseMirror table th {
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--foreground) 45%, var(--border));
   padding: 0.5rem 0.75rem;
   vertical-align: top;
   text-align: left;

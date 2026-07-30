@@ -34,7 +34,7 @@ export const fileUploads = pgTable("file_uploads", {
   index("file_uploads_confirmed_idx").on(t.confirmedAt),
   check(
     "file_uploads_avatar_workspace_chk",
-    sql`(kind = 'user_avatar' AND workspace_id IS NULL) OR (kind != 'user_avatar' AND workspace_id IS NOT NULL)`
+    sql`(kind IN ('user_avatar', 'template_cover') AND workspace_id IS NULL) OR (kind NOT IN ('user_avatar', 'template_cover') AND workspace_id IS NOT NULL)`
   ),
 ]);
 

@@ -148,6 +148,7 @@ export function DatabaseToolbar({
   const [layoutView, setLayoutView] = useState<DbView | null>(null);
   const [layoutRect, setLayoutRect] = useState<DOMRect | null>(null);
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+  const activeTabRef = useRef<HTMLButtonElement>(null);
   const addViewDropRef = useRef<HTMLDivElement>(null);
   const contextDropRef = useRef<HTMLDivElement>(null);
   const propsDropRef = useRef<HTMLDivElement>(null);
@@ -252,6 +253,13 @@ export function DatabaseToolbar({
     }
   }, [searchQuery, searchInputRef]);
 
+  // The tab strip scrolls internally and starts scrolled to the left, so
+  // switching to (or loading with) a view further along the list left its
+  // name clipped by the container edge with no scrollbar to reveal it.
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeViewId]);
+
   function commitRename(view: DbView) {
     const name = editingName.trim() || view.name;
     if (name !== view.name) {
@@ -345,7 +353,7 @@ export function DatabaseToolbar({
         {/* This strip owns its own horizontal scroll (min-w-0 lets it shrink
             below content width) so a growing number of views never pushes
             the always-visible actions cluster below off the right edge. */}
-        <div className="flex min-w-0 flex-1 items-stretch self-stretch overflow-x-auto pl-4 sm:pl-8 lg:pl-16 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-0 flex-1 items-stretch self-stretch overflow-x-auto pl-4 sm:pl-8 lg:pl-16">
           {views.map((view) => {
             const ViewIcon = VIEW_ICONS[view.type] ?? Table;
             const isActive = view.id === activeViewId;
@@ -373,6 +381,7 @@ export function DatabaseToolbar({
                   </div>
                 ) : (
                   <button
+                    ref={isActive ? activeTabRef : undefined}
                     className={[
                       "relative flex h-full shrink-0 items-center gap-1.5 px-3.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
                       isActive
@@ -429,41 +438,44 @@ export function DatabaseToolbar({
               </div>
             );
           })}
-
-          {/* ── Add view button ── */}
-          {isEditor && (
-            <div className="flex shrink-0 items-center pl-2 pr-1">
-              <button
-                className={[
-                  "flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
-                  addViewRect
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border/70 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
-                ].join(" ")}
-                onClick={(e) => {
-                  if (addViewRect) {
-                    setAddViewRect(null);
-                    return;
-                  }
-                  closeAllLocalDropdowns();
-                  if (showFilterBar) {
-                    onToggleFilterBar();
-                  }
-                  if (showSortBar) {
-                    onToggleSortBar();
-                  }
-                  setAddViewRect(
-                    (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  );
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <Plus className="text-primary/60" size={11} />
-                Add a view
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* ── Add view button ── */}
+        {/* Kept outside the scrollable tabs strip (shrink-0, always visible)
+            so it — and the view-type picker it opens — never gets clipped
+            off-screen in a narrow (e.g. inline) container as views accrue. */}
+        {isEditor && (
+          <div className="flex shrink-0 items-center pl-2 pr-1">
+            <button
+              className={[
+                "flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
+                addViewRect
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border/70 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
+              ].join(" ")}
+              onClick={(e) => {
+                if (addViewRect) {
+                  setAddViewRect(null);
+                  return;
+                }
+                closeAllLocalDropdowns();
+                if (showFilterBar) {
+                  onToggleFilterBar();
+                }
+                if (showSortBar) {
+                  onToggleSortBar();
+                }
+                setAddViewRect(
+                  (e.currentTarget as HTMLElement).getBoundingClientRect()
+                );
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <Plus className="text-primary/60" size={11} />
+              Add a view
+            </button>
+          </div>
+        )}
 
         {/* ── Actions cluster ── */}
         {/* Always fully visible — the view-tabs strip above shrinks and
@@ -789,8 +801,13 @@ export function DatabaseToolbar({
           );
         })()}
 
-        {/* ── Entry open mode segmented control ── */}
-        {activeView && (
+        {/* ── Entry open mode segmented control ──
+            Inline (embedded) databases always open entries in the side panel
+            (see database-page.tsx's openEntry default) and hide labels on
+            these buttons anyway, so the toggle offered no visible feedback
+            and read as broken — only the full standalone database page
+            exposes this preference. */}
+        {activeView && !inline && (
           <div className="flex shrink-0 items-center rounded-[var(--radius-sm)] border border-border/60 bg-muted/30 p-0.5">
             <button
               className={[
@@ -806,7 +823,7 @@ export function DatabaseToolbar({
               onMouseLeave={hideTooltip}
             >
               <SidebarSimple size={12} />
-              {!inline && <span className="hidden xl:inline">Panel</span>}
+              <span className="hidden xl:inline">Panel</span>
             </button>
             <button
               className={[
@@ -822,7 +839,7 @@ export function DatabaseToolbar({
               onMouseLeave={hideTooltip}
             >
               <ArrowsOut size={12} />
-              {!inline && <span className="hidden xl:inline">Full page</span>}
+              <span className="hidden xl:inline">Full page</span>
             </button>
           </div>
         )}
@@ -872,18 +889,28 @@ export function DatabaseToolbar({
               </p>
             </div>
 
-            {/* View type grid — 4 per row */}
+            {/* View type grid — 4 per row. Each type is capped at one view —
+                once a Table/Board/Calendar/Gallery view exists, its button is
+                disabled rather than silently creating another. */}
             <div className="grid grid-cols-4 gap-1.5 p-3">
               {VIEW_TYPES.map((type) => {
                 const VIcon = VIEW_ICONS[type];
+                const alreadyExists = views.some((v) => v.type === type);
                 return (
                   <button
-                    className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-colors duration-150 hover:bg-accent"
+                    className={[
+                      "group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-colors duration-150",
+                      alreadyExists ? "cursor-not-allowed opacity-40" : "hover:bg-accent",
+                    ].join(" ")}
+                    aria-disabled={alreadyExists}
                     key={type}
                     onClick={() => {
+                      if (alreadyExists) return;
                       onAddView(VIEW_LABELS[type], type);
                       setAddViewRect(null);
                     }}
+                    onMouseEnter={(e) => alreadyExists && showTooltip(`A ${VIEW_LABELS[type]} view already exists`, e)}
+                    onMouseLeave={hideTooltip}
                   >
                     <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border/70 bg-muted/50 transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary/10">
                       <VIcon

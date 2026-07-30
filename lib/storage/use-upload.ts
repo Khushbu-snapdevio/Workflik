@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-export type UploadKind = "page_cover" | "page_icon" | "block_media" | "user_avatar" | "workspace_icon" | "database_file";
+export type UploadKind = "page_cover" | "page_icon" | "block_media" | "user_avatar" | "workspace_icon" | "database_file" | "template_cover";
 
 interface UseUploadOptions {
   kind: UploadKind;

@@ -204,22 +204,6 @@ export default async function OrbitOverviewPage() {
 
       {/* ── Secondary strip ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Link href="/orbit-admin/orbit/queues"
-          className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-primary">
-              <rect x="1.5" y="2.5" width="13" height="3" rx="1"/><rect x="1.5" y="6.5" width="13" height="3" rx="1"/>
-              <rect x="1.5" y="10.5" width="13" height="3" rx="1"/>
-            </svg>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-foreground">{queues.length}</p>
-            <p className="text-xs text-muted-foreground">Queue workers</p>
-          </div>
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-muted-foreground/30 opacity-0 transition group-hover:opacity-100">
-            <path d="M2 6h8M7 3l3 3-3 3"/>
-          </svg>
-        </Link>
         <Link href="/orbit-admin/orbit/analytics"
           className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">

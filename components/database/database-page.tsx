@@ -12,6 +12,7 @@ import { CalendarView } from "@/components/database/calendar-view";
 import { GalleryView } from "@/components/database/gallery-view";
 import { GanttView } from "@/components/database/gantt-view";
 import { EntrySidePanel } from "@/components/database/entry-side-panel";
+import { isGroupableType } from "@/components/database/grouping";
 import type {
   DbView, DbProperty, DbEntry, DbPropertyValue,
   FilterRule, SortRule, SharedViewProps, DbPropertyConfig,
@@ -324,16 +325,53 @@ export function DatabasePage({
   }, [databaseId]);
 
   const addView = useCallback(async (name: string, type: string) => {
+    // Board/Calendar render nothing until a group-by/date property is set, so
+    // a freshly created one looks broken/empty — auto-pick the first
+    // candidate property (same filters the toolbar's own Group/Date dropdown
+    // uses); if the database has none at all yet, create a starter one
+    // (server seeds Status's default To-do/In progress/Complete options)
+    // rather than leaving the user to add a property then rediscover the
+    // toolbar's Group/Date dropdown themselves.
+    const body: Record<string, unknown> = { name, type };
+    if (type === "board") {
+      let groupProp = properties.find((p) => isGroupableType(p.type) && !p.isSystem);
+      if (!groupProp) {
+        const propRes = await fetch(`/api/databases/${databaseId}/properties`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Status", type: "status" }),
+        });
+        if (propRes.ok) {
+          groupProp = await propRes.json() as DbProperty;
+          setProperties((prev) => [...prev, groupProp!]);
+        }
+      }
+      if (groupProp) body.groupByPropertyId = groupProp.id;
+    } else if (type === "calendar") {
+      let dateProp = properties.find((p) => p.type === "date" && !p.isSystem);
+      if (!dateProp) {
+        const propRes = await fetch(`/api/databases/${databaseId}/properties`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "Date", type: "date" }),
+        });
+        if (propRes.ok) {
+          dateProp = await propRes.json() as DbProperty;
+          setProperties((prev) => [...prev, dateProp!]);
+        }
+      }
+      if (dateProp) body.calendarPropertyId = dateProp.id;
+    }
     const res = await fetch(`/api/databases/${databaseId}/views`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, type }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) return;
     const view = await res.json() as DbView;
     setViews((prev) => [...prev, view]);
     setActiveViewId(view.id);
-  }, [databaseId]);
+  }, [databaseId, properties]);
 
   const updateView = useCallback(async (viewId: string, patch: Record<string, unknown>) => {
     setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, ...patch } as DbView : v));
@@ -392,7 +430,7 @@ export function DatabasePage({
   // ── Shared view props ─────────────────────────────────────────────────────
 
   const openEntry = useCallback((entry: DbEntry) => {
-    if (activeView?.entryOpenMode === "side_panel") {
+    if ((activeView?.entryOpenMode ?? "side_panel") === "side_panel") {
       setPanelEntryId(entry.id);
       return;
     }

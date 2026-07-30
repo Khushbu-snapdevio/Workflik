@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { RoleSelect } from "@/components/ui/role-select";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { getAvatarColor } from "@/lib/utils";
 
 type Role = "admin" | "editor" | "viewer";
 
@@ -55,14 +56,6 @@ const ROLE_STYLES: Record<string, { badge: string; dot: string }> = {
  viewer: { badge: "bg-muted/50 text-muted-foreground", dot: "bg-muted-foreground" },
 };
 
-const AVATAR_BG_CLASSES = [
- "bg-primary", "bg-destructive", "bg-success", "bg-warning",
- "bg-muted-foreground", "bg-primary/70", "bg-destructive/70", "bg-success/70",
-];
-function avatarBgClass(s: string): string {
- let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
- return AVATAR_BG_CLASSES[Math.abs(h) % AVATAR_BG_CLASSES.length]!;
-}
 function ago(d: Date | null | undefined) {
  if (!d) return "—";
  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
@@ -259,7 +252,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
        <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < active.length - 1 ? "border-b border-border/40" : ""}`}>
         {m.userImage
          ? <img src={m.userImage} alt={display} className="size-9 shrink-0 rounded-full object-cover ring-1 ring-border/30" />
-         : <div className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border/30 ${avatarBgClass(display)}`}>{(()=>{const w=display.split(/[\s._@-]+/).filter(Boolean);return(w.length>=2?w[0][0]!+w[w.length-1][0]!:display.slice(0,2)).toUpperCase();})()}</div>
+         : <div className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border/30 ${getAvatarColor(display)}`}>{(()=>{const w=display.split(/[\s._@-]+/).filter(Boolean);return(w.length>=2?w[0][0]!+w[w.length-1][0]!:display.slice(0,2)).toUpperCase();})()}</div>
         }
         <div className="flex-1 min-w-0">
          <div className="flex items-center gap-2">

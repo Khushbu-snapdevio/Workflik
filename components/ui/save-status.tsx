@@ -1,8 +1,10 @@
 "use client";
 
-import { Check, Loader2, WifiOff } from "lucide-react";
+import { Check, Dot, Loader2, WifiOff } from "lucide-react";
 
-export type SaveState = "idle" | "saving" | "saved" | "offline";
+// "unsaved" only applies to editors that save explicitly rather than
+// autosaving (the Orbit template builder) — autosaving callers never enter it.
+export type SaveState = "idle" | "saving" | "saved" | "offline" | "unsaved";
 
 interface Props {
   state: SaveState;
@@ -34,6 +36,12 @@ export function SaveStatusIndicator({ state, className = "" }: Props) {
         <>
           <Check size={11} className="text-success" />
           Saved
+        </>
+      )}
+      {state === "unsaved" && (
+        <>
+          <Dot size={11} className="text-warning" />
+          Unsaved changes
         </>
       )}
       {state === "offline" && (

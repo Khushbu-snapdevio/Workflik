@@ -4,18 +4,8 @@ import { Bell, ChevronRight, Home, Menu, Search, Settings, Shield, User, Users, 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
-import { getInitials } from "@/lib/utils";
+import { getAvatarColor, getInitials } from "@/lib/utils";
 import { useSettingsUser } from "./settings-user-context";
-
-const AVATAR_BG_CLASSES = [
-  "bg-primary", "bg-destructive", "bg-success", "bg-warning",
-  "bg-muted-foreground", "bg-primary/70", "bg-destructive/70", "bg-success/70",
-];
-function avatarBgClass(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return AVATAR_BG_CLASSES[Math.abs(h) % AVATAR_BG_CLASSES.length]!;
-}
 
 interface Props {
   workspaceSlug: string;
@@ -43,7 +33,7 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
 
   const displayName = user.name?.trim() || user.email;
   const initials    = getInitials(displayName);
-  const bg          = avatarBgClass(displayName);
+  const bg          = getAvatarColor(displayName);
   const profileHref = `/app/${workspaceSlug}/settings/profile`;
 
   const navItems = getNavItems(workspaceSlug);

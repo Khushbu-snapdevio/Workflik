@@ -1,3 +1,5 @@
+import { createLocalDriver } from "./drivers/local";
+import { createS3Driver } from "./drivers/s3";
 import type { StorageDriver } from "./drivers/types";
 
 export type { StorageDriver, UploadSlot } from "./drivers/types";
@@ -10,23 +12,16 @@ export function getStorage(): StorageDriver {
   }
 
   const driver = process.env.STORAGE_DRIVER ?? "local";
+  _driver =
+    driver === "s3" || driver === "r2" ? createS3Driver() : createLocalDriver();
 
-  if (driver === "s3" || driver === "r2") {
-    const { createS3Driver } =
-      require("./drivers/s3") as typeof import("./drivers/s3");
-    _driver = createS3Driver();
-  } else {
-    const { createLocalDriver } =
-      require("./drivers/local") as typeof import("./drivers/local");
-    _driver = createLocalDriver();
-  }
-
-  return _driver!;
+  return _driver;
 }
 
 /** Per-kind size limits in bytes. Enforced at the presign step. */
 export const SIZE_LIMITS: Record<string, number> = {
   page_cover: 5 * 1024 * 1024, //   5 MB
+  template_cover: 5 * 1024 * 1024, //   5 MB
   page_icon: 1 * 1024 * 1024, //   1 MB
   user_avatar: 1 * 1024 * 1024, //   1 MB
   workspace_icon: 1 * 1024 * 1024, //   1 MB

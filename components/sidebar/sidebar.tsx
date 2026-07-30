@@ -35,7 +35,7 @@ import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { usePageTreeStream } from "@/lib/pages/use-page-tree-stream";
-import { getInitials } from "@/lib/utils";
+import { getAvatarColor, getInitials } from "@/lib/utils";
 
 type PageItem = {
  id: string;
@@ -81,7 +81,7 @@ type Props = {
  initialSidebarCollapsed: boolean;
 };
 
-const MIN_WIDTH = 260;
+const MIN_WIDTH = 300;
 const MAX_WIDTH = 480;
 
 export function Sidebar({
@@ -949,7 +949,7 @@ function UserAvatar({
  const showImage = Boolean(image) && !failed;
  return (
   <div
-   className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold uppercase ${showImage ? "bg-transparent" : "bg-primary text-primary-foreground"} ${className ?? ""}`}
+   className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-bold uppercase ${showImage ? "bg-transparent" : `${getAvatarColor(name)} text-white`} ${className ?? ""}`}
   >
    {showImage ? (
     <img
@@ -980,7 +980,7 @@ function SectionLabel({
    <button
     type="button"
     onClick={onToggle}
-    className="flex min-w-0 cursor-pointer items-center gap-1 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-sidebar-accent-foreground"
+    className="flex min-w-0 flex-1 cursor-pointer items-center gap-1 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/60 transition-colors duration-150 group-hover:text-sidebar-accent-foreground"
    >
     <span className="truncate">{label}</span>
     <ChevronDown

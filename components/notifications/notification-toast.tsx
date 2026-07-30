@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { StreamNotification } from "@/lib/notifications/use-notification-stream";
+import { getAvatarColor } from "@/lib/utils";
 
 interface Props {
   notification: StreamNotification;
@@ -73,7 +74,7 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
             </div>
           ) : (
             <div
-              className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white select-none ${avatarBgClass(who)}`}
+              className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white select-none ${getAvatarColor(who)}`}
             >
               {initials}
             </div>
@@ -129,19 +130,3 @@ export function NotificationToast({ notification, onDismiss, onView }: Props) {
   );
 }
 
-const AVATAR_BG_CLASSES = [
-  "bg-primary",
-  "bg-destructive",
-  "bg-success",
-  "bg-warning",
-  "bg-muted-foreground",
-  "bg-primary/70",
-  "bg-destructive/70",
-  "bg-success/70",
-  "bg-warning/70",
-];
-function avatarBgClass(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return AVATAR_BG_CLASSES[h % AVATAR_BG_CLASSES.length]!;
-}

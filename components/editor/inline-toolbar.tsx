@@ -2,6 +2,7 @@
 
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
+import { TextSelection } from "@tiptap/pm/state";
 import {
   Bold, Italic, Underline, Strikethrough,
   Code, Link, Paintbrush, Highlighter, MessageSquare,
@@ -33,6 +34,16 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
   return (
     <BubbleMenu
       editor={editor}
+      // Default shouldShow only checks that the selection is non-empty, so a
+      // NodeSelection on a block (e.g. a clicked-into inline database/embed)
+      // satisfies it too — restrict to genuine text selections, keeping the
+      // library's other default checks (focus, editability).
+      shouldShow={({ view, state }) => {
+        const { selection } = state;
+        if (selection.empty || !(selection instanceof TextSelection)) return false;
+        if (!view.hasFocus() || !editor.isEditable) return false;
+        return true;
+      }}
       className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1"
     >
       {linkInput ? (

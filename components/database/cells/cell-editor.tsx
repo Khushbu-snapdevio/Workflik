@@ -204,8 +204,19 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
  const [options, setOptions]  = useState<SelectOption[]>((property.config?.options ?? []) as SelectOption[]);
  const [search, setSearch]   = useState("");
  const [optionMenu, setOptionMenu] = useState<{ opt: SelectOption; rect: DOMRect } | null>(null);
+ // Adding a new option via the group-header "+" (or the no-options "Add option"
+ // button): same as edit-property-panel.tsx — swap the button for an inline
+ // "Option name…" input instead of creating a blank "Option" immediately.
+ const UNGROUPED = "__ungrouped_add__";
+ const [addingTo, setAddingTo] = useState<string | null>(null);
+ const [newOptionName, setNewOptionName] = useState("");
+ const addInputRef = useRef<HTMLInputElement>(null);
  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
+
+ useEffect(() => {
+  if (addingTo) addInputRef.current?.focus();
+ }, [addingTo]);
 
  const filtered = options.filter((o) => o.name.toLowerCase().includes(search.toLowerCase()));
  const canCreate = search.trim() && !options.some((o) => o.name.toLowerCase() === search.trim().toLowerCase());
@@ -248,11 +259,22 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
   setSearch("");
  }
 
- function quickAddOption(group?: StatusGroupKey) {
-  const newOpt: SelectOption = { id: createId(), name: "Option", color: OPTION_COLORS[options.length % OPTION_COLORS.length].id, group };
-  const newOptions = [...options, newOpt];
-  setOptions(newOptions);
-  saveOptionsConfig(newOptions);
+ function commitNewOption() {
+  const name = newOptionName.trim();
+  if (name && addingTo) {
+   const group = addingTo === UNGROUPED ? undefined : (addingTo as StatusGroupKey);
+   const newOpt: SelectOption = { id: createId(), name, color: OPTION_COLORS[options.length % OPTION_COLORS.length].id, group };
+   const newOptions = [...options, newOpt];
+   setOptions(newOptions);
+   saveOptionsConfig(newOptions);
+  }
+  setAddingTo(null);
+  setNewOptionName("");
+ }
+
+ function cancelNewOption() {
+  setAddingTo(null);
+  setNewOptionName("");
  }
 
  function recolorOption(optId: string, color: string) {
@@ -367,7 +389,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
          <div className="mb-0.5 flex items-center justify-between px-2 pt-1">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">{section.label}</span>
           <button
-           onClick={() => quickAddOption(section.key as StatusGroupKey)}
+           onClick={() => setAddingTo(section.key)}
            className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
            onMouseEnter={(e) => showTooltip(`Add option to ${section.label}`, e)}
            onMouseLeave={hideTooltip}
@@ -377,6 +399,20 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
          </div>
         )}
         {section.options.map(renderOptionRow)}
+        {section.label && addingTo === section.key && (
+         <input
+          ref={addInputRef}
+          value={newOptionName}
+          onChange={(e) => setNewOptionName(e.target.value)}
+          onBlur={commitNewOption}
+          onKeyDown={(e) => {
+           if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); commitNewOption(); }
+           if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelNewOption(); }
+          }}
+          placeholder="Option name…"
+          className="w-full rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
+         />
+        )}
        </div>
       ))}
      </SortableContext>
@@ -397,13 +433,28 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
         option — "No options" was a dead end. Offer a direct add button here
         too, not just next to grouped section headers. */}
     {!options.length && !search.trim() && (
-     <button
-      onClick={() => quickAddOption()}
-      className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
-     >
-      <Plus size={12} />
-      Add option
-     </button>
+     addingTo === UNGROUPED ? (
+      <input
+       ref={addInputRef}
+       value={newOptionName}
+       onChange={(e) => setNewOptionName(e.target.value)}
+       onBlur={commitNewOption}
+       onKeyDown={(e) => {
+        if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); commitNewOption(); }
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelNewOption(); }
+       }}
+       placeholder="Option name…"
+       className="w-full rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
+      />
+     ) : (
+      <button
+       onClick={() => setAddingTo(UNGROUPED)}
+       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+      >
+       <Plus size={12} />
+       Add option
+      </button>
+     )
     )}
 
     {!!options.length && !filtered.length && !canCreate && (

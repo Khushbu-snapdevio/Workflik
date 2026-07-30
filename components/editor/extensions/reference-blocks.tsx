@@ -146,10 +146,11 @@ interface PageSearchResult {
   breadcrumb: string;
 }
 
-function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
+function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeViewProps) {
   const pageId = (node.attrs.pageId as string) || "";
   const { workspaceId, workspaceSlug } = extension.options as LinkedPageOptions;
 
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PageSearchResult[]>([]);
   const [isRecent, setIsRecent] = useState(false);
@@ -265,10 +266,27 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
     updateAttributes({ pageId: result.pageId });
   }
 
+  // Nothing was picked yet, so this node is just an unresolved placeholder —
+  // clicking (or opening any other panel, e.g. Comments) outside it, or
+  // pressing Escape, cancels it instead of leaving its search dropdown
+  // floating on top of everything else with no way to dismiss it.
+  useEffect(() => {
+    if (pageId) {
+      return;
+    }
+    function handler(e: MouseEvent) {
+      if (!wrapperRef.current?.contains(e.target as globalThis.Node)) {
+        deleteNode();
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [pageId, deleteNode]);
+
   if (!pageId) {
     return (
       <NodeViewWrapper contentEditable={false}>
-        <div className="relative my-1">
+        <div className="relative my-1" ref={wrapperRef}>
           <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5">
             <span className="font-semibold text-primary">↗</span>
             <input
@@ -291,6 +309,10 @@ function LinkedPageView({ node, updateAttributes, extension }: NodeViewProps) {
                   if (picked) {
                     selectPage(picked);
                   }
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  deleteNode();
                 }
               }}
               placeholder="Search for a page…"
@@ -1057,6 +1079,20 @@ function InlineDatabaseView({
   const [searchLoading, setSearchLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Older blocks (created before shortId was persisted, or ones where the
+  // attribute update never made it into a saved revision) render with an
+  // empty shortId, which silently hides the "Open" full-page link below with
+  // no way to recover it — backfill it from the database's own host page.
+  useEffect(() => {
+    if (!databaseId || shortId || !isEditor) return;
+    fetch(`/api/databases/${databaseId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { database?: { shortId?: string } } | null) => {
+        if (data?.database?.shortId) updateAttributes({ shortId: data.database.shortId });
+      })
+      .catch(() => {});
+  }, [databaseId, shortId, isEditor, updateAttributes]);
+
   function handleDuplicate(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -1352,6 +1388,13 @@ export const InlineDatabase = Node.create<InlineDatabaseOptions>({
   group: "block",
   atom: true,
   draggable: true,
+  // Without this, ProseMirror's default click handling (NodeView.stopEvent)
+  // treats any mousedown inside this atom's own interactive UI (row clicks,
+  // dropdowns, inputs) as a plain click on a selectable node and wraps it in
+  // a NodeSelection — which then satisfies the bubble menu's default
+  // shouldShow (non-empty selection) and pops the text-format toolbar over
+  // the table instead of letting the click (e.g. opening an entry) happen.
+  selectable: false,
 
   addOptions() {
     return { workspaceId: "", workspaceSlug: "", isEditor: false };

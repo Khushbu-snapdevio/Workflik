@@ -291,18 +291,51 @@ export function LibraryClient({
 
   async function handleDeleteSelected() {
     setDeletingSelected(true); setDeleteErr("");
-    const ids = [...selectedIds];
+    const selected = [...selectedIds];
+
+    // The DELETE endpoint already cascades to every descendant of the page
+    // it's given. If a parent AND its child are both checked (e.g. via
+    // "select all", which checks every expanded row), firing a separate
+    // request for the child races that cascade — the child's own request can
+    // find it already marked deleted and permanently hard-delete it instead
+    // of moving it to Trash. So each selected id is folded up to the
+    // topmost selected id in its ancestor chain, and only that one is
+    // actually requested.
+    const parentOf = new Map(rows.map((r) => [r.id, r.parentId]));
+    function topmostSelectedAncestor(id: string): string {
+      let cur = id;
+      const seen = new Set<string>();
+      for (;;) {
+        const parent = parentOf.get(cur);
+        if (!parent || seen.has(parent) || !selectedIds.has(parent)) return cur;
+        seen.add(parent);
+        cur = parent;
+      }
+    }
+    const effectiveIdFor = new Map(selected.map((id) => [id, topmostSelectedAncestor(id)]));
+    const idsToRequest = [...new Set(effectiveIdFor.values())];
+
     try {
-      const results  = await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
-      const failed  = results.filter((r) => !r.ok).length;
-      const removed  = new Set(ids.filter((_, i) => results[i]!.ok));
+      const results = await Promise.all(idsToRequest.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
+      const okById = new Map(idsToRequest.map((id, i) => [id, results[i]!.ok]));
+      const removed = new Set(selected.filter((id) => okById.get(effectiveIdFor.get(id)!)));
+      const failedIds = idsToRequest.filter((id) => !okById.get(id));
+
       setRows((prev) => prev.filter((p) => !removed.has(p.id)));
       setSelectedIds(new Set());
       if (removed.size > 0) {
         window.dispatchEvent(new CustomEvent("pages:refresh"));
         refetch(); // reconcile totals/tab counts and refill this page from what's left
       }
-      if (failed > 0) setDeleteErr(`Failed to delete ${failed} page${failed !== 1 ? "s" : ""}`);
+      if (failedIds.length > 0) {
+        if (failedIds.length === 1) {
+          const res = results[idsToRequest.indexOf(failedIds[0]!)]!;
+          const body = await res.json().catch(() => null) as { error?: string } | null;
+          setDeleteErr(body?.error ? `Failed to delete page: ${body.error}` : "Failed to delete page");
+        } else {
+          setDeleteErr(`Failed to delete ${failedIds.length} pages`);
+        }
+      }
     } catch { setDeleteErr("Network error"); }
     finally { setDeletingSelected(false); setConfirmDeleteSelected(false); }
   }

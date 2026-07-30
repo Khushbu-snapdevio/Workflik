@@ -7,6 +7,8 @@ import { templateCategories, templates } from "@/lib/db/schema";
 import { TemplatePublishToggle } from "@/components/orbit/template-publish-toggle";
 import { SeedTemplatesButton } from "@/components/orbit/seed-templates-button";
 import { TemplateDeleteButton } from "@/components/orbit/template-delete-button";
+import { TemplateDuplicateButton } from "@/components/orbit/template-duplicate-button";
+import { TemplateArchiveButton } from "@/components/orbit/template-archive-button";
 import { TemplatePreviewButton } from "@/components/orbit/template-preview-modal";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 import { BackToTopButton } from "@/components/orbit/back-to-top-button";
@@ -41,7 +43,8 @@ export default async function OrbitTemplatesPage() {
  const categoryById = new Map(categories.map((c, i) => [c.id, { label: c.label, cls: CATEGORY_CLS_CYCLE[i % CATEGORY_CLS_CYCLE.length] }]));
 
  const published = list.filter(t => t.status === "published").length;
- const drafts  = list.filter(t => t.status !== "published").length;
+ const drafts  = list.filter(t => t.status === "draft").length;
+ const archived = list.filter(t => t.status === "archived").length;
 
  return (
   <div className="space-y-6">
@@ -63,6 +66,11 @@ export default async function OrbitTemplatesPage() {
         <strong className="font-bold text-foreground">{drafts}</strong> drafts
        </span>
       )}
+      {archived > 0 && (
+       <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning">
+        <strong className="font-bold">{archived}</strong> archived
+       </span>
+      )}
      </div>
     </div>
    </div>
@@ -70,13 +78,22 @@ export default async function OrbitTemplatesPage() {
    {/* Action bar */}
    <div className="flex items-center justify-between">
     <SeedTemplatesButton currentCount={list.length} />
-    <Link href="/orbit-admin/orbit/templates/new"
-     className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
-     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
-      <path d="M6 1v10M1 6h10"/>
-     </svg>
-     New template
-    </Link>
+    <div className="flex items-center gap-2">
+     <Link href="/orbit-admin/orbit/templates/categories"
+      className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-150 hover:bg-accent">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+       <path d="M2 3.5h4l1.5 2H12v5a1 1 0 01-1 1H2a1 1 0 01-1-1v-6a1 1 0 011-1z"/>
+      </svg>
+      Categories
+     </Link>
+     <Link href="/orbit-admin/orbit/templates/new"
+      className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
+       <path d="M6 1v10M1 6h10"/>
+      </svg>
+      New template
+     </Link>
+    </div>
    </div>
 
    {/* Table */}
@@ -112,6 +129,7 @@ export default async function OrbitTemplatesPage() {
         {list.map(tpl => {
          const cat = categoryById.get(tpl.categoryId);
          const isPublished = tpl.status === "published";
+         const isArchived = tpl.status === "archived";
          return (
           <tr key={tpl.id} className="group transition-colors hover:bg-accent">
            <td className="px-5 py-3.5">
@@ -127,9 +145,9 @@ export default async function OrbitTemplatesPage() {
            </td>
            <td className="px-5 py-3.5">
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-             isPublished ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+             isPublished ? "bg-success/10 text-success" : isArchived ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
             }`}>
-             <span className={`size-1.5 rounded-full ${isPublished ? "bg-success" : "bg-muted-foreground/40"}`} />
+             <span className={`size-1.5 rounded-full ${isPublished ? "bg-success" : isArchived ? "bg-warning" : "bg-muted-foreground/40"}`} />
              {tpl.status}
             </span>
            </td>
@@ -146,7 +164,11 @@ export default async function OrbitTemplatesPage() {
               label="Edit"
               href={`/orbit-admin/orbit/templates/${tpl.id}/edit`}
              />
-             <TemplatePublishToggle templateId={tpl.id} templateName={tpl.name} currentStatus={tpl.status} />
+             <TemplateDuplicateButton templateId={tpl.id} />
+             {!isArchived && (
+              <TemplatePublishToggle templateId={tpl.id} templateName={tpl.name} currentStatus={tpl.status} />
+             )}
+             <TemplateArchiveButton templateId={tpl.id} templateName={tpl.name} currentStatus={tpl.status} />
              <TemplateDeleteButton templateId={tpl.id} templateName={tpl.name} />
             </div>
            </td>

@@ -51,6 +51,14 @@ const NAV = [
     ),
   },
   {
+    href: "/orbit-admin/orbit/templates/categories", label: "Categories", exact: true,
+    icon: (
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
+        <path d="M1.5 3h4l1.5 2h5.5v6a1 1 0 01-1 1h-9a1 1 0 01-1-1v-7a1 1 0 011-1z"/>
+      </svg>
+    ),
+  },
+  {
     href: "/orbit-admin/orbit/audit", label: "Audit Trail", exact: false,
     icon: (
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
@@ -60,16 +68,26 @@ const NAV = [
   },
 ];
 
+// Some hrefs are prefixes of others (Templates vs. Templates/Categories) — a
+// plain `pathname.startsWith(href)` check would light up both at once when
+// on the more specific page. Pick the single longest matching href across
+// both nav groups so only the most specific item wins.
+function isHrefMatch(pathname: string, href: string, exact?: boolean) {
+  return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function computeActiveHref(pathname: string) {
+  let best: string | null = null;
+  for (const item of [...NAV, ...SECONDARY]) {
+    const exact = (item as { exact?: boolean }).exact;
+    if (isHrefMatch(pathname, item.href, exact) && (!best || item.href.length > best.length)) {
+      best = item.href;
+    }
+  }
+  return best;
+}
+
 const SECONDARY = [
-  {
-    href: "/orbit-admin/orbit/queues", label: "Queues",
-    icon: (
-      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-[15px]">
-        <rect x="1" y="2" width="12" height="2.5" rx="0.75"/><rect x="1" y="5.75" width="12" height="2.5" rx="0.75"/>
-        <rect x="1" y="9.5" width="12" height="2.5" rx="0.75"/>
-      </svg>
-    ),
-  },
   {
     href: "/orbit-admin/orbit/email", label: "Email",
     icon: (
@@ -110,6 +128,7 @@ export function AdminSidebar({
   version?: string;
 }) {
   const pathname      = usePathname();
+  const activeHref    = computeActiveHref(pathname);
   const displayName   = email.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   const [userMenu, setUserMenu] = useState(false);
   const userMenuRef   = useRef<HTMLDivElement>(null);
@@ -143,8 +162,8 @@ export function AdminSidebar({
       <nav className="flex-1 overflow-y-auto px-2 py-2">
         <p className="mb-1 px-2.5 text-xs font-semibold uppercase tracking-wide text-primary/60">Main</p>
         <div className="space-y-0.5">
-          {NAV.map(({ href, label, icon, exact }) => {
-            const active = exact ? pathname === href : pathname.startsWith(href);
+          {NAV.map(({ href, label, icon }) => {
+            const active = href === activeHref;
             return (
               <Link
                 key={href}
@@ -169,7 +188,7 @@ export function AdminSidebar({
         <p className="mb-1 px-2.5 text-xs font-semibold uppercase tracking-wide text-primary/60">System</p>
         <div className="space-y-0.5">
           {SECONDARY.map(({ href, label, icon }) => {
-            const active = pathname.startsWith(href);
+            const active = href === activeHref;
             return (
               <Link
                 key={href}

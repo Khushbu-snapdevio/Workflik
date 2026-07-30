@@ -183,6 +183,34 @@
       "when": 1785127589468,
       "tag": "0025_whole_mattie_franklin",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785390938310,
+      "tag": "0026_worthless_emma_frost",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785391599291,
+      "tag": "0027_faithful_ender_wiggin",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1785391599292,
+      "tag": "0028_template_cover_workspace_chk",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1785405282341,
+      "tag": "0029_open_bromley",
+      "breakpoints": true
     }
   ]
 }

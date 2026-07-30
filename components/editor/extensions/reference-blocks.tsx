@@ -79,7 +79,7 @@ function BlockTypeSelect({
           "flex w-full items-center justify-between rounded-[var(--radius-sm)] border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors",
           open
             ? "border-primary ring-2 ring-primary/20"
-            : "border-border hover:border-border/80",
+            : "border-border hover:border-border",
         ].join(" ")}
         onClick={() => setOpen((p) => !p)}
         type="button"
@@ -292,7 +292,7 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
             <input
               // biome-ignore lint/a11y/noAutofocus: intentional — block was just inserted
               autoFocus
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
+              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
@@ -322,7 +322,7 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
           </div>
           {results.length > 0 && (
             <div className="absolute left-0 top-[calc(100%+4px)] z-[200] max-h-64 w-full min-w-[260px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover py-1">
-              <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground/70">
+              <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {isRecent ? "Recent" : "Pages"}
               </p>
               {results.map((r, i) => (
@@ -340,7 +340,7 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
                     {r.icon ? (
                       <PageIcon icon={r.icon} size={16} />
                     ) : (
-                      <FileText className="shrink-0 text-muted-foreground/60" size={16} />
+                      <FileText className="shrink-0 text-muted-foreground" size={16} />
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -384,7 +384,7 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
         {resolved.icon ? (
           <PageIcon icon={resolved.icon} size={18} />
         ) : (
-          <FileText className="shrink-0 text-muted-foreground/60" size={18} />
+          <FileText className="shrink-0 text-muted-foreground" size={18} />
         )}
         <span className="text-sm font-medium text-primary underline decoration-primary/40 underline-offset-2 transition-colors group-hover:decoration-primary">
           {resolved.title}
@@ -541,7 +541,7 @@ function TemplateButtonView({
                     value={b.type}
                   />
                   <input
-                    className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground-subtle focus:border-primary focus:ring-2 focus:ring-primary/20"
                     onChange={(e) => {
                       const next = [...draftBlocks];
                       next[i] = { ...next[i], text: e.target.value };
@@ -552,7 +552,7 @@ function TemplateButtonView({
                     value={b.text}
                   />
                   <button
-                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground-subtle hover:bg-destructive/10 hover:text-destructive transition-colors"
                     onClick={() =>
                       setDraftBlocks(draftBlocks.filter((_, j) => j !== i))
                     }
@@ -570,7 +570,7 @@ function TemplateButtonView({
                 </div>
               ))}
               <button
-                className="mt-0.5 self-start rounded-[var(--radius-sm)] border border-dashed border-border/60 px-3 py-1 text-xs text-muted-foreground/60 hover:border-primary/30 hover:text-primary"
+                className="mt-0.5 self-start rounded-[var(--radius-sm)] border border-dashed border-border px-3 py-1 text-xs text-muted-foreground hover:border-primary/30 hover:text-primary"
                 onClick={() =>
                   setDraftBlocks([
                     ...draftBlocks,
@@ -621,7 +621,7 @@ function TemplateButtonView({
           <span>{label}</span>
         </button>
         <button
-          className="rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground/70 hover:bg-accent hover:text-muted-foreground"
+          className="rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-muted-foreground"
           onClick={() => {
             setDraftLabel(label);
             setDraftLocation(insertLocation);
@@ -979,7 +979,7 @@ function SubPageBlockView({
         {resolved.icon ? (
           <PageIcon icon={resolved.icon} size={18} />
         ) : (
-          <FileText className="shrink-0 text-muted-foreground/60" size={18} />
+          <FileText className="shrink-0 text-muted-foreground" size={18} />
         )}
         <span className="text-sm font-medium text-primary underline decoration-primary/40 underline-offset-2 transition-colors group-hover:decoration-primary">
           {resolved.title}
@@ -995,11 +995,11 @@ function SubPageBlockView({
             {resolved.icon ? (
               <PageIcon icon={resolved.icon} size={18} />
             ) : (
-              <FileText size={18} className="text-muted-foreground/60" />
+              <FileText size={18} className="text-muted-foreground" />
             )}
           </div>
           {parentTitle && (
-            <p className="truncate text-xs text-muted-foreground/60">{parentTitle}</p>
+            <p className="truncate text-xs text-muted-foreground">{parentTitle}</p>
           )}
           <p className="truncate text-sm font-semibold text-foreground">{resolved.title}</p>
 
@@ -1172,7 +1172,7 @@ function InlineDatabaseView({
       return (
         <NodeViewWrapper contentEditable={false}>
           <div className="my-1 rounded-[var(--radius-md)] border border-border bg-background p-4">
-            <p className="mb-2 text-xs font-semibold text-muted-foreground/60">
+            <p className="mb-2 text-xs font-semibold text-muted-foreground">
               Link an existing database
             </p>
             <input
@@ -1211,7 +1211,7 @@ function InlineDatabaseView({
               </div>
             )}
             {!searchLoading && query && results.length === 0 && (
-              <p className="mt-2 text-xs text-muted-foreground/70">
+              <p className="mt-2 text-xs text-muted-foreground">
                 No databases found
               </p>
             )}
@@ -1257,7 +1257,7 @@ function InlineDatabaseView({
           {isEditor && (
             <div className="flex items-center gap-2">
               <button
-                className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary/90 disabled:opacity-60"
+                className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 disabled={creating}
                 onClick={handleCreateNew}
               >
@@ -1282,9 +1282,9 @@ function InlineDatabaseView({
   // Render the embedded database
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="my-3 overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-background">
+      <div className="my-3 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
         {/* Inline header bar */}
-        <div className="flex items-center gap-2 border-b border-border/40 bg-muted/20 px-3 py-2">
+        <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-3 py-2">
           <svg
             className="size-3.5 shrink-0 text-muted-foreground"
             fill="none"
@@ -1303,7 +1303,7 @@ function InlineDatabaseView({
             {isEditor && (
               <>
                 <button
-                  className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-muted-foreground"
+                  className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
                   onMouseDown={handleDuplicate}
                   onMouseEnter={(e) => showTooltip("Duplicate block", e)}
                   onMouseLeave={hideTooltip}
@@ -1320,7 +1320,7 @@ function InlineDatabaseView({
                   </svg>
                 </button>
                 <button
-                  className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   onMouseDown={handleDelete}
                   onMouseEnter={(e) => showTooltip("Delete block", e)}
                   onMouseLeave={hideTooltip}
@@ -1342,7 +1342,7 @@ function InlineDatabaseView({
             )}
             {workspaceSlug && shortId && (
               <a
-                className="ml-1 flex items-center gap-1 rounded-[var(--radius-sm)] px-1.5 py-1 text-xs text-muted-foreground/70 transition-colors hover:bg-accent hover:text-primary"
+                className="ml-1 flex items-center gap-1 rounded-[var(--radius-sm)] px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
                 href={`/app/${workspaceSlug}/${shortId}`}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -1499,7 +1499,7 @@ function TableOfContentsView({ editor }: NodeViewProps) {
     <NodeViewWrapper contentEditable={false}>
       <div className="my-1">
         {headings.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground/60">
+          <p className="text-sm italic text-muted-foreground">
             Table of contents — headings you add on this page will show up here.
           </p>
         ) : (

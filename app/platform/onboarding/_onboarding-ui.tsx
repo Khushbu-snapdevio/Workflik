@@ -246,7 +246,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
     </div>
 
     {/* Step label */}
-    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground/60">
+    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground">
      {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${progressTotal}`}
     </p>
 
@@ -269,7 +269,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
         onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
         placeholder="Your full name"
         maxLength={80}
-        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
        />
        <input
         type="text"
@@ -278,7 +278,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
         onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
         placeholder="Job title (optional)"
         maxLength={80}
-        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
        />
       </div>
      </>
@@ -318,7 +318,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
           <div className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
            isSelected ? "border-primary bg-primary" : "border-border"
           }`}>
-           {isSelected && <span className="size-[6px] rounded-full bg-white" />}
+           {isSelected && <span className="size-[6px] rounded-full bg-primary-foreground" />}
           </div>
          </button>
         );
@@ -348,9 +348,9 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
         onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
         placeholder={isTeam ? "e.g. Acme Corp" : "e.g. My Projects"}
         maxLength={100}
-        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
        />
-       <p className="mt-2 text-xs text-muted-foreground/50">
+       <p className="mt-2 text-xs text-muted-foreground-subtle">
         You can rename or create more workspaces later in settings.
        </p>
       </div>
@@ -386,7 +386,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
            onChange={(e) => updateInviteEmail(i, e.target.value)}
            onBlur={() => touchInviteEmail(i)}
            aria-invalid={showInviteError}
-           className={`h-11 flex-1 bg-transparent px-4 text-sm placeholder:text-muted-foreground/40 focus:outline-none ${
+           className={`h-11 flex-1 bg-transparent px-4 text-sm placeholder:text-muted-foreground-subtle focus:outline-none ${
             showInviteError ? "text-destructive" : "text-foreground"
            }`}
           />
@@ -403,7 +403,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
             type="button"
             onClick={() => setPendingRemoveIndex(i)}
             aria-label="Remove this invite"
-            className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+            className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
            >
             <X size={14} />
            </button>
@@ -446,7 +446,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
        </button>
       )}
 
-      <p className="mb-5 text-xs text-muted-foreground/50">
+      <p className="mb-5 text-xs text-muted-foreground-subtle">
        Invites are valid for 7 days. You can invite more teammates from workspace settings at any time.
       </p>
      </>
@@ -486,7 +486,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
           <div className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
            isSelected ? "border-primary bg-primary" : "border-border"
           }`}>
-           {isSelected && <span className="size-[6px] rounded-full bg-white" />}
+           {isSelected && <span className="size-[6px] rounded-full bg-primary-foreground" />}
           </div>
          </button>
         );

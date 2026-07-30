@@ -147,7 +147,7 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
       style={{ position: "fixed", top: getClampedTop(rect, height), left: getClampedLeft(rect, width, { align: "end" }), zIndex: 500, width }}
       className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
-      <div className="flex items-center gap-1.5 border-b border-border/60 px-2.5 py-2">
+      <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
         <button type="button" onClick={onBack} className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent">
           <ArrowLeft size={13} />
         </button>
@@ -162,11 +162,11 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
           onChange={(e) => setExpression(e.target.value)}
           placeholder='e.g. if(prop("Status") == "Done", "✅", "")'
           rows={4}
-          className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-primary/40 focus:outline-none"
+          className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
         />
 
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Insert property</p>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Insert property</p>
           <div className="flex flex-wrap gap-1">
             {properties.filter((p) => !p.isSystem).map((p) => (
               <button
@@ -181,15 +181,15 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
           </div>
         </div>
 
-        <div className="rounded-[var(--radius-sm)] border border-border/60 bg-muted/20 px-2.5 py-2">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Preview</p>
+        <div className="rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Preview</p>
           {preview.error ? (
             <p className="flex items-start gap-1.5 text-xs text-destructive">
               <AlertCircle size={12} className="mt-0.5 shrink-0" />
               {preview.error}
             </p>
           ) : (
-            <p className="truncate text-sm text-foreground">{preview.display || <span className="text-muted-foreground/50">—</span>}</p>
+            <p className="truncate text-sm text-foreground">{preview.display || <span className="text-muted-foreground-subtle">—</span>}</p>
           )}
         </div>
 

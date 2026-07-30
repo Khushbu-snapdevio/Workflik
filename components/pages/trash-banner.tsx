@@ -69,7 +69,7 @@ export function TrashBanner({ pageId, workspaceSlug, parentShortId, rootFallback
       type="button"
       onClick={() => setConfirming(true)}
       disabled={restoring || deleting}
-      className="rounded-[var(--radius-sm)] bg-destructive px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+      className="rounded-[var(--radius-sm)] bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
      >
       Delete permanently
      </button>
@@ -107,7 +107,7 @@ export function TrashBanner({ pageId, workspaceSlug, parentShortId, rootFallback
         type="button"
         onClick={handlePermanentDelete}
         disabled={deleting}
-        className="flex-1 rounded-[var(--radius-sm)] bg-destructive py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+        className="flex-1 rounded-[var(--radius-sm)] bg-destructive py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
        >
         {deleting ? "Deleting…" : "Delete forever"}
        </button>

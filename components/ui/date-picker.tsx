@@ -38,17 +38,17 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", autoF
           type="button"
           className={cn(
             "flex h-9 w-full items-center gap-2 rounded-[var(--radius-xs)] border border-input bg-card px-3 text-sm text-foreground transition-colors duration-150 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring",
-            !value && "text-muted-foreground/50",
+            !value && "text-muted-foreground-subtle",
             className
           )}
         >
-          <CalendarIcon size={14} className="shrink-0 text-muted-foreground/60" />
+          <CalendarIcon size={14} className="shrink-0 text-muted-foreground" />
           <span className="truncate">{value ? formatDate(value) : placeholder}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto gap-0 p-0" align="start">
         <Calendar mode="single" selected={selected} onSelect={select} defaultMonth={selected ?? new Date()} autoFocus />
-        <div className="flex items-center justify-between border-t border-border/60 px-3 py-2">
+        <div className="flex items-center justify-between border-t border-border px-3 py-2">
           <button
             type="button"
             disabled={!value}

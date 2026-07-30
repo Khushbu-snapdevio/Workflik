@@ -74,7 +74,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
      </svg>
      Workspaces
     </Link>
-    <span className="select-none text-sm font-light text-muted-foreground/30">/</span>
+    <span className="select-none text-sm font-light text-muted-foreground-subtle">/</span>
     <span className="text-xs font-semibold text-foreground">{ws.name}</span>
    </div>
 
@@ -87,30 +87,30 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
        <p className="mt-1 font-mono text-sm text-muted-foreground">/{ws.slug}</p>
       </div>
       <div className="shrink-0 text-right">
-       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Workspace ID</p>
-       <p className="mt-0.5 font-mono text-xs text-muted-foreground/80 break-all">{ws.id}</p>
+       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Workspace ID</p>
+       <p className="mt-0.5 font-mono text-xs text-muted-foreground break-all">{ws.id}</p>
       </div>
      </div>
     </div>
     <div className="flex items-center gap-0 border-t border-border divide-x divide-border">
      <div className="px-6 py-4">
       <p className="text-lg font-bold text-primary">{activeMembers.length}</p>
-      <p className="text-xs text-muted-foreground/60">Active members</p>
+      <p className="text-xs text-muted-foreground">Active members</p>
      </div>
      <div className="px-6 py-4">
       <p className="text-lg font-bold text-primary">{members.length}</p>
-      <p className="text-xs text-muted-foreground/60">Total members</p>
+      <p className="text-xs text-muted-foreground">Total members</p>
      </div>
      <div className="px-6 py-4">
       <p className="text-lg font-bold text-primary">{pageCount!.count}</p>
-      <p className="text-xs text-muted-foreground/60">Pages</p>
+      <p className="text-xs text-muted-foreground">Pages</p>
      </div>
      <div className="px-6 py-4">
       <p className={`text-lg font-bold ${storagePct >= 90 ? "text-destructive" : "text-primary"}`}>{formatBytes(bytesUsed)}</p>
-      <p className="text-xs text-muted-foreground/60">Storage ({storagePct.toFixed(1)}% of 5 GB)</p>
+      <p className="text-xs text-muted-foreground">Storage ({storagePct.toFixed(1)}% of 5 GB)</p>
      </div>
      <div className="ml-auto px-6 py-4 text-right">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Created</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Created</p>
       <p className="text-xs text-muted-foreground">{formatDateTime(ws.createdAt)}</p>
      </div>
     </div>

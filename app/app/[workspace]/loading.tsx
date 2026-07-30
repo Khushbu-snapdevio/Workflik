@@ -22,11 +22,11 @@ export default function WorkspaceHomeLoading() {
             {/* Left column */}
             <div className="flex flex-col gap-4">
               <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-                <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
+                <div className="flex items-center justify-between border-b border-border px-5 py-3">
                   <div className="h-4 w-32 rounded bg-muted" />
                   <div className="h-3 w-16 rounded bg-muted/60" />
                 </div>
-                <div className="divide-y divide-border/40">
+                <div className="divide-y divide-border">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="flex items-center gap-3 px-5 py-2.5">
                       <div className="size-7 shrink-0 rounded-[var(--radius-sm)] bg-muted" />
@@ -41,10 +41,10 @@ export default function WorkspaceHomeLoading() {
             {/* Right column */}
             <div className="flex flex-col gap-3">
               <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-                <div className="border-b border-border/60 px-4 py-2.5">
+                <div className="border-b border-border px-4 py-2.5">
                   <div className="h-2.5 w-16 rounded bg-muted/60" />
                 </div>
-                <div className="divide-y divide-border/40">
+                <div className="divide-y divide-border">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-center justify-between px-4 py-2.5">
                       <div className="flex items-center gap-2.5">

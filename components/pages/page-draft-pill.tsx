@@ -19,7 +19,7 @@ export function PageDraftPill() {
       <span
         onMouseEnter={(e) => showTooltip("This page is still a draft. Only you can see it for now. It will become visible to collaborators after you add a title or start writing.", e)}
         onMouseLeave={hideTooltip}
-        className="ml-1.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] border border-[#fde68a] bg-[#fef9c3] px-1.5 py-0.5 text-[11px] font-semibold text-[#92400e]"
+        className="ml-1.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] border border-[#fde68a] bg-[#fef9c3] px-1.5 py-0.5 text-[11px] font-semibold text-[#92400e] dark:border-[#473c1b] dark:bg-[#713f12] dark:text-[#fde68a]"
       >
         <Pencil size={10} />
         Draft

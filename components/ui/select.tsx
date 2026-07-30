@@ -49,7 +49,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground/60" />
+        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -109,7 +109,7 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
     <SelectPrimitive.Label
       data-slot="select-label"
       className={cn(
-        "px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60",
+        "px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground",
         className
       )}
       {...props}
@@ -146,7 +146,7 @@ function SelectSeparator({ className, ...props }: React.ComponentProps<typeof Se
   return (
     <SelectPrimitive.Separator
       data-slot="select-separator"
-      className={cn("-mx-1 my-1 h-px bg-border/50", className)}
+      className={cn("-mx-1 my-1 h-px bg-border", className)}
       {...props}
     />
   )
@@ -156,7 +156,7 @@ function SelectScrollUpButton({ className, ...props }: React.ComponentProps<type
   return (
     <SelectPrimitive.ScrollUpButton
       data-slot="select-scroll-up-button"
-      className={cn("flex cursor-default items-center justify-center py-1 text-muted-foreground/60", className)}
+      className={cn("flex cursor-default items-center justify-center py-1 text-muted-foreground", className)}
       {...props}
     >
       <ChevronUp className="size-3.5" />
@@ -168,7 +168,7 @@ function SelectScrollDownButton({ className, ...props }: React.ComponentProps<ty
   return (
     <SelectPrimitive.ScrollDownButton
       data-slot="select-scroll-down-button"
-      className={cn("flex cursor-default items-center justify-center py-1 text-muted-foreground/60", className)}
+      className={cn("flex cursor-default items-center justify-center py-1 text-muted-foreground", className)}
       {...props}
     >
       <ChevronDown className="size-3.5" />

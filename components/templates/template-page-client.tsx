@@ -255,7 +255,7 @@ function CoverPicker({
    {/* Modal */}
    <div className="fixed left-1/2 top-1/2 z-[600] w-[calc(100vw-32px)] max-w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-popover">
     {/* Header */}
-    <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+    <div className="flex items-center justify-between border-b border-border px-5 py-4">
      <span className="text-sm font-semibold text-foreground">Page Cover</span>
      <button onClick={onClose} className="text-muted-foreground transition-colors hover:text-foreground">
       <XIcon size={15} />
@@ -283,7 +283,7 @@ function CoverPicker({
      {uploadErr && <p className="mb-2 text-xs text-destructive">{uploadErr}</p>}
 
 
-     <div className="my-3 border-t border-border/40" />
+     <div className="my-3 border-t border-border" />
 
      {/* Gradients */}
      <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Color & Gradient</p>
@@ -293,7 +293,7 @@ function CoverPicker({
         key={g}
         onClick={() => { onSelect(g); onClose(); }}
         style={{ background: g }}
-        className="h-8 rounded-[var(--radius-sm)] border border-border/20 transition-all hover:scale-105 hover:ring-2 hover:ring-primary/50"
+        className="h-8 rounded-[var(--radius-sm)] border border-border transition-all hover:scale-105 hover:ring-2 hover:ring-primary/50"
        />
       ))}
      </div>
@@ -362,7 +362,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
 
  return (
   <div className="absolute right-0 top-full z-[400] mt-1 w-[calc(100vw-24px)] max-w-[380px] rounded-[var(--radius-md)] border border-border bg-popover">
-   <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+   <div className="flex items-center justify-between border-b border-border px-4 py-3">
     <span className="text-sm font-semibold">Filter</span>
     <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
    </div>
@@ -459,7 +459,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
      );
     })}
    </div>
-   <div className="flex items-center gap-2 border-t border-border/40 px-4 py-3">
+   <div className="flex items-center gap-2 border-t border-border px-4 py-3">
     <button
      onClick={addRule}
      disabled={atLimit}
@@ -518,7 +518,7 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
 
  return (
   <div className="absolute right-0 top-full z-[400] mt-1 w-[300px] rounded-[var(--radius-md)] border border-border bg-popover">
-   <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+   <div className="flex items-center justify-between border-b border-border px-4 py-3">
     <span className="text-sm font-semibold">Sort</span>
     <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
    </div>
@@ -556,7 +556,7 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
      );
     })}
    </div>
-   <div className="flex items-center gap-2 border-t border-border/40 px-4 py-3">
+   <div className="flex items-center gap-2 border-t border-border px-4 py-3">
     <button
      onClick={addSort}
      disabled={atLimit}
@@ -590,7 +590,7 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
  const visible = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
  return (
   <div className="absolute right-0 top-full z-[400] mt-1 w-[240px] rounded-[var(--radius-md)] border border-border bg-popover">
-   <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+   <div className="flex items-center justify-between border-b border-border px-4 py-3">
     <span className="text-sm font-semibold">Properties</span>
     <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
    </div>
@@ -1620,7 +1620,7 @@ export function TemplatePageClient({
           {label}
          </Link>
         ) : (
-         <span className="max-w-[120px] truncate px-2 py-1 text-xs text-muted-foreground/70">
+         <span className="max-w-[120px] truncate px-2 py-1 text-xs text-muted-foreground">
           {label}
          </span>
         )}
@@ -1652,7 +1652,7 @@ export function TemplatePageClient({
     {/* Action buttons — same as page editor */}
     <div className="ml-2 flex shrink-0 items-center gap-1">
      {page.updatedAt && (
-      <span className="mr-1.5 whitespace-nowrap text-xs text-muted-foreground/70">
+      <span className="mr-1.5 whitespace-nowrap text-xs text-muted-foreground">
        Edited <TimeAgo iso={page.updatedAt} />
       </span>
      )}
@@ -1824,7 +1824,7 @@ export function TemplatePageClient({
         onClick={() => { if (!locked) setEditingPageTitle(true); }}
         className={`-mx-1 rounded px-1 text-4xl font-bold tracking-tight text-foreground transition-colors ${locked ? "" : "cursor-text hover:bg-muted/30"}`}
        >
-        {pageTitle || <span className="text-muted-foreground/60">Untitled</span>}
+        {pageTitle || <span className="text-muted-foreground">Untitled</span>}
        </h1>
       )}
 
@@ -1845,14 +1845,14 @@ export function TemplatePageClient({
          if (e.key === "Escape") saveDescription((e.target as HTMLTextAreaElement).value);
         }}
         placeholder="Add a description…"
-        className="mt-1 w-full resize-none overflow-hidden bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+        className="mt-1 w-full resize-none overflow-hidden bg-transparent text-sm text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
        />
       ) : (
        <p
         onClick={() => setEditingDescription(true)}
         className="-mx-1 mt-1 cursor-text rounded px-1 text-sm text-muted-foreground transition-colors hover:bg-muted/30"
        >
-        {pageDescription || <span className="text-muted-foreground/60">Add a description…</span>}
+        {pageDescription || <span className="text-muted-foreground">Add a description…</span>}
        </p>
       )}
      </div>
@@ -1861,7 +1861,7 @@ export function TemplatePageClient({
 
    {/* View tabs + toolbar — sticky so it stays visible as cover/header scroll away */}
    <div ref={viewToolbarRef} className="sticky top-0 z-20 bg-card">
-   <div className="mx-auto flex max-w-[1100px] items-end justify-between border-b border-border/60 px-8">
+   <div className="mx-auto flex max-w-[1100px] items-end justify-between border-b border-border px-8">
     <div className="flex items-end self-stretch">
      {views.map((view) => {
       const Icon   = VIEW_ICON[view.type] ?? TableIcon;
@@ -1923,7 +1923,7 @@ export function TemplatePageClient({
         >
          <span className={[
           "flex size-5 items-center justify-center rounded-[var(--radius-xs)] transition-colors",
-          menuOpen ? "bg-accent text-foreground" : "text-muted-foreground/60 hover:bg-accent hover:text-foreground",
+          menuOpen ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
          ].join(" ")}>
           <MoreVerticalIcon size={13} />
          </span>
@@ -1943,14 +1943,14 @@ export function TemplatePageClient({
         "flex size-[26px] items-center justify-center rounded-[var(--radius-sm)] border transition-all",
         showAddView
          ? "border-primary bg-primary/10 text-primary"
-         : "border-border/50 text-muted-foreground/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
+         : "border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
        ].join(" ")}
       >
        <PlusIcon size={14} />
       </button>
       {showAddView && (
-       <div className="absolute left-0 top-full z-[400] mt-1.5 w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card">
-        <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
+       <div className="absolute left-0 top-full z-[400] mt-1.5 w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
          <PlusIcon size={13} className="text-primary" />
          <span className="text-sm font-semibold text-foreground">Add a new view</span>
         </div>
@@ -1966,7 +1966,7 @@ export function TemplatePageClient({
            onClick={() => { addView(label, type); setShowAddView(false); }}
            className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all hover:bg-primary/5 active:scale-[0.96]"
           >
-           <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border/70 bg-muted/50 transition-all group-hover:border-primary/40 group-hover:bg-primary/10">
+           <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border bg-muted/50 transition-all group-hover:border-primary/40 group-hover:bg-primary/10">
             <Icon size={24} className="text-foreground/70 transition-colors group-hover:text-primary" />
            </div>
            <span className="text-xs font-medium leading-tight text-muted-foreground transition-colors group-hover:text-primary">
@@ -1989,7 +1989,7 @@ export function TemplatePageClient({
       >
        <FunnelIcon size={13} />
        Filter
-       {activeFilterCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-white">{activeFilterCount}</span>}
+       {activeFilterCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">{activeFilterCount}</span>}
       </button>
       {showFilter && (
        <FilterPanel
@@ -2009,7 +2009,7 @@ export function TemplatePageClient({
       >
        <SortAscendingIcon size={13} />
        Sort
-       {activeSortCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-white">{activeSortCount}</span>}
+       {activeSortCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground">{activeSortCount}</span>}
       </button>
       {showSort && (
        <SortPanel
@@ -2038,7 +2038,7 @@ export function TemplatePageClient({
       )}
      </div>
 
-     <div className="mx-1 h-4 w-px bg-border/60" />
+     <div className="mx-1 h-4 w-px bg-border" />
 
      <button
       ref={newButtonRef}
@@ -2082,7 +2082,7 @@ export function TemplatePageClient({
 
    {/* Bulk action bar */}
    {selectedIds.size > 0 && (
-    <div className="border-b border-border/40 bg-primary/5">
+    <div className="border-b border-border bg-primary/5">
     <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-6 py-2">
      <span className="text-sm font-medium">
       {selectedIds.size} {selectedIds.size === 1 ? "row" : "rows"} selected
@@ -2249,11 +2249,11 @@ export function TemplatePageClient({
       left: getClampedLeft(viewMenuRect, 320, { align: "start" }),
       zIndex: 500,
      }}
-     className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border/70 bg-card"
+     className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card"
     >
      <button
       onClick={() => setShowLayoutPicker(false)}
-      className="flex w-full items-center gap-2 border-b border-border/50 px-4 py-3 text-left transition-colors hover:bg-accent"
+      className="flex w-full items-center gap-2 border-b border-border px-4 py-3 text-left transition-colors hover:bg-accent"
      >
       <ChevronLeftIcon size={14} className="text-muted-foreground" />
       <span className="truncate text-sm font-semibold text-foreground">Layout — {viewMenuTarget.name}</span>
@@ -2274,7 +2274,7 @@ export function TemplatePageClient({
         >
          <div className={[
           "flex size-12 items-center justify-center rounded-[var(--radius-md)] border transition-all",
-          isActive ? "border-primary/40 bg-primary/10" : "border-border/70 bg-muted/50 group-hover:border-primary/40 group-hover:bg-primary/10",
+          isActive ? "border-primary/40 bg-primary/10" : "border-border bg-muted/50 group-hover:border-primary/40 group-hover:bg-primary/10",
          ].join(" ")}>
           <Icon size={24} className={isActive ? "text-primary" : "text-foreground/70 transition-colors group-hover:text-primary"} />
          </div>
@@ -2325,7 +2325,7 @@ export function TemplatePageClient({
     </button>
     {views.length > 1 && (
      <>
-      <div className="my-1 h-px bg-border/60" />
+      <div className="my-1 h-px bg-border" />
       <button
        onClick={() => { setDeleteViewTarget(viewMenuTarget); setViewMenuTarget(null); setViewMenuRect(null); }}
        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"

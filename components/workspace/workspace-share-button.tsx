@@ -109,7 +109,7 @@ export function WorkspaceShareButton({ workspaceId, workspaceSlug, workspaceName
      >
       <div className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
        {/* Header */}
-       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3.5">
+       <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
         <div className="flex items-center gap-2">
          <div className="flex size-6 items-center justify-center rounded bg-primary/10">
           <svg className="size-3.5 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
@@ -133,7 +133,7 @@ export function WorkspaceShareButton({ workspaceId, workspaceSlug, workspaceName
        {/* Body */}
        <div className="px-4 py-3.5 space-y-3">
         {/* Workspace name pill */}
-        <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border/60 bg-sidebar px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-sidebar px-3 py-2.5">
          <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary text-sm font-bold text-primary-foreground">
           {workspaceName[0]?.toUpperCase() ?? "W"}
          </div>

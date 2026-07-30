@@ -112,7 +112,7 @@ export default async function PublicPage({ params }: Props) {
 
         {/* Footer */}
         <div className="mt-16 border-t border-border pt-6 text-center">
-          <p className="text-xs text-muted-foreground/60">
+          <p className="text-xs text-muted-foreground">
             Made with{" "}
             <a href="/" className="font-semibold text-muted-foreground hover:text-foreground transition-colors">
               Workflik

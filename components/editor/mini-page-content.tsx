@@ -36,7 +36,7 @@ export function MiniPageContent({
     <div className="h-1.5 w-2/3 rounded-[var(--radius-xs)] bg-foreground/18" />
     <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-muted-foreground/14" />
     <div className="h-1 w-full rounded-[var(--radius-xs)] bg-muted-foreground/12" />
-    <div className="h-px bg-border/40 my-1" />
+    <div className="h-px bg-border my-1" />
     <div className="flex items-center gap-1.5 pl-1">
      <div className="size-1 shrink-0 rounded-full bg-muted-foreground/30" />
      <div className="h-1 w-3/5 rounded-[var(--radius-xs)] bg-muted-foreground/14" />
@@ -89,7 +89,7 @@ export function MiniBlock({
  }
 
  if (type === "divider") {
-  return <div className="h-px bg-border/50" />;
+  return <div className="h-px bg-border" />;
  }
 
  if (type === "h1") {
@@ -118,7 +118,7 @@ export function MiniBlock({
   return (
    <div className="flex items-center gap-1.5 pl-2">
     <div className="size-1 shrink-0 rounded-full bg-primary/45" />
-    <div className="truncate text-[7px] leading-tight text-muted-foreground/70">
+    <div className="truncate text-[7px] leading-tight text-muted-foreground">
      {text}
     </div>
    </div>
@@ -128,7 +128,7 @@ export function MiniBlock({
   return (
    <div className="flex items-center gap-1.5 pl-2">
     <div className="size-1 shrink-0 rounded-[var(--radius-xs)] bg-primary/40" />
-    <div className="truncate text-[7px] leading-tight text-muted-foreground/70">
+    <div className="truncate text-[7px] leading-tight text-muted-foreground">
      {text}
     </div>
    </div>
@@ -146,7 +146,7 @@ export function MiniBlock({
      )}
     </div>
     <div
-     className={`truncate text-[7px] leading-tight ${checked ? "text-muted-foreground/40 line-through" : "text-muted-foreground/70"}`}
+     className={`truncate text-[7px] leading-tight ${checked ? "text-muted-foreground-subtle line-through" : "text-muted-foreground"}`}
     >
      {text}
     </div>
@@ -158,7 +158,7 @@ export function MiniBlock({
   return (
    <div className="flex items-center gap-1.5">
     <ChevronRight className="shrink-0 text-primary/50" size={7} />
-    <div className="truncate text-[7px] font-medium leading-tight text-muted-foreground/70">
+    <div className="truncate text-[7px] font-medium leading-tight text-muted-foreground">
      {text}
     </div>
    </div>
@@ -169,7 +169,7 @@ export function MiniBlock({
   return (
    <div className="flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-warning/10 px-2 py-1">
     <div className="size-1.5 shrink-0 rounded-full bg-warning/60" />
-    <div className="truncate text-[7px] leading-tight text-muted-foreground/70">
+    <div className="truncate text-[7px] leading-tight text-muted-foreground">
      {text}
     </div>
    </div>
@@ -180,7 +180,7 @@ export function MiniBlock({
   return (
    <div className="flex gap-1.5 pl-0.5">
     <div className="w-0.5 shrink-0 self-stretch rounded-full bg-border" />
-    <div className="truncate text-[7px] italic leading-tight text-muted-foreground/60">
+    <div className="truncate text-[7px] italic leading-tight text-muted-foreground">
      {text}
     </div>
    </div>
@@ -189,14 +189,14 @@ export function MiniBlock({
 
  if (type === "code") {
   return (
-   <div className="truncate rounded-[var(--radius-xs)] bg-muted px-2 py-1 font-mono text-[7px] leading-tight text-muted-foreground/80">
+   <div className="truncate rounded-[var(--radius-xs)] bg-muted px-2 py-1 font-mono text-[7px] leading-tight text-muted-foreground">
     {text}
    </div>
   );
  }
 
  return (
-  <div className="truncate text-[7px] leading-tight text-muted-foreground/60">
+  <div className="truncate text-[7px] leading-tight text-muted-foreground">
    {text}
   </div>
  );

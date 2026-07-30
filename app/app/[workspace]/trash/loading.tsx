@@ -8,7 +8,7 @@ export default function TrashLoading() {
       </div>
 
       {/* Row list skeleton */}
-      <div className="flex-1 overflow-hidden divide-y divide-border/40">
+      <div className="flex-1 overflow-hidden divide-y divide-border">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 px-6 py-3">
             <div className="size-6 shrink-0 rounded-[var(--radius-sm)] bg-muted" />

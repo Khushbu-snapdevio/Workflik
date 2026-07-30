@@ -92,7 +92,7 @@ function AlertDialogAction({
   return (
     <AlertDialogPrimitive.Action
       className={cn(
-        "inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] bg-destructive px-4 text-sm font-semibold text-white transition-colors duration-150 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+        "inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] bg-destructive px-4 text-sm font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
         className,
       )}
       {...props}

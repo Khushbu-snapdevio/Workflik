@@ -89,7 +89,7 @@ export default async function OrbitWorkspacesPage({ searchParams }: Props) {
       <Link key={ws.id} href={`/orbit-admin/orbit/workspaces/${ws.id}`}
        className="group flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-card p-5 transition">
        <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-sm font-bold text-white">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-sm font-bold text-primary-foreground">
          {letter}
         </span>
         <div className="min-w-0 flex-1">
@@ -97,7 +97,7 @@ export default async function OrbitWorkspacesPage({ searchParams }: Props) {
          <p className="truncate text-xs text-muted-foreground">/{ws.slug}</p>
         </div>
        </div>
-       <div className="flex items-center justify-between border-t border-border/40 pt-3">
+       <div className="flex items-center justify-between border-t border-border pt-3">
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3">
           <circle cx="4.5" cy="4" r="2"/><path d="M1 10c0-2 1.7-3.5 3.5-3.5S8 8 8 10"/>
@@ -105,7 +105,7 @@ export default async function OrbitWorkspacesPage({ searchParams }: Props) {
          </svg>
          <span className="font-semibold">{memberCount}</span> member{memberCount !== 1 ? "s" : ""}
         </div>
-        <span className="text-xs text-muted-foreground/60">{ago(ws.createdAt)}</span>
+        <span className="text-xs text-muted-foreground">{ago(ws.createdAt)}</span>
        </div>
       </Link>
      );
@@ -120,7 +120,7 @@ export default async function OrbitWorkspacesPage({ searchParams }: Props) {
       </svg>
      </div>
      <p className="text-sm font-semibold text-muted-foreground">{q ? "No workspaces found" : "No workspaces yet"}</p>
-     {q && <p className="mt-1 text-xs text-muted-foreground/60">Try a different name or slug.</p>}
+     {q && <p className="mt-1 text-xs text-muted-foreground">Try a different name or slug.</p>}
     </div>
    )}
 

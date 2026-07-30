@@ -696,7 +696,7 @@ export function CellCommentPopover({
           onClick={() => editFileInputRef.current?.click()}
           onMouseEnter={(e) => showTooltip("Attach file", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
         >
           {editAttachLoading ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
         </button>
@@ -705,7 +705,7 @@ export function CellCommentPopover({
           onClick={insertEditMention}
           onMouseEnter={(e) => showTooltip("Mention someone", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
         >
           <AtSign size={11} />
         </button>
@@ -714,7 +714,7 @@ export function CellCommentPopover({
           onClick={(e) => setInsertEmojiAnchor({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), target: "edit" })}
           onMouseEnter={(e) => showTooltip("Insert emoji", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
         >
           <Smile size={11} />
         </button>
@@ -734,7 +734,7 @@ export function CellCommentPopover({
           onClick={() => replyFileInputRef.current?.click()}
           onMouseEnter={(e) => showTooltip("Attach file", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
         >
           {replyAttachLoading ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
         </button>
@@ -743,7 +743,7 @@ export function CellCommentPopover({
           onClick={insertReplyMention}
           onMouseEnter={(e) => showTooltip("Mention someone", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
         >
           <AtSign size={11} />
         </button>
@@ -752,7 +752,7 @@ export function CellCommentPopover({
           onClick={(e) => setInsertEmojiAnchor({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), target: "reply" })}
           onMouseEnter={(e) => showTooltip("Insert emoji", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
         >
           <Smile size={11} />
         </button>
@@ -821,12 +821,12 @@ export function CellCommentPopover({
               const visibleReplies = t.replies?.filter((r) => !r.deletedAt) ?? [];
 
               return (
-                <div key={t.id} className="border-b border-border/40 last:border-0">
+                <div key={t.id} className="border-b border-border last:border-0">
                   {/* Quoted property reference — frozen snapshot from when the comment was made */}
                   {t.propertyName && (
                     <div className="mx-3 mt-2 flex items-baseline gap-1 border-l-2 border-primary/40 pl-2 text-[11px] leading-tight">
                       <span className="font-semibold text-muted-foreground">{t.propertyName}:</span>
-                      <span className="truncate text-muted-foreground/80">{t.propertyValueLabel || "Empty"}</span>
+                      <span className="truncate text-muted-foreground">{t.propertyValueLabel || "Empty"}</span>
                     </div>
                   )}
                   {/* Root comment */}
@@ -839,7 +839,7 @@ export function CellCommentPopover({
                           <span className="text-xs font-semibold text-foreground leading-none truncate">
                             {getDisplayName(t.author)}
                           </span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground/60">
+                          <span className="shrink-0 text-[10px] text-muted-foreground">
                             {timeAgo(t.createdAt)}
                             {t.editedAt && <span className="ml-0.5">(edited)</span>}
                           </span>
@@ -850,7 +850,7 @@ export function CellCommentPopover({
                               onClick={(e) => openEmojiMenu(e, t.id)}
                               onMouseEnter={(e) => showTooltip("Add reaction", e)}
                               onMouseLeave={hideTooltip}
-                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors text-sm"
+                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-sm"
                             >
                               <Smile size={12} />
                             </button>
@@ -859,7 +859,7 @@ export function CellCommentPopover({
                               onClick={() => startReply(t.id)}
                               onMouseEnter={(e) => showTooltip("Reply", e)}
                               onMouseLeave={hideTooltip}
-                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
+                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                             >
                               <Reply size={12} />
                             </button>
@@ -868,7 +868,7 @@ export function CellCommentPopover({
                               onClick={(e) => openMoreMenu(e, t.id, false, isOwn)}
                               onMouseEnter={(e) => showTooltip("More options", e)}
                               onMouseLeave={hideTooltip}
-                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
+                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                             >
                               <MoreHorizontal size={12} />
                             </button>
@@ -909,7 +909,7 @@ export function CellCommentPopover({
                               <button
                                 onClick={() => submitEdit(t.id)}
                                 disabled={editSubmitting}
-                                className="shrink-0 flex size-5 items-center justify-center rounded bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+                                className="shrink-0 flex size-5 items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                               >
                                 {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
                               </button>
@@ -956,7 +956,7 @@ export function CellCommentPopover({
                                             className={`w-full object-cover block ${grid ? "h-[70px]" : "max-h-[140px]"}`}
                                           />
                                           <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 transition-colors group-hover/img:bg-black/40">
-                                            <span className={`flex items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto ${grid ? "size-5" : "size-7"}`}>
+                                            <span className={`flex items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto ${grid ? "size-5" : "size-7"}`}>
                                               <ZoomIn size={grid ? 10 : 14} />
                                             </span>
                                             {!grid && (
@@ -964,7 +964,7 @@ export function CellCommentPopover({
                                                 href={att.url}
                                                 download={att.name}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="flex size-7 items-center justify-center rounded-full bg-white/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100"
+                                                className="flex size-7 items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100"
                                               >
                                                 <Download size={13} />
                                               </a>
@@ -1020,7 +1020,7 @@ export function CellCommentPopover({
 
                   {/* Replies */}
                   {visibleReplies.length > 0 && (
-                    <div className="ml-9 border-l border-border/40 pl-2 pr-3 pb-1">
+                    <div className="ml-9 border-l border-border pl-2 pr-3 pb-1">
                       {visibleReplies.map((rep) => {
                         const repText = rep.content ? extractText(rep.content as Record<string, unknown>) : "";
                         const repIsOwn = rep.author?.id === currentUserId;
@@ -1033,13 +1033,13 @@ export function CellCommentPopover({
                                   <span className="text-[11px] font-semibold text-foreground leading-none truncate">
                                     {getDisplayName(rep.author)}
                                   </span>
-                                  <span className="shrink-0 text-[10px] text-muted-foreground/60">
+                                  <span className="shrink-0 text-[10px] text-muted-foreground">
                                     {timeAgo(rep.createdAt)}
                                   </span>
                                   <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/reply:opacity-100 transition-opacity shrink-0">
                                     <button
                                       onClick={(e) => openMoreMenu(e, rep.id, true, repIsOwn)}
-                                      className="flex size-4 items-center justify-center rounded text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
+                                      className="flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                                     >
                                       <MoreHorizontal size={11} />
                                     </button>
@@ -1139,14 +1139,14 @@ export function CellCommentPopover({
                             if (e.key === "Escape") { setReplyToId(null); }
                           }}
                           placeholder="Reply…"
-                          className="min-w-0 flex-1 rounded border border-border bg-muted/30 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:outline-none"
+                          className="min-w-0 flex-1 rounded border border-border bg-muted/30 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
                         />
                         <button
                           type="button"
                           onClick={() => { setReplyToId(null); setReplyText(""); setReplyAttachments([]); }}
                           onMouseEnter={(e) => showTooltip("Cancel (Esc)", e)}
                           onMouseLeave={hideTooltip}
-                          className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
+                          className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                         >
                           <X size={12} />
                         </button>
@@ -1159,7 +1159,7 @@ export function CellCommentPopover({
                           className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors ${
                             replyText.trim() || replyAttachments.length > 0
                               ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
-                              : "bg-muted text-muted-foreground/40 cursor-not-allowed"
+                              : "bg-muted text-muted-foreground-subtle cursor-not-allowed"
                           }`}
                         >
                           {replySubmitting ? <Loader2 size={10} className="animate-spin" /> : <ArrowUp size={11} />}
@@ -1188,7 +1188,7 @@ export function CellCommentPopover({
         ) : null}
 
         {/* ── Divider ── */}
-        {!loading && visible.length > 0 && <div className="shrink-0 h-px bg-border/40" />}
+        {!loading && visible.length > 0 && <div className="shrink-0 h-px bg-border" />}
 
         {/* ── Upload error ── */}
         {uploadError && (
@@ -1242,7 +1242,7 @@ export function CellCommentPopover({
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
             }}
             placeholder="Add a comment…"
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
           />
           <div className="flex shrink-0 items-center gap-0.5">
             {/* Hidden file input */}
@@ -1280,7 +1280,7 @@ export function CellCommentPopover({
               onClick={() => fileInputRef.current?.click()}
               onMouseEnter={(e) => showTooltip("Attach file", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+              className="flex size-6 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
             >
               <Paperclip size={12} />
             </button>
@@ -1289,7 +1289,7 @@ export function CellCommentPopover({
               onClick={insertMention}
               onMouseEnter={(e) => showTooltip("Mention someone", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground transition-colors"
+              className="flex size-6 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
             >
               <AtSign size={12} />
             </button>
@@ -1302,7 +1302,7 @@ export function CellCommentPopover({
               className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-all ${
                 hasText
                   ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
-                  : "bg-muted text-muted-foreground/40 cursor-not-allowed"
+                  : "bg-muted text-muted-foreground-subtle cursor-not-allowed"
               }`}
             >
               {submitting ? <Loader2 size={11} className="animate-spin" /> : <ArrowUp size={12} />}
@@ -1359,7 +1359,7 @@ export function CellCommentPopover({
           </button>
           {moreMenu.isOwn && (
             <>
-              <div className="my-0.5 h-px bg-border/40 mx-1" />
+              <div className="my-0.5 h-px bg-border mx-1" />
               <button
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
                 onClick={() => {

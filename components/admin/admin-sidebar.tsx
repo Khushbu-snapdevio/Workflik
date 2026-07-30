@@ -232,7 +232,7 @@ export function AdminSidebar({
 
         {/* Popup — appears above */}
         {userMenu && (
-          <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover">
+          <div className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 overflow-hidden rounded-[var(--radius-xl)] border border-border bg-popover">
 
             {/* User info */}
             <div className="px-3.5 pb-3 pt-3.5">
@@ -248,7 +248,7 @@ export function AdminSidebar({
               </div>
             </div>
 
-            <div className="mx-3 h-px bg-border/50" />
+            <div className="mx-3 h-px bg-border" />
 
             {/* Sign out — "Back to workspace" deliberately omitted here: it
                 already lives as an always-visible link right below this

@@ -47,7 +47,7 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
  return (
   <div className="flex shrink-0 flex-col gap-1.5 border-b border-border px-4 py-2.5 sm:px-8 lg:px-16 bg-sidebar">
    <div className="flex items-center justify-between">
-    <p className="text-xs font-semibold tracking-wide text-muted-foreground/60">Sort</p>
+    <p className="text-xs font-semibold tracking-wide text-muted-foreground">Sort</p>
     {atLimit && (
      <span className="text-xs text-muted-foreground">
       {sorts.length >= MAX_SORTS ? `Max ${MAX_SORTS} sort rules` : "All properties sorted"}
@@ -81,7 +81,7 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
         onClick={() => update(idx, { direction: dir })}
         className={`flex items-center gap-1 transition-colors ${
          sort.direction === dir
-          ? "bg-primary text-white rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-semibold"
+          ? "bg-primary text-primary-foreground rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-semibold"
           : "text-muted-foreground px-2.5 py-1 text-xs font-medium hover:text-foreground"
         }`}
        >
@@ -93,7 +93,7 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
 
      <button
       onClick={() => remove(idx)}
-      className="ml-auto flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/70 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+      className="ml-auto flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
      >
       <X size={11} />
      </button>

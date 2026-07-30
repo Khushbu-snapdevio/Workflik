@@ -8,6 +8,7 @@ import { useUpload } from "@/lib/storage/use-upload";
 import { changeEmail, changePassword } from "@/lib/auth/client";
 import { getAvatarColor, getInitials } from "@/lib/utils";
 import { useSettingsUser } from "./settings-user-context";
+import { ThemeToggle } from "./theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -135,13 +136,13 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
    className="w-[280px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card"
   >
    {/* Search */}
-   <div className="border-b border-border/60 px-3 py-2.5">
+   <div className="border-b border-border px-3 py-2.5">
     <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-1.5">
      <Search size={14} className="shrink-0 text-muted-foreground" />
      <input ref={inputRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search timezone…"
-      className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40" />
+      className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle" />
      {search && (
-      <button type="button" onClick={() => setSearch("")} className="text-muted-foreground/70 hover:text-muted-foreground">
+      <button type="button" onClick={() => setSearch("")} className="text-muted-foreground hover:text-muted-foreground">
        <X size={12} />
       </button>
      )}
@@ -152,7 +153,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
    <div className="max-h-[240px] overflow-y-auto py-1">
     {Object.entries(regionGroups).map(([region, tzs]) => (
      <div key={region}>
-      <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground/70">{region}</p>
+      <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground">{region}</p>
       {tzs.map(tz => {
        const isActive = tz === value;
        return (
@@ -169,7 +170,7 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
       })}
      </div>
     ))}
-    {filtered.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground/70">No timezones found</div>}
+    {filtered.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground">No timezones found</div>}
    </div>
   </div>,
   document.body
@@ -179,10 +180,10 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
   <>
    <button ref={btnRef} type="button" onClick={handleOpen}
     className={`flex w-[220px] items-center justify-between rounded-[var(--radius-sm)] border bg-muted/20 px-3 py-2 text-sm text-foreground outline-none transition-colors duration-150 ${
-     open ? "border-primary bg-card" : "border-border hover:border-border/80"
+     open ? "border-primary bg-card" : "border-border hover:border-border"
     }`}>
     <div className="flex min-w-0 items-center gap-2">
-     <Globe size={14} className="shrink-0 text-muted-foreground/60" />
+     <Globe size={14} className="shrink-0 text-muted-foreground" />
      <span className="truncate">{value.replace(/_/g, " ")}</span>
     </div>
     <ChevronDown size={14} className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
@@ -483,8 +484,8 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
       onMouseLeave={hideTooltip}
      >
       {displayImage
-       ? <img src={displayImage} alt={displayName} className="size-[72px] rounded-full object-cover ring-1 ring-border/30" />
-       : <div className={`flex size-[72px] items-center justify-center rounded-full text-2xl font-bold text-white ring-1 ring-border/30 ${bg}`}>{initials}</div>
+       ? <img src={displayImage} alt={displayName} className="size-[72px] rounded-full object-cover ring-1 ring-border" />
+       : <div className={`flex size-[72px] items-center justify-center rounded-full text-2xl font-bold text-white ring-1 ring-border ${bg}`}>{initials}</div>
       }
       <div className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/45 transition-opacity ${avatarUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
        {avatarUploading
@@ -503,7 +504,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
         <p className="mt-0.5 text-xs text-muted-foreground">
          {avatarUploading ? "Uploading…" : "Click the photo to change it"}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground/60">JPG, PNG, WebP or GIF · Max 1 MB</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">JPG, PNG, WebP or GIF · Max 1 MB</p>
         {avatarError && <p className="mt-1.5 text-xs text-destructive">{avatarError}</p>}
        </div>
        {currentImage && !avatarUploading && (
@@ -519,11 +520,25 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
     </div>
    </div>
 
+   {/* ── Appearance ── */}
+   <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Appearance</p>
+   <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="flex items-center justify-between gap-4 px-5 py-4">
+     <div className="min-w-0">
+      <p className="text-sm font-medium text-foreground">Theme</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+       Choose a colour theme, or follow your device setting.
+      </p>
+     </div>
+     <ThemeToggle />
+    </div>
+   </div>
+
    {/* ── Identity ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Identity</p>
    <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
     {/* Name */}
-    <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
+    <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
      <div className="min-w-0">
       <p className="text-sm font-medium text-foreground">Preferred name</p>
       <p className="mt-0.5 text-xs text-muted-foreground">How your name appears to teammates.</p>
@@ -543,7 +558,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
     </div>
 
     {/* Job title */}
-    <div className="flex items-center justify-between gap-4 border-b border-border/50 px-5 py-4">
+    <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
      <p className="text-sm font-medium text-foreground">Job title</p>
      <div className="relative shrink-0">
       <Input
@@ -642,7 +657,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
         >
          {emailSending ? "Sending…" : "Resend"}
         </button>
-        <span className="text-muted-foreground/30">·</span>
+        <span className="text-muted-foreground-subtle">·</span>
         <button
          type="button"
          onClick={handleDismissPending}
@@ -690,7 +705,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
      </div>
 
      {editingPassword && (
-      <div className="mt-4 space-y-3 border-t border-border/50 pt-4">
+      <div className="mt-4 space-y-3 border-t border-border pt-4">
        <div className="flex flex-col gap-2">
         {hasPassword && (
          <Input
@@ -742,7 +757,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
      )}
 
      {passwordSetDone && (
-      <div className="mt-4 flex items-center gap-1.5 border-t border-border/50 pt-3">
+      <div className="mt-4 flex items-center gap-1.5 border-t border-border pt-3">
        <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-success">
         <Check size={9} strokeWidth={3} className="text-white" />
        </span>
@@ -775,7 +790,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
      </div>
     </div>
     {saved === "timezone" && (
-     <div className="flex items-center justify-end gap-1.5 border-t border-border/50 px-5 py-2">
+     <div className="flex items-center justify-end gap-1.5 border-t border-border px-5 py-2">
       <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-success">
        <Check size={9} strokeWidth={3} className="text-white" />
       </span>
@@ -828,7 +843,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
             <p className="text-xs font-medium text-foreground">{deleteError}</p>
             <ul className="mt-2.5 space-y-1.5">
              {blockingWorkspaces.map(w => (
-              <li key={w.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border/60 bg-card px-3 py-2">
+              <li key={w.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-2">
                <div className="min-w-0">
                 <p className="truncate text-xs font-semibold text-foreground">{w.name}</p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">

@@ -91,7 +91,7 @@ export function UserHoverCard({ userId, workspaceId, currentUserId, cachedName, 
           // eslint-disable-next-line @next/next/no-img-element
           <img src={member.userImage} alt={name} className="size-7 shrink-0 rounded-full object-cover" />
         ) : (
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
             {initial}
           </div>
         )}
@@ -103,7 +103,7 @@ export function UserHoverCard({ userId, workspaceId, currentUserId, cachedName, 
         </div>
       </div>
       {timeLabel && (
-        <p className="mt-1 text-[11px] text-muted-foreground/70">{timeLabel}</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">{timeLabel}</p>
       )}
     </div>,
     document.body,

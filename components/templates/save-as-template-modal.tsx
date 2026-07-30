@@ -74,7 +74,7 @@ export function SaveAsTemplateModal({
     <button
      type="button"
      onClick={onClose}
-     className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+     className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
     >
      <X size={16} />
     </button>
@@ -101,7 +101,7 @@ export function SaveAsTemplateModal({
       <p className="mb-1 text-sm text-muted-foreground">
        <span className="font-semibold text-foreground">{name}</span> is now available
       </p>
-      <p className="text-xs text-muted-foreground/70">
+      <p className="text-xs text-muted-foreground">
        All workspace members can use this template
       </p>
      </div>
@@ -119,7 +119,7 @@ export function SaveAsTemplateModal({
         placeholder="e.g. Sprint Planning"
         // biome-ignore lint/a11y/noAutofocus: intentional — modal just opened
         autoFocus
-        className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary focus:ring-2 focus:ring-primary/20"
        />
       </div>
 
@@ -133,7 +133,7 @@ export function SaveAsTemplateModal({
         onChange={(e) => setDesc(e.target.value)}
         placeholder="What is this template for?"
         rows={2}
-        className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary focus:ring-2 focus:ring-primary/20"
        />
       </div>
 

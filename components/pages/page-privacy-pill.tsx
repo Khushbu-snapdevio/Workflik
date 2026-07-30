@@ -21,7 +21,7 @@ export function PagePrivacyPill() {
       <span
         onMouseEnter={(e) => showTooltip("Only you and invited people can open this page", e)}
         onMouseLeave={hideTooltip}
-        className="ml-1.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] border border-[#bae6fd] bg-[#e0f2fe] px-1.5 py-0.5 text-[11px] font-semibold text-[#0369a1]"
+        className="ml-1.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] border border-[#bae6fd] bg-[#e0f2fe] px-1.5 py-0.5 text-[11px] font-semibold text-[#0369a1] dark:border-[#1f3c56] dark:bg-[#0c4a6e] dark:text-[#bae6fd]"
       >
         <Lock size={10} />
         Private

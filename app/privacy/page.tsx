@@ -60,7 +60,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-page text-foreground antialiased">
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-10 border-b border-border/60 bg-page/80 backdrop-blur-md">
+      <header className="sticky top-0 z-10 border-b border-border bg-page/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
           <Link href="/" className="flex items-center gap-2.5">
             <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-7 w-auto" />
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
           <p className="mt-2 text-sm text-muted-foreground">Last updated: {LAST_UPDATED}</p>
 
           {/* Intro card */}
-          <div className="mt-8 rounded-[var(--radius-lg)] border border-border/60 bg-card px-6 py-5">
+          <div className="mt-8 rounded-[var(--radius-lg)] border border-border bg-card px-6 py-5">
             <p className="text-base leading-7 text-muted-foreground">
               {PRODUCT_NAME} is committed to protecting your personal information. This Privacy Policy explains
               what data we collect, how we use it, and the choices you have.
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
           {SECTIONS.map((section, i) => (
             <div
               key={section.title}
-              className="group rounded-[var(--radius-lg)] border border-border/50 bg-card px-6 py-5 transition-colors hover:border-border"
+              className="group rounded-[var(--radius-lg)] border border-border bg-card px-6 py-5 transition-colors hover:border-border"
             >
               <div className="flex items-start gap-4">
                 {/* Number badge */}
@@ -125,7 +125,7 @@ export default function PrivacyPage() {
         </div>
 
         {/* ── Footer ── */}
-        <div className="mt-14 flex items-center justify-center border-t border-border/60 pt-10">
+        <div className="mt-14 flex items-center justify-center border-t border-border pt-10">
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"

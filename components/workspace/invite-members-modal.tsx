@@ -134,7 +134,7 @@ export function InviteMembersModal({ workspaceId, isOwner = false, onClose }: Pr
       onChange={(v) => setRole(v as Role)}
       triggerClassName="w-full border-border bg-background"
      />
-     <p className="mt-1.5 text-xs text-muted-foreground/70">{ROLE_CAPTIONS[role]}</p>
+     <p className="mt-1.5 text-xs text-muted-foreground">{ROLE_CAPTIONS[role]}</p>
     </div>
 
     {error && (

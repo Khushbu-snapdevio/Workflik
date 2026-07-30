@@ -239,23 +239,23 @@ export function GalleryView({
                       {group.label}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground/60">
+                    <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
                       <span className="size-1.5 rounded-full bg-muted-foreground/30" />
                       {group.label}
                     </span>
                   )}
-                  <span className="text-xs text-muted-foreground/70">
+                  <span className="text-xs text-muted-foreground">
                     {group.entries.length}
                   </span>
-                  <div className="h-px flex-1 bg-border/50" />
+                  <div className="h-px flex-1 bg-border" />
                 </div>
                 <div className={`grid gap-4 ${SIZE_GRID[cardSize]}`}>
                   {renderCards(group.entries)}
                   {isEditor && (
                     <button
                       className={[
-                        "flex h-full min-h-24 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
-                        "text-muted-foreground/70 transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
+                        "flex h-full min-h-24 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border bg-muted/20",
+                        "text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
                       ].join(" ")}
                       onClick={() => {
                         const dv = groupProp && group.id ? defaultValueForGroup(groupProp, group.id) : undefined;
@@ -377,8 +377,8 @@ export function GalleryView({
               {isEditor && (
                 <button
                   className={[
-                    "flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border/40 bg-muted/20",
-                    "text-muted-foreground/70 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
+                    "flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border bg-muted/20",
+                    "text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
                   ].join(" ")}
                   onClick={() => onCreateEntry()}
                 >
@@ -621,7 +621,7 @@ function GalleryCard({
     <>
       <div
         className={[
-          "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card transition-colors duration-150",
+          "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card transition-colors duration-150",
           dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
         onMouseEnter={() => !dragging && setHovered(true)}
@@ -737,7 +737,7 @@ function GalleryCard({
               />
             ) : (
               <div className="flex size-full items-center justify-center bg-muted">
-                <LayoutGrid className="text-muted-foreground/60" size={28} />
+                <LayoutGrid className="text-muted-foreground" size={28} />
               </div>
             )}
           </button>
@@ -757,7 +757,7 @@ function GalleryCard({
               />
             ) : (
               <div className="flex size-full items-center justify-center bg-muted">
-                <LayoutGrid className="text-muted-foreground/60" size={28} />
+                <LayoutGrid className="text-muted-foreground" size={28} />
               </div>
             )}
           </Link>
@@ -773,7 +773,7 @@ function GalleryCard({
               {entry.icon ? (
                 <PageIcon icon={entry.icon} size={14} className="shrink-0" />
               ) : (
-                <FileText className="shrink-0 text-muted-foreground/60" size={12} />
+                <FileText className="shrink-0 text-muted-foreground" size={12} />
               )}
             </span>
             {editing ? (
@@ -808,7 +808,7 @@ function GalleryCard({
               >
                 <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
                   {entry.title || (
-                    <span className="font-normal text-muted-foreground/60">
+                    <span className="font-normal text-muted-foreground">
                       Untitled
                     </span>
                   )}
@@ -822,7 +822,7 @@ function GalleryCard({
               >
                 <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
                   {entry.title || (
-                    <span className="font-normal text-muted-foreground/60">
+                    <span className="font-normal text-muted-foreground">
                       Untitled
                     </span>
                   )}
@@ -923,7 +923,7 @@ function GalleryCard({
        inline card editor so gallery cards can be filled in without opening
        the full page. */}
           {emptyProps.length > 0 && (
-            <div className="mt-2 flex flex-col gap-0.5 border-t border-border/50 pt-2">
+            <div className="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
               {emptyProps.map((prop) => {
                 const TypeIcon =
                   PROPERTY_TYPE_ICON[
@@ -932,7 +932,7 @@ function GalleryCard({
                 const propConfig = (prop.config ?? {}) as { icon?: string };
                 return (
                   <button
-                    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();

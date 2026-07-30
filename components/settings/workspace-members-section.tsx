@@ -183,7 +183,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
    {isAdmin && (
     <div className="mb-7">
      <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Invite people</p>
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card p-4">
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card p-4">
       <div className="flex items-center gap-2">
        <Input
         type="email"
@@ -228,7 +228,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
    )}
 
    {transferSent && (
-    <p className="mb-4 rounded-[var(--radius-sm)] border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+    <p className="mb-4 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
      Confirmation email sent to your inbox — the transfer to <strong className="text-foreground">{transferSent}</strong> completes once you click the link there.
     </p>
    )}
@@ -236,7 +236,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
    {/* ── Active members ── */}
    <div className="mb-7">
     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Members</p>
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
      {active.map((m, i) => {
       const display  = m.userName?.trim() || m.userEmail?.trim() || m.invitedEmail?.trim() || "Unknown";
       const isMe    = m.userId === currentUserId;
@@ -249,10 +249,10 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
       const rowRoleOptions = isOwner ? [ADMIN_ROLE_OPTION, ...BASE_ROLE_OPTIONS] : BASE_ROLE_OPTIONS;
       const style   = ROLE_STYLES[m.role] ?? ROLE_STYLES.viewer!;
       return (
-       <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < active.length - 1 ? "border-b border-border/40" : ""}`}>
+       <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < active.length - 1 ? "border-b border-border" : ""}`}>
         {m.userImage
-         ? <img src={m.userImage} alt={display} className="size-9 shrink-0 rounded-full object-cover ring-1 ring-border/30" />
-         : <div className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border/30 ${getAvatarColor(display)}`}>{(()=>{const w=display.split(/[\s._@-]+/).filter(Boolean);return(w.length>=2?w[0][0]!+w[w.length-1][0]!:display.slice(0,2)).toUpperCase();})()}</div>
+         ? <img src={m.userImage} alt={display} className="size-9 shrink-0 rounded-full object-cover ring-1 ring-border" />
+         : <div className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border ${getAvatarColor(display)}`}>{(()=>{const w=display.split(/[\s._@-]+/).filter(Boolean);return(w.length>=2?w[0][0]!+w[w.length-1][0]!:display.slice(0,2)).toUpperCase();})()}</div>
         }
         <div className="flex-1 min-w-0">
          <div className="flex items-center gap-2">
@@ -268,7 +268,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
          <Badge variant="secondary" className={`shrink-0 flex items-center gap-1.5 ${style.badge}`}>
           <span className={`size-1.5 rounded-full ${style.dot}`} />
           {ROLE_LABELS[m.role] ?? m.role}
-          {isOwnerRow && <span className="text-[10px] font-normal text-muted-foreground/70">(owner)</span>}
+          {isOwnerRow && <span className="text-[10px] font-normal text-muted-foreground">(owner)</span>}
          </Badge>
         )}
         {/* Transfer ownership — owner only, to anyone else active */}
@@ -281,7 +281,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
           disabled={transferBusy}
           onMouseEnter={(e) => showTooltip("Transfer ownership to this person", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground/70 hover:bg-accent hover:text-foreground shadow-none border-0"
+          className="flex size-7 shrink-0 items-center justify-center p-0 bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground shadow-none border-0"
          >
           <ArrowLeftRight size={14} />
          </Button>
@@ -296,7 +296,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
           disabled={busy === m.userId}
           onMouseEnter={(e) => showTooltip("Remove", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-7 shrink-0 items-center justify-center p-0 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
+          className="flex size-7 shrink-0 items-center justify-center p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
          >
           <X size={14} />
          </Button>
@@ -317,11 +317,11 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
       <p className="text-xs font-semibold tracking-wide text-muted-foreground">Pending invitations</p>
       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{invited.length}</span>
      </div>
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       {invited.map((m, i) => {
        const addr = m.invitedEmail ?? m.userEmail ?? "—";
        return (
-        <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < invited.length - 1 ? "border-b border-border/40" : ""}`}>
+        <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < invited.length - 1 ? "border-b border-border" : ""}`}>
          <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-dashed border-border text-xs font-bold text-muted-foreground">
           {addr.slice(0,2).toUpperCase()}
          </div>
@@ -351,7 +351,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
             disabled={busy === m.id}
             onMouseEnter={(e) => showTooltip("Cancel invitation", e)}
             onMouseLeave={hideTooltip}
-            className="flex size-7 items-center justify-center p-0 text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
+            className="flex size-7 items-center justify-center p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive shadow-none border-0"
            >
             <X size={14} />
            </Button>

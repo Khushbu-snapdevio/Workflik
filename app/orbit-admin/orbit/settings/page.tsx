@@ -147,7 +147,7 @@ export default function OrbitAuthSettingsPage() {
 
       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
         {/* Email + password — primary method */}
-        <div className="flex items-center gap-4 border-b border-border/60 p-5">
+        <div className="flex items-center gap-4 border-b border-border p-5">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
             <KeyRound className="text-primary" size={18} />
           </div>
@@ -178,7 +178,7 @@ export default function OrbitAuthSettingsPage() {
         </div>
 
         {/* Magic link — optional */}
-        <div className="flex items-center gap-4 border-b border-border/60 p-5">
+        <div className="flex items-center gap-4 border-b border-border p-5">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted/50">
             <Link2 className="text-muted-foreground" size={18} />
           </div>

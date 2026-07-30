@@ -167,7 +167,7 @@ export function TemplateGanttView({
   return (
    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
     <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-     <GanttChartSquare size={28} className="text-muted-foreground/70" />
+     <GanttChartSquare size={28} className="text-muted-foreground" />
     </div>
     <div>
      <p className="text-sm font-semibold text-foreground">No start/end date properties selected</p>
@@ -245,7 +245,7 @@ export function TemplateGanttView({
   <>
    <div className="flex h-full flex-col overflow-hidden">
     {/* ── Header ── */}
-    <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-6 py-3">
+    <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-3">
      <h2 className="text-lg font-semibold tracking-tight text-foreground">Timeline</h2>
      <div className="flex items-center gap-1">
       <div className="mr-2 flex items-center rounded-[var(--radius-sm)] border border-border p-0.5">
@@ -275,23 +275,23 @@ export function TemplateGanttView({
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
      <div style={{ width: SIDEBAR_W + timelineWidth, position: "relative" }}>
       <div className="sticky top-0 z-20 flex bg-background">
-       <div className="sticky left-0 z-30 shrink-0 border-b border-r border-border/60 bg-background" style={{ width: SIDEBAR_W, height: HEADER_H }} />
+       <div className="sticky left-0 z-30 shrink-0 border-b border-r border-border bg-background" style={{ width: SIDEBAR_W, height: HEADER_H }} />
        <div style={{ width: timelineWidth }}>
-        <div className="flex border-b border-border/40" style={{ height: HEADER_H / 2 }}>
+        <div className="flex border-b border-border" style={{ height: HEADER_H / 2 }}>
          {monthBands.map((band, i) => (
-          <div key={i} className="shrink-0 truncate border-r border-border/40 px-2 text-xs font-medium text-muted-foreground/70" style={{ width: band.days * dayWidth, lineHeight: `${HEADER_H / 2}px` }}>
+          <div key={i} className="shrink-0 truncate border-r border-border px-2 text-xs font-medium text-muted-foreground" style={{ width: band.days * dayWidth, lineHeight: `${HEADER_H / 2}px` }}>
            {band.label}
           </div>
          ))}
         </div>
-        <div className="flex border-b border-border/60" style={{ height: HEADER_H / 2 }}>
+        <div className="flex border-b border-border" style={{ height: HEADER_H / 2 }}>
          {dayTicks.map((d, i) => {
           const isToday = daysBetween(todayMidnight, d) === 0;
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           return (
            <div
             key={i}
-            className={`shrink-0 text-center text-[10px] tabular-nums leading-[26px] ${isToday ? "font-bold text-primary" : isWeekend ? "text-muted-foreground/40" : "text-muted-foreground/70"}`}
+            className={`shrink-0 text-center text-[10px] tabular-nums leading-[26px] ${isToday ? "font-bold text-primary" : isWeekend ? "text-muted-foreground-subtle" : "text-muted-foreground"}`}
             style={{ width: dayWidth }}
            >
             {scale !== "month" ? d.getDate() : ""}
@@ -305,10 +305,10 @@ export function TemplateGanttView({
       {entries.map((entry) => {
        const bar = bars.get(entry.id);
        return (
-        <div key={entry.id} className="group/row flex border-b border-border/40 hover:bg-muted/10" style={{ height: ROW_H }}>
-         <div className="sticky left-0 z-10 flex shrink-0 items-center gap-1.5 border-r border-border/60 bg-background px-2.5" style={{ width: SIDEBAR_W }}>
+        <div key={entry.id} className="group/row flex border-b border-border hover:bg-muted/10" style={{ height: ROW_H }}>
+         <div className="sticky left-0 z-10 flex shrink-0 items-center gap-1.5 border-r border-border bg-background px-2.5" style={{ width: SIDEBAR_W }}>
           <button onClick={() => onClickEntry(entry.id)} className="flex min-w-0 flex-1 items-center gap-1.5 py-1 text-left">
-           {entry.icon ? <PageIcon icon={entry.icon} size={13} className="shrink-0" /> : <FileText size={12} className="shrink-0 text-muted-foreground/60" />}
+           {entry.icon ? <PageIcon icon={entry.icon} size={13} className="shrink-0" /> : <FileText size={12} className="shrink-0 text-muted-foreground" />}
            <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{entry.title || "Untitled"}</span>
           </button>
           <button
@@ -341,7 +341,7 @@ export function TemplateGanttView({
 
       {!locked && (
        <div className="flex" style={{ height: ROW_H }}>
-        <div className="sticky left-0 z-10 flex shrink-0 items-center border-r border-border/60 bg-background px-2.5" style={{ width: SIDEBAR_W }}>
+        <div className="sticky left-0 z-10 flex shrink-0 items-center border-r border-border bg-background px-2.5" style={{ width: SIDEBAR_W }}>
          <button
           onClick={() => onAddEntry({
            [startProp.id]: { date: toISODate(todayMidnight) },

@@ -58,7 +58,7 @@ function InviteRow({
     placeholder={`teammate${index + 1}@company.com`}
     value={value}
     onChange={(e) => onChange(e.target.value)}
-    className="h-11 flex-1 bg-transparent px-4 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+    className="h-11 flex-1 bg-transparent px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
    />
    <div className="h-6 w-px bg-border" />
    <div className="px-2">
@@ -69,7 +69,7 @@ function InviteRow({
      type="button"
      onClick={onRemove}
      aria-label="Remove this invite"
-     className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+     className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
     >
      <X size={14} />
     </button>
@@ -207,7 +207,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
     </div>
 
     {/* Step label */}
-    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground/60">
+    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground">
      {isInviteStep ? "Invite your team" : `Step ${step + 1} of ${totalSteps}`}
     </p>
 

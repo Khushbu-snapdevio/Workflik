@@ -107,7 +107,7 @@ export function EntrySidePanel({
    >
 
     {/* ── Top nav bar ─────────────────────────────────────────────────── */}
-    <div className="flex shrink-0 items-center justify-between border-b border-border/60 bg-card px-3 py-2.5">
+    <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-3 py-2.5">
      <button
       onClick={onClose}
       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
@@ -120,7 +120,7 @@ export function EntrySidePanel({
       {isEditor && (
        <button
         onClick={() => setConfirmDelete(true)}
-        className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+        className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
         onMouseEnter={(e) => showTooltip("Delete entry", e)}
         onMouseLeave={hideTooltip}
        >
@@ -148,8 +148,8 @@ export function EntrySidePanel({
          <PageIcon icon={entry.icon} size={36} />
         </span>
        ) : (
-        <div className="inline-flex size-12 items-center justify-center rounded-[var(--radius-lg)] border border-border/40 bg-card">
-         <FileText size={20} className="text-muted-foreground/70" />
+        <div className="inline-flex size-12 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card">
+         <FileText size={20} className="text-muted-foreground" />
         </div>
        )}
       </div>
@@ -172,8 +172,8 @@ export function EntrySidePanel({
          className="w-full bg-transparent text-3xl font-bold leading-tight tracking-tight text-foreground placeholder:text-foreground/20 focus:outline-none"
         />
         <div className="mt-1 flex items-center gap-1.5 opacity-0 transition-opacity group-focus-within/title:opacity-100 group-hover/title:opacity-100">
-         <PencilSimple size={11} className="text-muted-foreground/70" />
-         <span className="text-xs text-muted-foreground/70">Editing title — press Enter to save</span>
+         <PencilSimple size={11} className="text-muted-foreground" />
+         <span className="text-xs text-muted-foreground">Editing title — press Enter to save</span>
         </div>
        </div>
       ) : (
@@ -196,7 +196,7 @@ export function EntrySidePanel({
        </div>
 
        {/* Property rows */}
-       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/50 bg-card dark:bg-card/4">
+       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card dark:bg-card/4">
         {visibleProps.map((prop, idx) => {
          const Icon      = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
          const raw       = getVal(prop.id);
@@ -210,19 +210,19 @@ export function EntrySidePanel({
            key={prop.id}
            className={[
             "group/prop flex min-h-[36px] items-center transition-colors duration-150 hover:bg-accent/50",
-            !isLast ? "border-b border-border/40" : "",
+            !isLast ? "border-b border-border" : "",
            ].join(" ")}
           >
            {/* Property label */}
            <div className="flex w-[140px] shrink-0 items-center gap-2 px-3.5 py-2.5 text-xs font-medium text-muted-foreground">
-            <div className="flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-muted-foreground/60">
+            <div className="flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-muted-foreground">
              {prop.config?.icon ? <PageIcon icon={prop.config.icon} size={11} /> : <Icon size={11} />}
             </div>
             <span className="truncate">{prop.name}</span>
            </div>
 
            {/* Separator */}
-           <div className="h-full w-px bg-border/40 self-stretch" />
+           <div className="h-full w-px bg-border self-stretch" />
 
            {/* Value */}
            <div
@@ -261,7 +261,7 @@ export function EntrySidePanel({
             ) : hasValue ? (
              <CellDisplay property={prop} value={raw} compact workspaceId={workspaceId} />
             ) : (
-             <span className="text-xs text-muted-foreground/60 opacity-0 transition-opacity group-hover/prop:opacity-100">
+             <span className="text-xs text-muted-foreground opacity-0 transition-opacity group-hover/prop:opacity-100">
               {isEditor ? "Click to add" : "—"}
              </span>
             )}
@@ -274,22 +274,22 @@ export function EntrySidePanel({
      ) : (
       <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
        <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-        <FileText size={20} className="text-muted-foreground/60" />
+        <FileText size={20} className="text-muted-foreground" />
        </div>
        <p className="text-sm font-medium text-muted-foreground">No properties yet</p>
-       <p className="text-xs text-muted-foreground/60">Add properties from the table view</p>
+       <p className="text-xs text-muted-foreground">Add properties from the table view</p>
       </div>
      )}
 
      {/* ── Content / Block editor ── */}
      <div className="px-4 pb-2">
       <div className="mb-2 flex items-center gap-2 px-1">
-       <span className="text-xs font-semibold tracking-wide text-muted-foreground/70">
+       <span className="text-xs font-semibold tracking-wide text-muted-foreground">
         Content
        </span>
-       <div className="h-px flex-1 bg-border/40" />
+       <div className="h-px flex-1 bg-border" />
       </div>
-      <div className="rounded-[var(--radius-lg)] border border-border/50 bg-card px-4 py-3 dark:bg-card/4">
+      <div className="rounded-[var(--radius-lg)] border border-border bg-card px-4 py-3 dark:bg-card/4">
        <PageEditor
         pageId={entry.id}
         isLocked={false}
@@ -306,10 +306,10 @@ export function EntrySidePanel({
     </div>
 
     {/* ── Footer CTA ──────────────────────────────────────────────────── */}
-    <div className="shrink-0 border-t border-border/60 bg-card px-4 pb-5 pt-3">
+    <div className="shrink-0 border-t border-border bg-card px-4 pb-5 pt-3">
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="group inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold !text-white transition-colors duration-150 hover:bg-primary/90"
+      className="group inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold !text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
      >
       <FileText size={14} className="!text-white" />
       Open full page

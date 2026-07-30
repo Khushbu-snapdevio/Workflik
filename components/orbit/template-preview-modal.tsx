@@ -59,11 +59,11 @@ function BlockRow({ block, depth = 0 }: { block: SnapshotBlock; depth?: number }
   return (
     <>
       <div className="flex items-start gap-2 py-1" style={{ paddingLeft: depth * 16 }}>
-        <span className="mt-0.5 shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/70">
+        <span className="mt-0.5 shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
           {block.type === "todo" && checked ? "✓ To-do" : BLOCK_LABELS[block.type] ?? block.type}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs text-foreground/80">
-          {text || <span className="italic text-muted-foreground/40">(empty)</span>}
+          {text || <span className="italic text-muted-foreground-subtle">(empty)</span>}
         </span>
       </div>
       {block.children?.map((c) => <BlockRow block={c} depth={depth + 1} key={c.id} />)}
@@ -76,19 +76,19 @@ function SchemaPreview({ schema }: { schema: DatabaseSchema }) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Properties ({schema.properties.length})
         </p>
         <div className="flex flex-wrap gap-1.5">
           {schema.properties.map((p) => (
             <span key={p.name} className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-muted/40 px-2 py-1 text-xs text-foreground/80">
-              {p.name} <span className="text-muted-foreground/50">· {p.type}</span>
+              {p.name} <span className="text-muted-foreground-subtle">· {p.type}</span>
             </span>
           ))}
         </div>
       </div>
       <div>
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           Views ({schema.views.length})
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -102,7 +102,7 @@ function SchemaPreview({ schema }: { schema: DatabaseSchema }) {
       </div>
       {schema.sample_rows && schema.sample_rows.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             Sample rows ({schema.sample_rows.length})
           </p>
           <div className="overflow-x-auto rounded-[var(--radius-md)] border border-border">
@@ -171,7 +171,7 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close preview"
-              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <X size={16} />
             </button>
@@ -192,7 +192,7 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card">
                       {data.pageSnapshot.icon
                         ? <PageIcon icon={data.pageSnapshot.icon} size={24} />
-                        : <FileText size={20} className="text-muted-foreground/60" />}
+                        : <FileText size={20} className="text-muted-foreground" />}
                     </div>
                     <div className="min-w-0">
                       <h2 className="text-base font-bold text-foreground">{data.name}</h2>
@@ -221,7 +221,7 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
                     <p className="py-8 text-center text-xs text-muted-foreground">This template has no content blocks.</p>
                   ) : (
                     <div>
-                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                         Content ({data.pageSnapshot.blocks.length} block{data.pageSnapshot.blocks.length === 1 ? "" : "s"})
                       </p>
                       <div className="rounded-[var(--radius-md)] border border-border bg-muted/20 px-3 py-2">

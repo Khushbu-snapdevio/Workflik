@@ -13,7 +13,7 @@ export function SearchTrigger() {
         </svg>
         <span className="truncate whitespace-nowrap text-left text-xs">Search anything…</span>
       </div>
-      <kbd className="ml-3 shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground/60">⌘K</kbd>
+      <kbd className="ml-3 shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground">⌘K</kbd>
     </button>
   );
 }

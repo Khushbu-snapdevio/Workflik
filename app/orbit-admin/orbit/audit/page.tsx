@@ -101,16 +101,16 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
    {events.length === 0 ? (
     <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-muted/20 py-24">
      <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-7 text-muted-foreground/50">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-7 text-muted-foreground-subtle">
        <path d="M5 5h10M5 9h10M5 13h6" strokeLinecap="round"/>
       </svg>
      </div>
      <p className="text-sm font-semibold text-muted-foreground">No audit events yet</p>
-     <p className="mt-1 text-xs text-muted-foreground/60">Admin actions will appear here automatically.</p>
+     <p className="mt-1 text-xs text-muted-foreground">Admin actions will appear here automatically.</p>
     </div>
    ) : (
     <div className="rounded-[var(--radius-lg)] border border-border bg-card">
-     <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border/60 bg-muted/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+     <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border bg-muted/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
       <span className="w-44">Action</span>
       <span className="pl-4">Details</span>
       <span className="pr-6">Actor</span>
@@ -134,7 +134,7 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
           <div className="flex items-center gap-2">
            <span className="text-xs font-semibold text-muted-foreground">{ev.targetType}</span>
            {ev.targetId && (
-            <span className="font-mono text-xs text-muted-foreground/60">{ev.targetId.slice(0, 12)}…</span>
+            <span className="font-mono text-xs text-muted-foreground">{ev.targetId.slice(0, 12)}…</span>
            )}
           </div>
           {md && Object.keys(md).length > 0 && (
@@ -162,12 +162,12 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
             {ev.actorName ?? ev.actorEmail}
            </Link>
           ) : (
-           <span className="text-xs text-muted-foreground/60">Deleted user</span>
+           <span className="text-xs text-muted-foreground">Deleted user</span>
           )}
          </div>
          <div className="shrink-0 text-right">
           <p className="text-xs font-medium text-muted-foreground">{ago(ev.createdAt)}</p>
-          <p className="text-xs text-muted-foreground/60">{formatDateTime(ev.createdAt)}</p>
+          <p className="text-xs text-muted-foreground">{formatDateTime(ev.createdAt)}</p>
          </div>
         </div>
        );

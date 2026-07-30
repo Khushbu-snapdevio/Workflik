@@ -29,7 +29,7 @@ export function PageCommentsSection({
 }: Props) {
   return (
     <div
-      className="mb-6 border-b border-border/50 pb-4"
+      className="mb-6 border-b border-border pb-4"
       id="page-comments-section"
     >
       <CommentCard

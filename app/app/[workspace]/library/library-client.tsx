@@ -62,11 +62,11 @@ function TabIcon({ id }: { id: Tab }) {
 function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
   if (icon) return <SharedPageIcon icon={icon} size={14} />;
   if (kind === "database") return (
-    <svg className="size-3.5 shrink-0 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <svg className="size-3.5 shrink-0 text-muted-foreground-subtle" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
       <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/>
     </svg>
   );
-  return <FileText size={14} className="shrink-0 text-muted-foreground/40" />;
+  return <FileText size={14} className="shrink-0 text-muted-foreground-subtle" />;
 }
 
 export function LibraryClient({
@@ -376,7 +376,7 @@ export function LibraryClient({
               </button>
             ))}
             {loading && (
-              <Loader2 size={13} className="ml-2 shrink-0 animate-spin text-muted-foreground/50" />
+              <Loader2 size={13} className="ml-2 shrink-0 animate-spin text-muted-foreground-subtle" />
             )}
           </div>
 
@@ -406,15 +406,15 @@ export function LibraryClient({
                     <><Trash2 size={12} />Delete selected ({selectedIds.size})</>
                   )}
                 </button>
-                <div className="h-5 w-px bg-border/60" />
+                <div className="h-5 w-px bg-border" />
               </>
             )}
 
             {/* Search */}
             <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs transition-colors duration-150 focus-within:border-border">
-              <Search size={13} className="shrink-0 text-muted-foreground/50" />
+              <Search size={13} className="shrink-0 text-muted-foreground-subtle" />
               <input
-                className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
                 placeholder="Search by page name or creator…"
                 value={search}
                 onChange={(e) => changeSearch(e.target.value)}
@@ -424,7 +424,7 @@ export function LibraryClient({
                 <button
                   type="button"
                   onClick={() => changeSearch("")}
-                  className="text-muted-foreground/40 transition-colors duration-150 hover:text-muted-foreground"
+                  className="text-muted-foreground-subtle transition-colors duration-150 hover:text-muted-foreground"
                 >
                   <X size={12} />
                 </button>
@@ -447,13 +447,13 @@ export function LibraryClient({
 
           {loading && rows.length === 0 ? (
             <div className="flex items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card py-16">
-              <Loader2 size={20} className="animate-spin text-muted-foreground/40" />
+              <Loader2 size={20} className="animate-spin text-muted-foreground-subtle" />
             </div>
           ) : rows.length === 0 ? (
             <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
               <div className="flex flex-col items-center py-16 text-center">
                 <div className="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-muted">
-                  <BookOpen size={20} className="text-muted-foreground/40" />
+                  <BookOpen size={20} className="text-muted-foreground-subtle" />
                 </div>
                 <p className="text-sm font-semibold text-foreground">No pages found</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -479,7 +479,7 @@ export function LibraryClient({
                       ? "border-primary bg-primary"
                       : someSelected
                         ? "border-primary bg-primary/20"
-                        : "border-border/60 bg-background hover:border-primary/50"
+                        : "border-border bg-background hover:border-primary/50"
                   }`}>
                     {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                     {someSelected && (
@@ -487,15 +487,15 @@ export function LibraryClient({
                     )}
                   </span>
                 </label>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Page name</span>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Created by</span>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Last edited</span>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Created</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">Page name</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">Created by</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">Last edited</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">Created</span>
                 <span />
               </div>
 
               {/* Rows */}
-              <div className={`divide-y divide-border/40 transition-opacity duration-150 ${loading ? "opacity-60" : ""}`}>
+              <div className={`divide-y divide-border transition-opacity duration-150 ${loading ? "opacity-60" : ""}`}>
                 {displayRows.map((page) => {
                   const isChecked = selectedIds.has(page.id);
                   return (
@@ -514,7 +514,7 @@ export function LibraryClient({
                         className="sr-only"
                       />
                       <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
-                        isChecked ? "border-primary bg-primary" : "border-border/50 bg-background hover:border-primary/50"
+                        isChecked ? "border-primary bg-primary" : "border-border bg-background hover:border-primary/50"
                       }`}>
                         {isChecked && <Check size={10} className="text-white" strokeWidth={3} />}
                       </span>
@@ -529,7 +529,7 @@ export function LibraryClient({
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); toggleCollapse(page.id); }}
-                          className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/50 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                          className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground-subtle transition-colors duration-150 hover:bg-accent hover:text-foreground"
                         >
                           {collapsedIds.has(page.id) ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                         </button>
@@ -549,8 +549,8 @@ export function LibraryClient({
                           onClick={() => togglePrivate(page)}
                           className={`flex size-6 items-center justify-center rounded transition-all duration-150 ${
                             page.isPrivate
-                              ? "text-muted-foreground/60 hover:text-foreground"
-                              : "text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 hover:text-foreground"
+                              ? "text-muted-foreground hover:text-foreground"
+                              : "text-muted-foreground-subtle opacity-0 group-hover/row:opacity-100 hover:text-foreground"
                           }`}
                         >
                           <EyeOff size={12} />
@@ -570,7 +570,7 @@ export function LibraryClient({
                           className={`flex size-6 items-center justify-center rounded transition-all duration-150 ${
                             page.isLocked
                               ? "text-warning/70 hover:text-warning"
-                              : "text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 hover:text-foreground"
+                              : "text-muted-foreground-subtle opacity-0 group-hover/row:opacity-100 hover:text-foreground"
                           }`}
                         >
                           <Lock size={12} />
@@ -590,7 +590,7 @@ export function LibraryClient({
                           className={`flex size-6 items-center justify-center rounded transition-all duration-150 ${
                             page.isFavorited
                               ? "text-warning"
-                              : "text-muted-foreground/30 opacity-0 group-hover/row:opacity-100 hover:text-warning"
+                              : "text-muted-foreground-subtle opacity-0 group-hover/row:opacity-100 hover:text-warning"
                           }`}
                         >
                           <Star size={13} fill={page.isFavorited ? "currentColor" : "none"} />
@@ -604,13 +604,13 @@ export function LibraryClient({
                     </div>
 
                     {/* Created by */}
-                    <span className="relative z-10 pr-4 text-xs text-muted-foreground/70">{page.creatorName}</span>
+                    <span className="relative z-10 pr-4 text-xs text-muted-foreground">{page.creatorName}</span>
 
                     {/* Last edited */}
-                    <span className="relative z-10 pr-4 text-xs text-muted-foreground/70"><TimeAgo iso={page.updatedAt} /></span>
+                    <span className="relative z-10 pr-4 text-xs text-muted-foreground"><TimeAgo iso={page.updatedAt} /></span>
 
                     {/* Created */}
-                    <span className="relative z-10 pr-2 text-xs text-muted-foreground/70"><TimeAgo iso={page.createdAt} /></span>
+                    <span className="relative z-10 pr-2 text-xs text-muted-foreground"><TimeAgo iso={page.createdAt} /></span>
 
                     {/* Row actions */}
                     <span className="relative z-10 flex justify-end" onClick={(e) => e.stopPropagation()}>
@@ -650,8 +650,8 @@ export function LibraryClient({
               </div>
 
               {/* Footer: rows per page · go to page · prev/numbered/next */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 px-5 py-3">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>Rows per page</span>
                   <div className="relative flex items-center">
                     <input
@@ -668,7 +668,7 @@ export function LibraryClient({
                         type="button"
                         aria-label="Increase rows per page"
                         onClick={() => changePageSize(pageSize + 5)}
-                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                        className="flex h-2.5 items-center text-muted-foreground-subtle hover:text-foreground"
                       >
                         <ChevronUp size={10} />
                       </button>
@@ -676,7 +676,7 @@ export function LibraryClient({
                         type="button"
                         aria-label="Decrease rows per page"
                         onClick={() => changePageSize(pageSize - 5)}
-                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                        className="flex h-2.5 items-center text-muted-foreground-subtle hover:text-foreground"
                       >
                         <ChevronDown size={10} />
                       </button>
@@ -684,7 +684,7 @@ export function LibraryClient({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>Go to page</span>
                   <input
                     type="text"
@@ -693,7 +693,7 @@ export function LibraryClient({
                     placeholder={`1–${totalPages}`}
                     onChange={(e) => setGoToPageInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(); }}
-                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:outline-none"
+                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
                   />
                   <button
                     type="button"
@@ -718,7 +718,7 @@ export function LibraryClient({
 
                   {getPageNumbers(currentPage, totalPages).map((p, i) =>
                     p === "…" ? (
-                      <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground/50">…</span>
+                      <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground-subtle">…</span>
                     ) : (
                       <button
                         key={p}

@@ -227,7 +227,7 @@ export function DateValueEditor({ value, onSave, onClose }: DateValueEditorProps
         />
       )}
 
-      <div className="flex flex-col gap-2.5 border-t border-border/60 px-3 py-2.5">
+      <div className="flex flex-col gap-2.5 border-t border-border px-3 py-2.5">
         <ToggleRow label="End date" checked={rangeOn} onCheckedChange={toggleRange} />
 
         <MenuRow label="Date format" value={dateFormatLabel} onClick={(e) => openFlyoutAt("format", e)} />
@@ -244,7 +244,7 @@ export function DateValueEditor({ value, onSave, onClose }: DateValueEditorProps
         <MenuRow label="Remind" value={reminderLabel} onClick={(e) => openFlyoutAt("remind", e)} />
       </div>
 
-      <div className="border-t border-border/60 px-3 py-2">
+      <div className="border-t border-border px-3 py-2">
         <button
           type="button"
           disabled={!v.date}
@@ -435,7 +435,7 @@ function MenuRow({ label, value, onClick }: { label: string; value?: string; onC
       <span className="text-foreground">{label}</span>
       <span className="flex items-center gap-1 text-muted-foreground">
         {value}
-        <ChevronRight size={12} className="text-muted-foreground/60" />
+        <ChevronRight size={12} className="text-muted-foreground" />
       </span>
     </button>
   );
@@ -556,17 +556,17 @@ function TimezoneFlyout({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search cities, timezones…"
-          className="w-full bg-transparent text-xs placeholder:text-muted-foreground/40 focus:outline-none"
+          className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
         />
       </div>
       <div className="flex-1 overflow-y-auto p-1">
         {!q && current && (
           <>
-            <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Current timezone</p>
+            <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Current timezone</p>
             <TimezoneRow zone={current} selected={selected === current.value} onSelect={() => { onSelect(current.value); onClose(); }} />
           </>
         )}
-        {!q && <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Select a timezone</p>}
+        {!q && <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Select a timezone</p>}
         {filtered.map((z) => (
           <TimezoneRow key={z.value} zone={z} selected={selected === z.value} onSelect={() => { onSelect(z.value); onClose(); }} />
         ))}

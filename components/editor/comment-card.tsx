@@ -584,7 +584,7 @@ export function DropdownItem({
 }
 
 export function DropdownSeparator() {
- return <div className="my-1 border-t border-border/40" />;
+ return <div className="my-1 border-t border-border" />;
 }
 
 // ---------- CommentCard ----------
@@ -797,7 +797,7 @@ export function CommentCard({
       <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
      </div>
     ) : inlineVisible.length > 0 && (
-     <div className="divide-y divide-border/25">
+     <div className="divide-y divide-border">
       {inlineVisible.map((thread) => (
        <ThreadSection
         key={thread.id}
@@ -864,10 +864,10 @@ export function CommentCard({
     {!loading && activeVisible.length === 0 && (
      <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
       <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50 border border-border mb-2.5">
-       <ChatTextIcon size={20} className="text-muted-foreground/70" />
+       <ChatTextIcon size={20} className="text-muted-foreground" />
       </div>
       <p className="text-sm font-medium text-foreground/70">No comments yet</p>
-      <p className="text-xs text-muted-foreground/70 mt-0.5">
+      <p className="text-xs text-muted-foreground mt-0.5">
        {blockId ? "Comment on this block" : "Start the conversation"}
       </p>
      </div>
@@ -888,7 +888,7 @@ export function CommentCard({
      />
     ))}
     {orphaned.length > 0 && (
-     <div className="border-t border-border/40 px-4 pt-2 pb-3">
+     <div className="border-t border-border px-4 pt-2 pb-3">
       <p className="text-xs font-medium text-warning mb-2">⚠ Original content removed</p>
       {orphaned.map((thread) => (
        <div key={thread.id} className="flex items-start gap-2 py-1.5">
@@ -901,7 +901,7 @@ export function CommentCard({
    </div>
 
    {/* Composer */}
-   <div className="border-t border-border/50 bg-muted/10 px-3 py-2.5">
+   <div className="border-t border-border bg-muted/10 px-3 py-2.5">
     <CommentComposer
      workspaceId={workspaceId}
      mode="new"
@@ -995,7 +995,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
  return (
   <div
    id={`comment-${thread.id}`}
-   className={`group/thread relative border-b border-border/20 last:border-0 transition-colors duration-150 hover:bg-accent/30 ${thread.isResolved ? "opacity-55" : ""}`}
+   className={`group/thread relative border-b border-border last:border-0 transition-colors duration-150 hover:bg-accent/30 ${thread.isResolved ? "opacity-55" : ""}`}
   >
    {/* ── Unread indicator — right edge, hidden once the hover pill takes over ── */}
    {isUnread && !thread.deletedAt && editingId !== thread.id && (
@@ -1007,7 +1007,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
 
    {/* ── Floating action pill — appears top-right on hover ── */}
    {!thread.deletedAt && editingId !== thread.id && (
-    <div className="absolute top-2.5 right-3 z-10 hidden group-hover/thread:flex items-center gap-px rounded-[var(--radius-sm)] border border-border/60 bg-card px-0.5 py-0.5">
+    <div className="absolute top-2.5 right-3 z-10 hidden group-hover/thread:flex items-center gap-px rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5">
      {thread.isResolved ? (
       <button
        type="button"
@@ -1103,13 +1103,13 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
        {formatTime(thread.createdAt)}
       </span>
       {thread.editedAt && !thread.deletedAt && (
-       <span className="text-xs text-muted-foreground/60 flex-shrink-0">(edited)</span>
+       <span className="text-xs text-muted-foreground flex-shrink-0">(edited)</span>
       )}
      </div>
 
      {/* Content */}
      {thread.deletedAt ? (
-      <p className="text-sm text-muted-foreground/60 italic">[Comment deleted]</p>
+      <p className="text-sm text-muted-foreground italic">[Comment deleted]</p>
      ) : editingId === thread.id ? (
       <CommentComposer
        workspaceId={workspaceId}
@@ -1140,7 +1140,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
           className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
            iMine
             ? "bg-primary/10 border-primary/30 text-primary"
-            : "bg-muted/50 hover:bg-accent border-border/50 hover:border-border text-foreground/70"
+            : "bg-muted/50 hover:bg-accent border-border hover:border-border text-foreground/70"
           }`}
          >
           {emoji}
@@ -1155,7 +1155,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
 
    {/* ── Replies ── */}
    {thread.replies.length > 0 && (
-    <div className="ml-[56px] mr-4 mb-2 border-l-2 border-border/30 pl-3">
+    <div className="ml-[56px] mr-4 mb-2 border-l-2 border-border pl-3">
      {thread.replies.map((reply) => (
       <ReplyRow
        key={reply.id}
@@ -1280,11 +1280,11 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
      <span className="text-xs text-muted-foreground flex-shrink-0">
       {formatTime(reply.createdAt)}
      </span>
-     {reply.editedAt && <span className="text-xs text-muted-foreground/60">(edited)</span>}
+     {reply.editedAt && <span className="text-xs text-muted-foreground">(edited)</span>}
     </div>
 
     {reply.deletedAt ? (
-     <p className="text-xs text-muted-foreground/60 italic">[Comment deleted]</p>
+     <p className="text-xs text-muted-foreground italic">[Comment deleted]</p>
     ) : editingId === reply.id ? (
      <CommentComposer
       workspaceId={workspaceId}
@@ -1314,7 +1314,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
           iMine
            ? "bg-primary/10 border-primary/30 text-primary"
-           : "bg-muted/50 hover:bg-accent border-border/50 hover:border-border text-foreground/70"
+           : "bg-muted/50 hover:bg-accent border-border hover:border-border text-foreground/70"
          }`}
         >
          {emoji}
@@ -1328,7 +1328,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
 
    {/* Hover action — floating dot menu */}
    {!reply.deletedAt && editingId !== reply.id && (
-    <div className="absolute top-1.5 right-0 hidden group-hover/reply:flex items-center rounded-[var(--radius-sm)] border border-border/50 bg-card px-0.5 py-0.5">
+    <div className="absolute top-1.5 right-0 hidden group-hover/reply:flex items-center rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5">
      <button
       type="button"
       onClick={(e) => setEmojiAnchor(e.currentTarget.getBoundingClientRect())}

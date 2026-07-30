@@ -121,7 +121,7 @@ export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
       {editor && <BlockHandle editor={editor} />}
 
       {editor && (
-        <div className="flex items-center gap-1 border-b border-border/60 px-4 py-1.5">
+        <div className="flex items-center gap-1 border-b border-border px-4 py-1.5">
           <TemplateQuickInsert editor={editor} variant="toolbar" />
         </div>
       )}
@@ -133,12 +133,12 @@ export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
           top of — and outside — the border. */}
       <EditorContent
         editor={editor}
-        className="prose prose-neutral dark:prose-invert max-w-none pl-[72px] pr-10 py-6 text-base focus-within:outline-none [&_.ProseMirror]:min-h-[460px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground/70 [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]"
+        className="prose prose-neutral dark:prose-invert max-w-none pl-[72px] pr-10 py-6 text-base focus-within:outline-none [&_.ProseMirror]:min-h-[460px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]"
       />
 
       {editor && isEmpty && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 pl-[72px] pr-10 pb-6">
-          <p className="mb-2 text-xs text-muted-foreground/60">Or start with:</p>
+          <p className="mb-2 text-xs text-muted-foreground">Or start with:</p>
           <div className="pointer-events-auto">
             <TemplateQuickInsert editor={editor} variant="empty" />
           </div>

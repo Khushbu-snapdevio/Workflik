@@ -225,7 +225,7 @@ export function EntryContextMenu({
       onClick={(e) => e.stopPropagation()}
     >
       <div className="p-1">
-        <p className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/40">Page</p>
+        <p className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Page</p>
 
         <button onClick={(e) => { e.stopPropagation(); toggleFavorite(); }} className={itemClass}>
           <Star size={13} className={`shrink-0 ${favorited ? "text-warning" : "text-muted-foreground"}`} fill={favorited ? "currentColor" : "none"} />
@@ -253,7 +253,7 @@ export function EntryContextMenu({
           <ChevronRight size={13} className="shrink-0 text-muted-foreground" />
         </button>
 
-        <div className="my-0.5 h-px bg-border/40" />
+        <div className="my-0.5 h-px bg-border" />
 
         {onOpenEntry ? (
           <button onClick={(e) => { e.stopPropagation(); onClose(); onOpenEntry(); }} className={itemClass}>
@@ -278,7 +278,7 @@ export function EntryContextMenu({
           Comment
         </button>
 
-        <div className="my-0.5 h-px bg-border/40" />
+        <div className="my-0.5 h-px bg-border" />
 
         <button
           onClick={(e) => {
@@ -300,11 +300,11 @@ export function EntryContextMenu({
             className={`${itemClass} justify-between`}
           >
             <span className="flex items-center gap-2.5"><Copy size={13} className="shrink-0 text-muted-foreground" />Duplicate</span>
-            <span className="text-[10px] text-muted-foreground/40">Ctrl+D</span>
+            <span className="text-[10px] text-muted-foreground-subtle">Ctrl+D</span>
           </button>
         )}
 
-        <div className="my-0.5 h-px bg-border/40" />
+        <div className="my-0.5 h-px bg-border" />
 
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); onClose(); }}
@@ -316,8 +316,8 @@ export function EntryContextMenu({
       </div>
 
       {updatedAt && (
-        <div className="border-t border-border/40 px-3 py-2">
-          <p className="text-[10px] text-muted-foreground/60">Last edited {fmtRelative(updatedAt)}</p>
+        <div className="border-t border-border px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">Last edited {fmtRelative(updatedAt)}</p>
         </div>
       )}
     </div>,
@@ -562,9 +562,9 @@ function PropertyFlyout({
       className="max-h-[320px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1"
       onClick={(e) => e.stopPropagation()}
     >
-      {loading && <p className="px-2.5 py-2 text-xs text-muted-foreground/60">Loading…</p>}
+      {loading && <p className="px-2.5 py-2 text-xs text-muted-foreground">Loading…</p>}
       {!loading && visibleProps.length === 0 && (
-        <p className="px-2.5 py-2 text-xs text-muted-foreground/60">No properties</p>
+        <p className="px-2.5 py-2 text-xs text-muted-foreground">No properties</p>
       )}
       {visibleProps.map((prop) => {
         const TypeIcon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON];

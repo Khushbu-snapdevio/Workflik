@@ -42,7 +42,7 @@ export function ImpersonateButton({ userId }: { userId: string }) {
    <button
     onClick={() => setConfirmOpen(true)}
     disabled={loading}
-    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-primary/90 disabled:opacity-50">
+    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-50">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
      <circle cx="7" cy="5" r="2.5"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
      <path d="M11 2l2 2-2 2"/>
@@ -227,7 +227,7 @@ export function ForceDeleteWorkspaceButton({ workspaceId, workspaceName }: { wor
    <button
     onClick={() => setConfirmOpen(true)}
     disabled={loading}
-    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-destructive px-3 py-1.5 text-xs font-semibold text-white transition-colors duration-150 hover:bg-destructive/90 disabled:opacity-50">
+    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 disabled:opacity-50">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
      <path d="M2 3.5h10M5.5 3.5V2.5h3v1M4.5 3.5l.5 8M9.5 3.5l-.5 8M7 3.5v8"/>
     </svg>

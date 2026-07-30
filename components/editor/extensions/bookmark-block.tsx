@@ -58,7 +58,7 @@ function UrlPicker({
         <input
           // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
           autoFocus
-          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40 disabled:opacity-50"
+          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground-subtle disabled:opacity-50"
           disabled={loading}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => {
@@ -126,7 +126,7 @@ function BookmarkCard({
                 {preview.description}
               </p>
             )}
-            <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground/70">
+            <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
               {preview.favicon && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -157,7 +157,7 @@ function BookmarkCard({
         <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
           {onDelete && (
             <button
-              className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-destructive/80"
+              className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
               onMouseDown={(e) => {
                 e.preventDefault();
                 onDelete();
@@ -169,7 +169,7 @@ function BookmarkCard({
           )}
           {onChange && (
             <button
-              className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-foreground/90"
+              className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
               onMouseDown={(e) => {
                 e.preventDefault();
                 onChange();
@@ -394,7 +394,7 @@ function EmbedToolbar({
     <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
       {onComment && (
         <button
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
           onClick={onComment}
           onMouseDown={(e) => e.preventDefault()}
           onMouseEnter={(e) => showTooltip("Comment", e)}
@@ -406,7 +406,7 @@ function EmbedToolbar({
       )}
       {onZoom && (
         <button
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
           onClick={onZoom}
           onMouseDown={(e) => e.preventDefault()}
           onMouseEnter={(e) => showTooltip("Expand", e)}
@@ -418,7 +418,7 @@ function EmbedToolbar({
       )}
       {download && (
         <a
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
           download={download.name}
           href={download.url}
           onClick={(e) => e.stopPropagation()}
@@ -430,7 +430,7 @@ function EmbedToolbar({
         </a>
       )}
       <button
-        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-foreground/90"
+        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
         onClick={onChangeDirect}
         onMouseDown={(e) => e.preventDefault()}
         onMouseEnter={(e) => showTooltip("Change", e)}
@@ -440,7 +440,7 @@ function EmbedToolbar({
         <Pencil size={12} />
       </button>
       <button
-        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-foreground/80 text-white hover:bg-destructive/80"
+        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-destructive/80"
         onClick={onDelete}
         onMouseDown={(e) => e.preventDefault()}
         onMouseEnter={(e) => showTooltip("Delete", e)}
@@ -498,7 +498,7 @@ function EmbedLightbox({
           />
         ) : (
           <iframe
-            className="size-full rounded-[var(--radius-md)] bg-white"
+            className="size-full rounded-[var(--radius-md)] bg-card"
             src={src}
             title={title}
           />
@@ -667,7 +667,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
                 <input
                   // biome-ignore lint/a11y/noAutofocus: intentional — tab just opened
                   autoFocus
-                  className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40"
+                  className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground-subtle"
                   onChange={(e) => setLinkUrl(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && linkUrl.trim()) {
@@ -687,7 +687,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
                 >
                   Embed link
                 </Button>
-                <p className="text-center text-xs text-muted-foreground/70">
+                <p className="text-center text-xs text-muted-foreground">
                   Works with links of PDFs, Google Drive, Google Maps, CodePen…
                 </p>
               </TabsContent>

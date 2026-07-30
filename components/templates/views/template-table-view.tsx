@@ -200,7 +200,7 @@ function EditableCell({
   >
    {display
     ? <span className="block truncate text-foreground">{display}</span>
-    : <span className="block truncate text-muted-foreground/60 text-xs">{placeholder}</span>
+    : <span className="block truncate text-muted-foreground text-xs">{placeholder}</span>
    }
   </button>
  );
@@ -269,7 +269,7 @@ function SelectCell({
      ? <OptionBadge name={current.name} color={current.color} displayAs={displayAs} wrap={wrapContent} />
      : displayAs === "checkbox"
      ? <span className="flex size-4 shrink-0 items-center justify-center rounded border border-border" />
-     : <span className="text-xs text-muted-foreground/60">Empty</span>
+     : <span className="text-xs text-muted-foreground">Empty</span>
     }
    </button>
 
@@ -286,7 +286,7 @@ function SelectCell({
      {sections.map((section) => (
       <div key={section.key}>
        {section.label && (
-        <p className="mb-0.5 mt-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">{section.label}</p>
+        <p className="mb-0.5 mt-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</p>
        )}
        {section.options.map((opt) => (
         <button
@@ -300,7 +300,7 @@ function SelectCell({
        ))}
       </div>
      ))}
-     <div className="my-1 h-px bg-border/60" />
+     <div className="my-1 h-px bg-border" />
      <button
       onClick={(e) => { onEditProperty((e.currentTarget as HTMLElement).getBoundingClientRect()); setOpen(false); }}
       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -357,7 +357,7 @@ function MultiSelectCell({
    >
     {selectedOpts.length > 0
      ? selectedOpts.map((o) => <OptionBadge key={o.id} name={o.name} color={o.color} displayAs={displayAs} wrap={wrapContent} />)
-     : <span className="text-xs text-muted-foreground/60">Empty</span>
+     : <span className="text-xs text-muted-foreground">Empty</span>
     }
    </button>
 
@@ -384,7 +384,7 @@ function MultiSelectCell({
        </button>
       );
      })}
-     <div className="my-1 h-px bg-border/60" />
+     <div className="my-1 h-px bg-border" />
      <button
       onClick={(e) => { onEditProperty((e.currentTarget as HTMLElement).getBoundingClientRect()); setOpen(false); }}
       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -444,14 +444,14 @@ function SelectPopoverCell({
        <OptionBadge key={o.id} name={o.name} color={o.color} displayAs={displayAs} wrap={wrapContent} />
       ))
      ) : (
-      <span className="text-xs text-muted-foreground/60">Empty</span>
+      <span className="text-xs text-muted-foreground">Empty</span>
      )
     ) : currentOpt ? (
      <OptionBadge name={currentOpt.name} color={currentOpt.color} displayAs={displayAs} wrap={wrapContent} />
     ) : displayAs === "checkbox" ? (
      <span className="flex size-4 shrink-0 items-center justify-center rounded border border-border" />
     ) : (
-     <span className="text-xs text-muted-foreground/60">Empty</span>
+     <span className="text-xs text-muted-foreground">Empty</span>
     )}
    </button>
 
@@ -506,7 +506,7 @@ function DateCell({
     {hasValue ? (
      <CellDisplay property={property as unknown as DbProperty} value={value} />
     ) : (
-     <span className="text-xs text-muted-foreground/60">Pick date</span>
+     <span className="text-xs text-muted-foreground">Pick date</span>
     )}
    </button>
 
@@ -585,8 +585,8 @@ function PersonCell({
      <CellDisplay property={property as unknown as DbProperty} value={value} workspaceId={workspaceId} />
     ) : (
      <>
-      <UserIcon size={12} className="shrink-0 text-muted-foreground/70" />
-      <span className="text-xs text-muted-foreground/60">Empty</span>
+      <UserIcon size={12} className="shrink-0 text-muted-foreground" />
+      <span className="text-xs text-muted-foreground">Empty</span>
      </>
     )}
    </button>
@@ -630,7 +630,7 @@ function FileCell({
     {hasValue ? (
      <CellDisplay property={property as unknown as DbProperty} value={value} compact workspaceId={workspaceId} />
     ) : (
-     <span className="text-xs text-muted-foreground/60">Empty</span>
+     <span className="text-xs text-muted-foreground">Empty</span>
     )}
    </button>
 
@@ -723,7 +723,7 @@ function ColumnHeader({
     <div className="flex min-w-0 items-center gap-1.5">
      {propConfig.icon
       ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" />
-      : <Icon size={12} className="shrink-0 text-muted-foreground/60" />
+      : <Icon size={12} className="shrink-0 text-muted-foreground" />
      }
      <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">
       {prop.name}
@@ -735,7 +735,7 @@ function ColumnHeader({
      <button
       ref={triggerRef}
       onClick={() => setMenuOpen((p) => !p)}
-      className="flex size-5 items-center justify-center rounded text-muted-foreground/70 opacity-0 group-hover/col:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+      className="flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover/col:opacity-100 hover:bg-accent hover:text-foreground transition-all"
      >
       <DotsThreeIcon size={14} />
      </button>
@@ -773,7 +773,7 @@ function ColumnHeader({
            <GearIcon size={13} /> Edit property
           </button>
          )}
-         <div className="my-1 h-px bg-border/40" />
+         <div className="my-1 h-px bg-border" />
          <button
           onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
           className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
@@ -932,7 +932,7 @@ function AddPropertyPanel({
   >
    {step === "name" ? (
     <>
-     <div className="border-b border-border/40 px-4 py-3">
+     <div className="border-b border-border px-4 py-3">
       <span className="text-sm font-semibold">New property</span>
      </div>
      <div className="p-3">
@@ -958,7 +958,7 @@ function AddPropertyPanel({
     </>
    ) : (
     <>
-     <div className="flex items-center gap-2 border-b border-border/40 px-4 py-3">
+     <div className="flex items-center gap-2 border-b border-border px-4 py-3">
       <button
        onClick={() => setStep("name")}
        className="text-muted-foreground hover:text-foreground text-xs transition-colors"
@@ -1128,7 +1128,7 @@ function CellContent({
     <div className="flex min-h-[24px] w-full items-center px-1 py-0.5">
      {hasValue
       ? <CellDisplay property={prop as unknown as DbProperty} value={pv} workspaceId={workspaceId} />
-      : <span className="text-xs text-muted-foreground/60">Empty</span>
+      : <span className="text-xs text-muted-foreground">Empty</span>
      }
     </div>
    );
@@ -1138,7 +1138,7 @@ function CellContent({
    return <EditableCell value={pv?.phone} type="text" placeholder="Empty" onSave={(v) => onSave(v ? { phone: (v as { text: string }).text } : null)} onEditingChange={onEditingChange} />;
   }
   default:
-   return <span className="px-1 text-xs text-muted-foreground/70">—</span>;
+   return <span className="px-1 text-xs text-muted-foreground">—</span>;
  }
 }
 
@@ -1271,7 +1271,7 @@ function SortableRow({
    suppressHydrationWarning
    onMouseEnter={() => setRowHovered(true)}
    onMouseLeave={() => setRowHovered(false)}
-   className={`group/row border-b border-border/30 transition-colors ${isSelected ? "bg-primary/5" : !deleteTarget ? "hover:bg-muted/20" : ""}`}
+   className={`group/row border-b border-border transition-colors ${isSelected ? "bg-primary/5" : !deleteTarget ? "hover:bg-muted/20" : ""}`}
   >
    {/* Drag handle + row actions (Notion style: 6-dot grip, click for menu) */}
    <td className="w-6 px-0.5 py-0" style={{ touchAction: "none", userSelect: "none" }}>
@@ -1281,7 +1281,7 @@ function SortableRow({
       onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); }}
       onMouseEnter={(e) => showTooltip("Drag · Click for actions", e)}
       onMouseLeave={hideTooltip}
-      className="flex size-5 cursor-grab items-center justify-center rounded text-muted-foreground/0 hover:bg-accent hover:text-muted-foreground/60 transition-colors active:cursor-grabbing group-hover/row:text-muted-foreground/40"
+      className="flex size-5 cursor-grab items-center justify-center rounded text-muted-foreground/0 hover:bg-accent hover:text-muted-foreground transition-colors active:cursor-grabbing group-hover/row:text-muted-foreground-subtle"
      >
       <GripVertical size={13} />
      </div>
@@ -1324,7 +1324,7 @@ function SortableRow({
        >
         <CopyIcon size={13} /> Duplicate
        </button>
-       <div className="my-1 h-px bg-border/40" />
+       <div className="my-1 h-px bg-border" />
        <button
         onClick={() => { setMenuOpen(false); onSetDeleteTarget(entry.id); }}
         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
@@ -1365,7 +1365,7 @@ function SortableRow({
        >
         {entry.title
          ? <span className="text-foreground">{entry.title}</span>
-         : <span className="text-muted-foreground/60">Untitled</span>
+         : <span className="text-muted-foreground">Untitled</span>
         }
        </button>
       )}
@@ -1380,7 +1380,7 @@ function SortableRow({
        }}
        onMouseEnter={(e) => showTooltip("View comments", e)}
        onMouseLeave={hideTooltip}
-       className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground/60 transition-opacity duration-150 hover:bg-accent hover:text-foreground"
+       className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground"
        style={{ opacity: isRowHovered ? 1 : 0 }}
       >
        <MessageSquareIcon size={11} />
@@ -1395,7 +1395,7 @@ function SortableRow({
        href={`/app/${workspaceSlug}/${entry.shortId}`}
        onMouseEnter={(e) => showTooltip("Open full page", e)}
        onMouseLeave={hideTooltip}
-       className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground/60 hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
+       className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
       >
        <FileText size={9} />
        OPEN
@@ -1633,7 +1633,7 @@ export function TemplateTableView({
 
     {/* Header */}
     <thead className="sticky top-0 z-[200] bg-card">
-     <tr className="border-b border-border/60">
+     <tr className="border-b border-border">
       {/* Drag handle column header (empty) */}
       <th className="w-6 px-0.5 py-2.5" />
 
@@ -1746,7 +1746,7 @@ export function TemplateTableView({
    <DragOverlay>
     {draggingEntry && (
      <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
-      <GripVertical size={13} className="text-muted-foreground/40" />
+      <GripVertical size={13} className="text-muted-foreground-subtle" />
       {draggingEntry.title || "Untitled"}
      </div>
     )}

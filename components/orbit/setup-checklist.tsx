@@ -77,7 +77,7 @@ export function SetupChecklist({
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-3.5">
+      <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
             <ShieldAlert className="text-primary" size={14} />
@@ -103,7 +103,7 @@ export function SetupChecklist({
         </button>
       </div>
 
-      <div className="divide-y divide-border/60">
+      <div className="divide-y divide-border">
         {items.map((item) => (
           <div className="flex items-center gap-3.5 px-5 py-3" key={item.key}>
             <span
@@ -146,7 +146,7 @@ export function SetupChecklist({
             </p>
           </div>
           <ChevronRight
-            className="shrink-0 text-muted-foreground/40 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            className="shrink-0 text-muted-foreground-subtle opacity-0 transition-opacity duration-150 group-hover:opacity-100"
             size={14}
           />
         </Link>

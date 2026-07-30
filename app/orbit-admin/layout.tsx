@@ -23,7 +23,7 @@ export default async function AdminLayout({
     >
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar — visible on desktop; mobile uses AdminShell's header */}
-        <div className="hidden h-11 shrink-0 items-center border-b border-border/60 bg-card px-4 md:flex md:px-8">
+        <div className="hidden h-11 shrink-0 items-center border-b border-border bg-card px-4 md:flex md:px-8">
           <div className="mx-auto flex w-full max-w-[1100px] items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3 text-primary">

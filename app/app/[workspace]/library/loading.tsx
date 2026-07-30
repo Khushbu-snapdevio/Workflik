@@ -11,14 +11,14 @@ export default function LibraryLoading() {
       </div>
 
       {/* Table header skeleton */}
-      <div className="flex items-center gap-4 border-b border-border/60 px-6 py-2.5">
+      <div className="flex items-center gap-4 border-b border-border px-6 py-2.5">
         <div className="h-3 w-48 rounded bg-muted" />
         <div className="ml-auto h-3 w-24 rounded bg-muted/60" />
         <div className="h-3 w-20 rounded bg-muted/60" />
       </div>
 
       {/* Page rows skeleton */}
-      <div className="flex-1 overflow-hidden divide-y divide-border/40">
+      <div className="flex-1 overflow-hidden divide-y divide-border">
         {[...Array(10)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 px-6 py-3">
             <div className="size-6 shrink-0 rounded-[var(--radius-sm)] bg-muted" />

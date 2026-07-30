@@ -120,7 +120,7 @@ export default function GuestInvitePage() {
        Accept invitation
       </button>
 
-      <p className="mt-4 text-center text-xs text-muted-foreground/70">
+      <p className="mt-4 text-center text-xs text-muted-foreground">
        Make sure you're signed in with <span className="font-medium">{invitation.email}</span> before accepting.
       </p>
      </>

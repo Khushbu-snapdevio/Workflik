@@ -111,7 +111,7 @@ export function NewWorkspaceForm() {
      </form>
 
      <div className="border-t border-border px-7 py-4">
-      <p className="text-center text-xs leading-relaxed text-muted-foreground/60">
+      <p className="text-center text-xs leading-relaxed text-muted-foreground">
        You can rename or create more workspaces later in settings.
       </p>
      </div>

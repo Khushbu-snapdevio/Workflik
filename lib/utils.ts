@@ -17,15 +17,22 @@ export function getInitials(name: string): string {
     : (words[0]!.charAt(0) + words[words.length - 1]!.charAt(0)).toUpperCase()
 }
 
-// Fixed palette of semantic bg-* tokens (UI Rule 26) — never random, and
-// the single source of truth every avatar fallback across the app must use.
-// Previously each caller hand-rolled its own hash/palette; they drifted out
-// of sync (different palette sizes, different hash-to-index math, some
-// even hashing user id instead of name), so the same person's avatar could
-// show a different color in different parts of the app.
+// Fixed palette — never random, and the single source of truth every avatar
+// fallback across the app must use. Previously each caller hand-rolled its own
+// hash/palette; they drifted out of sync (different palette sizes, different
+// hash-to-index math, some even hashing user id instead of name), so the same
+// person's avatar could show a different color in different parts of the app.
+//
+// These are deliberately fixed hues rather than semantic tokens. An avatar
+// colour is an identity — it should not change when the user switches theme,
+// and it carries no status meaning, so borrowing --success/--destructive was
+// always a category error. It was also unreadable: every one of those tokens
+// lifts to a light tone in the dark theme, dropping the white initials on top
+// to between 1.7:1 and 2.8:1. Each hue below holds white at >= 5:1 and stays
+// legible as a disc on both the light and dark card surface.
 const AVATAR_BG_CLASSES = [
-  "bg-primary", "bg-destructive", "bg-success", "bg-warning",
-  "bg-muted-foreground", "bg-primary/70", "bg-destructive/70", "bg-success/70",
+  "bg-[#0369A1]", "bg-[#B91C1C]", "bg-[#047857]", "bg-[#B45309]",
+  "bg-[#6D28D9]", "bg-[#0F766E]", "bg-[#BE185D]", "bg-[#4338CA]",
 ] as const
 
 export function getAvatarColor(seed: string): string {

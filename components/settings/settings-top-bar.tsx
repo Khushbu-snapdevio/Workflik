@@ -71,7 +71,7 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative hidden sm:block">
-            <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
+            <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               ref={inputRef}
               value={search}
@@ -79,7 +79,7 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
               onFocus={() => setOpen(true)}
               onBlur={() => setTimeout(() => setOpen(false), 150)}
               placeholder="Search settings…"
-              className="h-7 w-[160px] rounded-[var(--radius-md)] border border-input bg-muted/40 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground/50 transition-colors focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/20 md:w-[200px]"
+              className="h-7 w-[160px] rounded-[var(--radius-md)] border border-input bg-muted/40 pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground-subtle transition-colors focus:border-primary/50 focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/20 md:w-[200px]"
             />
             {open && results.length > 0 && (
               <div
@@ -155,7 +155,7 @@ export function SettingsTopBar({ workspaceSlug, workspaceName }: Props) {
 
       {/* Mobile nav drawer (below the top bar, above content) */}
       {mobileNav && (
-        <div className="shrink-0 border-b border-border/60 bg-sidebar px-2 py-2 md:hidden">
+        <div className="shrink-0 border-b border-border bg-sidebar px-2 py-2 md:hidden">
           {navItems.map((item) => {
             const Icon  = item.icon;
             const isActive = item.href.includes("profile")

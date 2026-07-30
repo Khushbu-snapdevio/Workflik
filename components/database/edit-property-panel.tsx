@@ -337,7 +337,7 @@ export function EditPropertySidePanel({
             className="flex items-center justify-between rounded-[var(--radius-sm)] px-0.5 py-1 text-xs transition-colors duration-150 hover:bg-accent"
           >
             <span className="text-muted-foreground">Type</span>
-            <span className="flex items-center gap-1 text-muted-foreground/60">
+            <span className="flex items-center gap-1 text-muted-foreground">
               {groupedByStatus ? "Status" : reg?.label ?? property.type}
               <ChevronRight size={12} className={`transition-transform duration-150 ${showTypePicker ? "rotate-90" : ""}`} />
             </span>
@@ -351,11 +351,11 @@ export function EditPropertySidePanel({
                 <GroupDropTarget key={section.key} groupKey={section.key}>
                   {section.label && (
                     <div className="mb-1 flex items-center justify-between px-0.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">{section.label}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</span>
                       <button
                         type="button"
                         onClick={() => setAddingTo(section.key)}
-                        className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
+                        className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
                         <Plus size={11} />
                       </button>
@@ -386,7 +386,7 @@ export function EditPropertySidePanel({
                         />
                       )}
                       {section.options.length === 0 && addingTo !== section.key && (
-                        <div className="rounded-[var(--radius-sm)] border border-dashed border-border/60 py-2 text-center text-[11px] text-muted-foreground/50">
+                        <div className="rounded-[var(--radius-sm)] border border-dashed border-border py-2 text-center text-[11px] text-muted-foreground-subtle">
                           Drop here
                         </div>
                       )}
@@ -431,7 +431,7 @@ export function EditPropertySidePanel({
             capped max-height with no visible affordance to scroll to it). */}
         <div className="flex shrink-0 flex-col gap-3 border-t border-border p-3">
           {viewContext && (
-            <p className="-mb-1 text-[10px] text-muted-foreground/60">Only affects this view</p>
+            <p className="-mb-1 text-[10px] text-muted-foreground">Only affects this view</p>
           )}
 
           {/* Wrap content */}
@@ -459,7 +459,7 @@ export function EditPropertySidePanel({
               </span>
             </button>
             {showDisplayAs && (
-              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border/60 bg-popover p-1">
+              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1">
                 {(["checkbox", "select"] as const).map((mode) => (
                   <button
                     key={mode}
@@ -492,7 +492,7 @@ export function EditPropertySidePanel({
             type="button"
             disabled={!canDelete}
             onClick={() => setConfirmDelete(true)}
-            className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-0.5 py-1.5 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5 disabled:cursor-not-allowed disabled:text-muted-foreground/40 disabled:hover:bg-transparent"
+            className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-0.5 py-1.5 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5 disabled:cursor-not-allowed disabled:text-muted-foreground-subtle disabled:hover:bg-transparent"
           >
             <Trash2 size={14} />
             Delete property
@@ -582,7 +582,7 @@ function SortableOptionRow({ option, isDragging, onOpenSubmenu }: { option: Sele
         {...attributes}
         {...listeners}
         style={{ touchAction: "none" }}
-        className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/40 opacity-0 group-hover/opt:opacity-100"
+        className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground-subtle opacity-0 group-hover/opt:opacity-100"
       >
         <GripVertical size={12} />
       </span>
@@ -593,7 +593,7 @@ function SortableOptionRow({ option, isDragging, onOpenSubmenu }: { option: Sele
       <button
         type="button"
         onClick={(e) => onOpenSubmenu((e.currentTarget as HTMLElement).getBoundingClientRect())}
-        className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 opacity-0 hover:bg-accent group-hover/opt:opacity-100"
+        className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground opacity-0 hover:bg-accent group-hover/opt:opacity-100"
       >
         <ChevronRight size={13} />
       </button>

@@ -47,7 +47,7 @@ function timeAgo(iso: string) {
 function PageIcon({ icon, size = "sm" }: { icon: string | null; size?: "sm" | "lg" }) {
   const px = size === "lg" ? 20 : 14;
   if (icon) return <SharedPageIcon icon={icon} size={px} />;
-  return <FileText size={px} className="shrink-0 text-muted-foreground/40" />;
+  return <FileText size={px} className="shrink-0 text-muted-foreground-subtle" />;
 }
 
 // Deterministic accent per page (same id → same color every time), so tile
@@ -153,9 +153,9 @@ export default async function WorkspacePage({ params }: Props) {
         </nav>
         <div className="flex shrink-0 items-center gap-2">
           <div className="hidden sm:block"><SearchTrigger /></div>
-          <div className="hidden h-5 w-px bg-border/60 sm:block" />
+          <div className="hidden h-5 w-px bg-border sm:block" />
           <div className="hidden sm:block"><WorkspaceShareButton workspaceId={ws.id} workspaceSlug={slug} workspaceName={ws.name ?? ws.id} /></div>
-          <div className="hidden h-5 w-px bg-border/60 sm:block" />
+          <div className="hidden h-5 w-px bg-border sm:block" />
           <NewPageButton
             workspaceId={ws.id}
             workspaceSlug={slug}
@@ -168,7 +168,7 @@ export default async function WorkspacePage({ params }: Props) {
       </div>
 
       {/* ── Body ── */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="flex-1 overflow-y-auto bg-card">
 
         {/* ── Hero card: greeting + stat strip in one unit ── */}
         <div className="mx-auto w-full max-w-[1200px] px-4 pt-6 sm:px-6 lg:px-8">
@@ -186,7 +186,7 @@ export default async function WorkspacePage({ params }: Props) {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 divide-x divide-border/50 border-t border-border/60">
+            <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
               <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
                   <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -261,7 +261,7 @@ export default async function WorkspacePage({ params }: Props) {
                 <section>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-muted-foreground/50 shrink-0" />
+                      <Clock size={14} className="text-muted-foreground-subtle shrink-0" />
                       <h2 className="text-sm font-semibold text-foreground">Jump back in</h2>
                       <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{recentPages.length}</span>
                     </div>
@@ -278,7 +278,7 @@ export default async function WorkspacePage({ params }: Props) {
                       <Link
                         key={page.id}
                         href={`/app/${slug}/${page.shortId}`}
-                        className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-[var(--radius-md)] border border-border/60 bg-card p-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
+                        className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-[var(--radius-md)] border border-border bg-card p-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
                       >
                         <div className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${chipColorFor(page.id)}`}>
                           <PageIcon icon={page.icon} size="lg" />
@@ -287,7 +287,7 @@ export default async function WorkspacePage({ params }: Props) {
                           <p className="truncate text-sm font-semibold text-foreground leading-snug transition-colors duration-150 group-hover:text-primary">
                             {page.title || "Untitled"}
                           </p>
-                          <p className="mt-1 text-xs text-muted-foreground/50">{timeAgo(page.visitedAt)}</p>
+                          <p className="mt-1 text-xs text-muted-foreground-subtle">{timeAgo(page.visitedAt)}</p>
                         </div>
                       </Link>
                     ))}
@@ -299,7 +299,7 @@ export default async function WorkspacePage({ params }: Props) {
               {recentPages.length === 0 && pageCount > 0 && (
                 <div className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-border bg-muted/20 px-5 py-5">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted">
-                    <Clock size={18} className="text-muted-foreground/40" />
+                    <Clock size={18} className="text-muted-foreground-subtle" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground">No pages visited yet</p>
@@ -330,7 +330,7 @@ export default async function WorkspacePage({ params }: Props) {
                 <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
 
                   {/* Welcome header */}
-                  <div className="border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
+                  <div className="border-b border-border bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
                     <div className="flex items-center gap-4">
                       <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10">
                         <svg className="size-5 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -354,7 +354,7 @@ export default async function WorkspacePage({ params }: Props) {
                   </div>
 
                   {/* Steps */}
-                  <div className="divide-y divide-border/40">
+                  <div className="divide-y divide-border">
 
                     {/* Step 1 — Create first page */}
                     <div className={`flex items-center gap-4 px-6 py-4 transition-colors duration-150 ${pageCount >= 1 ? "opacity-50" : "hover:bg-accent/30"}`}>
@@ -455,7 +455,7 @@ export default async function WorkspacePage({ params }: Props) {
                 <section>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <BookOpen size={14} className="text-muted-foreground/50 shrink-0" />
+                      <BookOpen size={14} className="text-muted-foreground-subtle shrink-0" />
                       <h2 className="text-sm font-semibold text-foreground">All Pages</h2>
                       <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{topPageCount}</span>
                     </div>
@@ -464,7 +464,7 @@ export default async function WorkspacePage({ params }: Props) {
                     </Link>
                   </div>
                   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-                    <div className="divide-y divide-border/40">
+                    <div className="divide-y divide-border">
                       {workspacePages.map((page) => (
                         <Link
                           key={page.id}
@@ -475,15 +475,15 @@ export default async function WorkspacePage({ params }: Props) {
                             <PageIcon icon={page.icon} />
                           </div>
                           <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{page.title || "Untitled"}</p>
-                          <p className="shrink-0 text-xs text-muted-foreground/50">{timeAgo(page.updatedAt)}</p>
-                          <ChevronRight size={14} className="shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover:opacity-100" />
+                          <p className="shrink-0 text-xs text-muted-foreground-subtle">{timeAgo(page.updatedAt)}</p>
+                          <ChevronRight size={14} className="shrink-0 text-muted-foreground-subtle opacity-0 transition-opacity group-hover:opacity-100" />
                         </Link>
                       ))}
                     </div>
                     {topPageCount > workspacePages.length && (
                       <Link
                         href={`/app/${slug}/library`}
-                        className="flex items-center justify-center gap-1 border-t border-border/40 bg-muted/10 py-2.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                        className="flex items-center justify-center gap-1 border-t border-border bg-muted/10 py-2.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                       >
                         View all {topPageCount} pages <ChevronRight size={12} />
                       </Link>
@@ -507,7 +507,7 @@ export default async function WorkspacePage({ params }: Props) {
                       <span className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${f.iconBg}`}>{f.icon}</span>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-foreground">{f.label}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground/60">{f.desc}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{f.desc}</p>
                       </div>
                     </div>
                   ))}

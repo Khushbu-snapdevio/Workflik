@@ -98,7 +98,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
      {grouped ? (
       grouped.map((cat) => (
        <div key={cat.key}>
-        <p className="px-3 pb-0.5 pt-2 text-xs font-semibold tracking-wide text-muted-foreground/60">
+        <p className="px-3 pb-0.5 pt-2 text-xs font-semibold tracking-wide text-muted-foreground">
          {cat.label}
         </p>
         {cat.blocks.map((def) => (

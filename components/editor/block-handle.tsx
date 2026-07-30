@@ -331,7 +331,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
     onClick={insertBlock}
     onMouseEnter={(e) => showTooltip("Click to add below · Alt-click to add above", e)}
     onMouseLeave={hideTooltip}
-    className="flex h-6 w-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+    className="flex h-6 w-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
    >
     <Plus size={14} />
    </button>
@@ -361,7 +361,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
     }}
     onMouseEnter={(e) => showTooltip("Drag to reorder · Click for options", e)}
     onMouseLeave={hideTooltip}
-    className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing"
+    className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing"
    >
     <GripVertical size={14} />
    </button>

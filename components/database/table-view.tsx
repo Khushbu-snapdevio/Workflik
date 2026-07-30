@@ -274,7 +274,7 @@ function SortableTableRow({
        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
        setRowMenu(rowMenu?.entryId === entry.id ? null : { entryId: entry.id, shortId: entry.shortId, rect });
       }}
-      className="flex size-6 cursor-grab items-center justify-center rounded text-muted-foreground/30 hover:bg-accent hover:text-muted-foreground/60 transition-colors active:cursor-grabbing"
+      className="flex size-6 cursor-grab items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-muted-foreground transition-colors active:cursor-grabbing"
       style={{ opacity: isRowHovered ? 1 : 0, transition: "opacity 150ms" }}
       onMouseEnter={(e) => showTooltip("Drag · Click for actions", e)}
       onMouseLeave={hideTooltip}
@@ -298,13 +298,13 @@ function SortableTableRow({
        className="sr-only"
       />
       {/* Row number — fades out on hover/select */}
-      <span className="absolute select-none text-xs tabular-nums text-muted-foreground/60 transition-opacity duration-150"
+      <span className="absolute select-none text-xs tabular-nums text-muted-foreground transition-opacity duration-150"
        style={{ opacity: isSelected || isRowHovered ? 0 : 1 }}>
        {rowIdx + 1}
       </span>
       {/* Checkbox — fades in on hover/select */}
       <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
-       isSelected ? "border-primary bg-primary" : "border-border/50 bg-background"
+       isSelected ? "border-primary bg-primary" : "border-border bg-background"
       }`} style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}>
        {isSelected && (
         <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
@@ -314,7 +314,7 @@ function SortableTableRow({
       </span>
      </label>
     ) : (
-     <span className="select-none text-xs tabular-nums text-muted-foreground/60">{rowIdx + 1}</span>
+     <span className="select-none text-xs tabular-nums text-muted-foreground">{rowIdx + 1}</span>
     )}
    </div>
 
@@ -326,8 +326,8 @@ function SortableTableRow({
     {entry.icon ? (
      <PageIcon icon={entry.icon} size={14} className="shrink-0" />
     ) : (
-     <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-border/40 bg-muted/20">
-      <FileText size={11} className="text-muted-foreground/60" />
+     <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-border bg-muted/20">
+      <FileText size={11} className="text-muted-foreground" />
      </span>
     )}
 
@@ -359,7 +359,7 @@ function SortableTableRow({
        }
       }}
       className={`min-w-0 flex-1 truncate text-sm font-medium cursor-pointer ${
-       entry.title ? "text-foreground" : "text-muted-foreground/60"
+       entry.title ? "text-foreground" : "text-muted-foreground"
       }`}
      >
       {entry.title || "Untitled"}
@@ -375,7 +375,7 @@ function SortableTableRow({
       }}
       onMouseEnter={(e) => showTooltip("View comments", e)}
       onMouseLeave={hideTooltip}
-      className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground/60 transition-opacity duration-150 hover:bg-accent hover:text-foreground"
+      className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground"
       style={{ opacity: isRowHovered ? 1 : 0 }}
      >
       <MessageSquareIcon size={11} />
@@ -388,7 +388,7 @@ function SortableTableRow({
      style={{ opacity: isRowHovered ? 1 : 0 }}>
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border/60 bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground/60 hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
+      className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
       onMouseEnter={(e) => showTooltip("Open full page", e)}
       onMouseLeave={hideTooltip}
       onClick={(e) => e.stopPropagation()}
@@ -452,7 +452,7 @@ function SortableTableRow({
        <>
         <CellDisplay property={prop} value={rawVal} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} workspaceId={workspaceId} />
         {isEditor && TEXT_TYPES.has(prop.type) && (
-         <span className="pointer-events-none select-none text-sm text-muted-foreground/60">Type…</span>
+         <span className="pointer-events-none select-none text-sm text-muted-foreground">Type…</span>
         )}
        </>
       )}
@@ -764,7 +764,7 @@ export function TableView({
           ? "border-primary bg-primary"
           : someSelected
            ? "border-primary bg-primary/20"
-           : "border-border/60 bg-background hover:border-primary/50"
+           : "border-border bg-background hover:border-primary/50"
         }`}>
          {allSelected && (
           <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
@@ -785,7 +785,7 @@ export function TableView({
       style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: 34, borderRight: "1px solid var(--color-border)" }}
      >
       <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-       <TextT size={10} className="text-muted-foreground/60" />
+       <TextT size={10} className="text-muted-foreground" />
       </span>
       <span className="text-xs font-semibold text-muted-foreground tracking-wide">Name</span>
      </div>
@@ -820,7 +820,7 @@ export function TableView({
          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
          setAddPropMenu(addPropMenu ? null : { rect });
         }}
-        className="flex size-full items-center justify-center text-muted-foreground/60 transition-colors hover:bg-accent/60 hover:text-muted-foreground"
+        className="flex size-full items-center justify-center text-muted-foreground transition-colors hover:bg-accent/60 hover:text-muted-foreground"
         onMouseEnter={(e) => showTooltip("Add property", e)}
         onMouseLeave={hideTooltip}
        >
@@ -852,7 +852,7 @@ export function TableView({
      const groupHeader = rowGroups && (
       <div
        key={`gh-${gIdx}`}
-       className="flex items-center gap-2.5 border-b border-border/40 bg-muted/20 px-3 py-2"
+       className="flex items-center gap-2.5 border-b border-border bg-muted/20 px-3 py-2"
       >
        {group.id && group.color ? (() => {
         const c = getOptionColor(group.color);
@@ -863,12 +863,12 @@ export function TableView({
          </span>
         );
        })() : (
-        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground/70">
+        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
          <span className="size-1.5 rounded-full bg-muted-foreground/30" />
          {group.label}
         </span>
        )}
-       <span className="text-xs text-muted-foreground/70">{group.entries.length}</span>
+       <span className="text-xs text-muted-foreground">{group.entries.length}</span>
       </div>
      );
 
@@ -917,7 +917,7 @@ export function TableView({
        <DragOverlay>
         {draggingEntry && (
          <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
-          <GripVertical size={13} className="text-muted-foreground/40" />
+          <GripVertical size={13} className="text-muted-foreground-subtle" />
           {draggingEntry.title || "Untitled"}
          </div>
         )}
@@ -932,18 +932,18 @@ export function TableView({
     {entries.length === 0 && (
      <div className="flex flex-col items-center justify-center gap-6 py-24">
       <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
-       <Table2 size={24} className="text-muted-foreground/70" />
+       <Table2 size={24} className="text-muted-foreground" />
       </div>
       <div className="text-center">
        <p className="text-base font-semibold text-foreground">No entries yet</p>
-       <p className="mt-1.5 text-sm text-muted-foreground/60">
+       <p className="mt-1.5 text-sm text-muted-foreground">
         Add your first entry to start building your database
        </p>
       </div>
       {isEditor && (
        <button
         onClick={() => onCreateEntry()}
-        className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-150"
+        className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150"
        >
         <Plus size={14} />
         Add first entry
@@ -1145,7 +1145,7 @@ function SortableColumnHeader({ prop, width, isEditor, isRenaming, renameVal, on
        {...listeners}
        onClick={(e) => e.stopPropagation()}
        style={{ touchAction: "none" }}
-       className="flex size-3.5 shrink-0 cursor-grab items-center justify-center text-muted-foreground/0 group-hover:text-muted-foreground/40"
+       className="flex size-3.5 shrink-0 cursor-grab items-center justify-center text-muted-foreground/0 group-hover:text-muted-foreground-subtle"
       >
        <GripVertical size={11} />
       </span>
@@ -1237,7 +1237,7 @@ function RowContextMenu({ menu, workspaceSlug, onCommentClick, onDuplicate, onDe
      <CopyIcon size={13} className="shrink-0 text-muted-foreground" /> Duplicate
     </button>
    )}
-   <div className="my-1 h-px bg-border/60" />
+   <div className="my-1 h-px bg-border" />
    <button
     onClick={onDeleteRequest}
     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"
@@ -1337,7 +1337,7 @@ function PropHeaderMenu({ menu, prop, properties, workspaceId, onRename, onHide,
      <>
       <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
       <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
-      <div className="my-1 h-px bg-border/60" />
+      <div className="my-1 h-px bg-border" />
      </>
     )}
     <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><PencilIcon size={13} /> Rename</button>
@@ -1345,7 +1345,7 @@ function PropHeaderMenu({ menu, prop, properties, workspaceId, onRename, onHide,
      <button onClick={() => setEditingProperty(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><GearIcon size={13} /> Edit property</button>
     )}
     <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
-    <div className="my-1 h-px bg-border/60" />
+    <div className="my-1 h-px bg-border" />
     <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"><Trash size={13} /> Delete column</button>
    </div>
    <ConfirmDialog
@@ -1448,7 +1448,7 @@ function AddPropertyMenu({ rect, propName, workspaceId, databaseId, properties, 
      value={propName}
      onChange={(e) => onNameChange(e.target.value)}
      placeholder="Property name…"
-     className="w-full bg-transparent text-sm placeholder:text-muted-foreground/40 focus:outline-none"
+     className="w-full bg-transparent text-sm placeholder:text-muted-foreground-subtle focus:outline-none"
      onKeyDown={(e) => e.stopPropagation()}
     />
    </div>

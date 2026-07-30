@@ -68,7 +68,7 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
 
    {/* Table */}
    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-    <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3.5">
+    <div className="flex items-center justify-between border-b border-border bg-muted/20 px-5 py-3.5">
      <div>
       <h2 className="text-sm font-semibold text-foreground">Outbox</h2>
       <p className="text-xs text-muted-foreground">All transactional emails, most recent first</p>
@@ -79,12 +79,12 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
     {outbox.length === 0 ? (
      <div className="flex flex-col items-center justify-center py-20">
       <div className="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
-       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-6 text-muted-foreground/50">
+       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-6 text-muted-foreground-subtle">
         <rect x="2" y="4" width="16" height="12" rx="2"/><path d="M2 7l8 5 8-5"/>
        </svg>
       </div>
       <p className="text-sm font-semibold text-muted-foreground">No emails yet</p>
-      <p className="mt-0.5 text-xs text-muted-foreground/60">Emails will appear here when sent.</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">Emails will appear here when sent.</p>
      </div>
     ) : (
      <div>
@@ -142,7 +142,7 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
            </td>
            <td className="whitespace-nowrap px-5 py-3.5 text-xs text-muted-foreground">
             <p>{formatDateTime(isSent ? email.updatedAt : email.createdAt)}</p>
-            <p className="text-[10px] text-muted-foreground/60">{isSent ? "Sent" : "Queued"}</p>
+            <p className="text-[10px] text-muted-foreground">{isSent ? "Sent" : "Queued"}</p>
            </td>
           </tr>
          );

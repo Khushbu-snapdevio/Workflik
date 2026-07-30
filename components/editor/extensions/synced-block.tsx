@@ -191,7 +191,7 @@ function SyncedReferenceView({ sourceBlockId }: { sourceBlockId: string }) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <div className="my-1 rounded-[var(--radius-md)] border border-border bg-muted/20 p-3">
-        <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+        <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           🔄 Synced
           {data?.sourcePageTitle ? ` from ${data.sourcePageTitle}` : ""}
         </p>
@@ -207,7 +207,7 @@ function SyncedReferenceView({ sourceBlockId }: { sourceBlockId: string }) {
         {data && (
           <div className="space-y-1.5">
             {data.content.length === 0 && (
-              <p className="text-xs text-muted-foreground/60">Empty</p>
+              <p className="text-xs text-muted-foreground">Empty</p>
             )}
             {data.content.map((node, i) => (
               <ReadOnlyNode key={i} node={node} />
@@ -280,7 +280,7 @@ function SyncedSourceView({ node, editor, getPos }: NodeViewProps) {
           className="mb-2 flex items-center justify-between"
           contentEditable={false}
         >
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             🔄 Synced Block
           </p>
           <button

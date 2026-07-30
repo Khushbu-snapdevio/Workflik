@@ -21,8 +21,8 @@ What users actually do in WorkFlik — with full context, sequence, and how each
 ### Overall User Journey
 
 **First visit (new user):**
-1. Receives a magic-link invite email OR signs in via Google → authenticated
-2. New users go through the 4-screen onboarding wizard (mandatory, cannot be skipped)
+1. Receives a workspace invite email from an admin, clicks it, sets a password → authenticated and added to the workspace (or, on the very first install, self-registers to bootstrap the instance — see Registration below)
+2. New users go through the 4-screen onboarding wizard (mandatory, cannot be skipped) — unless they arrived via a workspace invite or guest page invite, both of which skip straight to their destination
 3. Land on their first page inside their new workspace
 4. Optional tooltip tour walks them through the sidebar and editor
 
@@ -36,15 +36,27 @@ What users actually do in WorkFlik — with full context, sequence, and how each
 
 ### Authentication
 
-WorkFlik supports two sign-in methods: **magic link (passwordless)** and **Google OAuth**.
+WorkFlik supports three sign-in methods: **email + password**, **magic link (passwordless)**, and **Google OAuth**. Each can be individually toggled on/off per instance from Orbit Admin.
+
+#### Registration (Invite-Only After Setup)
+
+Self-serve account creation only ever happens once: the very first account on a fresh install. Visiting `/auth/login` with zero users anywhere on the instance shows a signup form instead of sign-in; the account created there is automatically promoted to Platform Admin (see Orbit Admin section below) and becomes the Owner of the first workspace it creates during onboarding.
+
+Once that first account exists, the instance is **invite-only** by default:
+- The login page shows sign-in only — no signup form, no "Sign Up" link.
+- `/signup` redirects into that state: to `/auth/login` if registration happens to still be open, otherwise it shows a "Registration is disabled — ask your administrator for an invitation" page.
+- Every registration path is blocked server-side, not just hidden in the UI — password signup, magic-link sign-in for an unrecognized email, and Google OAuth sign-in for an unrecognized email all reject with the same invite-only error.
+- New accounts only ever come from an admin's workspace invite (see Workspace → Member management below) or a guest page invite, neither of which touches this gate.
+
+Set `ALLOW_PUBLIC_REGISTRATION=true` (env var, default `false`) to keep self-serve signup open indefinitely instead — the login page then shows a "Create an account" toggle even after the instance is no longer freshly bootstrapped.
 
 #### Magic Link (Passwordless)
 
 1. User visits `/sign-in` → enters email → clicks "Email me a sign-in link"
-2. Response always shows: *"If an account exists with this email, a sign-in link has been sent."* (prevents email enumeration)
+2. On an instance where registration is open (bootstrap, or `ALLOW_PUBLIC_REGISTRATION=true`), the response always shows *"If an account exists with this email, a sign-in link has been sent."* (prevents email enumeration). On an invite-only instance, an email with no existing account is rejected immediately with an invite-only message instead — new accounts only come from invites, so there's nothing to send a link to.
 3. User receives a one-time email link valid for **15 minutes**, single-use
 4. Clicks the link →
-   - **New email:** account auto-created, email marked verified, redirected to `/onboarding`
+   - **New email** (only reachable when registration is open): account auto-created, email marked verified, redirected to `/onboarding`
    - **Existing user:** session created, redirected to last active workspace
 5. Link is immediately invalidated after use
 
@@ -52,7 +64,7 @@ WorkFlik supports two sign-in methods: **magic link (passwordless)** and **Googl
 
 1. User clicks "Sign in with Google" on `/sign-in`
 2. Google OAuth flow completes → user authenticated
-3. Same outcome: new users go to `/onboarding`, existing users go to their workspace
+3. Same outcome as Magic Link: on an invite-only instance, a Google account with no existing WorkFlik user is rejected with an invite-only message instead of creating one; when registration is open, new users go to `/onboarding` and existing users go to their workspace
 
 #### Sessions
 
@@ -546,7 +558,7 @@ The sidebar is the persistent navigation hub — always visible, never re-render
 
 ### Orbit Admin (Platform Team Only)
 
-Orbit Admin (`/orbit`) is WorkFlik's internal operations dashboard. **Not accessible to any end user, including workspace Admins.** Access requires `is_platform_admin = true` set directly in the database — no UI exists to self-assign this role. Every action taken in Orbit is logged to an append-only audit trail.
+Orbit Admin (`/orbit`) is WorkFlik's internal operations dashboard. **Not accessible to any end user, including workspace Admins.** Access requires `is_platform_admin = true`. The only account that gets this automatically is the very first account created on the instance (see Registration above) — every other user needs it set directly in the database (or via `pnpm make:admin`); there's no in-app UI to self-assign it. Every action taken in Orbit is logged to an append-only audit trail.
 
 **Dashboard (`/orbit`):**
 - Platform-wide metrics: total users, active workspaces (any login in last 30 days), new signups (7d / 30d), current active sessions

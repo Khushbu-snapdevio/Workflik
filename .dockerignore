@@ -14,3 +14,6 @@ uploads
 .idea
 tsconfig.tsbuildinfo
 npm-debug.log*
+pnpm-debug.log*
+coverage
+.DS_Store

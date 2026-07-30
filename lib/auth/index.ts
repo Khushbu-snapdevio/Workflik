@@ -1,10 +1,11 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { admin } from "better-auth/plugins/admin";
 import { magicLink } from "better-auth/plugins/magic-link";
 import { ADMIN_ROLE, PRODUCT_NAME } from "@/config/platform";
+import { getUserCount, isRegistrationAllowed } from "@/lib/auth/registration";
 import { isAuthMethodEnabled } from "@/lib/auth/settings";
 import * as schema from "@/lib/db/schema";
 import { db } from "@/lib/db";
@@ -156,16 +157,14 @@ export const auth = betterAuth({
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path === "/sign-up/email") {
         // Self-serve signup only ever exists to bootstrap the very first,
-        // instance-admin account. Once anyone exists, this is a private
-        // self-hosted instance — new accounts are pre-created by an admin's
-        // invite (members/route.ts) and set their password via the
-        // reset-password flow instead of signing up here.
-        const [{ value: userCount }] = await db
-          .select({ value: count() })
-          .from(schema.users);
-        if (userCount > 0) {
+        // instance-admin account (or to stay open indefinitely when
+        // ALLOW_PUBLIC_REGISTRATION=true). Once that's not the case, this
+        // is a private self-hosted instance — new accounts are pre-created
+        // by an admin's invite (members/route.ts) and set their password
+        // via the reset-password flow instead of signing up here.
+        if (!(await isRegistrationAllowed())) {
           throw APIError.from("FORBIDDEN", {
-            code: "SIGNUP_DISABLED",
+            code: "REGISTRATION_DISABLED",
             message:
               "This instance is invite-only. Ask an administrator for an invite.",
           });
@@ -191,6 +190,27 @@ export const auth = betterAuth({
             code: "MAGIC_LINK_DISABLED",
             message: "Magic-link sign-in is turned off on this instance.",
           });
+        }
+        // Magic link auto-creates an account for any email that doesn't
+        // already have one — reject that up front on an invite-only
+        // instance instead of letting it fail later at verify time, so the
+        // sender gets an immediate, clear error instead of a dead link.
+        const magicLinkEmail = (ctx.body as { email?: string } | undefined)?.email
+          ?.trim()
+          .toLowerCase();
+        if (magicLinkEmail && !(await isRegistrationAllowed())) {
+          const [existingUser] = await db
+            .select({ id: schema.users.id })
+            .from(schema.users)
+            .where(eq(schema.users.email, magicLinkEmail))
+            .limit(1);
+          if (!existingUser) {
+            throw APIError.from("FORBIDDEN", {
+              code: "REGISTRATION_DISABLED",
+              message:
+                "This instance is invite-only. Ask an administrator for an invite.",
+            });
+          }
         }
       }
       if (
@@ -239,6 +259,18 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        // Catch-all enforcement for the invite-only model: closes the gap
+        // that `hooks.before` above can't reach — magic-link and Google
+        // OAuth both auto-create a new user row directly (no `/sign-up/*`
+        // request path to intercept), so a per-request check on `ctx.path`
+        // alone isn't sufficient. Returning `false` aborts the insert; both
+        // Better Auth flows handle that gracefully by redirecting with an
+        // error instead of crashing (verified against the installed
+        // better-auth version's source — see plan notes).
+        before: async () => {
+          if (await isRegistrationAllowed()) return;
+          return false;
+        },
         after: async (user) => {
           console.log(`[signup] new account created: ${user.email} (${user.id})`);
 
@@ -258,9 +290,7 @@ export const auth = betterAuth({
           // shell/DB-access step required to reach Orbit for the first time.
           // `pnpm make:admin` remains available to promote additional users.
           try {
-            const [{ value: userCount }] = await db
-              .select({ value: count() })
-              .from(schema.users);
+            const userCount = await getUserCount();
             if (userCount === 1) {
               console.log(`[signup] first account on this instance — auto-promoting to platform admin: ${user.email}`);
               await db

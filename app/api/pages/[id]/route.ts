@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pageClosure, pages } from "@/lib/db/schema";
+import { pageClosure, pages, userFavorites } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 import { requirePagePermission } from "@/lib/permissions/resolver";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
@@ -146,7 +146,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     await requirePagePermission(session.user.id, id, "can_edit");
 
     // Databases and already-trashed pages are permanently deleted immediately.
-    // ON DELETE CASCADE on databaseId removes all entries; pageClosure/blocks cascade too.
+    // ON DELETE CASCADE on databaseId/parentId removes all entries and
+    // descendant pages; pageClosure/blocks/userFavorites (via pages.id) cascade
+    // too, so no favorite reference for this page or any descendant can survive.
     if (page.kind === "database" || page.isDeleted) {
       await db.delete(pages).where(eq(pages.id, id));
       return Response.json({ success: true, deleted: "permanent" });
@@ -166,6 +168,15 @@ export async function DELETE(_req: Request, { params }: Ctx) {
         .update(pages)
         .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
         .where(inArray(pages.id, descendantIds));
+
+      // Soft delete only flips isDeleted — the pages row itself isn't removed,
+      // so the DB's ON DELETE CASCADE on userFavorites never fires here;
+      // remove favorite rows for every affected user explicitly instead.
+      // Deliberately permanent: if the page is later restored, it should NOT
+      // reappear in anyone's Favorites — they can re-favorite it themselves.
+      await tx
+        .delete(userFavorites)
+        .where(inArray(userFavorites.pageId, descendantIds));
 
       // Notify the page creator that their page was moved to Trash and will be
       // permanently deleted after 30 days. The deleter is never notified about

@@ -11,8 +11,6 @@ import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 interface BlockInfo {
- top:   number;
- left:   number;
  // True when the editor sits inside a narrow fixed-position panel (e.g. the
  // database entry side panel) that doesn't have the ~58px of margin the full
  // "+" and grip pair needs — see computeHandleLeft below. Drives hiding the
@@ -22,8 +20,10 @@ interface BlockInfo {
  // the compact single-grip layout doesn't have GRIP_W + 2*EDGE_GAP to spare
  // (see computeHandleLeft).
  gripSize: number;
+ left:   number;
  nodePos: number;
  nodeSize: number;
+ top:   number;
 }
 
 const GRIP_W = 20;

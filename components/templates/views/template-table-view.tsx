@@ -682,8 +682,16 @@ function ColumnHeader({
  // "Edit property" replaces this same menu's content in place, at the same anchor —
  // matches Notion's behavior of drilling into a sub-panel rather than opening a new one.
  const [editingProperty, setEditingProperty] = useState(false);
+ // Snapshotted at open time and used to portal the menu to <body> with fixed
+ // positioning — the table body scrolls horizontally, and an in-flow
+ // `position: absolute` menu was getting clipped by that scroll container
+ // instead of floating above it.
+ const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
  const menuRef = useRef<HTMLDivElement>(null);
  const triggerRef = useRef<HTMLButtonElement>(null);
+ // The dropdown itself is portaled to <body> (see below), so it's no longer a
+ // DOM descendant of menuRef — needs its own ref for the outside-click check.
+ const dropdownRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLInputElement>(null);
 
  useEffect(() => {
@@ -693,7 +701,7 @@ function ColumnHeader({
    // EditPropertySidePanel (and its own nested submenu/confirm-dialog portals) render
    // outside menuRef's DOM subtree — without this they'd read as "outside" and close mid-interaction.
    if (target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')) return;
-   if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
+   if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
     setMenuOpen(false);
     setEditingProperty(false);
     setRenaming(false);
@@ -707,8 +715,17 @@ function ColumnHeader({
   if (renaming) inputRef.current?.focus();
  }, [renaming]);
 
+ // Keeps the frozen `menuRect` snapshot valid — without this, scrolling the
+ // table while the menu is open would leave the fixed-position menu visually
+ // detached from the "⋯" button that anchored it.
+ useScrollLockWhileOpen(menuOpen && !editingProperty, (target) =>
+  !!menuRef.current?.contains(target) || !!dropdownRef.current?.contains(target) || !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]'));
+
  const Icon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextTIcon;
  const propConfig = (prop.config ?? {}) as PropConfig;
+ const menuItemCount = 2 + (prop.isSystem ? 0 : 1); // Rename, [Edit property], Delete property
+ const menuHeight = menuItemCount * 32 + 9 + 8; // items + 1 divider + padding
+ const menuWidth = 190;
 
  function commitRename() {
   const n = draftName.trim();
@@ -720,69 +737,80 @@ function ColumnHeader({
  return (
   <>
    <div className="flex items-center justify-between gap-1 w-full">
-    <div className="flex min-w-0 items-center gap-1.5">
+    <div className="flex min-w-0 flex-1 items-center gap-1.5">
      {propConfig.icon
       ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" />
       : <Icon size={12} className="shrink-0 text-muted-foreground" />
      }
-     <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">
-      {prop.name}
-     </span>
+     {/* Renames inline, in place of the label — matches components/database/table-view.tsx's
+         SortableColumnHeader instead of popping a disconnected floating box elsewhere. */}
+     {renaming ? (
+      <input
+       ref={inputRef}
+       value={draftName}
+       onChange={(e) => setDraftName(e.target.value)}
+       onBlur={commitRename}
+       onKeyDown={(e) => {
+        if (e.key === "Enter") commitRename();
+        if (e.key === "Escape") setRenaming(false);
+       }}
+       className="min-w-0 flex-1 rounded-[var(--radius-xs)] border border-primary/60 bg-background px-1 py-0.5 text-xs font-semibold text-foreground outline-none"
+      />
+     ) : (
+      <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">
+       {prop.name}
+      </span>
+     )}
     </div>
 
     <div ref={menuRef} className="relative shrink-0">
      {!locked && (
      <button
       ref={triggerRef}
-      onClick={() => setMenuOpen((p) => !p)}
+      onClick={() => {
+       if (!menuOpen) setMenuRect(triggerRef.current?.getBoundingClientRect() ?? null);
+       setMenuOpen((p) => !p);
+      }}
       className="flex size-5 items-center justify-center rounded text-muted-foreground opacity-0 group-hover/col:opacity-100 hover:bg-accent hover:text-foreground transition-all"
      >
       <DotsThreeIcon size={14} />
      </button>
      )}
 
-     {menuOpen && !editingProperty && (
-      <div className="absolute right-0 top-full z-[500] mt-0.5 w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
-       {renaming ? (
-        <div className="flex items-center gap-2 px-2 py-1.5">
-         <input
-          ref={inputRef}
-          value={draftName}
-          onChange={(e) => setDraftName(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={(e) => {
-           if (e.key === "Enter") commitRename();
-           if (e.key === "Escape") { setRenaming(false); setMenuOpen(false); }
-          }}
-          className="flex-1 rounded-[var(--radius-sm)] border border-primary/60 bg-background px-2 py-1 text-xs text-foreground outline-none"
-         />
-        </div>
-       ) : (
-        <>
-         <button
-          onClick={() => { setDraftName(prop.name); setRenaming(true); }}
-          className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
-         >
-          <PencilSimpleIcon size={13} /> Rename
-         </button>
-         {!prop.isSystem && (
-          <button
-           onClick={() => setEditingProperty(true)}
-           className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
-          >
-           <GearIcon size={13} /> Edit property
-          </button>
-         )}
-         <div className="my-1 h-px bg-border" />
-         <button
-          onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
-          className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-         >
-          <TrashIcon size={13} /> Delete property
-         </button>
-        </>
+     {menuOpen && !editingProperty && menuRect && typeof document !== "undefined" && createPortal(
+      <div
+       ref={dropdownRef}
+       style={{
+        position: "fixed",
+        top:  getClampedTop(menuRect, menuHeight),
+        left: getClampedLeft(menuRect, menuWidth, { align: "end" }),
+        zIndex: 500,
+       }}
+       className="w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1"
+      >
+       <button
+        onClick={() => { setDraftName(prop.name); setRenaming(true); setMenuOpen(false); }}
+        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+       >
+        <PencilSimpleIcon size={13} /> Rename
+       </button>
+       {!prop.isSystem && (
+        <button
+         onClick={() => setEditingProperty(true)}
+         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+        >
+         <GearIcon size={13} /> Edit property
+        </button>
        )}
-      </div>
+       <div className="my-1 h-px bg-border" />
+       <button
+        onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
+        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+       >
+        <TrashIcon size={13} /> Delete property
+       </button>
+      </div>,
+      document.body,
      )}
 
      {menuOpen && editingProperty && (

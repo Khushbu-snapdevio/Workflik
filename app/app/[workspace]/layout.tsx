@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ne, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Sidebar } from "@/components/sidebar/sidebar";
@@ -128,8 +128,9 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     db
       // Join the page so favorites carry title/icon/shortId even when the page
       // isn't in the sidebar tree (database entries, etc.); otherwise those
-      // render as "Untitled" with a broken link. Matches the GET in
-      // app/api/user/favorites/route.ts.
+      // render as "Untitled" with a broken link. Trashed pages are excluded —
+      // matches the GET in app/api/user/favorites/route.ts (see its comment
+      // for why the LEFT JOIN and isNull check are needed together).
       .select({
         id:         userFavorites.id,
         pageId:     userFavorites.pageId,
@@ -143,7 +144,8 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       .where(
         and(
           eq(userFavorites.userId, session.user.id),
-          eq(userFavorites.workspaceId, ws.id)
+          eq(userFavorites.workspaceId, ws.id),
+          or(eq(pages.isDeleted, false), isNull(pages.id))
         )
       )
       .orderBy(asc(userFavorites.orderIndex)),

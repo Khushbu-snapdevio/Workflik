@@ -110,19 +110,24 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
     </div>
    ) : (
     <div className="rounded-[var(--radius-lg)] border border-border bg-card">
-     <div className="grid grid-cols-[auto_1fr_auto_auto] border-b border-border bg-muted/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-      <span className="w-44">Action</span>
+     {/* Header and rows are separate grids, so their column template must be
+         explicit and identical: `auto` tracks size to each grid's OWN content,
+         which made the header ("ACTOR") resolve to a different width than the
+         rows ("Sahaj Tavethiya") and drift out of alignment. Keep the gap and
+         text alignment in sync with the row grid below for the same reason. */}
+     <div className="grid grid-cols-[11rem_1fr_11rem_9.5rem] gap-2 border-b border-border bg-muted/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <span>Action</span>
       <span className="pl-4">Details</span>
-      <span className="pr-6">Actor</span>
-      <span>When</span>
+      <span className="pr-6 text-right">Actor</span>
+      <span className="text-right">When</span>
      </div>
      <div className="divide-y divide-border">
       {events.map(ev => {
        const meta = ACTION_META[ev.action];
        const md   = ev.metadata as Record<string, unknown> | null;
        return (
-        <div key={ev.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 px-5 py-3.5 transition-colors hover:bg-accent">
-         <span className="w-44 min-w-0 shrink-0">
+        <div key={ev.id} className="grid grid-cols-[11rem_1fr_11rem_9.5rem] items-center gap-2 px-5 py-3.5 transition-colors hover:bg-accent">
+         <span className="min-w-0">
           <AuditActionPill
            action={ev.action}
            label={meta?.label ?? humanizeAction(ev.action)}
@@ -155,17 +160,17 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
            </Link>
           )}
          </div>
-         <div className="shrink-0 pr-6 text-right">
+         <div className="min-w-0 pr-6 text-right">
           {ev.actorEmail ? (
            <Link href={`/orbit-admin/orbit/users/${ev.actorId}`}
-            className="text-xs font-semibold text-foreground/70 transition hover:text-primary hover:underline">
+            className="block truncate text-xs font-semibold text-foreground/70 transition hover:text-primary hover:underline">
             {ev.actorName ?? ev.actorEmail}
            </Link>
           ) : (
            <span className="text-xs text-muted-foreground">Deleted user</span>
           )}
          </div>
-         <div className="shrink-0 text-right">
+         <div className="min-w-0 text-right">
           <p className="text-xs font-medium text-muted-foreground">{ago(ev.createdAt)}</p>
           <p className="text-xs text-muted-foreground">{formatDateTime(ev.createdAt)}</p>
          </div>

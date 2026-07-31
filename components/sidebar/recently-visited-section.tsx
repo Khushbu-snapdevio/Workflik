@@ -5,6 +5,7 @@ import { PageIcon } from "@/components/pages/page-icon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { usePersistedToggle } from "@/hooks/use-persisted-toggle";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 const VISIBLE_MAX = 3;
@@ -29,7 +30,7 @@ type Props = {
 };
 
 export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props) {
- const [expanded, setExpanded] = useState(true);
+ const [expanded, setExpanded] = usePersistedToggle("workflik:sidebar-recently-visited-expanded", true);
  const [popupOpen, setPopupOpen] = useState(false);
  const moreRef = useRef<HTMLButtonElement>(null);
  const popupRef = useRef<HTMLDivElement>(null);

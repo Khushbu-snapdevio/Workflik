@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { PageIcon } from "@/components/pages/page-icon";
+import { usePersistedToggle } from "@/hooks/use-persisted-toggle";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 
 const VISIBLE_MAX = 3;
@@ -63,7 +64,7 @@ export function FavoritesSection({
 }: Props) {
   const [mounted, setMounted] = useState(false);
   const [localFavs, setLocalFavs] = useState<FavoriteItem[]>(favorites);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = usePersistedToggle("workflik:sidebar-favorites-expanded", true);
   const [popupOpen, setPopupOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);

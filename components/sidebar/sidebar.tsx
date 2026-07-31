@@ -115,6 +115,7 @@ export function Sidebar({
  const [favorites, setFavorites] = useState<FavoriteItem[]>(initialFavorites);
  const [recentlyVisited, setRecentlyVisited] = useState<{ id: string; pageId: string; visitedAt: string }[]>(initialRecentlyVisited);
  const [newMenu, setNewMenu] = useState(false);
+ const [workspaceMenu, setWorkspaceMenu] = useState(false);
  const [userMenu, setUserMenu] = useState(false);
  const [pagesExpanded, setPagesExpanded] = useState(true);
  const [searchOpen, setSearchOpen] = useState(false);
@@ -227,7 +228,10 @@ export function Sidebar({
 
  useEffect(() => {
   function h(e: MouseEvent) {
-   if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) setNewMenu(false);
+   if (newMenuRef.current && !newMenuRef.current.contains(e.target as Node)) {
+    setNewMenu(false);
+    setWorkspaceMenu(false);
+   }
    if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenu(false);
   }
   document.addEventListener("mousedown", h);
@@ -313,6 +317,10 @@ export function Sidebar({
  }
 
  function toggleCollapse() {
+  // The button that was just clicked unmounts immediately — the header swaps
+  // to the opposite collapsed/expanded layout — so its onMouseLeave never
+  // fires and the tooltip would otherwise stay stuck on screen indefinitely.
+  hideTooltip();
   const next = !collapsed;
   setCollapsed(next);
   fetch("/api/user/preferences", {
@@ -355,11 +363,21 @@ export function Sidebar({
     <div className="relative shrink-0" ref={newMenuRef}>
      <div className="flex h-11 items-center gap-1 border-b border-sidebar-border px-2">
       <div className="min-w-0 flex-1">
-       <WorkspaceSwitcher currentSlug={workspaceSlug} />
+       <WorkspaceSwitcher
+        currentSlug={workspaceSlug}
+        open={workspaceMenu}
+        onOpenChange={(v) => {
+         setWorkspaceMenu(v);
+         if (v) setNewMenu(false);
+        }}
+       />
       </div>
       <button
        data-tour="new-page"
-       onClick={() => setNewMenu((v) => !v)}
+       onClick={() => {
+        setNewMenu((v) => !v);
+        setWorkspaceMenu(false);
+       }}
        onMouseEnter={(e) => showTooltip("Create new…", e)}
        onMouseLeave={hideTooltip}
        type="button"

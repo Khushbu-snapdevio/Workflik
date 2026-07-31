@@ -23,6 +23,7 @@ import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { usePageDraft } from "@/components/pages/page-draft-context";
 import { SaveStatusIndicator } from "@/components/ui/save-status";
 import { BlockHandle } from "./block-handle";
+import { TableControls } from "./table-controls";
 import { CommentCard } from "./comment-card";
 import { CommentGutter } from "./comment-gutter";
 import { BlockIdAttr } from "./extensions/block-id-attr";
@@ -716,6 +717,9 @@ export function PageEditor({
           }}
         />
       )}
+
+      {/* Table row/column "+" controls — appear on hover over a table */}
+      {editor && editable && <TableControls editor={editor} />}
 
       {/* Slash command popup — rendered when suggestion is active */}
       {slashProps && editable && (

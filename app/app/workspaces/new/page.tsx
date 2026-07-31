@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import { requireSession } from "@/lib/authz";
 import { createWorkspaceAction } from "@/app/actions/workspaces";
 import { PRODUCT_NAME } from "@/config/platform";
@@ -21,7 +21,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-9 w-auto" />
+     <Logo width={160} height={40} className="h-9 w-auto" />
     </div>
 
     {/* Heading */}

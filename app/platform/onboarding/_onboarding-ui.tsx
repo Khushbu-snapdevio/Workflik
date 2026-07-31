@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { completeOnboardingAction, type InviteEntry } from "@/app/actions/onboarding";
@@ -176,14 +176,23 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
  }
 
  function handleSkip() {
-  if (isProfileStep) { setStep(Q_FIRST_STEP); return; }
+  if (isProfileStep) {
+   setDisplayName("");
+   setJobTitle("");
+   setStep(Q_FIRST_STEP);
+   return;
+  }
   if (isQuestionStep) {
    const next = step + 1;
    setStep(next);
    if (next === WORKSPACE_STEP) setTimeout(() => nameInputRef.current?.focus(), 50);
    return;
   }
-  if (isNameStep) { setStep(isTeam ? INVITE_STEP : TEMPLATE_SOLO); return; }
+  if (isNameStep) {
+   setWorkspaceName("");
+   setStep(isTeam ? INVITE_STEP : TEMPLATE_SOLO);
+   return;
+  }
   if (isInviteStep) { setStep(TEMPLATE_TEAM); return; }
   if (isTemplateStep) { finish("blank"); }
  }
@@ -230,7 +239,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
+     <Logo width={180} height={45} className="h-10 w-auto" />
     </div>
 
     {/* Progress bar */}

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import { useState } from "react";
 import { createWorkspaceAction } from "@/app/actions/workspaces";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export function NewWorkspaceForm() {
    <div className="relative z-10 flex w-full max-w-sm flex-col items-center">
     {/* Logo mark */}
     <div className="mb-7">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-11 w-auto" />
+     <Logo width={180} height={45} className="h-11 w-auto" />
     </div>
 
     {/* Heading */}

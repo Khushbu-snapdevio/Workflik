@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, EyeOff, KeyRound, Link2, Loader2 } from "lucide-react";
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
@@ -269,7 +269,7 @@ function AuthFormInner() {
 
         {/* Logo */}
         <Link href="/" className="mb-10 flex flex-col items-center gap-3">
-          <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
+          <Logo width={180} height={45} className="h-10 w-auto" />
         </Link>
 
         {/* Form area */}

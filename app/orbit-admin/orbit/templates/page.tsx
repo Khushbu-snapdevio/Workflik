@@ -116,7 +116,7 @@ export default async function OrbitTemplatesPage() {
       </p>
      </div>
     ) : (
-     <div>
+     <div className="overflow-x-auto">
       <table className="w-full">
        <thead className="sticky top-0 z-10 bg-card">
         <tr className="bg-muted/40">
@@ -156,7 +156,7 @@ export default async function OrbitTemplatesPage() {
              ? new Date(tpl.updatedAt).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })
              : "—"}
            </td>
-           <td className="px-5 py-3.5">
+           <td className="w-px whitespace-nowrap px-5 py-3.5">
             <div className="flex items-center gap-1">
              <TemplatePreviewButton templateId={tpl.id} />
              <IconTooltipButton

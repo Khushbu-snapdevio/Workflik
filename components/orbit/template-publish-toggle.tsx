@@ -38,25 +38,31 @@ export function TemplatePublishToggle({ templateId, templateName, currentStatus 
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => (isPublished ? setPendingUnpublish(true) : run("publish"))}
-        disabled={busy}
-        className={[
-          "rounded-[var(--radius-md)] px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50",
-          isPublished
-            ? "border border-border text-muted-foreground hover:bg-accent"
-            : "bg-success text-success-foreground hover:bg-success/90",
-        ].join(" ")}
-      >
-        {busy ? "…" : isPublished ? "Unpublish" : "Publish"}
-      </button>
-      {error && (
-        <p className="mt-1.5 flex items-center gap-1 text-xs text-destructive">
-          <AlertCircle size={12} className="shrink-0" />
-          {error}
-        </p>
-      )}
+      {/* The error sits absolutely inside this wrapper rather than as a sibling
+          of the button — as a plain sibling it became its own flex item in the
+          surrounding row-actions flex container, landing beside the button and
+          shoving the archive/delete icons off the end of the row. */}
+      <span className="relative inline-flex shrink-0">
+        <button
+          type="button"
+          onClick={() => (isPublished ? setPendingUnpublish(true) : run("publish"))}
+          disabled={busy}
+          className={[
+            "rounded-[var(--radius-md)] px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+            isPublished
+              ? "border border-border text-muted-foreground hover:bg-accent"
+              : "bg-success text-success-foreground hover:bg-success/90",
+          ].join(" ")}
+        >
+          {busy ? "…" : isPublished ? "Unpublish" : "Publish"}
+        </button>
+        {error && (
+          <p className="absolute right-0 top-full z-10 mt-1 flex items-center gap-1 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2 py-1 text-xs text-destructive">
+            <AlertCircle size={12} className="shrink-0" />
+            {error}
+          </p>
+        )}
+      </span>
 
       {/* Unpublishing removes a live template from every workspace's gallery
           on this instance — that's shared, user-visible impact, so it gets

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { PRODUCT_NAME } from "@/config/platform";
 
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-page/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-7 w-auto" />
+            <Logo width={160} height={40} className="h-7 w-auto" />
           </Link>
           <Link
             href="/auth/login"

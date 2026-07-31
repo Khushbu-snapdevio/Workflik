@@ -2,8 +2,14 @@
 #
 # Quick start:
 #   cp .env.example .env   # then set APP_SECRET and NEXT_PUBLIC_APP_URL
-#   docker compose up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 #   docker compose run --rm migrate   # first run only — see also the `migrate` service below
+#
+# The app is NOT published to a host port by this file — docker-compose.local.yml
+# does that, for running without a reverse proxy. Behind Dokploy/Traefik, Caddy,
+# or nginx-in-a-container, omit it: the proxy reaches the app over the Docker
+# network, so a host binding is only attack surface (and collides with whatever
+# already owns port 3000 — Dokploy's own dashboard, for one).
 #
 # Optional local stand-ins for external services (no S3 account / SMTP provider needed):
 #   docker compose --profile extras up -d
@@ -59,8 +65,14 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-workflik}:${POSTGRES_PASSWORD:-workflik}@postgres:5432/${POSTGRES_DB:-workflik}
-    ports:
-      - "${APP_PORT:-3000}:3000"
+    # Not published to the host: behind a reverse proxy (Dokploy/Traefik,
+    # Caddy, nginx in a container) the proxy reaches this container over the
+    # Docker network, so a host binding is only attack surface — and it
+    # collides with anything already on port 3000 (Dokploy's own dashboard
+    # uses 3000). To reach the app directly without a proxy, add
+    # `ports: ["${APP_PORT:-3000}:3000"]` back, or use docker-compose.local.yml.
+    expose:
+      - "3000"
     volumes:
       - uploads:/app/uploads
     depends_on:

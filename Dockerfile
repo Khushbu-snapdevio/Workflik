@@ -22,6 +22,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json drizzle.config.ts ./
 COPY drizzle ./drizzle
 COPY lib ./lib
+# `pnpm db:migrate` runs `tsx scripts/migrate.ts` — the custom per-file
+# migration runner (drizzle's built-in one wraps everything in one
+# transaction, which breaks on the ALTER TYPE ... ADD VALUE migrations).
+COPY scripts ./scripts
 CMD ["pnpm", "db:migrate"]
 
 # ── builder ──────────────────────────────────────────────────────────────────

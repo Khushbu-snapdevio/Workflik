@@ -57,7 +57,7 @@ export function TemplateQuickInsert({ editor, variant }: Props) {
                 : "border-transparent px-2 py-1 text-xs",
             ].join(" ")}
           >
-            <span aria-hidden className="text-[13px] leading-none text-muted-foreground/70">
+            <span aria-hidden className="text-[13px] leading-none text-muted-foreground">
               {def.icon}
             </span>
             {SHORT_LABEL[type] ?? def.label}

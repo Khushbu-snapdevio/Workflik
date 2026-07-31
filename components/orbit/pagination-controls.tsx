@@ -39,7 +39,7 @@ export function PaginationControls({ page, pageSize, totalCount, basePath, query
             <ChevronLeft size={12} /> Prev
           </Link>
         ) : (
-          <span className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground/40">
+          <span className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground-subtle">
             <ChevronLeft size={12} /> Prev
           </span>
         )}
@@ -52,7 +52,7 @@ export function PaginationControls({ page, pageSize, totalCount, basePath, query
             Next <ChevronRight size={12} />
           </Link>
         ) : (
-          <span className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground/40">
+          <span className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground-subtle">
             Next <ChevronRight size={12} />
           </span>
         )}

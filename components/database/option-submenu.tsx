@@ -84,11 +84,11 @@ export function OptionSubmenu({ option, anchorRect, onRename, onDelete, onRecolo
           className="min-w-0 flex-1 bg-transparent text-xs text-foreground focus:outline-none"
         />
         {name && (
-          <button type="button" onClick={() => setName("")} className="flex size-4 shrink-0 items-center justify-center text-muted-foreground/60 hover:text-foreground">
+          <button type="button" onClick={() => setName("")} className="flex size-4 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground">
             <X size={11} />
           </button>
         )}
-        <Info size={12} className="shrink-0 text-muted-foreground/50" />
+        <Info size={12} className="shrink-0 text-muted-foreground-subtle" />
       </div>
 
       {/* Delete */}
@@ -107,7 +107,7 @@ export function OptionSubmenu({ option, anchorRect, onRename, onDelete, onRecolo
 
       {/* Colors */}
       <div className="max-h-[220px] overflow-y-auto p-1">
-        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Colors</p>
+        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Colors</p>
         {OPTION_COLORS.map((c) => (
           <button
             key={c.id}

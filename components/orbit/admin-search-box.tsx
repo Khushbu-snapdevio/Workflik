@@ -36,14 +36,14 @@ export function AdminSearchBox({ placeholder }: Props) {
 
   return (
     <div className="relative">
-      <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+      <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-9 w-full min-w-[220px] rounded-[var(--radius-md)] border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none transition-colors focus:border-primary/50 sm:w-64"
+        className="h-9 w-full min-w-[220px] rounded-[var(--radius-md)] border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground-subtle outline-none transition-colors focus:border-primary/50 sm:w-64"
       />
     </div>
   );

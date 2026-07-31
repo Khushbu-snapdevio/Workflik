@@ -116,7 +116,7 @@ export function IconPicker({
       onClick={(e) => e.stopPropagation()}
     >
       {/* ── Tab bar — Notion underline style ── */}
-      <div className="flex items-center border-b border-border/60 px-2">
+      <div className="flex items-center border-b border-border px-2">
         {(["emoji", "icons", "upload"] as const).map((id) => {
           const label = id === "emoji" ? "Emoji" : id === "icons" ? "Icons" : "Upload";
           return (
@@ -171,17 +171,17 @@ export function IconPicker({
         <div className="flex flex-col">
           <div className="px-3 pb-2 pt-2.5">
             <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground-subtle" />
               <input
                 value={iconSearch}
                 onChange={(e) => setIconSearch(e.target.value)}
                 placeholder="Search icons…"
                 autoFocus
-                className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/50"
+                className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary/50"
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 border-b border-border/40 px-3 pb-2.5">
+          <div className="flex items-center gap-2 border-b border-border px-3 pb-2.5">
             {ICON_COLORS.map((c) => (
               <button
                 key={c.value}
@@ -223,7 +223,7 @@ export function IconPicker({
       {/* ── Upload tab ── */}
       {tab === "upload" && (
         <div className="flex flex-col">
-          <div className="flex gap-0 border-b border-border/40 px-3">
+          <div className="flex gap-0 border-b border-border px-3">
             {(["file", "link"] as const).map((st) => (
               <button
                 key={st}
@@ -282,7 +282,7 @@ export function IconPicker({
                 onKeyDown={(e) => { if (e.key === "Enter" && linkPreviewOk) applyLinkUrl(); }}
                 placeholder="Paste image URL…"
                 autoFocus
-                className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
+                className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary/60"
               />
               {linkUrl.trim() && (
                 <div className="flex items-center gap-3">

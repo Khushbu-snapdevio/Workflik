@@ -147,7 +147,7 @@ function FilterChip<T extends string>({
      "flex items-center gap-1 rounded-[var(--radius-sm)] border px-3 py-1 text-xs font-medium transition-colors duration-150",
      active
       ? "border-primary/40 bg-primary/10 text-primary"
-      : "border-border bg-muted/30 text-muted-foreground hover:border-border/80 hover:bg-muted/60 hover:text-foreground",
+      : "border-border bg-muted/30 text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground",
     ].join(" ")}
    >
     {active ? selected?.label : label}
@@ -219,7 +219,7 @@ function ResultRow({
      </span>
     </div>
     {result.breadcrumb && (
-     <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground/70">
+     <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
       <CaretRightIcon size={9} className="shrink-0" />
       <span className="truncate">{result.breadcrumb}</span>
      </div>
@@ -574,14 +574,14 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    <div ref={dialogRef} className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
 
     {/* Search input */}
-    <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5">
+    <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
      <MagnifyingGlassIcon size={18} className="shrink-0 text-muted-foreground" />
      <input
       ref={inputRef}
       value={query}
       onChange={(e) => { setQuery(e.target.value); setActiveIndex(0); }}
       placeholder="Search pages, databases, and more…"
-      className="flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground/50"
+      className="flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground-subtle"
      />
      {(loading || isPending) && (
       <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
@@ -597,7 +597,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     </div>
 
     {/* Filter bar */}
-    <div className="flex flex-wrap items-center gap-2 border-b border-border/40 bg-muted/20 px-4 py-2.5">
+    <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/20 px-4 py-2.5">
      <FilterChip
       label="Any type"
       options={TYPE_OPTIONS}
@@ -639,13 +639,13 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
        {recent.length > 0 ? (
         <>
          <div className="flex items-center justify-between px-4 pb-1 pt-3">
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground/60">
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground">
            Recently visited
           </p>
           <button
            type="button"
            onClick={clearRecent}
-           className="text-xs font-medium text-muted-foreground/60 hover:text-foreground"
+           className="text-xs font-medium text-muted-foreground hover:text-foreground"
           >
            Clear all
           </button>
@@ -662,8 +662,8 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
         </>
        ) : (
         <div className="flex flex-col items-center gap-2 py-10 text-center">
-         <MagnifyingGlassIcon size={28} className="text-muted-foreground/60" />
-         <p className="text-sm text-muted-foreground/60">
+         <MagnifyingGlassIcon size={28} className="text-muted-foreground" />
+         <p className="text-sm text-muted-foreground">
           Start typing to search
          </p>
         </div>
@@ -681,11 +681,11 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
      {/* Query/browse done, no results */}
      {!showRecent && !isSearching && results.length === 0 && (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
-       <MagnifyingGlassIcon size={28} className="text-muted-foreground/60" />
+       <MagnifyingGlassIcon size={28} className="text-muted-foreground" />
        <p className="text-sm font-medium text-foreground">
         {browseMode ? "Nothing matches these filters" : <>No results for &ldquo;{query}&rdquo;</>}
        </p>
-       <p className="text-xs text-muted-foreground/60">
+       <p className="text-xs text-muted-foreground">
         {browseMode ? "Try a different type or time range" : "Try different keywords or adjust filters"}
        </p>
        {!reindexDone && (
@@ -727,7 +727,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     </div>
 
     {/* Footer hint */}
-    <div className="flex items-center gap-4 border-t border-border/40 bg-muted/20 px-4 py-2">
+    <div className="flex items-center gap-4 border-t border-border bg-muted/20 px-4 py-2">
      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
       <kbd className="flex size-5 items-center justify-center rounded border border-border bg-background text-xs">
        <ArrowUpIcon size={9} />

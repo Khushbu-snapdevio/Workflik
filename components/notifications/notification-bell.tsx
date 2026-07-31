@@ -31,7 +31,7 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
      >
       <Bell size={18} className={panelOpen ? "text-primary" : ""} />
       {badge && (
-       <span className="absolute top-1 right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-white leading-none">
+       <span className="absolute top-1 right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-xs font-bold text-primary-foreground leading-none">
         {badge}
        </span>
       )}
@@ -57,7 +57,7 @@ export function NotificationBell({ workspaceSlug, workspaceId, collapsed = false
        // at the icon's corner as content widens, so a 2-digit count ("10")
        // grows outward to the right instead of extending further left and
        // swallowing the 15px icon underneath it.
-       <span className="absolute -top-1 left-[9px] flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold text-white leading-none">
+       <span className="absolute -top-1 left-[9px] flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold text-primary-foreground leading-none">
         {badge}
        </span>
       )}

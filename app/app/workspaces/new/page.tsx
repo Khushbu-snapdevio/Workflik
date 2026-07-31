@@ -65,7 +65,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
      </form>
 
      <div className="border-t border-border px-7 py-4">
-      <p className="text-center text-xs text-muted-foreground/50">
+      <p className="text-center text-xs text-muted-foreground-subtle">
        You can rename or create more workspaces later in settings.
       </p>
      </div>

@@ -131,7 +131,7 @@ function MorePopupEntryRow({ entry, onClick, onDelete, locked }: MorePopupEntryR
    {entry.icon ? (
     <PageIcon icon={entry.icon} size={13} className="shrink-0" />
    ) : (
-    <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+    <FileText size={12} className="shrink-0 text-muted-foreground" />
    )}
    <span className="flex-1 truncate text-sm font-medium text-foreground">
     {entry.title || "Untitled"}
@@ -204,7 +204,7 @@ function DraggableChip({
    style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none", cursor: locked ? "pointer" : "grab" }}
    {...attributes}
    {...listeners}
-   className="group/event flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
+   className="group/event flex flex-col rounded-[var(--radius-sm)] border border-border bg-background hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
    onClick={(e) => { e.stopPropagation(); onClickEntry(entry.id); }}
    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setMenuPos({ x: e.clientX, y: e.clientY }); }}
   >
@@ -212,7 +212,7 @@ function DraggableChip({
     {entry.icon ? (
      <PageIcon icon={entry.icon} size={13} className="shrink-0" />
     ) : (
-     <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+     <FileText size={12} className="shrink-0 text-muted-foreground" />
     )}
     <span className="flex-1 truncate text-xs font-semibold text-foreground">{entry.title || "Untitled"}</span>
     {!!commentCount && (
@@ -461,7 +461,7 @@ export function TemplateCalendarView({
   >
   <div className="flex h-full flex-col overflow-hidden">
    {/* ── Header ───────────────────────────────────────────────────────────── */}
-   <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-6 py-3">
+   <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-3">
     <h2 className="text-lg font-semibold tracking-tight text-foreground">
      {MONTH_NAMES[month]} {year}
     </h2>
@@ -479,9 +479,9 @@ export function TemplateCalendarView({
    </div>
 
    {/* ── Day-of-week headers ───────────────────────────────────────────────── */}
-   <div className="grid shrink-0 grid-cols-7 border-b border-border/60 bg-muted/20">
+   <div className="grid shrink-0 grid-cols-7 border-b border-border bg-muted/20">
     {DAY_NAMES.map((d) => (
-     <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground/60">
+     <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
       {d.slice(0, 3)}
      </div>
     ))}
@@ -508,8 +508,8 @@ export function TemplateCalendarView({
      const baseCellClass = [
       "group relative flex flex-col p-1 transition-colors",
       day === null ? "bg-muted/10" : "bg-background hover:bg-accent/20",
-      !isLastRow ? "border-b border-border/60" : "",
-      !isLastCol ? "border-r border-border/60" : "",
+      !isLastRow ? "border-b border-border" : "",
+      !isLastCol ? "border-r border-border" : "",
      ].join(" ");
 
      if (day === null) {
@@ -603,7 +603,7 @@ export function TemplateCalendarView({
        className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
       >
        {/* Date label */}
-       <div className="border-b border-border/40 px-3 py-2">
+       <div className="border-b border-border px-3 py-2">
         {(() => {
          const [ey, em, ed] = morePopup.key.split("-").map(Number);
          return (

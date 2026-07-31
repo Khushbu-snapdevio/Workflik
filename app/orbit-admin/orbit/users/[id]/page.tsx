@@ -105,7 +105,7 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
       <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
        <strong className="font-bold text-foreground">{memberships.length}</strong> workspaces
       </span>
-      <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground/50">
+      <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground-subtle">
        {user.id.slice(0, 16)}… · joined {ago(user.createdAt)}
       </span>
      </div>
@@ -118,10 +118,10 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
 
      {/* Details card */}
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      <div className="border-b border-border/60 bg-muted/20 px-5 py-3">
-       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Account details</h2>
+      <div className="border-b border-border bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account details</h2>
       </div>
-      <div className="divide-y divide-border/50 px-5">
+      <div className="divide-y divide-border px-5">
        {[
         { label: "Email",   value: user.email },
         { label: "Name",    value: user.name ?? "—" },
@@ -140,16 +140,16 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
 
      {/* Admin actions */}
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      <div className="border-b border-border/60 bg-muted/20 px-5 py-3">
-       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Operator actions</h2>
+      <div className="border-b border-border bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Operator actions</h2>
       </div>
       <div className="space-y-2.5 p-4">
        <ImpersonateButton userId={id} />
        <RevokeSessionsButton userId={id} />
        <BanButton userId={id} banned={!!user.banned} />
       </div>
-      <div className="border-t border-border/60 bg-muted/10 px-5 pb-4 pt-3">
-       <p className="text-xs leading-relaxed text-muted-foreground/60">
+      <div className="border-t border-border bg-muted/10 px-5 pb-4 pt-3">
+       <p className="text-xs leading-relaxed text-muted-foreground">
         Impersonation sessions expire after 2 hours. Revoking sessions signs the user out of all devices immediately.
        </p>
       </div>
@@ -161,14 +161,14 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
 
      {/* Sessions */}
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3">
-       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Sessions</h2>
+      <div className="flex items-center justify-between border-b border-border bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sessions</h2>
        <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{totalSessions!.count}</span>
       </div>
       {userSessions.length === 0 ? (
        <p className="px-5 py-10 text-center text-xs text-muted-foreground">No sessions found</p>
       ) : (
-       <div className="divide-y divide-border/50">
+       <div className="divide-y divide-border">
         {userSessions.map(s => {
          const expired = new Date(s.expiresAt) < now;
          const isImpersonation = !!s.impersonatedBy;
@@ -183,9 +183,9 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
              )}
             </div>
             <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.userAgent?.slice(0, 60) ?? "—"}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground/60">IP: {s.ipAddress ?? "—"} · Expires {ago(s.expiresAt)}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">IP: {s.ipAddress ?? "—"} · Expires {ago(s.expiresAt)}</p>
            </div>
-           <p className="shrink-0 text-xs text-muted-foreground/60">{ago(s.createdAt)}</p>
+           <p className="shrink-0 text-xs text-muted-foreground">{ago(s.createdAt)}</p>
           </div>
          );
         })}
@@ -204,25 +204,25 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
 
      {/* Workspace memberships */}
      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-5 py-3">
-       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Workspace memberships</h2>
+      <div className="flex items-center justify-between border-b border-border bg-muted/20 px-5 py-3">
+       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workspace memberships</h2>
        <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{memberships.length}</span>
       </div>
       {memberships.length === 0 ? (
        <p className="px-5 py-10 text-center text-xs text-muted-foreground">No workspace memberships</p>
       ) : (
-       <div className="divide-y divide-border/50">
+       <div className="divide-y divide-border">
         {memberships.map(m => {
          const letter = ((m.wsIcon && m.wsIcon.length <= 2 ? m.wsIcon : m.wsName ?? "W")[0] ?? "W").toUpperCase();
          return (
           <Link key={m.id} href={`/orbit-admin/orbit/workspaces/${m.workspaceId}`}
            className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-accent">
-           <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary text-xs font-bold text-white">
+           <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary text-xs font-bold text-primary-foreground">
             {letter}
            </span>
            <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-foreground">{m.wsName ?? "Deleted workspace"}</p>
-            <p className="text-xs text-muted-foreground/70">/{m.wsSlug ?? m.workspaceId}</p>
+            <p className="text-xs text-muted-foreground">/{m.wsSlug ?? m.workspaceId}</p>
            </div>
            <div className="flex shrink-0 flex-col items-end gap-1.5">
             <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-semibold ${

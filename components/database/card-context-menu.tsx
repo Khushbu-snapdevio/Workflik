@@ -86,7 +86,7 @@ export function CardContextMenu({
           <Copy size={13} className="shrink-0 text-muted-foreground" /> Duplicate
         </button>
       )}
-      <div className="my-1 h-px bg-border/60" />
+      <div className="my-1 h-px bg-border" />
       <button
         onClick={() => { onClose(); onDeleteRequest(); }}
         className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"

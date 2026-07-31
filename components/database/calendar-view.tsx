@@ -106,7 +106,7 @@ function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps)
       {entry.icon ? (
         <PageIcon icon={entry.icon} size={13} className="shrink-0" />
       ) : (
-        <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+        <FileText size={12} className="shrink-0 text-muted-foreground" />
       )}
       <span className="flex-1 truncate text-sm font-medium text-foreground">{entry.title || "Untitled"}</span>
       {!!commentCount && (
@@ -170,7 +170,7 @@ function DraggableChip({
       {entry.icon ? (
         <PageIcon icon={entry.icon} size={13} className="shrink-0" />
       ) : (
-        <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+        <FileText size={12} className="shrink-0 text-muted-foreground" />
       )}
       <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">{entry.title || "Untitled"}</span>
     </>
@@ -183,7 +183,7 @@ function DraggableChip({
         style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none" }}
         {...attributes}
         {...listeners}
-        className="group/chip relative flex flex-col rounded-[var(--radius-sm)] border border-border/50 bg-background transition-colors hover:border-border hover:bg-accent/30 cursor-pointer"
+        className="group/chip relative flex flex-col rounded-[var(--radius-sm)] border border-border bg-background transition-colors hover:border-border hover:bg-accent/30 cursor-pointer"
         onMouseEnter={() => setShowDots(true)}
         onMouseLeave={() => setShowDots(false)}
         onContextMenu={(e) => {
@@ -345,7 +345,7 @@ export function CalendarView({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
         <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-          <Calendar size={28} className="text-muted-foreground/70" />
+          <Calendar size={28} className="text-muted-foreground" />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">No date property selected</p>
@@ -433,7 +433,7 @@ export function CalendarView({
     <div className="flex h-full flex-col overflow-hidden bg-card">
 
       {/* ── Navigation header ── */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border/60 px-4 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2">
         <h2 className="text-sm font-semibold text-foreground">
           {MONTHS[month]} {year}
         </h2>
@@ -454,9 +454,9 @@ export function CalendarView({
       </div>
 
       {/* ── Day-of-week header ── */}
-      <div className="grid shrink-0 grid-cols-7 border-b border-border/60">
+      <div className="grid shrink-0 grid-cols-7 border-b border-border">
         {DAYS.map((d) => (
-          <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground/60">{d}</div>
+          <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground">{d}</div>
         ))}
       </div>
 
@@ -472,7 +472,7 @@ export function CalendarView({
             return (
               <div
                 key={`empty-${idx}`}
-                className={`bg-muted/5 ${!isLastRow ? "border-b border-border/60" : ""} ${!isLastCol ? "border-r border-border/60" : ""}`}
+                className={`bg-muted/5 ${!isLastRow ? "border-b border-border" : ""} ${!isLastCol ? "border-r border-border" : ""}`}
               />
             );
           }
@@ -490,8 +490,8 @@ export function CalendarView({
           const cellCls = [
             "group/cell relative flex flex-col overflow-hidden transition-colors",
             isToday ? "bg-accent/30" : isSunSat ? "bg-muted/5 hover:bg-muted/10" : "bg-background hover:bg-muted/10",
-            !isLastRow ? "border-b border-border/60" : "",
-            !isLastCol ? "border-r border-border/60" : "",
+            !isLastRow ? "border-b border-border" : "",
+            !isLastCol ? "border-r border-border" : "",
           ].join(" ");
 
           return (
@@ -506,7 +506,7 @@ export function CalendarView({
                 {isEditor && (
                   <button
                     onClick={() => onCreateEntry({ [calPropId!]: { date: key } })}
-                    className="hidden size-5 items-center justify-center rounded text-muted-foreground/50 hover:bg-primary/10 hover:text-primary group-hover/cell:flex transition-colors"
+                    className="hidden size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-primary/10 hover:text-primary group-hover/cell:flex transition-colors"
                   >
                     <Plus size={11} />
                   </button>
@@ -569,7 +569,7 @@ export function CalendarView({
               onMouseLeave={scheduleCloseMore}
               className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
             >
-              <div className="border-b border-border/40 px-3 py-2">
+              <div className="border-b border-border px-3 py-2">
                 <span className="text-xs font-semibold text-muted-foreground">
                   {MONTHS_SHORT[em - 1]} {ed}, {ey}
                 </span>

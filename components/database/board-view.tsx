@@ -123,7 +123,7 @@ export function BoardView({
   return (
    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
     <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
-     <LayoutGrid size={28} className="text-muted-foreground/70" />
+     <LayoutGrid size={28} className="text-muted-foreground" />
     </div>
     <div>
      <p className="text-sm font-semibold text-foreground">No group-by property</p>
@@ -310,7 +310,7 @@ export function BoardView({
       no way back in: GroupSettingsPanel — which already lists hidden groups
       with a toggle to restore them — was only ever reachable from a visible
       column's own menu. */}
-  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-6 py-2">
+  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-2">
     <div className="flex flex-wrap items-center gap-2">
      {pinnedColumns.length > 0 && (
       <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -397,7 +397,7 @@ export function BoardView({
       >
        <ColumnDropTarget colKey={colKey} isCollapsed={isCollapsed}>
         <div
-         className={`flex flex-col rounded-[var(--radius-lg)] border border-border/50 bg-muted/40 ${isCollapsed ? "w-12" : ""}`}
+         className={`flex flex-col rounded-[var(--radius-lg)] border border-border bg-muted/40 ${isCollapsed ? "w-12" : ""}`}
          data-col-id={colKey}
         >
          {/* Column header */}
@@ -411,18 +411,18 @@ export function BoardView({
           >
            {col.id ? (
             <span
-             className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold ${colorColumns ? "" : "bg-muted text-muted-foreground/60"}`}
+             className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold ${colorColumns ? "" : "bg-muted text-muted-foreground"}`}
              style={colorColumns ? { backgroundColor: color.bg, color: color.text } : undefined}
             >
              {col.entries.length}
             </span>
            ) : (
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-xs font-bold text-muted-foreground/60">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-xs font-bold text-muted-foreground">
              {col.entries.length}
             </span>
            )}
            <span
-            className="text-xs font-semibold text-muted-foreground/60"
+            className="text-xs font-semibold text-muted-foreground"
             style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
            >
             {col.label}
@@ -438,14 +438,14 @@ export function BoardView({
             <div className="flex min-w-0 items-center gap-2">
             {col.id ? (
              <span
-              className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold ${colorColumns ? "" : "bg-muted text-muted-foreground/70"}`}
+              className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold ${colorColumns ? "" : "bg-muted text-muted-foreground"}`}
               style={colorColumns ? { backgroundColor: color.bg, color: color.text } : undefined}
              >
               <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
               {col.label}
              </span>
             ) : (
-             <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-sm font-semibold text-muted-foreground/70">
+             <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-sm font-semibold text-muted-foreground">
               <span className="size-1.5 rounded-full bg-muted-foreground/30" />
               {col.label}
              </span>
@@ -466,7 +466,7 @@ export function BoardView({
                onClick={(e) => setGroupMenu({ optionId: col.id!, triggerEl: e.currentTarget as HTMLElement })}
                onMouseEnter={(e) => showTooltip("More options", e)}
                onMouseLeave={hideTooltip}
-               className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+               className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
               >
                <MoreHorizontal size={13} />
               </button>
@@ -476,7 +476,7 @@ export function BoardView({
               onClick={toggleCollapse}
               onMouseEnter={(e) => showTooltip("Collapse column", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
              >
               <PanelLeft size={13} />
              </button>
@@ -514,8 +514,8 @@ export function BoardView({
             ))}
 
             {col.entries.length === 0 && (
-             <div className="flex h-16 items-center justify-center rounded-[var(--radius-md)] border border-border/40 bg-muted/20">
-              <span className="text-xs text-muted-foreground/70">Drop cards here</span>
+             <div className="flex h-16 items-center justify-center rounded-[var(--radius-md)] border border-border bg-muted/20">
+              <span className="text-xs text-muted-foreground">Drop cards here</span>
              </div>
             )}
            </div>
@@ -528,7 +528,7 @@ export function BoardView({
               const dv = gv ? { [groupPropId!]: gv } : {};
               onCreateEntry(dv);
              }}
-             className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-border/60 px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
+             className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
             >
              <Plus size={13} />
              Add entry
@@ -567,7 +567,7 @@ export function BoardView({
          </p>
          <button
           onClick={() => { setAddingOption(false); setNewOptName(""); }}
-          className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+          className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
          >
           <X size={11} />
          </button>
@@ -582,10 +582,10 @@ export function BoardView({
           if (e.key === "Escape") { setAddingOption(false); setNewOptName(""); }
          }}
          placeholder="Option name…"
-         className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+         className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
         />
 
-        <p className="mb-1.5 mt-3 text-xs font-semibold tracking-wide text-muted-foreground/70">
+        <p className="mb-1.5 mt-3 text-xs font-semibold tracking-wide text-muted-foreground">
          Colour
         </p>
         <div className="flex flex-wrap gap-2">
@@ -613,7 +613,7 @@ export function BoardView({
            {newOptName.trim()}
           </span>
          ) : (
-          <span className="text-xs text-muted-foreground/60">Preview will appear here</span>
+          <span className="text-xs text-muted-foreground">Preview will appear here</span>
          )}
         </div>
 
@@ -634,8 +634,8 @@ export function BoardView({
         </div>
 
         {options.length > 0 && (
-         <div className="mt-3 border-t border-border/50 pt-3">
-          <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground/70">
+         <div className="mt-3 border-t border-border pt-3">
+          <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
            Existing options
           </p>
           <div className="flex flex-col gap-1">
@@ -929,7 +929,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
    ref={cardRef}
    className={[
     "group rounded-[var(--radius-md)] border bg-card transition-colors duration-150",
-    dragging ? "border-primary/40 opacity-50" : "border-border/60",
+    dragging ? "border-primary/40 opacity-50" : "border-border",
    ].join(" ")}
    onMouseEnter={() => setHovered(true)}
    onMouseLeave={() => setHovered(false)}
@@ -966,7 +966,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
         {entry.icon ? (
          <PageIcon icon={entry.icon} size={14} className="shrink-0" />
         ) : (
-         <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+         <FileText size={12} className="shrink-0 text-muted-foreground" />
         )}
        </span>
        {editing ? (
@@ -995,7 +995,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           entryOpenMode === "side_panel" && onOpenEntry ? "hover:text-muted-foreground" : "cursor-default"
          }`}
         >
-         {entry.title || <span className="font-normal text-muted-foreground/60">Untitled</span>}
+         {entry.title || <span className="font-normal text-muted-foreground">Untitled</span>}
         </button>
        )}
 
@@ -1005,7 +1005,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            icons only highlight individually via hover:bg-accent, the box
            itself carries the visible border/background. */}
        <div
-        className="flex shrink-0 items-center gap-px rounded-[var(--radius-sm)] border border-border/60 bg-card px-0.5 py-0.5 transition-opacity"
+        className="flex shrink-0 items-center gap-px rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5 transition-opacity"
         style={{ opacity: hovered || editing ? 1 : 0 }}
        >
         {isEditor && !editing ? (
@@ -1065,7 +1065,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           changed right from the card instead of only from Table's column
           header. */}
       {(filledProps.length > 0 || !!commentCount) && (
-       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2">
+       <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border pt-2">
         {filledProps.map((prop) => {
          const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
          return (
@@ -1104,7 +1104,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
 
       {/* Quick-add empty properties — only while editing, matching Notion's inline card editor */}
       {emptyProps.length > 0 && (
-       <div className="mt-2 flex flex-col gap-0.5 border-t border-border/50 pt-2">
+       <div className="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
         {emptyProps.map((prop) => {
          const TypeIcon = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON];
          const propConfig = (prop.config ?? {}) as { icon?: string };
@@ -1118,7 +1118,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
             if (handleVoteClick(prop, entry.id)) return;
             setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
            }}
-           className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+           className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           >
            {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" /> : <TypeIcon size={12} className="shrink-0" />}
            Add {prop.name}

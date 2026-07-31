@@ -144,7 +144,7 @@ function SelectField({
     className="flex h-9 w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-2.5 text-xs text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
    >
     <span className="truncate whitespace-nowrap">{label}</span>
-    <ChevronDown size={12} className={`shrink-0 text-muted-foreground/60 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+    <ChevronDown size={12} className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
    </button>
 
    {open && menuRect && typeof document !== "undefined" && createPortal(
@@ -225,12 +225,12 @@ function GeneralAccessControl({
     onClick={handleOpen}
     className="h-9 w-full flex items-center gap-2.5 rounded-[var(--radius-sm)] border border-border bg-muted/20 px-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-60"
    >
-    <Icon size={14} className="shrink-0 text-muted-foreground/70" />
+    <Icon size={14} className="shrink-0 text-muted-foreground" />
     <span className="flex-1 min-w-0 truncate text-[13px] font-medium text-foreground">{current.label}</span>
     {disabled ? (
      <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
     ) : (
-     <ChevronDown size={13} className={`flex-shrink-0 text-muted-foreground/60 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+     <ChevronDown size={13} className={`flex-shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
     )}
    </button>
 
@@ -258,7 +258,7 @@ function GeneralAccessControl({
          selected ? "bg-primary/10" : "hover:bg-accent"
         }`}
        >
-        <OptionIcon size={14} className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground/70"}`} />
+        <OptionIcon size={14} className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`} />
         <span className={`flex-1 min-w-0 truncate text-[13px] font-medium ${selected ? "text-primary" : "text-foreground"}`}>{o.label}</span>
         {selected && <Check size={13} className="shrink-0 text-primary" />}
        </button>
@@ -434,11 +434,11 @@ export function SharePanel({
   <>
   <div
    ref={panelRef}
-   className="w-[460px] max-w-[calc(100vw-32px)] rounded-[var(--radius-md)] border border-border/80 bg-card overflow-hidden flex flex-col"
+   className="w-[460px] max-w-[calc(100vw-32px)] rounded-[var(--radius-md)] border border-border bg-card overflow-hidden flex flex-col"
    style={{ maxHeight: "calc(100vh - 80px)" }}
   >
    {/* Header */}
-   <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+   <div className="flex items-center justify-between px-5 py-4 border-b border-border">
     <span className="text-sm font-semibold text-foreground tracking-tight">Share</span>
     <button
      type="button"
@@ -461,7 +461,7 @@ export function SharePanel({
        onChange={(e) => { setInviteEmail(e.target.value); setInviteError(""); setInviteSuccess(false); }}
        onKeyDown={(e) => { if (e.key === "Enter") invite(); }}
        placeholder="Email or group, separated by commas"
-       className="flex-1 min-w-0 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
+       className="flex-1 min-w-0 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
       />
       <button
        type="button"
@@ -483,7 +483,7 @@ export function SharePanel({
      )}
     </div>
 
-    <div className="h-px bg-border/40 mx-5" />
+    <div className="h-px bg-border mx-5" />
 
     {/* People with access */}
     <div className="px-5 py-3">
@@ -496,10 +496,10 @@ export function SharePanel({
          <span className="text-[13px] font-medium text-foreground truncate leading-tight">
           {currentUserName ?? currentUserEmail ?? "You"}
          </span>
-         <span className="text-xs text-muted-foreground/60 flex-shrink-0">(you)</span>
+         <span className="text-xs text-muted-foreground flex-shrink-0">(you)</span>
         </div>
         {currentUserName && currentUserEmail && (
-         <p className="text-xs text-muted-foreground/60 truncate leading-tight">{currentUserEmail}</p>
+         <p className="text-xs text-muted-foreground truncate leading-tight">{currentUserEmail}</p>
         )}
        </div>
        <span className="text-xs text-muted-foreground flex-shrink-0">Full access</span>
@@ -529,7 +529,7 @@ export function SharePanel({
              {displayName}
             </span>
             {isCurrentUser && (
-             <span className="text-xs text-muted-foreground/60 flex-shrink-0">(you)</span>
+             <span className="text-xs text-muted-foreground flex-shrink-0">(you)</span>
             )}
             {isGuest && (
              <span className="flex-shrink-0 rounded-[var(--radius-xs)] border border-primary/20 bg-primary/10 px-1.5 py-px text-xs font-semibold text-primary leading-none">
@@ -538,7 +538,7 @@ export function SharePanel({
             )}
            </div>
            {showEmail && (
-            <p className="text-xs text-muted-foreground/60 truncate leading-tight">
+            <p className="text-xs text-muted-foreground truncate leading-tight">
              {displayEmail}
             </p>
            )}
@@ -559,7 +559,7 @@ export function SharePanel({
              onClick={() => setPendingRemoveGrant(grant)}
              onMouseEnter={(e) => showTooltip("Remove access", e)}
              onMouseLeave={hideTooltip}
-             className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground/60 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
+             className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
             >
              <X size={12} />
             </button>
@@ -571,7 +571,7 @@ export function SharePanel({
      </div>
     </div>
 
-    <div className="h-px bg-border/40 mx-5" />
+    <div className="h-px bg-border mx-5" />
 
     {/* General access */}
     <div className="px-5 py-3">
@@ -598,7 +598,7 @@ export function SharePanel({
    </div>
 
    {/* Footer */}
-   <div className="flex items-center justify-end border-t border-border/40 px-5 py-3">
+   <div className="flex items-center justify-end border-t border-border px-5 py-3">
     <button
      type="button"
      onClick={copyLink}

@@ -23,7 +23,7 @@ export function SaveStatusIndicator({ state, className = "" }: Props) {
       className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-opacity duration-300 select-none ${
         state === "offline"
           ? "border-warning/30 bg-warning/10 text-warning"
-          : "border-border/60 bg-muted/60 text-muted-foreground"
+          : "border-border bg-muted/60 text-muted-foreground"
       } ${className}`}
     >
       {state === "saving" && (

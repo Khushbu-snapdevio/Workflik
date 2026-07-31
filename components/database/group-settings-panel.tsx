@@ -226,7 +226,7 @@ export function GroupSettingsPanel({
                 value={groupBySearch}
                 onChange={(e) => setGroupBySearch(e.target.value)}
                 placeholder="Search for a property…"
-                className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
+                className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
               />
             </div>
           </div>
@@ -249,7 +249,7 @@ export function GroupSettingsPanel({
               );
             })}
             {filteredSelectProps.length === 0 && (
-              <p className="px-2 py-3 text-center text-xs text-muted-foreground/60">No matching properties</p>
+              <p className="px-2 py-3 text-center text-xs text-muted-foreground">No matching properties</p>
             )}
           </div>
         </div>
@@ -283,7 +283,7 @@ export function GroupSettingsPanel({
               </span>
             </button>
             {showStatusByPicker && (
-              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border/60 bg-popover p-1">
+              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1">
                 {([
                   { key: "group" as const, label: "Group" },
                   { key: "option" as const, label: "Option" },
@@ -317,7 +317,7 @@ export function GroupSettingsPanel({
             </span>
           </button>
           {showSortPicker && (
-            <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border/60 bg-popover p-1">
+            <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1">
               {(["manual", "asc", "desc"] as const).map((dir) => (
                 <button
                   key={dir}
@@ -354,9 +354,9 @@ export function GroupSettingsPanel({
         </div>
 
         {/* Groups list */}
-        <div className="mt-1 border-t border-border/60 pt-2.5">
+        <div className="mt-1 border-t border-border pt-2.5">
           <div className="mb-1 flex items-center justify-between px-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Groups</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Groups</span>
             {(statusBy === "group" ? true : options.length > 0) && (
               <button
                 type="button"
@@ -383,7 +383,7 @@ export function GroupSettingsPanel({
                 const isPinned = pinnedGroupKeys.includes(g.key);
                 return (
                   <div key={g.key} className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
-                    <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground/20">
+                    <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground-subtle">
                       <GripVertical size={12} />
                     </span>
                     <span
@@ -398,7 +398,7 @@ export function GroupSettingsPanel({
                       onClick={() => togglePinnedGroupKey(g.key)}
                       onMouseEnter={(e) => showTooltip(isPinned ? "Unpin group" : "Pin group", e)}
                       onMouseLeave={hideTooltip}
-                      className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground/60"}`}
+                      className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground"}`}
                     >
                       {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
                     </button>
@@ -407,7 +407,7 @@ export function GroupSettingsPanel({
                       onClick={() => toggleHiddenGroupKey(g.key)}
                       onMouseEnter={(e) => showTooltip(isHidden ? "Show group" : "Hide group", e)}
                       onMouseLeave={hideTooltip}
-                      className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
+                      className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
                     </button>
@@ -438,17 +438,17 @@ export function GroupSettingsPanel({
           )}
           {/* Pinned "No status" row — not backed by a real option, so no rename/color/drag */}
           <div className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
-            <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground/20">
+            <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground-subtle">
               <GripVertical size={12} />
             </span>
-            <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground/70">
+            <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
               <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/30" />
               No {groupProp.name}
             </span>
           </div>
         </div>
 
-        <p className="mt-1 px-0.5 text-xs text-muted-foreground/50">Learn about grouping</p>
+        <p className="mt-1 px-0.5 text-xs text-muted-foreground-subtle">Learn about grouping</p>
       </div>
       )}
 
@@ -497,7 +497,7 @@ function SortableGroupRow({
         {...(draggable ? attributes : {})}
         {...(draggable ? listeners : {})}
         style={{ touchAction: draggable ? "none" : undefined }}
-        className={`flex size-4 shrink-0 items-center justify-center text-muted-foreground/40 ${draggable ? "cursor-grab opacity-0 group-hover/opt:opacity-100" : "opacity-20"}`}
+        className={`flex size-4 shrink-0 items-center justify-center text-muted-foreground-subtle ${draggable ? "cursor-grab opacity-0 group-hover/opt:opacity-100" : "opacity-20"}`}
       >
         <GripVertical size={12} />
       </span>
@@ -515,7 +515,7 @@ function SortableGroupRow({
         onClick={onTogglePinned}
         onMouseEnter={(e) => showTooltip(isPinned ? "Unpin group" : "Pin group", e)}
         onMouseLeave={hideTooltip}
-        className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground/60"}`}
+        className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground"}`}
       >
         {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
       </button>
@@ -524,7 +524,7 @@ function SortableGroupRow({
         onClick={onToggleHidden}
         onMouseEnter={(e) => showTooltip(isHidden ? "Show group" : "Hide group", e)}
         onMouseLeave={hideTooltip}
-        className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
+        className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
       </button>

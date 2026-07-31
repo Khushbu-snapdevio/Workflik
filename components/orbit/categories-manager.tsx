@@ -121,7 +121,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-      <div className="border-b border-border/60 bg-muted/20 px-5 py-3.5">
+      <div className="border-b border-border bg-muted/20 px-5 py-3.5">
         <h2 className="text-sm font-semibold text-foreground">Categories</h2>
         <p className="text-xs text-muted-foreground">Used to group built-in templates in the user-facing gallery</p>
       </div>
@@ -158,7 +158,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                     >
                       <span className="truncate">{cat.label}</span>
                       {inUse && (
-                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground/70">
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
                           {cat.templateCount}
                         </span>
                       )}
@@ -169,7 +169,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                       type="button"
                       onClick={() => startEdit(cat)}
                       aria-label={`Rename ${cat.label}`}
-                      className="shrink-0 rounded-[var(--radius-xs)] p-1.5 text-muted-foreground/50 opacity-0 transition-colors hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                      className="shrink-0 rounded-[var(--radius-xs)] p-1.5 text-muted-foreground-subtle opacity-0 transition-colors hover:bg-accent hover:text-foreground group-hover:opacity-100"
                     >
                       <Pencil size={13} />
                     </button>
@@ -184,8 +184,8 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                     className={[
                       "shrink-0 rounded-[var(--radius-xs)] p-1.5 opacity-0 transition-colors group-hover:opacity-100",
                       inUse
-                        ? "cursor-not-allowed text-muted-foreground/30"
-                        : "text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive",
+                        ? "cursor-not-allowed text-muted-foreground-subtle"
+                        : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
                     ].join(" ")}
                   >
                     <X size={13} />
@@ -198,7 +198,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
 
         {error && <p className="mt-2 px-2 text-xs text-destructive">{error}</p>}
 
-        <div className="mt-2 border-t border-border/60 pt-3">
+        <div className="mt-2 border-t border-border pt-3">
           <button
             type="button"
             onClick={openAdd}

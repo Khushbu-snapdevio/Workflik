@@ -306,7 +306,7 @@ function UserAvatar({ name, image }: { name: string; image?: string }) {
   );
  }
  return (
-  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-white flex-shrink-0 select-none">
+  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground flex-shrink-0 select-none">
    {name[0]?.toUpperCase()}
   </div>
  );

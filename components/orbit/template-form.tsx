@@ -365,9 +365,9 @@ export function TemplateForm({ template }: Props) {
     <div className="flex min-h-[600px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
 
       {/* Left sidebar — w-[260px] matching settings sidebar */}
-      <aside className="flex w-[260px] shrink-0 flex-col border-r border-border/60 bg-sidebar">
-        <div className="border-b border-border/60 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Template settings</p>
+      <aside className="flex w-[260px] shrink-0 flex-col border-r border-border bg-sidebar">
+        <div className="border-b border-border px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template settings</p>
         </div>
 
         <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-5">
@@ -387,16 +387,16 @@ export function TemplateForm({ template }: Props) {
                 {icon ? (
                   <PageIcon icon={icon} size={20} />
                 ) : (
-                  <Smile size={16} className="shrink-0 text-muted-foreground/40" />
+                  <Smile size={16} className="shrink-0 text-muted-foreground-subtle" />
                 )}
-                <span className="flex-1 text-left text-xs text-muted-foreground/60">
+                <span className="flex-1 text-left text-xs text-muted-foreground">
                   {icon ? "Click to change" : "Pick an emoji icon"}
                 </span>
                 {icon && (
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setIcon(""); setDirty(true); }}
-                    className="shrink-0 text-[10px] text-muted-foreground/40 hover:text-muted-foreground"
+                    className="shrink-0 text-[10px] text-muted-foreground-subtle hover:text-muted-foreground"
                   >
                     ✕
                   </button>
@@ -446,7 +446,7 @@ export function TemplateForm({ template }: Props) {
             <label className="mb-2 block text-xs font-semibold text-muted-foreground">Category</label>
             {categories.length > 5 && (
               <div className="relative mb-1.5">
-                <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
+                <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground-subtle" />
                 <input
                   type="text"
                   value={categorySearch}
@@ -478,7 +478,7 @@ export function TemplateForm({ template }: Props) {
                     >
                       <span className="truncate">{cat.label}</span>
                       {inUse && (
-                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground/70">
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
                           {cat.templateCount}
                         </span>
                       )}
@@ -493,8 +493,8 @@ export function TemplateForm({ template }: Props) {
                       className={[
                         "shrink-0 rounded-[var(--radius-xs)] p-1.5 opacity-0 transition-colors group-hover:opacity-100",
                         inUse
-                          ? "cursor-not-allowed text-muted-foreground/30"
-                          : "text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive",
+                          ? "cursor-not-allowed text-muted-foreground-subtle"
+                          : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
                       ].join(" ")}
                     >
                       <X size={12} />
@@ -535,7 +535,7 @@ export function TemplateForm({ template }: Props) {
               <button
                 type="button"
                 onClick={() => setNewCategoryOpen(true)}
-                className="mt-1.5 flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-xs font-medium text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+                className="mt-1.5 flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <Plus size={12} />
                 New category
@@ -545,7 +545,7 @@ export function TemplateForm({ template }: Props) {
         </div>
 
         {/* Sidebar footer — actions */}
-        <div className="border-t border-border/60 p-4 space-y-2">
+        <div className="border-t border-border p-4 space-y-2">
           {saveState !== "idle" && (
             <div className="flex justify-center pb-1">
               <SaveStatusIndicator state={saveState} />
@@ -586,7 +586,7 @@ export function TemplateForm({ template }: Props) {
                 {saving === "publish" ? "Publishing…" : "Publish"}
               </button>
               {publishIssues.length > 0 && (
-                <p className="text-[11px] leading-snug text-muted-foreground/70">
+                <p className="text-[11px] leading-snug text-muted-foreground">
                   To publish, add {publishIssues.join(", ")}.
                 </p>
               )}
@@ -622,10 +622,10 @@ export function TemplateForm({ template }: Props) {
 
       {/* Right — content editor */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex items-start justify-between gap-3 border-b border-border/60 px-6 py-3">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">Template content</p>
-            <p className="mt-0.5 text-xs text-muted-foreground/60">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template content</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
               Press <kbd className="rounded border border-border bg-muted px-1 text-[10px]">/</kbd> for blocks
             </p>
           </div>
@@ -634,7 +634,7 @@ export function TemplateForm({ template }: Props) {
               type="button"
               onClick={() => coverInput.current?.click()}
               disabled={coverUploading}
-              className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground/60 transition-colors hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
+              className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
             >
               <ImageIcon size={13} />
               {coverUploading ? "Uploading…" : "Add cover"}
@@ -653,14 +653,14 @@ export function TemplateForm({ template }: Props) {
                   type="button"
                   onClick={() => coverInput.current?.click()}
                   disabled={coverUploading}
-                  className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card disabled:opacity-50"
+                  className="rounded-[var(--radius-sm)] border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card disabled:opacity-50"
                 >
                   {coverUploading ? "Uploading…" : "Change cover"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setRemoveCoverConfirm(true)}
-                  className="rounded-[var(--radius-sm)] border border-border/60 bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card"
+                  className="rounded-[var(--radius-sm)] border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card"
                 >
                   Remove
                 </button>

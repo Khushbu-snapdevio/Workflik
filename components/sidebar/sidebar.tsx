@@ -400,7 +400,7 @@ export function Sidebar({
          </span>
         </NewPageButton>
        </div>
-       <div className="mx-3 my-1 h-px bg-border/60" />
+       <div className="mx-3 my-1 h-px bg-border" />
        <div className="px-3 pb-2.5 pt-1">
         <p className="mb-1 text-xs font-medium tracking-wide text-muted-foreground">More</p>
         <NewDatabaseButton
@@ -443,7 +443,7 @@ export function Sidebar({
        <LayoutGrid size={18} />
       </CollapsedNavItem>
       <CollapsedFavoritesItem favorites={favorites} pagesMap={pagesMap} workspaceSlug={workspaceSlug} />
-      <div className="my-1 w-8 border-t border-sidebar-border/70" />
+      <div className="my-1 w-8 border-t border-sidebar-border" />
       <div className="group relative w-full">
        <NewPageButton
         workspaceId={workspaceId}
@@ -614,7 +614,7 @@ export function Sidebar({
          directions because their content never unmounts either. */}
      <div
       aria-hidden={!userMenu}
-      className={`absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 origin-bottom overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-popover transition-all duration-150 ease-out ${
+      className={`absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 origin-bottom overflow-hidden rounded-[var(--radius-xl)] border border-border bg-popover transition-all duration-150 ease-out ${
        userMenu ? "pointer-events-auto scale-100 opacity-100" : "pointer-events-none scale-95 opacity-0"
       }`}
      >
@@ -632,7 +632,7 @@ export function Sidebar({
         </div>
        </div>
       </div>
-      <div className="mx-3 h-px bg-border/50" />
+      <div className="mx-3 h-px bg-border" />
       <div className="p-1.5">
        <Link
         href={`/app/${workspaceSlug}/settings`}
@@ -645,7 +645,7 @@ export function Sidebar({
         <span className="text-sm font-medium text-foreground">Settings</span>
        </Link>
       </div>
-      <div className="mx-3 h-px bg-border/50" />
+      <div className="mx-3 h-px bg-border" />
       <div className="p-1.5">
        <SignOutButton className="group flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 transition-colors duration-150 hover:bg-destructive/10">
         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-destructive/10 text-destructive">
@@ -874,7 +874,7 @@ function CollapsedFavoritesItem({
           {r.icon ? (
            <PageIcon icon={r.icon} size={13} />
           ) : (
-           <FileText size={13} className="shrink-0 text-muted-foreground/70" />
+           <FileText size={13} className="shrink-0 text-muted-foreground" />
           )}
           <span className="min-w-0 truncate">{r.title || "Untitled"}</span>
          </Link>
@@ -882,7 +882,7 @@ function CollapsedFavoritesItem({
        })
       )}
      </div>
-     <div className="mx-1 h-px bg-border/60" />
+     <div className="mx-1 h-px bg-border" />
      <div className="px-3 py-2">
       <Link
        href={`/app/${workspaceSlug}/library`}

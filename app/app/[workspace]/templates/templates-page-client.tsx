@@ -290,8 +290,8 @@ export function TemplatesPageClient({
             <LayoutGrid className="shrink-0" size={13} />
             <span className="font-medium text-foreground">Templates</span>
           </span>
-          <span className="text-muted-foreground/30">·</span>
-          <span className="truncate px-1 text-muted-foreground/60">
+          <span className="text-muted-foreground-subtle">·</span>
+          <span className="truncate px-1 text-muted-foreground">
             Pick a starting point for your next page or database
           </span>
         </nav>
@@ -303,10 +303,10 @@ export function TemplatesPageClient({
             sits to the left on @md+ (container-query, since this page sits
             next to the app's own resizable sidebar — a viewport breakpoint
             can't tell how much width that leaves us, only a container one can) ── */}
-        <aside className="flex w-full shrink-0 flex-col border-b border-border/60 bg-sidebar @[768px]:w-[260px] @[768px]:border-b-0 @[768px]:border-r">
+        <aside className="flex w-full shrink-0 flex-col border-b border-border bg-sidebar @[768px]:w-[260px] @[768px]:border-b-0 @[768px]:border-r">
           {/* Header — shows active category count */}
-          <div className="border-b border-border/60 px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">
+          <div className="border-b border-border px-5 py-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">
               Categories
             </p>
             <div className="mt-1.5 flex items-end gap-1.5">
@@ -332,7 +332,7 @@ export function TemplatesPageClient({
                   className={`group mb-3 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border px-3.5 py-3 text-left transition-all duration-150 ${
                     allActive
                       ? "border-primary/25 bg-primary/10 text-primary"
-                      : "border-border/50 bg-card text-foreground hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
                   }`}
                   onClick={() => handleCategoryClick("all")}
                   type="button"
@@ -407,7 +407,7 @@ export function TemplatesPageClient({
                         className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums transition-colors duration-150 ${
                           isActive
                             ? "bg-primary/15 text-primary"
-                            : "bg-muted text-muted-foreground/60"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {cnt}
@@ -503,11 +503,11 @@ function GalleryView({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Search bar */}
-      <div className="shrink-0 border-b border-border/60 px-4 py-2.5 @[640px]:px-8 @[1024px]:px-20">
+      <div className="shrink-0 border-b border-border px-4 py-2.5 @[640px]:px-8 @[1024px]:px-20">
         <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
-          <Search className="shrink-0 text-muted-foreground/50" size={13} />
+          <Search className="shrink-0 text-muted-foreground-subtle" size={13} />
           <input
-            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search templates…"
             ref={searchRef}
@@ -734,7 +734,7 @@ function TemplateCard({
             <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6">
               {/* Close */}
               <button
-                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 onClick={() => setDeleteOpen(false)}
                 type="button"
               >
@@ -771,7 +771,7 @@ function TemplateCard({
                   Cancel
                 </button>
                 <button
-                  className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                  className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
                   disabled={deleting}
                   onClick={handleDelete}
                   type="button"
@@ -876,12 +876,12 @@ function TemplatePreviewModal({
 
         {/* ── Left info panel ── */}
         <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-border bg-background">
-          <div className="shrink-0 border-b border-border/50 bg-muted/20 px-5 py-6">
+          <div className="shrink-0 border-b border-border bg-muted/20 px-5 py-6">
             <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] border border-border bg-card">
               {template.pageSnapshot.icon ? (
                 <PageIcon icon={template.pageSnapshot.icon} size={30} />
               ) : (
-                <CatIcon className="text-muted-foreground/60" size={26} />
+                <CatIcon className="text-muted-foreground" size={26} />
               )}
             </div>
             <h2 className="pr-6 text-base font-bold leading-snug text-foreground">
@@ -889,7 +889,7 @@ function TemplatePreviewModal({
             </h2>
             {catLabel && (
               <div className="mt-2">
-                <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                   <CatIcon size={9} />
                   {catLabel}
                 </span>
@@ -911,15 +911,15 @@ function TemplatePreviewModal({
               />
             ) : blocks.length > 0 ? (
               <div>
-                <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
                   Includes
                 </p>
-                <div className="space-y-0.5 rounded-[var(--radius-xl)] border border-border/50 bg-muted/20 p-3">
+                <div className="space-y-0.5 rounded-[var(--radius-xl)] border border-border bg-muted/20 p-3">
                   {blocks.slice(0, 12).map((b, i) => (
                     <PreviewBlockRow block={b} key={i} />
                   ))}
                   {blocks.length > 12 && (
-                    <p className="pt-1 text-xs text-muted-foreground/40">
+                    <p className="pt-1 text-xs text-muted-foreground-subtle">
                       +{blocks.length - 12} more
                     </p>
                   )}
@@ -946,7 +946,7 @@ function TemplatePreviewModal({
                 </>
               )}
             </button>
-            <p className="mt-1.5 text-center text-[10px] text-muted-foreground/50">
+            <p className="mt-1.5 text-center text-[10px] text-muted-foreground-subtle">
               Creates an independent copy
             </p>
           </div>
@@ -963,7 +963,7 @@ function TemplatePreviewModal({
                   </span>
                 ) : (
                   <CatIcon
-                    className="translate-y-[20px] text-muted-foreground/25"
+                    className="translate-y-[20px] text-muted-foreground-subtle"
                     size={30}
                   />
                 )}
@@ -1022,12 +1022,12 @@ function PreviewBlockRow({
     block.type === "todo" && checked ? "☑" : (BLOCK_ICONS[block.type] ?? "·");
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/30">
+      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-muted-foreground-subtle">
         {icon}
       </span>
       <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">
         {text || (
-          <span className="italic text-muted-foreground/30">
+          <span className="italic text-muted-foreground-subtle">
             {block.type}
           </span>
         )}
@@ -1149,7 +1149,7 @@ function PreviewDocBlock({
     paragraph: "text-xs leading-relaxed text-foreground",
   };
   return (
-    <p className={cls[block.type] ?? "text-xs text-muted-foreground/50"}>
+    <p className={cls[block.type] ?? "text-xs text-muted-foreground-subtle"}>
       {text || <span className="opacity-30">—</span>}
     </p>
   );
@@ -1167,7 +1167,7 @@ function PreviewDbSchemaList({
   return (
     <div className="mt-5 space-y-5">
       <div>
-        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -1179,7 +1179,7 @@ function PreviewDbSchemaList({
                 "inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-xs font-medium transition-colors duration-150",
                 v.name === activeViewName
                   ? "border-primary/20 bg-primary/10 text-primary"
-                  : "border-border/50 bg-muted/30 text-muted-foreground hover:bg-accent hover:text-foreground",
+                  : "border-border bg-muted/30 text-muted-foreground hover:bg-accent hover:text-foreground",
               ].join(" ")}
               key={v.name}
             >
@@ -1190,20 +1190,20 @@ function PreviewDbSchemaList({
         </div>
       </div>
       <div>
-        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
           Properties ({schema.properties.length})
         </p>
-        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border/50 bg-card">
+        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
           {schema.properties.map((p, i) => (
             <div
               className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
                 i < schema.properties.length - 1
-                  ? "border-b border-border/40"
+                  ? "border-b border-border"
                   : ""
               }`}
               key={p.name}
             >
-              <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground/60">
+              <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">
                 {PROP_TYPE_ICON[p.type] ?? "·"}
               </span>
               <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground/80">
@@ -1223,7 +1223,7 @@ function PreviewDbSchemaList({
                     );
                   })}
                   {p.options.length > 2 && (
-                    <span className="text-[10px] text-muted-foreground/60">
+                    <span className="text-[10px] text-muted-foreground">
                       +{p.options.length - 2}
                     </span>
                   )}
@@ -1247,7 +1247,7 @@ function PreviewViewTabs({
   onSelect: (name: string) => void;
 }) {
   return (
-    <div className="mb-3 flex items-center gap-1 overflow-x-auto border-b border-border/40 pb-2">
+    <div className="mb-3 flex items-center gap-1 overflow-x-auto border-b border-border pb-2">
       {views.map((v) => (
         <button
           type="button"
@@ -1256,7 +1256,7 @@ function PreviewViewTabs({
             "shrink-0 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium transition-colors duration-150",
             v.name === activeName
               ? "bg-accent text-foreground font-semibold"
-              : "text-muted-foreground/50 hover:bg-accent/50 hover:text-foreground",
+              : "text-muted-foreground-subtle hover:bg-accent/50 hover:text-foreground",
           ].join(" ")}
           key={v.name}
         >
@@ -1292,11 +1292,11 @@ function PreviewDbTable({
   return (
     <div className="mt-3">
       <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border/40">
-        <div className="flex border-b border-border/40 bg-muted/30">
+      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border">
+        <div className="flex border-b border-border bg-muted/30">
           {visibleProps.map((p) => (
             <div
-              className="min-w-0 flex-1 truncate px-2 py-1.5 text-[9.5px] font-semibold text-muted-foreground/60"
+              className="min-w-0 flex-1 truncate px-2 py-1.5 text-[9.5px] font-semibold text-muted-foreground"
               key={p.name}
             >
               <span className="mr-1 opacity-50">
@@ -1308,7 +1308,7 @@ function PreviewDbTable({
         </div>
         {rows.slice(0, 3).map((row, ri) => (
           <div
-            className="flex border-b border-border/30 last:border-0"
+            className="flex border-b border-border last:border-0"
             key={ri}
           >
             {visibleProps.map((p, pi) => {
@@ -1326,7 +1326,7 @@ function PreviewDbTable({
                       {val}
                     </span>
                   ) : val === undefined ? (
-                    <span className="text-muted-foreground/20">—</span>
+                    <span className="text-muted-foreground-subtle">—</span>
                   ) : (
                     <span className="block truncate">{String(val)}</span>
                   )}
@@ -1336,7 +1336,7 @@ function PreviewDbTable({
           </div>
         ))}
         {rows.length === 0 && (
-          <div className="py-3 text-center text-xs text-muted-foreground/30">
+          <div className="py-3 text-center text-xs text-muted-foreground-subtle">
             No sample data
           </div>
         )}
@@ -1370,7 +1370,7 @@ function PreviewDbBoard({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-[var(--radius-lg)] border border-border/40 bg-background">
+      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-[var(--radius-lg)] border border-border bg-background">
         {columns.map((col, ci) => {
           const colRows = groupByProp
             ? rows.filter((r) => r[groupByProp.name] === col.name)
@@ -1378,16 +1378,16 @@ function PreviewDbBoard({
           const clr = OPTION_COLORS[col.color] ?? DEFAULT_OPT;
           return (
             <div
-              className={`flex min-w-[148px] flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border/30" : ""}`}
+              className={`flex min-w-[148px] flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border" : ""}`}
               key={col.name}
             >
-              <div className="flex shrink-0 items-center gap-1.5 border-b border-border/30 bg-muted/30 px-3 py-2.5">
+              <div className="flex shrink-0 items-center gap-1.5 border-b border-border bg-muted/30 px-3 py-2.5">
                 <span className={`size-1.5 shrink-0 rounded-full ${clr.dot}`} />
                 <span className="flex-1 truncate text-[11px] font-semibold text-foreground/70">
                   {col.name}
                 </span>
                 {colRows.length > 0 && (
-                  <span className="tabular-nums text-[10px] text-muted-foreground/40">
+                  <span className="tabular-nums text-[10px] text-muted-foreground-subtle">
                     {colRows.length}
                   </span>
                 )}
@@ -1403,7 +1403,7 @@ function PreviewDbBoard({
                   );
                   return (
                     <div
-                      className="shrink-0 rounded-[var(--radius-md)] border border-border/50 bg-card p-2.5"
+                      className="shrink-0 rounded-[var(--radius-md)] border border-border bg-card p-2.5"
                       key={i}
                     >
                       <p className="text-[11px] font-medium leading-snug text-foreground">
@@ -1420,8 +1420,8 @@ function PreviewDbBoard({
                   );
                 })}
               </div>
-              <div className="shrink-0 border-t border-border/20 px-3 py-2">
-                <span className="text-[10px] text-muted-foreground/30">
+              <div className="shrink-0 border-t border-border px-3 py-2">
+                <span className="text-[10px] text-muted-foreground-subtle">
                   + New
                 </span>
               </div>
@@ -1445,20 +1445,20 @@ function PreviewDbCalendar({
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
       <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/40">
-        <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-1.5">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border">
+        <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/20 px-3 py-1.5">
           <span className="text-xs font-semibold text-foreground/70">
             June 2026
           </span>
-          <div className="flex gap-2 text-xs text-muted-foreground/30">
+          <div className="flex gap-2 text-xs text-muted-foreground-subtle">
             <span>‹</span>
             <span>›</span>
           </div>
         </div>
-        <div className="grid shrink-0 grid-cols-7 border-b border-border/40 bg-muted/10">
+        <div className="grid shrink-0 grid-cols-7 border-b border-border bg-muted/10">
           {CAL_DAYS.map((d) => (
             <div
-              className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground/40"
+              className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground-subtle"
               key={d}
             >
               {d}
@@ -1468,12 +1468,12 @@ function PreviewDbCalendar({
         <div className="flex min-h-0 flex-1 flex-col">
           {CAL_WEEKS.map((week, wi) => (
             <div
-              className="grid flex-1 grid-cols-7 border-b border-border/20 last:border-0"
+              className="grid flex-1 grid-cols-7 border-b border-border last:border-0"
               key={wi}
             >
               {week.map((date, di) => (
                 <div
-                  className="border-r border-border/20 p-1 last:border-0"
+                  className="border-r border-border p-1 last:border-0"
                   key={di}
                 >
                   {date > 0 && (
@@ -1481,7 +1481,7 @@ function PreviewDbCalendar({
                       className={
                         date === 19
                           ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-                          : "text-xs text-muted-foreground/40"
+                          : "text-xs text-muted-foreground-subtle"
                       }
                     >
                       {date}
@@ -1529,7 +1529,7 @@ function TemplateCardThumbnail({ template, categories }: { template: Template; c
   const CatIcon = iconForCategory(categories, template.categoryId);
 
   return (
-    <div className="relative h-36 overflow-hidden border-b border-border/30 bg-gradient-to-b from-muted/30 to-muted/10">
+    <div className="relative h-36 overflow-hidden border-b border-border bg-gradient-to-b from-muted/30 to-muted/10">
       <div className="flex h-full flex-col justify-center p-3">
         {/* Icon indicator row */}
         <div className="mb-2.5 flex items-center gap-1.5">
@@ -1586,12 +1586,12 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
   const rows = schema.sample_rows ?? [];
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-xs)] border border-border/50 text-[8px] leading-none">
+    <div className="overflow-hidden rounded-[var(--radius-xs)] border border-border text-[8px] leading-none">
       {/* Header row */}
-      <div className="flex border-b border-border/40 bg-muted/50">
+      <div className="flex border-b border-border bg-muted/50">
         {props.map((p, i) => (
           <div
-            className="min-w-0 flex-1 truncate px-1.5 py-1 font-semibold text-muted-foreground/40"
+            className="min-w-0 flex-1 truncate px-1.5 py-1 font-semibold text-muted-foreground-subtle"
             key={i}
           >
             {PROP_TYPE_ICON[p.type] ?? "·"} {p.name.slice(0, 5)}
@@ -1603,7 +1603,7 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
         const row = rows[ri];
         return (
           <div
-            className="flex border-b border-border/20 last:border-0"
+            className="flex border-b border-border last:border-0"
             key={ri}
           >
             {props.map((p, pi) => {
@@ -1676,7 +1676,7 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
                   : undefined;
                 return (
                   <div
-                    className="space-y-0.5 rounded-[var(--radius-xs)] border border-border/30 bg-card p-1.5"
+                    className="space-y-0.5 rounded-[var(--radius-xs)] border border-border bg-card p-1.5"
                     key={ki}
                   >
                     {title !== undefined ? (
@@ -1703,11 +1703,11 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
 function MiniCalContent() {
   const events = new Set([2, 7, 12, 18, 20]);
   return (
-    <div className="overflow-hidden rounded-[var(--radius-xs)] border border-border/40">
-      <div className="grid grid-cols-7 border-b border-border/40 bg-muted/30">
+    <div className="overflow-hidden rounded-[var(--radius-xs)] border border-border">
+      <div className="grid grid-cols-7 border-b border-border bg-muted/30">
         {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
           <div className="py-0.5 text-center" key={i}>
-            <span className="text-[6.5px] font-semibold text-muted-foreground/40">
+            <span className="text-[6.5px] font-semibold text-muted-foreground-subtle">
               {d}
             </span>
           </div>
@@ -1716,7 +1716,7 @@ function MiniCalContent() {
       <div className="grid grid-cols-7">
         {Array.from({ length: 21 }).map((_, i) => (
           <div
-            className="relative h-4 border-b border-r border-border/15 p-0.5 last:border-r-0"
+            className="relative h-4 border-b border-r border-border p-0.5 last:border-r-0"
             key={i}
           >
             {i === 14 ? (
@@ -1727,7 +1727,7 @@ function MiniCalContent() {
               </div>
             ) : (
               <>
-                <span className="text-[5.5px] text-muted-foreground/30">
+                <span className="text-[5.5px] text-muted-foreground-subtle">
                   {i + 1}
                 </span>
                 {events.has(i) && (
@@ -1784,7 +1784,7 @@ function EmptyState({
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
         <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-          <LayoutGrid className="text-muted-foreground/40" size={22} />
+          <LayoutGrid className="text-muted-foreground-subtle" size={22} />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">
@@ -1815,7 +1815,7 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-        <LayoutGrid className="text-muted-foreground/40" size={22} />
+        <LayoutGrid className="text-muted-foreground-subtle" size={22} />
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">

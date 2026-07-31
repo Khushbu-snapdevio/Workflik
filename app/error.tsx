@@ -83,7 +83,7 @@ export default function GlobalErrorPage({
           this keeps happening.
         </p>
         {error.digest && (
-          <p className="mt-3 text-xs text-muted-foreground/60">
+          <p className="mt-3 text-xs text-muted-foreground">
             Reference: {error.digest}
           </p>
         )}

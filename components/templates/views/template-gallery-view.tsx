@@ -259,7 +259,7 @@ function GalleryCard({
     <>
       <div
         className={[
-          "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card transition-colors duration-150",
+          "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card transition-colors duration-150",
           dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
         onMouseEnter={() => !dragging && setHovered(true)}
@@ -363,7 +363,7 @@ function GalleryCard({
           onPointerDown={(e) => e.stopPropagation()}
         >
           <div className="flex size-full items-center justify-center">
-            <LayoutGrid className="text-muted-foreground/60" size={28} />
+            <LayoutGrid className="text-muted-foreground" size={28} />
           </div>
         </button>
 
@@ -377,7 +377,7 @@ function GalleryCard({
               {entry.icon ? (
                 <PageIcon className="shrink-0" icon={entry.icon} size={16} />
               ) : (
-                <FileText className="shrink-0 text-muted-foreground/60" size={12} />
+                <FileText className="shrink-0 text-muted-foreground" size={12} />
               )}
             </span>
             {editing ? (
@@ -412,7 +412,7 @@ function GalleryCard({
               >
                 <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
                   {entry.title || (
-                    <span className="font-normal text-muted-foreground/60">
+                    <span className="font-normal text-muted-foreground">
                       Untitled
                     </span>
                   )}
@@ -527,7 +527,7 @@ function GalleryCard({
             inline card editor so gallery cards can be filled in without opening
             the full page. */}
           {emptyProps.length > 0 && (
-            <div className="mt-2 flex flex-col gap-0.5 border-t border-border/50 pt-2">
+            <div className="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
               {emptyProps.map((prop) => {
                 const TypeIcon =
                   PROPERTY_TYPE_ICON[
@@ -536,7 +536,7 @@ function GalleryCard({
                 const propConfig = (prop.config ?? {}) as { icon?: string };
                 return (
                   <button
-                    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -781,7 +781,7 @@ export function TemplateGalleryView({
               {/* New page card — outside SortableContext items */}
               {!locked && (
                 <button
-                  className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border/50 text-muted-foreground/70 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
+                  className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
                   onClick={() => onAddEntry()}
                 >
                   <Plus size={18} />

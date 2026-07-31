@@ -53,7 +53,7 @@ function MediaPicker({
         <input
           // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
           autoFocus
-          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40"
+          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground-subtle"
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && url.trim()) {
@@ -132,7 +132,7 @@ function MediaActions({
     <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
       {onAddCaption && (
         <button
-          className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-foreground/90"
+          className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
           onClick={onAddCaption}
           onMouseDown={(e) => e.preventDefault()}
           type="button"
@@ -141,7 +141,7 @@ function MediaActions({
         </button>
       )}
       <button
-        className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-destructive/80"
+        className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
         onClick={onDelete}
         onMouseDown={(e) => e.preventDefault()}
         type="button"
@@ -149,7 +149,7 @@ function MediaActions({
         Delete
       </button>
       <button
-        className="rounded-[var(--radius-sm)] bg-foreground/80 px-2 py-1 text-xs text-white hover:bg-foreground/90"
+        className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
         onClick={onChangeDirect}
         onMouseDown={(e) => e.preventDefault()}
         type="button"
@@ -251,7 +251,7 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
         </div>
         {showCaption && (
           <input
-            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
+            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });
@@ -346,7 +346,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
         </div>
         {showCaption && (
           <input
-            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
+            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });
@@ -417,7 +417,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-2">
-        <div className="relative flex items-center gap-3 rounded-[var(--radius-sm)] border border-border/40 bg-muted/30 px-4 py-3">
+        <div className="relative flex items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-4 py-3">
           <span className="text-2xl">🎵</span>
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <audio
@@ -464,7 +464,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
         </div>
         {showCaption && (
           <input
-            className="mt-1.5 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+            className="mt-1.5 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });
@@ -531,7 +531,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="group my-2 flex items-center justify-between rounded-[var(--radius-sm)] border border-border/40 bg-muted/30 px-4 py-3">
+      <div className="group my-2 flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-muted/30 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-2xl">📎</span>
           <div className="min-w-0">
@@ -575,7 +575,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
         </div>
       </div>
       <input
-        className="mt-1 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/30"
+        className="mt-1 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
         onChange={(e) => {
           setCaptionDraft(e.target.value);
           updateAttributes({ caption: e.target.value });
@@ -745,7 +745,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
                 >
                   Embed PDF
                 </Button>
-                <p className="text-center text-xs text-muted-foreground/70">
+                <p className="text-center text-xs text-muted-foreground">
                   Embed a PDF file
                 </p>
               </TabsContent>
@@ -788,7 +788,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
         </div>
         <div className="mt-1.5 flex items-center justify-center gap-2">
           <input
-            className="max-w-xs bg-transparent text-center text-xs text-muted-foreground/60 outline-none placeholder:text-muted-foreground/30"
+            className="max-w-xs bg-transparent text-center text-xs text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });

@@ -365,7 +365,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
         if (e.key === "Backspace" && !search && selectedOptions.length > 0) toggle(selectedOptions[selectedOptions.length - 1].id);
        }}
        placeholder={selectedOptions.length > 0 ? "" : "Search or create…"}
-       className="min-w-[60px] flex-1 bg-transparent text-xs placeholder:text-muted-foreground/40 focus:outline-none"
+       className="min-w-[60px] flex-1 bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
       />
      )}
     </div>
@@ -377,7 +377,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
        there are. */}
    <div className="min-h-0 flex-1 overflow-y-auto p-1">
     {!hideSearch && !grouped && (
-     <p className="px-2 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+     <p className="px-2 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">
       Select an option or create one
      </p>
     )}
@@ -387,10 +387,10 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
        <div key={section.key} className="mb-1 last:mb-0">
         {section.label && (
          <div className="mb-0.5 flex items-center justify-between px-2 pt-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">{section.label}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</span>
           <button
            onClick={() => setAddingTo(section.key)}
-           className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 hover:bg-accent hover:text-foreground"
+           className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
            onMouseEnter={(e) => showTooltip(`Add option to ${section.label}`, e)}
            onMouseLeave={hideTooltip}
           >
@@ -458,7 +458,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
     )}
 
     {!!options.length && !filtered.length && !canCreate && (
-     <p className="px-3 py-2 text-xs text-muted-foreground/60">No options</p>
+     <p className="px-3 py-2 text-xs text-muted-foreground">No options</p>
     )}
    </div>
 
@@ -512,7 +512,7 @@ function SortableOptionRow({ option, selected, draggable, onToggle, onOpenMenu }
      {...attributes}
      {...listeners}
      style={{ touchAction: "none" }}
-     className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/40 opacity-0 group-hover/opt:opacity-100"
+     className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground-subtle opacity-0 group-hover/opt:opacity-100"
     >
      <GripVertical size={12} />
     </span>
@@ -531,7 +531,7 @@ function SortableOptionRow({ option, selected, draggable, onToggle, onOpenMenu }
    <button
     type="button"
     onClick={(e) => { e.stopPropagation(); onOpenMenu((e.currentTarget as HTMLElement).getBoundingClientRect()); }}
-    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground/60 opacity-0 hover:bg-accent group-hover/opt:opacity-100"
+    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground opacity-0 hover:bg-accent group-hover/opt:opacity-100"
    >
     <MoreHorizontal size={13} />
    </button>
@@ -681,7 +681,7 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
     <div className="flex flex-wrap gap-1 border-b border-border px-2.5 py-2">
      {selectedMembers.map((m) => (
       <span key={m.id} className="flex items-center gap-1 rounded-full bg-accent py-0.5 pl-1 pr-1.5 text-xs text-foreground">
-       <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
+       <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
         {(m.name || "?").slice(0, 1).toUpperCase()}
        </span>
        {m.name}
@@ -698,13 +698,13 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
      value={search}
      onChange={(e) => setSearch(e.target.value)}
      placeholder="Search people…"
-     className="w-full bg-transparent text-xs placeholder:text-muted-foreground/40 focus:outline-none"
+     className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
     />
    </div>
    <div className="max-h-48 overflow-y-auto p-1">
-    {loading && <p className="px-3 py-2 text-xs text-muted-foreground/60">Loading…</p>}
+    {loading && <p className="px-3 py-2 text-xs text-muted-foreground">Loading…</p>}
     {!loading && filtered.length > 0 && (
-     <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">People</p>
+     <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">People</p>
     )}
     {!loading && filtered.map((m) => {
      const selected = selectedIds.includes(m.userId);
@@ -720,7 +720,7 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
        onClick={() => toggle(m.userId)}
        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent"
       >
-       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
         {initials}
        </span>
        <span className="min-w-0 flex-1 text-left">
@@ -732,14 +732,14 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
      );
     })}
     {!loading && search.trim() && !filtered.length && (
-     <p className="px-3 py-2 text-xs text-muted-foreground/60">No matches in “{search}”…</p>
+     <p className="px-3 py-2 text-xs text-muted-foreground">No matches in “{search}”…</p>
     )}
     {!loading && !search.trim() && !filtered.length && (
-     <p className="px-3 py-2 text-xs text-muted-foreground/60">No members found</p>
+     <p className="px-3 py-2 text-xs text-muted-foreground">No members found</p>
     )}
    </div>
    <div className="border-t border-border p-1">
-    <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">More</p>
+    <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">More</p>
     <button
      onClick={() => setInviting(true)}
      className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-foreground hover:bg-accent"
@@ -796,12 +796,12 @@ function RelationEditor({ value, property, onSave }: RelationEditorProps) {
      value={search}
      onChange={(e) => setSearch(e.target.value)}
      placeholder="Search entries…"
-     className="w-full bg-transparent text-xs placeholder:text-muted-foreground/40 focus:outline-none"
+     className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
     />
    </div>
    <div className="max-h-48 overflow-y-auto p-1">
-    {loading && <p className="px-3 py-2 text-xs text-muted-foreground/60">Loading…</p>}
-    {!relDbId && !loading && <p className="px-3 py-2 text-xs text-muted-foreground/60">No related database configured</p>}
+    {loading && <p className="px-3 py-2 text-xs text-muted-foreground">Loading…</p>}
+    {!relDbId && !loading && <p className="px-3 py-2 text-xs text-muted-foreground">No related database configured</p>}
     {!loading && relDbId && filtered.map((entry) => {
      const selected = selectedIds.includes(entry.id);
      return (
@@ -818,7 +818,7 @@ function RelationEditor({ value, property, onSave }: RelationEditorProps) {
      );
     })}
     {!loading && relDbId && !filtered.length && (
-     <p className="px-3 py-2 text-xs text-muted-foreground/60">No entries found</p>
+     <p className="px-3 py-2 text-xs text-muted-foreground">No entries found</p>
     )}
    </div>
   </div>
@@ -942,7 +942,7 @@ function FileEditor({ value, workspaceId, onSave, onClose }: FileEditorProps) {
         >
          {uploading ? "Uploading…" : "Choose a file"}
         </Button>
-        <p className="mt-2 text-center text-xs text-muted-foreground/60">or Ctrl+V to paste an image</p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">or Ctrl+V to paste an image</p>
        </TabsContent>
        <TabsContent className="mt-3 space-y-2" value="link">
         <Input
@@ -992,7 +992,7 @@ function SortableFileRow({ file, onDelete }: { file: FileItem; onDelete: () => v
     {...attributes}
     {...listeners}
     style={{ touchAction: "none" }}
-    className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground/40 opacity-0 group-hover/filerow:opacity-100 active:cursor-grabbing"
+    className="flex size-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground-subtle opacity-0 group-hover/filerow:opacity-100 active:cursor-grabbing"
    >
     <GripVertical size={12} />
    </span>
@@ -1205,7 +1205,7 @@ export function FilesPropertyValue({ files, isEditor, onChange, onAddClick }: Fi
     <button
      type="button"
      onClick={onAddClick}
-     className="flex items-center gap-1 self-start rounded-[var(--radius-xs)] px-1 py-0.5 text-xs font-medium text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+     className="flex items-center gap-1 self-start rounded-[var(--radius-xs)] px-1 py-0.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
     >
      <Plus size={12} /> Add a file or image
     </button>

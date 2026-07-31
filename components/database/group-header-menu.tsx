@@ -81,7 +81,7 @@ export function GroupHeaderMenu({
       </button>
       {editable && (
         <>
-          <div className="my-1 h-px bg-border/60" />
+          <div className="my-1 h-px bg-border" />
           <button
             onClick={() => { onDeleteGroup(); onClose(); }}
             className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"

@@ -302,13 +302,13 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
       {/* Search row */}
       <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-2.5">
         <div className="relative flex-1">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground-subtle" />
           <input
             value={emojiSearch}
             onChange={(e) => setEmojiSearch(e.target.value)}
             placeholder="Filter..."
             autoFocus
-            className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+            className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary/50"
           />
         </div>
         {onShuffle && (
@@ -382,7 +382,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
           <>
             {recentEmojis.length > 0 && (
               <div ref={(el) => { catRefs.current["recent"] = el; }}>
-                <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground/50">
+                <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground-subtle">
                   Recently used
                 </p>
                 <div className="grid grid-cols-10 gap-0 pb-1">
@@ -394,7 +394,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             )}
             {EMOJI_CATEGORIES.map((cat) => (
               <div key={cat.id} ref={(el) => { catRefs.current[cat.id] = el; }}>
-                <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground/50">
+                <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground-subtle">
                   {cat.label}
                 </p>
                 <div className="grid grid-cols-10 gap-0 pb-1">
@@ -407,12 +407,12 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
       </div>
 
       {/* Category shortcut bar */}
-      <div className="flex items-center justify-around border-t border-border/50 px-1 py-1 scrollbar-none">
+      <div className="flex items-center justify-around border-t border-border px-1 py-1 scrollbar-none">
         <button
           onClick={() => scrollToCategory("recent")}
           onMouseEnter={(e) => showTooltip("Recently used", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+          className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <Clock size={13} />
         </button>

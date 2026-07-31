@@ -292,7 +292,7 @@ export default async function OrbitAnalyticsPage() {
          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/50">
           <div className="h-full rounded-full bg-primary" style={{ width: `${r.pct}%` }} />
          </div>
-         <p className="mt-1 text-xs text-muted-foreground/60">{r.pct}% of all users</p>
+         <p className="mt-1 text-xs text-muted-foreground">{r.pct}% of all users</p>
         </div>
        ))}
       </div>
@@ -403,7 +403,7 @@ function ChartCard({ title, subtitle, value, valueLabel, badge, children }: {
      <div className="shrink-0 text-right">
       <p className="text-xl font-bold leading-none text-primary">{value}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{valueLabel}</p>
-      {badge && <p className="mt-0.5 text-xs text-muted-foreground/60">{badge}</p>}
+      {badge && <p className="mt-0.5 text-xs text-muted-foreground">{badge}</p>}
      </div>
     </div>
     <div className="mt-4">{children}</div>
@@ -418,8 +418,8 @@ function DayLabels({ days }: { days: number }) {
  const fmt = (d: Date) => d.toLocaleDateString("en", { month: "short", day: "numeric" });
  return (
   <div className="mt-1.5 flex justify-between">
-   <span className="text-xs text-muted-foreground/60">{fmt(start)}</span>
-   <span className="text-xs text-muted-foreground/60">{fmt(now)}</span>
+   <span className="text-xs text-muted-foreground">{fmt(start)}</span>
+   <span className="text-xs text-muted-foreground">{fmt(now)}</span>
   </div>
  );
 }

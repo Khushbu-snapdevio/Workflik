@@ -114,7 +114,7 @@ export default function NotificationSettingsPage() {
   return (
     <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
-      <p className="rounded-[var(--radius-md)] border border-border/60 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+      <p className="rounded-[var(--radius-md)] border border-border bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
         These preferences are per-account, not per-workspace — they apply the same way across every workspace you&apos;re a member of.
       </p>
 
@@ -208,7 +208,7 @@ export default function NotificationSettingsPage() {
         <div className="grid grid-cols-2 gap-3">
           {EVENTS.map(ev => (
             <div key={ev.key}
-              className={`flex flex-col gap-3 rounded-[var(--radius-md)] border border-border/60 bg-card p-4 transition-colors duration-150 ${!emailOn ? "opacity-40" : ""}`}>
+              className={`flex flex-col gap-3 rounded-[var(--radius-md)] border border-border bg-card p-4 transition-colors duration-150 ${!emailOn ? "opacity-40" : ""}`}>
               <div className="flex items-center justify-between">
                 <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50 text-base">{ev.icon}</span>
                 <Switch

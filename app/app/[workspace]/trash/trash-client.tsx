@@ -43,14 +43,14 @@ function timeAgo(iso: string) {
 function PageIcon({ icon, kind }: { icon: string | null; kind: string }) {
   if (icon) return <SharedPageIcon icon={icon} size={14} />;
   if (kind === "database") return (
-    <svg className="size-4 shrink-0 text-muted-foreground/40" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+    <svg className="size-4 shrink-0 text-muted-foreground-subtle" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
       <rect x="3" y="3" width="18" height="18" rx="2"/>
       <line x1="3" y1="9" x2="21" y2="9"/>
       <line x1="3" y1="15" x2="21" y2="15"/>
       <line x1="9" y1="9" x2="9" y2="21"/>
     </svg>
   );
-  return <FileText size={16} className="shrink-0 text-muted-foreground/40" />;
+  return <FileText size={16} className="shrink-0 text-muted-foreground-subtle" />;
 }
 
 export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; workspaceSlug: string }) {
@@ -266,16 +266,16 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
 
             {/* Search */}
             <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 transition-colors duration-150 focus-within:border-border">
-              <Search size={13} className="shrink-0 text-muted-foreground/60" />
+              <Search size={13} className="shrink-0 text-muted-foreground" />
               <input
-                className="w-44 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+                className="w-44 bg-transparent text-xs text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
                 placeholder="Search trash…"
                 value={search}
                 onChange={(e) => changeSearch(e.target.value)}
                 type="text"
               />
               {search && (
-                <button type="button" onClick={() => changeSearch("")} className="text-muted-foreground/50 transition-colors hover:text-foreground">
+                <button type="button" onClick={() => changeSearch("")} className="text-muted-foreground-subtle transition-colors hover:text-foreground">
                   <X size={12} />
                 </button>
               )}
@@ -292,7 +292,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card py-20 text-center">
               <div className="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-muted">
-                <Trash2 size={20} className="text-muted-foreground/40" />
+                <Trash2 size={20} className="text-muted-foreground-subtle" />
               </div>
               <p className="text-sm font-semibold text-foreground">
                 {search ? "No pages match" : "Trash is empty"}
@@ -320,7 +320,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                         ? "border-primary bg-primary"
                         : someSelected
                           ? "border-primary bg-primary/20"
-                          : "border-border/60 bg-background hover:border-primary/50"
+                          : "border-border bg-background hover:border-primary/50"
                     }`}>
                       {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                       {someSelected && !allSelected && (
@@ -329,14 +329,14 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                     </span>
                   </label>
                 </div>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Page name</span>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Deleted by</span>
-                <span className="text-xs font-semibold tracking-wide text-muted-foreground/60">Deleted</span>
-                <span className="text-right text-xs font-semibold tracking-wide text-muted-foreground/60">Actions</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">Page name</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">Deleted by</span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground">Deleted</span>
+                <span className="text-right text-xs font-semibold tracking-wide text-muted-foreground">Actions</span>
               </div>
 
               {/* Rows */}
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-border">
                 {visibleRows.map((page) => {
                   const left     = page.deletedAt ? daysLeft(page.deletedAt) : 30;
                   const urgent   = left <= 7;
@@ -356,7 +356,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                             className="sr-only"
                           />
                           <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
-                            isChecked ? "border-primary bg-primary" : "border-border/50 bg-background hover:border-primary/50"
+                            isChecked ? "border-primary bg-primary" : "border-border bg-background hover:border-primary/50"
                           }`}>
                             {isChecked && <Check size={10} className="text-white" strokeWidth={3} />}
                           </span>
@@ -372,7 +372,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                           <p className="truncate text-sm font-medium text-foreground">
                             {page.title || "Untitled"}
                           </p>
-                          <p className={`text-xs ${urgent ? "font-medium text-destructive" : "text-muted-foreground/60"}`}>
+                          <p className={`text-xs ${urgent ? "font-medium text-destructive" : "text-muted-foreground"}`}>
                             {urgent
                               ? left === 0 ? "Deletes today" : `Deletes in ${left}d`
                               : `Deletes in ${left} days`}
@@ -420,8 +420,8 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
               </div>
 
               {/* Footer: rows per page · go to page · prev/numbered/next */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/40 px-5 py-3">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>Rows per page</span>
                   <div className="relative flex items-center">
                     <input
@@ -438,7 +438,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                         type="button"
                         aria-label="Increase rows per page"
                         onClick={() => changePageSize(pageSize + 5)}
-                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                        className="flex h-2.5 items-center text-muted-foreground-subtle hover:text-foreground"
                       >
                         <ChevronUp size={10} />
                       </button>
@@ -446,7 +446,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                         type="button"
                         aria-label="Decrease rows per page"
                         onClick={() => changePageSize(pageSize - 5)}
-                        className="flex h-2.5 items-center text-muted-foreground/50 hover:text-foreground"
+                        className="flex h-2.5 items-center text-muted-foreground-subtle hover:text-foreground"
                       >
                         <ChevronDown size={10} />
                       </button>
@@ -454,7 +454,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>Go to page</span>
                   <input
                     type="text"
@@ -463,7 +463,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                     placeholder={`1–${totalPages}`}
                     onChange={(e) => setGoToPageInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(totalPages); }}
-                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-primary/50 focus:outline-none"
+                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
                   />
                   <button
                     type="button"
@@ -488,7 +488,7 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
 
                   {getPageNumbers(page, totalPages).map((p, i) =>
                     p === "…" ? (
-                      <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground/50">…</span>
+                      <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted-foreground-subtle">…</span>
                     ) : (
                       <button
                         key={p}

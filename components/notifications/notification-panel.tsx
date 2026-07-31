@@ -170,7 +170,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   Notifications
                 </h2>
                 {unread > 0 && (
-                  <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold leading-none text-white">
+                  <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold leading-none text-primary-foreground">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
@@ -211,7 +211,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 icon={<X size={14} />}
                 label="Close"
                 onClick={closePanel}
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/70 transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               />
             </div>
           </div>
@@ -235,7 +235,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   {label}
                   {key === "all" && unread > 0 && (
                     <span className={`inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none ${
-                      filter === key ? "bg-primary text-white" : "bg-muted text-muted-foreground"
+                      filter === key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                     }`}>
                       {unread > 99 ? "99+" : unread}
                     </span>
@@ -263,7 +263,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
           ) : items.length === 0 ? (
             <EmptyState filter={filter} />
           ) : (
-            <div className="divide-y divide-border/50">
+            <div className="divide-y divide-border">
               {items.map((n) => (
                 <NotificationCard
                   key={n.id}
@@ -317,7 +317,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
 function LoadingSkeleton() {
   return (
-    <div className="divide-y divide-border/50">
+    <div className="divide-y divide-border">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="flex gap-3 px-4 py-3.5">
           <div className="size-9 shrink-0 animate-pulse rounded-full bg-muted/60" />
@@ -335,7 +335,7 @@ function EmptyState({ filter }: { filter: FilterKey }) {
   return (
     <div className="flex flex-col items-center justify-center gap-5 px-8 py-20">
       <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
-        <Bell size={24} className="text-muted-foreground/70" />
+        <Bell size={24} className="text-muted-foreground" />
       </div>
       <div className="text-center">
         <p className="text-sm font-semibold text-foreground">All caught up</p>

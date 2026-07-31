@@ -7,7 +7,7 @@ export default function TemplatesLoading() {
       </div>
 
       {/* Category filter skeleton */}
-      <div className="flex gap-2 border-b border-border/60 px-6 py-3">
+      <div className="flex gap-2 border-b border-border px-6 py-3">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="h-7 w-20 rounded-full bg-muted" />
         ))}

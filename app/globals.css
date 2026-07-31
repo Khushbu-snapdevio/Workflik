@@ -5,6 +5,11 @@
 @import "flag-icons/css/flag-icons.min.css";
 @plugin "@tailwindcss/typography";
 
+/* Tailwind v4 resolves `dark:` against prefers-color-scheme by default, which
+   would ignore an explicit user choice. Bind it to the .dark class that
+   next-themes puts on <html> so the toggle actually drives the variants. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 * {
   box-sizing: border-box;
 }
@@ -67,9 +72,11 @@ body {
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
+  --color-muted-foreground-subtle: var(--muted-foreground-subtle);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
@@ -91,20 +98,38 @@ body {
   --radius:     8px;
 }
 
+/* ── Colour contract ────────────────────────────────────────────────────────
+   Every foreground/background pair below is measured against WCAG 2.1:
+   text ≥ 4.5:1 (AA normal), UI control boundaries ≥ 3:1 (SC 1.4.11).
+   The measured ratio is noted next to each token — if you change a value,
+   re-check the pair it belongs to. Text tiers are three fixed tokens
+   (foreground → muted-foreground → muted-foreground-subtle); do NOT create a
+   fourth tier by applying an opacity modifier to one of them, because
+   `text-muted-foreground/40` lands at 1.7:1 and is effectively invisible.
+   ──────────────────────────────────────────────────────────────────────── */
 :root {
-  /* ── Page background ──────────────────────── */
-  --page: #F8FAFC;
+  /* ── Page background ──────────────────────────────────────────────────────
+     Canvas for full-page centred layouts (auth, error, invite). Deliberately
+     the same value as --background — it is a semantic alias so those routes
+     read as "page canvas", not a second, drifting background colour. */
+  --page: #F1F6FB;
 
-  /* ── Status colours ───────────────────────── */
-  --success:              #10B981;
-  --success-foreground:   #064E3B;
+  /* ── Status colours — all measured as TEXT on white ── */
+  --success:              #047857; /* 5.48:1 */
   --success-subtle:       #ECFDF5;
   --success-light:        #6EE7B7;
-  --warning:              #F59E0B;
-  --destructive:          #EF4444;
+  --warning:              #B45309; /* 5.02:1 */
+  --destructive:          #C81E1E; /* 5.25:1 on white, 4.91:1 on bg-destructive/10 */
+
+  /* Labels sitting on a SOLID status fill (`bg-success`, `bg-destructive`).
+     These must flip with the theme, not default to white: in dark mode the
+     fills lift to #34D399 / #F87171 and a white label falls to 1.9:1 / 2.8:1.
+     For text on a *subtle* status tint use `text-success` etc. instead. */
+  --success-foreground:     #FFFFFF; /* 5.48:1 on --success */
+  --destructive-foreground: #FFFFFF; /* 5.74:1 on --destructive */
 
   /* ── Brand palette ────────────────────────── */
-  --primary-hover:        #0369A1;
+  --primary-hover:        #075985;
 
   /* ── Shadows ──────────────────────────────── */
   --shadow-card:   0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
@@ -112,38 +137,50 @@ body {
   --shadow-float:  0 8px 24px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.06);
 
   /* ── Core tokens ──────────────────────────── */
-  --background:           #F8FBFF;
-  --foreground:           #0C2340;
+  /* Canvas is tinted so white cards read as raised surfaces against it —
+     at the old #F8FBFF the card/canvas delta was 1.04:1, i.e. no visible
+     edge at all once the hairline border is factored in. */
+  --background:           #F1F6FB;
+  --foreground:           #0C2340; /* 14.52:1 on background */
   --card:                 #FFFFFF;
   --card-foreground:      #0C2340;
   --popover:              #FFFFFF;
   --popover-foreground:   #0C2340;
-  --primary:              #0284C7;
+  --primary:              #0369A1; /* white label 5.93:1; as link text 5.93:1 */
   --primary-foreground:   #FFFFFF;
-  --secondary:            #EFF6FF;
-  --secondary-foreground: #0369A1;
-  --muted:                #F0F9FF;
-  --muted-foreground:     #64748B;
-  --accent:               #EFF6FF;
-  --accent-foreground:    #0284C7;
-  --border:               #DAEAF5;
-  --input:                #DAEAF5;
-  --ring:                 #0284C7;
-  --chart-1: #0284C7;
-  --chart-2: #0EA5E9;
-  --chart-3: #38BDF8;
-  --chart-4: #7DD3FC;
-  --chart-5: #EFF6FF;
+  --secondary:            #E8F1FB;
+  --secondary-foreground: #0369A1; /* 5.20:1 on secondary */
+  --muted:                #EAF2FA;
+
+  /* Text tier 2 — captions, metadata, helper copy */
+  --muted-foreground:        #556275; /* 6.19:1 card / 5.70:1 background */
+  /* Text tier 3 — the lightest text allowed to ship. Use this instead of
+     fading tier 2 with an opacity modifier. */
+  --muted-foreground-subtle: #5F6B7D; /* 5.40:1 card / 4.97:1 bg / 4.75:1 sidebar */
+
+  --accent:               #E8F1FB;
+  --accent-foreground:    #0369A1; /* 5.20:1 on accent — active nav item */
+  /* Decorative dividers. Deliberately lighter than --input: SC 1.4.11
+     governs control boundaries, not separators between blocks of content. */
+  --border:               #C3D7E8; /* 1.48:1 */
+  /* Form-control boundary — must clear 3:1 to satisfy SC 1.4.11 */
+  --input:                #7A8CA1; /* 3.45:1 card / 3.17:1 bg / 3.03:1 sidebar */
+  --ring:                 #0369A1; /* 5.93:1 */
+  --chart-1: #075985;
+  --chart-2: #0369A1;
+  --chart-3: #0284C7;
+  --chart-4: #38BDF8;
+  --chart-5: #A5D8F3;
 
   /* ── Sidebar ──────────────────────────────── */
-  --sidebar:                    #F5F8FC;
+  --sidebar:                    #EBF1F8;
   --sidebar-foreground:         #0C2340;
-  --sidebar-primary:            #0284C7;
+  --sidebar-primary:            #0369A1;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent:             #F0F9FF;
-  --sidebar-accent-foreground:  #0284C7;
-  --sidebar-border:             #E2EDF5;
-  --sidebar-ring:               #0284C7;
+  --sidebar-accent:             #E8F1FB;
+  --sidebar-accent-foreground:  #0369A1;
+  --sidebar-border:             #C3D7E8;
+  --sidebar-ring:               #0369A1;
 
   /* ── Syntax highlight tokens (light theme) ───────────────────────────── */
   --syntax-keyword:  var(--primary);
@@ -156,7 +193,93 @@ body {
   --syntax-tag:      var(--destructive);
   --syntax-meta:     var(--muted-foreground);
 
+  /* ── Comment annotations (see .comment-highlight) ── */
+  --comment-accent:     #7C3AED;
+  --comment-tint:       color-mix(in srgb, var(--comment-accent)  9%, transparent);
+  --comment-tint-hover: color-mix(in srgb, var(--comment-accent) 18%, transparent);
+
   color-scheme: light;
+}
+
+/* ── Dark theme ─────────────────────────────────────────────────────────────
+   Same contract as :root — every pair measured, ratios noted. Surfaces are
+   navy-tinted rather than neutral grey so the Sky Deep brand hue survives the
+   theme flip. Two inversions worth knowing about:
+     • --primary becomes LIGHT (#38BDF8) and --primary-foreground becomes DARK.
+       On a dark canvas a deep blue fill cannot carry a white label at 4.5:1,
+       so the polarity of the button flips while the brand hue does not.
+     • Elevation is carried by lighter surfaces, not heavier shadows. A shadow
+       tuned for light mode is invisible on #0B1220, so --card sits above
+       --background by luminance and the shadows only deepen the edge.
+   ──────────────────────────────────────────────────────────────────────── */
+.dark {
+  --page: #0B1220;
+
+  /* ── Status colours — measured as TEXT on --card ── */
+  --success:              #34D399; /* 8.89:1 */
+  --success-subtle:       #0C2A22;
+  --success-light:        #6EE7B7;
+  --warning:              #FBBF24; /* 10.24:1 */
+  --destructive:          #F87171; /* 6.18:1 card, 5.39:1 on its own /10 tint */
+
+  /* Polarity flips here — the fills are light, so their labels go dark. */
+  --success-foreground:     #052E22; /* 7.69:1 on --success */
+  --destructive-foreground: #450A0A; /* 5.84:1 on --destructive */
+
+  --primary-hover:        #7DD3FC;
+
+  /* Shadows are near-black and deeper — the light-mode navy rgba washes out
+     entirely against a dark canvas. */
+  --shadow-card:   0 1px 3px rgba(0,0,0,0.40), 0 1px 2px rgba(0,0,0,0.30);
+  --shadow-raised: 0 4px 12px rgba(0,0,0,0.48), 0 2px 4px rgba(0,0,0,0.34);
+  --shadow-float:  0 8px 24px rgba(0,0,0,0.58), 0 2px 8px rgba(0,0,0,0.40);
+
+  /* ── Core tokens ──────────────────────────── */
+  --background:           #0B1220;
+  --foreground:           #E8EEF6; /* 16.04:1 on background */
+  --card:                 #131C2B; /* sits 1.10:1 above background */
+  --card-foreground:      #E8EEF6;
+  --popover:              #172231;
+  --popover-foreground:   #E8EEF6;
+  --primary:              #38BDF8; /* dark label 7.11:1; as link 8.74:1 on bg */
+  --primary-foreground:   #06283D;
+  --secondary:            #1C2B3E;
+  --secondary-foreground: #7DD3FC; /* 8.60:1 on secondary */
+  --muted:                #16202F;
+
+  --muted-foreground:        #9DABBE; /* 8.03:1 bg / 7.33:1 card */
+  --muted-foreground-subtle: #8B9BB0; /* 6.61:1 bg / 6.03:1 card */
+
+  --accent:               #1C2B3E;
+  --accent-foreground:    #7DD3FC; /* 8.60:1 on accent */
+  --border:               #263449; /* 1.36:1 on card */
+  --input:                #5E7189; /* 3.42:1 card / 3.21:1 popover */
+  --ring:                 #38BDF8; /* 8.74:1 */
+  --chart-1: #7DD3FC;
+  --chart-2: #38BDF8;
+  --chart-3: #0EA5E9;
+  --chart-4: #0284C7;
+  --chart-5: #1E4E6D;
+
+  /* ── Sidebar ──────────────────────────────── */
+  --sidebar:                    #0E1725;
+  --sidebar-foreground:         #E8EEF6;
+  --sidebar-primary:            #38BDF8;
+  --sidebar-primary-foreground: #06283D;
+  --sidebar-accent:             #1C2B3E;
+  --sidebar-accent-foreground:  #7DD3FC;
+  --sidebar-border:             #263449;
+  --sidebar-ring:               #38BDF8;
+
+  /* Syntax tokens are all derived from the tokens above via color-mix, so they
+     re-resolve for this theme automatically — no dark-specific list needed. */
+
+  /* ── Comment annotations ── */
+  --comment-accent:     #A78BFA; /* lifted so the hue survives on a dark canvas */
+  --comment-tint:       color-mix(in srgb, var(--comment-accent) 20%, transparent);
+  --comment-tint-hover: color-mix(in srgb, var(--comment-accent) 32%, transparent);
+
+  color-scheme: dark;
 }
 
 @layer base {
@@ -165,9 +288,6 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "cv05" 1, "cv08" 1, "cv10" 1, "ss01" 1;
   }
   html {
     @apply font-sans;
@@ -186,10 +306,15 @@ body {
   }
   /* ── Typography uniformity ───────────────────────── */
 
-  /* Base — all UI text uses Inter with lining numerals + localized forms */
+  /* Base — all UI text uses Inter with lining numerals + localized forms.
+     This is the single source of truth for font-feature-settings: the property
+     does not merge across rules, so a second declaration elsewhere silently
+     drops every feature listed here. The cv* alternates (single-storey a,
+     straight-tailed l, open g) must stay in this one list to take effect. */
   body, button, input, textarea, select {
     font-family: var(--font-sans), ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "lnum" 1, "locl" 1;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "lnum" 1, "locl" 1,
+                           "cv05" 1, "cv08" 1, "cv10" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: 0;
@@ -226,27 +351,29 @@ body {
     letter-spacing: 0;
   }
 
-  /* Smooth global color transitions for theme switches */
-  *, *::before, *::after {
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-duration: 120ms;
-    transition-timing-function: ease;
-  }
-  /* But NOT layout/transform props — would make everything feel sluggish */
-  *:where(a, button, [role="button"]) {
+  /* Colour transitions are scoped to elements that actually change colour on
+     interaction. The previous `*, *::before, *::after` rule attached a
+     transition to every node in the document — in the database and table views
+     that is thousands of cells the compositor has to track, for no visual
+     benefit, since static text never changes colour. */
+  :where(a, button, [role="button"], [role="menuitem"], [role="option"],
+         [role="tab"], input, textarea, select, summary, label,
+         [data-slot="button"], [data-slot="sidebar-menu-button"]) {
     transition-property: background-color, border-color, color, box-shadow, opacity, filter;
-    transition-duration: 280ms;
+    transition-duration: 140ms; /* hover feedback under ~150ms reads as instant */
     transition-timing-function: ease;
   }
   /* Disable transitions on elements that opt out */
   .no-transition, .no-transition * {
     transition: none !important;
   }
-  /* Focus-visible rings — Sky Deep, clean */
+  /* Focus-visible rings — Sky Deep, clean.
+     No border-radius here: the outline already follows the element's own
+     corner shape, and forcing 4px squared off the ring on avatars, pill
+     buttons and every other non-8px-radius control. */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
-    border-radius: 4px;
   }
   /* Scrollbar — thin, design-system tinted */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -257,6 +384,18 @@ body {
   }
   ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
   * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+  /* Respect the OS "reduce motion" setting globally. Colour/opacity fades are
+     left intact — they carry state (hover, focus, validity) and are not the
+     vestibular trigger; movement and scaling are what get neutralised. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* ── Scrollbar utilities ─────────────────────────────────────────────────── */
@@ -528,7 +667,7 @@ body {
 
 /* Whole block hover — covers summary + all content children */
 .ProseMirror details:hover {
-  background: color-mix(in srgb, #0284C7 8%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 /* ── Summary row ── */
@@ -793,16 +932,17 @@ body {
 }
 .ProseMirror table p { margin: 0; }
 
-/* ── Database table borders ── */
-.db-border-b  { border-bottom: 1px solid rgba(26, 26, 20, 0.08) !important; }
-.db-header-b  { border-bottom: 1px solid rgba(26, 26, 20, 0.12) !important; }
-.dark .db-border-b  { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
-.dark .db-header-b  { border-bottom-color: rgba(255, 255, 255, 0.12) !important; }
+/* ── Database table borders ──
+   Driven by the border token rather than a hardcoded warm-grey rgba, which
+   both clashed with the blue-tinted palette and sat around 1.06:1 — invisible,
+   so table rows had no separation at all. */
+.db-border-b  { border-bottom: 1px solid var(--border) !important; }
+.db-header-b  { border-bottom: 1px solid color-mix(in srgb, var(--foreground) 22%, var(--border)) !important; }
 
 /* Page-level comments section flash — triggered when header Comments button is clicked */
 @keyframes comments-section-flash {
   0%   { background-color: transparent; }
-  25%  { background-color: rgba(59, 130, 246, 0.07); }
+  25%  { background-color: color-mix(in srgb, var(--primary) 10%, transparent); }
   100% { background-color: transparent; }
 }
 .comments-section-flash {
@@ -810,15 +950,18 @@ body {
   border-radius: 12px;
 }
 
-/* Comment text-range highlight */
+/* Comment text-range highlight. Violet rather than the brand blue so an
+   annotated range never reads as a link; --comment-accent carries that hue
+   per theme, and the tints are stated per theme rather than derived because a
+   7% wash that reads clearly on white disappears entirely on #0B1220. */
 .comment-highlight {
-  border-bottom: 2px solid rgba(139, 92, 246, 0.5);
-  background-color: rgba(139, 92, 246, 0.07);
+  border-bottom: 2px solid color-mix(in srgb, var(--comment-accent) 60%, transparent);
+  background-color: var(--comment-tint);
   cursor: pointer;
   border-radius: 2px;
 }
 .comment-highlight:hover {
-  background-color: rgba(139, 92, 246, 0.15);
+  background-color: var(--comment-tint-hover);
 }
 
 /* ── Landing page animations ─────────────────────────────────────────────── */

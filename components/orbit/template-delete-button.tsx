@@ -52,7 +52,7 @@ export function TemplateDeleteButton({ templateId, templateName }: Props) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground"
+              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <X size={16} />
             </button>
@@ -91,7 +91,7 @@ export function TemplateDeleteButton({ templateId, templateName }: Props) {
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
               >
                 {deleting ? "Deleting…" : "Delete template"}
               </button>

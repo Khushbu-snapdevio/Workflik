@@ -125,14 +125,14 @@ function SectionLabel({ label }: { label: string }) {
 }
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
  return (
-  <div className={`overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card ${className}`}>
+  <div className={`overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card ${className}`}>
    {children}
   </div>
  );
 }
 function CardRow({ label, desc, control, last, feedback }: { label: string; desc?: string; control: React.ReactNode; last?: boolean; feedback?: React.ReactNode }) {
  return (
-  <div className={`flex items-center justify-between gap-6 px-5 py-4 ${!last ? "border-b border-border/40" : ""}`}>
+  <div className={`flex items-center justify-between gap-6 px-5 py-4 ${!last ? "border-b border-border" : ""}`}>
    <div className="min-w-0 flex-1">
     <p className="text-sm font-medium text-foreground">{label}</p>
     {desc && <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>}
@@ -218,7 +218,7 @@ function ChevronSelect({ value, options, onChange }: { value: string; options: {
     className={[
      "flex items-center gap-2 rounded-[var(--radius-sm)] border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors duration-150",
      "focus-visible:outline-none",
-     open ? "border-primary" : "border-border hover:border-border/80",
+     open ? "border-primary" : "border-border hover:border-border",
     ].join(" ")}
    >
     <span className="min-w-[110px] text-left">{selected?.label ?? value}</span>
@@ -370,7 +370,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
     <SectionLabel label="Workspace" />
     <Card>
      {/* Live preview banner */}
-     <div className="flex items-center gap-3.5 border-b border-border/40 bg-muted/20 px-5 py-4">
+     <div className="flex items-center gap-3.5 border-b border-border bg-muted/20 px-5 py-4">
       <span className="flex size-10 items-center justify-center rounded-[var(--radius-sm)] bg-card text-2xl">
        {icon ? <PageIcon icon={icon} size={22} /> : "📁"}
       </span>
@@ -384,7 +384,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
      {/* Icon row — removing happens inside the picker itself (its own
          "Remove" footer button, same as page/database icons), so there's no
          separate, disconnected remove control floating in this row. */}
-     <div className={`flex items-center justify-between gap-6 px-5 py-4 border-b border-border/40`}>
+     <div className={`flex items-center justify-between gap-6 px-5 py-4 border-b border-border`}>
       <div className="min-w-0 flex-1">
        <p className="text-sm font-medium text-foreground">Icon</p>
        <p className="mt-0.5 text-xs text-muted-foreground">Click to choose an icon for your workspace.</p>
@@ -433,7 +433,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
     {inviteActive && inviteUrl ? (
      <Card>
       {/* URL bar */}
-      <div className="border-b border-border/40 bg-muted/20 px-5 py-4">
+      <div className="border-b border-border bg-muted/20 px-5 py-4">
        <div className="flex items-center gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10">
          <ExternalLink size={16} className="text-primary" />
@@ -443,7 +443,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
          <p className="text-xs text-muted-foreground">Anyone with this link can join your workspace</p>
         </div>
         <Button type="button" size="sm" onClick={copy}
-         className={`shrink-0 active:scale-[0.97] ${copied ? "bg-success-subtle text-success-foreground hover:bg-success-subtle" : ""}`}>
+         className={`shrink-0 active:scale-[0.97] ${copied ? "bg-success-subtle text-success hover:bg-success-subtle" : ""}`}>
          {copied ? "Copied ✓" : "Copy link"}
         </Button>
        </div>

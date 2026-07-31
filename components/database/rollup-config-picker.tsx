@@ -86,7 +86,7 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
       style={{ position: "fixed", top: getClampedTop(rect, height), left: getClampedLeft(rect, width, { align: "end" }), zIndex: 500, width }}
       className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
-      <div className="flex items-center gap-1.5 border-b border-border/60 px-2.5 py-2">
+      <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
         <button
           type="button"
           onClick={backAction}
@@ -100,7 +100,7 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
       {step === 1 && (
         <div className="max-h-72 overflow-y-auto p-1">
           {relationProps.length === 0 && (
-            <p className="px-3 py-3 text-xs text-muted-foreground/60">
+            <p className="px-3 py-3 text-xs text-muted-foreground">
               This database has no Relation properties yet. Create one first — Rollup always aggregates through a Relation.
             </p>
           )}
@@ -111,7 +111,7 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
               onClick={() => setRelationProp(p)}
               className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
             >
-              <ArrowLeftRight size={13} className="shrink-0 text-muted-foreground/60" />
+              <ArrowLeftRight size={13} className="shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate">{p.name}</span>
             </button>
           ))}
@@ -120,9 +120,9 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
 
       {step === 2 && (
         <div className="max-h-72 overflow-y-auto p-1">
-          {loadingTargets && <p className="px-3 py-2.5 text-xs text-muted-foreground/60">Loading…</p>}
+          {loadingTargets && <p className="px-3 py-2.5 text-xs text-muted-foreground">Loading…</p>}
           {!loadingTargets && targetProps.length === 0 && (
-            <p className="px-3 py-2.5 text-xs text-muted-foreground/60">No properties to roll up on the related database.</p>
+            <p className="px-3 py-2.5 text-xs text-muted-foreground">No properties to roll up on the related database.</p>
           )}
           {!loadingTargets && targetProps.map((p) => {
             const Icon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON] ?? ArrowLeftRight;
@@ -134,7 +134,7 @@ export function RollupConfigPicker({ rect, properties, onBack, onClose, onPick }
                 onClick={() => setTargetProp(p)}
                 className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
               >
-                {propConfig.icon ? <PageIcon icon={propConfig.icon} size={13} className="shrink-0" /> : <Icon size={13} className="shrink-0 text-muted-foreground/60" />}
+                {propConfig.icon ? <PageIcon icon={propConfig.icon} size={13} className="shrink-0" /> : <Icon size={13} className="shrink-0 text-muted-foreground" />}
                 <span className="min-w-0 flex-1 truncate">{p.name}</span>
               </button>
             );

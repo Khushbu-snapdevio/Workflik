@@ -45,7 +45,7 @@ function CheckboxGlyph({ checked }: { checked: boolean }) {
       <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </svg>
   ) : (
-    <svg className="size-4 shrink-0 text-muted-foreground/60" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <svg className="size-4 shrink-0 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
       <rect x="2.5" y="2.5" width="15" height="15" rx="3.5" />
     </svg>
   );
@@ -283,7 +283,7 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
                 onMouseEnter={workspaceId ? (e) => setHoveredUser({ userId: id, rect: e.currentTarget.getBoundingClientRect() }) : undefined}
                 onMouseLeave={workspaceId ? () => setHoveredUser((cur) => (cur?.userId === id ? null : cur)) : undefined}
               >
-                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                   {initial}
                 </span>
                 <span className="max-w-[80px] truncate text-xs font-medium text-foreground">

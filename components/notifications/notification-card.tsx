@@ -136,8 +136,8 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       {/* Avatar */}
       <div className="relative mt-0.5 shrink-0 self-start">
         {isSystem ? (
-          <div className="flex size-9 items-center justify-center rounded-full bg-muted/70 ring-1 ring-border/40">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 text-muted-foreground/60">
+          <div className="flex size-9 items-center justify-center rounded-full bg-muted/70 ring-1 ring-border">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="size-4 text-muted-foreground">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
             </svg>
           </div>
@@ -146,11 +146,11 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
           <img
             src={notification.senderImage}
             alt={who}
-            className="block size-9 rounded-full object-cover ring-1 ring-border/40 select-none"
+            className="block size-9 rounded-full object-cover ring-1 ring-border select-none"
           />
         ) : (
           <div
-            className={`flex size-9 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border/40 select-none ${getAvatarColor(who)}`}
+            className={`flex size-9 items-center justify-center rounded-full text-xs font-bold text-white ring-1 ring-border select-none ${getAvatarColor(who)}`}
           >
             {initials}
           </div>
@@ -183,7 +183,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
             <span className="text-xs opacity-60">
               {notification.pageIcon ?? "📄"}
             </span>
-            <span className="truncate text-xs font-medium text-muted-foreground/60">
+            <span className="truncate text-xs font-medium text-muted-foreground">
               {notification.pageTitle}
             </span>
           </div>
@@ -191,7 +191,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
 
         {/* Content snippet */}
         {notification.contentSnippet && (
-          <div className="mt-1.5 rounded-[var(--radius-sm)] border border-border/50 bg-muted/30 px-2.5 py-1.5">
+          <div className="mt-1.5 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-1.5">
             <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
               {notification.contentSnippet}
             </p>

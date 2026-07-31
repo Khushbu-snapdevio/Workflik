@@ -98,7 +98,7 @@ export default async function OrbitTemplatesPage() {
 
    {/* Table */}
    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-    <div className="border-b border-border/60 bg-muted/20 px-5 py-3.5">
+    <div className="border-b border-border bg-muted/20 px-5 py-3.5">
      <h2 className="text-sm font-semibold text-foreground">Built-in templates</h2>
      <p className="text-xs text-muted-foreground">Only published templates appear in the user gallery</p>
     </div>
@@ -106,12 +106,12 @@ export default async function OrbitTemplatesPage() {
     {list.length === 0 ? (
      <div className="flex flex-col items-center justify-center py-20 text-center">
       <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-md)] bg-muted">
-       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-7 text-muted-foreground/50">
+       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-7 text-muted-foreground-subtle">
         <rect x="2" y="2" width="16" height="16" rx="2"/><path d="M2 7h16M7 7v11"/>
        </svg>
       </div>
       <p className="text-sm font-semibold text-muted-foreground">No templates yet</p>
-      <p className="mt-1 text-xs text-muted-foreground/60">
+      <p className="mt-1 text-xs text-muted-foreground">
        Click <strong className="text-primary">+ New template</strong> or seed defaults above.
       </p>
      </div>

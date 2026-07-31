@@ -107,7 +107,7 @@ export function PrivateSection({
      <span className="truncate text-left">Private</span>
      <ChevronDown
       size={14}
-      className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover/header:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
+      className={`shrink-0 text-muted-foreground transition-transform duration-150 group-hover/header:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
      />
     </button>
     <NewPageButton
@@ -183,14 +183,14 @@ export function PrivateSection({
         {page.icon ? (
          <PageIcon icon={page.icon} size={13} />
         ) : (
-         <FileText size={13} className="shrink-0 text-muted-foreground/70" />
+         <FileText size={13} className="shrink-0 text-muted-foreground" />
         )}
         <span className="min-w-0 truncate">{page.title || "Untitled"}</span>
        </Link>
       ))}
      </div>
      {/* Footer */}
-     <div className="mx-1 h-px bg-border/60" />
+     <div className="mx-1 h-px bg-border" />
      <div className="px-3 py-2">
       <Link
        href={`/app/${workspaceSlug}/library?tab=private`}

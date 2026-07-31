@@ -70,7 +70,7 @@ export default async function OrbitUsersPage({ searchParams }: Props) {
 
    {/* Table */}
    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-    <div className="border-b border-border/60 bg-muted/20 px-5 py-3">
+    <div className="border-b border-border bg-muted/20 px-5 py-3">
      <p className="text-xs font-semibold text-muted-foreground">
       {filteredCount!.count} account{filteredCount!.count !== 1 ? "s" : ""}{q ? ` matching "${q}"` : ""}
      </p>
@@ -78,7 +78,7 @@ export default async function OrbitUsersPage({ searchParams }: Props) {
     {users.length === 0 ? (
      <div className="flex flex-col items-center justify-center py-16 text-center">
       <p className="text-sm font-semibold text-muted-foreground">No users found</p>
-      <p className="mt-1 text-xs text-muted-foreground/60">
+      <p className="mt-1 text-xs text-muted-foreground">
        {q ? "Try a different name or email." : "No accounts registered yet."}
       </p>
      </div>
@@ -106,7 +106,7 @@ export default async function OrbitUsersPage({ searchParams }: Props) {
             </span>
             <div className="min-w-0">
              <p className="text-xs font-semibold text-foreground group-hover:text-primary">{u.email}</p>
-             <p className={`text-xs ${u.name?.trim() ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
+             <p className={`text-xs ${u.name?.trim() ? "text-muted-foreground" : "text-muted-foreground-subtle"}`}>
               {u.name?.trim() || u.email?.split("@")[0] || "—"}
              </p>
             </div>

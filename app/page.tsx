@@ -103,7 +103,7 @@ export default async function HomePage() {
       <SmoothScroll />
 
       {/* ── Nav ─────────────────────────────────────────── full width */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-page/80 backdrop-blur-md">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-page/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <a href="#top">
             <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-7 w-auto" />
@@ -153,7 +153,7 @@ export default async function HomePage() {
             </Button>
           </div>
 
-          <p className="lp-fade-in mt-4 text-xs text-muted-foreground/50" style={{ animationDelay: "0.34s" }}>
+          <p className="lp-fade-in mt-4 text-xs text-muted-foreground-subtle" style={{ animationDelay: "0.34s" }}>
             Set up your instance in under 2 minutes
           </p>
         </div>
@@ -168,7 +168,7 @@ export default async function HomePage() {
                 <span className="size-2.5 rounded-full bg-border" />
               </div>
               <div className="mx-auto flex h-6 w-56 items-center justify-center rounded-[var(--radius-xs)] bg-muted/80">
-                <span className="text-xs font-medium text-muted-foreground/60">{PRODUCT_NAME.toLowerCase()}.example.com/workspace</span>
+                <span className="text-xs font-medium text-muted-foreground">{PRODUCT_NAME.toLowerCase()}.example.com/workspace</span>
               </div>
             </div>
             <div className="flex h-60 sm:h-80">
@@ -176,7 +176,7 @@ export default async function HomePage() {
                 <div className="mb-3 flex items-center gap-1.5 px-2">
                   <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={80} height={20} className="h-4 w-auto" />
                 </div>
-                <p className="mb-1 px-2 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/40">Pages</p>
+                <p className="mb-1 px-2 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Pages</p>
                 <div className="space-y-0.5">
                   {[
                     { icon: "📋", label: "Product Roadmap", active: true  },
@@ -185,7 +185,7 @@ export default async function HomePage() {
                     { icon: "🎨", label: "Design System",    active: false },
                     { icon: "👋", label: "Onboarding",       active: false },
                   ].map((item) => (
-                    <div key={item.label} className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-1.5 transition-colors duration-150 ${item.active ? "bg-primary/10 text-primary" : "text-muted-foreground/60 group-hover:text-muted-foreground/80"}`}>
+                    <div key={item.label} className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-1.5 transition-colors duration-150 ${item.active ? "bg-primary/10 text-primary" : "text-muted-foreground group-hover:text-muted-foreground"}`}>
                       <span className="text-xs leading-none">{item.icon}</span>
                       <span className={`truncate text-xs ${item.active ? "font-semibold" : ""}`}>{item.label}</span>
                     </div>
@@ -193,9 +193,9 @@ export default async function HomePage() {
                 </div>
               </div>
               <div className="flex flex-1 flex-col overflow-hidden">
-                <div className="flex items-center gap-1 border-b border-border/50 bg-muted/20 px-5 py-2">
-                  <span className="text-xs text-muted-foreground/40">Project</span>
-                  <span className="text-xs text-muted-foreground/30">/</span>
+                <div className="flex items-center gap-1 border-b border-border bg-muted/20 px-5 py-2">
+                  <span className="text-xs text-muted-foreground-subtle">Project</span>
+                  <span className="text-xs text-muted-foreground-subtle">/</span>
                   <span className="text-xs font-medium text-foreground/70">Product Roadmap</span>
                 </div>
                 <div className="flex-1 px-7 py-5">
@@ -354,7 +354,7 @@ export default async function HomePage() {
             </p>
             <Link
               href="/auth/login"
-              className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-white px-8 text-sm font-semibold text-primary transition-all duration-150 hover:-translate-y-0.5 hover:bg-white/90"
+              className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-card px-8 text-sm font-semibold text-primary transition-all duration-150 hover:-translate-y-0.5 hover:bg-card/90"
             >
               Sign in
               <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
@@ -378,7 +378,7 @@ export default async function HomePage() {
             </div>
 
             <div>
-              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Product</h4>
+              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Product</h4>
               <ul className="space-y-3">
                 {[
                   { label: "Features",     href: "#features"     },
@@ -395,7 +395,7 @@ export default async function HomePage() {
             </div>
 
             <div>
-              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/50">Legal</h4>
+              <h4 className="mb-5 text-xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Legal</h4>
               <ul className="space-y-3">
                 {[
                   { label: "Privacy Policy",   href: "/privacy" },
@@ -412,7 +412,7 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-8 sm:mt-14 sm:flex-row">
-            <p className="text-xs text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground">
               &copy; {new Date().getFullYear()} {PRODUCT_NAME}. All rights reserved.
             </p>
             <a
@@ -424,7 +424,7 @@ export default async function HomePage() {
                 <path d="M8 12V4M4 8l4-4 4 4"/>
               </svg>
             </a>
-            <p className="text-xs text-muted-foreground/60">
+            <p className="text-xs text-muted-foreground">
               Made with care for teams who build great things.
             </p>
           </div>

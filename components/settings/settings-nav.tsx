@@ -21,7 +21,7 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon: _work
   }
 
   return (
-    <aside className="hidden h-full w-[240px] shrink-0 flex-col border-r border-border/60 bg-sidebar md:flex">
+    <aside className="hidden h-full w-[240px] shrink-0 flex-col border-r border-border bg-sidebar md:flex">
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto px-2.5 py-3">
@@ -36,7 +36,7 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon: _work
           <NavItem href={`${base}/sessions`}      active={active("sessions")}      icon={<Shield size={14} />}  label="Security & sessions" />
         </div>
 
-        <div className="mx-1 my-3 h-px bg-border/50" />
+        <div className="mx-1 my-3 h-px bg-border" />
 
         {/* Workspace */}
         <p className="mb-1 px-2 text-xs font-semibold uppercase tracking-wider text-primary/60">
@@ -80,7 +80,7 @@ function LockedItem({ icon, label }: { icon: React.ReactNode; label: string }) {
     <div className="flex cursor-not-allowed items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/70">
       <span className="shrink-0 text-sidebar-foreground/60">{icon}</span>
       <span>{label}</span>
-      <Lock size={11} className="ml-auto text-muted-foreground/60" />
+      <Lock size={11} className="ml-auto text-muted-foreground" />
     </div>
   );
 }

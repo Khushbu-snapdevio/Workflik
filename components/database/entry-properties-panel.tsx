@@ -260,7 +260,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
             >
               {/* Label column */}
               <div className="flex w-[180px] shrink-0 items-center gap-2 pt-1">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border/60 bg-background text-muted-foreground">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground">
                   {prop.config?.icon ? <PageIcon icon={prop.config.icon} size={12} /> : <TypeIcon size={12} />}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
@@ -272,7 +272,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     onClick={(e) => setEditPropPanel({ propId: prop.id, anchorRect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
                     onMouseEnter={(e) => showTooltip("Edit property", e)}
                     onMouseLeave={hideTooltip}
-                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground/80 opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
                   >
                     <Settings2 size={12} />
                   </button>
@@ -299,7 +299,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                         <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
                       </svg>
                     ) : (
-                      <svg className="size-4 text-muted-foreground/80" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="size-4 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
                         <rect x="2.5" y="2.5" width="15" height="15" rx="3.5" />
                       </svg>
                     )}
@@ -450,7 +450,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     }}
                     onMouseEnter={(e) => showTooltip("Comment on this property", e)}
                     onMouseLeave={hideTooltip}
-                    className={`mt-1 flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-muted-foreground/80 transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
+                    className={`mt-1 flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
                       count > 0 ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"
                     }`}
                   >

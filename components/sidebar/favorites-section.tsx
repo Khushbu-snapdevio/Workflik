@@ -153,7 +153,7 @@ export function FavoritesSection({
         )}
         <ChevronDown
           size={14}
-          className={`shrink-0 text-muted-foreground/70 transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
+          className={`shrink-0 text-muted-foreground transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
         />
       </button>
 
@@ -165,7 +165,7 @@ export function FavoritesSection({
       <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden">
           {localFavs.length === 0 ? (
-            <p className="px-2.5 py-1 text-xs text-muted-foreground/70">
+            <p className="px-2.5 py-1 text-xs text-muted-foreground">
               Star a page to add it here.
             </p>
           ) : (
@@ -256,7 +256,7 @@ export function FavoritesSection({
                   {r.icon ? (
                     <PageIcon icon={r.icon} size={13} />
                   ) : (
-                    <FileText size={13} className="shrink-0 text-muted-foreground/70" />
+                    <FileText size={13} className="shrink-0 text-muted-foreground" />
                   )}
                   <span className="min-w-0 truncate">{r.title || "Untitled"}</span>
                 </Link>
@@ -264,7 +264,7 @@ export function FavoritesSection({
             })}
           </div>
           {/* Footer */}
-          <div className="mx-1 h-px bg-border/60" />
+          <div className="mx-1 h-px bg-border" />
           <div className="px-3 py-2">
             <Link
               href={`/app/${workspaceSlug}/library`}
@@ -319,7 +319,7 @@ function FavoriteRow({
         {icon ? (
           <PageIcon icon={icon} size={13} />
         ) : (
-          <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+          <FileText size={12} className="shrink-0 text-muted-foreground" />
         )}
         <span className="min-w-0 truncate">{title || "Untitled"}</span>
       </Link>

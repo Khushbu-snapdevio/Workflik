@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { PatchPerformanceMeasure } from "@/components/patch-performance-measure";
+import { ThemeProvider } from "@/components/theme-provider";
 import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from "@/config/platform";
 import { cn } from "@/lib/utils";
 import "@fontsource-variable/inter";
@@ -36,14 +37,21 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
+    /* suppressHydrationWarning is required on <html>: next-themes writes the
+       theme class here from an inline script before React hydrates, so the
+       server and client markup necessarily differ on this one element.
+       colorScheme is no longer hardcoded — each theme block declares its own,
+       which is what drives native form controls and scrollbars. */
     <html
       className={cn("font-sans", geistMono.variable)}
-      style={{ colorScheme: "light" }}
       lang="en"
+      suppressHydrationWarning
     >
       <body suppressHydrationWarning>
-        <PatchPerformanceMeasure />
-        {children}
+        <ThemeProvider>
+          <PatchPerformanceMeasure />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

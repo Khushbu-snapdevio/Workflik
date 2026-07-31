@@ -130,9 +130,9 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
        </AlertDialogContent>
       </AlertDialog>
      </div>
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border/60 bg-card">
+     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       {others.map((s, i) => (
-       <div key={s.id} className={i < others.length - 1 ? "border-b border-border/40" : ""}>
+       <div key={s.id} className={i < others.length - 1 ? "border-b border-border" : ""}>
         <SessionCard s={s} revoking={revoking === s.id} onRevoke={() => revoke(s.id, s.token)} />
        </div>
       ))}

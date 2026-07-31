@@ -5,11 +5,15 @@ import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CheckCircleIcon, InfoIcon, WarningIcon, XCircleIcon, SpinnerIcon } from "@phosphor-icons/react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  /* resolvedTheme, not theme: `theme` is "system" whenever the user has not
+     made an explicit choice, and Sonner would then apply its own OS media
+     query independently of ours. resolvedTheme is always a concrete
+     "light" | "dark", so the toast can never disagree with the app. */
+  const { resolvedTheme } = useTheme()
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={(resolvedTheme ?? "light") as ToasterProps["theme"]}
       className="toaster group"
       icons={{
         success: (

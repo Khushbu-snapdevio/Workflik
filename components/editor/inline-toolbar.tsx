@@ -183,7 +183,7 @@ function ColorPicker({ onSelect, active }: { onSelect: (c: string) => void; acti
               type="button"
               onClick={() => { onSelect(c); setOpen(false); }}
               aria-label={`Set text color ${c}`}
-              className="size-4 rounded-full border border-border/40 transition-colors duration-150"
+              className="size-4 rounded-full border border-border transition-colors duration-150"
               style={{ background: c }}
             />
           ))}

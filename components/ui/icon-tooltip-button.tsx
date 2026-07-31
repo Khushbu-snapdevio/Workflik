@@ -37,7 +37,7 @@ export function IconTooltipButton({ icon, label, href, onClick, danger, classNam
 
   const className = classNameProp ?? `flex size-7 items-center justify-center rounded-[var(--radius-xs)] transition-colors duration-150 ${
     danger
-      ? "text-muted-foreground/70 hover:bg-destructive/10 hover:text-destructive"
+      ? "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
       : "text-muted-foreground hover:bg-accent hover:text-foreground"
   }`;
 

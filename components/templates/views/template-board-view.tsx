@@ -26,41 +26,21 @@ import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { PROPERTY_TYPE_ICON, STATUS_GROUPS } from "@/components/database/property-registry";
 import type { DbProperty, DbView, StatusGroupKey, ViewPropertyOverride } from "@/components/database/types";
+import { type OptionStyle, optionStyle } from "@/components/database/option-colors";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
+// Sourced from components/database/option-colors.ts so the board, the gallery
+// modal and anything added later cannot drift apart — and so each hue carries
+// its dark-theme counterpart.
 
-type ColStyle = { header: string; dot: string; badge: string };
-
-const OPTION_STYLES: Record<string, ColStyle> = {
- gray:   { header: "bg-[#f4f4f5] border-[#d4d4d8]", dot: "bg-[#71717a]", badge: "bg-[#d4d4d8] text-[#3f3f46]" },
- red:    { header: "bg-[#fff5f5] border-[#fecaca]", dot: "bg-[#f87171]", badge: "bg-[#fee2e2] text-[#b91c1c]" },
- orange: { header: "bg-[#fff8f0] border-[#fed7aa]", dot: "bg-[#fb923c]", badge: "bg-[#ffedd5] text-[#c2410c]" },
- yellow: { header: "bg-[#fffdf0] border-[#fde68a]", dot: "bg-[#facc15]", badge: "bg-[#fef9c3] text-[#a16207]" },
- green:  { header: "bg-[#f0fdf4] border-[#bbf7d0]", dot: "bg-[#4ade80]", badge: "bg-[#dcfce7] text-[#15803d]" },
- teal:   { header: "bg-[#f0fdfa] border-[#99f6e4]", dot: "bg-[#2dd4bf]", badge: "bg-[#ccfbf1] text-[#0f766e]" },
- blue:   { header: "bg-[#f0f9ff] border-[#bae6fd]", dot: "bg-[#38bdf8]", badge: "bg-[#e0f2fe] text-[#0369a1]" },
- purple: { header: "bg-[#f5f3ff] border-[#ddd6fe]", dot: "bg-[#a78bfa]", badge: "bg-[#ede9fe] text-[#6d28d9]" },
- pink:   { header: "bg-[#fdf4ff] border-[#f5d0fe]", dot: "bg-[#f472b6]", badge: "bg-[#fce7f3] text-[#be185d]" },
-};
-
-const OPTION_COLORS: Record<string, string> = {
- gray:   "bg-[#d4d4d8] text-[#3f3f46]",
- red:    "bg-[#fee2e2] text-[#b91c1c]",
- orange: "bg-[#ffedd5] text-[#c2410c]",
- yellow: "bg-[#fef9c3] text-[#a16207]",
- green:  "bg-[#dcfce7] text-[#15803d]",
- teal:   "bg-[#ccfbf1] text-[#0f766e]",
- blue:   "bg-[#e0f2fe] text-[#0369a1]",
- purple: "bg-[#ede9fe] text-[#6d28d9]",
- pink:   "bg-[#fce7f3] text-[#be185d]",
-};
+type ColStyle = OptionStyle;
 
 function getStyle(color: string): ColStyle {
- return OPTION_STYLES[color] ?? OPTION_STYLES.gray;
+ return optionStyle(color);
 }
 
 function optionCls(color: string) {
- return OPTION_COLORS[color] ?? OPTION_COLORS.gray;
+ return optionStyle(color).badge;
 }
 
 // Same rule board-view.tsx uses to decide whether a property has a
@@ -114,7 +94,7 @@ function InlineCardInput({
     }}
     placeholder="Card title…"
     rows={2}
-    className="w-full resize-none bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50"
+    className="w-full resize-none bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground-subtle"
    />
    <div className="mt-2 flex items-center gap-2">
     <button
@@ -277,7 +257,7 @@ function CardShell({
     "group relative rounded-[var(--radius-sm)] border bg-background p-3 transition-all",
     dragging
      ? "border-primary/40 opacity-50"
-     : "border-border/50 hover:border-border hover:-translate-y-0.5",
+     : "border-border hover:border-border hover:-translate-y-0.5",
    ].join(" ")}
    onClick={() => !dragging && !editing && onClickEntry(entry.id)}
    onContextMenu={(e) => {
@@ -294,7 +274,7 @@ function CardShell({
      {entry.icon ? (
       <PageIcon icon={entry.icon} size={13} className="shrink-0" />
      ) : (
-      <FileText size={12} className="shrink-0 text-muted-foreground/60" />
+      <FileText size={12} className="shrink-0 text-muted-foreground" />
      )}
     </span>
     {editing ? (
@@ -316,7 +296,7 @@ function CardShell({
      />
     ) : (
      <p className="min-w-0 flex-1 pr-5 text-sm font-medium leading-snug text-foreground">
-      {entry.title || <span className="text-muted-foreground/70">Untitled</span>}
+      {entry.title || <span className="text-muted-foreground">Untitled</span>}
      </p>
     )}
    </div>
@@ -369,7 +349,7 @@ function CardShell({
        highlight individually via hover:bg-accent; the box itself carries the
        visible border/background. */}
    <div
-    className={`absolute right-2 top-2 items-center gap-px rounded-[var(--radius-sm)] border border-border/60 bg-card px-0.5 py-0.5 ${editing ? "flex" : "hidden group-hover:flex"}`}
+    className={`absolute right-2 top-2 items-center gap-px rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5 ${editing ? "flex" : "hidden group-hover:flex"}`}
     onClick={(e) => e.stopPropagation()}
    >
     {!editing ? (
@@ -419,7 +399,7 @@ function CardShell({
 
    {/* Quick-add empty properties — only while editing, matching Notion's inline card editor */}
    {editing && displayProps.filter((dp) => !valMap.get(dp.id)).length > 0 && (
-    <div className="mt-2 flex flex-col gap-0.5 border-t border-border/50 pt-2">
+    <div className="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
      {displayProps.filter((dp) => !valMap.get(dp.id)).map((dp) => {
       const TypeIcon = PROPERTY_TYPE_ICON[dp.type as keyof typeof PROPERTY_TYPE_ICON];
       const propConfig = (dp.config ?? {}) as { icon?: string };
@@ -434,7 +414,7 @@ function CardShell({
          if (handleVoteClick(dp)) return;
          setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
         }}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground"
+        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
        >
         {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" /> : <TypeIcon size={12} className="shrink-0" />}
         {dp.type === "person" && (dp.config as { voteMode?: boolean } | null)?.voteMode ? dp.name : `Add ${dp.name}`}
@@ -860,7 +840,7 @@ export function TemplateBoardView({
       with a toggle to restore them — was only ever reachable from a visible
       column's own menu. */}
   {groupProp && statusBy === "option" && (
-   <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/40 px-6 py-2">
+   <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-2">
     <div className="flex flex-wrap items-center gap-2">
      {pinnedColumns.length > 0 && (
       <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -934,7 +914,7 @@ export function TemplateBoardView({
        <SortableColumn key={colKey} colKey={colKey} draggable={col.optionId !== null && statusBy === "option" && sortDirection === "manual" && !locked} isDragging={draggingColKey === col.optionId} maxHeight={colMaxHeight}>
         {(handleProps) => (
         <div
-         className="flex flex-col rounded-[var(--radius-md)] border border-border/40 bg-muted/10 overflow-hidden"
+         className="flex flex-col rounded-[var(--radius-md)] border border-border bg-muted/10 overflow-hidden"
          style={{ maxHeight: colMaxHeight ?? undefined }}
          data-col-id={colKey}
         >
@@ -1017,7 +997,7 @@ export function TemplateBoardView({
            )}
 
            {col.entries.length === 0 && !isAddingHere && (
-            <p className="py-4 text-center text-xs text-muted-foreground/70">No items</p>
+            <p className="py-4 text-center text-xs text-muted-foreground">No items</p>
            )}
           </ColumnDropZone>
          </SortableContext>
@@ -1026,7 +1006,7 @@ export function TemplateBoardView({
          {!isAddingHere && !locked && (
           <button
            onClick={() => setAddingTo(colKey)}
-           className="mx-2 mb-2 flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed border-border/60 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
+           className="mx-2 mb-2 flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
           >
            <Plus size={12} />
            Add card

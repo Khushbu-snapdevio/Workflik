@@ -147,7 +147,7 @@ export default async function OrbitOverviewPage() {
             </span>
           </div>
           <span className="text-border">·</span>
-          <span className="text-xs text-muted-foreground/60">{queues.length} worker{queues.length !== 1 ? "s" : ""} active</span>
+          <span className="text-xs text-muted-foreground">{queues.length} worker{queues.length !== 1 ? "s" : ""} active</span>
         </div>
       </div>
 
@@ -215,7 +215,7 @@ export default async function OrbitOverviewPage() {
             <p className="text-sm font-bold text-foreground">{newUsers30d!.count}</p>
             <p className="text-xs text-muted-foreground">New users (30d)</p>
           </div>
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-muted-foreground/30 opacity-0 transition group-hover:opacity-100">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-muted-foreground-subtle opacity-0 transition group-hover:opacity-100">
             <path d="M2 6h8M7 3l3 3-3 3"/>
           </svg>
         </Link>
@@ -230,7 +230,7 @@ export default async function OrbitOverviewPage() {
             <p className="text-sm font-bold text-foreground">{activeWorkspaces30d!.count}</p>
             <p className="text-xs text-muted-foreground">Active workspaces (30d)</p>
           </div>
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-muted-foreground/30 opacity-0 transition group-hover:opacity-100">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5 shrink-0 text-muted-foreground-subtle opacity-0 transition group-hover:opacity-100">
             <path d="M2 6h8M7 3l3 3-3 3"/>
           </svg>
         </Link>
@@ -253,7 +253,7 @@ export default async function OrbitOverviewPage() {
 
         {/* Recent registrations */}
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border/60 px-5 py-3.5">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Recent registrations</h2>
               <p className="text-xs text-muted-foreground">Latest accounts to join</p>
@@ -264,7 +264,7 @@ export default async function OrbitOverviewPage() {
               <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
             </Link>
           </div>
-          <div className="divide-y divide-border/60">
+          <div className="divide-y divide-border">
             {recentUsers.map((u) => {
               const displayName = u.name?.trim() || u.email || "?";
               const avatarChar  = displayName[0]!.toUpperCase();
@@ -281,12 +281,12 @@ export default async function OrbitOverviewPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary">{u.email}</p>
-                    <p className={`truncate text-xs ${u.name?.trim() ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
+                    <p className={`truncate text-xs ${u.name?.trim() ? "text-muted-foreground" : "text-muted-foreground-subtle"}`}>
                       {u.name?.trim() || u.email?.split("@")[0] || "—"}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-xs text-muted-foreground/60">{ago(u.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground">{ago(u.createdAt)}</span>
                     {u.isPlatformAdmin && (
                       <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-px text-xs font-semibold text-primary">Admin</span>
                     )}
@@ -299,7 +299,7 @@ export default async function OrbitOverviewPage() {
 
         {/* Recent audit events */}
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-          <div className="flex items-center justify-between border-b border-border/60 px-5 py-3.5">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Audit events</h2>
               <p className="text-xs text-muted-foreground">Recent operator actions</p>
@@ -310,16 +310,16 @@ export default async function OrbitOverviewPage() {
               <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3"><path d="M2 5h6M5 2l3 3-3 3"/></svg>
             </Link>
           </div>
-          <div className="divide-y divide-border/60">
+          <div className="divide-y divide-border">
             {recentAudit.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="mb-3 flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
-                  <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-5 text-muted-foreground/50">
+                  <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-5 text-muted-foreground-subtle">
                     <path d="M4 4.5h10M4 8.5h10M4 12.5h6"/>
                   </svg>
                 </div>
                 <p className="text-sm font-semibold text-muted-foreground">No audit events yet</p>
-                <p className="mt-0.5 text-xs text-muted-foreground/60">Admin actions will appear here.</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Admin actions will appear here.</p>
               </div>
             ) : (
               recentAudit.map((ev) => {
@@ -335,10 +335,10 @@ export default async function OrbitOverviewPage() {
                         <span className={`rounded-[var(--radius-xs)] border px-1.5 py-px text-xs font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}>
                           {ev.targetType}
                         </span>
-                        <span className="font-mono text-xs text-muted-foreground/50">{ev.targetId?.slice(0, 8) ?? "—"}…</span>
+                        <span className="font-mono text-xs text-muted-foreground-subtle">{ev.targetId?.slice(0, 8) ?? "—"}…</span>
                       </div>
                     </div>
-                    <span className="shrink-0 text-xs text-muted-foreground/60">{ago(ev.createdAt)}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{ago(ev.createdAt)}</span>
                   </div>
                 );
               })
@@ -365,7 +365,7 @@ function StatCard({
           {icon}
         </div>
         <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-          className="size-3 text-muted-foreground/30 opacity-0 transition group-hover:opacity-100">
+          className="size-3 text-muted-foreground-subtle opacity-0 transition group-hover:opacity-100">
           <path d="M2 5h6M5 2l3 3-3 3"/>
         </svg>
       </div>

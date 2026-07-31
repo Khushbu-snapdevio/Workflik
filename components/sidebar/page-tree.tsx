@@ -272,14 +272,14 @@ export function PageTree({
         {node.icon ? (
          <PageIcon icon={node.icon} size={13} />
         ) : (
-         <FileText size={13} className="shrink-0 text-muted-foreground/70" />
+         <FileText size={13} className="shrink-0 text-muted-foreground" />
         )}
         <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
        </Link>
       ))}
      </div>
      {/* Footer */}
-     <div className="mx-1 h-px bg-border/60" />
+     <div className="mx-1 h-px bg-border" />
      <div className="px-3 py-2">
       <Link
        href={`/app/${workspaceSlug}/library`}
@@ -492,7 +492,7 @@ function PageTreeNode({
      )}
      <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
      {node.isDraft && (
-      <span className="shrink-0 rounded-[var(--radius-xs)] bg-[#fef9c3] px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-[#92400e]">
+      <span className="shrink-0 rounded-[var(--radius-xs)] bg-[#fef9c3] px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-[#92400e] dark:bg-[#713f12] dark:text-[#fde68a]">
        Draft
       </span>
      )}
@@ -679,7 +679,7 @@ function MoveToRow({
     {node.icon ? (
      <PageIcon icon={node.icon} size={14} />
     ) : (
-     <FileText size={14} className="shrink-0 text-muted-foreground/70" />
+     <FileText size={14} className="shrink-0 text-muted-foreground" />
     )}
     <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
    </button>
@@ -755,14 +755,14 @@ function MoveToDialog({
   <>
    <div className="fixed inset-0 z-[800] bg-black/40" onClick={onClose} />
    <div className="fixed left-1/2 top-[16vh] z-[810] w-full max-w-sm -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
-    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
+    <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
      <Search size={15} className="shrink-0 text-muted-foreground" />
      <input
       ref={inputRef}
       value={search}
       onChange={(e) => setSearch(e.target.value)}
       placeholder={`Move "${node.title || "Untitled"}" to…`}
-      className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/50"
+      className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
      />
      <button
       type="button"
@@ -781,9 +781,9 @@ function MoveToDialog({
        disabled={isAlreadyRoot}
        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-foreground/80 transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
       >
-       <Home size={14} className="shrink-0 text-muted-foreground/70" />
+       <Home size={14} className="shrink-0 text-muted-foreground" />
        Workspace root
-       {isAlreadyRoot && <span className="ml-auto text-xs text-muted-foreground/60">Current</span>}
+       {isAlreadyRoot && <span className="ml-auto text-xs text-muted-foreground">Current</span>}
       </button>
      )}
      {tree.length === 0 && !rootMatches && (

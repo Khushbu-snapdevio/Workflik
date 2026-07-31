@@ -15,7 +15,7 @@ type FavPage = {
 
 function PageIcon({ icon }: { icon: string | null }) {
   if (icon) return <SharedPageIcon icon={icon} size={16} />;
-  return <FileText size={14} className="text-muted-foreground/40" />;
+  return <FileText size={14} className="text-muted-foreground-subtle" />;
 }
 
 export function HomeFavoritesSection({
@@ -53,7 +53,7 @@ export function HomeFavoritesSection({
         </span>
       </div>
 
-      <div className="divide-y divide-border/40 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="divide-y divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
         {pages.map((page) => (
           <div
             key={page.id}
@@ -84,7 +84,7 @@ export function HomeFavoritesSection({
               </div>
             </div>
 
-            <ChevronRight size={12} className="relative z-10 shrink-0 text-muted-foreground/30 opacity-0 transition-opacity group-hover/row:opacity-100" />
+            <ChevronRight size={12} className="relative z-10 shrink-0 text-muted-foreground-subtle opacity-0 transition-opacity group-hover/row:opacity-100" />
           </div>
         ))}
       </div>

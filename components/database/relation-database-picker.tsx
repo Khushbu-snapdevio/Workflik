@@ -65,7 +65,7 @@ export function RelationDatabasePicker({ rect, workspaceId, onBack, onClose, onP
       style={{ position: "fixed", top: getClampedTop(rect, height), left: getClampedLeft(rect, width, { align: "end" }), zIndex: 500, width }}
       className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
-      <div className="flex items-center gap-1.5 border-b border-border/60 px-2.5 py-2">
+      <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
         <button
           type="button"
           onClick={selected ? () => setSelected(null) : onBack}
@@ -81,19 +81,19 @@ export function RelationDatabasePicker({ rect, workspaceId, onBack, onClose, onP
       {!selected ? (
         <>
           <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
-            <Search size={12} className="shrink-0 text-muted-foreground/60" />
+            <Search size={12} className="shrink-0 text-muted-foreground" />
             <input
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search databases…"
-              className="w-full bg-transparent text-xs placeholder:text-muted-foreground/40 focus:outline-none"
+              className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
             />
           </div>
           <div className="max-h-56 overflow-y-auto p-1">
-            {loading && <p className="px-3 py-2.5 text-xs text-muted-foreground/60">Loading…</p>}
+            {loading && <p className="px-3 py-2.5 text-xs text-muted-foreground">Loading…</p>}
             {!loading && results.length === 0 && (
-              <p className="px-3 py-2.5 text-xs text-muted-foreground/60">No databases found</p>
+              <p className="px-3 py-2.5 text-xs text-muted-foreground">No databases found</p>
             )}
             {!loading && results.map((db) => (
               <button
@@ -102,7 +102,7 @@ export function RelationDatabasePicker({ rect, workspaceId, onBack, onClose, onP
                 onClick={() => setSelected(db)}
                 className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
               >
-                <DatabaseIcon size={13} className="shrink-0 text-muted-foreground/60" />
+                <DatabaseIcon size={13} className="shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate">{db.title || "Untitled"}</span>
               </button>
             ))}
@@ -111,13 +111,13 @@ export function RelationDatabasePicker({ rect, workspaceId, onBack, onClose, onP
       ) : (
         <div className="flex flex-col gap-3 p-3">
           <div className="flex items-center gap-2.5 rounded-[var(--radius-sm)] bg-muted/30 px-2.5 py-2">
-            <DatabaseIcon size={13} className="shrink-0 text-muted-foreground/60" />
+            <DatabaseIcon size={13} className="shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{selected.title || "Untitled"}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-sm text-foreground">Show on related database</p>
-              <p className="mt-0.5 text-xs text-muted-foreground/60">Adds a matching property there too</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Adds a matching property there too</p>
             </div>
             <Switch checked={twoWay} onCheckedChange={(v) => setTwoWay(!!v)} aria-label="Two-way relation" />
           </div>

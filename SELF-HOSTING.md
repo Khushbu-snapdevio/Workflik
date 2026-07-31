@@ -36,8 +36,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000     # or your real domain in productio
 Everything else can stay at its default for a first run.
 
 ```bash
-# Build and start Postgres + the app + the worker
-docker compose up -d --build
+# Build and start Postgres + the app + the worker.
+# The -f docker-compose.local.yml part publishes the app on http://localhost:3000
+# — drop it when you run behind a reverse proxy (Dokploy/Traefik, Caddy, nginx),
+# which reaches the app over the Docker network instead. See §11.
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 
 # Apply the database schema (first run, and again after any update that ships new migrations)
 docker compose run --rm migrate
@@ -74,7 +77,7 @@ This is what the compose file wires together:
 |---|---|
 | `postgres` | Postgres 16, data persisted in the `postgres_data` volume |
 | `migrate` | One-shot: applies Drizzle migrations, then exits — re-run manually after updates |
-| `app` | The Next.js server, port `3000` (override with `APP_PORT` in `.env`) |
+| `app` | The Next.js server on container port `3000`. Only reachable inside the Docker network by default — add `-f docker-compose.local.yml` to publish it on the host (override the host port with `APP_PORT` in `.env`) |
 | `worker` | The pg-boss background worker — email, digests, cleanup jobs |
 | `mailpit` *(optional, `--profile extras`)* | Fake SMTP + web inbox, no account needed |
 | `minio` *(optional, `--profile extras`)* | Self-hosted S3-compatible storage, no account needed |

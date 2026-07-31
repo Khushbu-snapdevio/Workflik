@@ -622,8 +622,13 @@ export function CommentCard({
  const [data, setData]       = useState<CommentsData | null>(null);
  const [loading, setLoading]    = useState(true);
 
- const loadComments = useCallback(async () => {
-  setLoading(true);
+ // `background: true` skips the spinner — used after posting/editing/
+ // deleting a comment, so the refetch swaps the data in silently instead of
+ // flashing the whole list to a spinner and losing scroll position mid-
+ // conversation. A fresh load (mount, or switching to a different block)
+ // still shows the spinner as before.
+ const loadComments = useCallback(async (opts?: { background?: boolean }) => {
+  if (!opts?.background) setLoading(true);
   try {
    const res = await fetch(`/api/pages/${pageId}/comments`);
    if (res.ok) setData(await res.json());
@@ -708,7 +713,7 @@ export function CommentCard({
  // badge, sidebar panel, block gutter) that something changed — without this,
  // those only pick up new comments on their next mount/poll.
  function notifyChanged() {
-  loadComments();
+  loadComments({ background: true });
   emitCommentsChanged(pageId);
  }
 
@@ -764,14 +769,14 @@ export function CommentCard({
  async function resolveThread(id: string) {
   setResolvedLocally(id, true);
   const res = await fetch(`/api/comments/${id}/resolve`, { method: "POST" });
-  if (!res.ok) loadComments(); // rare failure path — fall back to a real reload
+  if (!res.ok) loadComments({ background: true }); // rare failure path — fall back to a real reload
   emitCommentsChanged(pageId);
  }
 
  async function reopenThread(id: string) {
   setResolvedLocally(id, false);
   const res = await fetch(`/api/comments/${id}/reopen`, { method: "POST" });
-  if (!res.ok) loadComments();
+  if (!res.ok) loadComments({ background: true });
   emitCommentsChanged(pageId);
  }
 
@@ -797,7 +802,7 @@ export function CommentCard({
       <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
      </div>
     ) : inlineVisible.length > 0 && (
-     <div className="divide-y divide-border">
+     <div className="max-h-[240px] divide-y divide-border overflow-y-auto">
       {inlineVisible.map((thread) => (
        <ThreadSection
         key={thread.id}

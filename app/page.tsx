@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PRODUCT_NAME } from "@/config/platform";
@@ -8,6 +7,7 @@ import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { MobileNav } from "@/components/landing/mobile-nav";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 
 /* ─── SVG icons ─── */
 function IconEditor() {
@@ -106,7 +106,7 @@ export default async function HomePage() {
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-page/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <a href="#top">
-            <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-7 w-auto" />
+            <Logo width={160} height={40} className="h-7 w-auto" />
           </a>
           <nav className="hidden items-center gap-8 sm:flex">
             {[
@@ -174,7 +174,7 @@ export default async function HomePage() {
             <div className="flex h-60 sm:h-80">
               <div className="hidden w-44 shrink-0 border-r border-border bg-sidebar px-2 py-3 sm:block">
                 <div className="mb-3 flex items-center gap-1.5 px-2">
-                  <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={80} height={20} className="h-4 w-auto" />
+                  <Logo width={80} height={20} className="h-4 w-auto" />
                 </div>
                 <p className="mb-1 px-2 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Pages</p>
                 <div className="space-y-0.5">
@@ -370,7 +370,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-8 lg:grid-cols-[2fr_1fr_1fr]">
             <div>
               <a href="#top">
-                <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={160} height={40} className="h-7 w-auto" />
+                <Logo width={160} height={40} className="h-7 w-auto" />
               </a>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
                 The connected workspace for teams — docs, wikis, and projects all in one place.

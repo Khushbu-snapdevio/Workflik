@@ -109,8 +109,8 @@ export function WorkspaceShareButton({ workspaceId, workspaceSlug, workspaceName
      >
       <div className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
        {/* Header */}
-       <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
-        <div className="flex items-center gap-2">
+       <div className="flex items-center justify-between border-b border-border pl-5 pr-4 py-3.5">
+        <div className="flex items-center gap-2">   
          <div className="flex size-6 items-center justify-center rounded bg-primary/10">
           <svg className="size-3.5 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} viewBox="0 0 24 24">
            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>

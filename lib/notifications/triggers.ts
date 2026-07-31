@@ -341,15 +341,13 @@ export async function triggerPageUpdateNotification(
   });
 }
 
-// Broadcasts to every active workspace member, INCLUDING the creator
-// themselves (an intentional exception to the "never notify a user for
-// their own action" rule every other trigger in this file follows — the
-// user explicitly asked for a confirmation entry in their own Notifications
-// panel when they create a page). Still deliberately narrower than "every
-// page create": private pages aren't visible to anyone but their creator (a
-// notification linking to a page you can't open is worse than no
-// notification), and database entries are created far too often (every row
-// added to a tracker) to announce workspace-wide without becoming noise.
+// Broadcasts to every *other* active workspace member — the creator is
+// excluded, per Hard Rule 11 (a user never receives a notification for their
+// own action). Still deliberately narrower than "every page create": private
+// pages aren't visible to anyone but their creator (a notification linking to
+// a page you can't open is worse than no notification), and database entries
+// are created far too often (every row added to a tracker) to announce
+// workspace-wide without becoming noise.
 export async function triggerPageCreatedNotification(
   tx: AnyTx,
   params: {
@@ -377,7 +375,7 @@ export async function triggerPageCreatedNotification(
     );
 
   for (const { userId } of members) {
-    if (!userId) continue;
+    if (!userId || userId === creatorId) continue;
     // contentSnippet stays null — the page title is already shown via the
     // pageId join (same reasoning as trash_warning above), so repeating it
     // here just duplicated the same text in the notification card's UI.
@@ -416,6 +414,39 @@ export async function triggerTaskAssignedNotification(
   });
 }
 
+// Fires the instant a page is soft-deleted (DELETE /api/pages/:id), telling
+// the page's creator it moved to Trash. The person who deleted it is never
+// notified for their own action (Hard Rule 11) — so trashing your own page
+// notifies nobody. Same shape as triggerPageUpdateNotification's
+// editorId === createdBy guard.
+export async function triggerPageDeletedNotification(
+  tx: AnyTx,
+  params: {
+    workspaceId: string;
+    pageId:      string;
+    deletedBy:   string;
+    createdBy:   string;
+    pageTitle:   string;
+  }
+): Promise<void> {
+  const { workspaceId, pageId, deletedBy, createdBy } = params;
+  if (createdBy === deletedBy) return;
+  await insertAndEnqueue(tx, {
+    workspaceId,
+    recipientId:    createdBy,
+    senderId:       deletedBy,
+    type:           "trash_warning",
+    pageId,
+    sourceId:       pageId,
+    contentSnippet: null,
+  });
+}
+
+// Cron-only (lib/jobs/handlers/warn-expiring-trash.ts) — a forward-looking
+// "this page is 3 days from permanent deletion" alert, not a report of anyone's
+// action. There's no live actor here (deletedBy is read from a historical
+// column), so both the deleter and the creator are warned by design, including
+// when they're the same person.
 export async function triggerTrashWarningNotification(
   tx: AnyTx,
   params: {

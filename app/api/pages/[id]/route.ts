@@ -5,7 +5,7 @@ import { pageClosure, pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 import { requirePagePermission } from "@/lib/permissions/resolver";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
-import { triggerPageUpdateNotification, triggerTrashWarningNotification } from "@/lib/notifications/triggers";
+import { triggerPageDeletedNotification, triggerPageUpdateNotification } from "@/lib/notifications/triggers";
 import { isMeaningfulTitle } from "@/lib/pages/draft";
 import { promoteDraftPage } from "@/lib/pages/promote-draft";
 
@@ -167,12 +167,13 @@ export async function DELETE(_req: Request, { params }: Ctx) {
         .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
         .where(inArray(pages.id, descendantIds));
 
-      // Notify page creator (and whoever deleted it, if different) that the page
-      // was moved to Trash and will be permanently deleted after 30 days.
-      // Skipped for still-draft pages — a trash warning would leak the
-      // existence of a page collaborators were never told about.
+      // Notify the page creator that their page was moved to Trash and will be
+      // permanently deleted after 30 days. The deleter is never notified about
+      // their own action, so trashing your own page notifies nobody. Skipped
+      // for still-draft pages — a trash warning would leak the existence of a
+      // page collaborators were never told about.
       if (page.createdBy && !page.isDraft) {
-        await triggerTrashWarningNotification(tx, {
+        await triggerPageDeletedNotification(tx, {
           workspaceId: page.workspaceId,
           pageId:      page.id,
           deletedBy:   session.user.id,

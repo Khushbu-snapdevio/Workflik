@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, X } from "lucide-react";
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { RoleSelect } from "@/components/ui/role-select";
@@ -191,7 +191,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
 
     {/* Logo */}
     <div className="mb-8">
-     <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
+     <Logo width={180} height={45} className="h-10 w-auto" />
     </div>
 
     {/* Progress dots */}

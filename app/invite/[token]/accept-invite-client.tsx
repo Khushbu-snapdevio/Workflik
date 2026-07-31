@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -52,7 +52,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
     <main className="grid min-h-screen place-items-center bg-page px-4">
       <div className="w-full max-w-md">
         <Link href="/" className="mb-10 flex flex-col items-center gap-3">
-          <Image src="/workflik-logo.png" unoptimized alt="Workflik" loading="eager" priority width={180} height={45} className="h-10 w-auto" />
+          <Logo width={180} height={45} className="h-10 w-auto" />
         </Link>
         <Card>
           <CardHeader className="text-center">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,16 +45,7 @@ export default function ForgotPasswordPage() {
     <main className="grid min-h-screen place-items-center bg-page px-4">
       <div className="w-full max-w-[380px]">
         <Link className="mb-10 flex flex-col items-center gap-3" href="/">
-          <Image
-            alt="Workflik"
-            className="h-10 w-auto"
-            height={45}
-            loading="eager"
-            priority
-            src="/workflik-logo.png"
-            unoptimized
-            width={180}
-          />
+          <Logo className="h-10 w-auto" height={45} width={180} />
         </Link>
 
         <div className="rounded-[var(--radius-xl)] border border-border bg-card px-8 py-8">

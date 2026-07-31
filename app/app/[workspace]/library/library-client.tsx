@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, EyeOff, FileText, Grid2X2, Loader2, Lock, Search, Star, Trash2, X } from "lucide-react";
+import { AlertCircle, BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Eye, EyeOff, FileText, Grid2X2, Loader2, Lock, Search, Star, Trash2, X } from "lucide-react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
@@ -12,6 +12,11 @@ import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, getPageNumbers } from 
 import type { LibraryPageResult, LibraryPageRow as PageRow } from "@/lib/pages/library";
 
 type DisplayRow = PageRow & { depth: number; hasChildren: boolean };
+
+// The server always renders the first page at DEFAULT_PAGE_SIZE (page.tsx has
+// no pageSize search param to read), so a chosen size lives only in
+// localStorage — restored client-side once the component mounts.
+const PAGE_SIZE_STORAGE_KEY = "workflik:library-page-size";
 
 // Nests sub-pages under their parent (in the same relative order `rows`
 // already has — most-recently-updated first) instead of listing every page
@@ -141,6 +146,23 @@ export function LibraryClient({
   function refetch() {
     fetchLibrary(tab, debouncedSearch, currentPage, pageSize);
   }
+
+  // Restore a previously-chosen page size once, on mount. This lands as a
+  // pageSize change (10 -> stored value), which the fetch effect below picks
+  // up on its own — no need to fetch here too.
+  useEffect(() => {
+    const stored = Number.parseInt(localStorage.getItem(PAGE_SIZE_STORAGE_KEY) ?? "", 10);
+    if (Number.isFinite(stored) && stored >= MIN_PAGE_SIZE && stored <= MAX_PAGE_SIZE && stored !== DEFAULT_PAGE_SIZE) {
+      setPageSize(stored);
+      setPageSizeInput(String(stored));
+      setRows([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(pageSize));
+  }, [pageSize]);
 
   // Skip the very first run — page.tsx's server-rendered `initial` already
   // covers page 1 of whichever tab the URL requested, so firing again here
@@ -553,7 +575,7 @@ export function LibraryClient({
                               : "text-muted-foreground-subtle opacity-0 group-hover/row:opacity-100 hover:text-foreground"
                           }`}
                         >
-                          <EyeOff size={12} />
+                          {page.isPrivate ? <EyeOff size={12} /> : <Eye size={12} />}
                         </button>
                         <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/private:opacity-100">
                           <p className="text-xs font-semibold text-popover-foreground">
@@ -658,25 +680,31 @@ export function LibraryClient({
                       type="text"
                       inputMode="numeric"
                       value={pageSizeInput}
-                      onChange={(e) => setPageSizeInput(e.target.value)}
+                      onChange={(e) => setPageSizeInput(e.target.value.replace(/[^0-9]/g, ""))}
                       onBlur={submitPageSizeInput}
-                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); return; }
+                        if (e.key === "ArrowUp")   { e.preventDefault(); changePageSize(pageSize + 5); return; }
+                        if (e.key === "ArrowDown") { e.preventDefault(); changePageSize(pageSize - 5); return; }
+                      }}
                       className="w-12 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
                     />
                     <div className="absolute right-1 flex flex-col">
                       <button
                         type="button"
                         aria-label="Increase rows per page"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => changePageSize(pageSize + 5)}
-                        className="flex h-2.5 items-center text-muted-foreground-subtle hover:text-foreground"
+                        className="flex h-3 items-center text-muted-foreground-subtle hover:text-foreground"
                       >
                         <ChevronUp size={10} />
                       </button>
                       <button
                         type="button"
                         aria-label="Decrease rows per page"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => changePageSize(pageSize - 5)}
-                        className="flex h-2.5 items-center text-muted-foreground-subtle hover:text-foreground"
+                        className="flex h-3 items-center text-muted-foreground-subtle hover:text-foreground"
                       >
                         <ChevronDown size={10} />
                       </button>

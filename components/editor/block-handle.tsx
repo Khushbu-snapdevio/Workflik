@@ -13,8 +13,73 @@ import { IconTooltip } from "@/components/ui/icon-tooltip";
 interface BlockInfo {
  top:   number;
  left:   number;
+ // True when the editor sits inside a narrow fixed-position panel (e.g. the
+ // database entry side panel) that doesn't have the ~58px of margin the full
+ // "+" and grip pair needs — see computeHandleLeft below. Drives hiding the
+ // "+" button so the remaining grip alone still fits without covering text.
+ compact: boolean;
+ // Grip button's rendered size in px — GRIP_W normally, shrunk down when even
+ // the compact single-grip layout doesn't have GRIP_W + 2*EDGE_GAP to spare
+ // (see computeHandleLeft).
+ gripSize: number;
  nodePos: number;
  nodeSize: number;
+}
+
+const GRIP_W = 20;
+const MIN_GRIP = 10; // smallest the grip will shrink to before it'd be too small to hit
+const EDGE_GAP = 2;  // breathing room kept from both the boundary and the block's own text
+
+// The handle normally sits 58px left of the editor to clear the text column
+// (room for both the "+" and grip buttons), which assumes a full-width page
+// with margin to spare. Inside a narrow fixed-position panel (e.g. the
+// database entry side panel), that margin doesn't exist and anchoring 58px
+// out would push the handle past the panel's own left edge and over whatever
+// is behind it.
+//
+// Two earlier passes at this fix each missed one boundary: clamping only to
+// the panel's own edge let the handle land on top of the block's text, and
+// clamping to the block's text edge instead let it land on top of an inner
+// bordered card's own edge (e.g. the entry side panel wraps its editor in a
+// bordered "Content" card, which has less padding than the panel itself).
+// Walk up collecting *every* ancestor that visually bounds the handle — a
+// `position: fixed` panel root, or any ancestor with a visible left border —
+// and use whichever is most restrictive (furthest right). Stop at the fixed
+// ancestor since nothing further out than the panel root can matter.
+function getHandleLeftBoundary(editorEl: HTMLElement): { boundary: number; compact: boolean } {
+ let boundary = 8; // fallback: viewport margin, used when nothing constrains us
+ let compact = false;
+ let el: HTMLElement | null = editorEl.parentElement;
+ while (el && el !== document.body) {
+  const cs = getComputedStyle(el);
+  const isFixed = cs.position === "fixed";
+  const borderW = parseFloat(cs.borderLeftWidth) || 0;
+  const hasLeftBorder = borderW > 0 && cs.borderLeftStyle !== "none";
+  if (isFixed || hasLeftBorder) {
+   const rect = el.getBoundingClientRect();
+   const edge = isFixed ? rect.left + 8 : rect.left + borderW;
+   if (!compact || edge > boundary) boundary = edge;
+   compact = true;
+  }
+  if (isFixed) break;
+  el = el.parentElement;
+ }
+ return { boundary, compact };
+}
+
+function computeHandleLeft(editorEl: HTMLElement, blockLeft: number): { left: number; compact: boolean; gripSize: number } {
+ const { boundary, compact } = getHandleLeftBoundary(editorEl);
+ if (!compact) {
+  return { left: Math.max(blockLeft - 58, boundary), compact: false, gripSize: GRIP_W };
+ }
+ // Compact mode: only the grip renders. Size it to whatever fits between the
+ // boundary and the text with EDGE_GAP to spare on each side — shrinking
+ // below GRIP_W rather than crossing either line — and position it flush
+ // against the text minus that same gap, which by construction never crosses
+ // the boundary either.
+ const available = blockLeft - boundary;
+ const gripSize = Math.min(GRIP_W, Math.max(MIN_GRIP, available - EDGE_GAP * 2));
+ return { left: blockLeft - EDGE_GAP - gripSize, compact: true, gripSize };
 }
 
 // Resolve which top-level block the mouse is over, via DOM traversal rather
@@ -56,9 +121,12 @@ function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
   if (nodePos === -1 || !node) return null;
 
   const br = el.getBoundingClientRect();
+  const { left, compact, gripSize } = computeHandleLeft(editorEl, er.left);
   return {
    top:   br.top + br.height / 2,
-   left:   er.left - 58,
+   left,
+   compact,
+   gripSize,
    nodePos,
    nodeSize: node.nodeSize,
   };
@@ -83,7 +151,7 @@ function getBlockRect(editor: Editor, nodePos: number): { top: number; left: num
    domNode = domNode.parentElement;
   }
   const br = domNode.getBoundingClientRect();
-  return { top: br.top + br.height / 2, left: er.left - 58 };
+  return { top: br.top + br.height / 2, left: computeHandleLeft(editorEl, er.left).left };
  } catch {
   return null;
  }
@@ -325,16 +393,20 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
     alignItems: "center",
    }}
   >
-   {/* + — insert a new block below (Alt-click: above) */}
-   <button
-    type="button"
-    onClick={insertBlock}
-    onMouseEnter={(e) => showTooltip("Click to add below · Alt-click to add above", e)}
-    onMouseLeave={hideTooltip}
-    className="flex h-6 w-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
-   >
-    <Plus size={14} />
-   </button>
+   {/* + — insert a new block below (Alt-click: above). Hidden in compact
+       mode (narrow fixed panels) — there isn't room for both buttons without
+       the pair covering the block's own text. */}
+   {!block.compact && (
+    <button
+     type="button"
+     onClick={insertBlock}
+     onMouseEnter={(e) => showTooltip("Click to add below · Alt-click to add above", e)}
+     onMouseLeave={hideTooltip}
+     className="flex h-6 w-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+    >
+     <Plus size={14} />
+    </button>
+   )}
 
    {/* ⠿ grip — drag to reorder, click to open block menu */}
    <button
@@ -361,17 +433,18 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
     }}
     onMouseEnter={(e) => showTooltip("Drag to reorder · Click for options", e)}
     onMouseLeave={hideTooltip}
-    className="flex h-6 w-5 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing"
+    style={{ width: block.gripSize }}
+    className="flex h-6 shrink-0 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing"
    >
-    <GripVertical size={14} />
+    <GripVertical size={Math.max(10, Math.min(14, block.gripSize - 2))} />
    </button>
 
    {/* Dropdown */}
    {menuOpen && (
     <div
      ref={dropdownRef}
-     className="absolute left-6 top-0 w-44 overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover"
-     style={{ zIndex: 9999 }}
+     className="absolute top-0 w-44 overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover"
+     style={{ left: block.gripSize + 4, zIndex: 9999 }}
     >
      <div className="py-1">
       {onComment && (
@@ -412,7 +485,7 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
    )}
   </div>
   {tooltip && (
-   <IconTooltip rect={tooltip.rect} label={tooltip.label} />
+   <IconTooltip rect={tooltip.rect} label={tooltip.label} minLeft={getHandleLeftBoundary(editor.view.dom as HTMLElement).boundary} />
   )}
   </>,
   document.body,

@@ -571,7 +571,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    />
 
    {/* Dialog */}
-   <div ref={dialogRef} className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
+   <div ref={dialogRef} className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
 
     {/* Search input */}
     <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">

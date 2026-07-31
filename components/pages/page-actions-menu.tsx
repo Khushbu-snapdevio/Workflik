@@ -188,6 +188,12 @@ export function PageActionsMenu({
     body:  JSON.stringify({ isPrivate: next }),
    });
    setIsPrivate(next);
+   // router.refresh() alone doesn't move the page into/out of the sidebar's
+   // Private section: the sidebar keeps its tree in useState seeded from
+   // props, so re-running the server layout doesn't touch it. Without this
+   // event the change only lands when the page-tree SSE poll next fires
+   // (4s server-side), which read as a ~5s lag.
+   window.dispatchEvent(new CustomEvent("pages:refresh"));
    router.refresh();
   });
  }

@@ -735,11 +735,20 @@ export function CommentCard({
    }),
   });
   notifyChanged();
-  // Closes the card after posting — unlike a reply (createReply below),
-  // which deliberately stays open since it's the middle of an ongoing
-  // thread conversation, submitting from this card's own top-level composer
-  // is a one-off "leave a comment and move on" action.
-  onClose();
+  // Floating (block-level) card only: closes after posting — unlike a reply
+  // (createReply below), which deliberately stays open since it's the middle
+  // of an ongoing thread conversation, submitting from a block card's own
+  // top-level composer is a one-off "leave a comment and move on" action.
+  //
+  // The inline (page-level) section must NOT close here. Its onClose is
+  // onDismiss, which unmounts the whole section — and since the comment just
+  // posted makes the page's active count non-zero, the parent immediately
+  // re-shows it, remounting the card into its non-background load path. The
+  // net effect was a visible list → gone → spinner → list flicker, with the
+  // page jumping height at every step. Staying open leaves the new comment
+  // on screen, which is also what Notion does. The composer clears itself
+  // (comment-composer.tsx), so nothing is left behind by not closing.
+  if (variant !== "inline") onClose();
  }
 
  async function createReply(parentId: string, content: Record<string, unknown>) {

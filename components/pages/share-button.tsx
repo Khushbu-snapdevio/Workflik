@@ -52,6 +52,10 @@ export function ShareButton({
    body:  JSON.stringify({ isPrivate: next }),
   });
   setPagePrivate(next);
+  // Moves the page into/out of the sidebar's Private section right away —
+  // otherwise it only updates when the page-tree SSE poll next fires (4s
+  // server-side), which read as a ~5s lag.
+  window.dispatchEvent(new CustomEvent("pages:refresh"));
  }, [pageId, setPagePrivate]);
 
  function handleClick(e: React.MouseEvent<HTMLButtonElement>) {

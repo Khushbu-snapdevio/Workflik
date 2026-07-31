@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import {
  forwardRef,
  useCallback,
@@ -13,6 +13,7 @@ import {
 import { exitSuggestion } from "@tiptap/suggestion";
 import type { MentionItem, MentionSuggestionProps } from "@/components/editor/extensions/mention-extension";
 import { MENTION_PLUGIN_KEY, PAGE_LINK_PLUGIN_KEY } from "@/components/editor/extensions/mention-extension";
+import { PageIcon } from "@/components/pages/page-icon";
 
 export interface MentionListHandle {
  onKeyDown: (event: KeyboardEvent) => boolean;
@@ -271,8 +272,14 @@ function MentionRow({
    )}
    {item.mentionType === "page" && (
     <>
-     <span className="text-base w-5 text-center">
-      {"icon" in item && item.icon ? item.icon : "📄"}
+     {/* Via PageIcon, not the raw string — a page icon isn't always an emoji.
+         Lucide-icon and uploaded-image icons are stored as JSON
+         (`{"type":"icon","name":"TrendingUp"}`), which rendered as literal
+         JSON text here before. */}
+     <span className="flex w-5 shrink-0 items-center justify-center">
+      {"icon" in item && item.icon
+       ? <PageIcon icon={item.icon} size={16} />
+       : <FileText className="text-muted-foreground" size={14} />}
      </span>
      <span className="text-foreground truncate">{item.label}</span>
     </>

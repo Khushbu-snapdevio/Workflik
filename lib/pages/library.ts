@@ -236,3 +236,51 @@ export async function getLibraryPage(
     },
   };
 }
+
+// Every id matching the current tab/search — unpaginated, id-only — so
+// Library's "select all" can select every matching page, not just whatever
+// happens to be loaded for the current page-size/pagination window (and,
+// for the nested "All Pages" tree, not just whatever's currently expanded).
+export async function getAllLibraryPageIds(
+  workspaceId: string,
+  userId: string,
+  opts: { tab?: string | null; search?: string },
+): Promise<string[]> {
+  const tab: LibraryTab =
+    opts.tab === "recents" || opts.tab === "favorites" || opts.tab === "private" ? opts.tab : "all";
+  const search = (opts.search ?? "").trim();
+
+  // Unfiltered "All Pages" — every non-deleted page in the workspace,
+  // root or descendant alike. Matches tabCounts.all's own query exactly.
+  if (tab === "all" && !search) {
+    const rows = await db.select({ id: pages.id }).from(pages)
+      .where(and(eq(pages.workspaceId, workspaceId), eq(pages.isDeleted, false)));
+    return rows.map((r) => r.id);
+  }
+
+  const recentPageIds = tab === "recents"
+    ? (await db.select({ pageId: userRecentlyVisited.pageId }).from(userRecentlyVisited)
+        .where(and(eq(userRecentlyVisited.userId, userId), eq(userRecentlyVisited.workspaceId, workspaceId))))
+        .map((r) => r.pageId)
+    : [];
+  const favPageIds = tab === "favorites"
+    ? (await db.select({ pageId: userFavorites.pageId }).from(userFavorites)
+        .where(and(eq(userFavorites.userId, userId), eq(userFavorites.workspaceId, workspaceId))))
+        .map((f) => f.pageId)
+    : [];
+
+  const baseConditions = [eq(pages.workspaceId, workspaceId), eq(pages.isDeleted, false)];
+  if (tab === "recents")   baseConditions.push(recentPageIds.length > 0 ? inArray(pages.id, recentPageIds) : sql`false`);
+  if (tab === "favorites") baseConditions.push(favPageIds.length > 0 ? inArray(pages.id, favPageIds) : sql`false`);
+  if (tab === "private")  baseConditions.push(eq(pages.isPrivate, true));
+
+  const searchCondition = search
+    ? or(ilike(pages.title, `%${search}%`), ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`))
+    : null;
+  const conditions = searchCondition ? [...baseConditions, searchCondition] : baseConditions;
+
+  const rows = await db.select({ id: pages.id }).from(pages)
+    .leftJoin(users, eq(users.id, pages.createdBy))
+    .where(and(...conditions));
+  return rows.map((r) => r.id);
+}

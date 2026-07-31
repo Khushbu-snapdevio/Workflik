@@ -120,6 +120,7 @@ export function LibraryClient({
   const [loading, setLoading]   = useState(false);
 
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
+  const [selectingAll, setSelectingAll]    = useState(false);
   // Which parent pages are expanded (opt-in — see buildDisplayRows). Never
   // reset by tab/search/pagination changes below, so a user's expand/collapse
   // choices persist while navigating around the Library.
@@ -288,7 +289,12 @@ export function LibraryClient({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isPrivate: next }),
-    }).catch(refetch);
+    })
+      // Moves the page into/out of the sidebar's Private section right away —
+      // otherwise it only updates when the page-tree SSE poll next fires (4s
+      // server-side), which read as a ~5s lag.
+      .then(() => window.dispatchEvent(new CustomEvent("pages:refresh")))
+      .catch(refetch);
   }
 
   function toggleLocked(row: PageRow) {
@@ -315,42 +321,53 @@ export function LibraryClient({
     });
   }
 
-  function toggleSelectAll(visibleIds: string[]) {
-    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
-    setSelectedIds(allSelected ? new Set() : new Set(visibleIds));
+  // Selects every page matching the current tab/search — not just whatever's
+  // loaded for this pagination page, and not just whatever's currently
+  // expanded in the "All Pages" tree — since the header checkbox's label
+  // ("select all") means all matching pages, not "all visible rows."
+  async function toggleSelectAll() {
+    if (expectedSelectAllTotal > 0 && selectedIds.size >= expectedSelectAllTotal) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectingAll(true);
+    try {
+      const params = new URLSearchParams({ tab, search: debouncedSearch });
+      const res = await fetch(`/api/workspaces/${workspaceId}/pages/library/ids?${params}`);
+      if (!res.ok) throw new Error("Failed to load");
+      const data = await res.json() as { ids: string[] };
+      setSelectedIds(new Set(data.ids));
+    } catch {
+      // Fall back to selecting what's already loaded rather than doing nothing.
+      setSelectedIds(new Set(rows.map((r) => r.id)));
+    } finally {
+      setSelectingAll(false);
+    }
   }
 
   async function handleDeleteSelected() {
     setDeletingSelected(true); setDeleteErr("");
     const selected = [...selectedIds];
 
-    // The DELETE endpoint already cascades to every descendant of the page
-    // it's given. If a parent AND its child are both checked (e.g. via
-    // "select all", which checks every expanded row), firing a separate
-    // request for the child races that cascade — the child's own request can
-    // find it already marked deleted and permanently hard-delete it instead
-    // of moving it to Trash. So each selected id is folded up to the
-    // topmost selected id in its ancestor chain, and only that one is
-    // actually requested.
-    const parentOf = new Map(rows.map((r) => [r.id, r.parentId]));
-    function topmostSelectedAncestor(id: string): string {
-      let cur = id;
-      const seen = new Set<string>();
-      for (;;) {
-        const parent = parentOf.get(cur);
-        if (!parent || seen.has(parent) || !selectedIds.has(parent)) return cur;
-        seen.add(parent);
-        cur = parent;
-      }
-    }
-    const effectiveIdFor = new Map(selected.map((id) => [id, topmostSelectedAncestor(id)]));
-    const idsToRequest = [...new Set(effectiveIdFor.values())];
-
+    // One request for the whole selection instead of one DELETE per id —
+    // selection can now span ids well beyond what's loaded client-side (see
+    // toggleSelectAll), so there's no reliable local parent-chain info to
+    // fold parent+child selections down to just the parent here. The server
+    // does that fold authoritatively against page_closure instead (see
+    // bulk-delete/route.ts) — necessary because deleting a parent already
+    // cascades to its descendants, and a separate request for one of those
+    // descendants would find it already soft-deleted and hard-delete it.
     try {
-      const results = await Promise.all(idsToRequest.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
-      const okById = new Map(idsToRequest.map((id, i) => [id, results[i]!.ok]));
-      const removed = new Set(selected.filter((id) => okById.get(effectiveIdFor.get(id)!)));
-      const failedIds = idsToRequest.filter((id) => !okById.get(id));
+      const res = await fetch(`/api/workspaces/${workspaceId}/pages/bulk-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selected }),
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      const { results } = await res.json() as { results: { id: string; ok: boolean; error?: string }[] };
+
+      const removed = new Set(results.filter((r) => r.ok).map((r) => r.id));
+      const failed = results.filter((r) => !r.ok);
 
       setRows((prev) => prev.filter((p) => !removed.has(p.id)));
       setSelectedIds(new Set());
@@ -358,14 +375,12 @@ export function LibraryClient({
         window.dispatchEvent(new CustomEvent("pages:refresh"));
         refetch(); // reconcile totals/tab counts and refill this page from what's left
       }
-      if (failedIds.length > 0) {
-        if (failedIds.length === 1) {
-          const res = results[idsToRequest.indexOf(failedIds[0]!)]!;
-          const body = await res.json().catch(() => null) as { error?: string } | null;
-          setDeleteErr(body?.error ? `Failed to delete page: ${body.error}` : "Failed to delete page");
-        } else {
-          setDeleteErr(`Failed to delete ${failedIds.length} pages`);
-        }
+      if (failed.length > 0) {
+        setDeleteErr(
+          failed.length === 1
+            ? `Failed to delete page: ${failed[0]!.error ?? "Unknown error"}`
+            : `Failed to delete ${failed.length} pages`
+        );
       }
     } catch { setDeleteErr("Network error"); }
     finally { setDeletingSelected(false); setConfirmDeleteSelected(false); }
@@ -375,9 +390,14 @@ export function LibraryClient({
     ? buildDisplayRows(rows, expandedIds)
     : rows.map((p) => ({ ...p, depth: 0, hasChildren: false }));
 
-  const visibleIds   = displayRows.map((p) => p.id);
-  const allSelected  = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
-  const someSelected = !allSelected && visibleIds.some((id) => selectedIds.has(id));
+  // tabCounts[tab] doesn't account for an active search (it's a flat,
+  // unfiltered tab-membership count — see lib/pages/library.ts), so once a
+  // search is active, totalCount (already search-aware, and always flat —
+  // nestingActive turns off the moment a search is active) is the right
+  // total to compare selection against instead.
+  const expectedSelectAllTotal = search ? totalCount : tabCounts[tab];
+  const allSelected  = expectedSelectAllTotal > 0 && selectedIds.size >= expectedSelectAllTotal;
+  const someSelected = !allSelected && selectedIds.size > 0;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -497,12 +517,13 @@ export function LibraryClient({
 
               {/* Table header */}
               <div className="grid items-center border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px 90px" }}>
-                <label className="flex cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                <label className={`flex items-center justify-center ${selectingAll ? "cursor-wait" : "cursor-pointer"}`} onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={allSelected}
+                    disabled={selectingAll}
                     ref={(el) => { if (el) el.indeterminate = someSelected; }}
-                    onChange={() => toggleSelectAll(visibleIds)}
+                    onChange={() => toggleSelectAll()}
                     className="sr-only"
                   />
                   <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
@@ -512,10 +533,13 @@ export function LibraryClient({
                         ? "border-primary bg-primary/20"
                         : "border-border bg-background hover:border-primary/50"
                   }`}>
-                    {allSelected && <Check size={10} className="text-white" strokeWidth={3} />}
-                    {someSelected && (
+                    {selectingAll ? (
+                      <Loader2 size={9} className="animate-spin text-muted-foreground" />
+                    ) : allSelected ? (
+                      <Check size={10} className="text-white" strokeWidth={3} />
+                    ) : someSelected ? (
                       <span className="block h-0.5 w-2 rounded-full bg-primary" />
-                    )}
+                    ) : null}
                   </span>
                 </label>
                 <span className="text-xs font-semibold tracking-wide text-muted-foreground">Page name</span>

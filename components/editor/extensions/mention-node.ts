@@ -1,4 +1,14 @@
 import { Node, mergeAttributes } from "@tiptap/react";
+import { parseIcon } from "@/components/pages/page-icon";
+
+// renderHTML returns a plain DOM spec, so a Lucide-icon or uploaded-image page
+// icon (both stored as JSON) can't be drawn here the way <PageIcon> does it in
+// React. Emoji icons pass through; anything else falls back to the default
+// glyph — the point is that raw JSON must never reach the document as text.
+function mentionIconGlyph(icon: unknown): string {
+  const parsed = typeof icon === "string" ? parseIcon(icon) : null;
+  return parsed?.kind === "emoji" ? parsed.value : "📄";
+}
 
 interface MentionNodeOptions {
   workspaceSlug: string;
@@ -49,7 +59,7 @@ export const MentionNode = Node.create<MentionNodeOptions>({
     // instead, dates read as plain text, matching Notion's conventions.
     const text =
       mentionType === "user" ? `@${label ?? ""}`
-      : mentionType === "page" ? `${icon ?? "📄"} ${label ?? ""}`
+      : mentionType === "page" ? `${mentionIconGlyph(icon)} ${label ?? ""}`
       : `📅 ${label ?? ""}`;
 
     const attrs = mergeAttributes(

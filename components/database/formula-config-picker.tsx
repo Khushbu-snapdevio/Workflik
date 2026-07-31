@@ -148,7 +148,12 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
       className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
     >
       <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
-        <button type="button" onClick={onBack} className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back"
+          className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <ArrowLeft size={13} />
         </button>
         <p className="text-xs font-semibold text-foreground/80">Edit formula</p>

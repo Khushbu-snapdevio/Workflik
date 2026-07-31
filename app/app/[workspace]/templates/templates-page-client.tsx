@@ -4,17 +4,11 @@ import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
   ArrowRight,
-  BarChart2,
-  Code2,
-  DollarSign,
   LayoutGrid,
   Loader2,
-  Megaphone,
   Search,
-  Tag,
   Trash2,
   X,
-  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,6 +17,7 @@ import { PageIcon } from "@/components/pages/page-icon";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { MINI_WIDTHS, MiniPageContent, blockText } from "@/components/editor/mini-page-content";
+import { resolveCategoryIcon } from "@/lib/orbit/category-icons";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -60,15 +55,14 @@ type Template = {
   };
 };
 
-type TemplateCategoryRow = { id: string; key: string; label: string; orderIndex: number };
+type TemplateCategoryRow = { id: string; key: string; label: string; icon?: string | null; orderIndex: number };
 
-// Categories are admin-managed (not a fixed list), so icons are cycled from
-// a small palette by position rather than mapped per-key.
-const CATEGORY_ICON_CYCLE: LucideIcon[] = [Zap, BarChart2, Megaphone, Code2, DollarSign, Tag];
-
+// Uses the icon the admin picked when creating the category. Categories that
+// predate the icon column have none stored and fall back to the old
+// positional cycle (see resolveCategoryIcon).
 function iconForCategory(categories: TemplateCategoryRow[], categoryId: string): LucideIcon {
   const idx = categories.findIndex((c) => c.id === categoryId);
-  return idx === -1 ? LayoutGrid : CATEGORY_ICON_CYCLE[idx % CATEGORY_ICON_CYCLE.length]!;
+  return idx === -1 ? LayoutGrid : resolveCategoryIcon(categories[idx]?.icon, idx);
 }
 
 function labelForCategory(categories: TemplateCategoryRow[], categoryId: string): string | undefined {
@@ -284,7 +278,7 @@ export function TemplatesPageClient({
   return (
     <div className="@container flex h-full flex-col overflow-hidden bg-card">
       {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
-      <div className="flex h-11 shrink-0 items-center bg-card px-3">
+      <div className="flex h-11 shrink-0 items-center border-b border-border bg-card px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
           <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground">
             <LayoutGrid className="shrink-0" size={13} />
@@ -376,7 +370,7 @@ export function TemplatesPageClient({
               {categories.map((cat, i) => {
                 const cnt = countForTab(cat.id);
                 const isActive = activeTab === cat.id;
-                const CatIcon = CATEGORY_ICON_CYCLE[i % CATEGORY_ICON_CYCLE.length]!;
+                const CatIcon = resolveCategoryIcon(cat.icon, i);
                 return (
                   <button
                     className={`group flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left transition-all duration-150 ${

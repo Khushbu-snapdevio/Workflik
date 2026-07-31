@@ -904,11 +904,18 @@ function GalleryCard({
                 className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
                 tabIndex={commentCount ? 0 : -1}
                 aria-hidden={!commentCount}
+                // Exempt from CellCommentPopover's capture-phase outside-click
+                // close. Without it that fires first and closes the popover,
+                // then the toggle below sees "closed" and reopens it — so the
+                // popover could never be dismissed from its own badge.
+                data-comment-exempt
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCommentAnchor(
-                    (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  );
+                  // Toggle: a second click on the badge closes the popover it
+                  // opened. Assigning the rect unconditionally just replaced
+                  // it with an identical one, leaving the popover stuck open.
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setCommentAnchor((cur) => (cur ? null : rect));
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}

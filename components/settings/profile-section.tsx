@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowRight, Camera, Check, ChevronDown, Clock, Globe, KeyRound, Loader2, Search, ShieldAlert, X } from "lucide-react";
+import { ArrowRight, Camera, Check, ChevronDown, Circle, Clock, Globe, KeyRound, Loader2, Search, ShieldAlert, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useUpload } from "@/lib/storage/use-upload";
 import { changeEmail, changePassword } from "@/lib/auth/client";
+// aliased — `passwordError` is also this component's own error-message state
+import { PASSWORD_RULES, passwordError as validatePassword } from "@/lib/auth/password";
 import { getAvatarColor, getInitials } from "@/lib/utils";
 import { useSettingsUser } from "./settings-user-context";
 import { ThemeToggle } from "./theme-toggle";
@@ -319,12 +321,17 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
    setPasswordError("Enter your current password.");
    return;
   }
-  if (newPassword.length < 8) {
-   setPasswordError("New password must be at least 8 characters.");
+  const strengthError = validatePassword(newPassword);
+  if (strengthError) {
+   setPasswordError(strengthError);
    return;
   }
   if (newPassword !== confirmPassword) {
-   setPasswordError("Passwords don't match.");
+   setPasswordError("New passwords don't match.");
+   return;
+  }
+  if (hasPassword && newPassword === currentPassword) {
+   setPasswordError("Your new password must be different from your current one.");
    return;
   }
   setPasswordError("");
@@ -333,7 +340,16 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
    if (hasPassword) {
     const result = await changePassword({ currentPassword, newPassword, revokeOtherSessions: false });
     if (result.error) {
-     setPasswordError(result.error.message ?? "Something went wrong. Please try again.");
+     // better-auth reports a wrong current password as a bare "Invalid
+     // password", which with three password fields on screen doesn't say
+     // *which* one it means — name the field instead.
+     const raw = result.error.message ?? "";
+     const isWrongCurrent = result.error.status === 400 && /invalid password/i.test(raw);
+     setPasswordError(
+      isWrongCurrent
+       ? "Your current password is incorrect."
+       : raw || "Something went wrong. Please try again."
+     );
      return;
     }
    } else {
@@ -733,6 +749,27 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
          className="w-[280px] focus-visible:border-primary"
         />
        </div>
+
+       {/* Live requirement checklist — shown as soon as the user starts typing
+           a new password, so the rules are discoverable up front instead of
+           only after a failed submit. */}
+       {newPassword.length > 0 && (
+        <ul className="flex w-[280px] flex-col gap-1">
+         {PASSWORD_RULES.map(rule => {
+          const met = rule.test(newPassword);
+          return (
+           <li
+            key={rule.id}
+            className={`flex items-center gap-1.5 text-xs transition-colors duration-150 ${met ? "text-success" : "text-muted-foreground"}`}
+           >
+            {met ? <Check className="shrink-0" size={12} /> : <Circle className="shrink-0" size={12} />}
+            {rule.label}
+           </li>
+          );
+         })}
+        </ul>
+       )}
+
        {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
        <div className="flex gap-2">
         <Button

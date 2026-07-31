@@ -501,11 +501,15 @@ function GalleryCard({
                 className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
                 tabIndex={commentCount ? 0 : -1}
                 aria-hidden={!commentCount}
+                // Exempt from CellCommentPopover's capture-phase outside-click
+                // close, which would otherwise close the popover just before
+                // the toggle below reopened it.
+                data-comment-exempt
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCommentAnchor(
-                    (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  );
+                  // Toggle: a second click closes the popover this badge opened.
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setCommentAnchor((cur) => (cur ? null : rect));
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 onMouseEnter={(e) =>

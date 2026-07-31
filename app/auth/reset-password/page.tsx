@@ -5,6 +5,7 @@ import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useState } from "react";
+import { passwordError } from "@/lib/auth/password";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,8 +40,9 @@ function ResetPasswordInner() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const strengthError = passwordError(password);
+    if (strengthError) {
+      setError(strengthError);
       setInvalidToken(false);
       return;
     }

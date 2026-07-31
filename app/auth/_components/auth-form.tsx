@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useState } from "react";
 import { PRODUCT_NAME } from "@/config/platform";
 import { signIn, signUp, useSession } from "@/lib/auth/client";
+import { passwordError } from "@/lib/auth/password";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -208,9 +209,14 @@ function AuthFormInner() {
       setError("Please enter your work email.");
       return;
     }
-    if (passwordMode === "signup" && password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
+    // Only on signup — sign-in must never hint at the policy, since that
+    // would tell an attacker which guesses can't be the stored password.
+    if (passwordMode === "signup") {
+      const strengthError = passwordError(password);
+      if (strengthError) {
+        setError(strengthError);
+        return;
+      }
     }
     if (!password) {
       setError("Please enter your password.");

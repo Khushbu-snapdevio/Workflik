@@ -331,6 +331,10 @@ function CoverPicker({
 
 const SYSTEM_TYPES = new Set(["title","created_by","created_time","last_edited_by","last_edited_time"]);
 const ANY_OPTION = "__any__";
+// Sentinel propertyId for sorting by the entry's page title (the "Name"
+// column), which has no `database_properties` row. Matches the id the
+// entries API recognises so saved view sorts round-trip server-side too.
+const TITLE_SORT_ID = "__title__";
 
 function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
  properties: DatabaseProperty[];
@@ -492,7 +496,13 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
  onClear:  () => void;
  onClose:  () => void;
 }) {
- const props = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
+ // The Name column has no `database_properties` row — it's the entry's own
+ // page title — so it's prepended as a synthetic option under the same
+ // `__title__` id the entries API already sorts by. Only id/name are read here.
+ const props: { id: string; name: string }[] = [
+  { id: TITLE_SORT_ID, name: "Name" },
+  ...properties.filter((p) => !SYSTEM_TYPES.has(p.type)).map((p) => ({ id: p.id, name: p.name })),
+ ];
  const atLimit = sorts.length >= props.length;
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
@@ -1197,12 +1207,16 @@ export function TemplatePageClient({
     for (const rule of sortRules) {
      const prop = properties.find((p) => p.id === rule.propertyId);
      const config = (prop?.config ?? {}) as { options?: { id: string; name: string }[] };
-     const cmp = compareVals(
-      entryValueMap.get(a.id)?.get(rule.propertyId),
-      entryValueMap.get(b.id)?.get(rule.propertyId),
-      prop?.type ?? "text",
-      config.options,
-     );
+     // Name sorts off the entry's page title — it has no propertyValues row,
+     // so there's nothing in entryValueMap to compare.
+     const cmp = rule.propertyId === TITLE_SORT_ID
+      ? compareVals({ text: a.title }, { text: b.title }, "text")
+      : compareVals(
+       entryValueMap.get(a.id)?.get(rule.propertyId),
+       entryValueMap.get(b.id)?.get(rule.propertyId),
+       prop?.type ?? "text",
+       config.options,
+      );
      if (cmp !== 0) return rule.direction === "asc" ? cmp : -cmp;
     }
     return 0;

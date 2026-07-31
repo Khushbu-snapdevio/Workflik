@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { templateCategories, templates, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import { CATEGORY_ICON_NAMES, DEFAULT_CATEGORY_ICON } from "@/lib/orbit/category-icons";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -42,6 +43,10 @@ async function uniqueKey(label: string): Promise<string> {
 
 const createSchema = z.object({
   label: z.string().min(1).max(60),
+  // Constrained to the shared registry rather than a free string — an
+  // unknown name would render as the fallback icon with no indication
+  // anything went wrong.
+  icon: z.enum(CATEGORY_ICON_NAMES as [string, ...string[]]).optional(),
 });
 
 // GET /api/orbit/templates/categories — list all template categories, with
@@ -56,6 +61,7 @@ export async function GET() {
       id:           templateCategories.id,
       key:          templateCategories.key,
       label:        templateCategories.label,
+      icon:         templateCategories.icon,
       orderIndex:   templateCategories.orderIndex,
       createdAt:    templateCategories.createdAt,
       templateCount: count(templates.id),
@@ -86,7 +92,12 @@ export async function POST(req: Request) {
 
   const [category] = await db
     .insert(templateCategories)
-    .values({ key, label: parsed.data.label, orderIndex })
+    .values({
+      key,
+      label: parsed.data.label,
+      icon: parsed.data.icon ?? DEFAULT_CATEGORY_ICON,
+      orderIndex,
+    })
     .returning();
 
   await writeAuditLog({
@@ -94,7 +105,7 @@ export async function POST(req: Request) {
     action:     "template_category.created",
     targetType: "template",
     targetId:   category!.id,
-    metadata:   { key: category!.key, label: category!.label },
+    metadata:   { key: category!.key, label: category!.label, icon: category!.icon },
   });
 
   return Response.json(category, { status: 201 });

@@ -328,9 +328,15 @@ function CardShell({
      {!!commentCount && (
       <button
        onPointerDown={(e) => e.stopPropagation()}
+       // Exempt from CellCommentPopover's capture-phase outside-click close,
+       // which would otherwise close the popover just before the toggle
+       // below reopened it.
+       data-comment-exempt
        onClick={(e) => {
         e.stopPropagation();
-        setCommentAnchor((e.currentTarget as HTMLElement).getBoundingClientRect());
+        // Toggle: a second click closes the popover this badge opened.
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setCommentAnchor((cur) => (cur ? null : rect));
        }}
        className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
        onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}

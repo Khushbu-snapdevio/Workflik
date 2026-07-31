@@ -628,6 +628,21 @@ export function CommentCard({
  const [data, setData]       = useState<CommentsData | null>(null);
  const [loading, setLoading]    = useState(true);
 
+ // The thread list is a capped-height scroller, so a newly posted comment
+ // lands below the fold once the conversation outgrows it — the user had to
+ // scroll down to see what they just wrote. Set when posting; consumed by the
+ // effect below once the refetched list has actually been committed to the
+ // DOM (scrolling any earlier would measure the pre-insert scrollHeight).
+ const listRef = useRef<HTMLDivElement>(null);
+ const scrollToNewestRef = useRef(false);
+
+ useEffect(() => {
+  if (!scrollToNewestRef.current) return;
+  scrollToNewestRef.current = false;
+  const el = listRef.current;
+  if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+ }, [data]);
+
  // `background: true` skips the spinner — used after posting/editing/
  // deleting a comment, so the refetch swaps the data in silently instead of
  // flashing the whole list to a spinner and losing scroll position mid-
@@ -734,6 +749,11 @@ export function CommentCard({
     content,
    }),
   });
+  // Reveal the just-posted comment: it's appended at the end of a
+  // capped-height scroller, so without this it lands below the fold and the
+  // user has to scroll to find what they just wrote. Chronological order is
+  // kept as-is — newest-first would make an ongoing thread read backwards.
+  scrollToNewestRef.current = true;
   notifyChanged();
   // Floating (block-level) card only: closes after posting — unlike a reply
   // (createReply below), which deliberately stays open since it's the middle
@@ -817,7 +837,7 @@ export function CommentCard({
       <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
      </div>
     ) : inlineVisible.length > 0 && (
-     <div className="max-h-[240px] divide-y divide-border overflow-y-auto">
+     <div ref={listRef} className="max-h-[240px] divide-y divide-border overflow-y-auto">
       {inlineVisible.map((thread) => (
        <ThreadSection
         key={thread.id}

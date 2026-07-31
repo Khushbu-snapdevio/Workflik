@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { NewPageButton } from "@/components/workspace/new-page-button";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { usePersistedToggle } from "@/hooks/use-persisted-toggle";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { findRootFallback } from "@/lib/pages/root-sibling";
 
@@ -53,7 +54,7 @@ type Props = {
 export function PrivateSection({
  pages, entries, workspaceId, workspaceSlug, favoritePageIds, onToggleFavorite, onPagesChange, onEntriesChange,
 }: Props) {
- const [expanded, setExpanded] = useState(true);
+ const [expanded, setExpanded] = usePersistedToggle("workflik:sidebar-private-expanded", true);
  const [popupOpen, setPopupOpen] = useState(false);
  const moreRef = useRef<HTMLButtonElement>(null);
  const popupRef = useRef<HTMLDivElement>(null);

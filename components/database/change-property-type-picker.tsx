@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Type as TextT } from "lucide-react";
+import { ArrowLeft, Check, Type as TextT } from "lucide-react";
 import { toast } from "sonner";
 import { PROPERTY_REGISTRY, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { RelationDatabasePicker } from "@/components/database/relation-database-picker";
@@ -20,10 +20,10 @@ interface ChangePropertyTypePickerProps {
   onBack: () => void;
   /** Dismiss without changing anything — clicking outside, backing out of a sub-picker. */
   onClose: () => void;
-  /** The type change committed successfully. Separate from onClose because the parent
-   *  panel's own state (options list, grouped-by-status, etc.) is derived once from the
-   *  property's *old* type and won't reactively follow a changed type/config prop — the
-   *  parent closes itself entirely on this, rather than trying to reconcile stale state. */
+  /** The type change committed successfully. Kept separate from onClose so the parent
+   *  can distinguish "dismissed" from "changed" — the Edit property panel dismisses
+   *  only this picker and stays open on the new type, remounting its body (keyed on
+   *  property.type) so state seeded from the old type doesn't linger. */
   onChanged: () => void;
   onUpdateProperty: (patch: Record<string, unknown>) => Promise<void>;
 }
@@ -137,9 +137,19 @@ export function ChangePropertyTypePicker({
           }}
           className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
         >
-          <div className="flex items-center gap-1.5 border-b border-border px-3 py-2.5">
-            <button type="button" onClick={onBack} className="text-xs font-medium text-muted-foreground hover:text-foreground">←</button>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground">Change type</p>
+          {/* Header matches the sibling step-pickers (rollup/formula) exactly —
+              same padding, same icon button, same title weight — so stepping
+              between them doesn't shift the chrome around. */}
+          <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back"
+              className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ArrowLeft size={13} />
+            </button>
+            <p className="text-xs font-semibold text-foreground/80">Change type</p>
           </div>
           <div className="max-h-60 overflow-y-auto p-1.5">
             {types.map((def) => {

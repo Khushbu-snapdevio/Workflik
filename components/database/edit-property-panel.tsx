@@ -53,7 +53,18 @@ interface EditPropertySidePanelProps {
 
 const PANEL_WIDTH = 288;
 
-export function EditPropertySidePanel({
+// Remounts the panel body whenever the property's type changes. Several pieces
+// of the body's state (options, groupedByStatus, name) are seeded once from the
+// property's config via lazy useState initialisers and don't reactively follow
+// a changed type — after "Change type" they'd keep rendering the previous
+// type's data (e.g. a Number property still listing the old Select options).
+// Keying here rather than at each call site keeps all six of them correct
+// without having to remember this at every one.
+export function EditPropertySidePanel(props: EditPropertySidePanelProps) {
+  return <EditPropertySidePanelBody key={props.property.type} {...props} />;
+}
+
+function EditPropertySidePanelBody({
   property, properties, workspaceId, getAnchorRect, onUpdateProperty, onDeleteProperty, onDuplicateProperty, canDelete, onClose, onBack, showCardToggle, viewContext,
 }: EditPropertySidePanelProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -151,14 +162,24 @@ export function EditPropertySidePanel({
       if (target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')) return;
       if (ref.current && !ref.current.contains(target)) onClose();
     }
-    function keyHandler(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    // Escape peels one layer at a time: whichever sub-popup is open closes and
+    // leaves the panel itself up, mirroring the outside-click exemptions above.
+    // Without this, dismissing a sub-picker took the whole panel with it.
+    function keyHandler(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (showTypePicker) { setShowTypePicker(false); return; }
+      if (showIconPicker) { setShowIconPicker(false); return; }
+      if (showDisplayAs)  { setShowDisplayAs(false);  return; }
+      if (submenu)        { setSubmenu(null);         return; }
+      onClose();
+    }
     document.addEventListener("mousedown", handler);
     document.addEventListener("keydown", keyHandler);
     return () => {
       document.removeEventListener("mousedown", handler);
       document.removeEventListener("keydown", keyHandler);
     };
-  }, [onClose]);
+  }, [onClose, showTypePicker, showIconPicker, showDisplayAs, submenu]);
 
   function persist(next: SelectOption[]) {
     onUpdateProperty({ config: { ...config, options: next } });
@@ -532,7 +553,10 @@ export function EditPropertySidePanel({
           workspaceId={workspaceId}
           onBack={() => setShowTypePicker(false)}
           onClose={() => setShowTypePicker(false)}
-          onChanged={onClose}
+          // Only the picker closes — the Edit property panel stays open on the
+          // new type, so you can keep configuring it. The panel re-seeds its
+          // type-derived state via the key in EditPropertySidePanel above.
+          onChanged={() => setShowTypePicker(false)}
           onUpdateProperty={onUpdateProperty}
         />
       )}

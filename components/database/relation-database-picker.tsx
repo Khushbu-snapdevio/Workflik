@@ -69,7 +69,8 @@ export function RelationDatabasePicker({ rect, workspaceId, onBack, onClose, onP
         <button
           type="button"
           onClick={selected ? () => setSelected(null) : onBack}
-          className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent"
+          aria-label="Back"
+          className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft size={13} />
         </button>

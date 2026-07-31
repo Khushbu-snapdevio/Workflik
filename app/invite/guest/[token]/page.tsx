@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/client";
+import { PageIcon } from "@/components/pages/page-icon";
 
 interface InvitationData {
  id:     string;
@@ -84,7 +85,9 @@ export default function GuestInvitePage() {
     {state === "ready" && invitation && (
      <>
       <div className="mb-6 text-center">
-       <div className="mb-3 text-4xl">{invitation.page.icon ?? "📄"}</div>
+       <div className="mb-3 flex justify-center">
+        <PageIcon icon={invitation.page.icon ?? "📄"} size={36} />
+       </div>
        <h1 className="text-xl font-bold text-foreground">You've been invited</h1>
        <p className="mt-1 text-sm text-muted-foreground">
         to access <span className="font-semibold text-foreground">{invitation.page.title || "Untitled"}</span>

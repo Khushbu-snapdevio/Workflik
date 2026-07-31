@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "@/lib/auth/client";
 import { File as FileIcon, ThumbsUp } from "lucide-react";
@@ -59,6 +59,27 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
   const [hoveredUser, setHoveredUser] = useState<{ userId: string; rect: DOMRect } | null>(null);
   const [voterTooltip, setVoterTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<FileItem | null>(null);
+
+  // Both hover cards are `position: fixed` portals anchored to a rect
+  // snapshotted once on mouseenter, so scrolling moves the chip they point at
+  // while the card stays glued to the viewport — it visibly detaches and, since
+  // the pointer never crosses the chip's boundary, onMouseLeave never fires to
+  // clean it up. Dismiss on scroll instead (same convention as
+  // use-hover-tooltip.ts). Capture-phase so scrolls on any ancestor scroll
+  // container are seen, not just the window. Only bound while a card is open —
+  // CellDisplay renders once per cell, so an always-on document listener would
+  // mean hundreds of them on a large table.
+  useEffect(() => {
+    if (!(hoveredUser || voterTooltip)) {
+      return;
+    }
+    function dismiss() {
+      setHoveredUser(null);
+      setVoterTooltip(null);
+    }
+    document.addEventListener("scroll", dismiss, true);
+    return () => document.removeEventListener("scroll", dismiss, true);
+  }, [hoveredUser, voterTooltip]);
 
   switch (property.type) {
     case "text": {

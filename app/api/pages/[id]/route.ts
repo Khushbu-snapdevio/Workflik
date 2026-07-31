@@ -1,13 +1,14 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { pageClosure, pages, userFavorites } from "@/lib/db/schema";
+import { pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 import { requirePagePermission } from "@/lib/permissions/resolver";
 import { upsertPageSearchIndex } from "@/lib/search/index-page";
-import { triggerPageDeletedNotification, triggerPageUpdateNotification } from "@/lib/notifications/triggers";
+import { triggerPageUpdateNotification } from "@/lib/notifications/triggers";
 import { isMeaningfulTitle } from "@/lib/pages/draft";
 import { promoteDraftPage } from "@/lib/pages/promote-draft";
+import { deletePageCascade } from "@/lib/pages/delete-page";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -134,67 +135,8 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   try {
     const { id } = await params;
     const session = await getSession();
-
-    const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, kind: pages.kind, createdBy: pages.createdBy, title: pages.title, isDraft: pages.isDraft })
-      .from(pages)
-      .where(eq(pages.id, id))
-      .limit(1);
-
-    if (!page) return apiError(404, "Page not found");
-
-    await requirePagePermission(session.user.id, id, "can_edit");
-
-    // Databases and already-trashed pages are permanently deleted immediately.
-    // ON DELETE CASCADE on databaseId/parentId removes all entries and
-    // descendant pages; pageClosure/blocks/userFavorites (via pages.id) cascade
-    // too, so no favorite reference for this page or any descendant can survive.
-    if (page.kind === "database" || page.isDeleted) {
-      await db.delete(pages).where(eq(pages.id, id));
-      return Response.json({ success: true, deleted: "permanent" });
-    }
-
-    // Soft delete — mark this page and all descendants as deleted, then notify
-    const descendants = await db
-      .select({ descendantId: pageClosure.descendantId })
-      .from(pageClosure)
-      .where(eq(pageClosure.ancestorId, id));
-
-    const descendantIds = descendants.map((d) => d.descendantId);
-    const now = new Date();
-
-    await db.transaction(async (tx) => {
-      await tx
-        .update(pages)
-        .set({ isDeleted: true, deletedAt: now, deletedBy: session.user.id, updatedAt: now })
-        .where(inArray(pages.id, descendantIds));
-
-      // Soft delete only flips isDeleted — the pages row itself isn't removed,
-      // so the DB's ON DELETE CASCADE on userFavorites never fires here;
-      // remove favorite rows for every affected user explicitly instead.
-      // Deliberately permanent: if the page is later restored, it should NOT
-      // reappear in anyone's Favorites — they can re-favorite it themselves.
-      await tx
-        .delete(userFavorites)
-        .where(inArray(userFavorites.pageId, descendantIds));
-
-      // Notify the page creator that their page was moved to Trash and will be
-      // permanently deleted after 30 days. The deleter is never notified about
-      // their own action, so trashing your own page notifies nobody. Skipped
-      // for still-draft pages — a trash warning would leak the existence of a
-      // page collaborators were never told about.
-      if (page.createdBy && !page.isDraft) {
-        await triggerPageDeletedNotification(tx, {
-          workspaceId: page.workspaceId,
-          pageId:      page.id,
-          deletedBy:   session.user.id,
-          createdBy:   page.createdBy,
-          pageTitle:   page.title ?? "Untitled",
-        });
-      }
-    });
-
-    return Response.json({ success: true, deleted: "soft" });
+    const result = await deletePageCascade(id, session.user.id);
+    return Response.json({ success: true, ...result });
   } catch (err) {
     if (err instanceof ApiError) return apiError(err.status, err.message);
     console.error(err);

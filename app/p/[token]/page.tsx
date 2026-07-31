@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { blocks, pages, publicLinks } from "@/lib/db/schema";
 import type { DbBlock } from "@/components/editor/serializer";
+import { PageIcon } from "@/components/pages/page-icon";
 import { PublicPageViewer } from "./public-viewer";
 
 type Props = { params: Promise<{ token: string }> };
@@ -98,8 +99,8 @@ export default async function PublicPage({ params }: Props) {
         {/* Title */}
         <div className="mb-8">
           {page.icon && (
-            <div className={`mb-3 text-5xl ${page.coverUrl ? "-mt-12 relative z-10" : ""}`}>
-              {page.icon}
+            <div className={`mb-3 ${page.coverUrl ? "-mt-12 relative z-10" : ""}`}>
+              <PageIcon icon={page.icon} size={48} />
             </div>
           )}
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">

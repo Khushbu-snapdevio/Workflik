@@ -61,6 +61,11 @@ export function PageClient({
  const [removeCoverConfirm, setRemoveCoverConfirm] = useState(false);
  const [icon, setIcon]       = useState<string | null>(initialIcon);
  const [showPicker, setShowPicker] = useState(false);
+ // Shared by both icon-trigger buttons below (never rendered at the same
+ // time) — passed to IconPicker so its outside-click-to-close doesn't treat
+ // a second click on this same button as "outside," which would otherwise
+ // close it and then immediately reopen it via the button's own toggle.
+ const iconBtnRef = useRef<HTMLButtonElement>(null);
  const [saveState, setSaveState]  = useState<"idle" | "saving" | "saved">("idle");
  // Hidden by default, matching Notion — only revealed via "Add comment", or
  // automatically if the page already has an existing page-level thread (so
@@ -137,8 +142,15 @@ export function PageClient({
   });
  }, [pageId]);
 
+ // Only set when the section is opened by the user actually clicking "Add
+ // comment" — never when it reveals itself because the page already has
+ // threads (recheck/handleActiveCountChange below), which on load would
+ // otherwise yank the caret out of the document and into the comment box.
+ const [focusComposer, setFocusComposer] = useState(false);
+
  function revealComments() {
   setShowComments(true);
+  setFocusComposer(true);
   requestAnimationFrame(() => {
    document.getElementById("page-comments-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
@@ -259,9 +271,10 @@ export function PageClient({
       className={`relative mb-2 ${showPicker ? "z-[600]" : "z-10"}`}
      >
       <button
+       ref={iconBtnRef}
        type="button"
        disabled={!editable}
-       onClick={() => editable && setShowPicker(true)}
+       onClick={() => editable && setShowPicker((p) => !p)}
        aria-label="Change icon"
        className="inline-flex cursor-pointer rounded-[var(--radius-sm)] p-1 leading-none outline-none transition-colors duration-150 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] disabled:cursor-default"
       >
@@ -275,6 +288,7 @@ export function PageClient({
         onClose={() => setShowPicker(false)}
         pageId={pageId}
         workspaceId={workspaceId}
+        triggerRef={iconBtnRef}
        />
       )}
      </div>
@@ -297,8 +311,9 @@ export function PageClient({
       {!icon && (
        <div className="relative">
         <button
+         ref={iconBtnRef}
          type="button"
-         onClick={() => setShowPicker(true)}
+         onClick={() => setShowPicker((p) => !p)}
          className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
         >
          <Smile size={13} />
@@ -311,6 +326,7 @@ export function PageClient({
           onClose={() => setShowPicker(false)}
           pageId={pageId}
           workspaceId={workspaceId}
+          triggerRef={iconBtnRef}
          />
         )}
        </div>
@@ -386,10 +402,11 @@ export function PageClient({
     {showComments && (
      <div className="mt-4">
       <PageCommentsSection
+       autoFocusComposer={focusComposer}
        currentUserId={currentUserId}
        isAdmin={isAdmin}
        onActiveCountChange={handleActiveCountChange}
-       onDismiss={() => setShowComments(false)}
+       onDismiss={() => { setShowComments(false); setFocusComposer(false); }}
        pageId={pageId}
        workspaceId={workspaceId}
       />

@@ -26,6 +26,11 @@ import { PageIcon } from "@/components/pages/page-icon";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 
 const DAYS   = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Floor for a day cell: the date number row plus the 3 entries a cell shows
+// before collapsing the rest into "+N more". Below this the cell clips its
+// own contents (see the grid's comment) — so rows stop shrinking here and the
+// grid scrolls instead.
+const MIN_ROW_HEIGHT = 110;
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -321,9 +326,17 @@ export function CalendarView({
   // snapshotted once on hover — dismiss it on scroll instead of
   // repositioning, since locking scroll on every hover would hurt the
   // calendar grid's own scrolling.
+  const morePopupRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
    if (!morePopup) return;
-   function handleScroll() {
+   function handleScroll(e: Event) {
+    // Capture phase, so this sees scrolls from every element — including the
+    // popup's own max-height entry list. Scrolling that list must not dismiss
+    // the popup, or a date with more entries than fit becomes unreadable: the
+    // first wheel tick over it closed the very thing being scrolled.
+    const target = e.target as Node | null;
+    if (target && morePopupRef.current?.contains(target)) return;
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     setMorePopup(null);
    }
@@ -430,7 +443,11 @@ export function CalendarView({
   return (
     <>
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
-    <div className="flex h-full flex-col overflow-hidden bg-card">
+    {/* min-h-full, not h-full: fills the pane when the window is tall enough,
+        but is free to grow past it when the month's rows need more room than
+        the viewport has — the page scrolls to reach the rest rather than the
+        rows compressing. No overflow clip here for the same reason. */}
+    <div className="flex min-h-full flex-1 flex-col bg-card">
 
       {/* ── Navigation header ── */}
       <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2">
@@ -460,10 +477,19 @@ export function CalendarView({
         ))}
       </div>
 
-      {/* ── Calendar grid ── */}
+      {/* ── Calendar grid ──
+          Rows are minmax(MIN_ROW_HEIGHT, 1fr), not a bare 1fr: on a tall
+          window 1fr still wins and the grid fills the pane exactly as before,
+          but on a short one (smaller screen, zoomed in, or just a visible
+          bookmarks bar) bare 1fr let every row shrink without limit until the
+          day cells — which are themselves overflow-hidden — silently swallowed
+          their own entries, with no scrollbar anywhere in the stack to reach
+          them. With the floor in place the grid instead outgrows the viewport
+          and the page scrolls. No `min-h-0` here: that would re-enable
+          shrinking below the rows' own minimum and undo exactly that. */}
       <div
-        className="flex-1 min-h-0 overflow-hidden"
-        style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridTemplateRows: `repeat(${rows}, 1fr)` }}
+        className="flex-1"
+        style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridTemplateRows: `repeat(${rows}, minmax(${MIN_ROW_HEIGHT}px, 1fr))` }}
       >
         {cells.map((day, idx) => {
           if (!day) {
@@ -565,6 +591,7 @@ export function CalendarView({
           return (
             <div
               style={posStyle}
+              ref={morePopupRef}
               onMouseEnter={cancelCloseMore}
               onMouseLeave={scheduleCloseMore}
               className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"

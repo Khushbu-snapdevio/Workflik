@@ -604,6 +604,11 @@ interface CommentCardProps {
   *  this card's scope — lets a page-level "show the comment section" toggle
   *  react instantly instead of blinking while it waits on its own refetch. */
  onActiveCountChange?: (count: number) => void;
+ /** Inline variant only — true when the section was just opened by "Add
+  *  comment", so the caret starts in the composer. Left false when it
+  *  renders because threads already exist, which would otherwise steal
+  *  focus from the document on page load. */
+ autoFocusComposer?: boolean;
 }
 
 export function CommentCard({
@@ -617,6 +622,7 @@ export function CommentCard({
  onClose,
  variant = "floating",
  onActiveCountChange,
+ autoFocusComposer = false,
 }: CommentCardProps) {
  const cardRef = useRef<HTMLDivElement>(null);
  const [data, setData]       = useState<CommentsData | null>(null);
@@ -836,6 +842,7 @@ export function CommentCard({
     {/* ── Compose area — adds a new top-level comment, after the list ── */}
     <div className={`px-4 pb-4 ${inlineVisible.length > 0 ? "pt-2" : "pt-4"}`}>
      <CommentComposer
+      autoFocus={autoFocusComposer}
       workspaceId={workspaceId}
       mode="new"
       placeholder="Write a comment…"
@@ -905,9 +912,12 @@ export function CommentCard({
     )}
    </div>
 
-   {/* Composer */}
+   {/* Composer — autofocused because this card only ever opens as a
+       deliberate "leave a comment here" action, so the caret should already
+       be waiting in the box rather than costing a second click. */}
    <div className="border-t border-border bg-muted/10 px-3 py-2.5">
     <CommentComposer
+     autoFocus
      workspaceId={workspaceId}
      mode="new"
      placeholder={blockId ? "Comment on this block…" : "Add a page comment…"}

@@ -820,6 +820,11 @@ export function TemplatePageClient({
  const [editingPageTitle, setEditingPageTitle] = useState(false);
  const [showIconPicker,  setShowIconPicker]  = useState(false);
  const [showCoverPicker, setShowCoverPicker] = useState(false);
+ // Shared by both icon-trigger buttons below (never rendered at the same
+ // time) — passed to IconPicker so its outside-click-to-close doesn't treat
+ // a second click on this same button as "outside," which would otherwise
+ // close it and then immediately reopen it via the button's own toggle.
+ const iconBtnRef = useRef<HTMLButtonElement>(null);
 
  const [showFilter,   setShowFilter]   = useState(false);
  const [showSort,    setShowSort]    = useState(false);
@@ -1741,6 +1746,7 @@ export function TemplatePageClient({
      {!pageIcon && !locked && (
       <div className="relative">
        <button
+        ref={iconBtnRef}
         onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
        >
@@ -1753,6 +1759,7 @@ export function TemplatePageClient({
          onClose={() => setShowIconPicker(false)}
          workspaceId={workspaceId}
          pageId={page.id}
+         triggerRef={iconBtnRef}
         />
        )}
       </div>
@@ -1783,6 +1790,7 @@ export function TemplatePageClient({
      {pageIcon && (
       <div className="relative mt-1 shrink-0">
        <button
+        ref={iconBtnRef}
         onClick={() => { if (locked) return; setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
         className="flex size-12 items-center justify-center rounded-[var(--radius-md)] transition-all hover:bg-muted/50"
        >
@@ -1796,6 +1804,7 @@ export function TemplatePageClient({
          onClose={() => setShowIconPicker(false)}
          workspaceId={workspaceId}
          pageId={page.id}
+         triggerRef={iconBtnRef}
         />
        )}
       </div>
@@ -2120,9 +2129,22 @@ export function TemplatePageClient({
    )}
 
    {/* View */}
+   {/* Calendar gets minHeight, not height: viewHeight is "whatever is left
+       below the header", which a cover banner (or zooming in) can squeeze to
+       almost nothing — as a hard height that squashed every week row until the
+       day cells clipped their own contents. As a minimum it still fills the
+       space exactly when there's room, but lets the month grow taller than the
+       viewport and the page scroll when there isn't. Gantt/board keep the hard
+       height: they scroll internally instead. */}
    <div
-    className={`relative ${activeView?.type === "board" ? "flex flex-col overflow-hidden" : ""}`}
-    style={["calendar", "gantt", "board"].includes(activeView?.type ?? "") ? { height: viewHeight ?? "calc(100dvh - 6rem)" } : undefined}
+    className={`relative ${activeView?.type === "board" ? "flex flex-col overflow-hidden" : ""} ${activeView?.type === "calendar" ? "flex flex-col" : ""}`}
+    style={
+     activeView?.type === "calendar"
+      ? { minHeight: viewHeight ?? "calc(100dvh - 6rem)" }
+      : ["gantt", "board"].includes(activeView?.type ?? "")
+      ? { height: viewHeight ?? "calc(100dvh - 6rem)" }
+      : undefined
+    }
    >
     {viewSwitching && (
      <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
@@ -2131,7 +2153,7 @@ export function TemplatePageClient({
     )}
     <div
      ref={tableViewRef}
-     className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "table" ? "overflow-x-auto template-hscroll" : ""} ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "h-full" : ""} ${activeView?.type === "board" ? "flex min-h-0 flex-1 flex-col" : ""}`}
+     className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "table" ? "overflow-x-auto template-hscroll" : ""} ${activeView?.type === "calendar" ? "flex flex-1 flex-col" : ""} ${activeView?.type === "gantt" ? "h-full" : ""} ${activeView?.type === "board" ? "flex min-h-0 flex-1 flex-col" : ""}`}
     >
     {activeView?.type === "board" ? (
      <TemplateBoardView

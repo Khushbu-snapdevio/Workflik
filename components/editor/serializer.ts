@@ -33,6 +33,21 @@ export interface BlockContent {
   pageId?: string;
   siteName?: string; // for bookmark
   sourceBlockId?: string; // for synced_block reference instances
+  // Whole table grid, stored inline on the `table` block itself rather than as
+  // child block rows — a table's rows/cells aren't independently addressable
+  // blocks anywhere else in the app (no comments, no drag handles, no ids), so
+  // giving each one a DB row would buy nothing and require table_row/table_cell
+  // block types throughout. Mirrors how template_button stores templateBlocks.
+  tableRows?: {
+    cells: {
+      colspan?: number;
+      isHeader?: boolean;
+      // One entry per paragraph in the cell — cells hold block content, not
+      // raw inline, and are usually but not always a single paragraph.
+      paragraphs: InlineNode[][];
+      rowspan?: number;
+    }[];
+  }[];
   templateBlocks?: { type: string; text: string }[]; // for template_button
   text?: InlineNode[];
   title?: string; // for bookmark
@@ -132,6 +147,56 @@ export interface TipTapNode {
   marks?: { type: string; attrs?: Record<string, unknown> }[];
   text?: string;
   type: string;
+}
+
+// TipTap table node → our stored grid shape.
+function tiptapTableToRows(node: TipTapNode): BlockContent["tableRows"] {
+  return (node.content ?? [])
+    .filter((row) => row.type === "tableRow")
+    .map((row) => ({
+      cells: (row.content ?? [])
+        .filter(
+          (cell) => cell.type === "tableCell" || cell.type === "tableHeader"
+        )
+        .map((cell) => ({
+          colspan: (cell.attrs?.colspan as number) ?? 1,
+          isHeader: cell.type === "tableHeader",
+          paragraphs: (cell.content ?? [])
+            .filter((p) => p.type === "paragraph")
+            .map((p) => tiptapContentToInline(p.content ?? [])),
+          rowspan: (cell.attrs?.rowspan as number) ?? 1,
+        })),
+    }));
+}
+
+// Our stored grid shape → TipTap table content. ProseMirror's table schema
+// requires at least one row, each with at least one cell, each containing at
+// least one block — so empty/missing pieces are backfilled rather than emitted
+// as-is, which would produce a document TipTap refuses to load.
+function rowsToTiptapTable(rows: BlockContent["tableRows"]): TipTapNode[] {
+  const src = rows?.length ? rows : [{ cells: [] }];
+  return src.map((row) => {
+    const cells = row.cells?.length
+      ? row.cells
+      : [{ isHeader: false, paragraphs: [] as InlineNode[][] }];
+    return {
+      type: "tableRow",
+      content: cells.map((cell) => ({
+        type: cell.isHeader ? "tableHeader" : "tableCell",
+        attrs: {
+          colspan: cell.colspan ?? 1,
+          colwidth: null,
+          rowspan: cell.rowspan ?? 1,
+        },
+        content: (cell.paragraphs?.length ? cell.paragraphs : [[]]).map(
+          (p) => ({
+            type: "paragraph",
+            content: inlineToTiptapContent(p),
+          })
+        ),
+      })),
+    };
+  });
 }
 
 export interface DbBlock {
@@ -404,7 +469,7 @@ export function blockToTipTapNode(block: DbBlock): TipTapNode {
       return {
         type: "table",
         attrs: { blockId: id },
-        content: block.children?.map(blockToTipTapNode) ?? [],
+        content: rowsToTiptapTable(c.tableRows),
       };
 
     default:
@@ -633,6 +698,15 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
           insertLocation: (node.attrs?.insertLocation as "below_button" | "bottom_of_page") ?? "below_button",
           templateBlocks: (node.attrs?.templateBlocks as { type: string; text: string }[]) ?? [{ type: "paragraph", text: "" }],
         },
+      };
+
+    // Without this, a table fell through to the `default` below and was
+    // persisted as an empty paragraph — the whole grid was silently destroyed
+    // on the first autosave after it was inserted.
+    case "table":
+      return {
+        type: "table",
+        content: { tableRows: tiptapTableToRows(node) },
       };
 
     default:

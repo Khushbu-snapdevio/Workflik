@@ -76,6 +76,7 @@ function WorkspaceIconPicker({
      onIconPreview={(v) => onChange(v)}
      onRemove={value ? () => { onChange(""); setOpen(false); } : undefined}
      onClose={() => setOpen(false)}
+     triggerRef={btnRef}
     />
    </div>
   </div>,

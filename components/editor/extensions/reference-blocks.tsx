@@ -1360,7 +1360,13 @@ function InlineDatabaseView({
             )}
           </div>
         </div>
-        <div style={{ height: 420, overflow: "hidden" }}>
+        {/* minHeight, not a fixed height + overflow:hidden — the calendar view
+            needs more room than 420px once its rows hold their minimum height,
+            and clipping it here is what made an embedded calendar look
+            squashed. DatabasePage keeps the old fixed 420px box for the views
+            that scroll internally (table/board/gallery/gantt); only calendar
+            grows past it, letting the page scroll instead. */}
+        <div style={{ minHeight: 420 }}>
           <DatabasePage
             databaseId={databaseId}
             initialIcon={null}

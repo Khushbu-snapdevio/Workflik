@@ -9,9 +9,24 @@ import { onCommentsChanged } from "@/lib/comments/comment-events";
 import { getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 
 const INDICATOR_WIDTH = 52;
+const INDICATOR_HEIGHT = 20;
 
 interface BlockCount { blockId: string; count: number }
-interface Indicator { blockId: string; count: number; top: number; left: number }
+interface Indicator { blockId: string; count: number; top: number; left: number; inView: boolean }
+
+// These badges are `position: fixed`, so a block scrolled out of the editor's
+// scrollport would otherwise still paint its badge — over the page topbar, or
+// past the bottom of the content area. Clamping needs the editor's own scroll
+// container (the topbar is a fixed-height flex sibling above it, not part of
+// the scrollport), so walk up to the nearest scrollable ancestor.
+function getScrollParent(el: HTMLElement): HTMLElement | null {
+ let p = el.parentElement;
+ while (p) {
+  if (/(auto|scroll|overlay)/.test(getComputedStyle(p).overflowY)) return p;
+  p = p.parentElement;
+ }
+ return null;
+}
 
 interface Props {
  pageId:    string;
@@ -25,12 +40,6 @@ interface Props {
 export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, activeBlockId }: Props) {
  const [counts,   setCounts]   = useState<BlockCount[]>([]);
  const [indicators, setIndicators] = useState<Indicator[]>([]);
- // Only the currently-hovered block's badge is shown — matching Notion,
- // where the indicator doesn't persist for every commented block, only the
- // one you're pointing at — instead of every commented block's badge
- // floating on screen all the time (including while scrolling, since these
- // are `position: fixed`).
- const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
 
  // Keep counts accessible inside stable callbacks without recreating them
  const countsRef = useRef<BlockCount[]>([]);
@@ -83,8 +92,20 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
   );
   const result: Indicator[] = [];
 
+  // Visible band = the editor's scrollport clipped to the viewport. Badges
+  // outside it are kept in state (so their positions stay warm) but not
+  // painted — see `inView` below.
+  const scrollRect = getScrollParent(editorEl)?.getBoundingClientRect();
+  const bandTop  = Math.max(scrollRect?.top ?? 0, 0);
+  const bandBottom = Math.min(scrollRect?.bottom ?? window.innerHeight, window.innerHeight);
+
   const sorted = [...blocksRef.current].sort((a, b) => a.orderIndex - b.orderIndex);
   const idToIdx = new Map<string, number>(sorted.map((b, i) => [b.id, i]));
+  // Counts blocks we successfully located, regardless of whether they're
+  // currently on screen — the "don't wipe on partial failure" guard below
+  // keys off this, so scrolling every badge out of view no longer looks
+  // like a failed measure.
+  let located = 0;
 
   for (const { blockId, count } of currentCounts) {
    const blockIdx = idToIdx.get(blockId);
@@ -104,15 +125,20 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
     while (el.parentElement && el.parentElement !== editorEl) el = el.parentElement;
     const rect = el.getBoundingClientRect();
     const top = rect.top + rect.height / 2 - 10;
-    // Don't render badges below the editor's bottom edge (avoids overlapping page-level comments)
-    if (top > editorRect.bottom - 10) continue;
-    result.push({ blockId, count, top, left });
+    located++;
+    const inView =
+     // Not below the editor's bottom edge (avoids overlapping page-level comments)
+     top <= editorRect.bottom - 10 &&
+     // ...and fully inside the scrollport, so badges never paint over the topbar
+     top >= bandTop &&
+     top + INDICATOR_HEIGHT <= bandBottom;
+    result.push({ blockId, count, top, left, inView });
    } catch { /* skip this block, don't wipe others */ }
   }
 
-  // Only update indicators when we found something — never wipe on partial failure
-  // (if result is empty here it means ALL blocks failed to measure — keep old positions)
-  if (result.length > 0) {
+  // Only update indicators when we located something — never wipe on partial
+  // failure (if nothing located, ALL blocks failed to measure — keep old positions)
+  if (located > 0) {
    setIndicators(result);
   }
  }, [editor, blocksRef]); // counts is intentionally NOT a dep — we use countsRef
@@ -133,7 +159,11 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
   }
 
   editor.on("update", debouncedMeasure);
-  window.addEventListener("scroll", debouncedMeasure, { passive: true });
+  // Capture phase: `scroll` doesn't bubble, and the editor lives inside its
+  // own `overflow-y-auto` container — a plain window listener never hears
+  // that one, which would leave these fixed-position badges stranded at
+  // stale coordinates while the content moves under them.
+  document.addEventListener("scroll", debouncedMeasure, { passive: true, capture: true });
   window.addEventListener("resize", debouncedMeasure, { passive: true });
 
   // Initial measure
@@ -142,109 +172,19 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
   return () => {
    cancelAnimationFrame(rafId);
    editor.off("update", debouncedMeasure);
-   window.removeEventListener("scroll", debouncedMeasure);
+   document.removeEventListener("scroll", debouncedMeasure, { capture: true });
    window.removeEventListener("resize", debouncedMeasure);
   };
  }, [editor, measure]); // stable — measure doesn't change anymore
 
- // ── Track which block is currently hovered ────────────────────────────────
- // Mirrors block-handle.tsx's own resolveBlock/safe-zone approach: walk up
- // from the DOM element under the cursor to the editor's direct child, then
- // match that against the document's top-level children (in order) to find
- // which block it is. The safe zone extends past the editor's right edge to
- // cover the badge's own position, plus a short hide delay, so moving the
- // mouse from a block toward its badge doesn't hide it before it's clickable.
- useEffect(() => {
-  const hideTimer = { current: undefined as ReturnType<typeof setTimeout> | undefined };
-  // Last real cursor position — scrolling moves content under a stationary
-  // cursor without ever firing mousemove, so re-checking hover on scroll
-  // needs a remembered point to re-resolve from.
-  const lastPoint = { current: null as { x: number; y: number } | null };
-
-  function resolveHoveredBlockId(x: number, y: number): string | null {
-   const editorEl = editor.view.dom as HTMLElement;
-   let el = document.elementFromPoint(x, y) as HTMLElement | null;
-   if (!el) return null;
-   while (el && el.parentElement !== editorEl) el = el.parentElement;
-   if (!el || el === editorEl) return null;
-
-   const sorted = [...blocksRef.current].sort((a, b) => a.orderIndex - b.orderIndex);
-   let offset = 0;
-   for (let i = 0; i < editor.state.doc.childCount; i++) {
-    const child = editor.state.doc.child(i);
-    if (editor.view.nodeDOM(offset) === el) return sorted[i]?.id ?? null;
-    offset += child.nodeSize;
-   }
-   return null;
-  }
-
-  function updateHoverFromPoint(x: number, y: number) {
-   const editorEl = editor.view.dom as HTMLElement;
-   const er = editorEl.getBoundingClientRect();
-   const inSafeZone = (
-    x >= er.left &&
-    x <= er.right + INDICATOR_WIDTH + 32 &&
-    y >= er.top - 10 &&
-    y <= er.bottom + 10
-   );
-   if (!inSafeZone) {
-    clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setHoveredBlockId(null), 300);
-    return;
-   }
-   clearTimeout(hideTimer.current);
-
-   const overEditor = (
-    x >= er.left && x <= er.right &&
-    y >= er.top && y <= er.bottom
-   );
-   if (!overEditor) return; // hovering the gutter itself — keep last block active
-
-   const id = resolveHoveredBlockId(x, y);
-   if (id) setHoveredBlockId(id);
-  }
-
-  function onMove(e: MouseEvent) {
-   lastPoint.current = { x: e.clientX, y: e.clientY };
-   updateHoverFromPoint(e.clientX, e.clientY);
-  }
-
-  // Re-resolve on scroll from the last known cursor position — otherwise the
-  // badge for whatever block happened to be under the cursor before the
-  // scroll just rides along with that block's new position indefinitely,
-  // looking "stuck" even though the cursor isn't over it anymore.
-  let scrollRafId = 0;
-  function onScroll() {
-   cancelAnimationFrame(scrollRafId);
-   scrollRafId = requestAnimationFrame(() => {
-    if (lastPoint.current) updateHoverFromPoint(lastPoint.current.x, lastPoint.current.y);
-   });
-  }
-
-  // The cursor can leave the browser window entirely (e.g. onto the OS
-  // taskbar) without ever firing another mousemove inside it — mouseleave on
-  // <html> is the reliable signal for that; the safe-zone/mousemove logic
-  // above never re-fires once the cursor is gone, so the badge stayed
-  // visible forever until the mouse came back and moved again.
-  function onWindowLeave() {
-   clearTimeout(hideTimer.current);
-   setHoveredBlockId(null);
-  }
-
-  document.addEventListener("mousemove", onMove);
-  window.addEventListener("scroll", onScroll, { passive: true });
-  document.documentElement.addEventListener("mouseleave", onWindowLeave);
-  return () => {
-   document.removeEventListener("mousemove", onMove);
-   window.removeEventListener("scroll", onScroll);
-   document.documentElement.removeEventListener("mouseleave", onWindowLeave);
-   cancelAnimationFrame(scrollRafId);
-   clearTimeout(hideTimer.current);
-  };
- }, [editor, blocksRef]);
-
  // ── Render ────────────────────────────────────────────────────────────────
- const visible = indicators.filter((i) => i.blockId !== activeBlockId && i.blockId === hoveredBlockId);
+ // Every commented block shows its badge, not just the hovered one — a
+ // hover-only indicator gave the reader no way to tell a commented line from
+ // an uncommented one without sweeping the mouse down the page, so existing
+ // comments were effectively invisible. The block whose card is currently
+ // open is skipped (the card itself already marks it), and off-screen badges
+ // are filtered by `inView` so nothing paints over the topbar.
+ const visible = indicators.filter((i) => i.blockId !== activeBlockId && i.inView);
 
  if (visible.length === 0 || typeof document === "undefined") return null;
 

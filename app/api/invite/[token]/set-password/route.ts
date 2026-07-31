@@ -2,6 +2,7 @@ import { hashPassword } from "better-auth/crypto";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { passwordSchema } from "@/lib/auth/password";
 import { isAuthMethodEnabled } from "@/lib/auth/settings";
 import { db } from "@/lib/db";
 import { accounts, users, workspaceMembers, workspaces } from "@/lib/db/schema";
@@ -13,7 +14,7 @@ type Ctx = { params: Promise<{ token: string }> };
 
 const bodySchema = z.object({
   name:     z.string().trim().min(1).max(80),
-  password: z.string().min(8).max(128),
+  password: passwordSchema,
 });
 
 // POST /api/invite/:token/set-password — first-time account setup for a

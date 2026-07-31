@@ -3,10 +3,11 @@ import { APIError } from "better-auth/api";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { isAuthMethodEnabled } from "@/lib/auth/settings";
+import { passwordSchema } from "@/lib/auth/password";
 import { apiError, ApiError, getSession } from "@/lib/workspaces/auth";
 
 const setPasswordSchema = z.object({
-  newPassword: z.string().min(8).max(128),
+  newPassword: passwordSchema,
 });
 
 // POST /api/user/set-password — lets a Google-only user (no "credential"

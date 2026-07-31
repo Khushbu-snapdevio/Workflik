@@ -17,6 +17,7 @@ export default async function TemplateCategoriesPage() {
       id:            templateCategories.id,
       key:           templateCategories.key,
       label:         templateCategories.label,
+      icon:          templateCategories.icon,
       orderIndex:    templateCategories.orderIndex,
       templateCount: count(templates.id),
     })

@@ -4,20 +4,15 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
   ArrowRight,
-  BarChart2,
-  Code2,
-  DollarSign,
   LayoutGrid,
-  Megaphone,
   Search,
-  Tag,
   X,
-  Zap,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { optionStyle } from "@/components/database/option-colors";
+import { resolveCategoryIcon } from "@/lib/orbit/category-icons";
 
 type DbProp = {
   name: string;
@@ -56,12 +51,13 @@ type TemplateCategory = {
   id: string;
   key: string;
   label: string;
+  icon?: string | null;
   orderIndex: number;
 };
 
-// Categories are admin-managed (not a fixed list), so icons are cycled from
-// a small palette by position rather than mapped per-key.
-const CATEGORY_ICON_CYCLE: LucideIcon[] = [Zap, BarChart2, Megaphone, Code2, DollarSign, Tag];
+// Uses the icon the admin picked for each category; categories created
+// before the icon column existed fall back to the old positional cycle
+// (see resolveCategoryIcon).
 
 const DEFAULT_COLOR = { badge: "bg-muted text-muted-foreground" };
 
@@ -115,7 +111,7 @@ export function TemplateGalleryModal({
   }, [workspaceId]);
 
   const catIconById = new Map(
-    categories.map((c, i) => [c.id, CATEGORY_ICON_CYCLE[i % CATEGORY_ICON_CYCLE.length]])
+    categories.map((c, i) => [c.id, resolveCategoryIcon(c.icon, i)])
   );
   const catLabelById = new Map(categories.map((c) => [c.id, c.label]));
 
@@ -200,7 +196,7 @@ export function TemplateGalleryModal({
                 {[{ key: "all", label: "All Templates", Icon: LayoutGrid }, ...categories.map((c, i) => ({
                   key: c.id,
                   label: c.label,
-                  Icon: CATEGORY_ICON_CYCLE[i % CATEGORY_ICON_CYCLE.length],
+                  Icon: resolveCategoryIcon(c.icon, i),
                 }))].map((cat) => {
                   const cnt = countForTab(cat.key);
                   const isActive = activeTab === cat.key;

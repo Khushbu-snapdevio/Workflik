@@ -106,6 +106,13 @@ const WHEEL_SENSITIVITY = 0.2; // zoom-percent per deltaY unit
 // Downloads via a temp <a download>. data: URIs are fetched into a blob first
 // — an <a download> pointed straight at a data: URI is blocked/ignored by
 // some browsers for large payloads, same reason FileAttachment below does it.
+// A real http(s) src goes through /api/attachments/download instead of
+// pointing straight at it — that src is typically a cross-origin S3/CDN URL
+// (lib/storage/drivers/s3.ts's getPublicUrl), and `download` is silently
+// ignored by browsers for cross-origin links, so it opened the image instead
+// of downloading it. The proxy route fetches it server-to-server (CORS never
+// applies there) and returns it with a Content-Disposition header that
+// forces the download reliably regardless of the storage host.
 function downloadImage(src: string, filename: string) {
  if (src.startsWith("data:")) {
   fetch(src)
@@ -121,7 +128,7 @@ function downloadImage(src: string, filename: string) {
   return;
  }
  const a = document.createElement("a");
- a.href = src;
+ a.href = `/api/attachments/download?${new URLSearchParams({ url: src, name: filename })}`;
  a.download = filename;
  a.click();
 }

@@ -720,7 +720,9 @@ export function LibraryClient({
                         if (e.key === "ArrowUp")   { e.preventDefault(); changePageSize(pageSize + 5); return; }
                         if (e.key === "ArrowDown") { e.preventDefault(); changePageSize(pageSize - 5); return; }
                       }}
-                      className="w-12 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+                      // w-16, not w-12: pl-2 + pr-5 eats 28px of the box, so a
+                      // 3-digit value like "100" was clipped at the old width.
+                      className="w-16 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
                     />
                     <div className="absolute right-1 flex flex-col">
                       <button
@@ -750,11 +752,16 @@ export function LibraryClient({
                   <input
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     value={goToPageInput}
                     placeholder={`1–${totalPages}`}
-                    onChange={(e) => setGoToPageInput(e.target.value)}
+                    // Digits only. This mirrors the rows-per-page input above
+                    // rather than using type="number", which still accepts
+                    // "e"/"+"/"-" and mutates on scroll-wheel. Without the
+                    // filter this field accepted arbitrary text.
+                    onChange={(e) => setGoToPageInput(e.target.value.replace(/[^0-9]/g, ""))}
                     onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(); }}
-                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
+                    className="w-20 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
                   />
                   <button
                     type="button"

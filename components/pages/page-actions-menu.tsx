@@ -321,7 +321,7 @@ export function PageActionsMenu({
         className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 hover:text-destructive"
        >
         <TrashIcon size={14} />
-        {pageKind === "database" ? "Delete database" : "Move to Trash"}
+        Move to Trash
        </button>
       </>
      )}
@@ -344,12 +344,12 @@ export function PageActionsMenu({
    <ConfirmDialog
     open={confirmTrash}
     onOpenChange={setConfirmTrash}
-    title={pageKind === "database" ? "Delete database forever?" : "Move to Trash?"}
+    title="Move to Trash?"
     description={pageKind === "database"
-     ? "This database and all its entries, properties, and views will be permanently deleted. This action cannot be undone."
+     ? "This database and all its entries will be moved to Trash and permanently deleted after 30 days."
      : "This page will be moved to Trash and permanently deleted after 30 days."}
-    confirmLabel={pageKind === "database" ? "Delete forever" : "Move to Trash"}
-    confirmLoadingLabel={pageKind === "database" ? "Deleting…" : "Moving…"}
+    confirmLabel="Move to Trash"
+    confirmLoadingLabel="Moving…"
     loading={deleting}
     onConfirm={confirmDelete}
    />

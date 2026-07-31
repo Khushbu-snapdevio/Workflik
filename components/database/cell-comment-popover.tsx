@@ -14,6 +14,7 @@ import { ImageLightbox } from "@/components/editor/comment-card";
 import { emitCommentsChanged } from "@/lib/comments/comment-events";
 import { formatReactionTooltip, formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
 
@@ -96,6 +97,28 @@ function extractText(node: Record<string, unknown>): string {
   if (node.type === "text") return String(node.text ?? "");
   const children = (node.content as Record<string, unknown>[]) ?? [];
   return children.map(extractText).join("");
+}
+
+// A plain `<a href download>` only forces an actual download for same-origin
+// (or blob:/data:) URLs — for a cross-origin one (e.g. an S3/CDN-backed
+// attachment, per lib/storage/drivers/s3.ts's getPublicUrl), browsers
+// silently ignore `download` and just navigate to it, which for an image
+// means it opens instead of downloading. A client-side `fetch()` of that same
+// cross-origin URL has the same problem one level earlier: browsers block it
+// outright unless the storage host sends permissive CORS headers, which a
+// private S3/R2 bucket generally doesn't. Routing through our own
+// /api/attachments/download instead makes the cross-origin fetch happen
+// server-to-server, where CORS (a browser-only mechanism) never applies —
+// then this same-origin response's own Content-Disposition header reliably
+// forces the download.
+function downloadAttachment(url: string, name: string) {
+  const proxied = `/api/attachments/download?${new URLSearchParams({ url, name })}`;
+  const a = document.createElement("a");
+  a.href = proxied;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 function timeAgo(iso: string): string {
@@ -261,6 +284,14 @@ export function CellCommentPopover({
   const editInputRef = useRef<HTMLInputElement>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // "@" autocomplete for each of the three text boxes below (new comment,
+  // edit, reply) — the AtSign toolbar button only ever inserted a literal
+  // "@" with no way to actually pick someone; this adds the matching
+  // dropdown, same UX as the page editor's rich-text @mention.
+  const newMention = useMentionAutocomplete({ workspaceId, getText: () => text, setText, inputRef });
+  const editMention = useMentionAutocomplete({ workspaceId, getText: () => editText, setText: setEditText, inputRef: editInputRef });
+  const replyMention = useMentionAutocomplete({ workspaceId, getText: () => replyText, setText: setReplyText, inputRef: replyInputRef });
 
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const router = useRouter();
@@ -577,6 +608,7 @@ export function CellCommentPopover({
       el.focus();
       const cursor = pos + prefix.length;
       el.setSelectionRange(cursor, cursor);
+      newMention.onTextChanged(next);
     }, 0);
   }
 
@@ -596,6 +628,7 @@ export function CellCommentPopover({
       el.focus();
       const cursor = pos + prefix.length;
       el.setSelectionRange(cursor, cursor);
+      editMention.onTextChanged(next);
     }, 0);
   }
 
@@ -612,6 +645,7 @@ export function CellCommentPopover({
       el.focus();
       const cursor = pos + prefix.length;
       el.setSelectionRange(cursor, cursor);
+      replyMention.onTextChanged(next);
     }, 0);
   }
 
@@ -899,13 +933,15 @@ export function CellCommentPopover({
                               <input
                                 ref={editInputRef}
                                 value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
+                                onChange={(e) => { setEditText(e.target.value); editMention.onTextChanged(e.target.value); }}
                                 onKeyDown={(e) => {
+                                  if (editMention.handleKeyDown(e)) return;
                                   if (e.key === "Enter") { e.preventDefault(); submitEdit(t.id); }
                                   if (e.key === "Escape") setEditingId(null);
                                 }}
                                 className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
                               />
+                              {editMention.dropdown}
                               <button
                                 onClick={() => submitEdit(t.id)}
                                 disabled={editSubmitting}
@@ -960,14 +996,13 @@ export function CellCommentPopover({
                                               <ZoomIn size={grid ? 10 : 14} />
                                             </span>
                                             {!grid && (
-                                              <a
-                                                href={att.url}
-                                                download={att.name}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex size-7 items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100"
+                                              <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); downloadAttachment(att.url, att.name); }}
+                                                className="flex size-7 items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto"
                                               >
                                                 <Download size={13} />
-                                              </a>
+                                              </button>
                                             )}
                                           </div>
                                         </div>
@@ -1068,13 +1103,15 @@ export function CellCommentPopover({
                                       <input
                                         ref={editInputRef}
                                         value={editText}
-                                        onChange={(e) => setEditText(e.target.value)}
+                                        onChange={(e) => { setEditText(e.target.value); editMention.onTextChanged(e.target.value); }}
                                         onKeyDown={(e) => {
+                                          if (editMention.handleKeyDown(e)) return;
                                           if (e.key === "Enter") { e.preventDefault(); submitEdit(rep.id); }
                                           if (e.key === "Escape") setEditingId(null);
                                         }}
                                         className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
                                       />
+                                      {editMention.dropdown}
                                       <button
                                         type="button"
                                         onClick={() => submitEdit(rep.id)}
@@ -1133,14 +1170,16 @@ export function CellCommentPopover({
                         <input
                           ref={replyInputRef}
                           value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
+                          onChange={(e) => { setReplyText(e.target.value); replyMention.onTextChanged(e.target.value); }}
                           onKeyDown={(e) => {
+                            if (replyMention.handleKeyDown(e)) return;
                             if (e.key === "Enter") { e.preventDefault(); submitReply(t.id); }
                             if (e.key === "Escape") { setReplyToId(null); }
                           }}
                           placeholder="Reply…"
                           className="min-w-0 flex-1 rounded border border-border bg-muted/30 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
                         />
+                        {replyMention.dropdown}
                         <button
                           type="button"
                           onClick={() => { setReplyToId(null); setReplyText(""); setReplyAttachments([]); }}
@@ -1237,13 +1276,15 @@ export function CellCommentPopover({
           <input
             ref={inputRef}
             value={text}
-            onChange={(e) => { setText(e.target.value); setUploadError(null); }}
+            onChange={(e) => { setText(e.target.value); setUploadError(null); newMention.onTextChanged(e.target.value); }}
             onKeyDown={(e) => {
+              if (newMention.handleKeyDown(e)) return;
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
             }}
             placeholder="Add a comment…"
             className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
           />
+          {newMention.dropdown}
           <div className="flex shrink-0 items-center gap-0.5">
             {/* Hidden file input */}
             <input

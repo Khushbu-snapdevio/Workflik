@@ -18,6 +18,10 @@ export const templateCategories = pgTable("template_categories", {
   id:         uuid("id").primaryKey().defaultRandom(),
   key:        text("key").notNull().unique(),
   label:      text("label").notNull(),
+  // Lucide icon name (e.g. "Rocket"), chosen by the admin who creates the
+  // category. Nullable so rows created before this column existed keep
+  // working — consumers fall back to a positional default for those.
+  icon:       text("icon"),
   orderIndex: integer("order_index").notNull().default(0),
   createdAt:  timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

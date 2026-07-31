@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { templateCategories, templates, users } from "@/lib/db/schema";
 import { apiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import { CATEGORY_ICON_NAMES } from "@/lib/orbit/category-icons";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -17,6 +18,7 @@ async function requirePlatformAdmin() {
 
 const patchSchema = z.object({
   label:      z.string().min(1).max(60).optional(),
+  icon:       z.enum(CATEGORY_ICON_NAMES as [string, ...string[]]).optional(),
   orderIndex: z.number().int().min(0).optional(),
 });
 
@@ -42,6 +44,7 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {};
   if (parsed.data.label !== undefined) updates.label = parsed.data.label;
+  if (parsed.data.icon !== undefined) updates.icon = parsed.data.icon;
   if (parsed.data.orderIndex !== undefined) updates.orderIndex = parsed.data.orderIndex;
   if (Object.keys(updates).length === 0) return apiError(400, "No fields to update");
 

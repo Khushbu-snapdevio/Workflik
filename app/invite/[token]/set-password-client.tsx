@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { passwordError } from "@/lib/auth/password";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,6 +37,13 @@ export function SetPasswordAcceptClient({ token, workspaceName, workspaceIcon, r
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    // Checked here as well as server-side so the requirement surfaces
+    // immediately instead of after a round-trip.
+    const strengthError = passwordError(password);
+    if (strengthError) {
+      setError(strengthError);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

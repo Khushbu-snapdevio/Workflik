@@ -9,9 +9,16 @@ export type DeletePageResult = { deleted: "permanent" | "soft" };
 
 // Shared by app/api/pages/[id]/route.ts's single DELETE and the bulk-delete
 // endpoint, so both go through the exact same cascade logic:
-//   • Database page → always hard-delete (permanent); DB CASCADE removes entries/views/properties
-//   • Regular page NOT in trash → soft delete (move to Trash, cascade to descendants)
-//   • Regular page already in Trash → hard delete (permanent, cascades via ON DELETE CASCADE)
+//   • Page NOT in trash (any kind) → soft delete (move to Trash, cascade to descendants)
+//   • Page already in Trash        → hard delete (permanent, cascades via ON DELETE CASCADE)
+//
+// Databases used to be exempted here and hard-deleted on the FIRST delete,
+// which meant a database — and every template that creates one — was destroyed
+// outright: it never appeared in Trash and could never be restored. Its entries
+// went with it via ON DELETE CASCADE on databaseId. They now soft-delete like
+// anything else; entries are created with `parentId: databaseId` (see
+// createPageWithClosure), so the closure query below already cascades to them.
+//
 // Throws ApiError(404) if the page doesn't exist, or whatever
 // requirePagePermission throws if the caller lacks edit access.
 export async function deletePageCascade(
@@ -38,7 +45,9 @@ export async function deletePageCascade(
 
   await requirePagePermission(userId, pageId, "can_edit");
 
-  if (page.kind === "database" || page.isDeleted) {
+  // Only an already-trashed page is destroyed for real — that's the explicit
+  // "delete forever" action from the Trash screen.
+  if (page.isDeleted) {
     await db.delete(pages).where(eq(pages.id, pageId));
     return { deleted: "permanent" };
   }

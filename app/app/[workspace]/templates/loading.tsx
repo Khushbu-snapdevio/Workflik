@@ -1,9 +1,10 @@
 export default function TemplatesLoading() {
   return (
     <div className="flex h-full flex-col bg-card animate-pulse">
-      {/* Topbar skeleton */}
-      <div className="flex h-14 shrink-0 items-center border-b border-border px-6">
-        <div className="h-5 w-28 rounded-[var(--radius-sm)] bg-muted" />
+      {/* Topbar skeleton — h-11/px-3 mirrors the real header in
+          templates-page-client.tsx exactly, so it doesn't jump on load. */}
+      <div className="flex h-11 shrink-0 items-center border-b border-border px-3">
+        <div className="h-4 w-28 rounded-[var(--radius-sm)] bg-muted" />
       </div>
 
       {/* Category filter skeleton */}

@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, getPageNumbers } from "@/lib/ui/pagination";
+import { toast } from "sonner";
 
 type TrashedPage = {
   id:            string;
@@ -166,10 +167,32 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
     setRestoringSelected(true);
     const ids = [...selectedIds];
     try {
-      await Promise.all(ids.map((id) => fetch(`/api/pages/${id}/restore`, { method: "POST" })));
+      // One transactional request rather than N concurrent ones. Firing a POST
+      // per page raced: a child processed before its parent saw the parent
+      // still deleted and detached itself to the workspace root, so sub-pages
+      // and database entries came back orphaned (and entries, filtered out of
+      // the page tree, looked like they hadn't come back at all).
+      const res = await fetch("/api/pages/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({})) as { error?: string };
+        toast.error(d.error ?? "Couldn't restore the selected pages.");
+        return;
+      }
+      const data = await res.json() as { restored?: number };
       setLocalPages((prev) => prev.filter((p) => !ids.includes(p.id)));
       setSelectedIds(new Set());
+      toast.success(
+        data.restored && data.restored > ids.length
+          ? `Restored ${ids.length} item${ids.length === 1 ? "" : "s"} (with ${data.restored - ids.length} nested page${data.restored - ids.length === 1 ? "" : "s"}).`
+          : `Restored ${data.restored ?? ids.length} item${(data.restored ?? ids.length) === 1 ? "" : "s"}.`
+      );
       router.refresh();
+    } catch {
+      toast.error("Couldn't restore the selected pages.");
     } finally {
       setRestoringSelected(false);
     }
@@ -180,9 +203,31 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
     setConfirmDeleteSelected(false);
     const ids = [...selectedIds];
     try {
-      await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
-      setLocalPages((prev) => prev.filter((p) => !ids.includes(p.id)));
+      // Bounded concurrency + per-request status checks. The previous
+      // Promise.all fired every request at once and treated any response —
+      // including 4xx/5xx — as success, so failures silently vanished from the
+      // UI while the rows were still in the Trash.
+      const failed: string[] = [];
+      const CHUNK = 10;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const slice = ids.slice(i, i + CHUNK);
+        const results = await Promise.all(
+          slice.map((id) =>
+            fetch(`/api/pages/${id}`, { method: "DELETE" })
+              .then((r) => (r.ok ? null : id))
+              .catch(() => id)
+          )
+        );
+        failed.push(...results.filter((r): r is string => r !== null));
+      }
+      const okIds = ids.filter((id) => !failed.includes(id));
+      setLocalPages((prev) => prev.filter((p) => !okIds.includes(p.id)));
       setSelectedIds(new Set());
+      if (failed.length > 0) {
+        toast.error(`Deleted ${okIds.length}, but ${failed.length} couldn't be deleted.`);
+      } else {
+        toast.success(`Permanently deleted ${okIds.length} item${okIds.length === 1 ? "" : "s"}.`);
+      }
       router.refresh();
     } finally {
       setDeletingSelected(false);
@@ -427,11 +472,15 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                     <input
                       type="text"
                       inputMode="numeric"
+                      pattern="[0-9]*"
                       value={pageSizeInput}
-                      onChange={(e) => setPageSizeInput(e.target.value)}
+                      // Digits only — this accepted arbitrary text before.
+                      onChange={(e) => setPageSizeInput(e.target.value.replace(/[^0-9]/g, ""))}
                       onBlur={submitPageSizeInput}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                      className="w-12 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+                      // w-16, not w-12: pl-2 + pr-5 eats 28px of the box, so a
+                      // 3-digit value like "100" was clipped at the old width.
+                      className="w-16 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
                     />
                     <div className="absolute right-1 flex flex-col">
                       <button
@@ -459,11 +508,15 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
                   <input
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     value={goToPageInput}
                     placeholder={`1–${totalPages}`}
-                    onChange={(e) => setGoToPageInput(e.target.value)}
+                    // Digits only. Mirrors the rows-per-page input rather than
+                    // using type="number", which still accepts "e"/"+"/"-" and
+                    // mutates on scroll-wheel.
+                    onChange={(e) => setGoToPageInput(e.target.value.replace(/[^0-9]/g, ""))}
                     onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(totalPages); }}
-                    className="w-16 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
+                    className="w-20 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
                   />
                   <button
                     type="button"

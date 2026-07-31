@@ -211,6 +211,13 @@
       "when": 1785405282341,
       "tag": "0029_open_bromley",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1785496092439,
+      "tag": "0030_faithful_leader",
+      "breakpoints": true
     }
   ]
 }

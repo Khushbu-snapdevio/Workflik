@@ -262,6 +262,10 @@ function PrivateRow({
   setConfirmTrash(false);
   if (onRemove) onRemove(page.id);
   else onPagesChange(pages.filter((p) => p.id !== page.id));
+  // Trashing a page removes its favorite row server-side (see DELETE
+  // /api/pages/[id]) — tell the sidebar to drop it from Favorites too,
+  // instead of leaving a stale entry until the next unrelated refetch.
+  window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
 
   const onDeletedPage = typeof window !== "undefined" && window.location.pathname.includes(page.shortId);
   if (onDeletedPage || page.kind === "database") {

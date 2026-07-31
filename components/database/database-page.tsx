@@ -269,6 +269,9 @@ export function DatabasePage({
     setRawValues((prev) => prev.filter((v) => v.entryId !== entryId));
     setSelectedIds((prev) => { const next = new Set(prev); next.delete(entryId); return next; });
     await fetch(`/api/pages/${entryId}`, { method: "DELETE" });
+    // Trashing an entry removes its favorite row server-side (see DELETE
+    // /api/pages/[id]) — tell the sidebar to drop it from Favorites too.
+    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
   }, []);
 
   const duplicateEntry = useCallback(async (entryId: string) => {
@@ -288,6 +291,7 @@ export function DatabasePage({
     setRawValues((prev) => prev.filter((v) => !selectedIds.has(v.entryId)));
     setSelectedIds(new Set());
     await Promise.all(ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" })));
+    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
   }, [selectedIds]);
 
   const addProperty = useCallback(async (name: string, type: string, config?: DbPropertyConfig, twoWay?: boolean) => {

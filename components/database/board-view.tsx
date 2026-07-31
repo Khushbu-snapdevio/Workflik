@@ -485,7 +485,7 @@ export function BoardView({
 
 
            {/* Cards */}
-           <div className="flex flex-col gap-2 px-2 pb-1">
+           <div className="flex flex-col gap-2 px-2 pb-2">
             {col.entries.map((entry) => (
              <SortableCard
               key={entry.id}
@@ -528,7 +528,7 @@ export function BoardView({
               const dv = gv ? { [groupPropId!]: gv } : {};
               onCreateEntry(dv);
              }}
-             className="mx-2 mb-2 mt-1 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
+             className="mx-2 mb-2 mt-2 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
             >
              <Plus size={13} />
              Add entry

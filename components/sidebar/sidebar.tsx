@@ -144,10 +144,23 @@ export function Sidebar({
    .catch(() => setPagesLoading(false));
  }, [workspaceId]);
 
+ const fetchFavorites = useCallback(() => {
+  fetch(`/api/user/favorites?workspaceId=${workspaceId}`)
+   .then((r) => r.json())
+   .then((d) => setFavorites(Array.isArray(d) ? d : []))
+   .catch(() => {});
+ }, [workspaceId]);
+
  useEffect(() => {
-  window.addEventListener("pages:refresh", fetchPages);
-  return () => window.removeEventListener("pages:refresh", fetchPages);
- }, [fetchPages]);
+  // Also re-fetch favorites on every page mutation, not just page-toggled-
+  // favorite ones (the "workflik:favorites-changed" listener below) — a page
+  // that's favorited can be trashed, renamed, etc. from a dozen different
+  // surfaces that all already fire this event, so hooking in here covers all
+  // of them for free instead of teaching each call site about favorites too.
+  function refresh() { fetchPages(); fetchFavorites(); }
+  window.addEventListener("pages:refresh", refresh);
+  return () => window.removeEventListener("pages:refresh", refresh);
+ }, [fetchPages, fetchFavorites]);
 
  // Same-tab mutations refetch via the "pages:refresh" listener above; this
  // catches everyone else's — another user (or another tab) creating,
@@ -195,13 +208,6 @@ export function Sidebar({
    document.removeEventListener("workflik:tour-inactive", onInactive);
   };
  }, []);
-
- const fetchFavorites = useCallback(() => {
-  fetch(`/api/user/favorites?workspaceId=${workspaceId}`)
-   .then((r) => r.json())
-   .then((d) => setFavorites(Array.isArray(d) ? d : []))
-   .catch(() => {});
- }, [workspaceId]);
 
  // "workflik:favorites-changed" exists so components that toggle a favorite
  // without going through handleToggleFavorite (favorite-button.tsx,

@@ -23,7 +23,13 @@ const PAGE_SIZE_STORAGE_KEY = "workflik:library-page-size";
 // flat, which made a top-level page and a deeply-nested one indistinguishable.
 // A page whose parent isn't present in `rows` (not on this page, or genuinely
 // a root) is treated as a root itself, so the tree never silently drops rows.
-function buildDisplayRows(rows: PageRow[], collapsed: Set<string>): DisplayRow[] {
+//
+// Parents are collapsed by default — `expanded` is opt-in (a page's children
+// only render once its id is added to the set), rather than opt-out, so a
+// freshly-loaded or newly-discovered parent starts collapsed with no seeding
+// needed. This keeps large workspaces scannable instead of dumping every
+// descendant open on first load.
+function buildDisplayRows(rows: PageRow[], expanded: Set<string>): DisplayRow[] {
   const idSet = new Set(rows.map((p) => p.id));
   const childrenByParent = new Map<string, PageRow[]>();
   const roots: PageRow[] = [];
@@ -41,7 +47,7 @@ function buildDisplayRows(rows: PageRow[], collapsed: Set<string>): DisplayRow[]
     for (const p of list) {
       const kids = childrenByParent.get(p.id) ?? [];
       out.push({ ...p, depth, hasChildren: kids.length > 0 });
-      if (kids.length > 0 && !collapsed.has(p.id)) walk(kids, depth + 1);
+      if (kids.length > 0 && expanded.has(p.id)) walk(kids, depth + 1);
     }
   }
   walk(roots, 0);
@@ -114,7 +120,10 @@ export function LibraryClient({
   const [loading, setLoading]   = useState(false);
 
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
-  const [collapsedIds, setCollapsedIds]   = useState<Set<string>>(new Set());
+  // Which parent pages are expanded (opt-in — see buildDisplayRows). Never
+  // reset by tab/search/pagination changes below, so a user's expand/collapse
+  // choices persist while navigating around the Library.
+  const [expandedIds, setExpandedIds]     = useState<Set<string>>(new Set());
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [deletingSelected, setDeletingSelected]      = useState(false);
   const [deleteErr, setDeleteErr]              = useState("");
@@ -290,8 +299,8 @@ export function LibraryClient({
     });
   }
 
-  function toggleCollapse(id: string) {
-    setCollapsedIds((prev) => {
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -363,7 +372,7 @@ export function LibraryClient({
   }
 
   const displayRows: DisplayRow[] = nestingActive
-    ? buildDisplayRows(rows, collapsedIds)
+    ? buildDisplayRows(rows, expandedIds)
     : rows.map((p) => ({ ...p, depth: 0, hasChildren: false }));
 
   const visibleIds   = displayRows.map((p) => p.id);
@@ -550,10 +559,10 @@ export function LibraryClient({
                       {page.hasChildren ? (
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); toggleCollapse(page.id); }}
+                          onClick={(e) => { e.stopPropagation(); toggleExpand(page.id); }}
                           className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground-subtle transition-colors duration-150 hover:bg-accent hover:text-foreground"
                         >
-                          {collapsedIds.has(page.id) ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                          {expandedIds.has(page.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                         </button>
                       ) : page.depth > 0 ? (
                         <span className="size-4 shrink-0" />

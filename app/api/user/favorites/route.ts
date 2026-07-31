@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { pages, userFavorites } from "@/lib/db/schema";
@@ -20,6 +20,12 @@ export async function GET(req: Request) {
     // (kind = "entry"), etc. — otherwise have no metadata on the client and
     // render as "Untitled" with a broken link. LEFT JOIN so a favorite whose
     // page was hard-deleted still returns its row (with null metadata).
+    // Trashed (soft-deleted) pages are excluded — their favorite rows are
+    // removed when the page is trashed (see DELETE /api/pages/[id]), but the
+    // `pages.isDeleted = false` check here is belt-and-suspenders against any
+    // that predate that cleanup. `isNull(pages.id)` keeps the LEFT JOIN's
+    // hard-deleted-orphan case above from being filtered out too — those rows
+    // have no page to check isDeleted on.
     const rows = await db
       .select({
         id:         userFavorites.id,
@@ -34,7 +40,8 @@ export async function GET(req: Request) {
       .where(
         and(
           eq(userFavorites.userId, session.user.id),
-          eq(userFavorites.workspaceId, workspaceId)
+          eq(userFavorites.workspaceId, workspaceId),
+          or(eq(pages.isDeleted, false), isNull(pages.id))
         )
       )
       .orderBy(asc(userFavorites.orderIndex));

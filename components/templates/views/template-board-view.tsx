@@ -124,7 +124,7 @@ function ColumnDropZone({ colKey, children }: { colKey: string; children: React.
  // is required, not decorative — same spec quirk as the row's overflow-x
  // fix, mirrored on this axis: `overflow-y: auto` alone silently upgrades
  // overflow-x from its default `visible` to `auto` too.
- return <div ref={setNodeRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-2 pt-2">{children}</div>;
+ return <div ref={setNodeRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-2 pt-2 pb-2">{children}</div>;
 }
 
 // ── Sortable column ────────────────────────────────────────────────────────────

@@ -1960,20 +1960,36 @@ export function TemplatePageClient({
           { type: "board",  label: "Board",  Icon: SquaresFourIcon },
           { type: "calendar", label: "Calendar", Icon: CalendarIcon },
           { type: "gallery", label: "Gallery", Icon: GridFourIcon },
-         ] as const).map(({ type, label, Icon }) => (
+         ] as const).map(({ type, label, Icon }) => {
+          // Each view type can only exist once — a second view of the same
+          // type would render with the same default name (two indistinguishable
+          // "Board" tabs), so block re-adding a type that's already present
+          // instead of letting that happen.
+          const alreadyAdded = views.some((v) => v.type === type);
+          return (
           <button
            key={type}
-           onClick={() => { addView(label, type); setShowAddView(false); }}
-           className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all hover:bg-primary/5 active:scale-[0.96]"
+           disabled={alreadyAdded}
+           onClick={() => { if (alreadyAdded) return; addView(label, type); setShowAddView(false); }}
+           onMouseEnter={(e) => { if (alreadyAdded) showTooltip(`${label} view already added`, e); }}
+           onMouseLeave={hideTooltip}
+           className={[
+            "group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all",
+            alreadyAdded ? "cursor-not-allowed opacity-40" : "hover:bg-primary/5 active:scale-[0.96]",
+           ].join(" ")}
           >
-           <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border bg-muted/50 transition-all group-hover:border-primary/40 group-hover:bg-primary/10">
-            <Icon size={24} className="text-foreground/70 transition-colors group-hover:text-primary" />
+           <div className={[
+            "flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border bg-muted/50 transition-all",
+            alreadyAdded ? "" : "group-hover:border-primary/40 group-hover:bg-primary/10",
+           ].join(" ")}>
+            <Icon size={24} className={`text-foreground/70 transition-colors ${alreadyAdded ? "" : "group-hover:text-primary"}`} />
            </div>
-           <span className="text-xs font-medium leading-tight text-muted-foreground transition-colors group-hover:text-primary">
+           <span className={`text-xs font-medium leading-tight text-muted-foreground transition-colors ${alreadyAdded ? "" : "group-hover:text-primary"}`}>
             {label}
            </span>
           </button>
-         ))}
+          );
+         })}
         </div>
        </div>
       )}

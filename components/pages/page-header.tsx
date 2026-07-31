@@ -34,6 +34,11 @@ export function PageHeader({
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const titleRef = useRef<HTMLDivElement>(null);
+  // Shared by both icon-trigger buttons below (never rendered at the same
+  // time) — passed to IconPicker so its outside-click-to-close doesn't treat
+  // a second click on this same button as "outside," which would otherwise
+  // close it and then immediately reopen it via the button's own toggle.
+  const iconBtnRef = useRef<HTMLButtonElement>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didMount = useRef(false);
 
@@ -101,8 +106,9 @@ export function PageHeader({
       {editable && !icon && (
         <div className="relative mb-2">
           <button
+            ref={iconBtnRef}
             type="button"
-            onClick={() => setShowPicker(true)}
+            onClick={() => setShowPicker((p) => !p)}
             className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-sm text-muted-foreground opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-foreground"
           >
             <Smile size={13} />
@@ -115,6 +121,7 @@ export function PageHeader({
               onRemove={() => saveIcon(null)}
               onClose={() => setShowPicker(false)}
               pageId={pageId}
+              triggerRef={iconBtnRef}
             />
           )}
         </div>
@@ -125,6 +132,7 @@ export function PageHeader({
         {icon && (
           <div className="relative mt-1 shrink-0">
             <button
+              ref={iconBtnRef}
               type="button"
               disabled={!editable}
               onClick={() => editable && setShowPicker((p) => !p)}
@@ -139,6 +147,7 @@ export function PageHeader({
                 onRemove={() => saveIcon(null)}
                 onClose={() => setShowPicker(false)}
                 pageId={pageId}
+                triggerRef={iconBtnRef}
               />
             )}
           </div>

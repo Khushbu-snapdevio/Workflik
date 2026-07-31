@@ -410,6 +410,7 @@ export function TemplateForm({ template }: Props) {
                       onIconPreview={(v) => { setIcon(v); setDirty(true); }}
                       onRemove={icon ? () => { setIcon(""); setEmojiOpen(false); setDirty(true); } : undefined}
                       onClose={() => setEmojiOpen(false)}
+                      triggerRef={iconTriggerRef}
                     />
                   </div>
                 </div>,

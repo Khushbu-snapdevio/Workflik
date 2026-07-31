@@ -31,6 +31,10 @@ const MONTH_NAMES = [
  "July","August","September","October","November","December",
 ];
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+// Floor for a day cell: the date number row plus the entries a cell shows
+// before collapsing the rest into "+N more". Below this the cell clips its own
+// contents, so rows stop shrinking here and the page grows instead.
+const MIN_ROW_HEIGHT = 110;
 
 const SHOW_MAX = 2;
 
@@ -436,9 +440,17 @@ export function TemplateCalendarView({
  // snapshotted once on hover — dismiss it on scroll instead of
  // repositioning, since locking scroll on every hover would hurt the
  // calendar grid's own scrolling.
+ const morePopupRef = useRef<HTMLDivElement>(null);
+
  useEffect(() => {
   if (!morePopup) return;
-  function handleScroll() {
+  function handleScroll(e: Event) {
+   // Capture phase, so this sees scrolls from every element — including the
+   // popup's own max-height entry list. Scrolling that list must not dismiss
+   // the popup, or a date with more entries than fit becomes unreadable: the
+   // first wheel tick over it closed the very thing being scrolled.
+   const target = e.target as Node | null;
+   if (target && morePopupRef.current?.contains(target)) return;
    if (hoverTimer.current) clearTimeout(hoverTimer.current);
    setMorePopup(null);
   }
@@ -459,7 +471,11 @@ export function TemplateCalendarView({
    onDragOver={handleDragOver}
    onDragEnd={handleDragEnd}
   >
-  <div className="flex h-full flex-col overflow-hidden">
+  {/* min-h-full, not h-full: fills the pane when there's room, but is free to
+      grow past it when the month's rows need more height than is available
+      (short window, zoomed in, or a cover banner eating vertical space) — the
+      page scrolls to the rest rather than the rows compressing. */}
+  <div className="flex min-h-full flex-1 flex-col">
    {/* ── Header ───────────────────────────────────────────────────────────── */}
    <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-3">
     <h2 className="text-lg font-semibold tracking-tight text-foreground">
@@ -488,12 +504,17 @@ export function TemplateCalendarView({
    </div>
 
    {/* ── Calendar grid ─────────────────────────────────────────────────────── */}
+   {/* Rows are minmax(MIN_ROW_HEIGHT, 1fr), not a bare 1fr: 1fr still wins when
+       there's room, but a bare 1fr let every row shrink without limit until the
+       day cells — themselves overflow-hidden — silently swallowed their own
+       entries, with nothing in the stack able to scroll to them. No `min-h-0`
+       here: that would re-enable shrinking below the rows' own minimum. */}
    <div
-    className="flex-1 min-h-0 overflow-hidden"
+    className="flex-1"
     style={{
      display:       "grid",
      gridTemplateColumns: "repeat(7, 1fr)",
-     gridTemplateRows:  `repeat(${rows}, 1fr)`,
+     gridTemplateRows:  `repeat(${rows}, minmax(${MIN_ROW_HEIGHT}px, 1fr))`,
     }}
    >
     {cells.map((day, i) => {
@@ -598,6 +619,7 @@ export function TemplateCalendarView({
 
      return (
       <div style={posStyle}
+       ref={morePopupRef}
        onMouseEnter={cancelClose}
        onMouseLeave={scheduleClose}
        className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"

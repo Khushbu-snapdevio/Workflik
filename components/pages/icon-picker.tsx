@@ -41,12 +41,21 @@ export interface IconPickerProps {
    *  "page_icon" (this picker's original, only use case); pass "workspace_icon"
    *  when reusing this same picker for a workspace's own icon instead of a page's. */
   uploadKind?: "page_icon" | "workspace_icon";
+  /** The button that opens/toggles this picker. Without this, clicking that
+   *  button again to close the picker doesn't work: the button sits outside
+   *  pickerRef, so its own mousedown fires the outside-click-close logic
+   *  first (capture phase, before the button's click handler runs), and the
+   *  click's own `setOpen(p => !p)` toggle then immediately reopens it from
+   *  the now-stale "closed" state. Passing the trigger's ref here excludes
+   *  it from the outside-click check, so only the button's own click
+   *  handler decides open/closed. */
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function IconPicker({
-  onSelect, onIconPreview, onRemove, onClose, workspaceId, pageId, uploadKind = "page_icon",
+  onSelect, onIconPreview, onRemove, onClose, workspaceId, pageId, uploadKind = "page_icon", triggerRef,
 }: IconPickerProps) {
   const [tab, setTab] = useState<"emoji" | "icons" | "upload">("emoji");
   const [iconColor, setIconColor] = useState("#6b7280");
@@ -66,7 +75,9 @@ export function IconPicker({
 
   useEffect(() => {
     function down(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (triggerRef?.current?.contains(target)) return;
+      if (pickerRef.current && !pickerRef.current.contains(target)) {
         // Skin-tone dropdown (rendered by EmojiGridPicker) is a portal outside
         // pickerRef — don't close when clicking inside it.
         if ((e.target as HTMLElement).closest?.("[data-emoji-picker-exempt]")) return;
@@ -76,7 +87,7 @@ export function IconPicker({
     // Use capture so we catch the event before other handlers
     document.addEventListener("mousedown", down, true);
     return () => document.removeEventListener("mousedown", down, true);
-  }, []); // stable — never re-runs
+  }, [triggerRef]); // triggerRef is a stable ref object from the caller — this never actually re-runs
 
   const filteredIcons = iconSearch.trim()
     ? ICON_NAMES.filter((n) => n.toLowerCase().includes(iconSearch.trim().toLowerCase()))

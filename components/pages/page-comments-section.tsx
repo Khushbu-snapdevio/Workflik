@@ -14,6 +14,10 @@ interface Props {
   /** Called when the user dismisses a freshly-opened empty composer (Escape /
    *  click outside) — the parent hides the whole section again. */
   onDismiss?: () => void;
+  /** True only when this section was just opened by the "Add comment" button,
+   *  so the caret starts in the box. Stays false when the section renders
+   *  itself because the page already has threads. */
+  autoFocusComposer?: boolean;
 }
 
 // Page-level (blockId-less) comments — matching Notion, which shows these
@@ -26,6 +30,7 @@ export function PageCommentsSection({
   isAdmin,
   onActiveCountChange,
   onDismiss,
+  autoFocusComposer,
 }: Props) {
   return (
     <div
@@ -33,6 +38,7 @@ export function PageCommentsSection({
       id="page-comments-section"
     >
       <CommentCard
+        autoFocusComposer={autoFocusComposer}
         blockId={null}
         currentUserId={currentUserId}
         isAdmin={isAdmin}

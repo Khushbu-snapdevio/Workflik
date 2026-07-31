@@ -141,12 +141,15 @@ export function DatabasePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIds]);
 
-  // Lock parent <main> scroll when calendar/gantt view is active — both
-  // manage their own internal scroll container.
+  // Lock parent <main> scroll for gantt, which manages its own two-axis
+  // internal scroll container. Calendar deliberately does NOT lock: its rows
+  // hold a fixed minimum height, so on a short window (or when zoomed in) the
+  // month has to be taller than the viewport — the page scrolls to reach it
+  // instead of the grid squashing every row until cells clip their contents.
   useEffect(() => {
     const mainEl = document.querySelector<HTMLElement>("main");
     if (!mainEl) return;
-    if (activeView?.type === "calendar" || activeView?.type === "gantt") {
+    if (activeView?.type === "gantt") {
       mainEl.style.setProperty("overflow", "hidden", "important");
       return () => { mainEl.style.removeProperty("overflow"); };
     } else {
@@ -496,8 +499,19 @@ export function DatabasePage({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  // Calendar grows past the available height when its rows don't fit, so it
+  // needs a root that can exceed it (min-h-*, no overflow clip) and lets the
+  // page scroll. Every other view stays boxed and scrolls internally.
+  // Embedded (inline) databases size against a fixed 420px box rather than the
+  // viewport — their wrapper in reference-blocks.tsx only sets a min-height
+  // now, so the boxed views have to state that height here.
+  const isCalendar = activeView?.type === "calendar";
+  const heightCls = isCalendar
+    ? (inline ? "min-h-[420px]" : "min-h-full")
+    : (inline ? "h-[420px] overflow-hidden" : "h-full overflow-hidden");
+
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col overflow-hidden bg-card isolate">
+    <div className={`mx-auto flex w-full max-w-[1100px] flex-col bg-card isolate ${heightCls}`}>
 
       {/* ── Page title / icon (hidden in inline/embedded mode) ── */}
       {!inline && (
@@ -576,8 +590,8 @@ export function DatabasePage({
       )}
 
       {/* ── View content ── */}
-      <div className={`min-h-0 flex-1 ${activeView?.type === "calendar" || activeView?.type === "gantt" ? "overflow-hidden" : activeView?.type === "table" ? "" : "overflow-y-auto overflow-x-hidden"}`}>
-        <div className={activeView?.type === "calendar" || activeView?.type === "gantt" || activeView?.type === "table" ? "h-full w-full" : "min-h-full w-full"}>
+      <div className={`min-h-0 flex-1 ${isCalendar ? "flex flex-col" : activeView?.type === "gantt" ? "overflow-hidden" : activeView?.type === "table" ? "" : "overflow-y-auto overflow-x-hidden"}`}>
+        <div className={isCalendar ? "flex w-full flex-1 flex-col" : activeView?.type === "gantt" || activeView?.type === "table" ? "h-full w-full" : "min-h-full w-full"}>
           {!activeView && (
             <div className="flex h-full items-center justify-center">
               <p className="text-sm text-muted-foreground">No views configured.</p>

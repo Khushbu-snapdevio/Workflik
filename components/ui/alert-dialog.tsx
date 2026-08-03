@@ -1,50 +1,127 @@
 "use client";
 
 import * as React from "react";
-import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { cn } from "@/lib/utils";
+import { Slot } from "@/components/ui/slot";
 
-const AlertDialog = AlertDialogPrimitive.Root;
-const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
-const AlertDialogPortal = AlertDialogPrimitive.Portal;
+// Native <dialog>-based, same engine as dialog.tsx (see the comment there).
+// Deliberately does NOT close on backdrop click — an alert dialog exists to
+// force an explicit Cancel/Action decision (see doc/CLAUDE.md Rule 8), so
+// only the two buttons (or Escape) can dismiss it.
 
-function AlertDialogOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
-  return (
-    <AlertDialogPrimitive.Overlay
-      className={cn(
-        // z-[580]+ — the "true full-screen modal" tier documented in
-        // workspace-shell.tsx, needed to paint over the sidebar's own
-        // z-[550] stacking context. z-50 (shadcn's default) sits well below
-        // that, so a dialog opened from inside the sidebar (e.g. a page
-        // row's "Move to Trash") would render fully dimmed everywhere
-        // *except* the sidebar, which stayed on top, undimmed.
-        "fixed inset-0 z-[580] bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-        className,
-      )}
-      {...props}
-    />
+type AlertDialogContextValue = {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  dialogRef: React.RefObject<HTMLDialogElement | null>;
+};
+
+const AlertDialogContext = React.createContext<AlertDialogContextValue | null>(null);
+
+function useAlertDialogContext(component: string) {
+  const ctx = React.useContext(AlertDialogContext);
+  if (!ctx) throw new Error(`<${component}> must be used within <AlertDialog>`);
+  return ctx;
+}
+
+function AlertDialog({
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  children,
+}: {
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children?: React.ReactNode;
+}) {
+  const [uncontrolled, setUncontrolled] = React.useState(defaultOpen);
+  const open = openProp ?? uncontrolled;
+  const dialogRef = React.useRef<HTMLDialogElement>(null);
+
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (openProp === undefined) setUncontrolled(next);
+      onOpenChange?.(next);
+    },
+    [openProp, onOpenChange],
   );
+
+  React.useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    if (open && !el.open) el.showModal();
+    else if (!open && el.open) el.close();
+  }, [open]);
+
+  React.useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    function handleClose() {
+      setOpen(false);
+    }
+    el.addEventListener("close", handleClose);
+    return () => el.removeEventListener("close", handleClose);
+  }, [setOpen]);
+
+  return (
+    <AlertDialogContext.Provider value={{ open, setOpen, dialogRef }}>
+      {children}
+    </AlertDialogContext.Provider>
+  );
+}
+
+function AlertDialogTrigger({
+  asChild,
+  onClick,
+  children,
+  ...props
+}: React.ComponentProps<"button"> & { asChild?: boolean }) {
+  const { setOpen } = useAlertDialogContext("AlertDialogTrigger");
+  const Comp = asChild ? Slot : "button";
+
+  return (
+    <Comp
+      data-slot="alert-dialog-trigger"
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) setOpen(true);
+      }}
+      {...props}
+    >
+      {children}
+    </Comp>
+  );
+}
+
+function AlertDialogPortal({ children }: { children?: React.ReactNode }) {
+  return <>{children}</>;
 }
 
 function AlertDialogContent({
   className,
-  overlayClassName,
+  // Callers used this to push the overlay above some other portaled/high
+  // z-index UI (a popover, etc). Native <dialog> renders in the browser's
+  // top-layer regardless of z-index, always above regular content, so the
+  // stacking problem this worked around no longer exists — kept as a no-op
+  // prop so existing call sites don't need to change.
+  overlayClassName: _overlayClassName,
+  children,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content> & { overlayClassName?: string }) {
+}: React.ComponentProps<"dialog"> & { overlayClassName?: string }) {
+  const { open, dialogRef } = useAlertDialogContext("AlertDialogContent");
+
   return (
-    <AlertDialogPortal>
-      <AlertDialogOverlay className={overlayClassName} />
-      <AlertDialogPrimitive.Content
-        className={cn(
-          "fixed left-1/2 top-1/2 z-[590] w-full max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-card p-6 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-          className,
-        )}
-        {...props}
-      />
-    </AlertDialogPortal>
+    <dialog
+      ref={dialogRef}
+      data-slot="alert-dialog-content"
+      className={cn(
+        "fixed left-1/2 top-1/2 z-[590] m-0 w-full max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-card p-6",
+        className,
+      )}
+      {...props}
+    >
+      {open && children}
+    </dialog>
   );
 }
 
@@ -61,36 +138,35 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">)
   );
 }
 
-function AlertDialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+function AlertDialogTitle({ className, ...props }: React.ComponentProps<"h2">) {
   return (
-    <AlertDialogPrimitive.Title
+    <h2
       className={cn("text-base font-semibold text-foreground", className)}
       {...props}
     />
   );
 }
 
-function AlertDialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+function AlertDialogDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
-    <AlertDialogPrimitive.Description
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
+    <p className={cn("text-sm text-muted-foreground", className)} {...props} />
   );
 }
 
 function AlertDialogAction({
   className,
+  onClick,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Action>) {
+}: React.ComponentProps<"button">) {
+  const { setOpen } = useAlertDialogContext("AlertDialogAction");
+
   return (
-    <AlertDialogPrimitive.Action
+    <button
+      type="button"
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) setOpen(false);
+      }}
       className={cn(
         "inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] bg-destructive px-4 text-sm font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
         className,
@@ -102,10 +178,18 @@ function AlertDialogAction({
 
 function AlertDialogCancel({
   className,
+  onClick,
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
+}: React.ComponentProps<"button">) {
+  const { setOpen } = useAlertDialogContext("AlertDialogCancel");
+
   return (
-    <AlertDialogPrimitive.Cancel
+    <button
+      type="button"
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) setOpen(false);
+      }}
       className={cn(
         "inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-transparent px-4 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
@@ -119,7 +203,6 @@ export {
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogPortal,
-  AlertDialogOverlay,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogFooter,

@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { Avatar as AvatarPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
@@ -9,11 +8,11 @@ function Avatar({
   className,
   size = "default",
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Root> & {
+}: React.ComponentProps<"div"> & {
   size?: "default" | "sm" | "lg"
 }) {
   return (
-    <AvatarPrimitive.Root
+    <div
       data-slot="avatar"
       data-size={size}
       className={cn(
@@ -25,17 +24,40 @@ function Avatar({
   )
 }
 
+/**
+ * Plain `<img>`, not `next/image` — deliberate exception to the project's
+ * "always next/image" rule (doc/CLAUDE.md UI Rule 13). Avatar sources are
+ * arbitrary user-uploaded/external URLs; next/image would 500 on any host not
+ * in next.config's remotePatterns, which this primitive has no way to
+ * guarantee. Radix's own AvatarImage was a plain `<img>` too. Zero consumers
+ * today — flagging rather than silently deciding, since a real consumer
+ * should make this call knowingly.
+ */
 function AvatarImage({
   className,
+  onLoad,
+  onError,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+}: React.ComponentProps<"img">) {
+  const [status, setStatus] = React.useState<"loading" | "loaded" | "error">("loading")
+  if (status === "error") return null
   return (
-    <AvatarPrimitive.Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       data-slot="avatar-image"
       className={cn(
         "aspect-square size-full rounded-full object-cover",
+        status !== "loaded" && "hidden",
         className
       )}
+      onLoad={(event) => {
+        setStatus("loaded")
+        onLoad?.(event)
+      }}
+      onError={(event) => {
+        setStatus("error")
+        onError?.(event)
+      }}
       {...props}
     />
   )
@@ -44,9 +66,9 @@ function AvatarImage({
 function AvatarFallback({
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: React.ComponentProps<"div">) {
   return (
-    <AvatarPrimitive.Fallback
+    <div
       data-slot="avatar-fallback"
       className={cn(
         "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",

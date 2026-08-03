@@ -1,32 +1,50 @@
 "use client"
 
 import * as React from "react"
-import { Accordion as AccordionPrimitive } from "radix-ui"
+import { CaretDownIcon } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
-import { CaretDownIcon, CaretUpIcon } from "@phosphor-icons/react"
+
+/**
+ * Native `<details>`/`<summary>` in place of Radix's Accordion. `type="single"`
+ * uses `<details name="...">` — browsers make same-named details mutually
+ * exclusive (Chrome 120+/Safari 17.4+/Firefox 129+) — instead of JS-managed
+ * open state.
+ *
+ * API note: Radix's controlled `value`/`onValueChange` contract is dropped in
+ * favour of native uncontrolled `open`/`defaultOpen` per item. Zero consumers
+ * in the app today; revisit if a future consumer needs programmatic control.
+ */
+const AccordionGroupContext = React.createContext<string | undefined>(undefined)
 
 function Accordion({
   className,
+  type = "single",
+  children,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Root>) {
+}: React.ComponentProps<"div"> & {
+  type?: "single" | "multiple"
+}) {
+  const groupName = React.useId()
   return (
-    <AccordionPrimitive.Root
-      data-slot="accordion"
-      className={cn("flex w-full flex-col", className)}
-      {...props}
-    />
+    <AccordionGroupContext.Provider value={type === "single" ? groupName : undefined}>
+      <div data-slot="accordion" className={cn("flex w-full flex-col", className)} {...props}>
+        {children}
+      </div>
+    </AccordionGroupContext.Provider>
   )
 }
 
 function AccordionItem({
   className,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Item>) {
+}: React.ComponentProps<"details">) {
+  const groupName = React.useContext(AccordionGroupContext)
   return (
-    <AccordionPrimitive.Item
+    <details
       data-slot="accordion-item"
-      className={cn("not-last:border-b", className)}
+      name={groupName}
+      className={cn("group/accordion-item not-last:border-b", className)}
       {...props}
     />
   )
@@ -36,22 +54,22 @@ function AccordionTrigger({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
+}: React.ComponentProps<"summary">) {
   return (
-    <AccordionPrimitive.Header className="flex">
-      <AccordionPrimitive.Trigger
-        data-slot="accordion-trigger"
-        className={cn(
-          "group/accordion-trigger relative flex flex-1 items-start justify-between gap-6 rounded-none border border-transparent py-4 text-left text-sm font-semibold transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-3.5 **:data-[slot=accordion-trigger-icon]:text-muted-foreground",
-          className
-        )}
-        {...props}
-      >
-        {children}
-        <CaretDownIcon data-slot="accordion-trigger-icon" className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
-        <CaretUpIcon data-slot="accordion-trigger-icon" className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
-      </AccordionPrimitive.Trigger>
-    </AccordionPrimitive.Header>
+    <summary
+      data-slot="accordion-trigger"
+      className={cn(
+        "relative flex flex-1 list-none items-start justify-between gap-6 rounded-none border border-transparent py-4 text-left text-sm font-semibold transition-all outline-none [&::-webkit-details-marker]:hidden hover:underline focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <CaretDownIcon
+        data-slot="accordion-trigger-icon"
+        className="pointer-events-none ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform group-open/accordion-item:rotate-180"
+      />
+    </summary>
   )
 }
 
@@ -59,22 +77,18 @@ function AccordionContent({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Content>) {
+}: React.ComponentProps<"div">) {
   return (
-    <AccordionPrimitive.Content
-      data-slot="accordion-content"
-      className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
-      {...props}
-    >
+    <div data-slot="accordion-content" className="text-sm" {...props}>
       <div
         className={cn(
-          "h-(--radix-accordion-content-height) pt-0 pb-4 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+          "pt-0 pb-4 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
           className
         )}
       >
         {children}
       </div>
-    </AccordionPrimitive.Content>
+    </div>
   )
 }
 

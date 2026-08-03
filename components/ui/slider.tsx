@@ -1,58 +1,68 @@
 "use client"
 
 import * as React from "react"
-import { Slider as SliderPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Native `<input type="range">` in place of Radix's Slider. Radix supported
+ * multiple thumbs via an array value; a native range input only has one.
+ * Zero consumers in the app today, so the multi-thumb case is dropped rather
+ * than emulated — revisit if a future consumer needs it.
+ */
 function Slider({
   className,
   defaultValue,
   value,
   min = 0,
   max = 100,
+  disabled,
+  onValueChange,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
-  const _values = React.useMemo(
-    () =>
-      Array.isArray(value)
-        ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
-    [value, defaultValue, min, max]
-  )
+}: Omit<React.ComponentProps<"input">, "type" | "value" | "defaultValue" | "onChange" | "min" | "max"> & {
+  value?: number[]
+  defaultValue?: number[]
+  min?: number
+  max?: number
+  onValueChange?: (value: number[]) => void
+}) {
+  const [uncontrolled, setUncontrolled] = React.useState(defaultValue?.[0] ?? min)
+  const current = value?.[0] ?? uncontrolled
+  const percent = ((current - min) / (max - min)) * 100
 
   return (
-    <SliderPrimitive.Root
+    <div
       data-slot="slider"
-      defaultValue={defaultValue}
-      value={value}
-      min={min}
-      max={max}
       className={cn(
-        "relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col",
-        className
+        "relative flex h-3 w-full touch-none items-center select-none",
+        disabled && "opacity-50"
       )}
-      {...props}
     >
-      <SliderPrimitive.Track
-        data-slot="slider-track"
-        className="relative grow overflow-hidden bg-input/50 data-horizontal:h-0.5 data-horizontal:w-full data-vertical:h-full data-vertical:w-0.5"
-      >
-        <SliderPrimitive.Range
-          data-slot="slider-range"
-          className="absolute bg-primary select-none data-horizontal:h-full data-vertical:w-full"
-        />
-      </SliderPrimitive.Track>
-      {Array.from({ length: _values.length }, (_, index) => (
-        <SliderPrimitive.Thumb
-          data-slot="slider-thumb"
-          key={index}
-          className="block size-3 shrink-0 border-none bg-primary transition-colors select-none hover:ring-2 hover:ring-ring/30 focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
-        />
-      ))}
-    </SliderPrimitive.Root>
+      <div className="pointer-events-none absolute top-1/2 h-0.5 w-full -translate-y-1/2 overflow-hidden bg-input/50">
+        <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        disabled={disabled}
+        value={current}
+        onChange={(event) => {
+          const next = Number(event.target.value)
+          setUncontrolled(next)
+          onValueChange?.([next])
+        }}
+        className={cn(
+          "relative w-full cursor-pointer appearance-none bg-transparent outline-none disabled:cursor-not-allowed",
+          "[&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-none [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:transition-colors",
+          "[&::-moz-range-thumb]:size-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:transition-colors",
+          "focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-ring/30",
+          "focus-visible:[&::-moz-range-thumb]:ring-2 focus-visible:[&::-moz-range-thumb]:ring-ring/30",
+          className
+        )}
+        {...props}
+      />
+    </div>
   )
 }
 

@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Toggle as TogglePrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
@@ -28,16 +27,36 @@ const toggleVariants = cva(
   }
 )
 
+/** Native `<button aria-pressed>` in place of Radix's Toggle. */
 function Toggle({
   className,
-  variant = "default",
-  size = "default",
+  variant,
+  size,
+  pressed,
+  defaultPressed,
+  onPressedChange,
+  onClick,
   ...props
-}: React.ComponentProps<typeof TogglePrimitive.Root> &
-  VariantProps<typeof toggleVariants>) {
+}: React.ComponentProps<"button"> &
+  VariantProps<typeof toggleVariants> & {
+    pressed?: boolean
+    defaultPressed?: boolean
+    onPressedChange?: (pressed: boolean) => void
+  }) {
+  const [uncontrolled, setUncontrolled] = React.useState(defaultPressed ?? false)
+  const isPressed = pressed ?? uncontrolled
+
   return (
-    <TogglePrimitive.Root
+    <button
+      type="button"
       data-slot="toggle"
+      aria-pressed={isPressed}
+      onClick={(event) => {
+        onClick?.(event)
+        if (event.defaultPrevented) return
+        setUncontrolled(!isPressed)
+        onPressedChange?.(!isPressed)
+      }}
       className={cn(toggleVariants({ variant, size, className }))}
       {...props}
     />

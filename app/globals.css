@@ -1,9 +1,201 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @import "katex/dist/katex.min.css";
 @import "flag-icons/css/flag-icons.min.css";
 @plugin "@tailwindcss/typography";
+
+/* ─── formerly `@import "shadcn/tailwind.css"` ───────────────────────────────
+   Inlined so the `shadcn` package could be removed — these variants/utility
+   are genuinely used across ~15 Radix-based primitives (dialog, sheet,
+   popover, tooltip, dropdown-menu, context-menu, menubar, hover-card,
+   navigation-menu, sidebar, drawer, command, tabs) plus separator.tsx and
+   toggle-group.tsx. Two things the original file also had were dropped as
+   dead: the accordion-down/up @keyframes (0 usage — Tier 0's accordion.tsx
+   rewrite uses native <details>, no CSS animation) and the data-checked /
+   data-unchecked variants (0 usage — Tier 0's checkbox/switch/radio-group
+   rewrites compute state in React, not CSS). Grep before re-adding either. */
+@custom-variant data-open {
+  &:where([data-state="open"]),
+  &:where([data-open]:not([data-open="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-closed {
+  &:where([data-state="closed"]),
+  &:where([data-closed]:not([data-closed="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-selected {
+  &:where([data-selected="true"]) {
+    @slot;
+  }
+}
+
+@custom-variant data-disabled {
+  &:where([data-disabled="true"]),
+  &:where([data-disabled]:not([data-disabled="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) {
+    @slot;
+  }
+}
+
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) {
+    @slot;
+  }
+}
+
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) {
+    @slot;
+  }
+}
+
+/* ─── Native <dialog>-based Dialog/AlertDialog/Sheet primitives ──────────────
+   Radix removed in favor of the browser's own modal semantics (showModal()
+   gives focus-trap + Escape + top-layer stacking for free). Two things the
+   UA stylesheet doesn't give us: (1) it centers a modal dialog via
+   `inset: 0; margin: auto`, which fights our own position classes — reset in
+   `@layer base` so it's always beaten by the (higher-priority) utility
+   classes that set explicit top/right/bottom/left; (2) open/close animation,
+   done with @starting-style so it's pure CSS, no animation-end listeners. */
+@layer base {
+  dialog[data-slot="dialog-content"],
+  dialog[data-slot="sheet-content"],
+  dialog[data-slot="alert-dialog-content"] {
+    inset: auto;
+    margin: 0;
+    max-height: 100vh;
+  }
+}
+
+dialog[data-slot="dialog-content"],
+dialog[data-slot="alert-dialog-content"] {
+  opacity: 1;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    overlay 150ms ease allow-discrete,
+    display 150ms ease allow-discrete;
+}
+dialog[data-slot="dialog-content"]:not([open]),
+dialog[data-slot="alert-dialog-content"]:not([open]) {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.95);
+}
+@starting-style {
+  dialog[data-slot="dialog-content"][open],
+  dialog[data-slot="alert-dialog-content"][open] {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+}
+
+dialog[data-slot="sheet-content"] {
+  transition:
+    transform 200ms ease,
+    overlay 200ms ease allow-discrete,
+    display 200ms ease allow-discrete;
+}
+dialog[data-slot="sheet-content"]:not([open]) {
+  transform: translateX(0);
+}
+dialog[data-slot="sheet-content"][data-side="right"]:not([open]) { transform: translateX(100%); }
+dialog[data-slot="sheet-content"][data-side="left"]:not([open]) { transform: translateX(-100%); }
+dialog[data-slot="sheet-content"][data-side="top"]:not([open]) { transform: translateY(-100%); }
+dialog[data-slot="sheet-content"][data-side="bottom"]:not([open]) { transform: translateY(100%); }
+@starting-style {
+  dialog[data-slot="sheet-content"][data-side="right"][open] { transform: translateX(100%); }
+  dialog[data-slot="sheet-content"][data-side="left"][open] { transform: translateX(-100%); }
+  dialog[data-slot="sheet-content"][data-side="top"][open] { transform: translateY(-100%); }
+  dialog[data-slot="sheet-content"][data-side="bottom"][open] { transform: translateY(100%); }
+}
+
+dialog[data-slot="dialog-content"]::backdrop,
+dialog[data-slot="sheet-content"]::backdrop {
+  background-color: rgb(0 0 0 / 0.2);
+  transition:
+    background-color 150ms ease,
+    overlay 150ms ease allow-discrete,
+    display 150ms ease allow-discrete;
+}
+dialog[data-slot="alert-dialog-content"]::backdrop {
+  background-color: rgb(0 0 0 / 0.4);
+  transition:
+    background-color 150ms ease,
+    overlay 150ms ease allow-discrete,
+    display 150ms ease allow-discrete;
+}
+dialog:not([open])::backdrop {
+  background-color: rgb(0 0 0 / 0);
+}
+@starting-style {
+  dialog[open]::backdrop {
+    background-color: rgb(0 0 0 / 0);
+  }
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ─── daisyUI theme ───────────────────────────────────────────────────────
+   ONE theme, and it carries STRUCTURE only — never colour.
+
+   Why one and not a light/dark pair: a theme named "light" or "dark" collides
+   with daisyUI's built-in themes of those names, and the built-ins win with no
+   error and no warning. Measured during the spike: --radius-field silently
+   became 4px and --color-primary became daisy's own blue. If you add a theme
+   here, give it a name daisyUI does not already ship.
+
+   Why no colour: every colour is authored once, in the :root / .dark blocks
+   below, and exported to daisy from there as --color-base-100: var(--card)
+   etc. Those blocks are unlayered so they outrank this layered theme. That
+   keeps the WCAG-annotated contract below as the single source of truth and
+   means dark mode needs no duplication — :root and .dark both target <html>,
+   so var(--card) simply re-resolves when .dark is present.
+
+   Consequence worth knowing: because this block declares no colours, daisy
+   does not emit .btn-primary / .btn-error / etc. Components set --btn-color
+   and friends directly instead. */
+@plugin "daisyui" { themes: workflik --default; }
+
+@plugin "daisyui/theme" {
+  name: "workflik";
+  default: true;
+  color-scheme: light;
+  /* Flat by design (UI Rule 2 — no shadows anywhere). daisy otherwise adds a
+     box-shadow, an inset highlight, a text-shadow and a noise layer to every
+     control; all four collapse to these two vars. */
+  --depth: 0;
+  --noise: 0;
+  --border: 1px;
+  /* daisy has 3 radius steps against our 5. These map the three that daisy
+     actually consumes; components needing --radius-xs (4px) or --radius-xl
+     (14px) still set them locally. */
+  --radius-field: 8px;      /* --radius-md */
+  --radius-box: 10px;       /* --radius-lg */
+  --radius-selector: 6px;   /* --radius-sm */
+  /* --size-field is shared by btn/input/select. Our input and our default
+     button are both 36px, so one value serves both — that is convenient, not
+     designed. Do not change either in isolation. */
+  --size-field: 0.25rem;
+  --size-selector: 0.25rem;
+}
 
 /* Tailwind v4 resolves `dark:` against prefers-color-scheme by default, which
    would ignore an explicit user choice. Bind it to the .dark class that
@@ -197,6 +389,33 @@ body {
   --comment-accent:     #7C3AED;
   --comment-tint:       color-mix(in srgb, var(--comment-accent)  9%, transparent);
   --comment-tint-hover: color-mix(in srgb, var(--comment-accent) 18%, transparent);
+
+  /* ── daisyUI colour contract ──────────────────────────────────────────────
+     Mapped from the tokens above so there is exactly ONE place a colour is
+     authored. Note base-100 is --card (white) and base-200 is --background:
+     our canvas sits BELOW our card, which is the opposite of daisy's own
+     themes. Tokens with no daisy equivalent (--muted-foreground tiers, --ring,
+     --input, --sidebar-*, charts, syntax) keep their own vars above. */
+  --color-base-100: var(--card);
+  --color-base-200: var(--background);
+  --color-base-300: var(--border);
+  --color-base-content: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-content: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-content: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-content: var(--accent-foreground);
+  --color-neutral: var(--foreground);          /* no source token */
+  --color-neutral-content: var(--card);        /* no source token */
+  --color-info: var(--primary);                /* no source token */
+  --color-info-content: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-success-content: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-content: #FFFFFF;
+  --color-error: var(--destructive);
+  --color-error-content: var(--destructive-foreground);
 
   color-scheme: light;
 }

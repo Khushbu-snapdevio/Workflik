@@ -1,92 +1,157 @@
 "use client"
 
 import * as React from "react"
-import { Popover as PopoverPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { Slot } from "@/components/ui/slot"
+
+// The native `popover` attribute replaces the hand-rolled outside-click /
+// Escape listeners and the createPortal call: `popover="auto"` already gives
+// light-dismiss (outside click + Escape) and renders in the browser's
+// top-layer, same as <dialog>. What's left is just React-state glue (calling
+// showPopover()/hidePopover() to match `open`, plus a `toggle` listener to
+// sync back when the browser dismisses it natively) and the trigger-relative
+// position math, which stays JS since the one real consumer needs a fully
+// controlled `open` state that daisy's CSS dropdown / CSS anchor positioning
+// alone can't drive.
+
+type PopoverContextValue = {
+  open: boolean
+  setOpen: (open: boolean) => void
+  triggerRef: React.RefObject<HTMLElement | null>
+}
+
+const PopoverContext = React.createContext<PopoverContextValue | null>(null)
+
+function usePopoverContext(component: string) {
+  const ctx = React.useContext(PopoverContext)
+  if (!ctx) throw new Error(`<${component}> must be used within <Popover>`)
+  return ctx
+}
 
 function Popover({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  children,
+}: {
+  open?: boolean
+  defaultOpen?: boolean
+  onOpenChange?: (open: boolean) => void
+  children?: React.ReactNode
+}) {
+  const [uncontrolled, setUncontrolled] = React.useState(defaultOpen)
+  const open = openProp ?? uncontrolled
+  const triggerRef = React.useRef<HTMLElement>(null)
+
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (openProp === undefined) setUncontrolled(next)
+      onOpenChange?.(next)
+    },
+    [openProp, onOpenChange]
+  )
+
+  return (
+    <PopoverContext.Provider value={{ open, setOpen, triggerRef }}>
+      {children}
+    </PopoverContext.Provider>
+  )
 }
 
 function PopoverTrigger({
+  asChild,
+  onClick,
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+}: React.ComponentProps<"button"> & { asChild?: boolean }) {
+  const { open, setOpen, triggerRef } = usePopoverContext("PopoverTrigger")
+  const Comp = asChild ? Slot : "button"
+
+  return (
+    <Comp
+      ref={triggerRef as React.Ref<never>}
+      data-slot="popover-trigger"
+      aria-expanded={open}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event)
+        if (!event.defaultPrevented) setOpen(!open)
+      }}
+      {...props}
+    >
+      {children}
+    </Comp>
+  )
 }
 
 function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
-  return (
-    <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
-        data-slot="popover-content"
-        align={align}
-        sideOffset={sideOffset}
-        className={cn(
-          "z-50 flex w-72 origin-(--radix-popover-content-transform-origin) flex-col gap-4 rounded-[var(--radius-md)] bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          className
-        )}
-        {...props}
-      />
-    </PopoverPrimitive.Portal>
-  )
-}
+}: React.ComponentProps<"div"> & {
+  align?: "start" | "center" | "end"
+  sideOffset?: number
+}) {
+  const { open, setOpen, triggerRef } = usePopoverContext("PopoverContent")
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  const [pos, setPos] = React.useState<{ top: number; left: number } | null>(null)
 
-function PopoverAnchor({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
-}
+  React.useLayoutEffect(() => {
+    const el = contentRef.current
+    const trigger = triggerRef.current
+    if (!el || !trigger) return
 
-function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
+    if (open && !el.matches(":popover-open")) el.showPopover()
+    else if (!open && el.matches(":popover-open")) el.hidePopover()
+
+    if (!open) return
+
+    function updatePosition() {
+      const triggerRect = trigger!.getBoundingClientRect()
+      const contentRect = el!.getBoundingClientRect()
+      let left = triggerRect.left
+      if (align === "center") left = triggerRect.left + triggerRect.width / 2 - contentRect.width / 2
+      if (align === "end") left = triggerRect.right - contentRect.width
+      left = Math.max(8, Math.min(left, window.innerWidth - contentRect.width - 8))
+      setPos({ top: triggerRect.bottom + sideOffset, left })
+    }
+
+    updatePosition()
+    window.addEventListener("resize", updatePosition)
+    window.addEventListener("scroll", updatePosition, true)
+    return () => {
+      window.removeEventListener("resize", updatePosition)
+      window.removeEventListener("scroll", updatePosition, true)
+    }
+  }, [open, align, sideOffset, triggerRef])
+
+  React.useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    function handleToggle(event: Event) {
+      setOpen((event as ToggleEvent).newState === "open")
+    }
+    el.addEventListener("toggle", handleToggle)
+    return () => el.removeEventListener("toggle", handleToggle)
+  }, [setOpen])
+
   return (
     <div
-      data-slot="popover-header"
-      className={cn("flex flex-col gap-1 text-sm", className)}
-      {...props}
-    />
-  )
-}
-
-function PopoverTitle({ className, ...props }: React.ComponentProps<"h2">) {
-  return (
-    <div
-      data-slot="popover-title"
-      className={cn("text-xs font-semibold uppercase", className)}
-      {...props}
-    />
-  )
-}
-
-function PopoverDescription({
-  className,
-  ...props
-}: React.ComponentProps<"p">) {
-  return (
-    <p
-      data-slot="popover-description"
+      ref={contentRef}
+      popover="auto"
+      data-slot="popover-content"
+      style={{ position: "fixed", margin: 0, top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
       className={cn(
-        "mt-0.5 text-sm leading-relaxed text-muted-foreground",
+        "flex w-72 flex-col gap-4 rounded-[var(--radius-md)] border border-border bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-hidden",
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   )
 }
 
-export {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-}
+export { Popover, PopoverContent, PopoverTrigger }

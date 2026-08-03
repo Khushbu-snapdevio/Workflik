@@ -1,57 +1,108 @@
 "use client"
 
 import * as React from "react"
-import { Tooltip as TooltipPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { Slot } from "@/components/ui/slot"
 
-function TooltipProvider({
-  delayDuration = 0,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
-  return (
-    <TooltipPrimitive.Provider
-      data-slot="tooltip-provider"
-      delayDuration={delayDuration}
-      {...props}
-    />
-  )
+// Pure daisyUI CSS tooltip — no JS state, no positioning library. Content is
+// either a plain string (daisy's `data-tip` attribute) or, for anything
+// richer, daisy's `tooltip-content` slot (real markup, still CSS-driven).
+
+type Side = "top" | "right" | "bottom" | "left"
+type Align = "start" | "center" | "end"
+
+type TooltipConfig = {
+  side: Side
+  align: Align
+  hidden: boolean
+  content: React.ReactNode
 }
 
-function Tooltip({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+const sideClass: Record<Side, string> = {
+  top: "tooltip-top",
+  right: "tooltip-right",
+  bottom: "tooltip-bottom",
+  left: "tooltip-left",
+}
+const alignClass: Record<Align, string> = {
+  start: "tooltip-start",
+  center: "tooltip-center",
+  end: "tooltip-end",
+}
+
+const TooltipConfigContext = React.createContext<{
+  setConfig: (config: TooltipConfig) => void
+} | null>(null)
+
+function TooltipProvider({ children }: { children?: React.ReactNode; delayDuration?: number }) {
+  return <>{children}</>
+}
+
+function Tooltip({ children }: { children?: React.ReactNode }) {
+  const [config, setConfig] = React.useState<TooltipConfig>({
+    side: "top",
+    align: "center",
+    hidden: false,
+    content: null,
+  })
+
+  if (config.hidden || !config.content) {
+    return <>{children}</>
+  }
+
+  const isPlainText = typeof config.content === "string"
+
+  return (
+    <TooltipConfigContext.Provider value={{ setConfig }}>
+      <div
+        data-slot="tooltip"
+        className={cn("tooltip", sideClass[config.side], alignClass[config.align])}
+        data-tip={isPlainText ? (config.content as string) : undefined}
+      >
+        {children}
+        {!isPlainText && <div className="tooltip-content">{config.content}</div>}
+      </div>
+    </TooltipConfigContext.Provider>
+  )
 }
 
 function TooltipTrigger({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+  asChild = true,
+  children,
+}: {
+  asChild?: boolean
+  children?: React.ReactNode
+}) {
+  if (!asChild) {
+    return (
+      <span data-slot="tooltip-trigger" className="contents">
+        {children}
+      </span>
+    )
+  }
+  return <Slot data-slot="tooltip-trigger">{children}</Slot>
 }
 
 function TooltipContent({
-  className,
-  sideOffset = 0,
+  side = "top",
+  align = "center",
+  hidden = false,
   children,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        data-slot="tooltip-content"
-        sideOffset={sideOffset}
-        className={cn(
-          "z-50 inline-flex w-fit max-w-xs origin-(--radix-tooltip-content-transform-origin) items-center gap-1.5 rounded-none bg-foreground px-3 py-1.5 text-sm text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-none data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          className
-        )}
-        {...props}
-      >
-        {children}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-none bg-foreground fill-foreground" />
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  )
+}: {
+  side?: Side
+  align?: Align
+  hidden?: boolean
+  children?: React.ReactNode
+} & Record<string, unknown>) {
+  const ctx = React.useContext(TooltipConfigContext)
+
+  React.useLayoutEffect(() => {
+    ctx?.setConfig({ side, align, hidden, content: children })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx, side, align, hidden, children])
+
+  return null
 }
 
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }

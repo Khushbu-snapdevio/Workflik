@@ -68,7 +68,7 @@ export function FavoriteButton({ pageId, workspaceId, isFavorited: initial }: Fa
       disabled={pending}
       onMouseEnter={(e) => showTooltip(favorited ? "Remove from favorites" : "Add to favorites", e)}
       onMouseLeave={hideTooltip}
-      className={`flex size-7 items-center justify-center rounded-[var(--radius-sm)] transition-colors disabled:opacity-50 ${
+      className={`flex size-7 items-center justify-center rounded-sm transition-colors disabled:opacity-50 ${
         favorited
           ? "text-warning hover:bg-warning/10"
           : "text-muted-foreground hover:bg-accent hover:text-foreground"

@@ -1,5 +1,12 @@
 "use client";
 
+import {
+ Combobox,
+ ComboboxButton,
+ ComboboxInput,
+ ComboboxOption,
+ ComboboxOptions,
+} from "@headlessui/react";
 import { ArrowRight, Camera, Check, ChevronDown, Circle, Clock, Globe, KeyRound, Loader2, Search, ShieldAlert, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -64,64 +71,14 @@ function timeInZone(tz: string): string {
  } catch { return ""; }
 }
 
-/* ── Custom timezone dropdown (portal, smart flip) ────────── */
-type PanelPos = { top?: number; bottom?: number; right: number };
-
+/* ── Timezone dropdown — Headless UI Combobox (search + anchor-based
+   flip), replacing the hand-rolled computePos()/scroll/resize-reposition/
+   outside-click code select.tsx's Listbox already showed the pattern for. */
 function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
- const [open,  setOpen]  = useState(false);
- const [search, setSearch] = useState("");
- const [pos,   setPos]   = useState<PanelPos | null>(null);
- const [mounted, setMounted] = useState(false);
- const btnRef  = useRef<HTMLButtonElement>(null);
- const panelRef = useRef<HTMLDivElement>(null);
- const inputRef = useRef<HTMLInputElement>(null);
+ const [query, setQuery] = useState("");
 
- useEffect(() => { setMounted(true); }, []);
-
- useEffect(() => {
-  if (!open) { setSearch(""); return; }
-  setTimeout(() => inputRef.current?.focus(), 60);
-  function handler(e: MouseEvent) {
-   const t = e.target as Node;
-   if (btnRef.current?.contains(t) || panelRef.current?.contains(t)) return;
-   setOpen(false);
-  }
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
- }, [open]);
-
- function computePos(): PanelPos | null {
-  if (!btnRef.current) return null;
-  const rect  = btnRef.current.getBoundingClientRect();
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const panelH = 320; // approx height of dropdown
-  const right = window.innerWidth - rect.right;
-  return spaceBelow >= panelH
-   ? { top: rect.bottom + 6, right }
-   : { bottom: window.innerHeight - rect.top + 6, right };
- }
-
- function handleOpen() {
-  if (!open) setPos(computePos());
-  setOpen(o => !o);
- }
-
- // Keep the panel glued to its trigger button as the page scrolls — position:fixed
- // alone freezes it at the coordinates from the moment it opened.
- useEffect(() => {
-  if (!open) return;
-  function reposition() { setPos(computePos()); }
-  window.addEventListener("scroll", reposition, true);
-  window.addEventListener("resize", reposition);
-  return () => {
-   window.removeEventListener("scroll", reposition, true);
-   window.removeEventListener("resize", reposition);
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [open]);
-
- const filtered = search.trim()
-  ? TIMEZONES.filter(tz => tz.toLowerCase().includes(search.trim().toLowerCase()))
+ const filtered = query.trim()
+  ? TIMEZONES.filter(tz => tz.toLowerCase().includes(query.trim().toLowerCase()))
   : TIMEZONES;
 
  const regionGroups: Record<string, string[]> = {};
@@ -131,67 +88,72 @@ function TimezoneDropdown({ value, onChange }: { value: string; onChange: (v: st
   regionGroups[region]!.push(tz);
  }
 
- const panel = mounted && open && pos ? createPortal(
-  <div
-   ref={panelRef}
-   style={{ position: "fixed", zIndex: 9999, right: pos.right, ...(pos.top !== undefined ? { top: pos.top } : { bottom: pos.bottom }) }}
-   className="w-[280px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card"
-  >
-   {/* Search */}
-   <div className="border-b border-border px-3 py-2.5">
-    <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-1.5">
-     <Search size={14} className="shrink-0 text-muted-foreground" />
-     <input ref={inputRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search timezone…"
-      className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle" />
-     {search && (
-      <button type="button" onClick={() => setSearch("")} className="text-muted-foreground hover:text-muted-foreground">
-       <X size={12} />
-      </button>
-     )}
-    </div>
-   </div>
-
-   {/* List */}
-   <div className="max-h-[240px] overflow-y-auto py-1">
-    {Object.entries(regionGroups).map(([region, tzs]) => (
-     <div key={region}>
-      <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground">{region}</p>
-      {tzs.map(tz => {
-       const isActive = tz === value;
-       return (
-        <button key={tz} type="button" onClick={() => { onChange(tz); setOpen(false); }}
-         className={`flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm transition-colors duration-150 ${
-          isActive ? "bg-accent font-semibold text-foreground" : "text-foreground hover:bg-accent"
-         }`}>
-         <span className={`flex size-4 shrink-0 items-center justify-center ${isActive ? "" : "opacity-0"}`}>
-          <Check size={12} />
-         </span>
-         {tz.replace(/_/g, " ")}
-        </button>
-       );
-      })}
-     </div>
-    ))}
-    {filtered.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground">No timezones found</div>}
-   </div>
-  </div>,
-  document.body
- ) : null;
-
  return (
-  <>
-   <button ref={btnRef} type="button" onClick={handleOpen}
-    className={`flex w-[220px] items-center justify-between rounded-[var(--radius-sm)] border bg-muted/20 px-3 py-2 text-sm text-foreground outline-none transition-colors duration-150 ${
-     open ? "border-primary bg-card" : "border-border hover:border-border"
-    }`}>
-    <div className="flex min-w-0 items-center gap-2">
-     <Globe size={14} className="shrink-0 text-muted-foreground" />
-     <span className="truncate">{value.replace(/_/g, " ")}</span>
+  <Combobox value={value} onChange={(next) => { if (next) onChange(next); }} onClose={() => setQuery("")}>
+   <ComboboxButton
+    className="flex w-55 items-center justify-between rounded-sm border border-border bg-muted/20 px-3 py-2 text-sm text-foreground outline-none transition-colors duration-150 hover:border-border data-open:border-primary data-open:bg-card"
+   >
+    {({ open }) => (
+     <>
+      <div className="flex min-w-0 items-center gap-2">
+       <Globe size={14} className="shrink-0 text-muted-foreground" />
+       <span className="truncate">{value.replace(/_/g, " ")}</span>
+      </div>
+      <ChevronDown size={14} className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+     </>
+    )}
+   </ComboboxButton>
+   <ComboboxOptions
+    anchor={{ to: "bottom end", gap: 6 }}
+    transition
+    className="z-600 w-70 overflow-hidden rounded-lg border border-border bg-card transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+   >
+    {/* Search */}
+    <div className="border-b border-border px-3 py-2.5">
+     <div className="flex items-center gap-2 rounded-sm border border-border bg-muted/30 px-2.5 py-1.5">
+      <Search size={14} className="shrink-0 text-muted-foreground" />
+      <ComboboxInput
+       autoFocus
+       value={query}
+       onChange={e => setQuery(e.target.value)}
+       placeholder="Search timezone…"
+       className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
+      />
+      {query && (
+       <button type="button" onClick={() => setQuery("")} className="text-muted-foreground hover:text-muted-foreground">
+        <X size={12} />
+       </button>
+      )}
+     </div>
     </div>
-    <ChevronDown size={14} className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
-   </button>
-   {panel}
-  </>
+
+    {/* List — plain divs grouping ComboboxOptions by region, no special primitive needed */}
+    <div className="max-h-60 overflow-y-auto py-1">
+     {Object.entries(regionGroups).map(([region, tzs]) => (
+      <div key={region}>
+       <p className="sticky top-0 z-10 bg-card/90 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground">{region}</p>
+       {tzs.map(tz => (
+        <ComboboxOption
+         key={tz}
+         value={tz}
+         className="flex w-full cursor-default items-center gap-2.5 px-3.5 py-2 text-left text-sm text-foreground outline-none transition-colors duration-150 data-focus:bg-accent data-selected:font-semibold"
+        >
+         {({ selected }) => (
+          <>
+           <span className={`flex size-4 shrink-0 items-center justify-center ${selected ? "" : "opacity-0"}`}>
+            <Check size={12} />
+           </span>
+           {tz.replace(/_/g, " ")}
+          </>
+         )}
+        </ComboboxOption>
+       ))}
+      </div>
+     ))}
+     {filtered.length === 0 && <div className="py-6 text-center text-sm text-muted-foreground">No timezones found</div>}
+    </div>
+   </ComboboxOptions>
+  </Combobox>
  );
 }
 
@@ -470,10 +432,10 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
  const bg      = getAvatarColor(displayName);
 
  return (
-  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
+  <div className="mx-auto max-w-195 px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {emailChangedBanner && (
-    <div className="mb-6 flex items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-success/30 bg-success/5 px-4 py-3">
+    <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-success/30 bg-success/5 px-4 py-3">
      <div className="flex items-center gap-2">
       <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success">
        <Check size={11} strokeWidth={3} className="text-white" />
@@ -488,20 +450,20 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
 
    {/* ── Photo ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Photo</p>
-   <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="mb-7 overflow-hidden rounded-lg border border-border bg-card">
     <div className="flex items-center gap-5 px-5 py-5">
      {/* Clickable avatar — kept as raw button (complex UI trigger) */}
      <div
       role="button" tabIndex={0}
       onClick={() => !avatarUploading && fileRef.current?.click()}
       onKeyDown={e => e.key === "Enter" && !avatarUploading && fileRef.current?.click()}
-      className="group relative size-[72px] shrink-0 cursor-pointer rounded-full"
+      className="group relative size-18 shrink-0 cursor-pointer rounded-full"
       onMouseEnter={(e) => showTooltip("Click to upload a photo", e)}
       onMouseLeave={hideTooltip}
      >
       {displayImage
-       ? <img src={displayImage} alt={displayName} className="size-[72px] rounded-full object-cover ring-1 ring-border" />
-       : <div className={`flex size-[72px] items-center justify-center rounded-full text-2xl font-bold text-white ring-1 ring-border ${bg}`}>{initials}</div>
+       ? <img src={displayImage} alt={displayName} className="size-18 rounded-full object-cover ring-1 ring-border" />
+       : <div className={`flex size-18 items-center justify-center rounded-full text-2xl font-bold text-white ring-1 ring-border ${bg}`}>{initials}</div>
       }
       <div className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/45 transition-opacity ${avatarUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
        {avatarUploading
@@ -538,7 +500,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
 
    {/* ── Appearance ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Appearance</p>
-   <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="mb-7 overflow-hidden rounded-lg border border-border bg-card">
     <div className="flex items-center justify-between gap-4 px-5 py-4">
      <div className="min-w-0">
       <p className="text-sm font-medium text-foreground">Theme</p>
@@ -552,7 +514,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
 
    {/* ── Identity ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Identity</p>
-   <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="mb-7 overflow-hidden rounded-lg border border-border bg-card">
     {/* Name */}
     <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
      <div className="min-w-0">
@@ -566,7 +528,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
        placeholder="Your name"
        onChange={e => setName(e.target.value)}
        onBlur={() => { const v = nameRef.current.trim(); if (v && v !== (user.name ?? "")) patch("name", v); }}
-       className="w-[220px] focus-visible:border-primary"
+       className="w-55 focus-visible:border-primary"
       />
       {saving === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saving…</span>}
       {saved === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saved ✓</span>}
@@ -583,7 +545,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
        placeholder="e.g. Product Designer"
        onChange={e => setJobTitle(e.target.value)}
        onBlur={() => { const v = jobRef.current.trim() || null; if (v !== (user.jobTitle ?? null)) patch("jobTitle", v); }}
-       className="w-[220px] focus-visible:border-primary"
+       className="w-55 focus-visible:border-primary"
       />
       {saving === "jobTitle" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saving…</span>}
       {saved === "jobTitle" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saved ✓</span>}
@@ -604,7 +566,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
          value={user.email}
          readOnly
          disabled
-         className="w-[220px] cursor-not-allowed text-muted-foreground"
+         className="w-55 cursor-not-allowed text-muted-foreground"
         />
         <button
          type="button"
@@ -626,7 +588,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
          onChange={e => setNewEmail(e.target.value)}
          placeholder="new@email.com"
          autoFocus
-         className="w-[260px] focus-visible:border-primary"
+         className="w-65 focus-visible:border-primary"
         />
         <Button
          size="sm"
@@ -650,7 +612,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
      )}
 
      {pendingEmail && !changingEmail && (
-      <div className="mt-3 flex items-start justify-between gap-3 rounded-[var(--radius-md)] border border-primary/20 bg-primary/5 px-3.5 py-2.5">
+      <div className="mt-3 flex items-start justify-between gap-3 rounded-md border border-primary/20 bg-primary/5 px-3.5 py-2.5">
        <div className="min-w-0 flex items-start gap-2">
         <Clock size={14} className="mt-0.5 shrink-0 text-primary" />
         <div className="min-w-0">
@@ -689,11 +651,11 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
 
    {/* ── Password ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Password</p>
-   <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="mb-7 overflow-hidden rounded-lg border border-border bg-card">
     <div className="px-5 py-4">
      <div className="flex items-center justify-between gap-4">
       <div className="min-w-0 flex items-start gap-3">
-       <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50">
+       <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-sm bg-muted/50">
         <KeyRound size={14} className="text-muted-foreground" />
        </div>
        <div className="min-w-0">
@@ -730,7 +692,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
           onChange={e => setCurrentPassword(e.target.value)}
           placeholder="Current password"
           autoFocus
-          className="w-[280px] focus-visible:border-primary"
+          className="w-70 focus-visible:border-primary"
          />
         )}
         <Input
@@ -739,14 +701,14 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
          onChange={e => setNewPassword(e.target.value)}
          placeholder="New password"
          autoFocus={!hasPassword}
-         className="w-[280px] focus-visible:border-primary"
+         className="w-70 focus-visible:border-primary"
         />
         <Input
          type="password"
          value={confirmPassword}
          onChange={e => setConfirmPassword(e.target.value)}
          placeholder="Confirm new password"
-         className="w-[280px] focus-visible:border-primary"
+         className="w-70 focus-visible:border-primary"
         />
        </div>
 
@@ -754,7 +716,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
            a new password, so the rules are discoverable up front instead of
            only after a failed submit. */}
        {newPassword.length > 0 && (
-        <ul className="flex w-[280px] flex-col gap-1">
+        <ul className="flex w-70 flex-col gap-1">
          {PASSWORD_RULES.map(rule => {
           const met = rule.test(newPassword);
           return (
@@ -806,7 +768,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
 
    {/* ── Language & time ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Language &amp; time</p>
-   <div className="mb-7 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="mb-7 overflow-hidden rounded-lg border border-border bg-card">
     <div className="flex items-center justify-between gap-4 px-5 py-4">
      <div className="min-w-0 flex-1">
       <p className="text-sm font-medium text-foreground">Timezone</p>
@@ -838,9 +800,9 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
 
    {/* ── Danger zone ── */}
    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Danger zone</p>
-   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-destructive/20 bg-destructive/5">
+   <div className="overflow-hidden rounded-lg border border-destructive/20 bg-destructive/5">
     <div className="flex items-start gap-4 px-5 py-5">
-     <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
+     <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="size-5 text-destructive">
        <path d="M10 2L2 17h16L10 2z"/><path d="M10 8v4M10 14.5v.5"/>
       </svg>
@@ -873,14 +835,14 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
          <p className="text-xs text-destructive">{deleteError}</p>
         )}
         {blockingWorkspaces.length > 0 && (
-         <div className="rounded-[var(--radius-md)] border border-warning/30 bg-warning/5 px-3.5 py-3">
+         <div className="rounded-md border border-warning/30 bg-warning/5 px-3.5 py-3">
           <div className="flex items-start gap-2.5">
            <ShieldAlert size={16} className="mt-0.5 shrink-0 text-warning" />
            <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-foreground">{deleteError}</p>
             <ul className="mt-2.5 space-y-1.5">
              {blockingWorkspaces.map(w => (
-              <li key={w.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-2">
+              <li key={w.id} className="flex items-center justify-between gap-3 rounded-sm border border-border bg-card px-3 py-2">
                <div className="min-w-0">
                 <p className="truncate text-xs font-semibold text-foreground">{w.name}</p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">

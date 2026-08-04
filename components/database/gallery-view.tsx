@@ -233,13 +233,14 @@ export function GalleryView({
                 <div className="mb-3 flex items-center gap-2.5">
                   {group.id && color ? (
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-xs font-semibold tracking-wide ${color.bg} ${color.text}`}
+                      className="inline-flex items-center gap-1.5 rounded-xs px-2.5 py-1 text-xs font-semibold tracking-wide"
+                      style={{ backgroundColor: color.bg, color: color.text }}
                     >
-                      <span className={`size-1.5 rounded-full ${color.dot}`} />
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
                       {group.label}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5 rounded-xs bg-muted px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
                       <span className="size-1.5 rounded-full bg-muted-foreground/30" />
                       {group.label}
                     </span>
@@ -254,7 +255,7 @@ export function GalleryView({
                   {isEditor && (
                     <button
                       className={[
-                        "flex h-full min-h-24 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border bg-muted/20",
+                        "flex h-full min-h-24 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20",
                         "text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
                       ].join(" ")}
                       onClick={() => {
@@ -377,7 +378,7 @@ export function GalleryView({
               {isEditor && (
                 <button
                   className={[
-                    "flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-border bg-muted/20",
+                    "flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20",
                     "text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
                   ].join(" ")}
                   onClick={() => onCreateEntry()}
@@ -621,7 +622,7 @@ function GalleryCard({
     <>
       <div
         className={[
-          "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card transition-colors duration-150",
+          "relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-150",
           dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
         onMouseEnter={() => !dragging && setHovered(true)}
@@ -653,7 +654,7 @@ function GalleryCard({
         >
           {isEditor && !editing ? (
             <button
-              className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
                 setTooltip({
@@ -680,7 +681,7 @@ function GalleryCard({
             </button>
           ) : (
             <Link
-              className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
               href={`/app/${workspaceSlug}/${entry.shortId}`}
               onClick={(e) => e.stopPropagation()}
               onMouseEnter={(e) =>
@@ -699,7 +700,7 @@ function GalleryCard({
           )}
           {isEditor && (
             <button
-              className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
                 setTooltip(null);
@@ -888,7 +889,7 @@ function GalleryCard({
                     className="flex items-center gap-1.5 overflow-hidden"
                     key={prop.id}
                   >
-                    <span className="w-[76px] shrink-0 truncate text-xs font-medium text-muted-foreground">
+                    <span className="w-19 shrink-0 truncate text-xs font-medium text-muted-foreground">
                       {prop.name}
                     </span>
                     <div className="min-w-0 flex-1 overflow-hidden">
@@ -901,7 +902,7 @@ function GalleryCard({
                   row's height on every card so a card with no comments doesn't
                   end up visibly shorter than one that has them. */}
               <button
-                className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
+                className={`inline-flex items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
                 tabIndex={commentCount ? 0 : -1}
                 aria-hidden={!commentCount}
                 // Exempt from CellCommentPopover's capture-phase outside-click
@@ -939,7 +940,7 @@ function GalleryCard({
                 const propConfig = (prop.config ?? {}) as { icon?: string };
                 return (
                   <button
-                    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();

@@ -49,20 +49,20 @@ export function CardContextMenu({
     <div
       ref={ref}
       style={{ position: "fixed", top, left, zIndex: 300, width: W }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
+      className="overflow-hidden rounded-md border border-border bg-background p-1.5"
       onClick={(e) => e.stopPropagation()}
     >
       <Link
         href={`/app/${workspaceSlug}/${shortId}`}
         onClick={onClose}
         onPointerDown={(e) => e.stopPropagation()}
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+        className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
       >
         <ExternalLink size={13} className="shrink-0 text-muted-foreground" /> Open full page
       </Link>
       <button
         onClick={(e) => onCommentClick((e.currentTarget as HTMLElement).getBoundingClientRect())}
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+        className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
       >
         <MessageSquare size={13} className="shrink-0 text-muted-foreground" /> Comment
       </button>
@@ -74,14 +74,14 @@ export function CardContextMenu({
           toast.success("Link copied to clipboard", { duration: 2000 });
           onClose();
         }}
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+        className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
       >
         <Link2 size={13} className="shrink-0 text-muted-foreground" /> Copy link
       </button>
       {onDuplicate && (
         <button
           onClick={() => { onDuplicate(); onClose(); }}
-          className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
         >
           <Copy size={13} className="shrink-0 text-muted-foreground" /> Duplicate
         </button>
@@ -89,7 +89,7 @@ export function CardContextMenu({
       <div className="my-1 h-px bg-border" />
       <button
         onClick={() => { onClose(); onDeleteRequest(); }}
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"
+        className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"
       >
         <Trash2 size={13} /> Delete entry
       </button>

@@ -61,7 +61,7 @@ function mapAuthErrorParam(code: string | null): string | null {
 
 function GoogleIcon() {
   return (
-    <svg className="size-[18px] shrink-0" viewBox="0 0 24 24">
+    <svg className="size-4.5 shrink-0" viewBox="0 0 24 24">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
@@ -122,14 +122,14 @@ function AuthFormInner() {
   if (methodsError) {
     return (
       <main className="grid min-h-screen place-items-center bg-page px-4">
-        <div className="w-full max-w-[380px] text-center">
-          <div className="rounded-[var(--radius-xl)] border border-border bg-card px-8 py-8">
+        <div className="w-full max-w-95 text-center">
+          <div className="rounded-xl border border-border bg-card px-8 py-8">
             <h1 className="mb-2 text-xl font-bold text-foreground">
               Can&rsquo;t reach the sign-in service
             </h1>
             <p className="mb-6 text-sm text-muted-foreground">
               This usually means the database hasn&rsquo;t been migrated yet
-              (run <code className="rounded-[var(--radius-xs)] bg-muted px-1 py-0.5 text-xs">pnpm db:migrate</code>),
+              (run <code className="rounded-xs bg-muted px-1 py-0.5 text-xs">pnpm db:migrate</code>),
               or the app can&rsquo;t connect to it. Check the server logs, then try again.
             </p>
             <Button
@@ -271,7 +271,7 @@ function AuthFormInner() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-page px-4">
-      <div className="w-full max-w-[380px]">
+      <div className="w-full max-w-95">
 
         {/* Logo */}
         <Link href="/" className="mb-10 flex flex-col items-center gap-3">
@@ -279,7 +279,7 @@ function AuthFormInner() {
         </Link>
 
         {/* Form area */}
-        <div className="rounded-[var(--radius-xl)] border border-border bg-card px-8 py-8">
+        <div className="rounded-xl border border-border bg-card px-8 py-8">
 
           {sent ? (
             /* ── Magic link sent state ── */
@@ -421,7 +421,7 @@ function AuthFormInner() {
                   </div>
 
                   {error && (
-                    <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                    <p className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
                       {error}
                     </p>
                   )}
@@ -466,7 +466,7 @@ function AuthFormInner() {
                   </div>
 
                   {error && (
-                    <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                    <p className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
                       {error}
                     </p>
                   )}
@@ -479,7 +479,7 @@ function AuthFormInner() {
               )}
 
               {!showGoogle && !showMagicLink && !showPassword && (
-                <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                <p className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
                   No sign-in methods are currently enabled on this instance. Contact your administrator.
                 </p>
               )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -10,22 +11,16 @@ export function MobileNav() {
       <button
         type="button"
         aria-label="Toggle menu"
+        aria-expanded={open}
+        aria-controls="mobile-nav-menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
+        className="flex size-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
       >
-        {open ? (
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-4">
-            <path d="M2 2l12 12M14 2L2 14" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-4">
-            <path d="M2 4h12M2 8h12M2 12h12" />
-          </svg>
-        )}
+        {open ? <X size={16} /> : <Menu size={16} />}
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-40 border-b border-border bg-page/95 px-6 py-4 backdrop-blur-md sm:hidden">
+        <div id="mobile-nav-menu" className="absolute left-0 right-0 top-full z-40 border-b border-border bg-page/95 px-6 py-4 backdrop-blur-md sm:hidden">
           <nav className="flex flex-col gap-1">
             {[
               { label: "Features",     href: "#features"    },
@@ -36,7 +31,7 @@ export function MobileNav() {
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="rounded-sm px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 {label}
               </a>
@@ -45,7 +40,7 @@ export function MobileNav() {
               <Link
                 href="/auth/login"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center rounded-[var(--radius-sm)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
+                className="flex w-full items-center justify-center rounded-sm bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
               >
                 Sign in
               </Link>

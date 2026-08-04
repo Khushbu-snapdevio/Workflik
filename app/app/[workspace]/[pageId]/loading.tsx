@@ -9,9 +9,9 @@ export default function PageLoading() {
       </div>
 
       {/* Page content skeleton */}
-      <div className="mx-auto w-full max-w-[720px] px-4 py-6 sm:px-8 md:px-16 md:py-10">
+      <div className="mx-auto w-full max-w-180 px-4 py-6 sm:px-8 md:px-16 md:py-10">
         {/* Title */}
-        <div className="mb-8 h-9 w-2/3 rounded-[var(--radius-sm)] bg-muted" />
+        <div className="mb-8 h-9 w-2/3 rounded-sm bg-muted" />
 
         {/* Paragraph blocks */}
         <div className="space-y-3">

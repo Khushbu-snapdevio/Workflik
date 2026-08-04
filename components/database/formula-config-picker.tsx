@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { Popover, PopoverPanel } from "@headlessui/react";
 import { ArrowLeft, Check, AlertCircle } from "lucide-react";
 import { tryParseFormula, evaluateFormulaValue, formatFormulaValue, type FormulaValue } from "@/lib/formula";
-import { getClampedLeft, getClampedTop } from "@/lib/ui/clamp-to-viewport";
+import { RectAnchorTrigger } from "@/components/database/rect-popover-anchor";
 import type { DbProperty } from "@/components/database/types";
 
 interface FormulaConfigPickerProps {
@@ -83,9 +83,18 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
   const [sampleEntry, setSampleEntry] = useState<{ id: string; values: Map<string, unknown> } | null>(null);
 
   useEffect(() => {
-    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); }
+    function h(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')) return;
+      if (ref.current && !ref.current.contains(target)) onClose();
+    }
+    function keyHandler(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", h);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [onClose]);
 
   useEffect(() => {
@@ -136,79 +145,80 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
   }
 
   const width = 320;
-  const height = 420;
 
-  if (typeof document === "undefined") return null;
+  return (
+    <Popover>
+      <RectAnchorTrigger rect={rect} />
+      <PopoverPanel
+        ref={ref}
+        static
+        data-edit-property-exempt
+        anchor={{ to: "bottom end", gap: 4 }}
+        style={{ width }}
+        className="z-500 flex flex-col overflow-hidden rounded-md border border-border bg-background"
+      >
+        <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back"
+            className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowLeft size={13} />
+          </button>
+          <p className="text-xs font-semibold text-foreground/80">Edit formula</p>
+        </div>
 
-  return createPortal(
-    <div
-      ref={ref}
-      data-edit-property-exempt
-      style={{ position: "fixed", top: getClampedTop(rect, height), left: getClampedLeft(rect, width, { align: "end" }), zIndex: 500, width }}
-      className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-    >
-      <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label="Back"
-          className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowLeft size={13} />
-        </button>
-        <p className="text-xs font-semibold text-foreground/80">Edit formula</p>
-      </div>
+        <div className="flex flex-col gap-2 p-2.5">
+          <textarea
+            ref={textareaRef}
+            autoFocus
+            value={expression}
+            onChange={(e) => setExpression(e.target.value)}
+            placeholder='e.g. if(prop("Status") == "Done", "✅", "")'
+            rows={4}
+            className="w-full resize-none rounded-sm border border-border bg-muted/20 px-2.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
+          />
 
-      <div className="flex flex-col gap-2 p-2.5">
-        <textarea
-          ref={textareaRef}
-          autoFocus
-          value={expression}
-          onChange={(e) => setExpression(e.target.value)}
-          placeholder='e.g. if(prop("Status") == "Done", "✅", "")'
-          rows={4}
-          className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
-        />
-
-        <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Insert property</p>
-          <div className="flex flex-wrap gap-1">
-            {properties.filter((p) => !p.isSystem).map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => insertPropRef(p.name)}
-                className="rounded-[var(--radius-xs)] border border-border bg-muted/30 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                {p.name}
-              </button>
-            ))}
+          <div>
+            <p className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Insert property</p>
+            <div className="flex flex-wrap gap-1">
+              {properties.filter((p) => !p.isSystem).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => insertPropRef(p.name)}
+                  className="rounded-xs border border-border bg-muted/30 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Preview</p>
-          {preview.error ? (
-            <p className="flex items-start gap-1.5 text-xs text-destructive">
-              <AlertCircle size={12} className="mt-0.5 shrink-0" />
-              {preview.error}
-            </p>
-          ) : (
-            <p className="truncate text-sm text-foreground">{preview.display || <span className="text-muted-foreground-subtle">—</span>}</p>
-          )}
-        </div>
+          <div className="rounded-sm border border-border bg-muted/20 px-2.5 py-2">
+            <p className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Preview</p>
+            {preview.error ? (
+              <p className="flex items-start gap-1.5 text-xs text-destructive">
+                <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                {preview.error}
+              </p>
+            ) : (
+              <p className="truncate text-sm text-foreground">{preview.display || <span className="text-muted-foreground-subtle">—</span>}</p>
+            )}
+          </div>
 
-        <button
-          type="button"
-          disabled={!expression.trim() || !!parseError}
-          onClick={() => onPick(expression.trim())}
-          className="flex items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <Check size={12} />
-          Save formula
-        </button>
-      </div>
-    </div>,
-    document.body,
+          <button
+            type="button"
+            disabled={!expression.trim() || !!parseError}
+            onClick={() => onPick(expression.trim())}
+            className="flex items-center justify-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Check size={12} />
+            Save formula
+          </button>
+        </div>
+      </PopoverPanel>
+    </Popover>
   );
 }

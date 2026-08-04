@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { Badge } from "@/components/ui/badge";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 interface Props {
@@ -19,13 +20,14 @@ export function AuditActionPill({ action, label, pillClass, hasMeta }: Props) {
 
  return (
   <>
-   <span
+   <Badge
+    variant="outline"
     onMouseEnter={(e) => { if (!hasMeta) showTooltip(action, e); }}
     onMouseLeave={hideTooltip}
-    className={`inline-flex max-w-full items-center truncate rounded-full border px-2 py-0.5 text-xs font-semibold ${pillClass}`}
+    className={`max-w-full truncate ${pillClass}`}
    >
     {label}
-   </span>
+   </Badge>
 
    {tooltip && typeof document !== "undefined" && createPortal(
     <IconTooltip rect={tooltip.rect} label={tooltip.label} />,

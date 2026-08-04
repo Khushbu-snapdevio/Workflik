@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { Popover, PopoverPanel, Listbox, ListboxOptions, ListboxOption } from "@headlessui/react";
 import { ArrowLeft, Check, Type as TextT } from "lucide-react";
 import { toast } from "sonner";
 import { PROPERTY_REGISTRY, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
@@ -9,7 +9,8 @@ import { RelationDatabasePicker } from "@/components/database/relation-database-
 import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
 import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { getClampedLeft, getClampedTop } from "@/lib/ui/clamp-to-viewport";
+import { RectAnchorTrigger } from "@/components/database/rect-popover-anchor";
+import { cn } from "@/lib/utils";
 import type { DbProperty } from "@/components/database/types";
 
 interface ChangePropertyTypePickerProps {
@@ -56,7 +57,6 @@ export function ChangePropertyTypePicker({
 
   const types = Object.values(PROPERTY_REGISTRY);
   const menuWidth = 240;
-  const menuHeight = 320;
 
   async function commit(type: string, config?: Record<string, unknown>, confirmDestructive?: boolean) {
     setCommitting(true);
@@ -124,18 +124,15 @@ export function ChangePropertyTypePicker({
 
   return (
     <>
-      {createPortal(
-        <div
+      <Popover>
+        <RectAnchorTrigger rect={rect} />
+        <PopoverPanel
           ref={ref}
+          static
           data-edit-property-exempt
-          style={{
-            position: "fixed",
-            top: getClampedTop(rect, menuHeight),
-            left: getClampedLeft(rect, menuWidth, { align: "end" }),
-            zIndex: 500,
-            width: menuWidth,
-          }}
-          className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+          anchor={{ to: "bottom end", gap: 4 }}
+          style={{ width: menuWidth }}
+          className="z-500 overflow-hidden rounded-md border border-border bg-background"
         >
           {/* Header matches the sibling step-pickers (rollup/formula) exactly —
               same padding, same icon button, same title weight — so stepping
@@ -145,40 +142,47 @@ export function ChangePropertyTypePicker({
               type="button"
               onClick={onBack}
               aria-label="Back"
-              className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ArrowLeft size={13} />
             </button>
             <p className="text-xs font-semibold text-foreground/80">Change type</p>
           </div>
-          <div className="max-h-60 overflow-y-auto p-1.5">
-            {types.map((def) => {
-              const Icon = PROPERTY_TYPE_ICON[def.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
-              const isCurrent = def.type === property.type;
-              return (
-                <button
-                  key={def.type}
-                  disabled={committing}
-                  onClick={() => {
-                    if (def.type === "relation") setPickingRelation(true);
-                    else if (def.type === "rollup") setPickingRollup(true);
-                    else if (def.type === "formula") setPickingFormula(true);
-                    else pickType(def.type);
-                  }}
-                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-sm text-foreground hover:bg-accent disabled:opacity-50"
-                >
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50 text-muted-foreground">
-                    <Icon size={12} />
-                  </span>
-                  <span className="flex-1 text-left">{def.label}</span>
-                  {isCurrent && <Check size={13} className="shrink-0 text-primary" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>,
-        document.body,
-      )}
+          <Listbox
+            value={property.type}
+            onChange={(type: string) => {
+              if (type === "relation") setPickingRelation(true);
+              else if (type === "rollup") setPickingRollup(true);
+              else if (type === "formula") setPickingFormula(true);
+              else pickType(type);
+            }}
+            disabled={committing}
+          >
+            <ListboxOptions static className="max-h-60 overflow-y-auto p-1.5">
+              {types.map((def) => {
+                const Icon = PROPERTY_TYPE_ICON[def.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
+                return (
+                  <ListboxOption
+                    key={def.type}
+                    value={def.type}
+                    className={({ focus, disabled }) => cn(
+                      "flex w-full cursor-default items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm text-foreground",
+                      focus && "bg-accent",
+                      disabled && "opacity-50",
+                    )}
+                  >
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-xs bg-muted/50 text-muted-foreground">
+                      <Icon size={12} />
+                    </span>
+                    <span className="flex-1 text-left">{def.label}</span>
+                    {def.type === property.type && <Check size={13} className="shrink-0 text-primary" />}
+                  </ListboxOption>
+                );
+              })}
+            </ListboxOptions>
+          </Listbox>
+        </PopoverPanel>
+      </Popover>
 
       <ConfirmDialog
         open={!!pendingChange}
@@ -189,8 +193,8 @@ export function ChangePropertyTypePicker({
         confirmLoadingLabel="Changing…"
         loading={committing}
         onConfirm={() => { if (pendingChange) commit(pendingChange.type, pendingChange.config, true); }}
-        overlayClassName="z-[600]"
-        className="z-[600]"
+        overlayClassName="z-600"
+        className="z-600"
       />
     </>
   );

@@ -33,12 +33,12 @@ export function EmailRetryButton({ id }: { id: string }) {
         type="button"
         onClick={retry}
         disabled={busy}
-        className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] border border-border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-xs border border-border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
       >
         <RotateCcw size={11} className={busy ? "animate-spin" : ""} />
         {busy ? "Retrying…" : "Retry"}
       </button>
-      {error && <p className="text-[10px] text-destructive">{error}</p>}
+      {error && <p className="text-2xs text-destructive">{error}</p>}
     </div>
   );
 }

@@ -39,7 +39,7 @@ export function SettingsRightPanel({ workspaceSlug, isAdmin }: Props) {
   const workspaceSections = visibleSections.filter(s => s.group === "workspace");
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col border-r border-border bg-sidebar">
+    <aside className="flex w-65 shrink-0 flex-col border-r border-border bg-sidebar">
 
       {/* Header */}
       <div className="border-b border-border px-5 py-4">
@@ -96,13 +96,13 @@ function SectionRow({
   return (
     <Link
       href={href}
-      className={`group flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 transition-all duration-150 ${
+      className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 transition-all duration-150 ${
         active
           ? "bg-primary/10 text-primary"
           : "text-sidebar-foreground/70 hover:bg-accent hover:text-foreground"
       }`}
     >
-      <span className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
+      <span className={`flex size-6 shrink-0 items-center justify-center rounded-sm transition-colors duration-150 ${
         active
           ? "bg-primary/15 text-primary"
           : "bg-muted/70 text-muted-foreground group-hover:bg-accent-foreground/10 group-hover:text-foreground"

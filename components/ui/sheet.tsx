@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -132,6 +133,11 @@ function SheetContent({
 }) {
   const { open, setOpen, dialogRef } = useSheetContext("SheetContent")
 
+  // Portaled to document.body so a SheetContent living inside a persistent ancestor (e.g. the sidebar) doesn't depend on that
+  // ancestor's CSS while closed and not yet top-layer-promoted; `mounted` avoids an SSR/client markup mismatch since the portal target only exists in the browser.
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => { setMounted(true) }, [])
+
   React.useEffect(() => {
     const el = dialogRef.current
     if (!el) return
@@ -151,7 +157,9 @@ function SheetContent({
     }
   }, [dialogRef, onEscapeKeyDown, setOpen])
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <dialog
       ref={dialogRef}
       data-slot="sheet-content"
@@ -182,7 +190,8 @@ function SheetContent({
           )}
         </>
       )}
-    </dialog>
+    </dialog>,
+    document.body
   )
 }
 

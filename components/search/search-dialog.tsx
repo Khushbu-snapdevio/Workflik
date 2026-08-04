@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal, flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
-import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Portal } from "@headlessui/react";
 import {
  Search as MagnifyingGlassIcon,
  X as XIcon,
@@ -20,6 +20,8 @@ import {
  LayoutTemplate as LayoutTemplateIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PageIcon, parseIcon } from "@/components/pages/page-icon";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -115,36 +117,14 @@ function FilterChip<T extends string>({
  value:  T;
  onChange: (v: T) => void;
 }) {
- const [open, setOpen] = useState(false);
- const [rect, setRect] = useState<DOMRect | null>(null);
- const ref = useRef<HTMLDivElement>(null);
- const btnRef = useRef<HTMLButtonElement>(null);
- const menuRef = useRef<HTMLDivElement>(null);
-
- useEffect(() => {
-  if (!open) return;
-  function h(e: MouseEvent) {
-   if (ref.current?.contains(e.target as Node)) return;
-   if (menuRef.current?.contains(e.target as Node)) return;
-   setOpen(false);
-  }
-  document.addEventListener("mousedown", h);
-  return () => document.removeEventListener("mousedown", h);
- }, [open]);
-
  const active = value !== options[0].value;
  const selected = options.find((o) => o.value === value);
 
  return (
-  <div ref={ref} className="relative">
-   <button
-    ref={btnRef}
-    onClick={() => {
-     if (!open) setRect(btnRef.current?.getBoundingClientRect() ?? null);
-     setOpen((p) => !p);
-    }}
+  <Listbox value={value} onChange={onChange}>
+   <ListboxButton
     className={[
-     "flex items-center gap-1 rounded-[var(--radius-sm)] border px-3 py-1 text-xs font-medium transition-colors duration-150",
+     "flex items-center gap-1 rounded-sm border px-3 py-1 text-xs font-medium transition-colors duration-150",
      active
       ? "border-primary/40 bg-primary/10 text-primary"
       : "border-border bg-muted/30 text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground",
@@ -152,37 +132,39 @@ function FilterChip<T extends string>({
    >
     {active ? selected?.label : label}
     <ChevronDown size={10} className="opacity-60" />
-   </button>
+   </ListboxButton>
 
-   {open && rect && typeof document !== "undefined" && createPortal(
-    <div
-     ref={menuRef}
-     // z-[820] — above the search dialog panel (z-[810]) and its backdrop
-     // (z-[800]); the shadcn default z-50 rendered this portal-mounted menu
-     // invisible/unclickable behind the dialog's opaque surface instead of
-     // on top of it (see components/ui/select.tsx for the same fix).
-     className="fixed z-[820] max-h-64 min-w-[160px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1"
-     style={{ top: getClampedTop(rect, 200, { gap: 4 }), left: getClampedLeft(rect, 160) }}
-    >
-     {options.map((opt) => (
-      <button
-       key={opt.value}
-       onClick={() => { onChange(opt.value); setOpen(false); }}
-       className={[
-        "flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm transition-colors",
-        opt.value === value
-         ? "bg-primary/10 font-medium text-primary"
-         : "text-foreground hover:bg-accent",
-       ].join(" ")}
-      >
-       {opt.value === value && <Check size={12} className="text-primary" />}
-       {opt.label}
-      </button>
-     ))}
-    </div>,
-    document.body,
-   )}
-  </div>
+   {/* The dialog shell is a native <dialog> promoted to the browser's top
+       layer on open — top-layer content paints above *any* z-index in the
+       normal stacking context, no matter how high. Left to its default,
+       this `anchor`-positioned panel would portal to the shared
+       #headlessui-portal-root under <body>, outside the dialog's subtree,
+       and render invisible/unclickable behind it. The call site wraps all
+       FilterChips in <Portal.Group target={filterBarRef}> so this portals
+       into the dialog's own subtree instead, inheriting its top-layer
+       promotion. z-820 here still matters within that subtree, to stay
+       above the results list below the filter bar. */}
+   <ListboxOptions
+    anchor={{ to: "bottom start", gap: 4 }}
+    transition
+    className="z-820 max-h-64 min-w-40 overflow-y-auto rounded-md border border-border bg-popover p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+   >
+    {options.map((opt) => (
+     <ListboxOption
+      key={opt.value}
+      value={opt.value}
+      className="flex w-full cursor-default items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground transition-colors data-focus:bg-accent data-selected:bg-primary/10 data-selected:font-medium data-selected:text-primary"
+     >
+      {({ selected: isSelected }) => (
+       <>
+        {isSelected && <Check size={12} className="text-primary" />}
+        {opt.label}
+       </>
+      )}
+     </ListboxOption>
+    ))}
+   </ListboxOptions>
+  </Listbox>
  );
 }
 
@@ -199,12 +181,12 @@ function ResultRow({
   <button
    onClick={onClick}
    className={[
-    "flex w-full items-start gap-3 rounded-[var(--radius-sm)] px-4 py-3 text-left transition-colors",
+    "flex w-full items-start gap-3 rounded-sm px-4 py-3 text-left transition-colors",
     isActive ? "bg-accent outline-none" : "hover:bg-accent",
    ].join(" ")}
   >
    {/* Icon */}
-   <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/60">
+   <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm bg-muted/60">
     <SourceIcon sourceType={result.sourceType} kind={result.kind} icon={result.icon} />
    </div>
 
@@ -214,9 +196,9 @@ function ResultRow({
      <span className="truncate text-sm font-semibold text-foreground">
       {result.title || "Untitled"}
      </span>
-     <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+     <Badge variant="secondary" className="shrink-0">
       {sourceLabel(result.sourceType, result.kind)}
-     </span>
+     </Badge>
     </div>
     {result.breadcrumb && (
      <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
@@ -247,11 +229,11 @@ function RecentRow({
   <button
    onClick={onClick}
    className={[
-    "flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-4 py-2.5 text-left transition-colors",
+    "flex w-full items-center gap-3 rounded-sm px-4 py-2.5 text-left transition-colors",
     isActive ? "bg-accent" : "hover:bg-accent",
    ].join(" ")}
   >
-   <div className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-muted/60">
+   <div className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-muted/60">
     {parseIcon(item.page?.icon)
      ? <PageIcon icon={item.page?.icon} size={13} />
      : <FileTextIcon size={13} className="text-muted-foreground" />
@@ -306,8 +288,9 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  const inputRef    = useRef<HTMLInputElement>(null);
  const listRef     = useRef<HTMLDivElement>(null);
  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
- const backdropRef  = useRef<HTMLDivElement>(null);
- const dialogRef   = useRef<HTMLDivElement>(null);
+ // Portal target for FilterChip's Listbox panels — needed since the dialog shell
+ // is now a native <dialog> (top-layer promoted); see ListboxOptions comment in FilterChip.
+ const filterBarRef = useRef<HTMLDivElement>(null);
  // Guards against an older in-flight request overwriting a newer one's
  // results if responses arrive out of order.
  const requestIdRef = useRef(0);
@@ -462,8 +445,8 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   // Templates aren't pages — they have no shortId route, so a match opens
   // the templates gallery with that template's preview pre-opened instead.
   if ("sourceType" in item && item.sourceType === "template") {
-   if (backdropRef.current) backdropRef.current.style.display = "none";
-   if (dialogRef.current) dialogRef.current.style.display = "none";
+   // flushSync forces React to commit the unmount before router.push() fires, avoiding a brief re-appear "blink"; native <dialog>
+   // defaults to hidden without showModal() (unlike the old always-visible divs), which removes most of the risk — kept as cheap insurance since rapid navigate-while-open hasn't been live-checked.
    flushSync(() => { onClose(); });
    router.push(`/app/${workspaceSlug}/templates?openId=${item.sourceId}`);
    return;
@@ -476,13 +459,6 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
    shortId = item.page.shortId;
   }
   if (shortId) {
-   // Pre-hide the fixed elements for any intermediate browser paint
-   if (backdropRef.current) backdropRef.current.style.display = "none";
-   if (dialogRef.current) dialogRef.current.style.display = "none";
-   // flushSync forces React to synchronously commit open=false and unmount
-   // the dialog BEFORE router.push() fires. Without this, router.push()
-   // triggers a layout re-render while open is still true, causing the dialog
-   // to briefly re-appear (the visible "blink").
    flushSync(() => { onClose(); });
    router.push(`/app/${workspaceSlug}/${shortId}?from=search`);
   } else {
@@ -503,8 +479,6 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     e.preventDefault();
     const active = items[activeIndex];
     if (active) navigate(active.item as SearchResult | RecentPage);
-   } else if (e.key === "Escape") {
-    onClose();
    } else if ((e.ctrlKey || e.metaKey) && e.key === "k") {
     e.preventDefault();
     setQuery("");
@@ -517,7 +491,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
   window.addEventListener("keydown", handleKey);
   return () => window.removeEventListener("keydown", handleKey);
  // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [items, activeIndex, onClose]);
+ }, [items, activeIndex]);
 
  // Scroll active item into view
  useEffect(() => {
@@ -562,16 +536,11 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  ];
 
  return (
-  <>
-   {/* Backdrop */}
-   <div
-    ref={backdropRef}
-    className="fixed inset-0 z-[800] bg-black/40"
-    onClick={onClose}
-   />
-
-   {/* Dialog */}
-   <div ref={dialogRef} className="fixed left-1/2 top-[12vh] z-[810] w-full max-w-[640px] -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover">
+  <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+   <DialogContent
+    showCloseButton={false}
+    className="top-[12vh] w-full max-w-160 translate-y-0 gap-0 overflow-hidden rounded-lg border border-border bg-popover p-0 ring-0 backdrop:bg-black/40 sm:max-w-160"
+   >
 
     {/* Search input */}
     <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
@@ -584,7 +553,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       className="flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground-subtle"
      />
      {(loading || isPending) && (
-      <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
+      <span className="loading loading-spinner loading-sm text-primary" />
      )}
      {query && !loading && !isPending && (
       <button
@@ -597,41 +566,43 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
     </div>
 
     {/* Filter bar */}
-    <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/20 px-4 py-2.5">
-     <FilterChip
-      label="Any type"
-      options={TYPE_OPTIONS}
-      value={filterType}
-      onChange={(v) => { setFilterType(v); setActiveIndex(0); }}
-     />
-     <FilterChip
-      label="Any time"
-      options={DATE_OPTIONS}
-      value={filterDate}
-      onChange={(v) => { setFilterDate(v); setActiveIndex(0); }}
-     />
-     <FilterChip
-      label="All locations"
-      options={LOCATION_OPTIONS}
-      value={filterLocation}
-      onChange={(v) => { setFilterLocation(v); setActiveIndex(0); }}
-     />
-     <FilterChip
-      label="Any author"
-      options={AUTHOR_OPTIONS}
-      value={filterAuthor}
-      onChange={(v) => { setFilterAuthor(v); setActiveIndex(0); }}
-     />
-     <FilterChip
-      label="Best match"
-      options={SORT_OPTIONS}
-      value={sortBy}
-      onChange={(v) => { setSortBy(v); setActiveIndex(0); }}
-     />
+    <div ref={filterBarRef} className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/20 px-4 py-2.5">
+     <Portal.Group target={filterBarRef}>
+      <FilterChip
+       label="Any type"
+       options={TYPE_OPTIONS}
+       value={filterType}
+       onChange={(v) => { setFilterType(v); setActiveIndex(0); }}
+      />
+      <FilterChip
+       label="Any time"
+       options={DATE_OPTIONS}
+       value={filterDate}
+       onChange={(v) => { setFilterDate(v); setActiveIndex(0); }}
+      />
+      <FilterChip
+       label="All locations"
+       options={LOCATION_OPTIONS}
+       value={filterLocation}
+       onChange={(v) => { setFilterLocation(v); setActiveIndex(0); }}
+      />
+      <FilterChip
+       label="Any author"
+       options={AUTHOR_OPTIONS}
+       value={filterAuthor}
+       onChange={(v) => { setFilterAuthor(v); setActiveIndex(0); }}
+      />
+      <FilterChip
+       label="Best match"
+       options={SORT_OPTIONS}
+       value={sortBy}
+       onChange={(v) => { setSortBy(v); setActiveIndex(0); }}
+      />
+     </Portal.Group>
     </div>
 
     {/* Results / recent */}
-    <div ref={listRef} className="max-h-[420px] overflow-y-auto">
+    <div ref={listRef} className="max-h-105 overflow-y-auto">
 
      {/* Idle (no query, no filter) — show recently visited */}
      {showRecent && (
@@ -674,7 +645,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
      {/* Has query, search in progress, no previous results to show — spinner */}
      {isSearching && results.length === 0 && (
       <div className="flex items-center justify-center py-12">
-       <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
+       <span className="loading loading-spinner loading-sm text-primary" />
       </div>
      )}
 
@@ -692,7 +663,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
         <button
          onClick={runReindex}
          disabled={reindexing}
-         className="mt-1 rounded-[var(--radius-sm)] border border-border bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-50"
+         className="mt-1 rounded-sm border border-border bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-50"
         >
          {reindexing ? "Indexing…" : "Index pages now"}
         </button>
@@ -752,7 +723,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
       Clear
      </span>
     </div>
-   </div>
-  </>
+   </DialogContent>
+  </Dialog>
  );
 }

@@ -362,10 +362,10 @@ export function TemplateForm({ template }: Props) {
 
   return (
     <>
-    <div className="flex min-h-[600px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="flex min-h-150 overflow-hidden rounded-lg border border-border bg-card">
 
-      {/* Left sidebar — w-[260px] matching settings sidebar */}
-      <aside className="flex w-[260px] shrink-0 flex-col border-r border-border bg-sidebar">
+      {/* Left sidebar — w-65 matching settings sidebar */}
+      <aside className="flex w-65 shrink-0 flex-col border-r border-border bg-sidebar">
         <div className="border-b border-border px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template settings</p>
         </div>
@@ -382,7 +382,7 @@ export function TemplateForm({ template }: Props) {
                 tabIndex={0}
                 onClick={toggleEmojiOpen}
                 onKeyDown={(e) => e.key === "Enter" && toggleEmojiOpen()}
-                className="flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 transition-colors hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-sm border border-border bg-background px-3 transition-colors hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 {icon ? (
                   <PageIcon icon={icon} size={20} />
@@ -396,7 +396,7 @@ export function TemplateForm({ template }: Props) {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setIcon(""); setDirty(true); }}
-                    className="shrink-0 text-[10px] text-muted-foreground-subtle hover:text-muted-foreground"
+                    className="shrink-0 text-2xs text-muted-foreground-subtle hover:text-muted-foreground"
                   >
                     ✕
                   </button>
@@ -428,7 +428,7 @@ export function TemplateForm({ template }: Props) {
               value={name}
               onChange={(e) => { setName(e.target.value); setDirty(true); }}
               placeholder="e.g. Meeting Notes"
-              className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -439,7 +439,7 @@ export function TemplateForm({ template }: Props) {
               onChange={(e) => { setDesc(e.target.value); setDirty(true); }}
               placeholder="What is this template for?"
               rows={3}
-              className="w-full resize-none rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full resize-none rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -453,7 +453,7 @@ export function TemplateForm({ template }: Props) {
                   value={categorySearch}
                   onChange={(e) => setCategorySearch(e.target.value)}
                   placeholder="Search categories"
-                  className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-sm border border-border bg-background py-1.5 pl-7 pr-2.5 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             )}
@@ -466,7 +466,7 @@ export function TemplateForm({ template }: Props) {
                   <div
                     key={cat.id}
                     className={[
-                      "group flex w-full items-center rounded-[var(--radius-sm)] pr-1 text-left text-xs font-medium transition-colors",
+                      "group flex w-full items-center rounded-sm pr-1 text-left text-xs font-medium transition-colors",
                       categoryId === cat.id
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -479,7 +479,7 @@ export function TemplateForm({ template }: Props) {
                     >
                       <span className="truncate">{cat.label}</span>
                       {inUse && (
-                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-2xs font-semibold tabular-nums text-muted-foreground">
                           {cat.templateCount}
                         </span>
                       )}
@@ -492,7 +492,7 @@ export function TemplateForm({ template }: Props) {
                       onMouseEnter={(e) => inUse && showTooltip(`Used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} — remove them first`, e)}
                       onMouseLeave={hideTooltip}
                       className={[
-                        "shrink-0 rounded-[var(--radius-xs)] p-1.5 opacity-0 transition-colors group-hover:opacity-100",
+                        "shrink-0 rounded-xs p-1.5 opacity-0 transition-colors group-hover:opacity-100",
                         inUse
                           ? "cursor-not-allowed text-muted-foreground-subtle"
                           : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
@@ -521,13 +521,13 @@ export function TemplateForm({ template }: Props) {
                     if (e.key === "Escape") { setNewCategoryOpen(false); setNewCategoryLabel(""); }
                   }}
                   placeholder="New category name"
-                  className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-sm border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <button
                   type="button"
                   onClick={handleCreateCategory}
                   disabled={creatingCategory || !newCategoryLabel.trim()}
-                  className="shrink-0 rounded-[var(--radius-sm)] bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  className="shrink-0 rounded-sm bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
                   Add
                 </button>
@@ -536,7 +536,7 @@ export function TemplateForm({ template }: Props) {
               <button
                 type="button"
                 onClick={() => setNewCategoryOpen(true)}
-                className="mt-1.5 flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="mt-1.5 flex w-full items-center gap-1.5 rounded-sm px-3 py-2 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <Plus size={12} />
                 New category
@@ -553,7 +553,7 @@ export function TemplateForm({ template }: Props) {
             </div>
           )}
           {error && (
-            <div className="rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <div className="rounded-sm bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {error}
             </div>
           )}
@@ -563,7 +563,7 @@ export function TemplateForm({ template }: Props) {
                 type="button"
                 onClick={handleUpdate}
                 disabled={saving !== null}
-                className="w-full rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                className="w-full rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 {saving === "update" ? "Updating…" : "Update"}
               </button>
@@ -571,7 +571,7 @@ export function TemplateForm({ template }: Props) {
                 type="button"
                 onClick={handleUnpublish}
                 disabled={saving !== null}
-                className="w-full rounded-[var(--radius-sm)] border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                className="w-full rounded-sm border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
               >
                 {saving === "unpublish" ? "Unpublishing…" : "Unpublish"}
               </button>
@@ -582,7 +582,7 @@ export function TemplateForm({ template }: Props) {
                 type="button"
                 onClick={handlePublish}
                 disabled={saving !== null || publishIssues.length > 0}
-                className="w-full rounded-[var(--radius-sm)] bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                className="w-full rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 {saving === "publish" ? "Publishing…" : "Publish"}
               </button>
@@ -595,7 +595,7 @@ export function TemplateForm({ template }: Props) {
                 type="button"
                 onClick={handleSaveDraft}
                 disabled={saving !== null}
-                className="w-full rounded-[var(--radius-sm)] border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                className="w-full rounded-sm border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
               >
                 {saving === "draft" ? "Saving…" : isEdit ? "Save draft" : "Save as draft"}
               </button>
@@ -604,7 +604,7 @@ export function TemplateForm({ template }: Props) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="w-full rounded-[var(--radius-sm)] border border-border px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="w-full rounded-sm border border-border px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Cancel
           </button>
@@ -612,7 +612,7 @@ export function TemplateForm({ template }: Props) {
             <button
               type="button"
               onClick={() => setConfirmDelete(true)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-4 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/5"
+              className="flex w-full items-center justify-center gap-1.5 rounded-sm px-4 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/5"
             >
               <Trash2 size={12} />
               Delete template
@@ -627,7 +627,7 @@ export function TemplateForm({ template }: Props) {
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template content</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Press <kbd className="rounded border border-border bg-muted px-1 text-[10px]">/</kbd> for blocks
+              Press <kbd className="rounded border border-border bg-muted px-1 text-2xs">/</kbd> for blocks
             </p>
           </div>
           {!coverUrl && (
@@ -635,7 +635,7 @@ export function TemplateForm({ template }: Props) {
               type="button"
               onClick={() => coverInput.current?.click()}
               disabled={coverUploading}
-              className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
+              className="flex shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
             >
               <ImageIcon size={13} />
               {coverUploading ? "Uploading…" : "Add cover"}
@@ -644,7 +644,7 @@ export function TemplateForm({ template }: Props) {
         </div>
         <div className="flex-1 overflow-y-auto px-3 py-5">
           {coverUrl && (
-            <div className="group/cover relative mb-4 h-[140px] w-full overflow-hidden rounded-[var(--radius-md)] bg-muted">
+            <div className="group/cover relative mb-4 h-35 w-full overflow-hidden rounded-md bg-muted">
               <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: `url(${coverUrl})` }}
@@ -654,14 +654,14 @@ export function TemplateForm({ template }: Props) {
                   type="button"
                   onClick={() => coverInput.current?.click()}
                   disabled={coverUploading}
-                  className="rounded-[var(--radius-sm)] border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card disabled:opacity-50"
+                  className="rounded-sm border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card disabled:opacity-50"
                 >
                   {coverUploading ? "Uploading…" : "Change cover"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setRemoveCoverConfirm(true)}
-                  className="rounded-[var(--radius-sm)] border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card"
+                  className="rounded-sm border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card"
                 >
                   Remove
                 </button>

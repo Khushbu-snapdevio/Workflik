@@ -2,6 +2,8 @@
 
 Replacing shadcn/ui styling with daisyUI 5, on Tailwind v4.
 
+> **Companion audit, 2026-08-04:** [daisyui-migration-audit-full-codebase.md](./daisyui-migration-audit-full-codebase.md) covers everything this doc doesn't — the ~170 feature-level files outside `components/ui/` (database views, editor, sidebar/admin shells, settings, orbit admin, pages/workspace/templates, notifications/search/onboarding), evaluated against this doc's locked native → daisy → Headless UI → hand-roll policy. Read that doc for the next round of migration work; this doc stays the source of truth for `components/ui/` primitive conversions.
+
 ## Decisions (locked 2026-08-03)
 
 | Question | Decision |
@@ -10,6 +12,60 @@ Replacing shadcn/ui styling with daisyUI 5, on Tailwind v4.
 | **Motivation** | Shrink `components/ui/`; drop the shadcn dependency; team prefers daisy's semantic classes. **Not** user-selectable themes — so a custom two-theme setup is correct and we are not constrained to daisy's stock theme contract. |
 | **A11y contract** | **Ours wins.** `--muted-foreground` / `--muted-foreground-subtle` survive as custom vars with their measured ratios. Any `/opacity` on text is a review defect. |
 | **Ship strategy** | **Incremental to `main`.** Phases 1–2 merge immediately; Phase 3 merges per tier behind the compat shim. No long-lived branch. |
+
+## Revision — 2026-08-04: reality check + Headless UI added to the stack
+
+**This section supersedes conflicting statements below it** — the original §0 "keep Radix" table, the Tier 3/4 plan, and the "Decided: stop here" section — **with the actual current state and the go-forward policy.** Per direction: *"we need to use daisy and headless UI... if not possible in any case then we will keep as it is, but majority we need to use daisy's component and headless UI."* Original text below is left in place for its history (per this doc's own practice of appending RESULTS rather than rewriting) — do not trust it over this section where the two disagree.
+
+### What actually happened since 2026-08-03 (undocumented until now)
+
+An audit of `components/ui/` on 2026-08-04 found the migration went considerably further than this doc's last recorded decision ("stop here", Tier 3/4 left on Radix). **Radix is gone.** Zero `@radix-ui`/`radix-ui` imports remain anywhere in the repo, `vaul` was never installed, and `dropdown-menu.tsx` / `context-menu.tsx` / `menubar.tsx` / `navigation-menu.tsx` / `hover-card.tsx` no longer exist as files (zero consumers — the same "latent code" situation Tier 0 found in `checkbox`/`radio-group`, just carried further). This happened without the doc being updated — a Hard Rule 1 miss, corrected here.
+
+The actual tech per primitive, replacing every prior Radix dependency:
+
+| Primitive | Doc previously said | Actual now |
+|---|---|---|
+| `dialog`, `alert-dialog`, `sheet` | keep Radix `Dialog`/`AlertDialog` | native `<dialog>` + `showModal()` — free focus trap, Escape handling, top-layer stacking |
+| `popover` | keep Radix `Popover` | native Popover API (`popover="auto"`) + hand-rolled position math |
+| `select` | keep Radix `Select` | `@headlessui/react` `Listbox` (+ `ListboxSelectedOption`) |
+| `accordion`, `collapsible` | moved to Tier 0, native `<details>` | done as planned |
+| `tabs` | keep Radix `Tabs` | hand-rolled (value-based context, roving tabindex) — **Headless UI's `TabGroup` was evaluated and rejected**, it's index-based and didn't fit the value-based consumer contract; documented in a comment in `tabs.tsx` |
+| `tooltip` | keep Radix `Tooltip` | pure daisy CSS (`tooltip`, `tooltip-top/right/bottom/left`, `tooltip-start/center/end`) |
+| `dropdown-menu`, `context-menu`, `menubar`, `navigation-menu`, `hover-card` | keep Radix | **files deleted, zero consumers** |
+
+### New locked policy: native → daisy → Headless UI → hand-roll, in that order
+
+Formalized as an ordered checklist for every primitive, new or revisited:
+
+1. **Pure styling, no interactive JS needed** → daisyUI CSS classes on plain markup (`alert`, `avatar`, `badge`, `card`, `input`, `textarea`, `table`, `skeleton`, `tooltip`, `btn`). Cheapest option, already covers ~12 primitives.
+2. **Needs real behavior, but a native HTML API covers it** → use the platform: `<dialog>`/`showModal()`, the Popover API, `<details>`/`<summary>`, native `<input type=range|checkbox|radio>`. This is what `dialog`, `alert-dialog`, `sheet`, `popover`, `accordion`, `collapsible`, `checkbox`, `radio-group`, `slider`, `switch`, `toggle` all already do — zero extra dependency, and it's what made removing Radix possible in the first place.
+3. **Needs behavior no native API or daisy class provides** (custom-rendered option list with full keyboard nav, combobox, multi-step disclosure with shared state, portal-based menu/popover composition) → **`@headlessui/react`**, not Radix. `select.tsx`'s `Listbox` is the existing precedent — its own comment calls it "the one primitive that genuinely needed a real behavior library." Reach for Headless UI's `Dialog`, `Menu`, `Popover`, `Combobox`, `Listbox`, `Transition`, `RadioGroup`, or `Disclosure` here before anything else.
+4. **Headless UI doesn't fit either** (checked and rejected, with a stated reason — e.g. `tabs.tsx`'s index-vs-value mismatch) → hand-roll, same as today. This is the explicit fallback the direction allows ("if not possible in any case then we will keep as it is") — it must be a considered, documented rejection, not a default.
+
+**Radix and `vaul` are permanently out of the stack.** Do not reintroduce `@radix-ui/*` / `radix-ui` / `vaul` for any new component or bug fix — every behavior need identified so far has been covered by tiers 1–3 above.
+
+### Backlog: hand-rolled call sites, evaluated against this order — run 2026-08-04
+
+Each item below was actually worked through (converted, or evaluated and rejected with a stated reason), not just flagged. Verification for the two conversions: `tsc --noEmit` clean + `pnpm build` clean (see Build Verification below).
+
+**Converted:**
+
+- `components/notifications/notification-panel.tsx` — **done.** Was a hand-rolled `createPortal` slide-over (manual backdrop div, manual open/close animation via `requestAnimationFrame`/`setTimeout`, manual `document.addEventListener("keydown", …)` for Escape). Rewritten onto `sheet.tsx` (native `<dialog>` + `showModal()`): dropped `mounted`/`shouldRender`/`animIn` state and the manual Escape listener entirely — `sheet.tsx`'s own `@starting-style` CSS animation and native `cancel`/`close` dialog events already do the same job (and its `::backdrop` is already `rgb(0 0 0 / 0.2)`, i.e. `bg-black/20` — an exact match to what the panel was hand-rolling). Confirmed **not** using daisyUI's own `drawer` CSS component, per the reasoning below.
+- `components/sidebar/page-tree.tsx`'s `MoveToDialog` — **done**, found during the sidebar audit (wasn't on the original list). A hand-rolled centered modal (`fixed inset-0 z-[800]` backdrop + `fixed … z-[810]` panel, manual Escape listener) with a search input and a page-tree picker list — no anchor/collision positioning at all, just a fixed top-of-viewport modal. Exactly `dialog.tsx`'s shape. Converted onto `Dialog`/`DialogContent`, overriding `DialogContent`'s default centered/padded look (`top-[16vh]` instead of vertical-centering, `p-0`/`ring-0` since the content supplies its own header/list chrome, `backdrop:bg-black/40` to preserve the original's darker overlay — matching `alert-dialog.tsx`'s 0.4 convention rather than `dialog.tsx`'s default 0.2, since this is a destructive-adjacent "reparent this page" action). Removed the manual Escape listener — native `<dialog>` handles it.
+
+**Evaluated, kept hand-rolled (considered rejection, not a default):**
+
+- `icon-tooltip.tsx` / `icon-tooltip-button.tsx` / `reaction-tooltip.tsx` — **kept.** These are *hover*-triggered, anchor-collision-aware tooltips (flip above/below, clamp to viewport edges via `getClampedLeft`/`getClampedTop`) rendered at arbitrary DOM positions across ~90 call sites. None of the three tiers above actually cover this: daisyUI's CSS `tooltip` (already added in Round 2, used today only in `sidebar.tsx`, a context with no edge-collision risk) has no auto-flip — confirmed against daisy's own docs, same finding as §0's original evidence. The native Popover API's implementation in this repo (`popover.tsx`) always anchors below with no vertical flip. Headless UI's `Popover`/`Transition` are click-triggered, not hover-triggered, and ship no built-in collision detection either (that needs Floating UI's `flip` middleware, which Headless UI's `anchor` prop — v2.2.10, already installed — *does* wire in for `Menu`/`Listbox`/`Combobox`/`Popover`, but only for those click/focus-triggered components, not for an arbitrary hover label). No tier here reaches the current behavior without hand-reimplementing the exact same collision math, for no gain. This is the same conclusion §0 already reached for this exact file — reconfirmed, not new.
+- `components/database/{cell-action-overlay,entry-context-menu,card-context-menu,cell-comment-popover,group-header-menu,option-submenu,user-hover-card}.tsx` — **kept.** Same category, more complex: right-click context menus opened at an arbitrary cursor point (`forcePos: {x,y}`, not a DOM trigger element — doesn't fit Headless UI's or the native Popover API's trigger-anchored model at all), cascading multi-popup state (a menu that gets replaced by an icon picker, or a comment view, or a property flyout, each aware of the others via `data-edit-property-exempt`/`[role="alertdialog"]` exemption checks so outside-click dismissal doesn't misfire), and a deliberate "lock scroll instead of reposition" pattern so the popup can't drift from a click point that isn't a stable element. Every one of these is already a considered, comment-documented decision in the file itself. Forcing a Headless UI `Menu`/`Popover` here would mean either reimplementing this same cascade/collision logic inside a different wrapper (no benefit) or dropping real behavior (multi-popup coordination, point-anchoring). Not attempted.
+- `tabs.tsx` — **kept**, unchanged from the earlier Revision note. Already evaluated Headless UI's `TabGroup` and rejected it (index-based API doesn't fit the value-based consumer contract). Re-open only if Headless UI's Tabs API changes shape.
+
+**Identified, not yet converted (real candidate, deferred rather than rushed):**
+
+- `components/settings/profile-section.tsx`'s `TimezoneDropdown` — a single-select-from-a-searchable-list dropdown (region-grouped, flip-positioned via hand-rolled `computePos()`) — structurally the same shape `select.tsx` already solved with Headless UI's `Listbox`, and a good fit for `Combobox` (search + single-select) with its `anchor` prop for automatic flip, which would let it drop the manual `computePos`/scroll/resize-reposition listeners entirely. Deferred rather than converted in this pass: it's a live account-settings form with grouped-option rendering to reproduce faithfully, and there's no browser available in this environment to click-test it before shipping — converting it blind is exactly the kind of unverified change the parity-first principle (§ "Resolving the parity ↔ less-code tension") warns against. Good next candidate; budget a dedicated pass with an actual browser check.
+- `components/sidebar/{recently-visited-section,favorites-section,private-section}.tsx` and `components/settings/{workspace-general-section,workspace-members-section}.tsx` — now individually inspected. All are the same anchor-positioned flyout/context-menu category as the database overlays, not centered-modal candidates like `MoveToDialog` was — **kept.** `recently-visited-section.tsx`/`favorites-section.tsx`/`private-section.tsx` each portal a "⋯" popup flyout explicitly pinned to `z-[560]` *because* it must render above the sidebar wrapper's own `md:z-[550]` in `workspace-shell.tsx` (documented in-file) — a cross-component stacking relationship that would need to be re-derived, not just dropped, under top-layer dialog/popover semantics. `private-section.tsx` additionally has a cursor-anchored right-click context menu (`z-[200]`, positioned at `menuPos.x/y`, not a DOM trigger). `workspace-general-section.tsx` has an icon-picker flyout and a menu, both anchor/`mounted+pos`-positioned. All of these are `IconTooltip`-portal or anchor-collision cases, already covered by the icon-tooltip/database-overlay verdict above — not attempted, for the same reasons.
+- `page-tree.tsx`'s remaining `fixed`/`createPortal` usage (the `⋯` popup menu, the right-click context menu, the `IconTooltip` portal) — same anchor-collision category, not converted for the same reasons. Its one true modal (`MoveToDialog`) is done, above.
+
+---
 
 ### Resolving the parity ↔ less-code tension
 
@@ -20,6 +76,8 @@ Pixel-parity and "own less CSS" pull in opposite directions: parity means overri
 Phase 0 sizes that list. If it comes back large, we revisit the parity decision before committing to Phase 3.
 
 ## 0. The one architectural decision that drives everything
+
+> ⚠️ **Superseded by the Revision, 2026-08-04 (above).** The "keep Radix" call below was the right decision when Tier 0 shipped, but it stopped being true for `dialog`/`alert-dialog`/`sheet`/`popover`/`accordion`/`collapsible`/`select` before this doc was updated to say so — they moved to native HTML APIs or Headless UI's `Listbox`, not "kept on Radix." `dropdown-menu`/`context-menu`/`menubar`/`navigation-menu`/`hover-card` were deleted outright. Kept below for the original reasoning (still valid re: *why* daisy-CSS-alone wasn't enough), just not as a description of current state.
 
 **We keep Radix where it carries behavior, and drop it where it doesn't.**
 
@@ -643,7 +701,7 @@ Only now touch the 211 consumer files, and only for what the shim can't cover:
 1. ~~Delete the Phase-2 shim aliases, one group at a time, fixing the build after each. Any survivor is a call site Phase 4 missed.~~ **N/A — there is no shim** (Phase 2 cancelled). Harmless to drop only because Phase 4's renames are dropped too; if renames are ever reinstated, this discovery mechanism has to be replaced with something else.
 2. `pnpm remove shadcn` · delete [components.json](../../components.json) · drop `@import "shadcn/tailwind.css"`.
 3. Decide on `class-variance-authority` (18 files) — keep it. daisy modifiers don't cover our compound variants, and `cva` is orthogonal to the styling library.
-4. **Keep** `radix-ui`, `cmdk`, `vaul`, `react-day-picker`, `clsx`, `tailwind-merge`, `tw-animate-css`, `sonner`. None of these are shadcn.
+4. **Keep** `cmdk`, `react-day-picker`, `react-resizable-panels`, `clsx`, `tailwind-merge`, `tw-animate-css`, `sonner`. None of these are shadcn. ⚠️ *`radix-ui` is not in this list because it's already gone (see Revision, 2026-08-04) — no removal step was ever needed since nothing here re-added it. `vaul` was never installed at all.*
 5. Rewrite [doc/docs/ui-design.md](./ui-design.md) against the new contract.
 
 ### Phase 6 — QA (1–2 weeks, overlappable)
@@ -662,11 +720,11 @@ Only now touch the 211 consumer files, and only for what the shim can't cover:
 | 2 — Compat shim | ~~1–2 days~~ | ❌ **cancelled — measured as a no-op, see Phase 2 RESULTS** |
 | 3 — Tier 0: delete 13 Radix primitives | 2–3 days | ✅ **done** — on `feat/daisyui-theme` |
 | 3 — Tier 1: `button` | — | ✅ **done** — ported from spike, 54/54 measured |
-| 3 — Tiers 1 (rest)/2/3/4: restyle ~37 more primitives | ~~3–4 weeks~~ | ❌ **decided against, 2026-08-03 — see below** |
+| 3 — Tiers 1 (rest)/2/3/4: restyle ~37 more primitives | ~~3–4 weeks~~ | ⚠️ **partially reopened, 2026-08-04** — "decided against" on 2026-08-03 (see below), then Round 2 added daisy classes to 8 static primitives (`card`/`alert`/`badge`/`avatar`/`input`/`textarea`/`skeleton`/`table`), and separately (undocumented until the 2026-08-04 Revision) `dialog`/`alert-dialog`/`sheet`/`popover`/`accordion`/`collapsible`/`select` moved off Radix to native APIs / Headless UI. Remaining candidates tracked in the Revision's backlog. |
 | 4 — Feature sweep | 1 week | N/A — depended on the renames above, which were dropped |
-| 5 — Decommission | ~~2–3 days~~ | N/A — nothing to decommission; shadcn/Radix stay |
+| 5 — Decommission | ~~2–3 days~~ | ⚠️ Radix is fully gone (not by way of this phase — see Revision, 2026-08-04) and `shadcn` was removed (see Postscript below). Nothing left to decommission either way. |
 | 6 — QA | — | Standard QA on the two merged phases, not a 1–2 week program |
-| **Total** | **done** | |
+| **Total** | **superseded — see Revision, 2026-08-04, top of doc** | |
 
 ### Decision, 2026-08-03: stop here — Tier 0 is the finish line
 
@@ -706,6 +764,111 @@ Tier 4 list, and the Phase 4 feature-sweep renames, are left exactly as they
 are — working, on our own tokens, zero risk. If daisy's visual language is
 wanted for any of these later, that's new, separate work with its own parity
 check, not a continuation of this migration.
+
+> ⚠️ **"Left exactly as they are" did not hold — corrected in the Revision, 2026-08-04 (top of doc).** `dialog`, `alert-dialog`, `sheet`, `popover`, `accordion`, and `collapsible` were subsequently moved off Radix onto native HTML APIs, and `select` onto Headless UI's `Listbox` — `dropdown-menu`/`context-menu`/`menubar`/`navigation-menu`/`hover-card` were deleted (zero consumers). None of that was a continuation of *this* migration's Radix-preserving decision; it happened separately and wasn't reflected here until now. `input`/`card`/`badge`/`textarea` did get daisy classes added, but under Round 2 below (2026-08-04), not this decision.
+
+### Round 2, 2026-08-04: styling-foundation adoption — goal changed
+
+> This round and the **Revision, 2026-08-04** (top of doc) landed the same day and cover different halves of the same policy: this section is the *static/styling* half (daisy CSS classes on `card`/`alert`/`badge`/`avatar`/`input`/`textarea`/`skeleton`/`table` — tier 1 of the Revision's native → daisy → Headless UI → hand-roll order), the Revision is the *behavioral* half (confirms `dialog`/`select`/`sheet`/etc. already left Radix for native APIs or Headless UI, and sets the going-forward rule for anything still interactive). Read both; neither alone is the full picture.
+
+The "stop here" decision above was made under a **dependency-removal**
+framing: convert a primitive only if doing so sheds Radix (or another JS
+dependency) and can be measured at zero visual regression. Revisited
+2026-08-04 — the actual goal is **consistency**, not code reduction: adopt
+daisyUI's classes as the standard styling vocabulary across static/visual
+primitives, accepting minor visual drift where daisy's defaults differ from
+today's pixel-exact values. Complex-interaction primitives (`dialog`,
+`popover`, `select`, `sheet`, `tooltip`, `tabs`, `command`, `calendar`,
+`date-picker`) are explicitly **out of scope for this goal** — they keep
+native-browser/Headless UI behavior; only their static-styling siblings are
+candidates.
+
+**Method, this round:** for each candidate, add daisy's base class alongside
+the existing token classes rather than replacing them — Tailwind's utilities
+layer already outranks daisy's components layer in this build (established in
+Phase 0: "our override lands at byte 263509, daisy's `.btn` at 63035, so our
+values win"), so every explicit radius/border/color/spacing override keeps
+winning the cascade unless deliberately removed. This makes the daisy class
+additive: free vocabulary/semantics now, and a smaller diff later if a
+component's bespoke overrides are ever relaxed toward daisy's own defaults.
+
+**Card spike, done first to re-test the "zero benefit" assumption.**
+Measured (production build, Playwright computed-style diff + screenshots,
+light+dark) before adding anything: `card` alone produces **zero visible
+diff** — two inert side effects only (`outline-color: transparent`,
+irrelevant since focus rings here are box-shadow-based, not native outline;
+and `position: relative`, checked against the one real consumer,
+`bookmark-block.tsx`, whose absolutely-positioned overlay is already anchored
+to its own `relative` wrapper, unaffected). Confirmed there is no
+"own-less-code" win available — daisy's card expects a `card-body` wrapper
+this component's per-section (`--card-spacing`) padding model doesn't use, so
+every existing override still has to stay. Kept `card` + `card-title` anyway,
+because under the revised goal the addition itself (vocabulary, zero risk) is
+the point, not a reduction.
+
+**Converted this round** (base daisy class added, all existing token
+overrides kept — colors/radii/spacing unchanged unless noted):
+
+| Primitive | Class added | Notes |
+|---|---|---|
+| `card` | `card`, `card-title` | Zero visual diff, measured. `card-body`/`card-actions` **not** adopted — would require restructuring `CardHeader`/`CardContent`/`CardFooter` off their own `--card-spacing` padding model, a real DOM/API change, not a class swap. |
+| `alert` | `alert` | Previously had **no radius at all** (square corners, unlike anything else in the app). Added `rounded-[var(--radius-md)]` explicitly — the "panels" bucket in the radius table — rather than inherit daisy's own default (`--radius-box`, 10px), so alerts stay on the documented 5-step scale for the right bucket. This is the one real, deliberate visual change in this round. |
+| `badge` | `badge` | No visible diff — existing `rounded-[var(--radius-xs)]` and alpha-tinted variant colors already override daisy's badge-color defaults, same reasoning as `button`'s `btn-soft` alpha-tint finding. |
+| `avatar` | `avatar` | No visible diff — daisy's `avatar` class doesn't set dimensions itself (sizing is Tailwind `size-*` on the inner element per daisy's own docs), so it's compatible with the existing `data-size` scheme. |
+| `input` | `input` | No visible diff — existing `h-9`, `rounded-[var(--radius-xs)]`, border/bg/padding all still win. (Note: `--radius-xs` here predates this round and doesn't match the radius table's own "buttons, inputs, tags → radius-sm" bucket — pre-existing, out of scope for this pass, not introduced by it.) |
+| `textarea` | `textarea` | No visible diff — the underline-only style (`border-transparent` + `border-b-input`, `rounded-none`) still fully overrides daisy's boxed default. |
+| `skeleton` | `skeleton` | **Caught a regression in verification**: daisy's `.skeleton` ships its own default `border-radius` (`--radius-box`, 10px); since the component had no radius class of its own to win the cascade, it silently gained 10px corners. Fixed by adding `rounded-[var(--radius-sm)]` explicitly — which also brings the component in line with UI Rule 12's own documented pattern (`bg-muted animate-pulse rounded-[var(--radius-sm)]`) that the component wasn't actually implementing before. |
+| `table` | `table` (on the `<table>` element) | Same regression class as `skeleton`: no existing radius override, so daisy's `--radius-box` leaked through. Fixed with `rounded-none` to preserve the existing square-cornered table. Did **not** add `table-zebra` — that's a new visual behavior, not a token-alignment change. |
+
+**Verification used for this round:** `pnpm build` + `pnpm start` (never dev
+— Turbopack serves stale CSS, per the Phase 0 finding), Playwright
+computed-style probe across the `[data-probe]` nodes in
+`app/parity-harness/page.tsx` for the touched primitives, plus full-page and
+per-section screenshots in light and dark. This is lighter than Phase 0's
+full 16-property matrix (parity is no longer the bar, per the goal change)
+but still catches silent regressions like the skeleton/table radius leak
+above — computed-style diffing remains worth doing even when pixel-parity
+isn't required, because "silent 10px corners nobody asked for" is a different
+failure mode than "doesn't match the old design," and still worth catching
+before merge.
+
+**Not converted this round — real technique conflicts, not just untested
+drift:**
+
+- **`separator` → daisy `divider`.** daisy's divider renders its line via
+  `::before`/`::after` pseudo-elements with a built-in `margin: 1rem 0`,
+  designed to sit *between* flex children with optional text in the gap.
+  This component's `Separator` **is** the line itself (explicit
+  `h-px`/`w-px` + `bg-border`, zero built-in margin, orientation via
+  `data-orientation`). Adding `divider` on top would layer daisy's own
+  (near-invisible, `opacity: .1`) pseudo-lines and inject an unrequested
+  `1rem` margin on every one of this app's separator call sites — a real
+  layout regression, not a token realignment. Adopting daisy's actual
+  technique instead of layering would mean dropping the box-based render
+  entirely, which un-does Tier 0's already-verified "pixel-identical, zero
+  attribute diffs" result for this exact file. Left as-is pending an explicit
+  decision on which rendering technique wins.
+- **`breadcrumb` → daisy `breadcrumbs`.** This component already renders its
+  own separator explicitly (`<BreadcrumbSeparator>` with a `CaretRightIcon`).
+  daisy's `breadcrumbs` class is documented to auto-insert its own separator
+  between `<li>` children; whether that targeting is scoped narrowly enough
+  to skip an `<li>` that is itself the separator wasn't verified, and a wrong
+  guess here is a visible duplicate-separator bug, not a color mismatch. Left
+  as-is; verifying this needs a live render check before it's safe.
+- **`progress` → daisy `.progress`.** No action possible without
+  restructuring: daisy's progress styling depends on
+  `::-webkit-progress-value` / `::-moz-progress-bar`, pseudo-elements that
+  only exist on a real `<progress>` element. This component is deliberately
+  a plain `div`+`div` (track+fill), for the cross-engine styling reasons
+  already documented at the top of `progress.tsx` — the same reasons that
+  ruled out native `<progress>` in Tier 0. Re-opening that tradeoff wasn't
+  asked for.
+- **`pagination` → daisy `join`/`join-item`.** Already inherits daisy's `btn`
+  vocabulary indirectly (`PaginationLink` renders through `<Button>`, which
+  carries `btn`). Wrapping `PaginationContent` in `join` would change the
+  *visual language* from separated pill buttons (current `gap-1`) to a
+  connected, zero-gap segment group — a layout/design decision, not a
+  styling-token alignment. Left for an explicit call rather than assumed.
 
 ### Postscript, 2026-08-03: `shadcn` package removed
 

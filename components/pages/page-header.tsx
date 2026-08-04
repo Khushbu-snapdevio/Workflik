@@ -109,7 +109,7 @@ export function PageHeader({
             ref={iconBtnRef}
             type="button"
             onClick={() => setShowPicker((p) => !p)}
-            className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-sm text-muted-foreground opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-foreground"
+            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm text-muted-foreground opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-foreground"
           >
             <Smile size={13} />
             Add icon
@@ -137,7 +137,7 @@ export function PageHeader({
               disabled={!editable}
               onClick={() => editable && setShowPicker((p) => !p)}
               aria-label="Change icon"
-              className="flex size-14 items-center justify-center rounded-[var(--radius-md)] transition-all hover:bg-muted/50 disabled:cursor-default"
+              className="flex size-14 items-center justify-center rounded-md transition-all hover:bg-muted/50 disabled:cursor-default"
             >
               <PageIcon icon={icon} size={52} />
             </button>
@@ -163,7 +163,7 @@ export function PageHeader({
             onBlur={onBlur}
             data-placeholder="Untitled"
             className={[
-              "w-full break-words text-[2.4rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
+              "w-full wrap-break-word text-[2.4rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
               "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
               editable ? "cursor-text" : "cursor-default select-text",
             ].join(" ")}

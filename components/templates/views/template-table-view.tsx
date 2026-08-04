@@ -209,7 +209,7 @@ function EditableCell({
 // ── Option badge (reusable) ────────────────────────────────────────────────────
 
 function OptionBadge({ name, color, displayAs, wrap }: { name: string; color: string; displayAs?: "select" | "checkbox"; wrap?: boolean }) {
- const wrapCls = wrap ? "whitespace-normal break-words" : "truncate";
+ const wrapCls = wrap ? "whitespace-normal wrap-break-word" : "truncate";
  if (displayAs === "checkbox") {
   return (
    <span className="flex size-4 shrink-0 items-center justify-center rounded border border-primary bg-primary text-xs font-bold text-primary-foreground">
@@ -220,7 +220,7 @@ function OptionBadge({ name, color, displayAs, wrap }: { name: string; color: st
  const c = getOptionColor(color);
  return (
   <span
-   className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium"
+   className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-xs px-1.5 py-0.5 text-xs font-medium"
    style={{ backgroundColor: c.bg, color: c.text }}
   >
    <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: c.dot }} />
@@ -274,11 +274,11 @@ function SelectCell({
    </button>
 
    {open && (
-    <div className="absolute left-0 top-full z-[300] mt-0.5 min-w-[180px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
+    <div className="absolute left-0 top-full z-300 mt-0.5 min-w-45 rounded-md border border-border bg-popover p-1">
      {current && (
       <button
        onClick={() => { onSave(null); setOpen(false); }}
-       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
+       className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
       >
        Clear
       </button>
@@ -286,13 +286,13 @@ function SelectCell({
      {sections.map((section) => (
       <div key={section.key}>
        {section.label && (
-        <p className="mb-0.5 mt-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</p>
+        <p className="mb-0.5 mt-1 px-2 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</p>
        )}
        {section.options.map((opt) => (
         <button
          key={opt.id}
          onClick={() => { onSave({ optionId: opt.id }); setOpen(false); }}
-         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors"
+         className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent transition-colors"
         >
          <OptionBadge name={opt.name} color={opt.color} />
          {opt.id === current?.id && <span className="ml-auto text-primary text-xs font-bold">✓</span>}
@@ -303,7 +303,7 @@ function SelectCell({
      <div className="my-1 h-px bg-border" />
      <button
       onClick={(e) => { onEditProperty((e.currentTarget as HTMLElement).getBoundingClientRect()); setOpen(false); }}
-      className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
      >
       <GearIcon size={12} /> Edit property
      </button>
@@ -353,7 +353,7 @@ function MultiSelectCell({
   <div ref={ref} className="relative">
    <button
     onClick={() => setOpen((p) => !p)}
-    className="flex w-full min-h-[24px] flex-wrap items-center gap-1 rounded px-1 py-0.5 hover:bg-muted/60 transition-colors"
+    className="flex w-full min-h-6 flex-wrap items-center gap-1 rounded px-1 py-0.5 hover:bg-muted/60 transition-colors"
    >
     {selectedOpts.length > 0
      ? selectedOpts.map((o) => <OptionBadge key={o.id} name={o.name} color={o.color} displayAs={displayAs} wrap={wrapContent} />)
@@ -362,11 +362,11 @@ function MultiSelectCell({
    </button>
 
    {open && (
-    <div className="absolute left-0 top-full z-[300] mt-0.5 min-w-[180px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
+    <div className="absolute left-0 top-full z-300 mt-0.5 min-w-45 rounded-md border border-border bg-popover p-1">
      {selectedOpts.length > 0 && (
       <button
        onClick={() => { onSave({ optionIds: [] }); setOpen(false); }}
-       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
+       className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
       >
        Clear
       </button>
@@ -377,7 +377,7 @@ function MultiSelectCell({
        <button
         key={opt.id}
         onClick={() => toggle(opt.id)}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent transition-colors"
        >
         <OptionBadge name={opt.name} color={opt.color} />
         {checked && <span className="ml-auto text-primary text-xs font-bold">✓</span>}
@@ -387,7 +387,7 @@ function MultiSelectCell({
      <div className="my-1 h-px bg-border" />
      <button
       onClick={(e) => { onEditProperty((e.currentTarget as HTMLElement).getBoundingClientRect()); setOpen(false); }}
-      className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
      >
       <GearIcon size={12} /> Edit property
      </button>
@@ -434,7 +434,7 @@ function SelectPopoverCell({
     onClick={(e) => setRect((e.currentTarget as HTMLElement).getBoundingClientRect())}
     className={
      multi
-      ? "flex min-h-[24px] w-full flex-wrap items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-muted/60"
+      ? "flex min-h-6 w-full flex-wrap items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-muted/60"
       : "flex w-full items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-muted/60"
     }
    >
@@ -501,7 +501,7 @@ function DateCell({
    <button
     type="button"
     onClick={open}
-    className="flex min-h-[24px] w-full items-center rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
+    className="flex min-h-6 w-full items-center rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
    >
     {hasValue ? (
      <CellDisplay property={property as unknown as DbProperty} value={value} />
@@ -567,7 +567,7 @@ function PersonCell({
     type="button"
     disabled={!session?.user?.id}
     onClick={() => { if (session?.user?.id) onSave(toggleSelfVote(value, session.user)); }}
-    className="flex min-h-[24px] w-fit items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60 disabled:cursor-default"
+    className="flex min-h-6 w-fit items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60 disabled:cursor-default"
    >
     <CellDisplay property={property as unknown as DbProperty} value={value ?? { userIds: [] }} workspaceId={workspaceId} />
    </button>
@@ -579,7 +579,7 @@ function PersonCell({
    <button
     type="button"
     onClick={(e) => setRect((e.currentTarget as HTMLElement).getBoundingClientRect())}
-    className="flex min-h-[24px] w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
+    className="flex min-h-6 w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
    >
     {hasValue ? (
      <CellDisplay property={property as unknown as DbProperty} value={value} workspaceId={workspaceId} />
@@ -625,7 +625,7 @@ function FileCell({
    <button
     type="button"
     onClick={(e) => setRect((e.currentTarget as HTMLElement).getBoundingClientRect())}
-    className="flex min-h-[24px] w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
+    className="flex min-h-6 w-full items-center gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
    >
     {hasValue ? (
      <CellDisplay property={property as unknown as DbProperty} value={value} compact workspaceId={workspaceId} />
@@ -754,7 +754,7 @@ function ColumnHeader({
         if (e.key === "Enter") commitRename();
         if (e.key === "Escape") setRenaming(false);
        }}
-       className="min-w-0 flex-1 rounded-[var(--radius-xs)] border border-primary/60 bg-background px-1 py-0.5 text-xs font-semibold text-foreground outline-none"
+       className="min-w-0 flex-1 rounded-xs border border-primary/60 bg-background px-1 py-0.5 text-xs font-semibold text-foreground outline-none"
       />
      ) : (
       <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">
@@ -786,18 +786,18 @@ function ColumnHeader({
         left: getClampedLeft(menuRect, menuWidth, { align: "end" }),
         zIndex: 500,
        }}
-       className="w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1"
+       className="w-47.5 rounded-md border border-border bg-popover p-1"
       >
        <button
         onClick={() => { setDraftName(prop.name); setRenaming(true); setMenuOpen(false); }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
        >
         <PencilSimpleIcon size={13} /> Rename
        </button>
        {!prop.isSystem && (
         <button
          onClick={() => setEditingProperty(true)}
-         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+         className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
         >
          <GearIcon size={13} /> Edit property
         </button>
@@ -805,7 +805,7 @@ function ColumnHeader({
        <div className="my-1 h-px bg-border" />
        <button
         onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
        >
         <TrashIcon size={13} /> Delete property
        </button>
@@ -956,7 +956,7 @@ function AddPropertyPanel({
     zIndex: 500,
     width: panelWidth,
    }}
-   className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+   className="overflow-hidden rounded-md border border-border bg-popover"
   >
    {step === "name" ? (
     <>
@@ -973,12 +973,12 @@ function AddPropertyPanel({
         if (e.key === "Escape") onClose();
        }}
        placeholder="Property name…"
-       className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
+       className="w-full rounded-sm border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-primary"
       />
       <button
        onClick={() => name.trim() && setStep("type")}
        disabled={!name.trim()}
-       className="mt-2 w-full rounded-[var(--radius-sm)] bg-primary py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors"
+       className="mt-2 w-full rounded-sm bg-primary py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors"
       >
        Continue →
       </button>
@@ -1007,7 +1007,7 @@ function AddPropertyPanel({
           else if (def.type === "formula") openSubPicker(setPickingFormula);
           else submit(def.type);
          }}
-         className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm hover:bg-accent transition-colors"
+         className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm hover:bg-accent transition-colors"
         >
          <Icon size={14} className="shrink-0 text-muted-foreground" />
          {def.label}
@@ -1153,7 +1153,7 @@ function CellContent({
    const pv = raw as PersonVal | null;
    const hasValue = (pv?.userIds?.length ?? 0) > 0;
    return (
-    <div className="flex min-h-[24px] w-full items-center px-1 py-0.5">
+    <div className="flex min-h-6 w-full items-center px-1 py-0.5">
      {hasValue
       ? <CellDisplay property={prop as unknown as DbProperty} value={pv} workspaceId={workspaceId} />
       : <span className="text-xs text-muted-foreground">Empty</span>
@@ -1315,11 +1315,11 @@ function SortableRow({
      </div>
 
      {menuOpen && (
-      <div className="absolute left-0 top-full z-[500] mt-0.5 w-[190px] rounded-[var(--radius-md)] border border-border bg-popover p-1">
+      <div className="absolute left-0 top-full z-500 mt-0.5 w-47.5 rounded-md border border-border bg-popover p-1">
        <Link
         href={`/app/${workspaceSlug}/${entry.shortId}`}
         onClick={() => setMenuOpen(false)}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
        >
         <ArrowSquareOutIcon size={13} /> Open full page
        </Link>
@@ -1328,7 +1328,7 @@ function SortableRow({
          setCommentPopover({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), propId: null, propName: null, valueLabel: null });
          setMenuOpen(false);
         }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
        >
         <MessageSquareIcon size={13} /> Comment
        </button>
@@ -1340,7 +1340,7 @@ function SortableRow({
          toast.success("Link copied to clipboard", { duration: 2000 });
          setMenuOpen(false);
         }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
        >
         <Link2Icon size={13} /> Copy link
        </button>
@@ -1348,14 +1348,14 @@ function SortableRow({
        <>
        <button
         onClick={() => { onDuplicateEntry(entry.id); setMenuOpen(false); }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors"
        >
         <CopyIcon size={13} /> Duplicate
        </button>
        <div className="my-1 h-px bg-border" />
        <button
         onClick={() => { setMenuOpen(false); onSetDeleteTarget(entry.id); }}
-        className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+        className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
        >
         <TrashIcon size={13} /> Delete
        </button>
@@ -1408,7 +1408,7 @@ function SortableRow({
        }}
        onMouseEnter={(e) => showTooltip("View comments", e)}
        onMouseLeave={hideTooltip}
-       className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground"
+       className="flex shrink-0 items-center gap-1 rounded-sm px-1 text-[11px] text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground"
        style={{ opacity: isRowHovered ? 1 : 0 }}
       >
        <MessageSquareIcon size={11} />
@@ -1423,7 +1423,7 @@ function SortableRow({
        href={`/app/${workspaceSlug}/${entry.shortId}`}
        onMouseEnter={(e) => showTooltip("Open full page", e)}
        onMouseLeave={hideTooltip}
-       className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
+       className="flex items-center gap-0.75 rounded-sm border border-border bg-background px-1.5 py-0.75 text-2xs font-semibold tracking-wide text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
       >
        <FileText size={9} />
        OPEN
@@ -1660,7 +1660,7 @@ export function TemplateTableView({
     </colgroup>
 
     {/* Header */}
-    <thead className="sticky top-0 z-[200] bg-card">
+    <thead className="sticky top-0 z-200 bg-card">
      <tr className="border-b border-border">
       {/* Drag handle column header (empty) */}
       <th className="w-6 px-0.5 py-2.5" />
@@ -1705,7 +1705,7 @@ export function TemplateTableView({
        <div className="relative">
         <button
          onClick={(e) => setAddPropRect(addPropRect ? null : (e.currentTarget as HTMLElement).getBoundingClientRect())}
-         className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+         className="flex items-center gap-1 rounded-sm px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         >
          <PlusIcon size={12} /> Add property
         </button>
@@ -1773,7 +1773,7 @@ export function TemplateTableView({
    {/* Drag overlay */}
    <DragOverlay>
     {draggingEntry && (
-     <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
+     <div className="flex items-center gap-2 rounded-sm border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
       <GripVertical size={13} className="text-muted-foreground-subtle" />
       {draggingEntry.title || "Untitled"}
      </div>

@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { ChevronDown, Star, FileText, MoreHorizontal, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -65,6 +66,10 @@ export function FavoritesSection({
   const [mounted, setMounted] = useState(false);
   const [localFavs, setLocalFavs] = useState<FavoriteItem[]>(favorites);
   const [expanded, setExpanded] = usePersistedToggle("workflik:sidebar-favorites-expanded", true);
+  // usePersistedToggle's real localStorage value lands post-hydration (an effect, to avoid SSR mismatch), but Disclosure only
+  // reads defaultOpen once at mount — keying on `hydrated` forces one remount to seed it correctly, after which only DisclosureButton's own click changes `expanded`.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   const [popupOpen, setPopupOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -141,29 +146,31 @@ export function FavoritesSection({
 
   return (
     <div className="px-2">
-      {/* Section header */}
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="group mb-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-      >
-        <Star size={15} className="shrink-0 text-muted-foreground group-hover:text-sidebar-accent-foreground" />
-        <span className="text-left">Favorites</span>
-        {localFavs.length > 0 && (
-          <span className="text-xs text-muted-foreground">{localFavs.length}</span>
-        )}
-        <ChevronDown
-          size={14}
-          className={`shrink-0 text-muted-foreground transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
-        />
-      </button>
+      <Disclosure key={hydrated ? "loaded" : "loading"} defaultOpen={expanded}>
+        {/* Section header */}
+        <DisclosureButton
+          onClick={() => setExpanded((v) => !v)}
+          className="group mb-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Star size={15} className="shrink-0 text-muted-foreground group-hover:text-sidebar-accent-foreground" />
+          <span className="text-left">Favorites</span>
+          {localFavs.length > 0 && (
+            <span className="text-xs text-muted-foreground">{localFavs.length}</span>
+          )}
+          <ChevronDown
+            size={14}
+            className={`shrink-0 text-muted-foreground transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
+          />
+        </DisclosureButton>
 
       {/* Grid-rows trick animates height without measuring it in JS — the
           row track tweens between 0fr/1fr while overflow-hidden clips the
           content, giving a smooth expand/collapse instead of an instant
           mount/unmount. Content stays mounted (just visually clipped) so the
-          transition has something to animate between. */}
-      <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+          transition has something to animate between. `static` keeps
+          DisclosurePanel always rendered so our own CSS (not Headless UI's
+          own show/hide) controls visibility. */}
+      <DisclosurePanel static className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden">
           {localFavs.length === 0 ? (
             <p className="px-2.5 py-1 text-xs text-muted-foreground">
@@ -217,7 +224,7 @@ export function FavoritesSection({
                   ref={moreRef}
                   type="button"
                   onClick={openPopup}
-                  className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
                   <MoreHorizontal size={12} />
                   {localFavs.length - VISIBLE_MAX} more
@@ -226,20 +233,21 @@ export function FavoritesSection({
             </>
           )}
         </div>
-      </div>
+      </DisclosurePanel>
+      </Disclosure>
 
       {/* Popup flyout — portaled to document.body, making it a *sibling* of
-          the sidebar's own wrapper (md:z-[550] in workspace-shell.tsx), not a
-          descendant of it. z-[560] keeps it above that wrapper; anything
+          the sidebar's own wrapper (md:z-550 in workspace-shell.tsx), not a
+          descendant of it. z-560 keeps it above that wrapper; anything
           lower renders half-hidden behind the sidebar wherever they overlap. */}
       {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
         <div
           ref={popupRef}
-          className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+          className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-popover"
           style={{ top: popupPos.top, left: popupPos.left }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
+          <div className="flex items-center justify-between bg-primary px-3 py-3">
             <span className="text-sm font-semibold text-white">Favorites</span>
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{localFavs.length}</span>
           </div>
@@ -310,7 +318,7 @@ function FavoriteRow({
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="group flex items-center rounded-[var(--radius-md)] transition-colors duration-150 hover:bg-sidebar-accent"
+      className="group flex items-center rounded-md transition-colors duration-150 hover:bg-sidebar-accent"
     >
       <Link
         className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors hover:text-sidebar-accent-foreground"

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { Eye, Loader2, X, Database, FileText, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Eye, Loader2, Database, FileText, AlertCircle } from "lucide-react";
 import { PageIcon } from "@/components/pages/page-icon";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 
 interface SchemaProp {
@@ -59,7 +59,7 @@ function BlockRow({ block, depth = 0 }: { block: SnapshotBlock; depth?: number }
   return (
     <>
       <div className="flex items-start gap-2 py-1" style={{ paddingLeft: depth * 16 }}>
-        <span className="mt-0.5 shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="mt-0.5 shrink-0 rounded-xs bg-muted px-1.5 py-0.5 text-2xs font-medium text-muted-foreground">
           {block.type === "todo" && checked ? "✓ To-do" : BLOCK_LABELS[block.type] ?? block.type}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs text-foreground/80">
@@ -76,24 +76,24 @@ function SchemaPreview({ schema }: { schema: DatabaseSchema }) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
           Properties ({schema.properties.length})
         </p>
         <div className="flex flex-wrap gap-1.5">
           {schema.properties.map((p) => (
-            <span key={p.name} className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-muted/40 px-2 py-1 text-xs text-foreground/80">
+            <span key={p.name} className="inline-flex items-center gap-1 rounded-sm border border-border bg-muted/40 px-2 py-1 text-xs text-foreground/80">
               {p.name} <span className="text-muted-foreground-subtle">· {p.type}</span>
             </span>
           ))}
         </div>
       </div>
       <div>
-        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
           Views ({schema.views.length})
         </p>
         <div className="flex flex-wrap gap-1.5">
           {schema.views.map((v) => (
-            <span key={v.name} className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+            <span key={v.name} className="inline-flex items-center gap-1 rounded-sm bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
               {v.name} <span className="text-primary/60">· {v.type}</span>
               {v.isDefault && <span className="text-primary/60">(default)</span>}
             </span>
@@ -102,10 +102,10 @@ function SchemaPreview({ schema }: { schema: DatabaseSchema }) {
       </div>
       {schema.sample_rows && schema.sample_rows.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
             Sample rows ({schema.sample_rows.length})
           </p>
-          <div className="overflow-x-auto rounded-[var(--radius-md)] border border-border">
+          <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-muted/40">
@@ -137,13 +137,6 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
   const [error, setError]     = useState("");
   const [data, setData]       = useState<TemplateDetail | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-
   async function openPreview() {
     setOpen(true);
     setLoading(true);
@@ -163,19 +156,8 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
     <>
       <IconTooltipButton icon={<Eye size={14} />} label="Preview" onClick={openPreview} />
 
-      {open && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
-          <div className="relative flex h-[min(600px,88vh)] w-[min(680px,92vw)] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-background">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close preview"
-              className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <X size={16} />
-            </button>
-
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="flex h-[min(600px,88vh)] w-[min(680px,92vw)] max-w-[min(680px,92vw)] sm:max-w-[min(680px,92vw)] flex-col gap-0 overflow-hidden rounded-xl bg-background p-0 ring-0">
             {loading ? (
               <div className="flex flex-1 items-center justify-center">
                 <Loader2 size={20} className="animate-spin text-muted-foreground" />
@@ -189,7 +171,7 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
               <>
                 <div className="shrink-0 border-b border-border bg-muted/20 px-6 py-5 pr-14">
                   <div className="flex items-start gap-3">
-                    <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card">
                       {data.pageSnapshot.icon
                         ? <PageIcon icon={data.pageSnapshot.icon} size={24} />
                         : <FileText size={20} className="text-muted-foreground" />}
@@ -200,12 +182,12 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
                         <p className="mt-0.5 text-xs text-muted-foreground">{data.description}</p>
                       )}
                       <div className="mt-2 flex items-center gap-1.5">
-                        <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">{data.category}</span>
-                        <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-[10px] font-semibold ${data.status === "published" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+                        <span className="rounded-xs bg-muted px-2 py-0.5 text-2xs font-semibold text-muted-foreground">{data.category}</span>
+                        <span className={`rounded-xs px-2 py-0.5 text-2xs font-semibold ${data.status === "published" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
                           {data.status}
                         </span>
                         {data.pageSnapshot.database_schema && (
-                          <span className="flex items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          <span className="flex items-center gap-1 rounded-xs bg-primary/10 px-2 py-0.5 text-2xs font-semibold text-primary">
                             <Database size={9} /> Database
                           </span>
                         )}
@@ -221,10 +203,10 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
                     <p className="py-8 text-center text-xs text-muted-foreground">This template has no content blocks.</p>
                   ) : (
                     <div>
-                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Content ({data.pageSnapshot.blocks.length} block{data.pageSnapshot.blocks.length === 1 ? "" : "s"})
                       </p>
-                      <div className="rounded-[var(--radius-md)] border border-border bg-muted/20 px-3 py-2">
+                      <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
                         {data.pageSnapshot.blocks.map((b) => <BlockRow block={b} key={b.id} />)}
                       </div>
                     </div>
@@ -232,10 +214,8 @@ export function TemplatePreviewButton({ templateId }: { templateId: string }) {
                 </div>
               </>
             )}
-          </div>
-        </div>,
-        document.body
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -140,15 +140,15 @@ export default function OrbitAuthSettingsPage() {
       </div>
 
       {error && (
-        <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+        <p className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
           {error}
         </p>
       )}
 
-      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         {/* Email + password — primary method */}
         <div className="flex items-center gap-4 border-b border-border p-5">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
             <KeyRound className="text-primary" size={18} />
           </div>
           <div className="min-w-0 flex-1">
@@ -156,7 +156,7 @@ export default function OrbitAuthSettingsPage() {
               <Label className="text-sm font-semibold text-foreground">
                 Email &amp; Password
               </Label>
-              <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
+              <span className="rounded-xs bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
                 Primary
               </span>
             </div>
@@ -179,7 +179,7 @@ export default function OrbitAuthSettingsPage() {
 
         {/* Magic link — optional */}
         <div className="flex items-center gap-4 border-b border-border p-5">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted/50">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted/50">
             <Link2 className="text-muted-foreground" size={18} />
           </div>
           <div className="min-w-0 flex-1">
@@ -203,7 +203,7 @@ export default function OrbitAuthSettingsPage() {
 
         {/* Google — optional, gated by env credentials */}
         <div className="flex items-center gap-4 p-5">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted/50">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted/50">
             <GoogleIcon />
           </div>
           <div className="min-w-0 flex-1">

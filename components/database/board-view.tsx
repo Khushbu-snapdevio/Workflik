@@ -9,7 +9,8 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, LayoutGrid, X, FileText, PanelLeft, PanelRight, Pencil, GripVertical, MoreHorizontal, MessageSquare, Pin, Settings2 } from "lucide-react";
+import { Popover, PopoverButton, PopoverPanel, Radio, RadioGroup, useClose } from "@headlessui/react";
+import { Plus, LayoutGrid, X, FileText, PanelLeft, PanelRight, Pencil, GripVertical, MoreHorizontal, MessageSquare, Pin, Settings2, Loader2 } from "lucide-react";
 import { useSession } from "@/lib/auth/client";
 import { toggleSelfVote } from "@/lib/databases/vote";
 import { OPTION_COLORS, getOptionColor, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
@@ -68,6 +69,126 @@ function parseCardSortId(id: string): { colKey: string; entryId: string } | null
  return { colKey: rest.slice(0, sep), entryId: rest.slice(sep + 1) };
 }
 
+// ── AddOptionPanel ────────────────────────────────────────────────────────────
+// Split out (rather than inlined) so it can call useClose() itself instead of BoardView threading Popover's render-prop `close` down.
+
+function AddOptionPanel({
+ newOptName, setNewOptName, newOptColor, setNewOptColor, previewColor, options, onAdd, addingOption, addOptInputRef, showTooltip, hideTooltip,
+}: {
+ newOptName: string;
+ setNewOptName: (v: string) => void;
+ newOptColor: string;
+ setNewOptColor: (v: string) => void;
+ previewColor: ReturnType<typeof getOptionColor>;
+ options: SelectOption[];
+ onAdd: () => void;
+ addingOption: boolean;
+ addOptInputRef: React.RefObject<HTMLInputElement | null>;
+ showTooltip: (label: string, e: React.MouseEvent<HTMLElement>) => void;
+ hideTooltip: () => void;
+}) {
+ const close = useClose();
+
+ // Popover unmounts this panel on every close path — clearing the draft name on unmount
+ // means it can never leak a half-typed option name into the next time this is opened.
+ useEffect(() => () => setNewOptName(""), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+ return (
+  <>
+   <div className="mb-3 flex items-center justify-between">
+    <p className="text-xs font-semibold tracking-wide text-muted-foreground">
+     New option
+    </p>
+    <button
+     onClick={close}
+     className="flex size-5 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+    >
+     <X size={11} />
+    </button>
+   </div>
+
+   <input
+    ref={addOptInputRef}
+    autoFocus
+    value={newOptName}
+    onChange={(e) => setNewOptName(e.target.value)}
+    onKeyDown={(e) => {
+     if (e.key === "Enter") onAdd();
+    }}
+    placeholder="Option name…"
+    className="w-full rounded-sm border border-border bg-muted/20 px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
+   />
+
+   <p className="mb-1.5 mt-3 text-xs font-semibold tracking-wide text-muted-foreground">
+    Colour
+   </p>
+   <RadioGroup value={newOptColor} onChange={setNewOptColor} className="flex flex-wrap gap-2">
+    {OPTION_COLORS.map((c) => (
+     <Radio
+      key={c.id}
+      value={c.id}
+      onMouseEnter={(e) => showTooltip(c.id, e)}
+      onMouseLeave={hideTooltip}
+      style={{ backgroundColor: c.dot }}
+      className="size-5 cursor-pointer rounded-full opacity-50 transition-colors duration-150 hover:opacity-90 data-checked:scale-110 data-checked:opacity-100 data-checked:outline data-checked:outline-2 data-checked:outline-foreground/60"
+     />
+    ))}
+   </RadioGroup>
+
+   <div className="mt-3 flex min-h-6.5 items-center">
+    {newOptName.trim() ? (
+     <span className={`inline-flex items-center gap-1.5 rounded-xs px-2.5 py-1 text-xs font-semibold ${previewColor.bg} ${previewColor.text}`}>
+      <span className={`size-1.5 rounded-full ${previewColor.dot}`} />
+      {newOptName.trim()}
+     </span>
+    ) : (
+     <span className="text-xs text-muted-foreground">Preview will appear here</span>
+    )}
+   </div>
+
+   <div className="mt-3 flex gap-2">
+    <button
+     onClick={onAdd}
+     disabled={!newOptName.trim() || addingOption}
+     className="flex flex-1 items-center justify-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+     {addingOption ? <Loader2 size={12} className="animate-spin" /> : "Add option"}
+    </button>
+    <button
+     onClick={close}
+     disabled={addingOption}
+     className="rounded-sm border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+    >
+     Cancel
+    </button>
+   </div>
+
+   {options.length > 0 && (
+    <div className="mt-3 border-t border-border pt-3">
+     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
+      Existing options
+     </p>
+     <div className="flex flex-col gap-1">
+      {options.map((opt) => {
+       const c = getOptionColor(opt.color);
+       return (
+        <span
+         key={opt.id}
+         className="inline-flex w-fit items-center gap-1.5 rounded-xs px-2.5 py-0.5 text-xs font-semibold"
+         style={{ backgroundColor: c.bg, color: c.text }}
+        >
+         <span className="size-1.5 rounded-full" style={{ backgroundColor: c.dot }} />
+         {opt.name}
+        </span>
+       );
+      })}
+     </div>
+    </div>
+   )}
+  </>
+ );
+}
+
 // ── BoardView ─────────────────────────────────────────────────────────────────
 
 export function BoardView({
@@ -77,9 +198,9 @@ export function BoardView({
 }: SharedViewProps) {
  const [draggingSortId, setDraggingSortId] = useState<string | null>(null);
  const [collapsed, setCollapsed]    = useState<Set<string>>(new Set());
- const [addingOption, setAddingOption] = useState(false);
  const [newOptName, setNewOptName]   = useState("");
  const [newOptColor, setNewOptColor]  = useState("blue");
+ const [addingOption, setAddingOption] = useState(false);
  const [deleteTarget, setDeleteTarget] = useState<DbEntry | null>(null);
  const [deletingEntry, setDeletingEntry] = useState(false);
  const [localEntryOrder, setLocalEntryOrder] = useState<Map<string, string[]>>(new Map());
@@ -89,7 +210,6 @@ export function BoardView({
  const [draggingColKey, setDraggingColKey] = useState<string | null>(null);
  const [pinTooltip, setPinTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
- const addOptRef            = useRef<HTMLDivElement>(null);
  const addOptInputRef         = useRef<HTMLInputElement>(null);
  const editGroupsButtonRef      = useRef<HTMLButtonElement>(null);
 
@@ -97,17 +217,6 @@ export function BoardView({
  const groupProp  = properties.find((p) => p.id === groupPropId && isGroupableType(p.type));
 
  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
- useEffect(() => {
-  function h(e: MouseEvent) {
-   if (addOptRef.current && !addOptRef.current.contains(e.target as Node)) {
-    setAddingOption(false);
-    setNewOptName("");
-   }
-  }
-  document.addEventListener("mousedown", h);
-  return () => document.removeEventListener("mousedown", h);
- }, []);
 
  // pinTooltip is a `position: fixed` portal anchored to a rect snapshotted
  // once on hover — dismiss it on scroll instead of repositioning, since
@@ -122,7 +231,7 @@ export function BoardView({
  if (!groupProp) {
   return (
    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-    <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
+    <div className="flex size-16 items-center justify-center rounded-lg bg-muted/40">
      <LayoutGrid size={28} className="text-muted-foreground" />
     </div>
     <div>
@@ -289,15 +398,20 @@ export function BoardView({
   onUpdateProperty(groupProp!.id, { config: { ...groupProp!.config, options: next } });
  }
 
- function handleAddOption() {
+ async function handleAddOption() {
   const name = newOptName.trim();
-  if (!name) return;
+  if (!name || addingOption) return;
   const newOpt: SelectOption = { id: crypto.randomUUID(), name, color: newOptColor };
   const updated = [...options, newOpt];
-  onUpdateProperty(groupProp!.id, { config: { ...groupProp!.config, options: updated } });
-  setNewOptName("");
-  setNewOptColor(OPTION_COLORS[(updated.length) % OPTION_COLORS.length].id);
-  setTimeout(() => addOptInputRef.current?.focus(), 0);
+  setAddingOption(true);
+  try {
+   await onUpdateProperty(groupProp!.id, { config: { ...groupProp!.config, options: updated } });
+   setNewOptName("");
+   setNewOptColor(OPTION_COLORS[(updated.length) % OPTION_COLORS.length].id);
+   setTimeout(() => addOptInputRef.current?.focus(), 0);
+  } finally {
+   setAddingOption(false);
+  }
  }
 
  const previewColor = getOptionColor(newOptColor);
@@ -354,12 +468,12 @@ export function BoardView({
      ref={editGroupsButtonRef}
      type="button"
      onClick={() => setEditingGroupsAnchor(editGroupsButtonRef.current)}
-     className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+     className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
     >
      <Settings2 size={12} />
      Edit groups
      {hiddenGroupOptionIds.length > 0 && (
-      <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+      <span className="rounded-xs bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
        {hiddenGroupOptionIds.length} hidden
       </span>
      )}
@@ -397,7 +511,7 @@ export function BoardView({
       >
        <ColumnDropTarget colKey={colKey} isCollapsed={isCollapsed}>
         <div
-         className={`flex flex-col rounded-[var(--radius-lg)] border border-border bg-muted/40 ${isCollapsed ? "w-12" : ""}`}
+         className={`flex flex-col rounded-lg border border-border bg-muted/40 ${isCollapsed ? "w-12" : ""}`}
          data-col-id={colKey}
         >
          {/* Column header */}
@@ -411,13 +525,13 @@ export function BoardView({
           >
            {col.id ? (
             <span
-             className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-xs font-bold ${colorColumns ? "" : "bg-muted text-muted-foreground"}`}
+             className={`flex size-6 shrink-0 items-center justify-center rounded-xs text-xs font-bold ${colorColumns ? "" : "bg-muted text-muted-foreground"}`}
              style={colorColumns ? { backgroundColor: color.bg, color: color.text } : undefined}
             >
              {col.entries.length}
             </span>
            ) : (
-            <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted text-xs font-bold text-muted-foreground">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-xs bg-muted text-xs font-bold text-muted-foreground">
              {col.entries.length}
             </span>
            )}
@@ -438,20 +552,20 @@ export function BoardView({
             <div className="flex min-w-0 items-center gap-2">
             {col.id ? (
              <span
-              className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-sm font-semibold ${colorColumns ? "" : "bg-muted text-muted-foreground"}`}
+              className={`inline-flex items-center gap-1.5 rounded-xs px-2.5 py-1 text-sm font-semibold ${colorColumns ? "" : "bg-muted text-muted-foreground"}`}
               style={colorColumns ? { backgroundColor: color.bg, color: color.text } : undefined}
              >
               <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
               {col.label}
              </span>
             ) : (
-             <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-sm font-semibold text-muted-foreground">
+             <span className="inline-flex items-center gap-1.5 rounded-xs bg-muted px-2.5 py-1 text-sm font-semibold text-muted-foreground">
               <span className="size-1.5 rounded-full bg-muted-foreground/30" />
               {col.label}
              </span>
             )}
             {!hideAggregation && (
-             <span className="ml-1.5 shrink-0 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+             <span className="ml-1.5 shrink-0 rounded-xs bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
               {col.entries.length}
              </span>
             )}
@@ -466,7 +580,7 @@ export function BoardView({
                onClick={(e) => setGroupMenu({ optionId: col.id!, triggerEl: e.currentTarget as HTMLElement })}
                onMouseEnter={(e) => showTooltip("More options", e)}
                onMouseLeave={hideTooltip}
-               className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+               className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
               >
                <MoreHorizontal size={13} />
               </button>
@@ -476,7 +590,7 @@ export function BoardView({
               onClick={toggleCollapse}
               onMouseEnter={(e) => showTooltip("Collapse column", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+              className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
              >
               <PanelLeft size={13} />
              </button>
@@ -514,7 +628,7 @@ export function BoardView({
             ))}
 
             {col.entries.length === 0 && (
-             <div className="flex h-16 items-center justify-center rounded-[var(--radius-md)] border border-border bg-muted/20">
+             <div className="flex h-16 items-center justify-center rounded-md border border-border bg-muted/20">
               <span className="text-xs text-muted-foreground">Drop cards here</span>
              </div>
             )}
@@ -528,7 +642,7 @@ export function BoardView({
               const dv = gv ? { [groupPropId!]: gv } : {};
               onCreateEntry(dv);
              }}
-             className="mx-2 mb-2 mt-2 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
+             className="mx-2 mb-2 mt-2 flex w-[calc(100%-1rem)] items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-primary/5"
             >
              <Plus size={13} />
              Add entry
@@ -547,117 +661,31 @@ export function BoardView({
     {/* ── Add option column — select/status only; checkbox/person's columns
         are derived, not a user-managed option list to add to. ── */}
     {isEditor && groupsEditable && (
-     <div ref={addOptRef} className="w-[260px] shrink-0">
-      {!addingOption ? (
-       <button
-        onClick={() => {
-         setAddingOption(true);
-         setTimeout(() => addOptInputRef.current?.focus(), 50);
-        }}
-        className="flex h-10 w-full items-center gap-2 rounded-[var(--radius-lg)] border border-border px-3 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
-       >
-        <Plus size={13} />
-        Add option to &ldquo;{groupProp.name}&rdquo;
-       </button>
-      ) : (
-       <div className="rounded-[var(--radius-lg)] border border-border bg-background p-3.5">
-        <div className="mb-3 flex items-center justify-between">
-         <p className="text-xs font-semibold tracking-wide text-muted-foreground">
-          New option
-         </p>
-         <button
-          onClick={() => { setAddingOption(false); setNewOptName(""); }}
-          className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
-         >
-          <X size={11} />
-         </button>
-        </div>
-
-        <input
-         ref={addOptInputRef}
-         value={newOptName}
-         onChange={(e) => setNewOptName(e.target.value)}
-         onKeyDown={(e) => {
-          if (e.key === "Enter") handleAddOption();
-          if (e.key === "Escape") { setAddingOption(false); setNewOptName(""); }
-         }}
-         placeholder="Option name…"
-         className="w-full rounded-[var(--radius-sm)] border border-border bg-muted/20 px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
-        />
-
-        <p className="mb-1.5 mt-3 text-xs font-semibold tracking-wide text-muted-foreground">
-         Colour
-        </p>
-        <div className="flex flex-wrap gap-2">
-         {OPTION_COLORS.map((c) => (
-          <button
-           key={c.id}
-           onClick={() => setNewOptColor(c.id)}
-           onMouseEnter={(e) => showTooltip(c.id, e)}
-           onMouseLeave={hideTooltip}
-           style={{ backgroundColor: c.dot }}
-           className={[
-            "size-5 rounded-full transition-colors duration-150",
-            newOptColor === c.id
-             ? "scale-110 outline outline-2 outline-foreground/60"
-             : "opacity-50 hover:opacity-90",
-           ].join(" ")}
-          />
-         ))}
-        </div>
-
-        <div className="mt-3 flex min-h-[26px] items-center">
-         {newOptName.trim() ? (
-          <span className={`inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-1 text-xs font-semibold ${previewColor.bg} ${previewColor.text}`}>
-           <span className={`size-1.5 rounded-full ${previewColor.dot}`} />
-           {newOptName.trim()}
-          </span>
-         ) : (
-          <span className="text-xs text-muted-foreground">Preview will appear here</span>
-         )}
-        </div>
-
-        <div className="mt-3 flex gap-2">
-         <button
-          onClick={handleAddOption}
-          disabled={!newOptName.trim()}
-          className="flex-1 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-         >
-          Add option
-         </button>
-         <button
-          onClick={() => { setAddingOption(false); setNewOptName(""); }}
-          className="rounded-[var(--radius-sm)] border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
-         >
-          Cancel
-         </button>
-        </div>
-
-        {options.length > 0 && (
-         <div className="mt-3 border-t border-border pt-3">
-          <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
-           Existing options
-          </p>
-          <div className="flex flex-col gap-1">
-           {options.map((opt) => {
-            const c = getOptionColor(opt.color);
-            return (
-             <span
-              key={opt.id}
-              className="inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-semibold"
-              style={{ backgroundColor: c.bg, color: c.text }}
-             >
-              <span className="size-1.5 rounded-full" style={{ backgroundColor: c.dot }} />
-              {opt.name}
-             </span>
-            );
-           })}
-          </div>
-         </div>
-        )}
-       </div>
-      )}
-     </div>
+     <Popover className="w-65 shrink-0">
+      <PopoverButton className="flex h-10 w-full items-center gap-2 rounded-lg border border-border px-3 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground data-open:border-primary/40 data-open:text-foreground">
+       <Plus size={13} />
+       Add option to &ldquo;{groupProp.name}&rdquo;
+      </PopoverButton>
+      <PopoverPanel
+       anchor={{ to: "bottom start", gap: 4 }}
+       transition
+       className="z-600 w-65 rounded-lg border border-border bg-background p-3.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+      >
+       <AddOptionPanel
+        newOptName={newOptName}
+        setNewOptName={setNewOptName}
+        newOptColor={newOptColor}
+        setNewOptColor={setNewOptColor}
+        previewColor={previewColor}
+        options={options}
+        onAdd={handleAddOption}
+        addingOption={addingOption}
+        addOptInputRef={addOptInputRef}
+        showTooltip={showTooltip}
+        hideTooltip={hideTooltip}
+       />
+      </PopoverPanel>
+     </Popover>
     )}
    </div>
    </SortableContext>
@@ -789,7 +817,7 @@ function SortableColumn({
  // row instead of pushing later columns onto a second row far below the
  // fold — flex items need an explicit width, unlike grid's `1fr` tracks.
  return (
-  <div ref={setNodeRef} style={style} className={`shrink-0 ${isCollapsed ? "w-12" : "w-[260px]"}`}>
+  <div ref={setNodeRef} style={style} className={`shrink-0 ${isCollapsed ? "w-12" : "w-65"}`}>
    {children(handleProps)}
   </div>
  );
@@ -864,7 +892,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
  const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
  const [commentCount, setCommentCount]  = useState<number | null>(entry.commentCount ?? null);
- const [tooltip, setTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [editing, setEditing] = useState(false);
  const [editTitle, setEditTitle] = useState(entry.title ?? "");
  const [propEditor, setPropEditor] = useState<{ prop: DbProperty; rect: DOMRect } | null>(null);
@@ -908,16 +936,6 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
   return () => document.removeEventListener("mousedown", h);
  }, [editing, menuPos, commentAnchor, propEditor]);
 
- // tooltip is a `position: fixed` portal anchored to a rect snapshotted once
- // on hover — dismiss it on scroll instead of repositioning, since locking
- // scroll on every card hover would hurt the board's own scrolling.
- useEffect(() => {
-  if (!tooltip) return;
-  function handleScroll() { setTooltip(null); }
-  document.addEventListener("scroll", handleScroll, true);
-  return () => document.removeEventListener("scroll", handleScroll, true);
- }, [tooltip]);
-
  function commitTitle() {
   const trimmed = editTitle.trim();
   if (trimmed !== (entry.title ?? "")) onUpdateTitle(entry.id, trimmed);
@@ -928,7 +946,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
   <div
    ref={cardRef}
    className={[
-    "group rounded-[var(--radius-md)] border bg-card transition-colors duration-150",
+    "group rounded-md border bg-card transition-colors duration-150",
     dragging ? "border-primary/40 opacity-50" : "border-border",
    ].join(" ")}
    onMouseEnter={() => setHovered(true)}
@@ -943,7 +961,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
    <>
     {entry.coverUrl && (
       <div
-       className="h-20 w-full rounded-t-[var(--radius-md)] bg-cover bg-center"
+       className="h-20 w-full rounded-t-md bg-cover bg-center"
        style={{ backgroundImage: `url(${entry.coverUrl})` }}
       />
      )}
@@ -1005,7 +1023,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            icons only highlight individually via hover:bg-accent, the box
            itself carries the visible border/background. */}
        <div
-        className="flex shrink-0 items-center gap-px rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5 transition-opacity"
+        className="flex shrink-0 items-center gap-px rounded-sm border border-border bg-card px-0.5 py-0.5 transition-opacity"
         style={{ opacity: hovered || editing ? 1 : 0 }}
        >
         {isEditor && !editing ? (
@@ -1016,14 +1034,14 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            // The icon swaps to the side-peek icon in the same spot the cursor is
            // already resting on, so no fresh hover event will fire to update the
            // tooltip — set it directly instead of clearing it to null.
-           setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+           showTooltip("Open full page", e);
            setEditTitle(entry.title ?? "");
            setEditing(true);
           }}
-          onMouseEnter={(e) => setTooltip({ label: "Edit", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-          onMouseLeave={() => setTooltip(null)}
+          onMouseEnter={(e) => showTooltip("Edit", e)}
+          onMouseLeave={hideTooltip}
           style={{ cursor: "pointer" }}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex size-6 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
          >
           <Pencil size={12} />
          </button>
@@ -1032,10 +1050,10 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           href={`/app/${workspaceSlug}/${entry.shortId}`}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          onMouseEnter={(e) => setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-          onMouseLeave={() => setTooltip(null)}
+          onMouseEnter={(e) => showTooltip("Open full page", e)}
+          onMouseLeave={hideTooltip}
           style={{ cursor: "pointer" }}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex size-6 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
          >
           <PanelRight size={12} />
          </Link>
@@ -1045,13 +1063,13 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
            e.stopPropagation();
-           setTooltip(null);
+           hideTooltip();
            setMenuPos({ x: e.clientX, y: e.clientY });
           }}
-          onMouseEnter={(e) => setTooltip({ label: "More options", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-          onMouseLeave={() => setTooltip(null)}
+          onMouseEnter={(e) => showTooltip("More options", e)}
+          onMouseLeave={hideTooltip}
           style={{ cursor: "pointer" }}
-          className="flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex size-6 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
          >
           <MoreHorizontal size={12} />
          </button>
@@ -1078,7 +1096,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
             if (handleVoteClick(prop, entry.id)) return;
             setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
            }}
-           className="min-w-0 shrink-0 rounded-[var(--radius-xs)] text-left hover:bg-accent"
+           className="min-w-0 shrink-0 rounded-xs text-left hover:bg-accent"
           >
            <CellDisplay property={prop} value={raw} compact resolvedDisplayAs={resolveDisplayAs(prop, activeView)} resolvedWrapContent={resolveWrapContent(prop, activeView)} workspaceId={workspaceId} />
           </button>
@@ -1097,9 +1115,9 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
            setCommentAnchor((cur) => (cur ? null : rect));
           }}
-          className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
-          onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-          onMouseLeave={() => setTooltip(null)}
+          className="inline-flex items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
+          onMouseEnter={(e) => showTooltip("View comments", e)}
+          onMouseLeave={hideTooltip}
          >
           <MessageSquare size={11} />
           {commentCount}
@@ -1124,7 +1142,7 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
             if (handleVoteClick(prop, entry.id)) return;
             setPropEditor({ prop, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
            }}
-           className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+           className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           >
            {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" /> : <TypeIcon size={12} className="shrink-0" />}
            Add {prop.name}

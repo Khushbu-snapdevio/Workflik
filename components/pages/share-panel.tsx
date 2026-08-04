@@ -2,13 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/react";
 import {
  X, Check, Globe, Lock, Building2,
  UserPlus, Link2, ChevronDown,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
-import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { getAvatarColor } from "@/lib/utils";
@@ -108,77 +107,17 @@ function SelectField({
  disabled?: boolean;
  className?: string;
 }) {
- const [open, setOpen] = useState(false);
- const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
- const btnRef = useRef<HTMLButtonElement>(null);
- const menuRef = useRef<HTMLDivElement>(null);
- const label = options.find((o) => o.value === value)?.label ?? value;
-
- useEffect(() => {
-  if (!open) return;
-  function handler(e: MouseEvent) {
-   if (menuRef.current?.contains(e.target as Node)) return;
-   if (btnRef.current?.contains(e.target as Node)) return;
-   setOpen(false);
-  }
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
- }, [open]);
-
- useScrollLockWhileOpen(open, (target) =>
-  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
-
- function handleOpen() {
-  const r = btnRef.current?.getBoundingClientRect();
-  if (!open && r) setMenuRect(r);
-  setOpen((o) => !o);
- }
-
  return (
-  <div className={`relative shrink-0 ${className}`}>
-   <button
-    ref={btnRef}
-    type="button"
-    disabled={disabled}
-    onClick={handleOpen}
-    className="flex h-9 w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-input bg-background px-2.5 text-xs text-foreground transition-colors hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
-   >
-    <span className="truncate whitespace-nowrap">{label}</span>
-    <ChevronDown size={12} className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
-   </button>
-
-   {open && menuRect && typeof document !== "undefined" && createPortal(
-    <div
-     ref={menuRef}
-     style={{
-      position: "fixed",
-      top: getClampedTop(menuRect, 8 + options.length * 36),
-      left: getClampedLeft(menuRect, menuRect.width, { align: "start" }),
-      minWidth: menuRect.width,
-      zIndex: 9999,
-     }}
-     className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
-    >
-     {options.map((o) => (
-      <button
-       key={o.value}
-       type="button"
-       onClick={() => { onChange(o.value); setOpen(false); }}
-       className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-xs transition-colors ${
-        o.value === value
-         ? "bg-primary/10 font-medium text-primary"
-         : "text-foreground hover:bg-accent"
-       }`}
-      >
-       {o.value === value && <Check size={12} className="shrink-0 text-primary" />}
-       {o.value !== value && <span className="w-3 shrink-0" />}
-       {o.label}
-      </button>
-     ))}
-    </div>,
-    document.body
-   )}
-  </div>
+  <select
+   value={value}
+   disabled={disabled}
+   onChange={(e) => onChange(e.target.value)}
+   className={`h-9 shrink-0 rounded-sm border border-input bg-background px-2.5 text-xs text-foreground transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+  >
+   {options.map((o) => (
+    <option key={o.value} value={o.value}>{o.label}</option>
+   ))}
+  </select>
  );
 }
 
@@ -189,85 +128,46 @@ function GeneralAccessControl({
  onChange:  (v: GeneralAccess) => void;
  disabled?: boolean;
 }) {
- const [open, setOpen]   = useState(false);
- const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
- const btnRef = useRef<HTMLButtonElement>(null);
- const menuRef = useRef<HTMLDivElement>(null);
  const current = GENERAL_ACCESS_OPTIONS.find((o) => o.value === value) ?? GENERAL_ACCESS_OPTIONS[1]!;
  const Icon  = current.icon;
 
- useEffect(() => {
-  if (!open) return;
-  function handler(e: MouseEvent) {
-   if (menuRef.current?.contains(e.target as Node)) return;
-   if (btnRef.current?.contains(e.target as Node)) return;
-   setOpen(false);
-  }
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
- }, [open]);
-
- useScrollLockWhileOpen(open, (target) =>
-  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
-
- function handleOpen() {
-  const r = btnRef.current?.getBoundingClientRect();
-  if (!open && r) setMenuRect(r);
-  setOpen((o) => !o);
- }
-
  return (
-  <div className="relative">
-   <button
-    ref={btnRef}
-    type="button"
-    disabled={disabled}
-    onClick={handleOpen}
-    className="h-9 w-full flex items-center gap-2.5 rounded-[var(--radius-sm)] border border-border bg-muted/20 px-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-60"
-   >
+  <Listbox value={value} onChange={onChange} disabled={disabled}>
+   <ListboxButton className="h-9 w-full flex items-center gap-2.5 rounded-sm border border-border bg-muted/20 px-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-60 data-open:bg-muted/40">
     <Icon size={14} className="shrink-0 text-muted-foreground" />
     <span className="flex-1 min-w-0 truncate text-[13px] font-medium text-foreground">{current.label}</span>
     {disabled ? (
-     <span className="h-3.5 w-3.5 flex-shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
+     <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-border border-t-primary" />
     ) : (
-     <ChevronDown size={13} className={`flex-shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+     <ChevronDown size={13} className="shrink-0 text-muted-foreground transition-transform duration-150 data-open:rotate-180" />
     )}
-   </button>
+   </ListboxButton>
 
-   {open && menuRect && typeof document !== "undefined" && createPortal(
-    <div
-     ref={menuRef}
-     style={{
-      position: "fixed",
-      top: getClampedTop(menuRect, 8 + GENERAL_ACCESS_OPTIONS.length * 36),
-      left: getClampedLeft(menuRect, menuRect.width, { align: "start" }),
-      minWidth: menuRect.width,
-      zIndex: 9999,
-     }}
-     className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
-    >
-     {GENERAL_ACCESS_OPTIONS.map((o) => {
-      const OptionIcon = o.icon;
-      const selected  = o.value === value;
-      return (
-       <button
-        key={o.value}
-        type="button"
-        onClick={() => { onChange(o.value); setOpen(false); }}
-        className={`flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-left transition-colors ${
-         selected ? "bg-primary/10" : "hover:bg-accent"
-        }`}
-       >
-        <OptionIcon size={14} className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`} />
-        <span className={`flex-1 min-w-0 truncate text-[13px] font-medium ${selected ? "text-primary" : "text-foreground"}`}>{o.label}</span>
-        {selected && <Check size={13} className="shrink-0 text-primary" />}
-       </button>
-      );
-     })}
-    </div>,
-    document.body
-   )}
-  </div>
+   <ListboxOptions
+    anchor={{ to: "bottom start", gap: 4 }}
+    transition
+    className="z-600 w-(--button-width) overflow-hidden rounded-md border border-border bg-popover p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+   >
+    {GENERAL_ACCESS_OPTIONS.map((o) => {
+     const OptionIcon = o.icon;
+     return (
+      <ListboxOption
+       key={o.value}
+       value={o.value}
+       className="flex w-full cursor-default items-center gap-2.5 rounded-sm px-3 py-2 text-left transition-colors data-focus:bg-accent"
+      >
+       {({ selected }) => (
+        <>
+         <OptionIcon size={14} className={`shrink-0 ${selected ? "text-primary" : "text-muted-foreground"}`} />
+         <span className={`flex-1 min-w-0 truncate text-[13px] font-medium ${selected ? "text-primary" : "text-foreground"}`}>{o.label}</span>
+         {selected && <Check size={13} className="shrink-0 text-primary" />}
+        </>
+       )}
+      </ListboxOption>
+     );
+    })}
+   </ListboxOptions>
+  </Listbox>
  );
 }
 
@@ -434,7 +334,7 @@ export function SharePanel({
   <>
   <div
    ref={panelRef}
-   className="w-[460px] max-w-[calc(100vw-32px)] rounded-[var(--radius-md)] border border-border bg-card overflow-hidden flex flex-col"
+   className="w-115 max-w-[calc(100vw-32px)] rounded-md border border-border bg-card overflow-hidden flex flex-col"
    style={{ maxHeight: "calc(100vh - 80px)" }}
   >
    {/* Header */}
@@ -443,7 +343,7 @@ export function SharePanel({
     <button
      type="button"
      onClick={onClose}
-     className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+     className="rounded-sm p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
     >
      <X size={14} />
     </button>
@@ -461,13 +361,13 @@ export function SharePanel({
        onChange={(e) => { setInviteEmail(e.target.value); setInviteError(""); setInviteSuccess(false); }}
        onKeyDown={(e) => { if (e.key === "Enter") invite(); }}
        placeholder="Email or group, separated by commas"
-       className="flex-1 min-w-0 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
+       className="flex-1 min-w-0 rounded-sm border border-border bg-muted/30 px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary/20 transition-all"
       />
       <button
        type="button"
        onClick={invite}
        disabled={inviting || !inviteEmail.trim()}
-       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-4 py-2.5 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+       className="flex items-center gap-1.5 rounded-sm bg-primary px-4 py-2.5 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 active:bg-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
       >
        {inviting && (
         <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -489,20 +389,20 @@ export function SharePanel({
     <div className="px-5 py-3">
      <div className="space-y-0.5">
       {/* Owner — always shown, not editable */}
-      <div className="flex items-center gap-3 rounded-[var(--radius-sm)] px-2 py-1.5">
+      <div className="flex items-center gap-3 rounded-sm px-2 py-1.5">
        <Avatar name={currentUserName ?? currentUserEmail} image={currentUserImage} />
        <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
          <span className="text-[13px] font-medium text-foreground truncate leading-tight">
           {currentUserName ?? currentUserEmail ?? "You"}
          </span>
-         <span className="text-xs text-muted-foreground flex-shrink-0">(you)</span>
+         <span className="text-xs text-muted-foreground shrink-0">(you)</span>
         </div>
         {currentUserName && currentUserEmail && (
          <p className="text-xs text-muted-foreground truncate leading-tight">{currentUserEmail}</p>
         )}
        </div>
-       <span className="text-xs text-muted-foreground flex-shrink-0">Full access</span>
+       <span className="text-xs text-muted-foreground shrink-0">Full access</span>
       </div>
 
       {loading ? (
@@ -519,7 +419,7 @@ export function SharePanel({
         return (
          <div
           key={grant.id}
-          className="group flex items-center gap-3 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-muted/40 transition-colors"
+          className="group flex items-center gap-3 rounded-sm px-2 py-1.5 hover:bg-muted/40 transition-colors"
          >
           <Avatar name={displayName} image={grant.userImage} />
 
@@ -529,10 +429,10 @@ export function SharePanel({
              {displayName}
             </span>
             {isCurrentUser && (
-             <span className="text-xs text-muted-foreground flex-shrink-0">(you)</span>
+             <span className="text-xs text-muted-foreground shrink-0">(you)</span>
             )}
             {isGuest && (
-             <span className="flex-shrink-0 rounded-[var(--radius-xs)] border border-primary/20 bg-primary/10 px-1.5 py-px text-xs font-semibold text-primary leading-none">
+             <span className="shrink-0 rounded-xs border border-primary/20 bg-primary/10 px-1.5 py-px text-xs font-semibold text-primary leading-none">
               GUEST
              </span>
             )}
@@ -544,7 +444,7 @@ export function SharePanel({
            )}
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
            <SelectField
             value={grant.accessLevel}
             options={ACCESS_OPTIONS}
@@ -559,7 +459,7 @@ export function SharePanel({
              onClick={() => setPendingRemoveGrant(grant)}
              onMouseEnter={(e) => showTooltip("Remove access", e)}
              onMouseLeave={hideTooltip}
-             className="rounded-[var(--radius-sm)] p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
+             className="rounded-sm p-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-colors duration-150"
             >
              <X size={12} />
             </button>
@@ -602,7 +502,7 @@ export function SharePanel({
     <button
      type="button"
      onClick={copyLink}
-     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 hover:border-primary/30 hover:bg-primary/5 transition-colors"
+     className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80 hover:border-primary/30 hover:bg-primary/5 transition-colors"
     >
      {copied
       ? <Check size={12} className="text-primary" />

@@ -105,7 +105,7 @@ function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps)
 
   return (
     <div
-      className="group/pe flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
+      className="group/pe flex items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
       onClick={onClick}
     >
       {entry.icon ? (
@@ -115,7 +115,7 @@ function MorePopupEntryRow({ entry, onClick, onDelete }: MorePopupEntryRowProps)
       )}
       <span className="flex-1 truncate text-sm font-medium text-foreground">{entry.title || "Untitled"}</span>
       {!!commentCount && (
-        <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="flex shrink-0 items-center gap-0.5 text-2xs font-medium text-muted-foreground">
           <MessageSquare size={10} />
           {commentCount}
         </span>
@@ -188,7 +188,7 @@ function DraggableChip({
         style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none" }}
         {...attributes}
         {...listeners}
-        className="group/chip relative flex flex-col rounded-[var(--radius-sm)] border border-border bg-background transition-colors hover:border-border hover:bg-accent/30 cursor-pointer"
+        className="group/chip relative flex flex-col rounded-sm border border-border bg-background transition-colors hover:border-border hover:bg-accent/30 cursor-pointer"
         onMouseEnter={() => setShowDots(true)}
         onMouseLeave={() => setShowDots(false)}
         onContextMenu={(e) => {
@@ -219,7 +219,7 @@ function DraggableChip({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); setShowComment(true); }}
-              className="mr-0.5 flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="mr-0.5 flex shrink-0 items-center gap-0.5 text-2xs font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <MessageSquare size={10} />
               {commentCount}
@@ -230,7 +230,7 @@ function DraggableChip({
             <button
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); setRightClickPos({ x: e.clientX, y: e.clientY }); }}
-              className="mr-1 flex shrink-0 items-center justify-center rounded-[var(--radius-xs)] p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="mr-1 flex shrink-0 items-center justify-center rounded-xs p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
               <MoreHorizontal size={10} />
             </button>
@@ -357,7 +357,7 @@ export function CalendarView({
   if (!calProp) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-        <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
+        <div className="flex size-16 items-center justify-center rounded-lg bg-muted/40">
           <Calendar size={28} className="text-muted-foreground" />
         </div>
         <div>
@@ -455,16 +455,16 @@ export function CalendarView({
           {MONTHS[month]} {year}
         </h2>
         <div className="flex items-center gap-1">
-          <button onClick={prevMonth} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+          <button onClick={prevMonth} className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
             <ChevronLeft size={14} />
           </button>
           <button
             onClick={goToday}
-            className={`rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-medium transition-colors ${isCurrentMonth ? "text-muted-foreground hover:bg-accent hover:text-foreground" : "text-foreground font-semibold hover:bg-accent"}`}
+            className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ${isCurrentMonth ? "text-muted-foreground hover:bg-accent hover:text-foreground" : "text-foreground font-semibold hover:bg-accent"}`}
           >
             Today
           </button>
-          <button onClick={nextMonth} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+          <button onClick={nextMonth} className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
             <ChevronRight size={14} />
           </button>
         </div>
@@ -524,7 +524,7 @@ export function CalendarView({
             <DroppableDateCell key={key} dateKey={key} isOver={overDate === key} className={cellCls}>
               <div className="flex items-center justify-between px-2 pt-1.5 pb-0.5">
                 <span className={[
-                  "flex size-[22px] items-center justify-center rounded-full text-xs font-semibold tabular-nums select-none",
+                  "flex size-5.5 items-center justify-center rounded-full text-xs font-semibold tabular-nums select-none",
                   isToday ? "bg-primary text-primary-foreground" : "text-foreground/60",
                 ].join(" ")}>
                   {day}
@@ -594,14 +594,14 @@ export function CalendarView({
               ref={morePopupRef}
               onMouseEnter={cancelCloseMore}
               onMouseLeave={scheduleCloseMore}
-              className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+              className="overflow-hidden rounded-md border border-border bg-popover"
             >
               <div className="border-b border-border px-3 py-2">
                 <span className="text-xs font-semibold text-muted-foreground">
                   {MONTHS_SHORT[em - 1]} {ed}, {ey}
                 </span>
               </div>
-              <div className="max-h-[220px] overflow-y-auto p-1">
+              <div className="max-h-55 overflow-y-auto p-1">
                 {morePopup.entries.map((entry) => (
                   <MorePopupEntryRow
                     key={entry.id}
@@ -620,9 +620,9 @@ export function CalendarView({
 
     <DragOverlay dropAnimation={null}>
       {draggingEntry && (
-        <div className="flex items-center gap-1 rounded-[var(--radius-xs)] bg-primary px-1.5 py-[3px] text-xs font-medium text-primary-foreground cursor-grabbing">
+        <div className="flex items-center gap-1 rounded-xs bg-primary px-1.5 py-0.75 text-xs font-medium text-primary-foreground cursor-grabbing">
           {draggingEntry.icon && <span className="shrink-0 text-xs leading-none">{draggingEntry.icon}</span>}
-          <span className="max-w-[120px] truncate">{draggingEntry.title || "Untitled"}</span>
+          <span className="max-w-30 truncate">{draggingEntry.title || "Untitled"}</span>
         </div>
       )}
     </DragOverlay>

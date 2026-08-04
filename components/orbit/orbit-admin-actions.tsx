@@ -42,7 +42,7 @@ export function ImpersonateButton({ userId }: { userId: string }) {
    <button
     onClick={() => setConfirmOpen(true)}
     disabled={loading}
-    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-50">
+    className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-50">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
      <circle cx="7" cy="5" r="2.5"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
      <path d="M11 2l2 2-2 2"/>
@@ -103,7 +103,7 @@ export function BanButton({ userId, banned, onDone }: { userId: string; banned: 
     onClick={() => setConfirmOpen(true)}
     disabled={loading}
     className={cn(
-     "flex items-center gap-1.5 rounded-[var(--radius-md)] px-3 py-1.5 text-xs font-semibold transition-colors duration-150 disabled:opacity-50",
+     "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150 disabled:opacity-50",
      banned
       ? "bg-muted/40 text-foreground border border-border hover:bg-accent"
       : "bg-destructive/5 text-destructive border border-destructive/20 hover:bg-destructive/10"
@@ -133,7 +133,7 @@ export function BanButton({ userId, banned, onDone }: { userId: string; banned: 
        onChange={(e) => setReason(e.target.value)}
        placeholder="Reason (optional, visible in the audit log)…"
        rows={2}
-       className="mt-1 w-full resize-none rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+       className="mt-1 w-full resize-none rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
       <AlertDialogFooter>
        <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -175,7 +175,7 @@ export function RevokeSessionsButton({ userId }: { userId: string }) {
    <button
     onClick={() => setConfirmOpen(true)}
     disabled={loading}
-    className="flex items-center gap-1.5 rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-semibold text-warning transition-colors duration-150 hover:bg-warning/20 disabled:opacity-50">
+    className="flex items-center gap-1.5 rounded-md border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs font-semibold text-warning transition-colors duration-150 hover:bg-warning/20 disabled:opacity-50">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
      <path d="M7 2v3l2 2"/><circle cx="7" cy="7" r="5"/>
      <path d="M1 1l12 12"/>
@@ -227,7 +227,7 @@ export function ForceDeleteWorkspaceButton({ workspaceId, workspaceName }: { wor
    <button
     onClick={() => setConfirmOpen(true)}
     disabled={loading}
-    className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 disabled:opacity-50">
+    className="flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 disabled:opacity-50">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
      <path d="M2 3.5h10M5.5 3.5V2.5h3v1M4.5 3.5l.5 8M9.5 3.5l-.5 8M7 3.5v8"/>
     </svg>
@@ -250,7 +250,7 @@ export function ForceDeleteWorkspaceButton({ workspaceId, workspaceName }: { wor
       value={confirmInput}
       onChange={(e) => setConfirmInput(e.target.value)}
       placeholder={workspaceName}
-      className="mt-1 w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+      className="mt-1 w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
      />
      <AlertDialogFooter>
       <AlertDialogCancel>Cancel</AlertDialogCancel>

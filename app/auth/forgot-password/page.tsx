@@ -43,12 +43,12 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-page px-4">
-      <div className="w-full max-w-[380px]">
+      <div className="w-full max-w-95">
         <Link className="mb-10 flex flex-col items-center gap-3" href="/">
           <Logo className="h-10 w-auto" height={45} width={180} />
         </Link>
 
-        <div className="rounded-[var(--radius-xl)] border border-border bg-card px-8 py-8">
+        <div className="rounded-xl border border-border bg-card px-8 py-8">
           {sent ? (
             <div className="text-center">
               <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-success/10">
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 {error && (
-                  <p className="rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                  <p className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
                     {error}
                   </p>
                 )}

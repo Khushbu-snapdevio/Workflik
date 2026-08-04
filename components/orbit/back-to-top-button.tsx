@@ -29,7 +29,7 @@ export function BackToTopButton() {
       type="button"
       onClick={() => document.getElementById("orbit-admin-scroll")?.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Back to top"
-      className="fixed bottom-6 right-6 z-40 flex items-center gap-1.5 rounded-[var(--radius-md)] border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors duration-150 hover:bg-accent"
+      className="fixed bottom-6 right-6 z-40 flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors duration-150 hover:bg-accent"
     >
       <ArrowUp size={13} />
       Top

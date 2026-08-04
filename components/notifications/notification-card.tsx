@@ -125,12 +125,12 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
     <div
       onClick={handleCardClick}
       className={`group relative flex cursor-pointer gap-3 px-4 py-3.5 transition-colors duration-150 ${
-        isUnread ? "bg-primary/[0.06] hover:bg-primary/[0.13]" : "bg-card hover:bg-accent"
+        isUnread ? "bg-primary/6 hover:bg-primary/13" : "bg-card hover:bg-accent"
       }`}
     >
       {/* Unread left accent */}
       {isUnread && (
-        <span className="absolute left-0 top-3.5 bottom-3.5 w-[3px] rounded-r bg-primary" />
+        <span className="absolute left-0 top-3.5 bottom-3.5 w-0.75 rounded-r bg-primary" />
       )}
 
       {/* Avatar */}
@@ -191,7 +191,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
 
         {/* Content snippet */}
         {notification.contentSnippet && (
-          <div className="mt-1.5 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-1.5">
+          <div className="mt-1.5 rounded-sm border border-border bg-muted/30 px-2.5 py-1.5">
             <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
               {notification.contentSnippet}
             </p>
@@ -202,7 +202,7 @@ export function NotificationCard({ notification, workspaceSlug, onMarkRead, onCl
       {/* Hover action buttons */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="absolute right-3 top-3 hidden items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-card p-0.5 group-hover:flex"
+        className="absolute right-3 top-3 hidden items-center gap-0.5 rounded-sm border border-border bg-card p-0.5 group-hover:flex"
       >
         {isUnread && (
           <IconTooltipButton

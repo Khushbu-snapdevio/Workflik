@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { Slice, Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { Copy, GripVertical, Plus, Trash2, MessageSquare } from "lucide-react";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 
@@ -160,19 +160,16 @@ function getBlockRect(editor: Editor, nodePos: number): { top: number; left: num
 export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?: (nodePos: number, absoluteY: number) => void }) {
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [block, setBlock]    = useState<BlockInfo | null>(null);
- const [menuOpen, setMenuOpen] = useState(false);
 
+ // Mirrors Menu's open state (no controlled prop, only render-prop — see
+ // MenuOpenSync) so hover/scroll-tracking effects below can keep freezing while a menu is open.
  const menuOpenRef  = useRef(false);
- const dropdownRef  = useRef<HTMLDivElement>(null);
- const triggerRef   = useRef<HTMLButtonElement>(null);
  const hideTimer    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
  // Tracks whether the last interaction was a drag so we don't also open the menu.
  const wasDragRef   = useRef(false);
  // Set the instant mousedown lands on the grip (not just once native dragstart
  // fires) — see the mousemove effect below for why the earlier window matters.
  const dragIntentRef = useRef(false);
-
- useEffect(() => { menuOpenRef.current = menuOpen; }, [menuOpen]);
 
  // Native HTML5 drag requires the element that received mousedown to stay put
  // — same DOM node, same position — until the browser commits to a drag and
@@ -259,30 +256,11 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
   return () => document.removeEventListener("scroll", onScroll, true);
  }, [editor]);
 
- // ── Outside-click closes dropdown ─────────────────────────────────────────
- useEffect(() => {
-  if (!menuOpen) return;
-  const close = (e: MouseEvent) => {
-   if (triggerRef.current?.contains(e.target as Node)) return;
-   if (dropdownRef.current?.contains(e.target as Node)) return;
-   setMenuOpen(false);
-  };
-  document.addEventListener("mousedown", close);
-  return () => document.removeEventListener("mousedown", close);
- }, [menuOpen]);
-
- // The grip's mousemove tracker deliberately stops updating `block` while the
- // dropdown is open (see the early return above), so its `position: fixed`
- // coordinates would otherwise go stale as soon as the document scrolls. Lock
- // scroll instead of trying to track position without a live mousemove.
- useScrollLockWhileOpen(menuOpen, (target) =>
-  !!dropdownRef.current?.contains(target) || !!triggerRef.current?.contains(target));
-
- // ── Block actions ─────────────────────────────────────────────────────────
+ // ── Block actions ──────────────────────────────────────────────────────────
+ // Closing the dropdown is Headless UI's job now (any MenuItem click closes the Menu automatically).
  const deleteBlock = useCallback(() => {
   if (!block) return;
   const { nodePos, nodeSize } = block;
-  setMenuOpen(false);
   setBlock(null);
   editor.commands.command(({ tr }) => {
    tr.delete(nodePos, nodePos + nodeSize);
@@ -294,7 +272,6 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
   if (!block) return;
   const node = editor.state.doc.nodeAt(block.nodePos);
   if (!node) return;
-  setMenuOpen(false);
   editor.commands.command(({ tr }) => {
    tr.insert(block.nodePos + block.nodeSize, node);
    return true;
@@ -319,7 +296,6 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
 
  const commentBlock = useCallback(() => {
   if (!block || !onComment) return;
-  setMenuOpen(false);
   onComment(block.nodePos, block.top);
  }, [block, onComment]);
 
@@ -402,87 +378,92 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
      onClick={insertBlock}
      onMouseEnter={(e) => showTooltip("Click to add below · Alt-click to add above", e)}
      onMouseLeave={hideTooltip}
-     className="flex h-6 w-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
+     className="flex h-6 w-5 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground"
     >
      <Plus size={14} />
     </button>
    )}
 
-   {/* ⠿ grip — drag to reorder, click to open block menu */}
-   <button
-    ref={triggerRef}
-    type="button"
-    draggable
-    onDragStart={handleDragStart}
-    onDragEnd={handleDragEnd}
-    onMouseDown={(e) => {
-     // Do NOT preventDefault here — it blocks the browser's dragstart sequence.
-     // Editor focus is restored automatically after drag ends.
-     e.stopPropagation();
-     dragIntentRef.current = true;
-     // A hide timer may already be pending from just before mousedown (e.g. the
-     // cursor briefly left the safe zone while approaching the grip). Clear it
-     // here too — the guard above only stops *new* timers, not one already in
-     // flight — otherwise it can still fire mid-gesture and unmount this button.
-     clearTimeout(hideTimer.current);
-    }}
-    onClick={() => {
-     // Ignore click if it was the tail-end of a drag interaction.
-     if (wasDragRef.current) return;
-     setMenuOpen((v) => !v);
-    }}
-    onMouseEnter={(e) => showTooltip("Drag to reorder · Click for options", e)}
-    onMouseLeave={hideTooltip}
-    style={{ width: block.gripSize }}
-    className="flex h-6 shrink-0 cursor-grab items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing"
-   >
-    <GripVertical size={Math.max(10, Math.min(14, block.gripSize - 2))} />
-   </button>
-
-   {/* Dropdown */}
-   {menuOpen && (
-    <div
-     ref={dropdownRef}
-     className="absolute top-0 w-44 overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover"
-     style={{ left: block.gripSize + 4, zIndex: 9999 }}
-    >
-     <div className="py-1">
-      {onComment && (
-       <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={commentBlock}
-        className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition-colors duration-150 hover:bg-accent"
-       >
-        <MessageSquare size={14} className="shrink-0 text-muted-foreground" />
-        Comment
-       </button>
-      )}
-
-      <button
-       type="button"
-       onMouseDown={(e) => e.preventDefault()}
-       onClick={duplicateBlock}
-       className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+   {/* ⠿ grip — drag to reorder, click to open block menu. The grip button
+       IS the Headless UI MenuButton (drag props forwarded straight onto it)
+       so a click on it is never mistaken for an "outside" click by the
+       Menu's own dismiss logic — no separate hidden trigger needed. */}
+   <Menu>
+    {({ open }) => (
+     <MenuOpenSync open={open} onOpenChange={(o) => { menuOpenRef.current = o; }}>
+      <MenuButton
+       draggable
+       onDragStart={handleDragStart}
+       onDragEnd={handleDragEnd}
+       onMouseDown={(e) => {
+        // Do NOT preventDefault here — it blocks the browser's dragstart sequence.
+        // Editor focus is restored automatically after drag ends.
+        e.stopPropagation();
+        dragIntentRef.current = true;
+        // A hide timer may already be pending from just before mousedown; clear it here too
+        // since the guard above only stops new timers, not one in flight (would unmount this button mid-gesture).
+        clearTimeout(hideTimer.current);
+       }}
+       onClick={(e) => {
+        // Ignore click if tail-end of a drag — Headless UI merges this handler with its own
+        // open/close toggle and skips it once the event is marked prevented.
+        if (wasDragRef.current) e.preventDefault();
+       }}
+       onMouseEnter={(e) => showTooltip("Drag to reorder · Click for options", e)}
+       onMouseLeave={hideTooltip}
+       style={{ width: block.gripSize }}
+       className="flex h-6 shrink-0 cursor-grab items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-muted-foreground active:cursor-grabbing data-open:bg-accent data-open:text-foreground"
       >
-       <Copy size={14} className="shrink-0 text-muted-foreground" />
-       Duplicate
-      </button>
-
-      <div className="mx-2 my-0.5 h-px bg-border" />
-
-      <button
-       type="button"
-       onMouseDown={(e) => e.preventDefault()}
-       onClick={deleteBlock}
-       className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/10"
+       <GripVertical size={Math.max(10, Math.min(14, block.gripSize - 2))} />
+      </MenuButton>
+      <MenuItems
+       anchor={{ to: "right start", gap: 4 }}
+       transition
+       className="z-9999 w-44 overflow-hidden rounded-sm border border-border bg-popover py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
       >
-       <Trash2 size={14} className="shrink-0" />
-       Delete
-      </button>
-     </div>
-    </div>
-   )}
+       {onComment && (
+        <MenuItem>
+         <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={commentBlock}
+          className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition-colors duration-150 data-focus:bg-accent"
+         >
+          <MessageSquare size={14} className="shrink-0 text-muted-foreground" />
+          Comment
+         </button>
+        </MenuItem>
+       )}
+
+       <MenuItem>
+        <button
+         type="button"
+         onMouseDown={(e) => e.preventDefault()}
+         onClick={duplicateBlock}
+         className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground transition-colors data-focus:bg-accent"
+        >
+         <Copy size={14} className="shrink-0 text-muted-foreground" />
+         Duplicate
+        </button>
+       </MenuItem>
+
+       <div className="mx-2 my-0.5 h-px bg-border" />
+
+       <MenuItem>
+        <button
+         type="button"
+         onMouseDown={(e) => e.preventDefault()}
+         onClick={deleteBlock}
+         className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-destructive transition-colors duration-150 data-focus:bg-destructive/10"
+        >
+         <Trash2 size={14} className="shrink-0" />
+         Delete
+        </button>
+       </MenuItem>
+      </MenuItems>
+     </MenuOpenSync>
+    )}
+   </Menu>
   </div>
   {tooltip && (
    <IconTooltip rect={tooltip.rect} label={tooltip.label} minLeft={getHandleLeftBoundary(editor.view.dom as HTMLElement).boundary} />
@@ -490,4 +471,22 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
   </>,
   document.body,
  );
+}
+
+// Mirrors a Menu's open state up via callback — Menu has no controlled open prop, only a
+// render-prop, and calling hooks inside that render-prop would violate rules-of-hooks.
+function MenuOpenSync({
+ open,
+ onOpenChange,
+ children,
+}: {
+ open: boolean;
+ onOpenChange: (open: boolean) => void;
+ children: React.ReactNode;
+}) {
+ useEffect(() => {
+  onOpenChange(open);
+  return () => onOpenChange(false);
+ }, [open, onOpenChange]);
+ return <>{children}</>;
 }

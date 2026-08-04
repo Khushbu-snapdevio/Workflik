@@ -160,7 +160,7 @@ export function useMentionAutocomplete({
     typeof document !== "undefined"
       ? createPortal(
           <div
-            className="w-56 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
+            className="w-56 overflow-hidden rounded-md border border-border bg-popover p-1 shadow-lg"
             data-comment-exempt
             style={{
               position: "fixed",
@@ -171,7 +171,7 @@ export function useMentionAutocomplete({
           >
             {items.map((item, i) => (
               <button
-                className={`flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-sm transition-colors ${
+                className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors ${
                   i === activeIndex
                     ? "bg-accent text-foreground"
                     : "text-foreground/90 hover:bg-accent"
@@ -190,7 +190,7 @@ export function useMentionAutocomplete({
                     src={item.image}
                   />
                 ) : (
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-2xs font-semibold text-muted-foreground">
                     {item.label.charAt(0).toUpperCase()}
                   </span>
                 )}

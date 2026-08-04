@@ -1,41 +1,41 @@
 "use client";
 
-import { createPortal } from "react-dom";
 import { signOut } from "@/lib/auth/client";
-import { IconTooltip } from "@/components/ui/icon-tooltip";
-import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function SignOutButton({
   children,
   className,
   title,
+  ref,
 }: {
   children: React.ReactNode;
   className?: string;
   title?: string;
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
-  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
-
   async function handleSignOut() {
     await signOut();
     window.location.href = "/auth/login";
   }
 
+  const button = (
+    <button
+      ref={ref}
+      className={className}
+      onClick={handleSignOut}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+
+  if (!title) return button;
+
   return (
-    <>
-      <button
-        className={className}
-        onClick={handleSignOut}
-        type="button"
-        onMouseEnter={(e) => { if (title) showTooltip(title, e); }}
-        onMouseLeave={hideTooltip}
-      >
-        {children}
-      </button>
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
-    </>
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent>{title}</TooltipContent>
+    </Tooltip>
   );
 }

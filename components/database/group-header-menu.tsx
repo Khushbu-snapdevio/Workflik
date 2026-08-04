@@ -57,25 +57,25 @@ export function GroupHeaderMenu({
     <div
       ref={ref}
       style={{ position: "fixed", top, left, width, zIndex: 300 }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
+      className="overflow-hidden rounded-md border border-border bg-background p-1.5"
     >
       {editable && (
         <button
           onClick={() => { onEditGroups(); onClose(); }}
-          className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"
         >
           <Settings2 size={13} /> Edit groups
         </button>
       )}
       <button
         onClick={() => { onToggleHideAggregation(); onClose(); }}
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"
+        className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"
       >
         <EyeOff size={13} /> {hideAggregation ? "Show aggregation" : "Hide aggregation"}
       </button>
       <button
         onClick={() => { onHideGroup(); onClose(); }}
-        className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"
+        className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"
       >
         <EyeOff size={13} /> Hide group
       </button>
@@ -84,7 +84,7 @@ export function GroupHeaderMenu({
           <div className="my-1 h-px bg-border" />
           <button
             onClick={() => { onDeleteGroup(); onClose(); }}
-            className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"
+            className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"
           >
             <Trash2 size={13} /> Move to Trash
           </button>

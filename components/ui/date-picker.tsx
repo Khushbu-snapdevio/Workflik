@@ -37,7 +37,7 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", autoF
         <button
           type="button"
           className={cn(
-            "flex h-9 w-full items-center gap-2 rounded-[var(--radius-xs)] border border-input bg-card px-3 text-sm text-foreground transition-colors duration-150 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring",
+            "flex h-9 w-full items-center gap-2 rounded-xs border border-input bg-card px-3 text-sm text-foreground transition-colors duration-150 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring",
             !value && "text-muted-foreground-subtle",
             className
           )}

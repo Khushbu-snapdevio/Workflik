@@ -33,21 +33,21 @@ export function MiniPageContent({
  if (items.length === 0) {
   return (
    <div className="space-y-1.5">
-    <div className="h-1.5 w-2/3 rounded-[var(--radius-xs)] bg-foreground/18" />
-    <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-muted-foreground/14" />
-    <div className="h-1 w-full rounded-[var(--radius-xs)] bg-muted-foreground/12" />
+    <div className="h-1.5 w-2/3 rounded-xs bg-foreground/18" />
+    <div className="h-1 w-4/5 rounded-xs bg-muted-foreground/14" />
+    <div className="h-1 w-full rounded-xs bg-muted-foreground/12" />
     <div className="h-px bg-border my-1" />
     <div className="flex items-center gap-1.5 pl-1">
      <div className="size-1 shrink-0 rounded-full bg-muted-foreground/30" />
-     <div className="h-1 w-3/5 rounded-[var(--radius-xs)] bg-muted-foreground/14" />
+     <div className="h-1 w-3/5 rounded-xs bg-muted-foreground/14" />
     </div>
     <div className="flex items-center gap-1.5 pl-1">
      <div className="size-1 shrink-0 rounded-full bg-muted-foreground/30" />
-     <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-muted-foreground/12" />
+     <div className="h-1 w-4/5 rounded-xs bg-muted-foreground/12" />
     </div>
     <div className="flex items-center gap-1.5 pl-1">
      <div className="size-1 shrink-0 rounded-full bg-muted-foreground/30" />
-     <div className="h-1 w-1/2 rounded-[var(--radius-xs)] bg-muted-foreground/10" />
+     <div className="h-1 w-1/2 rounded-xs bg-muted-foreground/10" />
     </div>
    </div>
   );
@@ -83,7 +83,7 @@ export function MiniBlock({
  if (!text && type !== "divider") {
   return (
    <div
-    className={`${wCls} h-1 rounded-[var(--radius-xs)] bg-muted-foreground/12`}
+    className={`${wCls} h-1 rounded-xs bg-muted-foreground/12`}
    />
   );
  }
@@ -127,7 +127,7 @@ export function MiniBlock({
  if (type === "numbered") {
   return (
    <div className="flex items-center gap-1.5 pl-2">
-    <div className="size-1 shrink-0 rounded-[var(--radius-xs)] bg-primary/40" />
+    <div className="size-1 shrink-0 rounded-xs bg-primary/40" />
     <div className="truncate text-[7px] leading-tight text-muted-foreground">
      {text}
     </div>
@@ -167,7 +167,7 @@ export function MiniBlock({
 
  if (type === "callout") {
   return (
-   <div className="flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-warning/10 px-2 py-1">
+   <div className="flex items-center gap-1.5 rounded-xs bg-warning/10 px-2 py-1">
     <div className="size-1.5 shrink-0 rounded-full bg-warning/60" />
     <div className="truncate text-[7px] leading-tight text-muted-foreground">
      {text}
@@ -189,7 +189,7 @@ export function MiniBlock({
 
  if (type === "code") {
   return (
-   <div className="truncate rounded-[var(--radius-xs)] bg-muted px-2 py-1 font-mono text-[7px] leading-tight text-muted-foreground">
+   <div className="truncate rounded-xs bg-muted px-2 py-1 font-mono text-[7px] leading-tight text-muted-foreground">
     {text}
    </div>
   );

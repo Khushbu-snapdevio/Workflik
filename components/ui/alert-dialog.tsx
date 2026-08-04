@@ -115,7 +115,7 @@ function AlertDialogContent({
       ref={dialogRef}
       data-slot="alert-dialog-content"
       className={cn(
-        "fixed left-1/2 top-1/2 z-[590] m-0 w-full max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-card p-6",
+        "fixed left-1/2 top-1/2 z-590 m-0 w-full max-w-105 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-6",
         className,
       )}
       {...props}
@@ -168,7 +168,7 @@ function AlertDialogAction({
         if (!event.defaultPrevented) setOpen(false);
       }}
       className={cn(
-        "inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] bg-destructive px-4 text-sm font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+        "inline-flex h-9 items-center justify-center rounded-sm bg-destructive px-4 text-sm font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
         className,
       )}
       {...props}
@@ -191,7 +191,7 @@ function AlertDialogCancel({
         if (!event.defaultPrevented) setOpen(false);
       }}
       className={cn(
-        "inline-flex h-9 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-transparent px-4 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "inline-flex h-9 items-center justify-center rounded-sm border border-border bg-transparent px-4 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
       {...props}

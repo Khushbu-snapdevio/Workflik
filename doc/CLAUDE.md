@@ -664,13 +664,13 @@ All colors, radii, and shadows must come from the design token system defined in
 
 **Radius — only the five defined steps:**
 ```
-rounded-[var(--radius-xs)]   →  4px   (chips, badges, tiny pills)
-rounded-[var(--radius-sm)]   →  6px   (buttons, inputs, tags)
-rounded-[var(--radius-md)]   →  8px   (cards, panels, dropdowns)
-rounded-[var(--radius-lg)]   →  10px  (modals, sidebars, page sections)
-rounded-[var(--radius-xl)]   →  14px  (hero cards, full-width banners)
+rounded-xs   →  4px   (chips, badges, tiny pills)
+rounded-sm   →  6px   (buttons, inputs, tags)
+rounded-md   →  8px   (cards, panels, dropdowns)
+rounded-lg   →  10px  (modals, sidebars, page sections)
+rounded-xl   →  14px  (hero cards, full-width banners)
 
-❌  rounded-lg  rounded-xl  rounded-2xl  rounded-[12px]  (Tailwind defaults bypass the scale)
+❌  rounded-2xl  rounded-3xl  rounded-[12px]  rounded-[var(--radius-md)]  (outside the 5-step scale, or needless brackets — the canonical class already resolves to the custom token via the `@theme inline` registration in globals.css)
 ```
 
 **Spacing — use Tailwind's standard scale only:**
@@ -684,9 +684,7 @@ rounded-[var(--radius-xl)]   →  14px  (hero cards, full-width banners)
 WorkFlik uses border + background contrast for depth, not drop shadows. Remove all shadow utilities from every component.
 
 ```
-❌  shadow-[var(--shadow-card)]
-❌  shadow-[var(--shadow-raised)]
-❌  shadow-[var(--shadow-float)]
+❌  shadow-card  shadow-raised  shadow-float
 ❌  shadow-sm  shadow-md  shadow-lg  shadow-xl
 ❌  drop-shadow-*  filter: drop-shadow(...)
 ❌  box-shadow: ...  (inline styles)
@@ -719,7 +717,7 @@ The app font is **Inter** (sans) and **Geist Mono** (mono), loaded via `next/fon
 
 **Size scale for UI text (use these, not arbitrary sizes):**
 ```
-text-[10px] / text-[10.5px]   →  micro labels, eyebrows, table meta
+text-2xs (10px, registered as --text-2xs) / text-[10.5px]   →  micro labels, eyebrows, table meta
 text-xs  (12px)               →  captions, secondary labels, descriptions
 text-sm  (14px)               →  body text, list items, inputs
 text-base (16px)              →  primary body, card titles
@@ -753,7 +751,7 @@ The code-block background (`#1e1e1e`) and syntax token colors are the one approv
 Before every PR that touches UI, verify:
 
 - [ ] All colors are semantic tokens — no hex/rgb hardcoded
-- [ ] All radii use `var(--radius-*)` — no `rounded-lg`, `rounded-xl`, or `rounded-[Npx]`
+- [ ] All radii use the canonical scale classes (`rounded-xs`/`sm`/`md`/`lg`/`xl`, which resolve to `var(--radius-*)` via the `@theme inline` registration) — no `rounded-2xl`, `rounded-3xl`, `rounded-[Npx]`, or needless `rounded-[var(--radius-*)]` brackets
 - [ ] No shadow utilities anywhere in the diff
 - [ ] Border is `border border-border` (1px) — no `border-2+`
 - [ ] Font classes are `font-sans` or `font-mono` — no hardcoded family names
@@ -888,7 +886,7 @@ Every `"use client"` directive added high in the component tree forces its entir
 ❌  Blank white area while data loads
 ```
 
-- Use `bg-muted animate-pulse rounded-[var(--radius-sm)]` for skeleton blocks.
+- Use `bg-muted animate-pulse rounded-sm` for skeleton blocks.
 - Match the number of items to the expected content (3–5 rows for lists, full-width bar for titles).
 - The sidebar and topbar must never be part of any skeleton — they stay painted at all times.
 

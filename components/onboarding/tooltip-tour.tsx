@@ -223,7 +223,7 @@ export function TooltipTour({ tourCompleted }: Props) {
             width:     targetRect.width  + 8,
             height:    targetRect.height + 8,
             borderRadius: 6,
-            border:    "1.5px solid var(--color-primary, #0284C7)",
+            border:    "1.5px solid var(--color-primary)",
             boxShadow: "0 0 0 3999px rgba(0,0,0,0.22)",
             zIndex:    9997,
             transition:"top 220ms ease, left 220ms ease, width 220ms ease, height 220ms ease",
@@ -251,7 +251,7 @@ export function TooltipTour({ tourCompleted }: Props) {
           ...tooltipStyle,
           transform:  `${tooltipStyle.transform ?? ""} scale(${animIn ? 1 : 0.96})`.trim(),
         }}
-        className="rounded-[var(--radius-lg)] border border-border bg-card p-5 shadow-[var(--shadow-float)]"
+        className="rounded-lg border border-border bg-card p-5"
       >
         {/* Close */}
         <Button
@@ -268,7 +268,7 @@ export function TooltipTour({ tourCompleted }: Props) {
         </Button>
 
         {/* Icon */}
-        <div className="mb-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-primary">
+        <div className="mb-4 flex size-8 items-center justify-center rounded-sm bg-primary/10 text-primary">
           <current.Icon />
         </div>
 

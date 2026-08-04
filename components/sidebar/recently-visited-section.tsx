@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import { ChevronDown, Clock, FileText, MoreHorizontal, BookOpen } from "lucide-react";
 import { PageIcon } from "@/components/pages/page-icon";
 import Link from "next/link";
@@ -31,6 +32,10 @@ type Props = {
 
 export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props) {
  const [expanded, setExpanded] = usePersistedToggle("workflik:sidebar-recently-visited-expanded", true);
+ // See favorites-section.tsx for why this key-on-hydrate trick is needed — Disclosure
+ // only reads defaultOpen once at mount, usePersistedToggle resolves its real value slightly later.
+ const [hydrated, setHydrated] = useState(false);
+ useEffect(() => { setHydrated(true); }, []);
  const [popupOpen, setPopupOpen] = useState(false);
  const moreRef = useRef<HTMLButtonElement>(null);
  const popupRef = useRef<HTMLDivElement>(null);
@@ -71,10 +76,10 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
 
  return (
   <div className="px-2">
-   <button
-    type="button"
+   <Disclosure key={hydrated ? "loaded" : "loading"} defaultOpen={expanded}>
+   <DisclosureButton
     onClick={() => setExpanded((v) => !v)}
-    className="group mb-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+    className="group mb-0.5 flex w-full cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
    >
     <Clock size={15} className="shrink-0 text-muted-foreground group-hover:text-sidebar-accent-foreground" />
     <span className="text-left">Recently Visited</span>
@@ -82,11 +87,13 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
      size={14}
      className={`shrink-0 text-muted-foreground transition-transform duration-150 group-hover:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
     />
-   </button>
+   </DisclosureButton>
 
    {/* Grid-rows trick animates height without measuring it in JS — see
-       favorites-section.tsx for the full rationale. */}
-   <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+       favorites-section.tsx for the full rationale. `static` keeps the
+       panel always rendered so our own CSS, not Headless UI's, controls
+       visibility. */}
+   <DisclosurePanel static className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
     <div className="overflow-hidden">
      {visible.map((item) => {
       const page = pagesMap[item.pageId];
@@ -94,7 +101,7 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
        <Link
         key={item.id}
         href={`/app/${workspaceSlug}/${page.shortId}?from=recent`}
-        className="flex min-w-0 items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        className="flex min-w-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
        >
         {page.icon ? (
          <PageIcon icon={page.icon} size={13} />
@@ -110,27 +117,28 @@ export function RecentlyVisitedSection({ items, pagesMap, workspaceSlug }: Props
        ref={moreRef}
        type="button"
        onClick={openPopup}
-       className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+       className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
        <MoreHorizontal size={12} />
        {resolved.length - VISIBLE_MAX} more
       </button>
      )}
     </div>
-   </div>
+   </DisclosurePanel>
+   </Disclosure>
 
    {/* Popup flyout — portaled to document.body, making it a *sibling* of the
-       sidebar's own wrapper (md:z-[550] in workspace-shell.tsx), not a
-       descendant of it. z-[560] keeps it above that wrapper; anything lower
+       sidebar's own wrapper (md:z-550 in workspace-shell.tsx), not a
+       descendant of it. z-560 keeps it above that wrapper; anything lower
        renders half-hidden behind the sidebar wherever the two overlap. */}
    {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
     <div
      ref={popupRef}
-     className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+     className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-popover"
      style={{ top: popupPos.top, left: popupPos.left }}
     >
      {/* Header */}
-     <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
+     <div className="flex items-center justify-between bg-primary px-3 py-3">
       <span className="text-sm font-semibold text-white">Recently Visited</span>
       <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{resolved.length}</span>
      </div>

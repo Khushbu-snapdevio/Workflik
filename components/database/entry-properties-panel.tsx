@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { Settings2, MessageSquare } from "lucide-react";
+import { Settings2, MessageSquare, Plus, Loader2 } from "lucide-react";
 import { useSession } from "@/lib/auth/client";
 import { toggleSelfVote } from "@/lib/databases/vote";
 import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
@@ -92,6 +92,10 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
   // separate from the page-level Comments section further down the page.
   const [rowComments, setRowComments] = useState<Array<{ blockId: string | null; deletedAt: string | null; propertyId: string | null }> | null>(null);
   const [commentPopover, setCommentPopover] = useState<{ propId: string; rect: DOMRect; propName: string; valueLabel: string } | null>(null);
+
+  // Empty-state CTA (Hard Rule 28) — adds a default Text property directly, matching the
+  // "create then edit inline" pattern used by New Page/New Database, not a separate type-picker.
+  const [addingProperty, setAddingProperty] = useState(false);
 
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
@@ -239,8 +243,41 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
     setProperties((prev) => [...prev, newProp]);
   }, [databaseId]);
 
+  const addPropertyLocal = useCallback(async () => {
+    setAddingProperty(true);
+    const res = await fetch(`/api/databases/${databaseId}/properties`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Property", type: "text" }),
+    });
+    setAddingProperty(false);
+    if (!res.ok) return;
+    const newProp = await res.json() as DbProperty;
+    setProperties((prev) => [...prev, newProp]);
+  }, [databaseId]);
+
   const visibleProps = properties.filter((p) => !p.isSystem && !p.isBackRelation);
-  if (loading || !visibleProps.length) return null;
+  if (loading) return null;
+
+  if (!visibleProps.length) {
+    return (
+      <div className="mb-5 mt-3 flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-6 text-center">
+        <p className="text-sm font-medium text-muted-foreground">No properties yet</p>
+        <p className="text-xs text-muted-foreground">Track structured data like status, priority, or due date on this entry.</p>
+        {isEditor && (
+          <button
+            type="button"
+            disabled={addingProperty}
+            onClick={addPropertyLocal}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+          >
+            {addingProperty ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+            Add a property
+          </button>
+        )}
+      </div>
+    );
+  }
 
   const popoverProp = popover ? properties.find((p) => p.id === popover.propId) ?? null : null;
   const editPropProp = editPropPanel ? properties.find((p) => p.id === editPropPanel.propId) ?? null : null;
@@ -256,11 +293,11 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
           return (
             <div
               key={prop.id}
-              className="group/row flex min-h-[32px] items-start gap-2 rounded-[var(--radius-sm)] px-1 py-0.5 hover:bg-muted/50"
+              className="group/row flex min-h-8 items-start gap-2 rounded-sm px-1 py-0.5 hover:bg-muted/50"
             >
               {/* Label column */}
-              <div className="flex w-[180px] shrink-0 items-center gap-2 pt-1">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground">
+              <div className="flex w-45 shrink-0 items-center gap-2 pt-1">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-muted-foreground">
                   {prop.config?.icon ? <PageIcon icon={prop.config.icon} size={12} /> : <TypeIcon size={12} />}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
@@ -272,7 +309,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     onClick={(e) => setEditPropPanel({ propId: prop.id, anchorRect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
                     onMouseEnter={(e) => showTooltip("Edit property", e)}
                     onMouseLeave={hideTooltip}
-                    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground group-hover/row:opacity-100"
                   >
                     <Settings2 size={12} />
                   </button>
@@ -335,7 +372,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                         setEditText(cur);
                         setEditingId(prop.id);
                       }}
-                      className="flex min-h-[22px] w-full items-center text-left disabled:cursor-default"
+                      className="flex min-h-5.5 w-full items-center text-left disabled:cursor-default"
                     >
                       {val && <CellDisplay property={prop} value={val} workspaceId={workspaceId} />}
                       {!val && (
@@ -376,7 +413,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                       if (!session?.user?.id) return;
                       saveValue(prop.id, toggleSelfVote(val as { userIds?: string[] } | null, session.user));
                     }}
-                    className="flex min-h-[22px] w-fit items-center gap-1 text-left disabled:cursor-default"
+                    className="flex min-h-5.5 w-fit items-center gap-1 text-left disabled:cursor-default"
                   >
                     {val ? <CellDisplay property={prop} value={val} workspaceId={workspaceId} /> : <CellDisplay property={prop} value={{ userIds: [] }} workspaceId={workspaceId} />}
                   </button>
@@ -391,7 +428,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       setPopover({ propId: prop.id, rect });
                     }}
-                    className="flex min-h-[22px] w-full items-center gap-1 text-left disabled:cursor-default"
+                    className="flex min-h-5.5 w-full items-center gap-1 text-left disabled:cursor-default"
                   >
                     {val && <CellDisplay property={prop} value={val} workspaceId={workspaceId} />}
                     {!val && (
@@ -405,7 +442,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                 {/* Computed, read-only — same reasoning as Rollup/Formula:
                     no click-to-edit popover, since there's nothing to pick. */}
                 {prop.type === "created_by" && (
-                  <div className="flex min-h-[22px] w-full items-center gap-1">
+                  <div className="flex min-h-5.5 w-full items-center gap-1">
                     {val ? (
                       <CellDisplay property={prop} value={val} workspaceId={workspaceId} />
                     ) : (
@@ -418,7 +455,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
 
                 {/* Computed, read-only — same reasoning as Created by above. */}
                 {(prop.type === "formula" || prop.type === "rollup") && (
-                  <div className="flex min-h-[22px] w-full items-center gap-1">
+                  <div className="flex min-h-5.5 w-full items-center gap-1">
                     {val ? (
                       <CellDisplay property={prop} value={val} workspaceId={workspaceId} />
                     ) : (
@@ -450,7 +487,7 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
                     }}
                     onMouseEnter={(e) => showTooltip("Comment on this property", e)}
                     onMouseLeave={hideTooltip}
-                    className={`mt-1 flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 py-0.5 text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
+                    className={`mt-1 flex shrink-0 items-center gap-1 rounded-sm px-1 py-0.5 text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground ${
                       count > 0 ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"
                     }`}
                   >

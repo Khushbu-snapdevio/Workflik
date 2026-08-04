@@ -24,6 +24,7 @@ import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { EditPropertySidePanel } from "@/components/database/edit-property-panel";
 import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { PROPERTY_TYPE_ICON, STATUS_GROUPS } from "@/components/database/property-registry";
 import type { DbProperty, DbView, StatusGroupKey, ViewPropertyOverride } from "@/components/database/types";
 import { type OptionStyle, optionStyle } from "@/components/database/option-colors";
@@ -83,7 +84,7 @@ function InlineCardInput({
  useEffect(() => { ref.current?.focus(); }, []);
 
  return (
-  <div className="rounded-[var(--radius-sm)] border border-primary/50 bg-background p-3">
+  <div className="rounded-sm border border-primary/50 bg-background p-3">
    <textarea
     ref={ref}
     value={val}
@@ -99,13 +100,13 @@ function InlineCardInput({
    <div className="mt-2 flex items-center gap-2">
     <button
      onClick={() => onConfirm(val.trim())}
-     className="rounded-[var(--radius-sm)] bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+     className="rounded-sm bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
     >
      Add card
     </button>
     <button
      onClick={onCancel}
-     className="rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground hover:bg-accent transition-colors"
+     className="rounded-sm px-2 py-1 text-xs text-muted-foreground hover:bg-accent transition-colors"
     >
      Cancel
     </button>
@@ -158,7 +159,7 @@ function SortableColumn({
  const handleProps = draggable ? { ...attributes, ...listeners } : null;
 
  return (
-  <div ref={setNodeRef} style={style} className="w-[260px] shrink-0">
+  <div ref={setNodeRef} style={style} className="w-65 shrink-0">
    {children(handleProps)}
   </div>
  );
@@ -198,7 +199,7 @@ function CardShell({
  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
  const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
  const [commentCount, setCommentCount]  = useState<number | null>(entry.commentCount ?? null);
- const [tooltip, setTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
+ const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [editing, setEditing] = useState(false);
  const [editTitle, setEditTitle] = useState(entry.title ?? "");
  const [propEditor, setPropEditor] = useState<{ prop: DatabaseProperty; rect: DOMRect } | null>(null);
@@ -222,16 +223,6 @@ function CardShell({
  // between fetches.
  useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
 
- // tooltip is a `position: fixed` portal anchored to a rect snapshotted once
- // on hover — dismiss it on scroll instead of repositioning, since locking
- // scroll on every card hover would hurt the board's own scrolling.
- useEffect(() => {
-  if (!tooltip) return;
-  function handleScroll() { setTooltip(null); }
-  document.addEventListener("scroll", handleScroll, true);
-  return () => document.removeEventListener("scroll", handleScroll, true);
- }, [tooltip]);
-
  useEffect(() => {
   if (!editing) return;
   function h(e: MouseEvent) {
@@ -254,7 +245,7 @@ function CardShell({
   <div
    ref={cardRef}
    className={[
-    "group relative rounded-[var(--radius-sm)] border bg-background p-3 transition-all",
+    "group relative rounded-sm border bg-background p-3 transition-all",
     dragging
      ? "border-primary/40 opacity-50"
      : "border-border hover:border-border hover:-translate-y-0.5",
@@ -313,7 +304,7 @@ function CardShell({
        type="button"
        onPointerDown={(e) => e.stopPropagation()}
        onClick={(e) => { e.stopPropagation(); if (locked) return; if (handleVoteClick(dp)) return; setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() }); }}
-       className="min-w-0 shrink-0 rounded-[var(--radius-xs)] text-left hover:bg-accent"
+       className="min-w-0 shrink-0 rounded-xs text-left hover:bg-accent"
       >
        <CellDisplay
         property={dp as unknown as DbProperty}
@@ -338,9 +329,9 @@ function CardShell({
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         setCommentAnchor((cur) => (cur ? null : rect));
        }}
-       className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
-       onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-       onMouseLeave={() => setTooltip(null)}
+       className="inline-flex items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70"
+       onMouseEnter={(e) => showTooltip("View comments", e)}
+       onMouseLeave={hideTooltip}
       >
        <MessageSquare size={11} />
        {commentCount}
@@ -355,7 +346,7 @@ function CardShell({
        highlight individually via hover:bg-accent; the box itself carries the
        visible border/background. */}
    <div
-    className={`absolute right-2 top-2 items-center gap-px rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5 ${editing ? "flex" : "hidden group-hover:flex"}`}
+    className={`absolute right-2 top-2 items-center gap-px rounded-sm border border-border bg-card px-0.5 py-0.5 ${editing ? "flex" : "hidden group-hover:flex"}`}
     onClick={(e) => e.stopPropagation()}
    >
     {!editing ? (
@@ -367,13 +358,13 @@ function CardShell({
        // The icon swaps to the side-peek icon in the same spot the cursor is
        // already resting on, so no fresh hover event will fire to update the
        // tooltip — set it directly instead of clearing it to null.
-       setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
+       showTooltip("Open full page", e);
        setEditTitle(entry.title ?? "");
        setEditing(true);
       }}
-      onMouseEnter={(e) => setTooltip({ label: "Edit", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-      onMouseLeave={() => setTooltip(null)}
-      className="flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      onMouseEnter={(e) => showTooltip("Edit", e)}
+      onMouseLeave={hideTooltip}
+      className="flex size-5 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
      >
       <Pencil size={11} />
      </button>
@@ -381,9 +372,9 @@ function CardShell({
      <button
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.stopPropagation(); onClickEntry(entry.id); }}
-      onMouseEnter={(e) => setTooltip({ label: "Open full page", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-      onMouseLeave={() => setTooltip(null)}
-      className="flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      onMouseEnter={(e) => showTooltip("Open full page", e)}
+      onMouseLeave={hideTooltip}
+      className="flex size-5 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
      >
       <PanelRight size={11} />
      </button>
@@ -392,12 +383,12 @@ function CardShell({
      onPointerDown={(e) => e.stopPropagation()}
      onClick={(e) => {
       e.stopPropagation();
-      setTooltip(null);
+      hideTooltip();
       setMenuPos({ x: e.clientX, y: e.clientY });
      }}
-     onMouseEnter={(e) => setTooltip({ label: "More options", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-     onMouseLeave={() => setTooltip(null)}
-     className="flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+     onMouseEnter={(e) => showTooltip("More options", e)}
+     onMouseLeave={hideTooltip}
+     className="flex size-5 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     >
      <MoreHorizontal size={11} />
     </button>
@@ -420,7 +411,7 @@ function CardShell({
          if (handleVoteClick(dp)) return;
          setPropEditor({ prop: dp, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
         }}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+        className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
        >
         {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} className="shrink-0" /> : <TypeIcon size={12} className="shrink-0" />}
         {dp.type === "person" && (dp.config as { voteMode?: boolean } | null)?.voteMode ? dp.name : `Add ${dp.name}`}
@@ -589,7 +580,7 @@ export function TemplateBoardView({
  const [editingGroups, setEditingGroups]      = useState(false);
  const [deleteGroupTarget, setDeleteGroupTarget] = useState<{ id: string; name: string } | null>(null);
  const [draggingColKey, setDraggingColKey]     = useState<string | null>(null);
- const [pinTooltip, setPinTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
+ const { tooltip: pinTooltip, showTooltip: showPinTooltip, hideTooltip: hidePinTooltip } = useHoverTooltip();
 
  // Measured directly rather than via CSS `max-h-full` — percentage heights
  // only resolve if every ancestor in the chain already has a genuinely
@@ -619,16 +610,6 @@ export function TemplateBoardView({
   ro.observe(rowEl);
   return () => ro.disconnect();
  }, []);
-
- // pinTooltip is a `position: fixed` portal anchored to a rect snapshotted
- // once on hover — dismiss it on scroll instead of repositioning, since
- // locking scroll on every hover would hurt the board's own scrolling.
- useEffect(() => {
-  if (!pinTooltip) return;
-  function handleScroll() { setPinTooltip(null); }
-  document.addEventListener("scroll", handleScroll, true);
-  return () => document.removeEventListener("scroll", handleScroll, true);
- }, [pinTooltip]);
 
  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -863,8 +844,8 @@ export function TemplateBoardView({
        <button
         type="button"
         onClick={() => scrollToColumn(col.optionId ?? "none")}
-        onMouseEnter={(e) => setPinTooltip({ label: `Jump to ${col.label}`, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-        onMouseLeave={() => setPinTooltip(null)}
+        onMouseEnter={(e) => showPinTooltip(`Jump to ${col.label}`, e)}
+        onMouseLeave={hidePinTooltip}
         className="flex items-center gap-1.5 rounded-full px-1.5 transition-colors hover:opacity-70"
        >
         <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
@@ -875,8 +856,8 @@ export function TemplateBoardView({
         <button
          type="button"
          onClick={() => unpinColumn(col.optionId!)}
-         onMouseEnter={(e) => setPinTooltip({ label: "Unpin group", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-         onMouseLeave={() => setPinTooltip(null)}
+         onMouseEnter={(e) => showPinTooltip("Unpin group", e)}
+         onMouseLeave={hidePinTooltip}
          className="flex size-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-background/60"
         >
          <Pin size={10} className="shrink-0" />
@@ -890,12 +871,12 @@ export function TemplateBoardView({
      <button
       type="button"
       onClick={() => setEditingGroups(true)}
-      className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+      className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
      >
       <Settings2 size={12} />
       Edit groups
       {hiddenGroupOptionIds.length > 0 && (
-       <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+       <span className="rounded-xs bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
         {hiddenGroupOptionIds.length} hidden
        </span>
       )}
@@ -920,7 +901,7 @@ export function TemplateBoardView({
        <SortableColumn key={colKey} colKey={colKey} draggable={col.optionId !== null && statusBy === "option" && sortDirection === "manual" && !locked} isDragging={draggingColKey === col.optionId} maxHeight={colMaxHeight}>
         {(handleProps) => (
         <div
-         className="flex flex-col rounded-[var(--radius-md)] border border-border bg-muted/10 overflow-hidden"
+         className="flex flex-col rounded-md border border-border bg-muted/10 overflow-hidden"
          style={{ maxHeight: colMaxHeight ?? undefined }}
          data-col-id={colKey}
         >
@@ -932,10 +913,10 @@ export function TemplateBoardView({
           className={`flex shrink-0 items-center justify-between border-b px-3 py-2.5 ${style.header} ${handleProps ? "cursor-grab" : ""}`}
          >
           <div className="flex min-w-0 items-center gap-2">
-           <span className={`size-2 flex-shrink-0 rounded-full ${style.dot}`} />
+           <span className={`size-2 shrink-0 rounded-full ${style.dot}`} />
            <span className="truncate text-sm font-semibold text-foreground">{col.label}</span>
            {!hideAggregation && (
-            <span className="flex min-w-[18px] shrink-0 items-center justify-center rounded-full bg-background/80 px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+            <span className="flex min-w-4.5 shrink-0 items-center justify-center rounded-full bg-background/80 px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
              {col.entries.length}
             </span>
            )}
@@ -1012,7 +993,7 @@ export function TemplateBoardView({
          {!isAddingHere && !locked && (
           <button
            onClick={() => setAddingTo(colKey)}
-           className="mx-2 mb-2 flex shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
+           className="mx-2 mb-2 flex shrink-0 items-center justify-center gap-1.5 rounded-sm border border-dashed border-border px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/5"
           >
            <Plus size={12} />
            Add card

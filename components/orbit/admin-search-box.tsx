@@ -43,7 +43,7 @@ export function AdminSearchBox({ placeholder }: Props) {
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="h-9 w-full min-w-[220px] rounded-[var(--radius-md)] border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground-subtle outline-none transition-colors focus:border-primary/50 sm:w-64"
+        className="h-9 w-full min-w-55 rounded-md border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground-subtle outline-none transition-colors focus:border-primary/50 sm:w-64"
       />
     </div>
   );

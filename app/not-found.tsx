@@ -6,7 +6,7 @@ export default function NotFound() {
   return (
     <main className="grid min-h-screen place-items-center bg-page px-4">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted ring-1 ring-border">
+        <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-lg bg-muted ring-1 ring-border">
           <FileQuestion
             className="size-6 text-muted-foreground"
             strokeWidth={1.5}

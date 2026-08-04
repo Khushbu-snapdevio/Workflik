@@ -131,7 +131,7 @@ export default async function HomePage() {
       {/* ── Hero ────────────────────────────────── NARROW — centered text */}
       <section className="relative overflow-hidden px-4 pb-14 pt-16 text-center sm:px-6 sm:pb-20 sm:pt-24">
         {/* Ambient glow — purely decorative, respects reduced-motion via the lp-glow class */}
-        <div aria-hidden className="lp-glow pointer-events-none absolute left-1/2 top-0 -z-10 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/3 rounded-full" />
+        <div aria-hidden className="lp-glow pointer-events-none absolute left-1/2 top-0 -z-10 h-130 w-130 -translate-x-1/2 -translate-y-1/3 rounded-full" />
 
         <div className="mx-auto max-w-2xl">
           <h1 className="lp-fade-up mb-5 text-4xl font-black leading-[1.07] tracking-tight sm:text-5xl md:text-6xl" style={{ animationDelay: "0.1s" }}>
@@ -160,14 +160,14 @@ export default async function HomePage() {
 
         {/* App preview — breaks wider than the text */}
         <div className="lp-scale-in mx-auto mt-14 max-w-5xl" style={{ animationDelay: "0.4s" }}>
-          <div className="group overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card transition-shadow duration-300 hover:shadow-[0_20px_60px_-15px_rgba(2,132,199,0.25)]">
+          <div className="group overflow-hidden rounded-xl border border-border bg-card transition-shadow duration-300 hover:shadow-[0_20px_60px_-15px_rgba(2,132,199,0.25)]">
             <div className="flex items-center gap-3 border-b border-border bg-muted/50 px-4 py-3">
               <div className="flex gap-1.5">
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
               </div>
-              <div className="mx-auto flex h-6 w-56 items-center justify-center rounded-[var(--radius-xs)] bg-muted/80">
+              <div className="mx-auto flex h-6 w-56 items-center justify-center rounded-xs bg-muted/80">
                 <span className="text-xs font-medium text-muted-foreground">{PRODUCT_NAME.toLowerCase()}.example.com/workspace</span>
               </div>
             </div>
@@ -185,7 +185,7 @@ export default async function HomePage() {
                     { icon: "🎨", label: "Design System",    active: false },
                     { icon: "👋", label: "Onboarding",       active: false },
                   ].map((item) => (
-                    <div key={item.label} className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-1.5 transition-colors duration-150 ${item.active ? "bg-primary/10 text-primary" : "text-muted-foreground group-hover:text-muted-foreground"}`}>
+                    <div key={item.label} className={`flex items-center gap-1.5 rounded-xs px-2 py-1.5 transition-colors duration-150 ${item.active ? "bg-primary/10 text-primary" : "text-muted-foreground group-hover:text-muted-foreground"}`}>
                       <span className="text-xs leading-none">{item.icon}</span>
                       <span className={`truncate text-xs ${item.active ? "font-semibold" : ""}`}>{item.label}</span>
                     </div>
@@ -211,12 +211,12 @@ export default async function HomePage() {
                       { icon: "📊", text: "Analytics dashboard",    status: "Planned",     pill: "bg-muted text-muted-foreground" },
                       { icon: "🔔", text: "Notification digest",    status: "Backlog",     pill: "bg-warning/10 text-warning"     },
                     ].map((row) => (
-                      <div key={row.text} className="flex items-center justify-between rounded-[var(--radius-xs)] px-2 py-1.5">
+                      <div key={row.text} className="flex items-center justify-between rounded-xs px-2 py-1.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs">{row.icon}</span>
                           <span className="text-xs text-foreground/80">{row.text}</span>
                         </div>
-                        <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-[10px] font-semibold ${row.pill}`}>{row.status}</span>
+                        <span className={`rounded-xs px-2 py-0.5 text-2xs font-semibold ${row.pill}`}>{row.status}</span>
                       </div>
                     ))}
                   </div>
@@ -268,8 +268,8 @@ export default async function HomePage() {
             <div className="flex-1 grid gap-3 sm:grid-cols-2">
               {FEATURES.map((f, i) => (
                 <ScrollReveal key={f.title} delay={i * 50}>
-                  <div className="group flex gap-4 rounded-[var(--radius-lg)] border border-transparent p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card">
-                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
+                  <div className="group flex gap-4 rounded-lg border border-transparent p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card">
+                    <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
                       <f.Icon />
                     </div>
                     <div>
@@ -297,7 +297,7 @@ export default async function HomePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
               <ScrollReveal key={s.num} delay={i * 70}>
-                <div className="group flex h-full flex-col rounded-[var(--radius-xl)] border border-border bg-page p-6 transition-all duration-200 hover:-translate-y-1 hover:border-primary/30">
+                <div className="group flex h-full flex-col rounded-xl border border-border bg-page p-6 transition-all duration-200 hover:-translate-y-1 hover:border-primary/30">
                   {/* Step badge + arrow row */}
                   <div className="mb-5 flex items-center justify-between">
                     <span className="inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-black text-primary-foreground transition-transform duration-200 group-hover:scale-105">
@@ -328,8 +328,8 @@ export default async function HomePage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {USE_CASES.map((u, i) => (
               <ScrollReveal key={u.label} delay={i * 60}>
-                <div className="group h-full rounded-[var(--radius-xl)] border border-border bg-page p-5 transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_12px_32px_-12px_rgba(2,132,199,0.2)] sm:p-6">
-                  <div className="mb-4 flex size-10 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
+                <div className="group h-full rounded-xl border border-border bg-page p-5 transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_12px_32px_-12px_rgba(2,132,199,0.2)] sm:p-6">
+                  <div className="mb-4 flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
                     {u.icon}
                   </div>
                   <h3 className="mb-2 text-sm font-bold text-foreground">{u.label}</h3>
@@ -354,7 +354,7 @@ export default async function HomePage() {
             </p>
             <Link
               href="/auth/login"
-              className="inline-flex h-12 items-center gap-2 rounded-[var(--radius-md)] bg-card px-8 text-sm font-semibold text-primary transition-all duration-150 hover:-translate-y-0.5 hover:bg-card/90"
+              className="inline-flex h-12 items-center gap-2 rounded-md bg-card px-8 text-sm font-semibold text-primary transition-all duration-150 hover:-translate-y-0.5 hover:bg-card/90"
             >
               Sign in
               <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" /></svg>

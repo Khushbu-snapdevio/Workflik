@@ -48,7 +48,7 @@ export function TemplatePublishToggle({ templateId, templateName, currentStatus 
           onClick={() => (isPublished ? setPendingUnpublish(true) : run("publish"))}
           disabled={busy}
           className={[
-            "rounded-[var(--radius-md)] px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+            "rounded-md px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50",
             isPublished
               ? "border border-border text-muted-foreground hover:bg-accent"
               : "bg-success text-success-foreground hover:bg-success/90",
@@ -57,7 +57,7 @@ export function TemplatePublishToggle({ templateId, templateName, currentStatus 
           {busy ? "…" : isPublished ? "Unpublish" : "Publish"}
         </button>
         {error && (
-          <p className="absolute right-0 top-full z-10 mt-1 flex items-center gap-1 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2 py-1 text-xs text-destructive">
+          <p className="absolute right-0 top-full z-10 mt-1 flex items-center gap-1 whitespace-nowrap rounded-sm border border-border bg-popover px-2 py-1 text-xs text-destructive">
             <AlertCircle size={12} className="shrink-0" />
             {error}
           </p>

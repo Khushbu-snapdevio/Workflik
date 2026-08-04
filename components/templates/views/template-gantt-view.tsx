@@ -120,7 +120,7 @@ function GanttBar({ entry, startDate, endDate, rangeStart, dayWidth, onClick, on
 
  return (
   <div
-   className="group/bar absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-[var(--radius-xs)] bg-primary px-1.5 shadow-sm"
+   className="group/bar absolute top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-xs bg-primary px-1.5 shadow-sm"
    style={{ left, width, height: 24, cursor: locked ? "pointer" : dragMode === "move" ? "grabbing" : "grab" }}
    onPointerDown={(e) => { if (locked) { onClick(); return; } startDrag("move", e); }}
   >
@@ -166,7 +166,7 @@ export function TemplateGanttView({
  if (!startProp || !endProp) {
   return (
    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-    <div className="flex size-16 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
+    <div className="flex size-16 items-center justify-center rounded-lg bg-muted/40">
      <GanttChartSquare size={28} className="text-muted-foreground" />
     </div>
     <div>
@@ -248,24 +248,31 @@ export function TemplateGanttView({
     <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-3">
      <h2 className="text-lg font-semibold tracking-tight text-foreground">Timeline</h2>
      <div className="flex items-center gap-1">
-      <div className="mr-2 flex items-center rounded-[var(--radius-sm)] border border-border p-0.5">
+      <div className="join mr-2 items-center rounded-sm border border-border p-0.5">
        {(["day", "week", "month"] as Scale[]).map((s) => (
-        <button
+        <label
          key={s}
-         onClick={() => setScale(s)}
-         className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium capitalize transition-colors ${scale === s ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+         className="join-item cursor-pointer rounded-xs px-2 py-0.5 text-xs font-medium capitalize text-muted-foreground transition-colors has-checked:bg-accent has-checked:text-foreground hover:text-foreground"
         >
+         <input
+          type="radio"
+          name="gantt-scale"
+          value={s}
+          checked={scale === s}
+          onChange={() => setScale(s)}
+          className="sr-only"
+         />
          {s}
-        </button>
+        </label>
        ))}
       </div>
-      <button onClick={() => scrollBy(-7)} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+      <button onClick={() => scrollBy(-7)} className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
        <ChevronLeft size={14} />
       </button>
-      <button onClick={goToday} className="rounded-[var(--radius-sm)] px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+      <button onClick={goToday} className="rounded-sm px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
        Today
       </button>
-      <button onClick={() => scrollBy(7)} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+      <button onClick={() => scrollBy(7)} className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
        <ChevronRight size={14} />
       </button>
      </div>
@@ -291,7 +298,7 @@ export function TemplateGanttView({
           return (
            <div
             key={i}
-            className={`shrink-0 text-center text-[10px] tabular-nums leading-[26px] ${isToday ? "font-bold text-primary" : isWeekend ? "text-muted-foreground-subtle" : "text-muted-foreground"}`}
+            className={`shrink-0 text-center text-2xs tabular-nums leading-6.5 ${isToday ? "font-bold text-primary" : isWeekend ? "text-muted-foreground-subtle" : "text-muted-foreground"}`}
             style={{ width: dayWidth }}
            >
             {scale !== "month" ? d.getDate() : ""}
@@ -347,7 +354,7 @@ export function TemplateGanttView({
            [startProp.id]: { date: toISODate(todayMidnight) },
            [endProp.id]: { date: toISODate(todayMidnight) },
           })}
-          className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 rounded-sm px-1 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
          >
           <Plus size={12} />
           New

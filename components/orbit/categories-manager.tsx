@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Plus, Pencil } from "lucide-react";
+import { X, Plus, Pencil, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import {
@@ -41,7 +43,7 @@ function IconPicker({
             aria-label={name}
             aria-pressed={selected}
             className={[
-              "flex aspect-square items-center justify-center rounded-[var(--radius-sm)] border transition-colors",
+              "flex aspect-square items-center justify-center rounded-sm border transition-colors",
               selected
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground",
@@ -88,10 +90,6 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
     setAddOpen(true);
   }
 
-  function closeAdd() {
-    setAddOpen(false);
-  }
-
   async function handleCreate() {
     const label = newLabel.trim();
     if (!label || creating) return;
@@ -115,13 +113,6 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
       setCreating(false);
     }
   }
-
-  useEffect(() => {
-    if (!addOpen) return;
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") closeAdd(); }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [addOpen]);
 
   function startEdit(cat: TemplateCategory) {
     setEditingId(cat.id);
@@ -175,7 +166,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
   }
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="border-b border-border bg-muted/20 px-5 py-3.5">
         <h2 className="text-sm font-semibold text-foreground">Categories</h2>
         <p className="text-xs text-muted-foreground">Used to group built-in templates in the user-facing gallery</p>
@@ -192,7 +183,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
               return (
                 <div
                   key={cat.id}
-                  className="group flex flex-wrap items-center gap-1 rounded-[var(--radius-sm)] px-2 py-2 text-sm font-medium text-foreground hover:bg-accent"
+                  className="group flex flex-wrap items-center gap-1 rounded-sm px-2 py-2 text-sm font-medium text-foreground hover:bg-accent"
                 >
                   {editingId === cat.id ? (
                     <>
@@ -205,9 +196,9 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                           if (e.key === "Enter") { e.preventDefault(); commitEdit(cat); }
                           if (e.key === "Escape") { e.preventDefault(); setEditingId(null); }
                         }}
-                        className="min-w-0 flex-1 rounded-[var(--radius-xs)] border border-primary/40 bg-background px-2 py-1 text-sm text-foreground outline-none"
+                        className="min-w-0 flex-1 rounded-xs border border-primary/40 bg-background px-2 py-1 text-sm text-foreground outline-none"
                       />
-                      <div className="mt-1.5 w-full rounded-[var(--radius-sm)] border border-border bg-background p-1.5">
+                      <div className="mt-1.5 w-full rounded-sm border border-border bg-background p-1.5">
                         <IconPicker onChange={setEditIcon} value={editIcon} />
                       </div>
                     </>
@@ -220,7 +211,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                       <CatIcon className="shrink-0 text-muted-foreground" size={15} />
                       <span className="truncate">{cat.label}</span>
                       {inUse && (
-                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-2xs font-semibold tabular-nums text-muted-foreground">
                           {cat.templateCount}
                         </span>
                       )}
@@ -231,7 +222,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                       type="button"
                       onClick={() => startEdit(cat)}
                       aria-label={`Rename ${cat.label}`}
-                      className="shrink-0 rounded-[var(--radius-xs)] p-1.5 text-muted-foreground-subtle opacity-0 transition-colors hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                      className="shrink-0 rounded-xs p-1.5 text-muted-foreground-subtle opacity-0 transition-colors hover:bg-accent hover:text-foreground group-hover:opacity-100"
                     >
                       <Pencil size={13} />
                     </button>
@@ -244,7 +235,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                     onMouseEnter={(e) => inUse && showTooltip(`Used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} — remove them first`, e)}
                     onMouseLeave={hideTooltip}
                     className={[
-                      "shrink-0 rounded-[var(--radius-xs)] p-1.5 opacity-0 transition-colors group-hover:opacity-100",
+                      "shrink-0 rounded-xs p-1.5 opacity-0 transition-colors group-hover:opacity-100",
                       inUse
                         ? "cursor-not-allowed text-muted-foreground-subtle"
                         : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
@@ -264,7 +255,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
           <button
             type="button"
             onClick={openAdd}
-            className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex w-full items-center gap-1.5 rounded-sm px-2 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Plus size={14} />
             New category
@@ -277,11 +268,12 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
         document.body,
       )}
 
-      {addOpen && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={closeAdd} />
-          <div className="relative w-[min(360px,92vw)] rounded-[var(--radius-xl)] border border-border bg-background p-5">
-            <h2 className="text-sm font-semibold text-foreground">New category</h2>
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-90 sm:max-w-90 gap-4 rounded-xl bg-background">
+          <DialogHeader>
+            <DialogTitle>New category</DialogTitle>
+          </DialogHeader>
+          <div>
             <input
               type="text"
               autoFocus
@@ -289,39 +281,34 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
               onChange={(e) => setNewLabel(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleCreate();
-                if (e.key === "Escape") closeAdd();
               }}
               placeholder="e.g. Meeting Notes"
-              className="mt-3 w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
 
             <p className="mt-4 text-xs font-semibold text-muted-foreground">Icon</p>
-            <div className="mt-1.5 rounded-[var(--radius-sm)] border border-border p-2">
+            <div className="mt-1.5 rounded-sm border border-border p-2">
               <IconPicker onChange={setNewIcon} value={newIcon} />
             </div>
 
             {addError && <p className="mt-1.5 text-xs text-destructive">{addError}</p>}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeAdd}
-                className="rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={creating || !newLabel.trim()}
-                className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                {creating ? "Saving…" : "Save"}
-              </button>
-            </div>
           </div>
-        </div>,
-        document.body,
-      )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" size="sm">Cancel</Button>
+            </DialogClose>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleCreate}
+              disabled={creating || !newLabel.trim()}
+            >
+              {creating && <Loader2 size={13} className="animate-spin" />}
+              {creating ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!toDelete}

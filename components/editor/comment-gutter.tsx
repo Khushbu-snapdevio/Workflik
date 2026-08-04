@@ -196,7 +196,7 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
      type="button"
      onClick={() => onOpen(blockId)}
      style={{ position: "fixed", top, left, zIndex: 100 }}
-     className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-muted-foreground bg-muted border border-border rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground transition-colors duration-150"
+     className="flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium text-muted-foreground bg-muted border border-border rounded-xs hover:bg-accent hover:text-foreground transition-colors duration-150"
     >
      <MessageSquare size={10} />
      {count}

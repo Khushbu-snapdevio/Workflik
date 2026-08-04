@@ -60,7 +60,7 @@ export default async function TrashPage({ params }: Props) {
         <nav className="flex items-center gap-0.5 text-xs">
           <Link
             href={`/app/${slug}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-foreground transition-colors hover:bg-accent"
+            className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-foreground transition-colors hover:bg-accent"
           >
             <Home size={13} className="shrink-0 text-foreground" />
             <span className="font-medium">{ws.name}</span>

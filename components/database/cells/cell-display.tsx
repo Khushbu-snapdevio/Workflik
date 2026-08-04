@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "@/lib/auth/client";
-import { File as FileIcon, ThumbsUp } from "lucide-react";
+import { Check, File as FileIcon, ThumbsUp } from "lucide-react";
 import { getOptionColor, formatNumber, formatDateValue } from "@/components/database/property-registry";
 import type { NumberFormat } from "@/components/database/property-registry";
 import type { DbProperty, FileItem, SelectOption } from "@/components/database/types";
@@ -35,19 +35,30 @@ interface CellDisplayProps {
   workspaceId?: string;
 }
 
-// Same custom rounded-square glyph the checkbox-type property already uses in
-// entry-properties-panel.tsx — the app's actual checkbox design, rather than
-// the generic lucide Square/SquareCheck icons.
-function CheckboxGlyph({ checked }: { checked: boolean }) {
-  return checked ? (
-    <svg className="size-4 shrink-0 text-primary" viewBox="0 0 20 20" fill="currentColor">
-      <rect x="2" y="2" width="16" height="16" rx="4" />
-      <path d="M6 10l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-  ) : (
-    <svg className="size-4 shrink-0 text-muted-foreground" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <rect x="2.5" y="2.5" width="15" height="15" rx="3.5" />
-    </svg>
+// Native input (not hand-drawn svg) gives role="checkbox"/aria-checked for free; `data-slot="checkbox"` + `peer`
+// mirror checkbox.tsx's convention. Visual state driven off `checked` prop, not CSS :checked, per checkbox.tsx.
+function CheckboxGlyph({ checked, onToggle }: { checked: boolean; onToggle?: () => void }) {
+  return (
+    <span
+      data-slot="checkbox"
+      className={`peer relative inline-flex size-4 shrink-0 items-center justify-center ${onToggle ? "cursor-pointer" : "cursor-default"}`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        readOnly={!onToggle}
+        tabIndex={onToggle ? undefined : -1}
+        onChange={onToggle ? () => onToggle() : undefined}
+        className={`absolute inset-0 size-full cursor-[inherit] appearance-none rounded-[3px] border bg-transparent outline-none transition-colors ${
+          checked ? "border-primary bg-primary" : "border-muted-foreground"
+        }`}
+      />
+      <Check
+        aria-hidden="true"
+        strokeWidth={2.5}
+        className={`pointer-events-none relative size-2.5 text-primary-foreground transition-none ${checked ? "opacity-100" : "opacity-0"}`}
+      />
+    </span>
   );
 }
 
@@ -101,17 +112,16 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
     case "status": {
       const optionId = (v as { optionId?: string | null } | null)?.optionId ?? null;
       if (displayAs === "checkbox") {
-        const icon = <CheckboxGlyph checked={!!optionId} />;
+        const icon = <CheckboxGlyph checked={!!optionId} onToggle={onToggleCheckbox} />;
         if (onToggleCheckbox) {
           return (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleCheckbox(); }}
-              className="inline-flex items-center gap-1.5 text-sm text-foreground hover:text-foreground"
+            <label
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-foreground hover:text-foreground"
             >
               {icon}
               {property.name}
-            </button>
+            </label>
           );
         }
         return (
@@ -125,10 +135,10 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
       const options = (property.config?.options ?? []) as SelectOption[];
       const opt = options.find((o) => o.id === optionId);
       if (!opt) return null;
-      const wrapCls = wrapContent ? "whitespace-normal break-words" : "truncate";
+      const wrapCls = wrapContent ? "whitespace-normal wrap-break-word" : "truncate";
       const color = getOptionColor(opt.color);
       return (
-        <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+        <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
           <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
           <span className={wrapCls}>{opt.name}</span>
         </span>
@@ -140,17 +150,16 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
       const options   = (property.config?.options ?? []) as SelectOption[];
       const selected  = optionIds.map((id) => options.find((o) => o.id === id)).filter(Boolean) as SelectOption[];
       if (displayAs === "checkbox") {
-        const icon = <CheckboxGlyph checked={selected.length > 0} />;
+        const icon = <CheckboxGlyph checked={selected.length > 0} onToggle={onToggleCheckbox} />;
         if (onToggleCheckbox) {
           return (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleCheckbox(); }}
-              className="inline-flex items-center gap-1.5 text-sm text-foreground hover:text-foreground"
+            <label
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex cursor-pointer items-center gap-1.5 text-sm text-foreground hover:text-foreground"
             >
               {icon}
               {property.name}
-            </button>
+            </label>
           );
         }
         return (
@@ -167,7 +176,7 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
           {shown.map((opt) => {
             const color = getOptionColor(opt.color);
             return (
-              <span key={opt.id} className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+              <span key={opt.id} className="inline-flex items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
                 <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
                 {opt.name}
               </span>
@@ -269,7 +278,7 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
             <span
               onMouseEnter={userIds.length ? (e) => setVoterTooltip({ label: voterLabel, rect: e.currentTarget.getBoundingClientRect() }) : undefined}
               onMouseLeave={userIds.length ? () => setVoterTooltip(null) : undefined}
-              className={`inline-flex w-fit items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium transition-colors duration-150 ${
+              className={`inline-flex w-fit items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium transition-colors duration-150 ${
                 hasVoted
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -300,14 +309,14 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
             return (
               <span
                 key={id}
-                className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted pl-0.5 pr-2 py-0.5"
+                className="inline-flex items-center gap-1 rounded-xs bg-muted pl-0.5 pr-2 py-0.5"
                 onMouseEnter={workspaceId ? (e) => setHoveredUser({ userId: id, rect: e.currentTarget.getBoundingClientRect() }) : undefined}
                 onMouseLeave={workspaceId ? () => setHoveredUser((cur) => (cur?.userId === id ? null : cur)) : undefined}
               >
                 <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                   {initial}
                 </span>
-                <span className="max-w-[80px] truncate text-xs font-medium text-foreground">
+                <span className="max-w-20 truncate text-xs font-medium text-foreground">
                   {label}
                 </span>
                 {workspaceId && hoveredUser?.userId === id && (
@@ -354,16 +363,16 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
                 src={f.url}
                 alt={f.name}
                 onClick={(e) => { e.stopPropagation(); setLightboxFile(f); }}
-                className="h-12 w-[76px] shrink-0 cursor-zoom-in rounded-[var(--radius-sm)] border border-border object-cover"
+                className="h-12 w-19 shrink-0 cursor-zoom-in rounded-sm border border-border object-cover"
               />
             ) : (
               <span
                 key={f.id}
                 title={f.name}
-                className="flex h-12 w-[76px] shrink-0 flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-1"
+                className="flex h-12 w-19 shrink-0 flex-col items-center justify-center gap-1 rounded-sm border border-border bg-muted/30 px-1"
               >
                 <FileIcon size={16} className="shrink-0 text-muted-foreground" />
-                <span className="w-full truncate text-center text-[10px] text-muted-foreground">{f.name}</span>
+                <span className="w-full truncate text-center text-2xs text-muted-foreground">{f.name}</span>
               </span>
             );
           })}

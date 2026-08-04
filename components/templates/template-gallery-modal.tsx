@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { optionStyle } from "@/components/database/option-colors";
 import { resolveCategoryIcon } from "@/lib/orbit/category-icons";
 
@@ -167,17 +167,12 @@ export function TemplateGalleryModal({
     }
   }
 
-  if (typeof document === "undefined") {
-    return null;
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative flex h-[88vh] w-full max-w-[980px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex h-[88vh] w-full max-w-245 gap-0 overflow-hidden rounded-lg border border-border bg-background p-0 ring-0 backdrop:bg-black/50"
+      >
         {/* ── GALLERY STEP ── */}
         {step === "gallery" && (
           <>
@@ -204,7 +199,7 @@ export function TemplateGalleryModal({
                   return (
                     <button
                       className={[
-                        "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors duration-150",
+                        "flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors duration-150",
                         isActive
                           ? "bg-accent text-foreground font-medium"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -221,7 +216,7 @@ export function TemplateGalleryModal({
                         {cat.label}
                       </span>
                       {cnt > 0 && (
-                        <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                        <span className="rounded-xs bg-muted px-1.5 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
                           {cnt}
                         </span>
                       )}
@@ -235,7 +230,7 @@ export function TemplateGalleryModal({
             <div className="flex min-w-0 flex-1 flex-col">
               {/* Search */}
               <div className="border-b border-border px-5 py-3">
-                <div className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/40 px-3.5 py-2.5">
+                <div className="flex items-center gap-2.5 rounded-md border border-border bg-muted/40 px-3.5 py-2.5">
                   <Search
                     className="shrink-0 text-muted-foreground"
                     size={15}
@@ -324,18 +319,18 @@ export function TemplateGalleryModal({
             return (
               <div className="flex h-full w-full">
                 {/* Left panel */}
-                <div className="flex w-[300px] shrink-0 flex-col border-r border-border bg-background">
+                <div className="flex w-75 shrink-0 flex-col border-r border-border bg-background">
                   {/* Header */}
                   <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
                     <button
-                      className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       onClick={handleBack}
                       type="button"
                     >
                       <ArrowLeft size={14} />
                     </button>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+                      <p className="text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
                         Templates
                       </p>
                       <h3 className="truncate text-sm font-bold text-foreground leading-tight">
@@ -346,7 +341,7 @@ export function TemplateGalleryModal({
 
                   {/* Icon + name hero */}
                   <div className="flex items-center gap-3 border-b border-border bg-muted/20 px-4 py-4">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-xl)] border border-border bg-card text-2xl">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-2xl">
                       {selected.pageSnapshot.icon || (
                         <CatIcon className="text-muted-foreground" size={20} />
                       )}
@@ -355,7 +350,7 @@ export function TemplateGalleryModal({
                       <p className="truncate text-sm font-semibold text-foreground">
                         {selected.name}
                       </p>
-                      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium border border-border text-muted-foreground bg-muted/30 mt-0.5">
+                      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs font-medium border border-border text-muted-foreground bg-muted/30 mt-0.5">
                         <CatIcon size={9} />
                         {catLabel}
                       </span>
@@ -377,10 +372,10 @@ export function TemplateGalleryModal({
                       />
                     ) : blocks.length > 0 ? (
                       <div className="mt-4">
-                        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+                        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
                           Included in this template
                         </p>
-                        <div className="space-y-1 rounded-[var(--radius-xl)] border border-border bg-muted/20 p-3">
+                        <div className="space-y-1 rounded-xl border border-border bg-muted/20 p-3">
                           {blocks.slice(0, 12).map((b, i) => (
                             <BlockPreview
                               block={b as { type: string; content?: unknown }}
@@ -400,7 +395,7 @@ export function TemplateGalleryModal({
                   {/* Use template CTA */}
                   <div className="border-t border-border px-4 py-4">
                     <button
-                      className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-xl)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
                       disabled={applying}
                       onClick={() => applyTemplate(selected)}
                       type="button"
@@ -426,16 +421,16 @@ export function TemplateGalleryModal({
                 {/* Right panel — page preview fills full height */}
                 <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
                   <div className="flex flex-1 flex-col overflow-hidden p-4">
-                    <div className="flex flex-1 flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-background">
+                    <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background">
                       {/* Cover strip with overlapping icon */}
-                      <div className="relative flex h-[80px] shrink-0 items-end bg-gradient-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
+                      <div className="relative flex h-20 shrink-0 items-end bg-linear-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
                         {selected.pageSnapshot.icon ? (
-                          <span className="translate-y-[22px] text-[40px] leading-none">
+                          <span className="translate-y-5.5 text-[40px] leading-none">
                             {selected.pageSnapshot.icon}
                           </span>
                         ) : (
                           <CatIcon
-                            className="translate-y-[22px] text-muted-foreground-subtle"
+                            className="translate-y-5.5 text-muted-foreground-subtle"
                             size={34}
                           />
                         )}
@@ -477,15 +472,14 @@ export function TemplateGalleryModal({
 
         {/* Close button */}
         <button
-          className="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+          className="absolute right-3 top-3 z-10 flex size-7 items-center justify-center rounded-sm border border-border bg-background text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
           onClick={onClose}
           type="button"
         >
           <X size={14} />
         </button>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -508,35 +502,35 @@ function TemplateCard({
 
   return (
     <button
-      className="group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-card text-left transition-colors duration-150 hover:border-border hover:bg-accent/20"
+      className="group flex flex-col overflow-hidden rounded-md border border-border bg-card text-left transition-colors duration-150 hover:border-border hover:bg-accent/20"
       onClick={onSelect}
       type="button"
     >
       {/* Mini document preview */}
-      <div className="relative h-[90px] overflow-hidden border-b border-border bg-muted/20 p-3">
+      <div className="relative h-22.5 overflow-hidden border-b border-border bg-muted/20 p-3">
         <div className="mb-2 flex items-center gap-1.5">
           {template.pageSnapshot.icon ? (
             <span className="shrink-0 text-sm leading-none">
               {template.pageSnapshot.icon}
             </span>
           ) : (
-            <div className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
+            <div className="flex size-4 shrink-0 items-center justify-center rounded-xs bg-muted">
               <CatIcon className="text-muted-foreground" size={9} />
             </div>
           )}
-          <div className="h-1.5 w-16 rounded-[var(--radius-xs)] bg-foreground/15" />
+          <div className="h-1.5 w-16 rounded-xs bg-foreground/15" />
         </div>
         <div className="space-y-1">
-          <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-muted-foreground/15" />
-          <div className="h-1 w-3/5 rounded-[var(--radius-xs)] bg-muted-foreground/12" />
+          <div className="h-1 w-4/5 rounded-xs bg-muted-foreground/15" />
+          <div className="h-1 w-3/5 rounded-xs bg-muted-foreground/12" />
           <div className="h-px bg-border my-0.5" />
           <div className="flex items-center gap-1">
             <div className="size-1 rounded-full bg-muted-foreground/25" />
-            <div className="h-1 w-1/2 rounded-[var(--radius-xs)] bg-muted-foreground/12" />
+            <div className="h-1 w-1/2 rounded-xs bg-muted-foreground/12" />
           </div>
           <div className="flex items-center gap-1">
             <div className="size-1 rounded-full bg-muted-foreground/25" />
-            <div className="h-1 w-2/3 rounded-[var(--radius-xs)] bg-muted-foreground/10" />
+            <div className="h-1 w-2/3 rounded-xs bg-muted-foreground/10" />
           </div>
         </div>
       </div>
@@ -553,7 +547,7 @@ function TemplateCard({
         )}
         <div className="mt-2">
           <span
-            className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-[9.5px] font-semibold ${colors.badge}`}
+            className={`inline-flex items-center gap-1 rounded-xs px-2 py-0.5 text-[9.5px] font-semibold ${colors.badge}`}
           >
             <CatIcon size={9} />
             {catLabel}
@@ -671,14 +665,14 @@ function DbSchemaPreview({
     <div className="mt-5 space-y-5">
       {/* Views */}
       <div>
-        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
           {schema.views.map((v) => (
             <span
               className={[
-                "inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-xs font-medium",
+                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
                 v.isDefault
                   ? "border-primary/20 bg-primary/10 text-primary"
                   : "border-border bg-muted/30 text-muted-foreground",
@@ -694,10 +688,10 @@ function DbSchemaPreview({
 
       {/* Properties */}
       <div>
-        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
           Properties ({schema.properties.length})
         </p>
-        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
           {schema.properties.map((p, i) => (
             <div
               className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
@@ -717,14 +711,14 @@ function DbSchemaPreview({
                 <div className="flex shrink-0 items-center gap-1">
                   {p.options.slice(0, 2).map((o) => (
                     <span
-                      className={`max-w-[64px] truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${optionStyle(o.color).badge}`}
+                      className={`max-w-16 truncate rounded px-1.5 py-0.5 text-2xs font-medium ${optionStyle(o.color).badge}`}
                       key={o.name}
                     >
                       {o.name}
                     </span>
                   ))}
                   {p.options.length > 2 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-2xs text-muted-foreground">
                       +{p.options.length - 2}
                     </span>
                   )}
@@ -802,7 +796,7 @@ function DbTablePreview({
     <div className="mt-3">
       <ViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
       {/* Table */}
-      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border">
+      <div className="overflow-hidden rounded-sm border border-border">
         {/* Header */}
         <div className="flex border-b border-border bg-muted/30">
           {visibleProps.map((p) => (
@@ -833,7 +827,7 @@ function DbTablePreview({
                 >
                   {opt ? (
                     <span
-                      className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[9.5px] font-medium ${optionStyle(opt.color).badge}`}
+                      className={`rounded-xs px-1.5 py-0.5 text-[9.5px] font-medium ${optionStyle(opt.color).badge}`}
                     >
                       {val}
                     </span>
@@ -885,7 +879,7 @@ function BoardPreview({
     <div className="flex min-h-0 flex-1 flex-col">
       <ViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
       {/* Board grid — columns divide the full height */}
-      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-[var(--radius-lg)] border border-border bg-background">
+      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-background">
         {columns.map((col, ci) => {
           const colRows = groupByProp
             ? rows.filter((r) => r[groupByProp.name] === col.name)
@@ -893,7 +887,7 @@ function BoardPreview({
           const clr = optionStyle(col.color);
           return (
             <div
-              className={`flex min-w-[148px] flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border" : ""}`}
+              className={`flex min-w-37 flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border" : ""}`}
               key={col.name}
             >
               {/* Column header */}
@@ -903,7 +897,7 @@ function BoardPreview({
                   {col.name}
                 </span>
                 {colRows.length > 0 && (
-                  <span className="tabular-nums text-[10px] text-muted-foreground-subtle">
+                  <span className="tabular-nums text-2xs text-muted-foreground-subtle">
                     {colRows.length}
                   </span>
                 )}
@@ -920,7 +914,7 @@ function BoardPreview({
                   );
                   return (
                     <div
-                      className="shrink-0 rounded-[var(--radius-md)] border border-border bg-card p-2.5"
+                      className="shrink-0 rounded-md border border-border bg-card p-2.5"
                       key={i}
                     >
                       <p className="text-[11px] font-medium leading-snug text-foreground">
@@ -928,7 +922,7 @@ function BoardPreview({
                       </p>
                       {tagOpt && (
                         <span
-                          className={`mt-1.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${optionStyle(tagOpt.color).badge}`}
+                          className={`mt-1.5 inline-flex rounded px-1.5 py-0.5 text-2xs font-medium ${optionStyle(tagOpt.color).badge}`}
                         >
                           {tagVal}
                         </span>
@@ -939,7 +933,7 @@ function BoardPreview({
               </div>
               {/* + New — pinned to column bottom */}
               <div className="shrink-0 border-t border-border px-3 py-2">
-                <span className="text-[10px] text-muted-foreground-subtle">
+                <span className="text-2xs text-muted-foreground-subtle">
                   + New
                 </span>
               </div>
@@ -974,7 +968,7 @@ function CalendarPreview({
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
       <ViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border">
         <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/20 px-3 py-1.5">
           <span className="text-xs font-semibold text-foreground/70">
             June 2026
@@ -1060,10 +1054,10 @@ function LoadingSkeleton() {
     <div className="grid grid-cols-3 gap-3">
       {Array.from({ length: 9 }).map((_, i) => (
         <div
-          className="overflow-hidden rounded-[var(--radius-md)] border border-border"
+          className="overflow-hidden rounded-md border border-border"
           key={i}
         >
-          <div className="h-[76px] animate-pulse bg-muted/60" />
+          <div className="h-19 animate-pulse bg-muted/60" />
           <div className="space-y-1.5 bg-background p-3">
             <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
             <div className="h-2.5 w-full animate-pulse rounded bg-muted/60" />
@@ -1077,7 +1071,7 @@ function LoadingSkeleton() {
 function EmptyState() {
   return (
     <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 text-center">
-      <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
+      <div className="flex size-14 items-center justify-center rounded-lg bg-muted/50">
         <LayoutGrid className="text-muted-foreground" size={28} />
       </div>
       <div>

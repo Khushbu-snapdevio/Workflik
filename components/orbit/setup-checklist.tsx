@@ -76,10 +76,10 @@ export function SetupChecklist({
   }
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-3.5">
         <div className="flex items-center gap-2.5">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
             <ShieldAlert className="text-primary" size={14} />
           </span>
           <div>
@@ -95,7 +95,7 @@ export function SetupChecklist({
         </div>
         <button
           aria-label="Dismiss setup checklist"
-          className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
           onClick={dismiss}
           type="button"
         >

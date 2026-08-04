@@ -69,7 +69,7 @@ function InviteRow({
      type="button"
      onClick={onRemove}
      aria-label="Remove this invite"
-     className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+     className="flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
     >
      <X size={14} />
     </button>
@@ -222,33 +222,35 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
       </p>
 
       {/* Vertical radio list */}
-      <div className="mb-6 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="mb-6 w-full overflow-hidden rounded-lg border border-border bg-card">
        {currentStep.options.map((opt, idx) => {
         const isSelected = selections[step] === opt.value;
         return (
-         <button
+         <label
           key={opt.value}
-          type="button"
-          onClick={() => selectOption(opt.value)}
-          className={`relative flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-150 ${
+          className={`group relative flex w-full cursor-pointer items-center gap-4 px-5 py-4 text-left transition-colors duration-150 has-checked:bg-primary/5 hover:bg-accent ${
            idx > 0 ? "border-t border-border" : ""
-          } ${isSelected ? "bg-primary/5" : "hover:bg-accent"}`}
+          }`}
          >
-          {isSelected && (
-           <span className="absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary" />
-          )}
+          <input
+           type="radio"
+           name={currentStep.key}
+           value={opt.value}
+           checked={isSelected}
+           onChange={() => selectOption(opt.value)}
+           className="sr-only"
+          />
+          <span className="absolute inset-y-0 left-0 hidden w-0.75 rounded-r-sm bg-primary group-has-checked:block" />
           <div className="flex-1 min-w-0 pl-1">
-           <p className={`text-[14.5px] font-semibold leading-snug ${isSelected ? "text-primary" : "text-foreground"}`}>
+           <p className="text-[14.5px] font-semibold leading-snug text-foreground group-has-checked:text-primary">
             {opt.label}
            </p>
            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{opt.description}</p>
           </div>
-          <div className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
-           isSelected ? "border-primary bg-primary" : "border-border"
-          }`}>
-           {isSelected && <span className="size-[6px] rounded-full bg-primary-foreground" />}
+          <div className="flex size-4.5 shrink-0 items-center justify-center rounded-full border-2 border-border transition-colors duration-150 group-has-checked:border-primary group-has-checked:bg-primary">
+           <span className="hidden size-1.5 rounded-full bg-primary-foreground group-has-checked:block" />
           </div>
-         </button>
+         </label>
         );
        })}
       </div>
@@ -268,7 +270,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
         : "Email isn't configured on this instance yet, so invite links won't be emailed — you'll need to share them manually from workspace settings."}
       </p>
 
-      <div className="mb-3 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="mb-3 w-full overflow-hidden rounded-lg border border-border bg-card">
        {invites.map((inv, i) => (
         <InviteRow
          key={i}
@@ -330,7 +332,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
        onClick={handleBack}
        disabled={pending}
        aria-label="Back"
-       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-border text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
       >
        <ArrowLeft size={16} />
       </button>
@@ -339,7 +341,7 @@ export function WorkspaceSetup({ workspaceId, workspaceName, workspaceSlug, work
       type="button"
       onClick={handleContinue}
       disabled={(!isInviteStep && !selected) || pending}
-      className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-11 flex-1 items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
      >
       {pending
        ? "Setting up…"

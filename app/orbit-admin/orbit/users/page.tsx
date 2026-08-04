@@ -49,19 +49,19 @@ export default async function OrbitUsersPage({ searchParams }: Props) {
       <h1 className="text-xl font-bold tracking-tight text-foreground">Users</h1>
       <p className="mt-1 text-sm text-muted-foreground">All registered accounts — ban, impersonate, revoke sessions.</p>
      </div>
-     <Suspense fallback={<div className="h-9 w-64 rounded-[var(--radius-md)] bg-muted animate-pulse" />}>
+     <Suspense fallback={<div className="h-9 w-64 rounded-md bg-muted animate-pulse" />}>
       <AdminSearchBox placeholder="Search by name or email…" />
      </Suspense>
     </div>
     <div className="mt-3 flex items-center gap-2">
-     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+     <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <strong className="font-bold text-foreground">{totalCount!.count}</strong> total
      </span>
-     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+     <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <strong className="font-bold text-foreground">{adminCount}</strong> admin{adminCount !== 1 ? "s" : ""} on this page
      </span>
      {bannedCount!.count > 0 && (
-      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive">
+      <span className="inline-flex items-center gap-1.5 rounded-sm bg-destructive/5 px-2.5 py-1 text-xs font-medium text-destructive">
        <strong className="font-bold">{bannedCount!.count}</strong> banned
       </span>
      )}
@@ -69,7 +69,7 @@ export default async function OrbitUsersPage({ searchParams }: Props) {
    </div>
 
    {/* Table */}
-   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="overflow-hidden rounded-lg border border-border bg-card">
     <div className="border-b border-border bg-muted/20 px-5 py-3">
      <p className="text-xs font-semibold text-muted-foreground">
       {filteredCount!.count} account{filteredCount!.count !== 1 ? "s" : ""}{q ? ` matching "${q}"` : ""}
@@ -130,7 +130,7 @@ export default async function OrbitUsersPage({ searchParams }: Props) {
           <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">{formatDateTime(u.createdAt)}</td>
           <td className="px-4 py-3">
            <Link href={`/orbit-admin/orbit/users/${u.id}`}
-            className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-accent">
+            className="inline-flex items-center gap-1 rounded-sm border border-border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-accent">
             View <ArrowRight size={12} />
            </Link>
           </td>

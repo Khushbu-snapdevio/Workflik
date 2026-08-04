@@ -4,7 +4,7 @@ export default function TemplatesLoading() {
       {/* Topbar skeleton — h-11/px-3 mirrors the real header in
           templates-page-client.tsx exactly, so it doesn't jump on load. */}
       <div className="flex h-11 shrink-0 items-center border-b border-border px-3">
-        <div className="h-4 w-28 rounded-[var(--radius-sm)] bg-muted" />
+        <div className="h-4 w-28 rounded-sm bg-muted" />
       </div>
 
       {/* Category filter skeleton */}
@@ -18,7 +18,7 @@ export default function TemplatesLoading() {
       <div className="flex-1 overflow-hidden p-6">
         <div className="grid grid-cols-3 gap-4">
           {[...Array(9)].map((_, i) => (
-            <div key={i} className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+            <div key={i} className="overflow-hidden rounded-lg border border-border bg-card">
               <div className="h-28 w-full bg-muted" />
               <div className="p-4">
                 <div className="mb-2 h-4 w-3/4 rounded bg-muted" />

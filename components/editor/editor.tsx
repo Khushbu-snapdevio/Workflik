@@ -18,7 +18,6 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { usePageDraft } from "@/components/pages/page-draft-context";
 import { SaveStatusIndicator } from "@/components/ui/save-status";
@@ -282,6 +281,26 @@ export function PageEditor({
       !!commentCardRef.current?.contains(target) ||
       !!target.closest?.('[data-comment-exempt], [role="alertdialog"]')
   );
+
+  // Native <dialog> shell (showModal/close give focus-trap, Escape, ::backdrop for free, same
+  // pattern as ui/dialog.tsx); the margin/sidebar-collision positioning math below is untouched, kept as-is per its documented bug history.
+  const commentDialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const el = commentDialogRef.current;
+    if (!el) return;
+    if (commentCard && !el.open) el.showModal();
+    else if (!commentCard && el.open) el.close();
+  }, [commentCard]);
+  useEffect(() => {
+    const el = commentDialogRef.current;
+    if (!el) return;
+    function handleClose() {
+      closeCommentCard();
+    }
+    el.addEventListener("close", handleClose);
+    return () => el.removeEventListener("close", handleClose);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Belt-and-suspenders: useScrollLockWhileOpen only blocks wheel/touch, which
   // misses scrollbar-drag and keyboard scrolling (Space/PageDown/arrows).
@@ -733,7 +752,7 @@ export function PageEditor({
 
       <EditorContent
         className={[
-          "outline-none [&_.ProseMirror]:min-h-[120px]",
+          "outline-none [&_.ProseMirror]:min-h-30",
           fontClass,
           sizeClass,
         ].join(" ")}
@@ -753,16 +772,21 @@ export function PageEditor({
       )}
 
       {/* Floating comment card — anchored just right of the editor column,
-          next to the block it was opened from, clamped to stay on-screen */}
-      {commentCard &&
-        workspaceId &&
-        editor &&
-        typeof document !== "undefined" &&
-        (() => {
-          const CARD_WIDTH = 380;
-          const CARD_MAX_HEIGHT = 550; // header + capped thread list + composer
-          const VIEWPORT_MARGIN = 16;
-          const CARD_GAP = 20;
+          next to the block it was opened from, clamped to stay on-screen.
+          Native <dialog> shell (Escape + ::backdrop for free); the anchor
+          math below is unchanged custom positioning, not a Headless UI
+          anchor — this popup has no single DOM trigger element common to its
+          4 open paths (gutter badge, block handle, inline-toolbar selection,
+          keyboard shortcut) for a library to anchor against. */}
+      {workspaceId && editor && typeof document !== "undefined" && (() => {
+        const CARD_WIDTH = 380;
+        const CARD_MAX_HEIGHT = 550; // header + capped thread list + composer
+        const VIEWPORT_MARGIN = 16;
+        const CARD_GAP = 20;
+
+        let left = 0;
+        let top = 0;
+        if (commentCard) {
           const editorRect = editor.view.dom.getBoundingClientRect();
 
           // The left margin only has real free space past the app sidebar's
@@ -782,32 +806,27 @@ export function PageEditor({
           // always reading as "a margin comment next to this block."
           const spaceRight = window.innerWidth - editorRect.right - VIEWPORT_MARGIN;
           const spaceLeft = editorRect.left - sidebarRight - VIEWPORT_MARGIN;
-          let left = spaceRight >= spaceLeft
+          left = spaceRight >= spaceLeft
            ? editorRect.right + CARD_GAP
            : editorRect.left - CARD_GAP - CARD_WIDTH;
           left = Math.min(left, window.innerWidth - CARD_WIDTH - VIEWPORT_MARGIN);
           left = Math.max(left, sidebarRight + VIEWPORT_MARGIN);
 
           const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - CARD_MAX_HEIGHT - VIEWPORT_MARGIN);
-          const top = Math.min(Math.max(VIEWPORT_MARGIN, commentCard.blockY), maxTop);
+          top = Math.min(Math.max(VIEWPORT_MARGIN, commentCard.blockY), maxTop);
+        }
 
-          return createPortal(
-            <>
-              {/* Subtle backdrop — dims the page while the card is open and
-                  gives the outside-click-to-close handler an obvious target */}
-              <div
-                className="fixed inset-0 bg-black/5 dark:bg-black/20"
-                style={{ zIndex: 580 }}
-              />
-              <div
-                ref={commentCardRef}
-                style={{
-                  position: "fixed",
-                  left,
-                  top,
-                  zIndex: 590,
-                }}
-              >
+        return (
+          <dialog
+            ref={commentDialogRef}
+            onClick={(e) => {
+              if (e.target === commentDialogRef.current) closeCommentCard();
+            }}
+            className="m-0 max-w-none border-none bg-transparent p-0 outline-none backdrop:bg-black/5 dark:backdrop:bg-black/20"
+            style={{ position: "fixed", left, top }}
+          >
+            {commentCard && (
+              <div ref={commentCardRef}>
                 <CommentCard
                   anchorEnd={commentCard.anchorEnd}
                   anchorStart={commentCard.anchorStart}
@@ -819,10 +838,10 @@ export function PageEditor({
                   workspaceId={workspaceId}
                 />
               </div>
-            </>,
-            document.body
-          );
-        })()}
+            )}
+          </dialog>
+        );
+      })()}
     </div>
   );
 }

@@ -2,8 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useNotificationStream, type StreamNotification } from "@/lib/notifications/use-notification-stream";
-import { NotificationToast } from "@/components/notifications/notification-toast";
+import { NotificationToastCard } from "@/components/notifications/notification-toast";
 
 interface NotificationContextValue {
   unreadCount:     number;
@@ -37,7 +38,6 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug, cur
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
   const [panelOpen, setPanelOpen]     = useState(false);
-  const [toasts, setToasts]           = useState<StreamNotification[]>([]);
 
   // Ref so the SSE callback always reads the live panelOpen value (no stale closure)
   const panelOpenRef = useRef(false);
@@ -64,6 +64,35 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug, cur
     return () => clearInterval(id);
   }, [fetchCount]);
 
+  const openPanel  = useCallback(() => { setPanelOpen(true);  }, []);
+  const closePanel = useCallback(() => { setPanelOpen(false); fetchCount(); }, [fetchCount]);
+
+  // Renders the existing rich card through sonner's toast.custom() instead of a hand-rolled
+  // stacked-toast queue, so notifications flow through the app's one toast pipeline (ui/sonner.tsx) instead of a second independent stack.
+  const showToast = useCallback((notification: StreamNotification) => {
+    toast.custom(
+      (id) => (
+        <NotificationToastCard
+          notification={notification}
+          onDismiss={() => toast.dismiss(id)}
+          onView={() => {
+            toast.dismiss(id);
+            if (notification.type === "trash_warning") {
+              router.push(`/app/${workspaceSlug}/trash`);
+            } else if (notification.type === "workspace_invite" && notification.inviteToken) {
+              router.push(`/invite/${notification.inviteToken}`);
+            } else if (notification.pageShortId) {
+              router.push(`/app/${workspaceSlug}/${notification.pageShortId}`);
+            } else {
+              openPanel();
+            }
+          }}
+        />
+      ),
+      { id: notification.id, duration: 5000 }
+    );
+  }, [router, workspaceSlug, openPanel]);
+
   // SSE — increments count + shows toast for each new notification
   useNotificationStream({
     workspaceId,
@@ -81,15 +110,10 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug, cur
       // that originated from someone else.
       if (!panelOpenRef.current) {
         const toastable = freshItems.filter((n) => n.senderId !== currentUserId);
-        if (toastable.length > 0) {
-          setToasts((prev) => [...prev, ...toastable].slice(-5)); // cap at 5 toasts
-        }
+        toastable.forEach(showToast);
       }
     },
   });
-
-  const openPanel  = useCallback(() => { setPanelOpen(true);  }, []);
-  const closePanel = useCallback(() => { setPanelOpen(false); fetchCount(); }, [fetchCount]);
 
   const markRead = useCallback((id: string) => {
     fetch(`/api/notifications/${id}/read`, { method: "PATCH" }).catch(() => {});
@@ -114,10 +138,6 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug, cur
     setUnreadCount(0);
   }, [workspaceId]);
 
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
   const deleteNotification = useCallback((id: string, wasUnread: boolean) => {
     fetch(`/api/notifications/${id}`, { method: "DELETE" }).catch(() => {});
     if (wasUnread) setUnreadCount((c) => Math.max(0, c - 1));
@@ -128,25 +148,6 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug, cur
       value={{ unreadCount, workspaceId, panelOpen, openPanel, closePanel, markRead, markAllRead, clearAll, deleteNotification, refreshCount: fetchCount }}
     >
       {children}
-      {toasts.map((t) => (
-        <NotificationToast
-          key={t.id}
-          notification={t}
-          onDismiss={() => dismissToast(t.id)}
-          onView={() => {
-            dismissToast(t.id);
-            if (t.type === "trash_warning") {
-              router.push(`/app/${workspaceSlug}/trash`);
-            } else if (t.type === "workspace_invite" && t.inviteToken) {
-              router.push(`/invite/${t.inviteToken}`);
-            } else if (t.pageShortId) {
-              router.push(`/app/${workspaceSlug}/${t.pageShortId}`);
-            } else {
-              openPanel();
-            }
-          }}
-        />
-      ))}
     </NotificationContext.Provider>
   );
 }

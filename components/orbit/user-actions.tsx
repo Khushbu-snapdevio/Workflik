@@ -1,8 +1,13 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import {
   setUserRoleAction,
   toggleUserBanAction,
 } from "@/app/actions/orbit-users";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ADMIN_ROLE, USER_ROLE } from "@/config/platform";
 
 export function UserRoleForm({
@@ -32,13 +37,45 @@ export function UserBanForm({
   banned: boolean;
   userId: string;
 }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function handleConfirm() {
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.set("userId", userId);
+      formData.set("banned", String(!banned));
+      await toggleUserBanAction(formData);
+    });
+  }
+
   return (
-    <form action={toggleUserBanAction}>
-      <input name="userId" type="hidden" value={userId} />
-      <input name="banned" type="hidden" value={String(!banned)} />
-      <Button type="submit" variant={banned ? "secondary" : "destructive"} size="sm">
-        {banned ? "Unban" : "Ban"}
+    <>
+      <Button
+        type="button"
+        variant={banned ? "secondary" : "destructive"}
+        size="sm"
+        disabled={pending}
+        onClick={() => setConfirmOpen(true)}
+      >
+        {pending && <Loader2 size={13} className="animate-spin" />}
+        {pending ? (banned ? "Unbanning…" : "Banning…") : banned ? "Unban" : "Ban"}
       </Button>
-    </form>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={banned ? "Unban this user?" : "Ban this user?"}
+        description={
+          banned
+            ? "This user will regain the ability to sign in."
+            : "This immediately revokes all active sessions and blocks the user from signing in."
+        }
+        confirmLabel={banned ? "Unban" : "Ban"}
+        confirmLoadingLabel={banned ? "Unbanning…" : "Banning…"}
+        loading={pending}
+        onConfirm={handleConfirm}
+      />
+    </>
   );
 }

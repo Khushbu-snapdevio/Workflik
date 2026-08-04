@@ -1,12 +1,12 @@
 "use client";
 
-import { createPortal } from "react-dom";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Settings, Bell, Mail, CircleCheck, Trash2 } from "lucide-react";
 import { useNotifications } from "@/components/notifications/notification-provider";
 import { NotificationCard, type NotificationItem } from "@/components/notifications/notification-card";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -18,7 +18,7 @@ function MailReadIcon() {
   return (
     <span className="relative inline-flex">
       <Mail size={14} />
-      <span className="absolute -bottom-[3px] -right-[3px] flex size-[11px] items-center justify-center rounded-full bg-card">
+      <span className="absolute -bottom-0.75 -right-0.75 flex size-2.75 items-center justify-center rounded-full bg-card">
         <CircleCheck size={11} strokeWidth={2.5} />
       </span>
     </span>
@@ -42,31 +42,13 @@ interface Props {
 
 export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   const router = useRouter();
-  const { panelOpen, closePanel, markRead, markAllRead, clearAll, deleteNotification, refreshCount } = useNotifications();
+  const { panelOpen, closePanel, markRead, markAllRead, clearAll, deleteNotification } = useNotifications();
 
   const [filter, setFilter]   = useState<FilterKey>("all");
   const [items, setItems]     = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  const [shouldRender, setShouldRender] = useState(false);
-  const [animIn, setAnimIn]             = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (panelOpen) {
-      setShouldRender(true);
-      const id = requestAnimationFrame(() => setAnimIn(true));
-      return () => cancelAnimationFrame(id);
-    } else {
-      setAnimIn(false);
-      const t = setTimeout(() => setShouldRender(false), 220);
-      return () => clearTimeout(t);
-    }
-  }, [panelOpen]);
 
   const fetchNotifications = useCallback(() => {
     if (!panelOpen) return;
@@ -79,13 +61,6 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
   }, [panelOpen, workspaceId, filter]);
 
   useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
-
-  useEffect(() => {
-    if (!panelOpen) return;
-    function h(e: KeyboardEvent) { if (e.key === "Escape") closePanel(); }
-    document.addEventListener("keydown", h);
-    return () => document.removeEventListener("keydown", h);
-  }, [panelOpen, closePanel]);
 
   function handleMarkRead(id: string) {
     markRead(id);
@@ -125,41 +100,21 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
   const unread = items.filter((n) => !n.isRead).length;
 
-  if (!mounted || !shouldRender) return null;
-
-  return createPortal(
+  return (
     <>
-      {/* Backdrop — dims whatever's underneath (matches the app's Sheet/Dialog
-          overlay convention, bg-black/20) so content that sits in the same
-          horizontal band as the panel, like the home page's topbar search
-          bar, reads as "behind an overlay" instead of just abruptly
-          clipped/half-hidden where the panel's left edge happens to fall. */}
-      <div
-        className="fixed inset-0 bg-black/20"
-        style={{
-          zIndex:     599,
-          opacity:    animIn ? 1 : 0,
-          transition: "opacity 0.18s ease",
-          pointerEvents: animIn ? "auto" : "none",
-        }}
-        onClick={closePanel}
-      />
-
-      {/* Panel */}
-      <div
-        className="fixed top-0 right-0 flex h-full w-full sm:w-[420px] flex-col border-l border-border bg-card"
-        style={{
-          zIndex:     600,
-          transform:  animIn ? "translateX(0)" : "translateX(20px)",
-          opacity:    animIn ? 1 : 0,
-          transition: "transform 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease",
-          willChange: "transform",
-        }}
+      <Sheet
+        open={panelOpen}
+        onOpenChange={(open) => { if (!open) closePanel(); }}
       >
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="gap-0 border-border bg-card p-0 data-[side=right]:w-full data-[side=right]:sm:w-105 data-[side=right]:sm:max-w-none"
+        >
         {/* ── Header ── */}
         <div className="shrink-0 border-b border-border bg-card">
           {/* Top accent bar */}
-          <div className="h-[3px] bg-gradient-to-r from-primary via-primary/60 to-transparent" />
+          <div className="h-0.75 bg-linear-to-r from-primary via-primary/60 to-transparent" />
 
           <div className="flex items-start justify-between gap-3 px-4 pb-3 pt-3.5">
             {/* Left: title + badge + subtitle */}
@@ -170,7 +125,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   Notifications
                 </h2>
                 {unread > 0 && (
-                  <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold leading-none text-primary-foreground">
+                  <span className="inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1.5 text-2xs font-bold leading-none text-primary-foreground">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
@@ -194,7 +149,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   icon={<MailReadIcon />}
                   label="Mark all as read"
                   onClick={handleMarkAllRead}
-                  className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                  className="flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
                 />
               )}
               <IconTooltipButton
@@ -204,14 +159,14 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   closePanel();
                   router.push(`/app/${workspaceSlug}/settings/notifications`);
                 }}
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               />
               <div className="mx-1 h-4 w-px bg-border" />
               <IconTooltipButton
                 icon={<X size={14} />}
                 label="Close"
                 onClick={closePanel}
-                className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               />
             </div>
           </div>
@@ -226,7 +181,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                   key={key}
                   type="button"
                   onClick={() => setFilter(key)}
-                  className={`relative flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-all duration-150 ${
+                  className={`relative flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium transition-all duration-150 ${
                     filter === key
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -234,7 +189,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
                 >
                   {label}
                   {key === "all" && unread > 0 && (
-                    <span className={`inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none ${
+                    <span className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-2xs font-bold leading-none ${
                       filter === key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                     }`}>
                       {unread > 99 ? "99+" : unread}
@@ -247,7 +202,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
               <button
                 type="button"
                 onClick={() => setConfirmClearAll(true)}
-                className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-destructive/5 hover:text-destructive"
+                className="flex shrink-0 items-center gap-1 rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-destructive/5 hover:text-destructive"
               >
                 <Trash2 size={11} />
                 Clear all
@@ -277,11 +232,12 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
             </div>
           )}
         </div>
-      </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Clear all confirmation */}
       <AlertDialog open={confirmClearAll} onOpenChange={setConfirmClearAll}>
-        <AlertDialogContent className="z-[900]" overlayClassName="z-[900]">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Clear all notifications?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -297,7 +253,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
 
       {/* Delete single notification confirmation */}
       <AlertDialog open={confirmDeleteId !== null} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
-        <AlertDialogContent className="z-[900]" overlayClassName="z-[900]">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this notification?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -310,8 +266,7 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>,
-    document.body,
+    </>
   );
 }
 
@@ -334,7 +289,7 @@ function LoadingSkeleton() {
 function EmptyState({ filter }: { filter: FilterKey }) {
   return (
     <div className="flex flex-col items-center justify-center gap-5 px-8 py-20">
-      <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
+      <div className="flex size-14 items-center justify-center rounded-lg border border-border bg-muted/50">
         <Bell size={24} className="text-muted-foreground" />
       </div>
       <div className="text-center">

@@ -12,17 +12,13 @@ import {
  LayoutGrid as SquaresFourIcon,
  Trash2 as TrashIcon,
 } from "lucide-react";
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { toast } from "sonner";
 import { SaveAsTemplateModal } from "@/components/templates/save-as-template-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { usePagePrivacy } from "@/components/pages/page-privacy-context";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
-import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
-
-const MENU_HEIGHT = 360;
 
 interface PageActionsMenuProps {
  pageId:    string;
@@ -53,7 +49,7 @@ interface PageActionsMenuProps {
 }
 
 const menuItemClass =
- "flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent cursor-pointer";
+ "flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground transition-colors data-focus:bg-accent cursor-pointer";
 
 export function PageActionsMenu({
  pageId,
@@ -72,33 +68,13 @@ export function PageActionsMenu({
 }: PageActionsMenuProps) {
  const router = useRouter();
  const { isPrivate, setIsPrivate } = usePagePrivacy();
- const [open, setOpen]          = useState(false);
  const [loading, setLoading]       = useState<string | null>(null);
  const [confirmTrash, setConfirmTrash]  = useState(false);
  const [deleting, setDeleting]      = useState(false);
  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
- const buttonRef = useRef<HTMLButtonElement>(null);
- const dropdownRef = useRef<HTMLDivElement>(null);
- const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
-
- // Close when clicking outside the portal dropdown
- useEffect(() => {
-  if (!open) return;
-  function handleClickOutside(e: MouseEvent) {
-   if (buttonRef.current?.contains(e.target as Node)) return;
-   if (dropdownRef.current?.contains(e.target as Node)) return;
-   setOpen(false);
-  }
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
- }, [open]);
-
- useScrollLockWhileOpen(open, (target) =>
-  !!dropdownRef.current?.contains(target) || !!target.closest?.('[role="alertdialog"]'));
 
  async function run(action: string, fn: () => Promise<void>) {
   setLoading(action);
-  setOpen(false);
   try {
    await fn();
   } finally {
@@ -107,7 +83,6 @@ export function PageActionsMenu({
  }
 
  function handleDelete() {
-  setOpen(false);
   setConfirmTrash(true);
  }
 
@@ -201,7 +176,6 @@ export function PageActionsMenu({
  async function handleCopyLink() {
   const url = `${window.location.origin}/app/${workspaceSlug}/${pageShortId}`;
   await navigator.clipboard.writeText(url).catch(() => {});
-  setOpen(false);
  }
 
  async function handleExport(format: "markdown" | "html") {
@@ -230,70 +204,69 @@ export function PageActionsMenu({
   });
  }
 
- function openMenu() {
-  if (buttonRef.current) {
-   const r = buttonRef.current.getBoundingClientRect();
-   setDropdownPos({ top: getClampedTop(r, MENU_HEIGHT), right: window.innerWidth - r.right });
-  }
-  setOpen(true);
- }
-
  return (
   <>
-   <button
-    ref={buttonRef}
-    type="button"
-    onClick={() => (open ? setOpen(false) : openMenu())}
-    disabled={loading !== null}
-    className={
-     iconOnly
-      ? "flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50"
-      : "flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50"
-    }
-    aria-label="Page actions"
-   >
-    <DotsThreeIcon size={14} />
-    {!iconOnly && "More"}
-   </button>
+   <Menu>
+    <MenuButton
+     type="button"
+     disabled={loading !== null}
+     aria-label="Page actions"
+     className={
+      iconOnly
+       ? "flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50 data-open:bg-accent data-open:text-foreground"
+       : "flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-[0.97] disabled:opacity-50 data-open:bg-accent data-open:text-foreground"
+     }
+    >
+     <DotsThreeIcon size={14} />
+     {!iconOnly && "More"}
+    </MenuButton>
 
-   {/* Dropdown — rendered in document.body so it escapes overflow:hidden containers */}
-   {open && dropdownPos && typeof document !== "undefined" && createPortal(
-    <div
-     ref={dropdownRef}
-     className="fixed z-[200] w-52 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover py-1"
-     style={{ top: dropdownPos.top, right: dropdownPos.right }}
+    <MenuItems
+     anchor={{ to: "bottom end", gap: 4 }}
+     transition
+     className="z-600 w-52 overflow-hidden rounded-md border border-border bg-popover py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
     >
      {!isDeleted && (
       <>
-       <button type="button" onClick={handleDuplicate} className={menuItemClass}>
-        <CopySimpleIcon size={14} />
-        Duplicate
-       </button>
+       <MenuItem>
+        <button type="button" onClick={handleDuplicate} className={menuItemClass}>
+         <CopySimpleIcon size={14} />
+         Duplicate
+        </button>
+       </MenuItem>
 
-       <button type="button" onClick={handleLock} className={menuItemClass}>
-        {isLocked ? <LockKeyOpenIcon size={14} /> : <LockKeyIcon size={14} />}
-        {isLocked ? "Unlock page" : "Lock page"}
-       </button>
+       <MenuItem>
+        <button type="button" onClick={handleLock} className={menuItemClass}>
+         {isLocked ? <LockKeyOpenIcon size={14} /> : <LockKeyIcon size={14} />}
+         {isLocked ? "Unlock page" : "Lock page"}
+        </button>
+       </MenuItem>
 
-       <button type="button" onClick={handleCopyLink} className={menuItemClass}>
-        <CopyIcon size={14} />
-        Copy link
-       </button>
+       <MenuItem>
+        <button type="button" onClick={handleCopyLink} className={menuItemClass}>
+         <CopyIcon size={14} />
+         Copy link
+        </button>
+       </MenuItem>
 
-       <button type="button" onClick={handleTogglePrivate} className={menuItemClass}>
-        {isPrivate ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
-        {isPrivate ? "Make shared" : "Make private"}
-       </button>
+       <MenuItem>
+        <button type="button" onClick={handleTogglePrivate} className={menuItemClass}>
+         {isPrivate ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
+         {isPrivate ? "Make shared" : "Make private"}
+        </button>
+       </MenuItem>
 
        {pageKind !== "database" && (
-        <button
-         type="button"
-         onClick={() => { setOpen(false); setSaveAsTemplate(true); }}
-         className={menuItemClass}
-        >
-         <SquaresFourIcon size={14} />
-         Save as Template
-        </button>
+        <MenuItem>
+         <button
+          type="button"
+          onClick={() => setSaveAsTemplate(true)}
+          className={menuItemClass}
+         >
+          <SquaresFourIcon size={14} />
+          Save as Template
+         </button>
+        </MenuItem>
        )}
 
        <div className="mx-2 my-1 border-t border-border" />
@@ -302,43 +275,47 @@ export function PageActionsMenu({
         <p className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground">Export</p>
        </div>
        {(["markdown", "html"] as const).map((fmt) => (
-        <button
-         key={fmt}
-         type="button"
-         onClick={() => handleExport(fmt)}
-         className={menuItemClass}
-        >
-         <DownloadSimpleIcon size={14} />
-         {fmt === "markdown" ? "Markdown" : fmt.toUpperCase()}
-        </button>
+        <MenuItem key={fmt}>
+         <button
+          type="button"
+          onClick={() => handleExport(fmt)}
+          className={menuItemClass}
+         >
+          <DownloadSimpleIcon size={14} />
+          {fmt === "markdown" ? "Markdown" : fmt.toUpperCase()}
+         </button>
+        </MenuItem>
        ))}
 
        <div className="mx-2 my-1 border-t border-border" />
 
-       <button
-        type="button"
-        onClick={handleDelete}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/5 hover:text-destructive"
-       >
-        <TrashIcon size={14} />
-        Move to Trash
-       </button>
+       <MenuItem>
+        <button
+         type="button"
+         onClick={handleDelete}
+         className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-destructive transition-colors data-focus:bg-destructive/5"
+        >
+         <TrashIcon size={14} />
+         Move to Trash
+        </button>
+       </MenuItem>
       </>
      )}
 
      {isDeleted && (
-      <button
-       type="button"
-       onClick={handleRestore}
-       className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-success transition-colors hover:bg-success/10"
-      >
-       <TrashIcon size={14} />
-       Restore from Trash
-      </button>
+      <MenuItem>
+       <button
+        type="button"
+        onClick={handleRestore}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm font-medium text-success transition-colors data-focus:bg-success/10"
+       >
+        <TrashIcon size={14} />
+        Restore from Trash
+       </button>
+      </MenuItem>
      )}
-    </div>,
-    document.body,
-   )}
+    </MenuItems>
+   </Menu>
 
    {/* Delete confirmation dialog */}
    <ConfirmDialog

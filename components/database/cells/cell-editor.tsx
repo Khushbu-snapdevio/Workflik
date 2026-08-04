@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Combobox, ComboboxInput, ComboboxOption, ComboboxOptions, Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { Check, Plus, Settings2, X, UserPlus, ChevronRight, Loader2, ArrowLeft, MoreHorizontal, GripVertical, File as FileIcon, Paperclip, Maximize2, Download, ExternalLink, Trash2 } from "lucide-react";
 import { ImageLightbox } from "@/components/editor/comment-card";
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
@@ -156,7 +157,7 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
  };
 
  return (
-  <div ref={ref} data-edit-property-exempt style={baseStyle} className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background">
+  <div ref={ref} data-edit-property-exempt style={baseStyle} className="overflow-hidden rounded-md border border-border bg-background">
    {(property.type === "select" || property.type === "status" || property.type === "multi_select") && (
     <SelectEditor
      property={property}
@@ -346,7 +347,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
      {selectedOptions.map((opt) => {
       const color = getOptionColor(opt.color);
       return (
-       <span key={opt.id} className="inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+       <span key={opt.id} className="inline-flex items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
         {opt.name}
         <button type="button" onClick={() => toggle(opt.id)} className="opacity-70 hover:opacity-100" aria-label={`Remove ${opt.name}`}>
          <X size={11} />
@@ -365,7 +366,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
         if (e.key === "Backspace" && !search && selectedOptions.length > 0) toggle(selectedOptions[selectedOptions.length - 1].id);
        }}
        placeholder={selectedOptions.length > 0 ? "" : "Search or create…"}
-       className="min-w-[60px] flex-1 bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
+       className="min-w-15 flex-1 bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
       />
      )}
     </div>
@@ -377,7 +378,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
        there are. */}
    <div className="min-h-0 flex-1 overflow-y-auto p-1">
     {!hideSearch && !grouped && (
-     <p className="px-2 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">
+     <p className="px-2 pt-1 pb-0.5 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">
       Select an option or create one
      </p>
     )}
@@ -387,10 +388,10 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
        <div key={section.key} className="mb-1 last:mb-0">
         {section.label && (
          <div className="mb-0.5 flex items-center justify-between px-2 pt-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</span>
+          <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</span>
           <button
            onClick={() => setAddingTo(section.key)}
-           className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
+           className="flex size-4 items-center justify-center rounded-xs text-muted-foreground hover:bg-accent hover:text-foreground"
            onMouseEnter={(e) => showTooltip(`Add option to ${section.label}`, e)}
            onMouseLeave={hideTooltip}
           >
@@ -410,7 +411,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
            if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelNewOption(); }
           }}
           placeholder="Option name…"
-          className="w-full rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
+          className="w-full rounded-sm border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
          />
         )}
        </div>
@@ -421,7 +422,7 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
     {canCreate && (
      <button
       onClick={() => createOption()}
-      className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
      >
       <Plus size={12} />
       Create <span className="font-medium text-foreground">"{search}"</span>
@@ -444,12 +445,12 @@ function SelectEditor({ property, value, multi, onSave, onClose, onConfigChange,
         if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelNewOption(); }
        }}
        placeholder="Option name…"
-       className="w-full rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
+       className="w-full rounded-sm border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
       />
      ) : (
       <button
        onClick={() => setAddingTo(UNGROUPED)}
-       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent"
       >
        <Plus size={12} />
        Add option
@@ -506,7 +507,7 @@ function SortableOptionRow({ option, selected, draggable, onToggle, onOpenMenu }
  const color = getOptionColor(option.color);
 
  return (
-  <div ref={setNodeRef} style={style} className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
+  <div ref={setNodeRef} style={style} className="group/opt flex items-center gap-1 rounded-sm px-1 py-1 hover:bg-accent">
    {draggable && (
     <span
      {...attributes}
@@ -520,9 +521,9 @@ function SortableOptionRow({ option, selected, draggable, onToggle, onOpenMenu }
    <button
     type="button"
     onClick={onToggle}
-    className="flex min-w-0 flex-1 items-center gap-2 rounded-[var(--radius-xs)] px-1 py-0.5 text-left"
+    className="flex min-w-0 flex-1 items-center gap-2 rounded-xs px-1 py-0.5 text-left"
    >
-    <span className="inline-flex min-w-0 items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+    <span className="inline-flex min-w-0 items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
      <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
      <span className="truncate">{option.name}</span>
     </span>
@@ -531,7 +532,7 @@ function SortableOptionRow({ option, selected, draggable, onToggle, onOpenMenu }
    <button
     type="button"
     onClick={(e) => { e.stopPropagation(); onOpenMenu((e.currentTarget as HTMLElement).getBoundingClientRect()); }}
-    className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground opacity-0 hover:bg-accent group-hover/opt:opacity-100"
+    className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground opacity-0 hover:bg-accent group-hover/opt:opacity-100"
    >
     <MoreHorizontal size={13} />
    </button>
@@ -585,19 +586,20 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
   return (m.userName ?? "").toLowerCase().includes(q) || (m.userEmail ?? "").toLowerCase().includes(q);
  });
 
- function toggle(userId: string) {
-  const next = selectedIds.includes(userId)
-   ? selectedIds.filter((id) => id !== userId)
-   : [...selectedIds, userId];
-  // Build updated _members cache — keep existing + add/remove the toggled member
-  const toggled = members.find((m) => m.userId === userId);
+ // Combobox's `multiple` onChange gives the whole array, not a single toggled id —
+ // rebuild the _members cache keeping existing entries + newly-selected ids.
+ function commitSelection(next: string[]) {
   let nextMembers = cachedMembers.filter((m) => next.includes(m.id));
-  if (toggled && next.includes(userId) && !nextMembers.some((m) => m.id === userId)) {
-   nextMembers = [...nextMembers, {
-    id: userId,
-    name: toggled.userName || toggled.userEmail || "Unknown member",
-    email: toggled.userEmail ?? "",
-   }];
+  for (const userId of next) {
+   if (nextMembers.some((m) => m.id === userId)) continue;
+   const found = members.find((m) => m.userId === userId);
+   if (found) {
+    nextMembers = [...nextMembers, {
+     id: userId,
+     name: found.userName || found.userEmail || "Unknown member",
+     email: found.userEmail ?? "",
+    }];
+   }
   }
   onSave({ userIds: next, _members: nextMembers });
  }
@@ -640,7 +642,7 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
     <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
      <button
       onClick={() => { setInviting(false); setInviteError(null); setInviteSuccess(false); }}
-      className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent"
+      className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground hover:bg-accent"
      >
       <ArrowLeft size={13} />
      </button>
@@ -658,13 +660,13 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
         onChange={(e) => { setInviteEmail(e.target.value); setInviteError(null); }}
         onKeyDown={(e) => { if (e.key === "Enter") sendInvite(); }}
         placeholder="Email address"
-        className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
+        className="w-full rounded-sm border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
        />
        {inviteError && <p className="text-[11px] text-destructive">{inviteError}</p>}
        <button
         onClick={sendInvite}
         disabled={!inviteEmail.trim() || inviteSubmitting}
-        className="flex items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className="flex items-center justify-center gap-1.5 rounded-sm bg-primary py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
        >
         {inviteSubmitting ? <Loader2 size={12} className="animate-spin" /> : "Send invite"}
        </button>
@@ -677,72 +679,76 @@ function PersonEditor({ value, workspaceId, onSave }: PersonEditorProps) {
 
  return (
   <div className="flex flex-col">
-   {selectedMembers.length > 0 && (
-    <div className="flex flex-wrap gap-1 border-b border-border px-2.5 py-2">
-     {selectedMembers.map((m) => (
-      <span key={m.id} className="flex items-center gap-1 rounded-full bg-accent py-0.5 pl-1 pr-1.5 text-xs text-foreground">
-       <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-        {(m.name || "?").slice(0, 1).toUpperCase()}
+   <Combobox value={selectedIds} onChange={commitSelection} multiple>
+    {selectedMembers.length > 0 && (
+     <div className="flex flex-wrap gap-1 border-b border-border px-2.5 py-2">
+      {selectedMembers.map((m) => (
+       <span key={m.id} className="flex items-center gap-1 rounded-full bg-accent py-0.5 pl-1 pr-1.5 text-xs text-foreground">
+        <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+         {(m.name || "?").slice(0, 1).toUpperCase()}
+        </span>
+        {m.name}
+        <button onClick={() => commitSelection(selectedIds.filter((id) => id !== m.id))} className="ml-0.5 text-muted-foreground hover:text-foreground">
+         <X size={11} />
+        </button>
        </span>
-       {m.name}
-       <button onClick={() => toggle(m.id)} className="ml-0.5 text-muted-foreground hover:text-foreground">
-        <X size={11} />
-       </button>
-      </span>
-     ))}
+      ))}
+     </div>
+    )}
+    <div className="border-b border-border px-3 py-2">
+     <ComboboxInput
+      autoFocus
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Search people…"
+      className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
+     />
     </div>
-   )}
-   <div className="border-b border-border px-3 py-2">
-    <input
-     autoFocus
-     value={search}
-     onChange={(e) => setSearch(e.target.value)}
-     placeholder="Search people…"
-     className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
-    />
-   </div>
-   <div className="max-h-48 overflow-y-auto p-1">
-    {loading && <p className="px-3 py-2 text-xs text-muted-foreground">Loading…</p>}
-    {!loading && filtered.length > 0 && (
-     <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">People</p>
-    )}
-    {!loading && filtered.map((m) => {
-     const selected = selectedIds.includes(m.userId);
-     // `??` only falls through on null/undefined — a member with a genuinely
-     // empty-string name/email (not just a missing one) was leaking through
-     // as blank initials and a blank row instead of falling back.
-     const displayName = m.userName || m.userEmail || "Unknown member";
-     const initials = displayName.slice(0, 1).toUpperCase();
-     const showEmailLine = !!m.userName && !!m.userEmail;
-     return (
-      <button
-       key={m.userId}
-       onClick={() => toggle(m.userId)}
-       className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent"
-      >
-       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-        {initials}
-       </span>
-       <span className="min-w-0 flex-1 text-left">
-        <p className="truncate text-xs font-medium text-foreground">{displayName}</p>
-        {showEmailLine && <p className="truncate text-xs text-muted-foreground">{m.userEmail}</p>}
-       </span>
-       {selected && <Check size={13} className="shrink-0 text-primary"/>}
-      </button>
-     );
-    })}
-    {!loading && search.trim() && !filtered.length && (
-     <p className="px-3 py-2 text-xs text-muted-foreground">No matches in “{search}”…</p>
-    )}
-    {!loading && !search.trim() && !filtered.length && (
-     <p className="px-3 py-2 text-xs text-muted-foreground">No members found</p>
-    )}
-   </div>
+    <ComboboxOptions static className="max-h-48 overflow-y-auto p-1">
+     {loading && <p className="px-3 py-2 text-xs text-muted-foreground">Loading…</p>}
+     {!loading && filtered.length > 0 && (
+      <p className="px-2 pb-0.5 pt-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">People</p>
+     )}
+     {!loading && filtered.map((m) => {
+      // `??` only falls through on null/undefined, not empty string — a genuinely
+      // empty name/email was leaking through as blank initials and a blank row.
+      const displayName = m.userName || m.userEmail || "Unknown member";
+      const initials = displayName.slice(0, 1).toUpperCase();
+      const showEmailLine = !!m.userName && !!m.userEmail;
+      return (
+       <ComboboxOption
+        key={m.userId}
+        value={m.userId}
+        className="flex w-full cursor-default items-center gap-2.5 rounded-sm px-2 py-1.5 outline-none data-focus:bg-accent"
+       >
+        {({ selected }) => (
+         <>
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+           {initials}
+          </span>
+          <span className="min-w-0 flex-1 text-left">
+           <p className="truncate text-xs font-medium text-foreground">{displayName}</p>
+           {showEmailLine && <p className="truncate text-xs text-muted-foreground">{m.userEmail}</p>}
+          </span>
+          {selected && <Check size={13} className="shrink-0 text-primary"/>}
+         </>
+        )}
+       </ComboboxOption>
+      );
+     })}
+     {!loading && search.trim() && !filtered.length && (
+      <p className="px-3 py-2 text-xs text-muted-foreground">No matches in “{search}”…</p>
+     )}
+     {!loading && !search.trim() && !filtered.length && (
+      <p className="px-3 py-2 text-xs text-muted-foreground">No members found</p>
+     )}
+    </ComboboxOptions>
+   </Combobox>
    <div className="border-t border-border p-1">
-    <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">More</p>
+    <p className="px-2 pb-0.5 pt-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">More</p>
     <button
      onClick={() => setInviting(true)}
-     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-foreground hover:bg-accent"
+     className="flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-xs text-foreground hover:bg-accent"
     >
      <UserPlus size={13} className="shrink-0 text-muted-foreground" />
      <span className="flex-1 text-left">Invite people</span>
@@ -781,17 +787,10 @@ function RelationEditor({ value, property, onSave }: RelationEditorProps) {
   (e.title ?? "Untitled").toLowerCase().includes(search.toLowerCase())
  );
 
- function toggle(entryId: string) {
-  const next = selectedIds.includes(entryId)
-   ? selectedIds.filter((id) => id !== entryId)
-   : [...selectedIds, entryId];
-  onSave({ entryIds: next });
- }
-
  return (
-  <div className="flex flex-col">
+  <Combobox value={selectedIds} onChange={(ids: string[]) => onSave({ entryIds: ids })} multiple>
    <div className="border-b border-border px-3 py-2">
-    <input
+    <ComboboxInput
      autoFocus
      value={search}
      onChange={(e) => setSearch(e.target.value)}
@@ -799,29 +798,30 @@ function RelationEditor({ value, property, onSave }: RelationEditorProps) {
      className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
     />
    </div>
-   <div className="max-h-48 overflow-y-auto p-1">
+   <ComboboxOptions static className="max-h-48 overflow-y-auto p-1">
     {loading && <p className="px-3 py-2 text-xs text-muted-foreground">Loading…</p>}
     {!relDbId && !loading && <p className="px-3 py-2 text-xs text-muted-foreground">No related database configured</p>}
-    {!loading && relDbId && filtered.map((entry) => {
-     const selected = selectedIds.includes(entry.id);
-     return (
-      <button
-       key={entry.id}
-       onClick={() => toggle(entry.id)}
-       className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent"
-      >
-       <span className="min-w-0 flex-1 truncate text-left text-xs text-foreground">
-        {entry.title || "Untitled"}
-       </span>
-       {selected && <Check size={13} className="shrink-0 text-primary"/>}
-      </button>
-     );
-    })}
+    {!loading && relDbId && filtered.map((entry) => (
+     <ComboboxOption
+      key={entry.id}
+      value={entry.id}
+      className="flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 outline-none data-focus:bg-accent"
+     >
+      {({ selected }) => (
+       <>
+        <span className="min-w-0 flex-1 truncate text-left text-xs text-foreground">
+         {entry.title || "Untitled"}
+        </span>
+        {selected && <Check size={13} className="shrink-0 text-primary"/>}
+       </>
+      )}
+     </ComboboxOption>
+    ))}
     {!loading && relDbId && !filtered.length && (
      <p className="px-3 py-2 text-xs text-muted-foreground">No entries found</p>
     )}
-   </div>
-  </div>
+   </ComboboxOptions>
+  </Combobox>
  );
 }
 
@@ -940,7 +940,7 @@ function FileEditor({ value, workspaceId, onSave, onClose }: FileEditorProps) {
          onClick={() => fileInputRef.current?.click()}
          type="button"
         >
-         {uploading ? "Uploading…" : "Choose a file"}
+         {uploading ? <Loader2 size={12} className="animate-spin" /> : "Choose a file"}
         </Button>
         <p className="mt-2 text-center text-xs text-muted-foreground">or Ctrl+V to paste an image</p>
        </TabsContent>
@@ -1018,7 +1018,6 @@ export interface FileThumbnailCardProps {
 }
 
 export function FileThumbnailCard({ file, onDelete, selected = false, onSelect, size = "sm" }: FileThumbnailCardProps) {
- const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
  const [lightbox, setLightbox] = useState(false);
  const [confirmDelete, setConfirmDelete] = useState(false);
  const isImage = file.mimeType.startsWith("image/");
@@ -1027,7 +1026,7 @@ export function FileThumbnailCard({ file, onDelete, selected = false, onSelect, 
   <div
    data-file-menu
    onClick={() => onSelect?.()}
-   className={`group/file relative overflow-hidden rounded-[var(--radius-sm)] border bg-muted/20 transition-colors duration-150 ${
+   className={`group/file relative overflow-hidden rounded-sm border bg-muted/20 transition-colors duration-150 ${
     selected ? "border-primary ring-2 ring-primary/40" : "border-border"
    } ${onSelect ? "cursor-pointer" : ""}`}
   >
@@ -1044,29 +1043,71 @@ export function FileThumbnailCard({ file, onDelete, selected = false, onSelect, 
      <span className="min-w-0 flex-1 truncate text-xs text-foreground">{file.name}</span>
     </div>
    )}
-   <button
-    type="button"
-    onClick={(e) => {
-     e.stopPropagation();
-     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-     setMenuAnchor((cur) => (cur ? null : rect));
-    }}
-    className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-[var(--radius-xs)] bg-background/90 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-foreground group-hover/file:opacity-100"
-    aria-label={`${file.name} options`}
-   >
-    <MoreHorizontal size={14} />
-   </button>
-   {menuAnchor && (
-    <FileThumbnailMenu
-     anchor={menuAnchor}
-     isImage={isImage}
-     fileUrl={file.url}
-     fileName={file.name}
-     onFullScreen={() => { setLightbox(true); setMenuAnchor(null); }}
-     onDismiss={() => setMenuAnchor(null)}
-     onDelete={() => { setMenuAnchor(null); setConfirmDelete(true); }}
-    />
-   )}
+   {/* anchor + Headless UI Menu replaces the old getBoundingClientRect +
+       createPortal + document-mousedown-listener combo — MenuItems' `anchor`
+       prop auto-portals (escaping this popover's own overflow-hidden clip,
+       same reason the old version portaled manually) and picks up
+       Escape/outside-click for free. data-file-menu/data-edit-property-exempt
+       move onto MenuItems itself so the two outside-click coordinators that
+       used to check for them (this card's own onClick and
+       CellEditorInner's/FilesPropertyValue's exemption checks) still treat
+       clicks inside the now-portaled panel as "inside". */}
+   <Menu>
+    <MenuButton
+     onClick={(e) => e.stopPropagation()}
+     className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-xs bg-background/90 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover/file:opacity-100 data-open:opacity-100"
+     aria-label={`${file.name} options`}
+    >
+     <MoreHorizontal size={14} />
+    </MenuButton>
+    <MenuItems
+     anchor={{ to: "bottom end", gap: 4 }}
+     transition
+     data-file-menu
+     data-edit-property-exempt
+     className="z-600 w-40 rounded-md border border-border bg-popover p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+    >
+     {isImage && (
+      <MenuItem>
+       <button
+        type="button"
+        onClick={() => setLightbox(true)}
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-foreground data-focus:bg-accent"
+       >
+        <Maximize2 size={13} /> Full screen
+       </button>
+      </MenuItem>
+     )}
+     <MenuItem>
+      <a
+       href={file.url}
+       download={file.name}
+       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-foreground data-focus:bg-accent"
+      >
+       <Download size={13} /> Download
+      </a>
+     </MenuItem>
+     <MenuItem>
+      <a
+       href={file.url}
+       target="_blank"
+       rel="noopener noreferrer"
+       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-foreground data-focus:bg-accent"
+      >
+       <ExternalLink size={13} /> View original
+      </a>
+     </MenuItem>
+     <MenuItem>
+      <button
+       type="button"
+       onClick={() => setConfirmDelete(true)}
+       className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-destructive data-focus:bg-destructive/10"
+      >
+       <Trash2 size={13} /> Delete
+      </button>
+     </MenuItem>
+    </MenuItems>
+   </Menu>
    {lightbox && (
     <ImageLightbox src={file.url} alt={file.name} onClose={() => setLightbox(false)} />
    )}
@@ -1079,87 +1120,6 @@ export function FileThumbnailCard({ file, onDelete, selected = false, onSelect, 
     onConfirm={() => { onDelete(); setConfirmDelete(false); }}
    />
   </div>
- );
-}
-
-// Rendered in a portal, positioned from the "…" button's own bounding rect —
-// the popover it lives inside is `overflow-hidden` with a capped height, so
-// an absolutely-positioned menu nested inside it could get silently clipped
-// (and there was no way to scroll to reveal the rest). Portaling to
-// document.body with `position: fixed` escapes that entirely.
-interface FileThumbnailMenuProps {
- anchor: DOMRect;
- isImage: boolean;
- fileUrl: string;
- fileName: string;
- onFullScreen: () => void;
- onDismiss: () => void;
- onDelete: () => void;
-}
-
-function FileThumbnailMenu({ anchor, isImage, fileUrl, fileName, onFullScreen, onDismiss, onDelete }: FileThumbnailMenuProps) {
- const [mounted, setMounted] = useState(false);
- useEffect(() => { setMounted(true); }, []);
-
- useEffect(() => {
-  function handler(e: MouseEvent) {
-   const target = e.target as HTMLElement;
-   if (!target.closest?.("[data-file-menu]")) onDismiss();
-  }
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
- }, [onDismiss]);
-
- if (!mounted) return null;
-
- const MENU_W = 160;
- const MARGIN = 4;
- const top  = Math.min(anchor.bottom + MARGIN, window.innerHeight - 160);
- const left = Math.min(Math.max(MARGIN, anchor.right - MENU_W), window.innerWidth - MENU_W - MARGIN);
-
- return createPortal(
-  <div
-   data-file-menu
-   data-edit-property-exempt
-   style={{ position: "fixed", top, left, width: MENU_W, zIndex: 300 }}
-   className="rounded-[var(--radius-md)] border border-border bg-popover p-1 shadow-lg"
-   onClick={(e) => e.stopPropagation()}
-  >
-   {isImage && (
-    <button
-     type="button"
-     onClick={() => { onFullScreen(); }}
-     className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
-    >
-     <Maximize2 size={13} /> Full screen
-    </button>
-   )}
-   <a
-    href={fileUrl}
-    download={fileName}
-    onClick={onDismiss}
-    className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
-   >
-    <Download size={13} /> Download
-   </a>
-   <a
-    href={fileUrl}
-    target="_blank"
-    rel="noopener noreferrer"
-    onClick={onDismiss}
-    className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
-   >
-    <ExternalLink size={13} /> View original
-   </a>
-   <button
-    type="button"
-    onClick={onDelete}
-    className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs text-destructive hover:bg-destructive/10"
-   >
-    <Trash2 size={13} /> Delete
-   </button>
-  </div>,
-  document.body
  );
 }
 
@@ -1205,7 +1165,7 @@ export function FilesPropertyValue({ files, isEditor, onChange, onAddClick }: Fi
     <button
      type="button"
      onClick={onAddClick}
-     className="flex items-center gap-1 self-start rounded-[var(--radius-xs)] px-1 py-0.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+     className="flex items-center gap-1 self-start rounded-xs px-1 py-0.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
     >
      <Plus size={12} /> Add a file or image
     </button>

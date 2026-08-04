@@ -51,7 +51,7 @@ export function CopyLinkButton({ pageId }: Props) {
         aria-label="Copy link"
         onMouseEnter={(e) => showTooltip("Copy link", e)}
         onMouseLeave={hideTooltip}
-        className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        className="flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       >
         <Link size={15} />
       </button>

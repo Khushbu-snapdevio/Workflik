@@ -195,10 +195,10 @@ export default async function OrbitAnalyticsPage() {
      <p className="mt-1 text-sm text-muted-foreground">Platform-wide metrics with real-time data and 30-day trends.</p>
     </div>
     <div className="hidden shrink-0 items-center gap-2 sm:flex">
-     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+     <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <strong className="font-bold text-foreground">{activationRate}%</strong> activation
      </span>
-     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+     <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <strong className="font-bold text-foreground">{activeSessions!.count}</strong> active sessions
      </span>
     </div>
@@ -207,9 +207,9 @@ export default async function OrbitAnalyticsPage() {
    {/* KPI row */}
    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
     {kpis.map(s => (
-     <div key={s.label} className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-card p-5">
+     <div key={s.label} className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
       <div className="flex items-center justify-between">
-       <span className="flex size-9 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10 text-primary">
+       <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
         {s.icon}
        </span>
        {s.label === "New users (7d)" && userTrendPct !== null && (
@@ -261,7 +261,7 @@ export default async function OrbitAnalyticsPage() {
      </div>
      <div className="mt-3 grid grid-cols-4 gap-2">
       {emailSegments.map(s => (
-       <div key={s.label} className="rounded-[var(--radius-md)] bg-muted/50 p-3 text-center">
+       <div key={s.label} className="rounded-md bg-muted/50 p-3 text-center">
         <p className={`text-base font-bold ${s.dot === "bg-success" ? "text-success" : s.dot === "bg-destructive" ? "text-destructive" : "text-primary"}`}>{s.value}</p>
         <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{s.label}</p>
        </div>
@@ -286,7 +286,7 @@ export default async function OrbitAnalyticsPage() {
         { label: "7-day signups", value: newUsers7d!.count, pct: totalUsers!.count > 0 ? Math.round((newUsers7d!.count / totalUsers!.count) * 100) : 0 },
         { label: "30-day signups", value: newUsers30d!.count, pct: totalUsers!.count > 0 ? Math.round((newUsers30d!.count / totalUsers!.count) * 100) : 0 },
        ].map(r => (
-        <div key={r.label} className="rounded-[var(--radius-md)] border border-border bg-muted/30 p-3">
+        <div key={r.label} className="rounded-md border border-border bg-muted/30 p-3">
          <p className="text-xl font-bold text-foreground">{r.value}</p>
          <p className="text-xs font-medium text-muted-foreground">{r.label}</p>
          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted/50">
@@ -297,7 +297,7 @@ export default async function OrbitAnalyticsPage() {
        ))}
       </div>
       {userTrendPct !== null && (
-       <div className={`flex items-center gap-2 rounded-[var(--radius-lg)] p-3 ${userTrend >= 0 ? "bg-success/5" : "bg-destructive/5"}`}>
+       <div className={`flex items-center gap-2 rounded-lg p-3 ${userTrend >= 0 ? "bg-success/5" : "bg-destructive/5"}`}>
         <span className={`flex items-center gap-1 text-sm font-bold ${userTrend >= 0 ? "text-success" : "text-destructive"}`}>
          {userTrend >= 0 ? (
           <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3"><path d="M5 8V2M2 5l3-3 3 3"/></svg>
@@ -342,11 +342,11 @@ export default async function OrbitAnalyticsPage() {
       <div className="h-full rounded-full bg-primary" style={{ width: `${notificationOpenRate}%` }} />
      </div>
      <div className="mt-3 grid grid-cols-2 gap-2">
-      <div className="rounded-[var(--radius-md)] bg-muted/50 p-3 text-center">
+      <div className="rounded-md bg-muted/50 p-3 text-center">
        <p className="text-base font-bold text-primary">{notifRead!.count}</p>
        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">Read</p>
       </div>
-      <div className="rounded-[var(--radius-md)] bg-muted/50 p-3 text-center">
+      <div className="rounded-md bg-muted/50 p-3 text-center">
        <p className="text-base font-bold text-foreground">{notifTotal!.count - notifRead!.count}</p>
        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">Unread</p>
       </div>
@@ -369,11 +369,11 @@ export default async function OrbitAnalyticsPage() {
         </div>
        </div>
        <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-[var(--radius-md)] border border-border bg-muted/30 p-3 text-center">
+        <div className="rounded-md border border-border bg-muted/30 p-3 text-center">
          <p className="text-xl font-bold text-foreground">{searchTotal30d!.count}</p>
          <p className="text-xs font-medium text-muted-foreground">Total searches</p>
         </div>
-        <div className="rounded-[var(--radius-md)] border border-border bg-muted/30 p-3 text-center">
+        <div className="rounded-md border border-border bg-muted/30 p-3 text-center">
          <p className="text-xl font-bold text-foreground">{searchNoResult30d!.count}</p>
          <p className="text-xs font-medium text-muted-foreground">Returned nothing</p>
         </div>
@@ -393,7 +393,7 @@ function ChartCard({ title, subtitle, value, valueLabel, badge, children }: {
  children: React.ReactNode;
 }) {
  return (
-  <div className="rounded-[var(--radius-lg)] border border-border bg-card">
+  <div className="rounded-lg border border-border bg-card">
    <div className="p-5">
     <div className="flex items-start justify-between gap-3">
      <div>

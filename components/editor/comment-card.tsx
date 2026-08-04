@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Menu, MenuButton, MenuItem, MenuItems, Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import {
  Smile as SmileyIcon, Check as CheckIcon, RotateCcw as ArrowCounterClockwiseIcon,
  MoreHorizontal as DotsThreeIcon, MessageSquare as ChatTextIcon, X as XIcon,
@@ -20,7 +21,6 @@ import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { emitCommentsChanged } from "@/lib/comments/comment-events";
 import { formatReactionTooltip, formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
-import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 // ---------- Types ----------
 
@@ -228,7 +228,7 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
  return createPortal(
   <div
    data-comment-exempt
-   className="fixed inset-0 z-[9999] flex flex-col bg-background"
+   className="fixed inset-0 z-9999 flex flex-col bg-background"
    style={{ pointerEvents: "auto" }} // see EmojiPicker's comment — required inside a modal Sheet/Dialog
   >
    {/* Toolbar */}
@@ -242,7 +242,7 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
      <button
       type="button"
       onClick={() => applyZoom(100)}
-      className="min-w-[42px] rounded-[var(--radius-sm)] px-1.5 py-1.5 text-center text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+      className="min-w-10.5 rounded-sm px-1.5 py-1.5 text-center text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
      >
       {Math.round(zoom)}%
      </button>
@@ -278,7 +278,7 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
      onPointerDown={onPointerDown}
      onPointerMove={onPointerMove}
      onPointerUp={onPointerUp}
-     className="max-h-full max-w-full select-none rounded-[var(--radius-sm)] object-contain"
+     className="max-h-full max-w-full select-none rounded-sm object-contain"
      style={{
       transform:  `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`,
       transition: dragging ? "none" : "transform 150ms ease-out",
@@ -299,14 +299,14 @@ export function ImageAttachment({ src, alt }: { src: string; alt: string }) {
    <button
     type="button"
     onClick={() => setOpen(true)}
-    className="mt-1.5 block focus:outline-none rounded-[var(--radius-sm)]"
+    className="mt-1.5 block focus:outline-none rounded-sm"
     onMouseEnter={(e) => showTooltip("Click to preview", e)}
     onMouseLeave={hideTooltip}
    >
     <img
      src={src}
      alt={alt}
-     className="h-14 w-auto max-w-[120px] rounded-[var(--radius-sm)] border border-border object-cover hover:opacity-90 transition-opacity cursor-zoom-in"
+     className="h-14 w-auto max-w-30 rounded-sm border border-border object-cover hover:opacity-90 transition-opacity cursor-zoom-in"
     />
    </button>
    {open && <ImageLightbox src={src} alt={alt} onClose={() => setOpen(false)} />}
@@ -345,10 +345,10 @@ export function FileAttachment({ src, name }: { src: string; name: string }) {
     onClick={handleClick}
     onMouseEnter={(e) => showTooltip(`Open ${name}`, e)}
     onMouseLeave={hideTooltip}
-    className="group mt-1.5 flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-muted px-3 py-2 transition-colors duration-150 hover:bg-accent"
+    className="group mt-1.5 flex items-center gap-2 rounded-sm border border-border bg-muted px-3 py-2 transition-colors duration-150 hover:bg-accent"
    >
     <Paperclip size={13} className="shrink-0 text-muted-foreground" />
-    <span className="max-w-[180px] truncate text-xs text-foreground/80 group-hover:text-foreground">
+    <span className="max-w-45 truncate text-xs text-foreground/80 group-hover:text-foreground">
      {name}
     </span>
    </button>
@@ -415,7 +415,7 @@ function renderContent(content: Record<string, unknown> | null): React.ReactNode
    if (attrs?.label) {
     if (attrs.mentionType === "user") {
      parts.push(
-      <span key={key++} className="text-primary font-medium bg-primary/5 rounded-[var(--radius-xs)] px-0.5 mx-px">
+      <span key={key++} className="text-primary font-medium bg-primary/5 rounded-xs px-0.5 mx-px">
        @{attrs.label}
       </span>
      );
@@ -446,12 +446,12 @@ function UserAvatar({ name, image, size = 24 }: { name?: string | null; image?: 
  const initial = name?.[0]?.toUpperCase() ?? "?";
  const px = `${size}px`;
  if (image) {
-  return <img src={image} alt={name ?? ""} style={{ width: px, height: px }} className="rounded-full object-cover flex-shrink-0" />;
+  return <img src={image} alt={name ?? ""} style={{ width: px, height: px }} className="rounded-full object-cover shrink-0" />;
  }
  return (
   <div
    style={{ width: px, height: px, fontSize: size <= 24 ? "11px" : "13px" }}
-   className="rounded-full bg-primary flex items-center justify-center font-semibold text-primary-foreground flex-shrink-0 select-none"
+   className="rounded-full bg-primary flex items-center justify-center font-semibold text-primary-foreground shrink-0 select-none"
   >
    {initial}
   </div>
@@ -462,131 +462,108 @@ function UserAvatar({ name, image, size = 24 }: { name?: string | null; image?: 
 // Full searchable/categorized emoji grid (same one used for page icons),
 // swapped in for the old fixed 24-emoji reaction grid.
 
+// Popover owns open/close + outside-click/Escape with a scroll-tracking anchor (old manual
+// listener/scroll-lock gone); caveat — it portals to document.body which sits outside the
+// native <dialog>'s top-layer, so it could render behind the dialog (flagged, unverified).
 export function EmojiPicker({
- anchor,
+ triggerClassName,
+ size = 12,
  onSelect,
- onClose,
+ onMouseEnter,
+ onMouseLeave,
 }: {
- anchor: DOMRect;
+ triggerClassName: string;
+ size?: number;
  onSelect: (e: string) => void;
- onClose: () => void;
+ onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+ onMouseLeave?: () => void;
 }) {
- const ref = useRef<HTMLDivElement>(null);
-
- useEffect(() => {
-  function handler(e: MouseEvent) {
-   if (ref.current && !ref.current.contains(e.target as Node)) {
-    // Skin-tone dropdown (rendered by EmojiGridPicker) is a portal outside
-    // ref — don't close when clicking inside it.
-    if ((e.target as HTMLElement).closest?.("[data-emoji-picker-exempt]")) return;
-    onClose();
-   }
-  }
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
- }, [onClose]);
-
- useScrollLockWhileOpen(true, (target) => !!ref.current?.contains(target));
-
- if (typeof document === "undefined") return null;
-
- // Position below the button, aligned to its right edge, clamped to viewport
- const pickerW = 352;
- const left = Math.max(8, Math.min(anchor.right - pickerW, window.innerWidth - pickerW - 8));
- const top = anchor.bottom + 6;
-
- return createPortal(
-  <div
-   ref={ref}
-   data-comment-exempt     // tells the card's outside-click handler to ignore this portal
-   // pointerEvents: "auto" overrides the document.body.pointerEvents="none"
-   // that Radix's Dialog/Sheet sets while a modal is open — without it, this
-   // portal (a sibling of the Sheet's own content, not a descendant) silently
-   // inherits the disabled state and becomes unclickable.
-   style={{ position: "fixed", top, left, zIndex: 9999, pointerEvents: "auto" }}
-   className="w-[352px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-popover"
-  >
-   <EmojiGridPicker onSelect={onSelect} onClose={onClose} />
-  </div>,
-  document.body,
+ return (
+  <Popover>
+   {({ close }) => (
+    <>
+     <PopoverButton
+      className={triggerClassName}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+     >
+      <SmileyIcon size={size} />
+     </PopoverButton>
+     <PopoverPanel
+      anchor={{ to: "bottom end", gap: 6 }}
+      transition
+      data-comment-exempt
+      className="z-9999 w-88 overflow-hidden rounded-lg border border-border bg-popover transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+     >
+      <EmojiGridPicker onSelect={(e) => { onSelect(e); close(); }} onClose={close} />
+     </PopoverPanel>
+    </>
+   )}
+  </Popover>
  );
 }
 
 // ---------- Simple Dropdown ----------
 
-export function SimpleDropdown({ trigger, children, onClose }: { trigger: React.ReactNode; children: React.ReactNode; onClose?: () => void }) {
- const [open, setOpen] = useState(false);
- const [menuRect, setMenuRect] = useState<DOMRect | null>(null);
- const triggerRef = useRef<HTMLDivElement>(null);
- const menuRef = useRef<HTMLDivElement>(null);
-
- function close() { setOpen(false); onClose?.(); }
-
- useEffect(() => {
-  if (!open) return;
-  function handler(e: MouseEvent) {
-   if (menuRef.current?.contains(e.target as Node)) return;
-   if (triggerRef.current?.contains(e.target as Node)) return;
-   close();
-  }
-  document.addEventListener("mousedown", handler);
-  return () => document.removeEventListener("mousedown", handler);
- }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
- useScrollLockWhileOpen(open, (target) =>
-  !!menuRef.current?.contains(target) || !!triggerRef.current?.contains(target));
-
- function handleOpen() {
-  const r = triggerRef.current?.getBoundingClientRect();
-  if (!open && r) setMenuRect(r);
-  setOpen((v) => !v);
- }
-
+// Headless UI Menu replaces the hand-rolled trigger+portal+cloneElement combo; DropdownItem
+// no longer needs a `_close` prop since MenuItem auto-closes on click.
+export function SimpleDropdown({
+ triggerClassName,
+ triggerIcon,
+ onMouseEnter,
+ onMouseLeave,
+ children,
+}: {
+ triggerClassName: string;
+ triggerIcon: React.ReactNode;
+ onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+ onMouseLeave?: () => void;
+ children: React.ReactNode;
+}) {
  return (
-  <div className="relative">
-   <div ref={triggerRef} className="cursor-pointer" onClick={handleOpen}>{trigger}</div>
-   {open && menuRect && typeof document !== "undefined" && createPortal(
-    <div
-     ref={menuRef}
-     data-comment-exempt
-     // See EmojiPicker's comment above — required so this portal stays
-     // clickable when opened from inside a modal Sheet/Dialog.
-     style={{ position: "fixed", top: getClampedTop(menuRect, 140, { gap: 4 }), right: window.innerWidth - menuRect.right, zIndex: 9999, pointerEvents: "auto" }}
-     className="w-[188px] rounded-[var(--radius-sm)] border border-border bg-card py-1"
-    >
-     {/* Pass close fn via context-like prop-drilling trick: clone children with close */}
-     {React.Children.map(children, (child) =>
-      React.isValidElement(child) && child.type !== React.Fragment
-       ? React.cloneElement(child as React.ReactElement<{ _close?: () => void }>, { _close: close })
-       : child
-     )}
-    </div>,
-    document.body
-   )}
-  </div>
+  <Menu>
+   <MenuButton
+    className={triggerClassName}
+    onMouseEnter={onMouseEnter}
+    onMouseLeave={onMouseLeave}
+   >
+    {triggerIcon}
+   </MenuButton>
+   <MenuItems
+    anchor={{ to: "bottom end", gap: 4 }}
+    transition
+    data-comment-exempt
+    className="z-9999 w-47 rounded-sm border border-border bg-card py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+   >
+    {children}
+   </MenuItems>
+  </Menu>
  );
 }
 
 export function DropdownItem({
- children, onClick, danger, icon, _close,
+ children, onClick, danger, icon,
 }: {
  children: React.ReactNode;
  onClick?: () => void;
  danger?: boolean;
  icon?: React.ReactNode;
- _close?: () => void;
 }) {
  return (
-  <button
-   type="button"
-   onClick={() => { onClick?.(); _close?.(); }}
-   className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors duration-150 ${
-    danger ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-accent"
-   }`}
-  >
-   {icon && <span className={`flex-shrink-0 ${danger ? "text-destructive" : "text-muted-foreground"}`}>{icon}</span>}
-   {children}
-  </button>
+  // as="div" because DropdownItem doesn't forward arbitrary props (no {...rest}), so MenuItem's
+  // default Fragment-merge would silently drop its role/keyboard wiring — see sidebar.tsx's New-menu for the same pattern.
+  <MenuItem as="div" className={`rounded-sm ${danger ? "data-focus:bg-destructive/10" : "data-focus:bg-accent"}`}>
+   <button
+    type="button"
+    onClick={onClick}
+    className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors duration-150 ${
+     danger ? "text-destructive hover:bg-destructive/10" : "text-foreground hover:bg-accent"
+    }`}
+   >
+    {icon && <span className={`shrink-0 ${danger ? "text-destructive" : "text-muted-foreground"}`}>{icon}</span>}
+    {children}
+   </button>
+  </MenuItem>
  );
 }
 
@@ -844,7 +821,7 @@ export function CommentCard({
       <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
      </div>
     ) : inlineVisible.length > 0 && (
-     <div ref={listRef} className="max-h-[240px] divide-y divide-border overflow-y-auto">
+     <div ref={listRef} className="max-h-60 divide-y divide-border overflow-y-auto">
       {inlineVisible.map((thread) => (
        <ThreadSection
         key={thread.id}
@@ -864,7 +841,7 @@ export function CommentCard({
     )}
 
     {orphaned.length > 0 && (
-     <div className="mx-4 mb-4 mt-2 rounded-[var(--radius-md)] border border-warning/30 bg-warning/5 px-4 py-3">
+     <div className="mx-4 mb-4 mt-2 rounded-md border border-warning/30 bg-warning/5 px-4 py-3">
       <p className="text-xs font-semibold text-warning mb-2">⚠ Original content removed</p>
       {orphaned.map((thread) => (
        <div key={thread.id} className="flex items-start gap-2 py-1.5">
@@ -899,11 +876,11 @@ export function CommentCard({
  return (
   <div
    ref={cardRef}
-   className="relative w-[380px] border border-border bg-card overflow-hidden"
+   className="relative w-95 border border-border bg-card overflow-hidden"
    style={{ borderRadius: "var(--radius-xl)" }}
   >
    {/* Thread list */}
-   <div className="max-h-[400px] overflow-y-auto">
+   <div className="max-h-100 overflow-y-auto">
     {loading && (
      <div className="flex items-center justify-center py-8">
       <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
@@ -911,7 +888,7 @@ export function CommentCard({
     )}
     {!loading && activeVisible.length === 0 && (
      <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50 border border-border mb-2.5">
+      <div className="flex size-12 items-center justify-center rounded-lg bg-muted/50 border border-border mb-2.5">
        <ChatTextIcon size={20} className="text-muted-foreground" />
       </div>
       <p className="text-sm font-medium text-foreground/70">No comments yet</p>
@@ -983,7 +960,6 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
  const [editingId,  setEditingId]  = useState<string | null>(null);
  const [replyKey,  setReplyKey]  = useState(0);
- const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
  const [reactions,  setReactions]  = useState<Record<string, string[]>>(thread.reactions ?? {});
  const [isUnread,  setIsUnread]  = useState(false);
  const [isMuted,   setIsMuted]   = useState(false);
@@ -1058,14 +1034,14 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
 
    {/* ── Floating action pill — appears top-right on hover ── */}
    {!thread.deletedAt && editingId !== thread.id && (
-    <div className="absolute top-2.5 right-3 z-10 hidden group-hover/thread:flex items-center gap-px rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5">
+    <div className="absolute top-2.5 right-3 z-10 hidden group-hover/thread:flex items-center gap-px rounded-sm border border-border bg-card px-0.5 py-0.5">
      {thread.isResolved ? (
       <button
        type="button"
        onMouseEnter={(e) => showTooltip("Reopen thread", e)}
        onMouseLeave={hideTooltip}
        onClick={() => onReopen(thread.id)}
-       className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-primary hover:bg-accent transition-colors duration-150"
+       className="flex size-6 items-center justify-center rounded-sm text-primary hover:bg-accent transition-colors duration-150"
       >
        <ArrowCounterClockwiseIcon size={12} />
       </button>
@@ -1075,36 +1051,20 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
        onMouseEnter={(e) => showTooltip("Resolve thread", e)}
        onMouseLeave={hideTooltip}
        onClick={() => onResolve(thread.id)}
-       className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+       className="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
       >
        <CheckIcon size={12} />
       </button>
      )}
-     <button
-      type="button"
+     <EmojiPicker
+      triggerClassName="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
       onMouseEnter={(e) => showTooltip("Add reaction", e)}
       onMouseLeave={hideTooltip}
-      onClick={(e) => setEmojiAnchor(e.currentTarget.getBoundingClientRect())}
-      className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
-     >
-      <SmileyIcon size={12} />
-     </button>
-     {emojiAnchor && (
-      <EmojiPicker
-       anchor={emojiAnchor}
-       onSelect={(emoji) => { void toggleReaction(emoji); }}
-       onClose={() => setEmojiAnchor(null)}
-      />
-     )}
+      onSelect={(emoji) => { void toggleReaction(emoji); }}
+     />
      <SimpleDropdown
-      trigger={
-       <button
-        type="button"
-        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
-       >
-        <DotsThreeIcon size={13} />
-       </button>
-      }
+      triggerClassName="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
+      triggerIcon={<DotsThreeIcon size={13} />}
      >
       {!thread.isResolved && (
        <DropdownItem icon={<ReplyIcon size={13} />} onClick={() => setShowReplyBox(true)}>
@@ -1150,11 +1110,11 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
       <span className="text-sm font-semibold text-foreground leading-tight truncate">
        {thread.author?.name ?? "Former Member"}
       </span>
-      <span className="text-xs text-muted-foreground flex-shrink-0">
+      <span className="text-xs text-muted-foreground shrink-0">
        {formatTime(thread.createdAt)}
       </span>
       {thread.editedAt && !thread.deletedAt && (
-       <span className="text-xs text-muted-foreground flex-shrink-0">(edited)</span>
+       <span className="text-xs text-muted-foreground shrink-0">(edited)</span>
       )}
      </div>
 
@@ -1171,7 +1131,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
        onCancel={() => setEditingId(null)}
       />
      ) : (
-      <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap break-words">
+      <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap wrap-break-word">
        {renderContent(thread.content)}
       </p>
      )}
@@ -1188,7 +1148,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
           onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
           onMouseLeave={hideTooltip}
           onClick={() => { void toggleReaction(emoji); }}
-          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
+          className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-xs border transition-colors duration-150 ${
            iMine
             ? "bg-primary/10 border-primary/30 text-primary"
             : "bg-muted/50 hover:bg-accent border-border hover:border-border text-foreground/70"
@@ -1206,7 +1166,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
 
    {/* ── Replies ── */}
    {thread.replies.length > 0 && (
-    <div className="ml-[56px] mr-4 mb-2 border-l-2 border-border pl-3">
+    <div className="ml-14 mr-4 mb-2 border-l-2 border-border pl-3">
      {thread.replies.map((reply) => (
       <ReplyRow
        key={reply.id}
@@ -1226,7 +1186,7 @@ function ThreadSection({ thread, currentUserId, isAdmin, workspaceId, reactionUs
 
    {/* ── Reply input — hidden until "Reply" is chosen from the ⋯ menu ── */}
    {!thread.isResolved && showReplyBox && (
-    <div className="pl-[56px] pr-4 pb-3">
+    <div className="pl-14 pr-4 pb-3">
      <CommentComposer
       key={replyKey}
       autoFocus
@@ -1273,7 +1233,6 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
  const isAuthor = reply.author?.id === currentUserId;
  const [pendingDelete, setPendingDelete] = useState(false);
  const [reactions, setReactions] = useState<Record<string, string[]>>(reply.reactions ?? {});
- const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  // Sync when the thread data refreshes (e.g. after onMutate's reload)
@@ -1320,7 +1279,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
  }
 
  return (
-  <div className="group/reply relative flex items-start gap-2 py-2 rounded-[var(--radius-sm)] hover:bg-accent/40 transition-colors duration-150">
+  <div className="group/reply relative flex items-start gap-2 py-2 rounded-sm hover:bg-accent/40 transition-colors duration-150">
    <UserAvatar name={reply.author?.name} image={reply.author?.image} size={20} />
    <div className="flex-1 min-w-0 pr-7">
     {/* Name + time */}
@@ -1328,7 +1287,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
      <span className="text-xs font-semibold text-foreground truncate">
       {reply.author?.name ?? "Former Member"}
      </span>
-     <span className="text-xs text-muted-foreground flex-shrink-0">
+     <span className="text-xs text-muted-foreground shrink-0">
       {formatTime(reply.createdAt)}
      </span>
      {reply.editedAt && <span className="text-xs text-muted-foreground">(edited)</span>}
@@ -1346,7 +1305,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
       onCancel={() => setEditingId(null)}
      />
     ) : (
-     <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap break-words">
+     <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap wrap-break-word">
       {renderContent(reply.content)}
      </p>
     )}
@@ -1362,7 +1321,7 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
          onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
          onMouseLeave={hideTooltip}
          onClick={() => { void toggleReaction(emoji); }}
-         className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-[var(--radius-xs)] border transition-colors duration-150 ${
+         className={`flex items-center gap-0.5 px-1.5 py-0.5 text-xs rounded-xs border transition-colors duration-150 ${
           iMine
            ? "bg-primary/10 border-primary/30 text-primary"
            : "bg-muted/50 hover:bg-accent border-border hover:border-border text-foreground/70"
@@ -1379,27 +1338,15 @@ function ReplyRow({ reply, currentUserId, isAdmin, workspaceId, reactionUsers, o
 
    {/* Hover action — floating dot menu */}
    {!reply.deletedAt && editingId !== reply.id && (
-    <div className="absolute top-1.5 right-0 hidden group-hover/reply:flex items-center rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5">
-     <button
-      type="button"
-      onClick={(e) => setEmojiAnchor(e.currentTarget.getBoundingClientRect())}
-      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
-     >
-      <SmileyIcon size={11} />
-     </button>
-     {emojiAnchor && (
-      <EmojiPicker
-       anchor={emojiAnchor}
-       onSelect={(emoji) => { void toggleReaction(emoji); }}
-       onClose={() => setEmojiAnchor(null)}
-      />
-     )}
+    <div className="absolute top-1.5 right-0 hidden group-hover/reply:flex items-center rounded-sm border border-border bg-card px-0.5 py-0.5">
+     <EmojiPicker
+      triggerClassName="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
+      size={11}
+      onSelect={(emoji) => { void toggleReaction(emoji); }}
+     />
      <SimpleDropdown
-      trigger={
-       <button type="button" className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150">
-        <DotsThreeIcon size={12} />
-       </button>
-      }
+      triggerClassName="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
+      triggerIcon={<DotsThreeIcon size={12} />}
      >
       {isAuthor && (
        <DropdownItem icon={<PencilSimpleIcon size={13} />} onClick={() => setEditingId(reply.id)}>Edit</DropdownItem>

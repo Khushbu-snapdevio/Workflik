@@ -332,7 +332,7 @@ function MonthCaptionNow({
       <button
         type="button"
         onClick={onJump}
-        className="ml-2.5 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-medium text-primary transition-colors duration-150 hover:bg-accent"
+        className="ml-2.5 rounded-xs px-1.5 py-0.5 text-xs font-medium text-primary transition-colors duration-150 hover:bg-accent"
       >
         {includeTime ? "Now" : "Today"}
       </button>
@@ -349,7 +349,7 @@ function DateBox({ label, active, onClick }: { label: string; active?: boolean; 
       type="button"
       onClick={onClick}
       className={cn(
-        "flex h-8 flex-1 items-center rounded-[var(--radius-xs)] border bg-card px-2.5 text-left text-xs text-foreground transition-colors duration-150",
+        "flex h-8 flex-1 items-center rounded-xs border bg-card px-2.5 text-left text-xs text-foreground transition-colors duration-150",
         active ? "border-primary ring-1 ring-primary/30" : "border-input",
       )}
     >
@@ -390,7 +390,7 @@ function TimeInput({ value, onChange, active, onFocus }: { value: string; onChan
       }}
       placeholder="9:00 AM"
       className={cn(
-        "h-8 w-28 shrink-0 rounded-[var(--radius-xs)] border bg-card px-2 text-xs text-foreground focus:outline-none focus:border-primary/50",
+        "h-8 w-28 shrink-0 rounded-xs border bg-card px-2 text-xs text-foreground focus:outline-none focus:border-primary/50",
         active ? "border-primary" : "border-input",
       )}
     />
@@ -430,7 +430,7 @@ function MenuRow({ label, value, onClick }: { label: string; value?: string; onC
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center justify-between rounded-[var(--radius-xs)] py-0.5 text-xs transition-colors duration-150 hover:text-foreground"
+      className="flex items-center justify-between rounded-xs py-0.5 text-xs transition-colors duration-150 hover:text-foreground"
     >
       <span className="text-foreground">{label}</span>
       <span className="flex items-center gap-1 text-muted-foreground">
@@ -499,7 +499,7 @@ function SimpleFlyout({
       ref={ref}
       data-edit-property-exempt
       style={style}
-      className="overflow-y-auto rounded-[var(--radius-md)] border border-border bg-background p-1 shadow-lg"
+      className="overflow-y-auto rounded-md border border-border bg-background p-1 shadow-lg"
       onClick={(e) => e.stopPropagation()}
     >
       {items.map((item) => (
@@ -507,7 +507,7 @@ function SimpleFlyout({
           key={item.value}
           type="button"
           onClick={() => { onSelect(item.value); onClose(); }}
-          className="flex w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-foreground transition-colors duration-150 hover:bg-accent"
+          className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-xs text-foreground transition-colors duration-150 hover:bg-accent"
         >
           <span className="truncate text-left">{item.label}</span>
           {item.value === selected && <Check size={13} className="shrink-0 text-primary" />}
@@ -547,7 +547,7 @@ function TimezoneFlyout({
       ref={ref}
       data-edit-property-exempt
       style={{ ...style, display: "flex", flexDirection: "column" }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background shadow-lg"
+      className="overflow-hidden rounded-md border border-border bg-background shadow-lg"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="shrink-0 border-b border-border px-2.5 py-2">
@@ -562,11 +562,11 @@ function TimezoneFlyout({
       <div className="flex-1 overflow-y-auto p-1">
         {!q && current && (
           <>
-            <p className="px-2 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Current timezone</p>
+            <p className="px-2 pb-0.5 pt-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Current timezone</p>
             <TimezoneRow zone={current} selected={selected === current.value} onSelect={() => { onSelect(current.value); onClose(); }} />
           </>
         )}
-        {!q && <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Select a timezone</p>}
+        {!q && <p className="px-2 pb-0.5 pt-1.5 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Select a timezone</p>}
         {filtered.map((z) => (
           <TimezoneRow key={z.value} zone={z} selected={selected === z.value} onSelect={() => { onSelect(z.value); onClose(); }} />
         ))}
@@ -581,11 +581,11 @@ function TimezoneRow({ zone, selected, onSelect }: { zone: { value: string; city
     <button
       type="button"
       onClick={onSelect}
-      className="flex w-full items-center justify-between gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-foreground transition-colors duration-150 hover:bg-accent"
+      className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-xs text-foreground transition-colors duration-150 hover:bg-accent"
     >
       <span className="flex min-w-0 flex-col text-left">
         <span className="truncate">{zone.city}</span>
-        <span className="truncate text-[10px] text-muted-foreground">{zone.offsetLabel}</span>
+        <span className="truncate text-2xs text-muted-foreground">{zone.offsetLabel}</span>
       </span>
       {selected && <Check size={13} className="shrink-0 text-primary" />}
     </button>

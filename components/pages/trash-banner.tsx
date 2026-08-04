@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface TrashBannerProps {
  pageId:    string;
@@ -47,11 +49,9 @@ export function TrashBanner({ pageId, workspaceSlug, parentShortId, rootFallback
  return (
   <>
    {/* Trash banner */}
-   <div className="mb-5 flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+   <div className="mb-5 flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
     <div className="flex items-center gap-2.5">
-     <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-     </svg>
+     <Trash2 size={16} className="shrink-0" />
      <span>
       This page is in <strong>Trash</strong>. It will be permanently deleted in 30 days.
      </span>
@@ -61,7 +61,7 @@ export function TrashBanner({ pageId, workspaceSlug, parentShortId, rootFallback
       type="button"
       onClick={handleRestore}
       disabled={restoring || deleting}
-      className="rounded-[var(--radius-sm)] border border-destructive/40 bg-card px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/15 disabled:opacity-50"
+      className="rounded-sm border border-destructive/40 bg-card px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/15 disabled:opacity-50"
      >
       {restoring ? "Restoring…" : "Restore"}
      </button>
@@ -69,52 +69,23 @@ export function TrashBanner({ pageId, workspaceSlug, parentShortId, rootFallback
       type="button"
       onClick={() => setConfirming(true)}
       disabled={restoring || deleting}
-      className="rounded-[var(--radius-sm)] bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+      className="rounded-sm bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
      >
       Delete permanently
      </button>
     </div>
    </div>
 
-   {/* Confirmation modal */}
-   {confirming && (
-    <div
-     className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-     onClick={(e) => { if (e.target === e.currentTarget) setConfirming(false); }}
-    >
-     <div className="w-full max-w-sm rounded-[var(--radius-lg)] bg-background p-6">
-      <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-destructive/10">
-       <svg className="size-5 text-destructive" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-       </svg>
-      </div>
-      <h2 className="mb-1 text-base font-semibold text-foreground">
-       Delete permanently?
-      </h2>
-      <p className="mb-5 text-sm text-muted-foreground">
-       This page and all its content will be removed forever. This cannot be undone.
-      </p>
-      <div className="flex gap-2">
-       <button
-        type="button"
-        onClick={() => setConfirming(false)}
-        disabled={deleting}
-        className="flex-1 rounded-[var(--radius-sm)] border border-border py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
-       >
-        Cancel
-       </button>
-       <button
-        type="button"
-        onClick={handlePermanentDelete}
-        disabled={deleting}
-        className="flex-1 rounded-[var(--radius-sm)] bg-destructive py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
-       >
-        {deleting ? "Deleting…" : "Delete forever"}
-       </button>
-      </div>
-     </div>
-    </div>
-   )}
+   <ConfirmDialog
+    open={confirming}
+    onOpenChange={setConfirming}
+    title="Delete permanently?"
+    description="This page and all its content will be removed forever. This cannot be undone."
+    confirmLabel="Delete forever"
+    confirmLoadingLabel="Deleting…"
+    loading={deleting}
+    onConfirm={handlePermanentDelete}
+   />
   </>
  );
 }

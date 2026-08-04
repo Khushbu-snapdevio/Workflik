@@ -112,24 +112,24 @@ export default function NotificationSettingsPage() {
   const freqLabel = !emailOn ? "Off" : frequency === "realtime" ? "Instant" : frequency === "daily" ? "Daily" : "Weekly";
 
   return (
-    <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
+    <div className="mx-auto max-w-195 px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
-      <p className="rounded-[var(--radius-md)] border border-border bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
+      <p className="rounded-md border border-border bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground">
         These preferences are per-account, not per-workspace — they apply the same way across every workspace you&apos;re a member of.
       </p>
 
       {/* ── Email channel card ── */}
       <div className="mt-8">
         <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Channel</p>
-        <div className={`overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-150 ${emailOn ? "border-border bg-card" : "border-border bg-muted/20"}`}>
+        <div className={`overflow-hidden rounded-lg border transition-colors duration-150 ${emailOn ? "border-border bg-card" : "border-border bg-muted/20"}`}>
           <div className="flex items-center gap-4 p-5">
-            <div className={`flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors ${emailOn ? "bg-primary" : "bg-muted"}`}>
+            <div className={`flex size-11 shrink-0 items-center justify-center rounded-md transition-colors ${emailOn ? "bg-primary" : "bg-muted"}`}>
               <Mail size={20} className={emailOn ? "text-primary-foreground" : "text-muted-foreground"} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <Label className="text-[14.5px] font-semibold text-foreground">Email notifications</Label>
-                <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-bold ${emailOn ? "bg-muted text-foreground" : "bg-muted text-muted-foreground"}`}>
+                <span className={`rounded-xs px-2 py-0.5 text-xs font-bold ${emailOn ? "bg-muted text-foreground" : "bg-muted text-muted-foreground"}`}>
                   {emailOn ? "Active" : "Paused"}
                 </span>
               </div>
@@ -154,12 +154,12 @@ export default function NotificationSettingsPage() {
             const isActive = frequency === opt.value;
             return (
               <button key={opt.value} type="button" onClick={() => setFrequency(opt.value)}
-                className={`flex flex-col items-start gap-2 rounded-[var(--radius-md)] border p-4 text-left transition-colors duration-150 ${
+                className={`flex flex-col items-start gap-2 rounded-md border p-4 text-left transition-colors duration-150 ${
                   isActive
                     ? "border-primary/30 bg-accent"
                     : "border-border bg-card hover:border-border hover:bg-accent"
                 }`}>
-                <div className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-lg ${isActive ? "bg-card" : "bg-muted/50"}`}>
+                <div className={`flex size-9 items-center justify-center rounded-sm text-lg ${isActive ? "bg-card" : "bg-muted/50"}`}>
                   {opt.icon}
                 </div>
                 <div className="flex-1">
@@ -167,7 +167,7 @@ export default function NotificationSettingsPage() {
                   <p className="mt-0.5 text-xs text-muted-foreground">{opt.desc}</p>
                 </div>
                 {isActive && (
-                  <div className="ml-auto flex size-5 items-center justify-center rounded-[var(--radius-xs)] bg-primary self-end">
+                  <div className="ml-auto flex size-5 items-center justify-center rounded-xs bg-primary self-end">
                     <Check size={11} className="text-primary-foreground" strokeWidth={3} />
                   </div>
                 )}
@@ -178,7 +178,7 @@ export default function NotificationSettingsPage() {
 
         {/* Weekly day picker */}
         {frequency === "weekly" && (
-          <div className="mt-4 overflow-hidden rounded-[var(--radius-md)] border border-border bg-card p-4">
+          <div className="mt-4 overflow-hidden rounded-md border border-border bg-card p-4">
             <p className="mb-3 text-sm text-muted-foreground">
               Send digest every
               <span className="ml-1.5 font-semibold text-foreground">{DAY_FULL[weeklyDay]}</span>
@@ -186,7 +186,7 @@ export default function NotificationSettingsPage() {
             <div className="flex gap-2">
               {DAYS.map((d, i) => (
                 <button key={i} type="button" onClick={() => setWeeklyDay(i)}
-                  className={`flex size-9 items-center justify-center rounded-[var(--radius-sm)] text-sm font-bold transition-colors duration-150 ${
+                  className={`flex size-9 items-center justify-center rounded-sm text-sm font-bold transition-colors duration-150 ${
                     weeklyDay === i
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted/50 text-muted-foreground hover:bg-accent"
@@ -203,14 +203,14 @@ export default function NotificationSettingsPage() {
       <div className="mt-7">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-semibold tracking-wide text-muted-foreground">What you'll receive</p>
-          <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{freqLabel}</span>
+          <span className="rounded-xs bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{freqLabel}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {EVENTS.map(ev => (
             <div key={ev.key}
-              className={`flex flex-col gap-3 rounded-[var(--radius-md)] border border-border bg-card p-4 transition-colors duration-150 ${!emailOn ? "opacity-40" : ""}`}>
+              className={`flex flex-col gap-3 rounded-md border border-border bg-card p-4 transition-colors duration-150 ${!emailOn ? "opacity-40" : ""}`}>
               <div className="flex items-center justify-between">
-                <span className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] bg-muted/50 text-base">{ev.icon}</span>
+                <span className="flex size-8 items-center justify-center rounded-sm bg-muted/50 text-base">{ev.icon}</span>
                 <Switch
                   checked={events[ev.key]}
                   disabled={!emailOn}

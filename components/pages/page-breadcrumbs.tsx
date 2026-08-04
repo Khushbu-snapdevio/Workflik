@@ -57,7 +57,7 @@ export function PageBreadcrumbs({
     <nav className="flex min-w-0 items-center gap-0.5 text-sm">
       <a
         href={`/app/${workspaceSlug}`}
-        className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+        className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
       >
         <Home size={13} className="shrink-0" />
         <span className="font-medium">{workspaceName}</span>
@@ -72,12 +72,12 @@ export function PageBreadcrumbs({
             {href ? (
               <a
                 href={href}
-                className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                className="max-w-30 truncate rounded-sm px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
               >
                 {label}
               </a>
             ) : (
-              <span className="max-w-[120px] truncate px-2 py-1 text-muted-foreground">
+              <span className="max-w-30 truncate px-2 py-1 text-muted-foreground">
                 {label}
               </span>
             )}
@@ -90,7 +90,7 @@ export function PageBreadcrumbs({
           <ChevronRight size={12} className="shrink-0 text-foreground/50" />
           <a
             href={`/app/${workspaceSlug}/${crumb.shortId}`}
-            className="flex max-w-[120px] items-center gap-1.5 truncate rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+            className="flex max-w-30 items-center gap-1.5 truncate rounded-sm px-2 py-1 text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
           >
             {crumb.icon
               ? <PageIcon icon={crumb.icon} size={12} />
@@ -103,7 +103,7 @@ export function PageBreadcrumbs({
 
       <span className="flex min-w-0 items-center gap-0.5">
         <ChevronRight size={12} className="shrink-0 text-foreground/50" />
-        <span className="flex max-w-[240px] items-center gap-1.5 truncate px-2 py-1 text-sm font-semibold text-foreground">
+        <span className="flex max-w-60 items-center gap-1.5 truncate px-2 py-1 text-sm font-semibold text-foreground">
           {icon
             ? <PageIcon icon={icon} size={12} />
             : <FileText size={12} className="shrink-0 text-muted-foreground" />

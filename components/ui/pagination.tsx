@@ -1,8 +1,11 @@
+// No consumers anywhere in the app (verified via grep, 2026-08-04 migration audit) — real
+// list views use server-driven <Link> navigation (pagination-controls.tsx); kept as a starting point if client-side pagination is ever needed.
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { CaretLeftIcon, CaretRightIcon, DotsThreeIcon } from "@phosphor-icons/react"
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
 
 function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (
@@ -73,7 +76,7 @@ function PaginationPrevious({
       className={cn("pl-2!", className)}
       {...props}
     >
-      <CaretLeftIcon data-icon="inline-start" />
+      <ChevronLeft data-icon="inline-start" />
       <span className="hidden sm:block">{text}</span>
     </PaginationLink>
   )
@@ -92,7 +95,7 @@ function PaginationNext({
       {...props}
     >
       <span className="hidden sm:block">{text}</span>
-      <CaretRightIcon data-icon="inline-end" />
+      <ChevronRight data-icon="inline-end" />
     </PaginationLink>
   )
 }
@@ -111,8 +114,7 @@ function PaginationEllipsis({
       )}
       {...props}
     >
-      <DotsThreeIcon
-      />
+      <MoreHorizontal />
       <span className="sr-only">More pages</span>
     </span>
   )

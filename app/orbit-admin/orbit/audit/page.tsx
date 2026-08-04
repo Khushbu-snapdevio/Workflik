@@ -92,15 +92,15 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
     <h1 className="text-xl font-bold tracking-tight text-foreground">Audit Trail</h1>
     <p className="mt-1 text-sm text-muted-foreground">Append-only log of all admin operator actions.</p>
     <div className="mt-3">
-     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+     <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <strong className="font-bold text-foreground">{totalCount}</strong> events total
      </span>
     </div>
    </div>
 
    {events.length === 0 ? (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border border-dashed border-border bg-muted/20 py-24">
-     <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-24">
+     <div className="mb-4 flex size-14 items-center justify-center rounded-xl bg-muted/50">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-7 text-muted-foreground-subtle">
        <path d="M5 5h10M5 9h10M5 13h6" strokeLinecap="round"/>
       </svg>
@@ -109,7 +109,7 @@ export default async function OrbitAuditPage({ searchParams }: Props) {
      <p className="mt-1 text-xs text-muted-foreground">Admin actions will appear here automatically.</p>
     </div>
    ) : (
-    <div className="rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="rounded-lg border border-border bg-card">
      {/* Header and rows are separate grids, so their column template must be
          explicit and identical: `auto` tracks size to each grid's OWN content,
          which made the header ("ACTOR") resolve to a different width than the

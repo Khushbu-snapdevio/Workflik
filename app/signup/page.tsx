@@ -28,12 +28,12 @@ export default async function SignupPage() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-page px-4">
-      <div className="w-full max-w-[380px]">
+      <div className="w-full max-w-95">
         <Link href="/" className="mb-10 flex flex-col items-center gap-3">
           <Logo width={180} height={45} className="h-10 w-auto" />
         </Link>
 
-        <div className="rounded-[var(--radius-xl)] border border-border bg-card px-8 py-8 text-center">
+        <div className="rounded-xl border border-border bg-card px-8 py-8 text-center">
           <h1 className="mb-2 text-xl font-bold text-foreground">
             Registration is disabled
           </h1>

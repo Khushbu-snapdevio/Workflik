@@ -21,7 +21,7 @@ export function SettingsNav({ workspaceSlug, workspaceName, workspaceIcon: _work
   }
 
   return (
-    <aside className="hidden h-full w-[240px] shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+    <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
 
       {/* Nav */}
       <div className="flex-1 overflow-y-auto px-2.5 py-3">
@@ -59,7 +59,7 @@ function NavItem({ href, active, icon, label }: { href: string; active: boolean;
   return (
     <Link
       href={href}
-      className={`group flex items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
+      className={`group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors duration-150 ${
         active
           ? "bg-primary/10 text-primary"
           : "text-sidebar-foreground/70 hover:bg-primary/10 hover:text-primary"
@@ -77,7 +77,7 @@ function NavItem({ href, active, icon, label }: { href: string; active: boolean;
 
 function LockedItem({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="flex cursor-not-allowed items-center gap-2.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/70">
+    <div className="flex cursor-not-allowed items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground/70">
       <span className="shrink-0 text-sidebar-foreground/60">{icon}</span>
       <span>{label}</span>
       <Lock size={11} className="ml-auto text-muted-foreground" />

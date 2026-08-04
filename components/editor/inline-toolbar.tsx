@@ -3,6 +3,7 @@
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { TextSelection } from "@tiptap/pm/state";
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import {
   Bold, Italic, Underline, Strikethrough,
   Code, Link, Paintbrush, Highlighter, MessageSquare,
@@ -14,7 +15,7 @@ interface Props {
   onCommentSelection?:  (anchorStart: number, anchorEnd: number) => void;
 }
 
-const btnBase = "flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground";
+const btnBase = "flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground";
 const btnActive = "bg-accent text-foreground";
 
 export function InlineToolbar({ editor, onCommentSelection }: Props) {
@@ -44,7 +45,7 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
         if (!view.hasFocus() || !editor.isEditable) return false;
         return true;
       }}
-      className="flex items-center gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1"
+      className="flex items-center gap-0.5 rounded-sm border border-border bg-popover p-1"
     >
       {linkInput ? (
         <div className="flex items-center gap-1 px-1">
@@ -58,7 +59,7 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
               if (e.key === "Escape") { setLinkInput(false); setLinkUrl(""); }
             }}
             placeholder="Paste link…"
-            className="h-6 w-48 rounded-[var(--radius-sm)] border border-border bg-background px-2 text-xs outline-none"
+            className="h-6 w-48 rounded-sm border border-border bg-background px-2 text-xs outline-none"
           />
           <button type="button" onClick={applyLink} className="text-xs font-medium text-foreground transition-colors duration-150 hover:text-muted-foreground">
             Apply
@@ -163,32 +164,34 @@ export function InlineToolbar({ editor, onCommentSelection }: Props) {
 const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6", "#000000"];
 
 function ColorPicker({ onSelect, active }: { onSelect: (c: string) => void; active: boolean }) {
-  const [open, setOpen] = useState(false);
-
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`${btnBase} ${active ? btnActive : ""}`}
-        aria-label="Text color"
-      >
-        <Paintbrush size={14} />
-      </button>
-      {open && (
-        <div className="absolute left-0 top-8 z-10 flex gap-1 rounded-[var(--radius-sm)] border border-border bg-popover p-1.5">
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => { onSelect(c); setOpen(false); }}
-              aria-label={`Set text color ${c}`}
-              className="size-4 rounded-full border border-border transition-colors duration-150"
-              style={{ background: c }}
-            />
-          ))}
-        </div>
+    <Popover className="relative">
+      {({ close }) => (
+        <>
+          <PopoverButton
+            className={`${btnBase} ${active ? btnActive : ""}`}
+            aria-label="Text color"
+          >
+            <Paintbrush size={14} />
+          </PopoverButton>
+          <PopoverPanel
+            anchor={{ to: "bottom start", gap: 4 }}
+            transition
+            className="z-600 flex gap-1 rounded-sm border border-border bg-popover p-1.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+          >
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => { onSelect(c); close(); }}
+                aria-label={`Set text color ${c}`}
+                className="size-4 rounded-full border border-border transition-colors duration-150"
+                style={{ background: c }}
+              />
+            ))}
+          </PopoverPanel>
+        </>
       )}
-    </div>
+    </Popover>
   );
 }

@@ -8,12 +8,8 @@ interface Options {
   enabled?:    boolean;
 }
 
-// Mirrors lib/notifications/use-notification-stream.ts's shape — same
-// EventSource + reconnect-with-backoff pattern, applied to
-// /api/workspaces/:id/pages/stream instead. The server sends a "changed"
-// event (no payload) whenever any page in the workspace was created,
-// renamed, moved, or deleted by anyone; the caller reacts by refetching its
-// own copy of the tree (e.g. Sidebar's fetchPages).
+// Mirrors use-notification-stream.ts's EventSource + reconnect-with-backoff pattern for the pages stream.
+// Server sends payload-less "changed" events; caller is expected to refetch its own tree copy.
 export function usePageTreeStream({ workspaceId, onChange, enabled = true }: Options) {
   const failCountRef  = useRef(0);
   const esRef          = useRef<EventSource | null>(null);

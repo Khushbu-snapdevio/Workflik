@@ -5,11 +5,8 @@ import { computeRemindAt, type DateReminderInput } from "@/lib/reminders/compute
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyTx = any;
 
-// Keeps the entry_reminders table in sync with a date property's current
-// value — called on every save of a `date`-type property value. Deletes the
-// row when there's nothing to schedule (no reminder chosen, no date, or the
-// computed time has already passed); otherwise upserts it so the cron in
-// entry-reminder-send.ts picks it up.
+// Syncs entry_reminders with a date property's value on every save; deletes the row when nothing should be
+// scheduled (no reminder/date, or already past), otherwise upserts for entry-reminder-send.ts's cron to pick up.
 export async function syncEntryReminder(
   tx: AnyTx,
   params: {

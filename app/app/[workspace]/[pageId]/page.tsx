@@ -61,11 +61,8 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
     .limit(1);
   if (!ws) notFound();
 
-  // No `if (!member) notFound()` here — a page-only guest (doc/CLAUDE.md
-  // "Guest bypass") has no workspaceMembers row at all. getEffectivePermission
-  // below already resolves guest access via their explicit page_permissions
-  // grant, so it's the sole gate; `member` stays null for guests everywhere
-  // else in this file.
+  // No `if (!member) notFound()` — page-only guests have no workspaceMembers row;
+  // getEffectivePermission below is their sole access gate.
   const member = await getWorkspaceMember(ws.id, session.user.id);
 
   const [page] = await db
@@ -75,10 +72,8 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
     .limit(1);
   if (!page) notFound();
 
-  // Enforce per-page permission (Hard Rule 3) — workspace membership alone is
-  // not enough: private pages and per-page permission ceilings/downgrades
-  // must gate access here too, not just on the ancillary permission/share
-  // endpoints. A denied page is indistinguishable from a nonexistent one.
+  // Enforce per-page permission (Hard Rule 3) — workspace membership alone isn't
+  // enough for private pages/permission ceilings. Denied looks like nonexistent.
   const effectiveLevel = await getEffectivePermission(session.user.id, page.id);
   if (!effectiveLevel) notFound();
 
@@ -196,12 +191,8 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
       })),
     ];
 
-    // Open (unresolved, undeleted, root-level, page-level) comment count per
-    // entry — same definition as /api/databases/[id]/entries, shown as a
-    // chat-icon badge next to the entry's name across table/board/gallery/
-    // calendar views. propertyId must be excluded — the badge's popover only
-    // shows page-level threads, so counting property-scoped ones here would
-    // overcount relative to what that popover actually displays.
+    // Open page-level comment count per entry, for the chat-icon badge. propertyId is
+    // excluded since the badge's popover only shows page-level threads.
     const commentCountRows = entryIds.length > 0
       ? await db
           .select({ pageId: comments.pageId, count: sql<number>`count(*)::int` })
@@ -225,12 +216,8 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
 
     return (
       <TemplatePageClient
-        // Forces a full remount on every navigation between two database
-        // pages (not just entry ↔ database) — this component seeds all its
-        // state once via useState(initEntries)/useState(initProps)/etc, which
-        // only reads its argument on mount, so reusing the same instance
-        // across a client-side navigation would keep showing whatever was
-        // true when it first mounted rather than picking up fresh server data.
+        // Forces a full remount on nav between database pages — state is seeded via
+        // useState() only on mount, so reuse would show stale data.
         key={page.id}
         lockedBanner={lockedBanner}
         page={{

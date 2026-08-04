@@ -58,11 +58,7 @@ export async function POST(req: Request) {
     const orderIndex = (maxOrder ?? -1) + 1;
     const shortId = createId().slice(0, 10);
 
-    // A blank "New Page" click starts as a silent draft — invisible to
-    // collaborators until it has a real title or real content. A caller
-    // that already supplies a meaningful title at creation time (duplicate,
-    // template) skips draft state entirely and notifies immediately, same
-    // as today.
+    // A blank "New Page" starts as a silent draft, invisible until it has real content; a meaningful title at creation skips draft state entirely.
     const startsAsDraft = kind === "page" && !isMeaningfulTitle(title);
 
     const newPage = await db.transaction(async (tx) => {

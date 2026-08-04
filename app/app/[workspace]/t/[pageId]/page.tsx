@@ -108,12 +108,8 @@ export default async function TemplateDatabasePage({ params }: Props) {
           .where(inArray(propertyValues.entryId, entryIds))
       : [];
 
-  // Open (unresolved, undeleted, root-level, page-level) comment count per
-  // entry — same definition as /api/databases/[id]/entries, shown as a
-  // chat-icon badge next to the entry's name across table/board/gallery/
-  // calendar views. propertyId must be excluded — the badge's popover only
-  // shows page-level threads, so counting property-scoped ones here would
-  // overcount relative to what that popover actually displays.
+  // Open page-level comment count per entry, for the chat-icon badge. propertyId is
+  // excluded since the badge's popover only shows page-level threads.
   const commentCountRows = entryIds.length > 0
     ? await db
         .select({ pageId: comments.pageId, count: sql<number>`count(*)::int` })

@@ -402,11 +402,7 @@ export function ProfileSection({ user, smtpConfigured, hasPassword: initialHasPa
 
  async function handleDeleteAccount() {
   setDeleting(true);
-  // A blocked-by-workspaces rejection can round-trip fast enough (especially
-  // locally) that toggling `deleting` back off reads as a flicker rather than
-  // a deliberate loading state — floor the visible duration so the button
-  // always dips into its disabled/spinner state for a beat, even when the
-  // response is near-instant.
+  // Floor the visible loading duration so a fast rejection doesn't read as a flicker.
   const minDuration = new Promise(resolve => setTimeout(resolve, 400));
   try {
    const [res] = await Promise.all([

@@ -3,11 +3,8 @@ import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
 import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
 
-// Long-poll interval: poll every 4s (snappier than the notifications stream's
-// 10s — this is a single indexed MAX() aggregate, not a row fetch), keeping
-// the connection alive with heartbeats every 25s. Same persistent-connection
-// requirement as app/api/notifications/stream/route.ts — the client
-// (usePageTreeStream) auto-reconnects if the host tears down idle connections.
+// Poll every 4s (cheaper than notifications' 10s since this is a single indexed
+// MAX() aggregate); heartbeat every 25s since the client auto-reconnects on idle teardown.
 const POLL_INTERVAL_MS = 4_000;
 const HEARTBEAT_MS     = 25_000;
 const MAX_DURATION_MS  = 55_000;
@@ -17,12 +14,8 @@ export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 
 // GET /api/workspaces/:id/pages/stream
-// Pushes a "changed" event whenever any page in the workspace is created,
-// renamed, moved, or (soft-)deleted — every one of those already bumps
-// pages.updated_at via the updatedAt() column helper, so this only needs to
-// watch MAX(updated_at) rather than track individual mutations. The client
-// reacts by doing a full tree refetch (same as the existing same-tab
-// pages:refresh path) — no payload is sent, the event is just a nudge.
+// Watches MAX(updated_at) instead of tracking individual mutations; client does a full
+// tree refetch on the bare "changed" nudge (no payload).
 export async function GET(req: Request, { params }: Ctx) {
   try {
     const { id: workspaceId } = await params;

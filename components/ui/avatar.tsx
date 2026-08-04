@@ -25,13 +25,8 @@ function Avatar({
 }
 
 /**
- * Plain `<img>`, not `next/image` — deliberate exception to the project's
- * "always next/image" rule (doc/CLAUDE.md UI Rule 13). Avatar sources are
- * arbitrary user-uploaded/external URLs; next/image would 500 on any host not
- * in next.config's remotePatterns, which this primitive has no way to
- * guarantee. Radix's own AvatarImage was a plain `<img>` too. Zero consumers
- * today — flagging rather than silently deciding, since a real consumer
- * should make this call knowingly.
+ * Plain `<img>`, not `next/image` (deliberate exception to CLAUDE.md UI Rule 13):
+ * sources are arbitrary external URLs that next/image would 500 on if not in remotePatterns.
  */
 function AvatarImage({
   className,

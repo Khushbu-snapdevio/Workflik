@@ -8,14 +8,8 @@ import { cn } from "@/lib/utils"
 type CheckedState = boolean | "indeterminate"
 
 /**
- * Native `<input type="checkbox">` in place of Radix's button+hidden-input
- * pair. Visual state is driven from React (checked/disabled props), not CSS
- * pseudo-classes — the same pattern already used for the bulk-select
- * checkboxes in table-view.tsx, kept deliberately boring so it doesn't depend
- * on which Tailwind v4 boolean-attribute variants happen to be enabled.
- *
- * `indeterminate` has no HTML attribute — it can only be set as a DOM
- * property, hence the ref effect.
+ * Native `<input type="checkbox">`; visual state driven from React props, not CSS pseudo-classes.
+ * `indeterminate` has no HTML attribute — only settable as a DOM property, hence the ref effect.
  */
 function Checkbox({
   className,

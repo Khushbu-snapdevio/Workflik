@@ -4,12 +4,8 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Native `<input type="range">` in place of Radix's Slider. Radix supported
- * multiple thumbs via an array value; a native range input only has one.
- * Zero consumers in the app today, so the multi-thumb case is dropped rather
- * than emulated — revisit if a future consumer needs it.
- */
+// Native `<input type="range">` in place of Radix's Slider.
+// Only single-thumb is supported (native range has one thumb); no consumer needs multi-thumb yet.
 function Slider({
   className,
   defaultValue,

@@ -7,11 +7,8 @@ interface PageDraftContextValue {
   setIsDraft: (v: boolean) => void;
 }
 
-// Unlike PagePrivacyContext, this defaults to a safe no-op instead of
-// throwing when unwrapped — the editor (components/editor/editor.tsx) is
-// also rendered from contexts that never set up this provider (e.g.
-// database entries in entry-side-panel.tsx, which are never drafts), and it
-// shouldn't have to know or care which host it's in.
+// Defaults to a safe no-op instead of throwing when unwrapped, since the editor
+// is also rendered from hosts (e.g. entry-side-panel.tsx) that never provide it.
 const NOOP_DRAFT_CONTEXT: PageDraftContextValue = { isDraft: false, setIsDraft: () => {} };
 const PageDraftContext = createContext<PageDraftContextValue>(NOOP_DRAFT_CONTEXT);
 

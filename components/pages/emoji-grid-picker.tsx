@@ -228,11 +228,8 @@ export interface EmojiGridPickerProps {
   onShuffle?: (emoji: string) => void;
 }
 
-// The reusable "Emoji tab" content — search, recently used, skin tone,
-// category grid, and category shortcut bar. Deliberately has no outer
-// border/width/positioning of its own; callers own their own popover chrome
-// (IconPicker's tab panel, or a comment's floating reaction picker) so this
-// stays a plain content block that fits either container.
+// Deliberately has no outer border/width/positioning — callers own their own
+// popover chrome, so this stays a plain content block that fits either container.
 export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPickerProps) {
   const [emojiSearch, setEmojiSearch] = useState("");
   const [skinTone, setSkinTone] = useState<string>(() => getSavedTone());

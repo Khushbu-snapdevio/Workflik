@@ -35,13 +35,9 @@ async function main() {
   for (const migration of migrations) {
     if (lastDbMigration && Number(lastDbMigration.created_at) >= migration.folderMillis) continue;
 
-    // Each migration file commits in its OWN transaction — required because
-    // Postgres forbids using an enum value added via ALTER TYPE ... ADD VALUE
-    // in the same transaction that added it (migration 0003 adds values that
-    // migration 0008 then uses as a column default). drizzle-orm's built-in
-    // migrator wraps every pending migration into a single transaction, which
-    // makes a fresh `pnpm db:migrate` fail with "unsafe use of new value" —
-    // this runner is a drop-in replacement that avoids that.
+    // Each migration commits in its own transaction: Postgres forbids using a value
+    // added via ALTER TYPE ... ADD VALUE in the same transaction that added it
+    // (migration 0008 uses an enum value 0003 adds), which breaks drizzle's default single-transaction migrator.
     await sql.begin(async (tx) => {
       for (const stmt of migration.sql) {
         if (stmt.trim()) await tx.unsafe(stmt);

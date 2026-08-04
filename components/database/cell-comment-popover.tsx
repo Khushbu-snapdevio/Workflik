@@ -99,18 +99,9 @@ function extractText(node: Record<string, unknown>): string {
   return children.map(extractText).join("");
 }
 
-// A plain `<a href download>` only forces an actual download for same-origin
-// (or blob:/data:) URLs — for a cross-origin one (e.g. an S3/CDN-backed
-// attachment, per lib/storage/drivers/s3.ts's getPublicUrl), browsers
-// silently ignore `download` and just navigate to it, which for an image
-// means it opens instead of downloading. A client-side `fetch()` of that same
-// cross-origin URL has the same problem one level earlier: browsers block it
-// outright unless the storage host sends permissive CORS headers, which a
-// private S3/R2 bucket generally doesn't. Routing through our own
-// /api/attachments/download instead makes the cross-origin fetch happen
-// server-to-server, where CORS (a browser-only mechanism) never applies —
-// then this same-origin response's own Content-Disposition header reliably
-// forces the download.
+// `<a download>` and client-side fetch() both fail for cross-origin (S3/CDN) URLs — browsers
+// ignore `download` cross-origin and block the fetch without CORS. Proxy through our own
+// /api/attachments/download so the fetch happens server-to-server and CORS never applies.
 function downloadAttachment(url: string, name: string) {
   const proxied = `/api/attachments/download?${new URLSearchParams({ url, name })}`;
   const a = document.createElement("a");
@@ -319,13 +310,8 @@ export function CellCommentPopover({
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
-  // Auto-scroll the thread list to the newest comment. Called on first load
-  // and after every submit/reply (which each cycle loading true → false via
-  // fetchComments) — without this, a long thread renders below the fold with
-  // no visual cue that there's more content or that your own new comment
-  // landed there. Also re-run when an attachment image finishes loading,
-  // since images have no reserved height until then and can otherwise push
-  // the "just scrolled to" bottom further down after the fact.
+  // Auto-scroll to the newest comment on load/submit/reply, and again on attachment image load
+  // since images have no reserved height and can push the already-scrolled-to bottom further down.
   const scrollListToBottom = useCallback(() => {
     const el = listRef.current;
     if (!el) return;
@@ -345,11 +331,8 @@ export function CellCommentPopover({
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
-  // While the delete-confirm dialog or the image lightbox is open, outside
-  // clicks/Escape should dismiss THAT overlay only — never the comment popover
-  // underneath it. (The delete confirm's own Delete/Cancel buttons are already
-  // covered by the role="alertdialog" check below, but its backdrop overlay is
-  // a sibling of that role, not a descendant, so it needs this explicit guard.)
+  // While the delete-confirm dialog or lightbox is open, outside clicks/Escape should dismiss
+  // only that overlay, not the popover underneath — its backdrop isn't covered by the alertdialog check below.
   const pendingDeleteRef = useRef(pendingDelete);
   useEffect(() => { pendingDeleteRef.current = pendingDelete; }, [pendingDelete]);
   const lightboxRef = useRef(lightbox);
@@ -375,12 +358,8 @@ export function CellCommentPopover({
   useEffect(() => {
     function h(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
-      // A nested overlay owns this Escape press — let it close itself instead
-      // of also closing the comment popover underneath. Checked in the CAPTURE
-      // phase (before Radix's own Escape handling on the alertdialog runs and
-      // synchronously clears pendingDelete) — a bubble-phase document listener
-      // would always see the already-cleared state, since document is the last
-      // stop in the bubble phase, after Radix's own handling has already run.
+      // Checked in the capture phase, before Radix's Escape handling clears pendingDelete —
+      // a bubble-phase listener would always see the already-cleared state.
       if (pendingDeleteRef.current) return;
       if (lightboxRef.current) { setLightbox(null); return; }
       onCloseRef.current();
@@ -389,13 +368,8 @@ export function CellCommentPopover({
     return () => document.removeEventListener("keydown", h, true);
   }, []); // stable — registered once on mount, uses refs for latest state
 
-  // Lock the page's scroll while this popover is open. It's a document.body portal
-  // used from many different scroll containers (table rows, board cards, etc.), so
-  // there's no single ref to set `overflow: hidden` on — instead, block wheel/touch
-  // scrolling everywhere except inside the popover itself (and its own nested
-  // portals: the more-menu, emoji picker, and lightbox), so the underlying page can't
-  // drift out from under a `position: fixed` popover that was positioned once at
-  // open time.
+  // Lock page scroll while open: since this is a document.body portal with no single scroll
+  // container to target, block wheel/touch everywhere except the popover and its nested portals.
   useEffect(() => {
     function preventScroll(e: WheelEvent | TouchEvent) {
       const target = e.target as HTMLElement;
@@ -810,17 +784,11 @@ export function CellCommentPopover({
   const anchorCenterX = anchorRect.left + anchorRect.width / 2;
   const left = Math.min(Math.max(8, anchorCenterX - POP_W / 2), winW - POP_W - 8);
   const spaceBelow = winH - anchorRect.bottom - 8;
-  // Only flip above when there's truly not enough room for a usable popover
-  // below (input row + a couple lines) — the list itself scrolls internally
-  // (maxHeight below), so it doesn't need a full 360px of clearance to render
-  // below the anchor. A too-high threshold here made short threads flip above
-  // anchors that sit mid-page, floating the popover far from its entry.
+  // Low threshold since the list scrolls internally (maxHeight below) and doesn't need full clearance;
+  // too high a threshold flipped short threads above mid-page anchors unnecessarily.
   const showBelow = spaceBelow >= 180;
-  // When there isn't room below, pin the BOTTOM edge just above the anchor
-  // (via CSS `bottom`, not a `top` computed from an assumed max height) so the
-  // popover hugs the anchor and grows upward by however tall it actually is —
-  // a `top` guessed from a fixed 420px assumption left a large dead gap above
-  // short threads instead of sitting flush against the entry.
+  // Pin the bottom edge via CSS `bottom` (not a guessed `top`) so the popover hugs the anchor
+  // and grows upward by its actual height instead of leaving a dead gap.
   const top = showBelow ? anchorRect.bottom + 6 : undefined;
   const bottom = showBelow ? undefined : winH - anchorRect.top + 6;
   const maxHeight = showBelow ? winH - anchorRect.bottom - 6 - 8 : anchorRect.top - 8 - 6;

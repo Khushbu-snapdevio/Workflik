@@ -18,17 +18,9 @@ type DisplayRow = PageRow & { depth: number; hasChildren: boolean };
 // localStorage — restored client-side once the component mounts.
 const PAGE_SIZE_STORAGE_KEY = "workflik:library-page-size";
 
-// Nests sub-pages under their parent (in the same relative order `rows`
-// already has — most-recently-updated first) instead of listing every page
-// flat, which made a top-level page and a deeply-nested one indistinguishable.
-// A page whose parent isn't present in `rows` (not on this page, or genuinely
-// a root) is treated as a root itself, so the tree never silently drops rows.
-//
-// Parents are collapsed by default — `expanded` is opt-in (a page's children
-// only render once its id is added to the set), rather than opt-out, so a
-// freshly-loaded or newly-discovered parent starts collapsed with no seeding
-// needed. This keeps large workspaces scannable instead of dumping every
-// descendant open on first load.
+// Nests sub-pages under their parent instead of listing flat; a page whose parent isn't
+// in `rows` is treated as a root so the tree never silently drops rows. Expansion is
+// opt-in so large workspaces start collapsed and scannable.
 function buildDisplayRows(rows: PageRow[], expanded: Set<string>): DisplayRow[] {
   const idSet = new Set(rows.map((p) => p.id));
   const childrenByParent = new Map<string, PageRow[]>();
@@ -108,11 +100,8 @@ export function LibraryClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [goToPageInput, setGoToPageInput] = useState("");
 
-  // `initial` is only ever the FIRST page's data (fetched server-side for
-  // whichever tab the URL requested) — every tab switch, search, page-size
-  // change, or page navigation after this re-fetches its own page from
-  // GET /api/workspaces/:id/pages/library instead of ever holding the whole
-  // workspace in memory.
+  // `initial` is only the server-rendered first page; every later change refetches
+  // its own page from the API instead of holding the whole workspace in memory.
   const [rows, setRows]       = useState<PageRow[]>(initial.pages);
   const [totalCount, setTotalCount] = useState(initial.totalCount);
   const [nestingActive, setNestingActive] = useState(initial.nestingActive);
@@ -349,14 +338,8 @@ export function LibraryClient({
     setDeletingSelected(true); setDeleteErr("");
     const selected = [...selectedIds];
 
-    // One request for the whole selection instead of one DELETE per id —
-    // selection can now span ids well beyond what's loaded client-side (see
-    // toggleSelectAll), so there's no reliable local parent-chain info to
-    // fold parent+child selections down to just the parent here. The server
-    // does that fold authoritatively against page_closure instead (see
-    // bulk-delete/route.ts) — necessary because deleting a parent already
-    // cascades to its descendants, and a separate request for one of those
-    // descendants would find it already soft-deleted and hard-delete it.
+    // One request for the whole selection (which can span beyond what's loaded
+    // client-side) — the server folds parent+child selections authoritatively.
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/pages/bulk-delete`, {
         method: "POST",
@@ -390,11 +373,8 @@ export function LibraryClient({
     ? buildDisplayRows(rows, expandedIds)
     : rows.map((p) => ({ ...p, depth: 0, hasChildren: false }));
 
-  // tabCounts[tab] doesn't account for an active search (it's a flat,
-  // unfiltered tab-membership count — see lib/pages/library.ts), so once a
-  // search is active, totalCount (already search-aware, and always flat —
-  // nestingActive turns off the moment a search is active) is the right
-  // total to compare selection against instead.
+  // tabCounts[tab] is unfiltered, so once search is active, totalCount (search-aware)
+  // is the right total to compare selection against.
   const expectedSelectAllTotal = search ? totalCount : tabCounts[tab];
   const allSelected  = expectedSelectAllTotal > 0 && selectedIds.size >= expectedSelectAllTotal;
   const someSelected = !allSelected && selectedIds.size > 0;

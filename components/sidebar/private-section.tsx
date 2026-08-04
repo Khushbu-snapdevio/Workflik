@@ -47,11 +47,7 @@ type Props = {
  onEntriesChange: (entries: PageItem[]) => void;
 };
 
-// Mirrors recently-visited-section.tsx for the section shell (header, "N
-// more" popup, empty-state), and page-tree.tsx's PageTreeNode for the
-// per-row hover "+"/"···" actions — same options that already exist there
-// (Favorite, Open, Add subpage, Duplicate, Copy link, Move to Trash), not a
-// new menu design.
+// Mirrors recently-visited-section.tsx's shell and page-tree.tsx's PageTreeNode row actions — reuses existing options, not a new menu.
 export function PrivateSection({
  pages, entries, workspaceId, workspaceSlug, favoritePageIds, onToggleFavorite, onPagesChange, onEntriesChange,
 }: Props) {

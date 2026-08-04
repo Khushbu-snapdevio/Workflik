@@ -278,11 +278,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  const [sortBy, setSortBy] = useState<SortOption>("relevance");
  const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
 
- // A filter is "active" when it's not the default. When one is active we
- // browse (list matching items) even with an empty query, instead of falling
- // back to the unfiltered recently-visited list — otherwise selecting a filter
- // looks like it does nothing. Sort has no effect on this — it only reorders
- // an existing result set, so it never triggers browse mode on its own.
+ // An active filter triggers browse mode even with an empty query, so picking a filter doesn't look like a no-op.
  const hasFilter = filterType !== "all" || filterDate !== "any" || filterLocation !== "all" || filterAuthor !== "any";
 
  const inputRef    = useRef<HTMLInputElement>(null);
@@ -294,13 +290,7 @@ export function SearchDialog({ workspaceSlug, workspaceId, onClose }: SearchDial
  // Guards against an older in-flight request overwriting a newer one's
  // results if responses arrive out of order.
  const requestIdRef = useRef(0);
- // A zero-result response can be a real "no matches" OR just a mid-word
- // fragment the backend's stemmed matching temporarily misses (e.g. typing
- // through "getting" letter by letter can drop out of matching partway).
- // Rather than clearing the panel the instant any response comes back empty
- // — which flashes "No results" and then real matches again a keystroke
- // later — an empty response is held for a beat so a same-query keystroke
- // can supersede it before it ever reaches the screen.
+ // Hold empty responses briefly — stemmed matching can transiently miss mid-word, causing a flash of "No results".
  const emptyHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
  async function runReindex() {

@@ -28,14 +28,8 @@ interface Props {
  onClose:   () => void;
 }
 
-// Quick "invite by email" popup reachable from the workspace switcher —
-// matches Notion's own pattern (a fast path for the common case) without
-// duplicating the invite logic already built into
-// components/settings/workspace-members-section.tsx, which stays the fuller
-// page for managing existing members/pending invites/roles. Admin is only
-// offered when isOwner is true, mirroring that same page's own gating —
-// assigning Admin is owner-only server-side, so showing it to anyone else
-// would just fail silently on submit.
+// Quick "invite by email" popup from the workspace switcher; full member management lives in
+// components/settings/workspace-members-section.tsx. Admin option is owner-only since the server rejects it otherwise.
 export function InviteMembersModal({ workspaceId, isOwner = false, onClose }: Props) {
  const roleOptions = isOwner ? [ADMIN_ROLE_OPTION, ...BASE_ROLE_OPTIONS] : BASE_ROLE_OPTIONS;
  const [emails, setEmails] = useState("");

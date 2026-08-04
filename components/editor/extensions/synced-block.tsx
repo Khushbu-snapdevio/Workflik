@@ -11,21 +11,9 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-// Synced Block v1 (confirmed scope: source + read-only reference view,
-// re-fetched on mount — not push-realtime, no bidirectional edit-from-anywhere).
-//
-// A block is a SOURCE when `sourceBlockId` is empty — its children are real,
-// editable ProseMirror content (persisted as normal parentBlockId-linked
-// block rows, see serializer.ts's tiptapDocToBlocks `walk()` branch for
-// "syncedBlock" with no sourceBlockId).
-//
-// A block is a REFERENCE when `sourceBlockId` is set — it has no children of
-// its own; the NodeView fetches the source's current content from
-// GET /api/blocks/:sourceBlockId/synced-content and renders it read-only.
-//
-// To create a reference: copy a source's id via its header "Copy" button,
-// then paste `SYNCED:<id>` as the very first (and only) text typed into a
-// freshly-inserted synced block — detected below and converted in place.
+// Synced Block v1: source blocks (`sourceBlockId` empty) hold real editable content; reference
+// blocks (`sourceBlockId` set) have no children and fetch+render the source read-only on mount (not push-realtime).
+// A reference is created by pasting `SYNCED:<id>` as the first text into a fresh synced block.
 
 const SYNCED_PASTE_PATTERN = /^SYNCED:([a-zA-Z0-9_-]{6,})$/;
 

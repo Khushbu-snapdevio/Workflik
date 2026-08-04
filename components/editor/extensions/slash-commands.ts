@@ -92,24 +92,16 @@ const CUSTOM_NODES: Partial<Record<string, { type: string } & Record<string, unk
   bookmark: { type: "bookmarkBlock", attrs: { url: "" } },
 };
 
-// Whether this editor instance can actually insert the block — i.e. whether
-// the extension backing it is registered. Editors that register a subset of
-// the block set (the Orbit template editor) would otherwise list blocks in the
-// "/" menu that silently do nothing when picked. Derived from the schema
-// rather than a per-editor list so it can't drift as extensions change.
+// Whether this editor's schema actually has the extension registered — editors with a subset
+// of blocks (e.g. the Orbit template editor) would otherwise list "/" items that silently no-op.
 export function isBlockAvailable(editor: Editor, type: string): boolean {
   const nodeName = NATIVE_NODE_NAME[type] ?? CUSTOM_NODES[type]?.type;
   if (!nodeName) return true;
   return !!editor.schema.nodes[nodeName];
 }
 
-// Block-type → editor command. Exported so quick-insert affordances (the
-// toolbar row and the empty-state buttons) insert blocks through the exact
-// same path as the "/" menu instead of re-deriving node shapes per caller.
-//
-// `range` is the suggestion range covering the typed "/query" and is only
-// passed by the slash menu; button callers omit it since there's nothing to
-// delete.
+// Block-type → editor command, shared by the "/" menu and quick-insert buttons so both go
+// through the same path. `range` (the typed "/query") is only passed by the slash menu.
 export function insertBlockType(
   editor: Editor,
   type: string,

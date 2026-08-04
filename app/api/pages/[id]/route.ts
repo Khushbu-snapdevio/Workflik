@@ -87,15 +87,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
         if (promoted && promotedPage) row.isDraft = promotedPage.isDraft;
       }
 
-      // Metadata-only edits (title/icon/cover/etc.) go through this route
-      // instead of /api/blocks/batch, which has the equivalent notify-once
-      // logic for content saves — without this, an editor who only renames
-      // a page before ever touching its content would stamp `lastEditedBy`
-      // here without notifying anyone, then blocks/batch's own throttle
-      // (`session.user.id !== page.lastEditedBy`) would see itself already
-      // recorded and skip the notification too, silently dropping it.
-      // Skipped for drafts (still true above `willPromote`) — a page
-      // collaborators don't know exists yet shouldn't notify anyone.
+      // Mirrors blocks/batch's notify-once throttle so a title-only edit still notifies (blocks/batch would otherwise see lastEditedBy already stamped and skip it). Drafts never notify.
       if (!page.isDraft && page.createdBy && session.user.id !== page.createdBy && session.user.id !== page.lastEditedBy) {
         await triggerPageUpdateNotification(tx, {
           workspaceId: page.workspaceId,

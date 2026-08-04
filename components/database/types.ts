@@ -77,11 +77,8 @@ export interface DbView {
 
 export type StatusGroupKey = "todo" | "in_progress" | "complete";
 
-/** Per-view copy of settings that otherwise live globally on a property's own
- *  config — lets e.g. Board show Status as a checkbox while Table keeps it a
- *  badge, without touching the property itself. Absent per-view (or absent
- *  entirely, for views created before this existed) falls back to the
- *  property's own global `config` value — see view-property-resolver.ts. */
+/** Per-view copy of settings that otherwise live globally on a property's config;
+ *  absent falls back to the property's global `config` — see view-property-resolver.ts. */
 export interface ViewPropertyOverride {
   displayAs?: "select" | "checkbox";
   wrapContent?: boolean;
@@ -121,11 +118,8 @@ export interface DbPropertyConfig {
   aggregation?: RollupAggregation;
   /** Formula only — the raw expression text (see lib/formula/). */
   expression?: string;
-  /** Person only — turns this property into a self-service vote: regular
-   *  members can only add/remove *their own* id (enforced server-side in
-   *  app/api/entries/[id]/property-values/[propId]/route.ts), and clicking
-   *  the cell toggles their own vote directly instead of opening the full
-   *  people picker. Admins keep full picker access for moderation. */
+  /** Person only — self-service vote: members can only add/remove their own id
+   *  (enforced server-side), clicking toggles it directly. Admins keep full picker. */
   voteMode?: boolean;
 }
 

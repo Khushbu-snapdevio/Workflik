@@ -99,11 +99,7 @@ function AlertDialogPortal({ children }: { children?: React.ReactNode }) {
 
 function AlertDialogContent({
   className,
-  // Callers used this to push the overlay above some other portaled/high
-  // z-index UI (a popover, etc). Native <dialog> renders in the browser's
-  // top-layer regardless of z-index, always above regular content, so the
-  // stacking problem this worked around no longer exists — kept as a no-op
-  // prop so existing call sites don't need to change.
+  // No-op: native <dialog> top-layer stacking made this unnecessary; kept so callers don't need to change.
   overlayClassName: _overlayClassName,
   children,
   ...props

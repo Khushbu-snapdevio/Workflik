@@ -37,11 +37,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    /* suppressHydrationWarning is required on <html>: next-themes writes the
-       theme class here from an inline script before React hydrates, so the
-       server and client markup necessarily differ on this one element.
-       colorScheme is no longer hardcoded — each theme block declares its own,
-       which is what drives native form controls and scrollbars. */
+    /* suppressHydrationWarning: next-themes sets the theme class via inline script before
+       hydration, so server/client markup necessarily differs on this element. */
     <html
       className={cn("font-sans", geistMono.variable)}
       lang="en"

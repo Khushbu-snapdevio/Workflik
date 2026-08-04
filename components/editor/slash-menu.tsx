@@ -41,13 +41,8 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
    return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [editor]);
 
-  // Also same reasoning as MentionList: `pos` below is only recomputed on
-  // React re-render, but scrolling the page (or any ancestor scroll
-  // container) doesn't trigger one — the popup would stay glued to its last
-  // viewport position while the "/" it's anchored to scrolls out from under
-  // it. Close on any scroll outside the popup itself (matches Notion), same
-  // as the click-outside handler above. Capture-phase so it catches scrolls
-  // on any ancestor container, not only the window.
+  // Scrolling doesn't re-render, so the popup would stay glued to its old
+  // position; close it on any ancestor scroll instead (capture-phase).
   useEffect(() => {
    function handleScroll(e: Event) {
     if (containerRef.current?.contains(e.target as Node)) return;

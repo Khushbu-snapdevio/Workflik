@@ -16,12 +16,8 @@ export interface HoverTooltipState {
   who?: string;
 }
 
-// Shared state for the app's hover-triggered IconTooltip portals (a bare
-// `position: fixed` box snapshotted from getBoundingClientRect() at
-// mouseenter) — dismisses on scroll instead of drifting, matching every
-// other hover overlay in the app. Use in place of a native `title=`
-// attribute, which renders an unstyled OS tooltip that ignores the app's
-// light/dark theme.
+// Shared state for hover-triggered tooltip portals; dismisses on scroll instead of drifting.
+// Use instead of native `title=`, which renders an unstyled OS tooltip that ignores app theming.
 export function useHoverTooltip() {
   const [tooltip, setTooltip] = useState<HoverTooltipState | null>(null);
 

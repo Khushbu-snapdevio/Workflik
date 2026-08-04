@@ -61,14 +61,9 @@ export async function acceptWorkspaceInviteTx(
   }
 }
 
-// Adds a user who followed the workspace's shareable "invite link"
-// (workspaces.inviteLinkToken) — unlike a per-email invite, there's no
-// pre-created workspaceMembers row addressed to them, and no single inviter
-// to notify (the link isn't extended to any one person). If they already
-// have a non-active row (e.g. a pending email invite to the same address),
-// reuse it — the unique (workspaceId, userId) index forbids a second row —
-// keeping its originally-invited role rather than overwriting it with the
-// link's role.
+// Joins via a shareable invite link (no pre-created row, no single inviter to notify).
+// Reuses any existing non-active row for the user, keeping its original role,
+// since the unique (workspaceId, userId) index forbids a second row.
 export async function joinWorkspaceViaLinkTx(
   tx: AnyTx,
   params: { workspaceId: string; userId: string; role: "admin" | "editor" | "viewer" }

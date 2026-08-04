@@ -24,11 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const body = await req.json() as { value: unknown };
 
-  // Computed properties are never stored directly — Formula/Rollup/Created-by
-  // are recalculated from other data on every read (lib/databases/compute-values.ts)
-  // and never consult property_values at all, so a direct write here would
-  // just sit as permanently-unreachable orphaned data. Reject outright rather
-  // than silently accepting a write nothing will ever read back.
+  // Formula/Rollup/Created-by are recomputed on every read and never consult property_values, so a direct write here would be orphaned data.
   if (prop.type === "formula" || prop.type === "rollup" || prop.type === "created_by") {
     return Response.json({ error: "computed_property_readonly" }, { status: 400 });
   }
@@ -92,11 +88,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
   }
 
-  // Notify newly-assigned users — person properties are stored as
-  // `{ userIds: string[] }` (see components/database/cells/cell-editor.tsx's
-  // PersonEditor), not a bare array/string, and only *newly added* ids
-  // should notify, or every unrelated save of an already-assigned person
-  // property would re-notify them.
+  // Only notify newly-added ids, or every unrelated save of an already-assigned person property would re-notify them.
   if (prop.type === "person") {
     const oldIds = new Set(existingPersonValue?.userIds ?? []);
     const newIds = ((body.value as { userIds?: string[] } | null)?.userIds) ?? [];

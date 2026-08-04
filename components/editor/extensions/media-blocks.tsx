@@ -589,10 +589,8 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
 }
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
-// Unlike Image/Video/Audio/File above (which still call URL.createObjectURL —
-// a session-local blob URL that never persists), this wires the real 3-step
-// upload flow (lib/storage/use-upload.ts: sign → PUT/POST → confirm) so a
-// picked PDF survives a reload and is visible to other users.
+// Unlike Image/Video/Audio/File above (session-local blob URLs), this wires the real
+// sign → PUT/POST → confirm upload flow so a picked PDF survives reload and is visible to other users.
 interface PdfBlockOptions {
   pageId: string;
   workspaceId: string;

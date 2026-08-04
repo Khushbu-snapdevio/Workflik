@@ -119,20 +119,12 @@ function InlineCardInput({
 
 function ColumnDropZone({ colKey, children }: { colKey: string; children: React.ReactNode }) {
  const { setNodeRef } = useDroppable({ id: "col-" + colKey });
- // The scrollable region of the column — bounded by the column's own
- // height (set on SortableColumn's wrapper) so a column with many cards
- // scrolls internally instead of growing the whole page. overflow-x-hidden
- // is required, not decorative — same spec quirk as the row's overflow-x
- // fix, mirrored on this axis: `overflow-y: auto` alone silently upgrades
- // overflow-x from its default `visible` to `auto` too.
+ // overflow-x-hidden is required, not decorative: `overflow-y: auto` alone silently upgrades overflow-x from `visible` to `auto` too.
  return <div ref={setNodeRef} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-2 pt-2 pb-2">{children}</div>;
 }
 
 // ── Sortable column ────────────────────────────────────────────────────────────
-// Whole columns are reorderable via drag, using a distinct "colhandle-" id prefix so
-// it never collides with the existing "col-<key>" empty-column drop target. Only the
-// header is the drag handle (passed via render prop) — not the whole column, so
-// dragging a card inside never gets mistaken for dragging the column itself.
+// Uses a distinct "colhandle-" id prefix (vs "col-<key>") and only the header as drag handle, so card drags aren't mistaken for column drags.
 
 function SortableColumn({
  colKey, draggable, isDragging, maxHeight, children,
@@ -148,12 +140,7 @@ function SortableColumn({
   transform: CSS.Transform.toString(transform),
   transition,
   opacity: isDragging ? 0.4 : 1,
-  // Explicit pixel max-height (measured from the row's own rendered size),
-  // not CSS `max-h-full` — a column with few cards still hugs its own
-  // content height below this; it only caps out (and its own card list
-  // scrolls) once content would exceed it. Board columns sit in a
-  // horizontally-scrolling flex row (not a wrapping grid) so many status
-  // options stay in one row instead of wrapping to a second row.
+  // Explicit pixel max-height (measured, not CSS `max-h-full`) so a column with few cards hugs its content and only scrolls once it grows past this.
   maxHeight: maxHeight ?? undefined,
  };
  const handleProps = draggable ? { ...attributes, ...listeners } : null;
@@ -582,12 +569,7 @@ export function TemplateBoardView({
  const [draggingColKey, setDraggingColKey]     = useState<string | null>(null);
  const { tooltip: pinTooltip, showTooltip: showPinTooltip, hideTooltip: hidePinTooltip } = useHoverTooltip();
 
- // Measured directly rather than via CSS `max-h-full` — percentage heights
- // only resolve if every ancestor in the chain already has a genuinely
- // definite height, which is fragile through several levels of nested flex
- // containers. Measuring the row's own rendered height in JS and applying
- // it to each column as an explicit pixel max-height sidesteps that
- // entirely, the same way the page-level view height is already measured.
+ // Measured in JS rather than CSS `max-h-full`: percentage heights need every ancestor to have a definite height, fragile through nested flex.
  const rowRef = useRef<HTMLDivElement>(null);
  const [colMaxHeight, setColMaxHeight] = useState<number | null>(null);
 
@@ -595,12 +577,7 @@ export function TemplateBoardView({
   const rowEl = rowRef.current;
   if (!rowEl) return;
   function measure() {
-   // clientHeight is the row's own padding-box height — it includes the
-   // row's `p-6` padding, but columns render inside that padded area, so
-   // their actual available height is clientHeight minus the row's own
-   // top+bottom padding. Without this, the last bit of a tall column
-   // (e.g. the "Add card" button) renders past the row's real boundary
-   // and gets clipped instead of fitting.
+   // clientHeight includes the row's own padding, so subtract it — otherwise a tall column's last bit (e.g. "Add card") gets clipped.
    const cs = getComputedStyle(rowEl!);
    const verticalPadding = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
    setColMaxHeight(rowEl!.clientHeight - verticalPadding);
@@ -634,11 +611,7 @@ export function TemplateBoardView({
   ? groupOptions
   : [...groupOptions].sort((a, b) => sortDirection === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
 
- // Matches Notion: a card shows only its title by default. The one
- // exception is Status, and only once the user explicitly turns on "Show on
- // card" from Status's own Edit Property panel — every other property stays
- // fully editable via the card's own popup but is never rendered on it.
- // Same rule as Calendar/Gallery.
+ // A card shows only its title by default, except Status when "Show on card" is explicitly enabled. Same rule as Calendar/Gallery.
  const displayProps = properties.filter((p) => {
   const config = p.config as { groupedByStatus?: boolean; showOnCard?: boolean } | null;
   return !!config?.groupedByStatus && !!config?.showOnCard;

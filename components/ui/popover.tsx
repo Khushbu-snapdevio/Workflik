@@ -5,15 +5,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Slot } from "@/components/ui/slot"
 
-// The native `popover` attribute replaces the hand-rolled outside-click /
-// Escape listeners and the createPortal call: `popover="auto"` already gives
-// light-dismiss (outside click + Escape) and renders in the browser's
-// top-layer, same as <dialog>. What's left is just React-state glue (calling
-// showPopover()/hidePopover() to match `open`, plus a `toggle` listener to
-// sync back when the browser dismisses it natively) and the trigger-relative
-// position math, which stays JS since the one real consumer needs a fully
-// controlled `open` state that daisy's CSS dropdown / CSS anchor positioning
-// alone can't drive.
+// Native `popover="auto"` attribute replaces hand-rolled outside-click/Escape listeners and createPortal;
+// remaining JS just syncs showPopover()/hidePopover() to `open` since the consumer needs full control.
 
 type PopoverContextValue = {
   open: boolean

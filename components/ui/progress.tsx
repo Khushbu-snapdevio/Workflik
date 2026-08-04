@@ -3,17 +3,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /**
- * Deliberately NOT a native `<progress>` element.
- *
- * The migration plan lists progress as a "use the platform" case, but the bar
- * we ship is a 2px track with a translated fill, and styling a real
- * `<progress>` to match means `::-webkit-progress-value` /
- * `::-moz-progress-bar`, which do not accept the same declarations and diverge
- * across engines. Under the parity-first rule that trade is not worth it, so
- * the markup stays as it is and only the Radix dependency goes.
- *
- * The ARIA below is what Radix was supplying; it is the whole reason this file
- * is not simply two divs.
+ * Deliberately NOT a native `<progress>` — its `::-webkit-progress-value`/`::-moz-progress-bar`
+ * diverge across engines and can't match our 2px translated-fill bar. ARIA below replaces Radix's.
  */
 function Progress({
   className,

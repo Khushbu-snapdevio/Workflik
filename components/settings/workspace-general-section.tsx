@@ -51,12 +51,7 @@ function WorkspaceIconPicker({
  function handleOpen() {
   if (!open && btnRef.current) {
    const rect = btnRef.current.getBoundingClientRect();
-   // IconPicker is a fixed w-88 panel positioned "absolute left-0" —
-   // anchor via `left` (not `right`) and clamp to the viewport, matching the
-   // pattern used elsewhere (entry-context-menu.tsx). A `right`-anchored
-   // wrapper collapses to zero width here (its only child is absolutely
-   // positioned), which pulls "left-0" to the button's right edge instead
-   // of flush against it — pushing the whole panel off-screen.
+   // Anchor via `left` and clamp to viewport: a `right`-anchored wrapper collapses to zero width here, pushing the panel off-screen.
    const PANEL_WIDTH = 352;
    const PANEL_HEIGHT = 400;
    const left = Math.max(8, Math.min(rect.right - PANEL_WIDTH, window.innerWidth - PANEL_WIDTH - 8));
@@ -164,11 +159,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
  const [deleteName,   setDeleteName]   = useState("");
  const [deleting,    setDeleting]    = useState(false);
  const [deleteError,  setDeleteError]  = useState("");
- // window.location.origin differs between the server (absent) and the
- // client's first hydration pass (present) — reading it unconditionally in
- // the render body causes a hydration mismatch. Gate it behind `mounted` so
- // both the SSR pass and the client's initial render agree on "", and the
- // full URL fills in one render later, after hydration has already settled.
+ // Gate window.location.origin behind `mounted` — reading it unconditionally causes a hydration mismatch (absent on server).
  const [mounted, setMounted] = useState(false);
  useEffect(() => { setMounted(true); }, []);
 

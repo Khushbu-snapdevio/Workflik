@@ -85,19 +85,9 @@ function isSuggestionActive(editor: Editor): boolean {
   );
 }
 
-// Stamps a permanent, client-generated blockId onto every block-eligible node
-// that doesn't already have one (or that duplicates one already seen earlier
-// in the same walk — ProseMirror's stock "split block" command, run for a
-// plain Enter press, copies the *original* node's attrs onto the newly split
-// half, so a fresh paragraph can start life already carrying its predecessor's
-// blockId), the instant it's created — mirroring tiptapDocToBlocks's own
-// recursion (top-level, plus toggle/columns/non-reference-syncedBlock
-// children). Assigning ids up front like this, rather than waiting for a save
-// round-trip and then trying to match new nodes back to their DB row by array
-// position, removes that race entirely: a block's id can no longer end up
-// wrong (or get treated as "new" again on every subsequent save, silently
-// duplicating its content) just because the document's shape changed while a
-// request was in flight.
+// Stamps a client-generated blockId onto new/duplicate block nodes immediately (rather than
+// matching them to DB rows by array position after a save round-trip), since split-block on Enter
+// copies the predecessor's blockId onto the new half and a save race could otherwise duplicate content.
 function assignMissingBlockIds(editor: Editor): boolean {
   const { state } = editor;
   const tr = state.tr.setMeta("addToHistory", false);
@@ -359,12 +349,8 @@ export function PageEditor({
           pageId
         );
 
-        // tiptapDocToBlocks only walks the current (possibly smaller) doc, so
-        // a block removed from it — via Backspace, a block's own delete
-        // button, etc. — just stops being upserted; nothing else flags it for
-        // server-side deletion. Diff against the last-persisted set so its id
-        // actually reaches deletedIds instead of leaving the orphaned row
-        // to reappear on the next load.
+        // Diff against the last-persisted set to catch blocks removed from the doc — tiptapDocToBlocks
+        // only walks the current doc, so a removed block wouldn't otherwise get flagged for server-side deletion.
         const outgoingIds = new Set(outgoing.map((b) => b.id).filter((id): id is string => !!id));
         const missingIds = currentBlocksRef.current
           .map((b) => b.id)
@@ -394,11 +380,8 @@ export function PageEditor({
         if (data.promoted) setIsDraft(false);
 
         deletedIds.current = [];
-        // No blockId sync-back needed: every node already carries a permanent,
-        // client-generated id (assignMissingBlockIds, stamped on synchronously
-        // the moment a block is created, before it's ever saved) that the server
-        // upserts by directly, so what was just sent is already what the live
-        // doc has — no server round-trip dependency, no stale-position risk.
+        // No blockId sync-back needed — assignMissingBlockIds stamps ids client-side before save,
+        // so the server upserts by that id directly and what was sent already matches the live doc.
         lastSaved.current = docStr;
 
         setSaveState("saved");
@@ -789,21 +772,12 @@ export function PageEditor({
         if (commentCard) {
           const editorRect = editor.view.dom.getBoundingClientRect();
 
-          // The left margin only has real free space past the app sidebar's
-          // own right edge — editorRect.left alone overstates it, since part
-          // of that span is the sidebar itself, not empty page. Previously
-          // this measured spaceLeft from x=0, so a left-anchored card could
-          // land partly underneath the sidebar (and get visually hidden by
-          // it — the sidebar's stacking context sits above this card's).
+          // Measure free space from the sidebar's right edge, not x=0, or a left-anchored card
+          // could land partly hidden underneath the sidebar.
           const sidebarRight = document.getElementById("workspace-sidebar")?.getBoundingClientRect().right ?? 0;
 
-          // Always anchor beside the editor column — prefer whichever margin
-          // (right or left) has more room, then clamp into the viewport.
-          // There's deliberately no centered fallback: centering the card
-          // over the page whenever neither margin fit the full CARD_WIDTH
-          // made its position look inconsistent from one open to the next
-          // (beside the block sometimes, dead-center other times) instead of
-          // always reading as "a margin comment next to this block."
+          // Anchor beside the editor column, preferring whichever margin has more room; no centered
+          // fallback since that made the card's position feel inconsistent between opens.
           const spaceRight = window.innerWidth - editorRect.right - VIEWPORT_MARGIN;
           const spaceLeft = editorRect.left - sidebarRight - VIEWPORT_MARGIN;
           left = spaceRight >= spaceLeft

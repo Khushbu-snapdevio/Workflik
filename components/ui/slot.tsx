@@ -2,20 +2,14 @@
 
 import * as React from "react"
 
-// Radix's `Slot` ships its own "use client" pragma internally, which is what
-// let `<Button asChild>` be used from Server Components (Button itself has
-// no "use client" — Slot being a client boundary is what makes attaching a
-// ref via cloneElement legal). This local replacement needs the same.
+// "use client" here (not on Button) is what lets `<Button asChild>` be used from Server Components.
 function setRef<T>(ref: React.Ref<T> | undefined, node: T) {
   if (typeof ref === "function") ref(node)
   else if (ref) (ref as React.RefObject<T | null>).current = node
 }
 
-// Local replacement for radix-ui's `Slot.Root` — merges the props passed to
-// `<Slot>` onto its single child (the `asChild` composition pattern), instead
-// of rendering its own DOM node. className/style are merged, `on*` handlers
-// are composed (both run, child wins on preventDefault), everything else the
-// child explicitly sets wins over the slot's value.
+// Local replacement for radix-ui's `Slot.Root`: merges slot props onto the single child (asChild pattern).
+// className/style merge, handlers compose (both run), other props: child wins.
 const Slot = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
   ({ children, ...slotProps }, ref) => {
     if (!React.isValidElement(children)) return null

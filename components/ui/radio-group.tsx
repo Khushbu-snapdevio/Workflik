@@ -5,13 +5,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /**
- * Native `<input type="radio">` group in place of Radix's RadioGroup. Native
- * radios sharing one `name` already give arrow-key navigation between
- * options for free — no roving-tabindex JS needed, which is the whole reason
- * this primitive was on the "drop Radix" list in the first place.
- *
- * `name` is auto-generated with `useId` when the consumer doesn't pass one,
- * since native radios only group correctly when they share a `name`.
+ * Native `<input type="radio">` group: sharing one `name` gives arrow-key nav for free, no roving-tabindex JS needed.
+ * `name` auto-generated via `useId` when omitted, since native grouping requires a shared `name`.
  */
 type RadioGroupContextValue = {
   name: string

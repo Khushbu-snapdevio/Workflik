@@ -4,22 +4,8 @@ import { Slot } from "@/components/ui/slot"
 
 import { cn } from "@/lib/utils"
 
-// daisyUI `btn` in place of the shadcn/Tailwind class string. The public API
-// is unchanged: same 6 variants × 9 sizes, same data-* attrs, same asChild.
-// Only the class strings moved. Measured 54/54 exact parity (Phase 0 spike,
-// see doc/docs/daisyui-migration-plan.md) against production builds, light
-// and dark.
-//
-// What daisy's `btn` actually contributes here: the base layer (inline-flex,
-// border-width, transition, disabled handling) and the colour modifiers
-// (btn-primary / btn-soft btn-error / btn-ghost / btn-link).
-//
-// What it cannot contribute: our size scale. daisy hardcodes its height steps
-// at 6/8/10/12/14 × --size-field, i.e. the ratio 3:4:5:6:7. Ours is
-// 24/32/36/40/44px = 6:8:9:10:11. No value of --size-field reconciles them, so
-// every size below re-declares --size and --btn-p explicitly. Same story for
-// font-size at lg/xl (daisy jumps to 18px/22px; we stay at 14px/16px) and for
-// font-weight (daisy 600, ours 500).
+// daisyUI `btn` swapped in for the shadcn/Tailwind class string; public API (variants/sizes/data-*/asChild) unchanged.
+// daisy's size scale (ratio 3:4:5:6:7) doesn't match ours (6:8:9:10:11), so each size below re-declares --size/--btn-p explicitly.
 const buttonVariants = cva(
   // `text-sm` must stay in the base, not only in the size variants: the four
   // icon sizes declare no text-* class, and without it they inherit

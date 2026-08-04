@@ -59,12 +59,7 @@ export async function POST(req: Request) {
         );
       }
 
-      // Upsert each block by its (now always client-generated, permanent) id —
-      // a real INSERT ... ON CONFLICT DO UPDATE rather than an update-only
-      // path, since a fresh id the client just minted won't exist as a row
-      // yet. The client assigns a stable UUID to every block the instant
-      // it's created (before it's ever saved), so the same id is reused on
-      // every subsequent save — this is what makes upserting by id safe.
+      // Client assigns a permanent UUID at creation time, so upserting by id (INSERT ... ON CONFLICT) is safe even for never-saved blocks.
       for (const b of incoming) {
         const id = b.id ?? crypto.randomUUID();
         const [saved] = await tx.insert(blocks).values({

@@ -34,11 +34,8 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) notFound();
 
-  // Only the first page of whichever tab was linked to (e.g. the sidebar's
-  // "/library?tab=private" link — defaults to "All Pages") is fetched here;
-  // every tab switch, search, page-size change, or page navigation after
-  // this initial render goes through GET /api/workspaces/:id/pages/library
-  // instead of re-fetching the whole workspace (see lib/pages/library.ts).
+  // Only the first page of the linked tab is fetched server-side; later changes
+  // go through GET /api/workspaces/:id/pages/library instead (see lib/pages/library.ts).
   const initial = await getLibraryPage(ws.id, session.user.id, { tab: initialTab, page: 1, pageSize: DEFAULT_PAGE_SIZE });
 
   return (

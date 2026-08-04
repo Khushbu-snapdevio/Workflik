@@ -5,12 +5,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /**
- * A native `<label>` already does the whole job of Radix's Label — the `for`
- * association, the click-to-focus forwarding — with one exception worth
- * keeping: double-clicking a label otherwise selects its text, which looks
- * broken next to a checkbox. Radix suppressed that, so we do too.
- *
- * Stays a client component only because of that handler.
+ * Native `<label>` does everything Radix's Label did, except double-click text selection,
+ * which looks broken next to a checkbox — suppressed here like Radix did.
  */
 function Label({
   className,

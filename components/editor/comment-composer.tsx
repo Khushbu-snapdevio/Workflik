@@ -28,21 +28,8 @@ type Attachment = { preview: string; name: string; mimeType: string };
 
 const ATTACHMENT_NODE_TYPES = new Set(["image", "file", "attachment"]);
 
-// The tiptap schema below only knows about paragraph/text/mention nodes — it
-// has no "image"/"file"/"attachment" node type (those are only rendered
-// manually by comment-card.tsx's read-only renderContent()). Handing an
-// existing attachment node to editor's `content:` would throw on an unknown
-// node type and silently drop the ENTIRE doc (not just that node), which is
-// why editing a comment that had an attachment used to blank out the whole
-// box — text included. "attachment" (url/name/mimeType attrs) is a third,
-// separate shape cell-comment-popover.tsx's own composer uses for the same
-// concept; every attachment-like node must be stripped here regardless of
-// which of the two shapes it's in, or the leftover one still crashes the
-// parse. Only the first is re-hydrated into this composer's single-slot
-// `attachment` state (its own attach flow only ever carries one at a time) —
-// a comment with 2+ attachments created via the OTHER composer will still
-// lose the extra ones if re-saved from here, but that beats the previous
-// total data loss.
+// The tiptap schema has no image/file/attachment node type, so handing one to `content:` would
+// throw and silently blank the ENTIRE doc — strip all attachment-like nodes here and re-hydrate only the first into single-slot state.
 function extractInitialAttachment(
   initialContent: Record<string, unknown> | undefined
 ): { docContent: Record<string, unknown> | undefined; attachment: Attachment | null } {

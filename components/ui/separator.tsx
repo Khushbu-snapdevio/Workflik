@@ -2,16 +2,8 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Radix's Separator did two things: render a div, and set the right ARIA. The
- * div is free and the ARIA is four lines, so the dependency was not earning
- * its keep.
- *
- * `data-orientation` is load-bearing, not decoration — the `data-horizontal:`
- * / `data-vertical:` variants below compile to `[data-orientation=…]`
- * selectors, so dropping the attribute silently costs the separator its 1px
- * size and it disappears.
- */
+// Local replacement for Radix's Separator (just a div + ARIA).
+// `data-orientation` is load-bearing: the `data-horizontal:`/`data-vertical:` classes below key off it.
 function Separator({
   className,
   orientation = "horizontal",
@@ -25,11 +17,9 @@ function Separator({
     <div
       data-slot="separator"
       data-orientation={orientation}
-      // A decorative rule carries no meaning for assistive tech, so it is
-      // removed from the tree entirely rather than announced as a separator.
+      // Decorative rules are hidden from assistive tech entirely.
       role={decorative ? "none" : "separator"}
-      // Only meaningful separators take aria-orientation, and only when
-      // vertical — horizontal is the implicit default for role="separator".
+      // aria-orientation only needed for vertical; horizontal is the implicit default.
       aria-orientation={
         !decorative && orientation === "vertical" ? "vertical" : undefined
       }

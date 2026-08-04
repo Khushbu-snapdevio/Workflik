@@ -130,11 +130,8 @@ export function EntryPropertiesPanel({ entryId, entryShortId, databaseId, worksp
     return () => window.removeEventListener("workflik:jump-to-page-comment", onJumpToComment);
   }, [entryId]);
 
-  // `popover`/`editPropPanel` are one-time DOMRect snapshots of a property row's
-  // trigger, and `getAnchorRect={() => editPropPanel.anchorRect}` below always
-  // returns that same frozen value — so EditPropertySidePanel's own
-  // reposition-on-scroll effect has nothing fresh to reposition to. Lock scroll
-  // while either popover is open instead, so the frozen anchor never goes stale.
+  // `popover`/`editPropPanel` are frozen DOMRect snapshots, so scroll is locked while
+  // either is open instead of repositioning (there's nothing fresh to reposition to).
   useScrollLockWhileOpen(!!popover || !!editPropPanel || !!commentPopover, (target) =>
    !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt], [data-comment-exempt]'));
 

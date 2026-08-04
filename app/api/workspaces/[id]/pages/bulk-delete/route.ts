@@ -15,17 +15,8 @@ type Ctx = { params: Promise<{ id: string }> };
 const bodySchema = z.object({ ids: z.array(z.string()).min(1).max(2000) });
 
 // POST /api/workspaces/:id/pages/bulk-delete
-// Deletes many pages in one request instead of the client firing one DELETE
-// per selected id. That matters beyond convenience: if both a parent and one
-// of its descendants are selected, deleting the parent already cascades to
-// the descendant (see deletePageCascade) — a separate concurrent DELETE for
-// that same descendant would find it already soft-deleted and, per the
-// single-page endpoint's own "already in trash" rule, hard-delete it instead
-// of leaving it in Trash. Folding every selected id up to whichever selected
-// ancestor is topmost (via page_closure, so it's correct for the whole
-// workspace — not just whatever the client happened to have loaded) and
-// deleting only those avoids ever sending that redundant, racing second
-// request.
+// Collapses selected ids to their topmost selected ancestor (via page_closure) before
+// deleting, so a selected descendant isn't also hard-deleted by a racing separate DELETE.
 export async function POST(req: Request, { params }: Ctx) {
   try {
     const { id: workspaceId } = await params;

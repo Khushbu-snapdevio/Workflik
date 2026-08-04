@@ -71,18 +71,8 @@ type Row = {
   creatorName:  string;
 };
 
-// Real server-side pagination for the Library table — a single query per
-// request/page instead of ever fetching the whole workspace at once.
-//
-// The "All Pages" tab (no search) still has to render its parent/child tree
-// exactly as the client already builds it (buildDisplayRows() in
-// library-client.tsx just needs a flat array of rows with parentId links) —
-// so it paginates by ROOT page, then attaches every descendant of the
-// current page's roots via page_closure. pageSize there means "N root
-// pages", not "N rows" (a root with many children makes that page longer).
-// Every other case (Recents / Favorites / Private, and "All Pages" WITH a
-// search — which can't show orphaned tree fragments) paginates flat, one
-// row per matching page.
+// Server-side pagination for the Library table. "All Pages" (no search) paginates by ROOT page and attaches
+// descendants via page_closure, so pageSize means "N roots" not "N rows"; every other case paginates flat.
 export async function getLibraryPage(
   workspaceId: string,
   userId: string,

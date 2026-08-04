@@ -272,12 +272,8 @@ const MONTH_SHORT = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-// Every branch is built manually (no toLocaleDateString) — relying on the
-// runtime's default locale/ICU data made "mdy" render unpadded ("7/15/2026")
-// while "dmy"/"ymd" happened to come out zero-padded from their locale's own
-// defaults, an inconsistency that could also differ between the server-
-// rendered and client-hydrated pass. Hardcoding the format removes both
-// problems and guarantees "07/15/2026"-style output every time.
+// Built manually (no toLocaleDateString): locale/ICU defaults padded formats
+// inconsistently and could differ between server-render and client-hydrate.
 function formatSingleDate(dateStr: string, format: DateValue["dateFormat"] = "mdy"): string {
   const d = new Date(`${dateStr.slice(0, 10)}T00:00:00`);
   if (Number.isNaN(d.getTime())) return "";

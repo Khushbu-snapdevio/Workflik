@@ -18,11 +18,8 @@ export function WorkspaceShareButton({ workspaceId, workspaceSlug, workspaceName
  const [copied, setCopied] = useState(false);
  const [copying, setCopying] = useState(false);
 
- // The workspace's normal page URL (previously copied here by mistake)
- // requires membership to view, so it's a dead end for anyone it's shared
- // with — the actual joinable link is the invite-link token from
- // /api/workspaces/:id/invite-link, the same one Settings → Workspace →
- // General reads/writes, built into a /invite/{token} URL.
+ // Must copy the invite-link token (/invite/{token}), not the workspace's normal page URL —
+ // that requires membership to view, so it's a dead end for anyone it's shared with.
  async function copyLink() {
   setCopying(true);
   try {

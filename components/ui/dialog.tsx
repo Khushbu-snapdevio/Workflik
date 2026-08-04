@@ -10,12 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Slot } from "@/components/ui/slot"
 import { XIcon } from "@phosphor-icons/react"
 
-// Built on the native <dialog> element instead of Radix: showModal()/close()
-// give focus-trap, Escape handling, and top-layer stacking for free (the
-// browser puts every open <dialog> above all regular content and orders
-// nested dialogs itself, which is what the old z-580/z-590 tiers in
-// alert-dialog.tsx were working around by hand). Entry/exit animation is
-// pure CSS (@starting-style, see globals.css) — no animation-end listeners.
+// Native <dialog> instead of Radix: showModal()/close() give focus-trap, Escape, and
+// top-layer stacking for free, replacing the old manual z-580/z-590 tiers.
 
 type DialogContextValue = {
   open: boolean

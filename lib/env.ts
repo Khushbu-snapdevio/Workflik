@@ -14,12 +14,8 @@ const envSchema = z.object({
       (v) => v !== "replace-with-at-least-32-random-characters",
       "APP_SECRET is still set to the .env.example placeholder — generate a real one with: openssl rand -base64 32"
     ),
-  // Trailing slashes are stripped here rather than at each use site: every
-  // consumer builds paths as `${env.NEXT_PUBLIC_APP_URL}/some/path`, so a
-  // deployment setting this to "https://example.com/" produced doubled
-  // slashes ("https://example.com//invite/<token>") in invite links, guest
-  // invites, notification/digest emails, ownership-transfer links and local
-  // upload URLs alike.
+  // Stripped here, not per-use-site: a trailing slash otherwise doubles up
+  // wherever consumers build `${env.NEXT_PUBLIC_APP_URL}/some/path`.
   NEXT_PUBLIC_APP_URL: z.url().transform((v) => v.replace(/\/+$/, "")),
   // Marketing landing page at "/". Defaults to false so self-hosted/open-source
   // instances go straight to login instead of showing a public marketing page.

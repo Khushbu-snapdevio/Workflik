@@ -3,28 +3,16 @@ import { db } from "@/lib/db";
 import { databaseProperties, propertyValues, users } from "@/lib/db/schema";
 import { evaluateFormulaValue, runFormula, FormulaEvalError, type FormulaValue } from "@/lib/formula";
 
-// Minimal entry shape needed to compute a "Created by" value — callers pass
-// either a full `pages` row (the live entries API route) or a narrower
-// column-restricted select (the initial server-rendered page load), so this
-// only requires the two fields actually used rather than the whole row.
+// Only the fields actually used — callers pass either a full `pages` row or a
+// narrower column-restricted select.
 type EntryForCreatedBy = { id: string; createdBy: string | null };
 
-// Rollup, Formula, and Created-by properties are never stored in
-// `property_values` — they're computed here on every read, from whichever
-// other data they derive from, and merged into the same valMap/flat-array
-// shape a real stored value has. Shared by the live API route
-// (app/api/databases/[id]/entries/route.ts) and the initial server-rendered
-// page load (app/app/[workspace]/[pageId]/page.tsx) so both agree on what a
-// database's entries actually look like — a computed property that only the
-// API route knew how to fill in would render blank on first load and only
-// appear after a client-side view switch.
+// Rollup/Formula/Created-by are never stored in `property_values` — computed here
+// on every read so the API route and server-rendered page load agree on values.
 
 export type ComputedValue = { propertyId: string; entryId: string; value: { display: string | null } | { userIds: string[]; _members: { id: string; name: string; email: string }[] } };
 
-// A property value counts as "has a value" the same way hasDisplayValue()
-// does client-side (components/database/board-view.tsx and friends) — kept
-// independent since this runs server-side against raw JSONB, not a typed
-// DbProperty, but the definition of "empty" must agree with the client's or
+// Must agree with client-side hasDisplayValue() (board-view.tsx etc.) or
 // "count values" would disagree with what a user sees filled in.
 function hasRollupValue(raw: unknown): boolean {
   if (raw == null) return false;
@@ -81,11 +69,8 @@ function formatRollup(
   return "";
 }
 
-// Computed on every read, not cached/stored — a related entry's value
-// changing takes effect immediately on the next fetch, with no invalidation
-// logic needed, at the cost of a couple extra queries per rollup property per
-// request. Fine at this app's scale (small teams, not enterprise-size
-// databases); revisit with a cache if that stops being true.
+// Computed on every read (no cache/invalidation) — fine at this app's scale,
+// revisit if that stops being true.
 async function computeRollupValues(
   properties: (typeof databaseProperties.$inferSelect)[],
   valMap: Map<string, Map<string, unknown>>,
@@ -147,12 +132,8 @@ async function computeRollupValues(
   return results;
 }
 
-// Computed from each entry's own `pages.createdBy` column, in the same
-// { userIds, _members } shape a real "person" value is saved with — so it
-// can reuse the exact same display/formula handling as Person, just always a
-// single, read-only user. Never stored: a database can gain a "Created by"
-// property long after entries already exist, and every entry still shows the
-// right creator with no backfill needed.
+// Shaped like a Person value so it reuses Person's display/formula handling.
+// Never stored, so adding this property later needs no backfill.
 async function computeCreatedByValues(
   properties: (typeof databaseProperties.$inferSelect)[],
   entries: EntryForCreatedBy[],

@@ -5,11 +5,8 @@ import { getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 const GAP    = 6;
 const MARGIN = 8;
 
-// Notion-style reaction hover card — a large emoji preview above the "X
-// reacted with 😀" caption. Kept separate from the plain single-line
-// IconTooltip (used for every other hover label in the app) since only
-// reaction badges need the bigger emoji preview; positioning logic mirrors
-// IconTooltip's above-by-default / flip-below-if-no-room behavior.
+// Notion-style reaction hover card (emoji + "X reacted with" caption); kept separate from IconTooltip
+// since only reaction badges need the bigger preview. Positioning mirrors IconTooltip's flip logic.
 export function ReactionTooltip({ rect, emoji, label, who }: { rect: DOMRect; emoji: string; label: string; who?: string }) {
   const estimatedWidth  = Math.min(220, Math.max(90, label.length * 6 + 24));
   const estimatedHeight = 56;

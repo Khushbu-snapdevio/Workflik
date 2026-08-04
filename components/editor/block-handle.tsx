@@ -30,22 +30,8 @@ const GRIP_W = 20;
 const MIN_GRIP = 10; // smallest the grip will shrink to before it'd be too small to hit
 const EDGE_GAP = 2;  // breathing room kept from both the boundary and the block's own text
 
-// The handle normally sits 58px left of the editor to clear the text column
-// (room for both the "+" and grip buttons), which assumes a full-width page
-// with margin to spare. Inside a narrow fixed-position panel (e.g. the
-// database entry side panel), that margin doesn't exist and anchoring 58px
-// out would push the handle past the panel's own left edge and over whatever
-// is behind it.
-//
-// Two earlier passes at this fix each missed one boundary: clamping only to
-// the panel's own edge let the handle land on top of the block's text, and
-// clamping to the block's text edge instead let it land on top of an inner
-// bordered card's own edge (e.g. the entry side panel wraps its editor in a
-// bordered "Content" card, which has less padding than the panel itself).
-// Walk up collecting *every* ancestor that visually bounds the handle — a
-// `position: fixed` panel root, or any ancestor with a visible left border —
-// and use whichever is most restrictive (furthest right). Stop at the fixed
-// ancestor since nothing further out than the panel root can matter.
+// Clamp the handle to the most restrictive ancestor boundary (fixed panel edge or
+// bordered card edge) so narrow panels don't get the handle overlapping their own edge or the block's text.
 function getHandleLeftBoundary(editorEl: HTMLElement): { boundary: number; compact: boolean } {
  let boundary = 8; // fallback: viewport margin, used when nothing constrains us
  let compact = false;
@@ -72,26 +58,14 @@ function computeHandleLeft(editorEl: HTMLElement, blockLeft: number): { left: nu
  if (!compact) {
   return { left: Math.max(blockLeft - 58, boundary), compact: false, gripSize: GRIP_W };
  }
- // Compact mode: only the grip renders. Size it to whatever fits between the
- // boundary and the text with EDGE_GAP to spare on each side — shrinking
- // below GRIP_W rather than crossing either line — and position it flush
- // against the text minus that same gap, which by construction never crosses
- // the boundary either.
+ // Compact mode: shrink the grip (down to MIN_GRIP) to fit between boundary and text with EDGE_GAP to spare.
  const available = blockLeft - boundary;
  const gripSize = Math.min(GRIP_W, Math.max(MIN_GRIP, available - EDGE_GAP * 2));
  return { left: blockLeft - EDGE_GAP - gripSize, compact: true, gripSize };
 }
 
-// Resolve which top-level block the mouse is over, via DOM traversal rather
-// than posAtCoords/posAtDOM. Both of those DOM->position APIs interpolate
-// from the nearest indexable *text* position — for atom/contentEditable=false
-// NodeViews (image, video, audio, file), which have no editable content of
-// their own, that resolution is ambiguous and in practice snaps forward into
-// the position just inside the *next* node instead of the atom itself. So
-// instead of asking "what position is under this DOM node", we go the other
-// way: walk the document's top-level children and ask the view for *their*
-// DOM node (view.nodeDOM), which is unambiguous for every block type,
-// including atoms, and stop at the one that matches what's under the cursor.
+// Resolve the hovered block via DOM traversal + view.nodeDOM rather than posAtCoords/posAtDOM,
+// which resolve ambiguously (snapping to the next node) over atom NodeViews like image/video/audio/file.
 function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
  const editorEl = editor.view.dom as HTMLElement;
  const er    = editorEl.getBoundingClientRect();
@@ -135,11 +109,8 @@ function resolveBlock(e: MouseEvent, editor: Editor): BlockInfo | null {
  }
 }
 
-// Re-measures the on-screen rect of an already-resolved block by its document
-// position, rather than the mouse coordinates that first found it. Used to
-// keep the handle glued to its block while scrolling, since scrolling doesn't
-// fire mousemove and would otherwise leave the fixed-position handle stuck at
-// its last known coordinates while the block scrolls away underneath it.
+// Re-measures a block's rect by document position (not mouse coords) to keep the handle
+// glued to it during scroll, since scroll doesn't fire mousemove.
 function getBlockRect(editor: Editor, nodePos: number): { top: number; left: number } | null {
  try {
   const editorEl = editor.view.dom as HTMLElement;
@@ -171,18 +142,8 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
  // fires) — see the mousemove effect below for why the earlier window matters.
  const dragIntentRef = useRef(false);
 
- // Native HTML5 drag requires the element that received mousedown to stay put
- // — same DOM node, same position — until the browser commits to a drag and
- // fires dragstart. There's a brief window between mousedown and that firing
- // (the few pixels of movement the browser waits for) where this component's
- // own mousemove tracking is still live; if the cursor crosses back over the
- // editor during that window, `resolveBlock` can re-resolve to a different
- // block and reposition (in React's eyes, just restyle, but to the browser's
- // in-flight drag heuristic, moving the source element) the grip out from
- // under the gesture, silently killing the drag before dragstart ever fires.
- // Freezing tracking from mousedown (not just from confirmed dragstart) covers
- // that whole window; a global mouseup resets it whether the interaction
- // turned out to be a click, a completed drag, or an abandoned one.
+ // Native HTML5 drag needs the mousedown-ed element to stay put until dragstart fires; freeze
+ // mousemove tracking from mousedown (not just dragstart) so resolveBlock can't reposition the grip mid-gesture and silently kill the drag.
  useEffect(() => {
   function onUp() { dragIntentRef.current = false; }
   document.addEventListener("mouseup", onUp);
@@ -316,18 +277,8 @@ export function BlockHandle({ editor, onComment }: { editor: Editor; onComment?:
   view.dispatch(view.state.tr.setSelection(nodeSel).setMeta("addToHistory", false));
   view.dom.focus();
 
-  // `view.dragging` is what ProseMirror's own drop handler reads instead of
-  // firing its usual internal dragstart logic — needed because that logic
-  // only ever runs for drags that start on view.dom itself, never on this
-  // portal-rendered button. Its public type is just `{slice, move}`, but the
-  // handler also reads an optional `.node` (a NodeSelection) when present and,
-  // if so, deletes the source via `node.replace(tr)` — which maps the node's
-  // *own* captured position through the drop transaction — instead of
-  // `tr.deleteSelection()`, which deletes whatever `view.state.selection`
-  // happens to be *at drop time*. Passing `node` here removes any dependency
-  // on that selection still being our NodeSelection by the time the drop
-  // lands, which the focus dance above is trying to guarantee but a stray
-  // selection change during the drag would otherwise silently break.
+  // Set view.dragging manually since this drag starts on a portal-rendered button, not view.dom.
+  // Passing `node` (undocumented but read by PM's drop handler) makes delete-on-drop use the node's own mapped position instead of the live selection.
   const slice = new Slice(Fragment.from(node), 0, 0);
   (view as any).dragging = { slice, move: true, node: nodeSel };
 

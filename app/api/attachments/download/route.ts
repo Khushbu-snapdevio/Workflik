@@ -2,17 +2,7 @@ import { env } from "@/lib/env";
 import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 // GET /api/attachments/download?url=&name=
-// Proxies a comment/entry attachment through our own server so the browser
-// never makes the request cross-origin. A plain `<a href download>` (or a
-// client-side `fetch()`) pointed straight at an S3/CDN-hosted attachment
-// (lib/storage/drivers/s3.ts's getPublicUrl serves from a separate CDN host)
-// depends on that host either being same-origin or sending permissive CORS
-// headers — browsers silently ignore `download` for a cross-origin link,
-// and block a cross-origin `fetch()` outright if CORS isn't configured.
-// Fetching it here instead is a server-to-server request, which CORS (a
-// browser-only mechanism) never applies to — then this response's own
-// same-origin Content-Disposition header reliably forces the download
-// regardless of the storage host's CORS setup.
+// Proxies the attachment server-side so download/CORS work regardless of the storage host's cross-origin policy.
 function isAllowedHost(url: string): boolean {
   try {
     const target = new URL(url);

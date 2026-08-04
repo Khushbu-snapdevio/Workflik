@@ -92,11 +92,7 @@ export async function GET(req: Request) {
     if (locationFilter) conditions.push(locationFilter);
     if (authorFilter)  conditions.push(authorFilter);
 
-    // Browse mode: an empty query is allowed when any filter is active, so
-    // selecting e.g. "Entries" or "Created by me" lists matching items (newest
-    // first) instead of the client falling back to the unfiltered
-    // recently-visited list. With no query AND no filter there's nothing to
-    // browse — return empty and let the client show recently-visited.
+    // Browse mode: an empty query is allowed when a filter is active (lists matching items instead of falling back to recently-visited). No query + no filter = nothing to browse.
     const hasAnyFilter = !!typeFilter || isTemplateOnly || !!dateFilter || !!locationFilter || !!authorFilter;
     if (!q && !hasAnyFilter) {
       return Response.json({ results: [], total: 0 });
@@ -218,13 +214,7 @@ export async function GET(req: Request) {
       rank:       r.rank,
     }));
 
-    // Templates aren't page-shaped (no owner/ancestor/isDeleted concept) —
-    // location (shared/private) has no meaning for them, and "last edited by"
-    // isn't tracked, so both exclude templates from the result set entirely
-    // rather than silently ignoring the active filter. They live outside
-    // search_index entirely, so they get their own lightweight ILIKE query
-    // here instead of being folded into the tsvector pipeline above, then
-    // merged into the same ranked result list.
+    // Templates aren't page-shaped (no owner/location/last-edited-by), so a location or "edited by me" filter excludes them entirely; they get their own ILIKE query, merged into the ranked results below.
     const includeTemplatesForFilters = includeTemplates && !locationFilter && author !== "me_edited";
     let templateResults: ResultRow[] = [];
     if (includeTemplatesForFilters) {
@@ -288,11 +278,7 @@ export async function GET(req: Request) {
       });
     }
 
-    // "Last edited" / "Created date" sort overrides relevance ranking outright;
-    // default (relevance) keeps the existing rank-then-recency ordering. This
-    // final in-memory sort is what actually determines display order (pages
-    // and templates come from two separate queries and get merged here), so
-    // it has to mirror whichever `sort` mode orderByCols used above.
+    // Final in-memory sort determines actual display order (pages + templates come from separate queries merged here) — must mirror whichever `sort` mode orderByCols used above.
     const compareResults = (a: ResultRow, b: ResultRow) => {
       if (sort === "created") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       if (sort === "edited")  return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();

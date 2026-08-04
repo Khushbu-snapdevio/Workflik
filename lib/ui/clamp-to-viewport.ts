@@ -1,9 +1,6 @@
 /**
- * Shared positioning math for the app's hand-rolled `position: fixed`
- * popups/menus (the ones anchored via `getBoundingClientRect()` instead of
- * a Radix/shadcn primitive). Without this, a popup opened near the edge of
- * the window renders partially or fully off-screen instead of flipping to
- * the side that actually has room.
+ * Positioning math for hand-rolled `position: fixed` popups (anchored via getBoundingClientRect(), not Radix/shadcn).
+ * Flips to the side with room instead of rendering off-screen near viewport edges.
  */
 
 export interface AnchorRect {
@@ -17,9 +14,7 @@ const DEFAULT_GAP    = 6;
 const DEFAULT_MARGIN = 8;
 
 /**
- * Vertical position for a popup anchored below `anchor`. Prefers opening
- * below (`anchor.bottom + gap`); flips above the anchor if it doesn't fit
- * below and there's more room above than below.
+ * Vertical position below `anchor`; flips above if it doesn't fit below and there's more room above.
  */
 export function getClampedTop(
   anchor: AnchorRect,
@@ -40,11 +35,7 @@ export function getClampedTop(
 }
 
 /**
- * Horizontal position for a popup anchored to `anchor`. `align: "start"`
- * lines the popup's left edge up with the anchor's left edge (the common
- * case); `align: "end"` lines the popup's right edge up with the anchor's
- * right edge. Either way the result is clamped so the popup never renders
- * past the left or right edge of the viewport.
+ * Horizontal position for `anchor`; align "start"/"end" matches left or right edges, clamped to viewport.
  */
 export function getClampedLeft(
   anchor: AnchorRect,

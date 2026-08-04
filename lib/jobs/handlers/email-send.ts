@@ -10,11 +10,8 @@ import { sleep } from "@/lib/utils";
 const MAX_ATTEMPTS = 3;
 const RETRY_BACKOFF_SECONDS = [60, 300, 900];
 
-// Many SMTP providers (Mailtrap's testing plan included) reject sends that
-// come in faster than ~1/second, independent of any monthly quota. Since
-// jobs can be enqueued in a tight burst (e.g. inviting several teammates at
-// once), pace actual sends here rather than relying on job-polling timing,
-// which isn't a reliable guarantee against bursts.
+// Many SMTP providers (incl. Mailtrap's testing plan) reject sends faster than
+// ~1/second regardless of quota, so bursts (e.g. inviting several teammates) are paced here.
 const MIN_SEND_INTERVAL_MS = 1100;
 let lastSendAt = 0;
 

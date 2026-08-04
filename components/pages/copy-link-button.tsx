@@ -11,12 +11,8 @@ interface Props {
   pageId: string;
 }
 
-// Topbar quick-copy icon next to Share, matching Notion's link button. Warns
-// (instead of a plain success toast) when the page is invite-only, since a
-// copied link is useless to anyone not already granted access — the "Give
-// access" action opens the same Share panel via a window event, since
-// ShareButton owns its own open/anchor state and isn't otherwise reachable
-// from this sibling button.
+// Warns instead of a plain toast when the page is invite-only; "Give access"
+// opens ShareButton's panel via a window event since it's a sibling component.
 export function CopyLinkButton({ pageId }: Props) {
   const { isPrivate } = usePagePrivacy();
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();

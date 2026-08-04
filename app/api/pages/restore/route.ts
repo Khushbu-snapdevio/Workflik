@@ -8,18 +8,8 @@ const bodySchema = z.object({
   ids: z.array(z.string().uuid()).min(1).max(1000),
 });
 
-// POST /api/pages/restore — restore many trashed pages at once.
-//
-// Exists because restoring N pages by firing N concurrent POSTs to
-// /api/pages/:id/restore is racy: each request independently decides whether
-// its parent is still deleted, and a child processed before its parent sees
-// `parent.isDeleted === true` and detaches itself to the workspace root. The
-// page is technically restored but loses its place in the tree — and for
-// `kind: "entry"` rows, which the sidebar tree filters out entirely, it
-// disappears from the UI altogether. Restoring the whole selection in ONE
-// transaction removes the race: the full restored set is known up front, so
-// each page's parent can be evaluated against the final state rather than a
-// half-applied one.
+// POST /api/pages/restore — restore many trashed pages in one transaction.
+// N concurrent single-page restores are racy (a child can detach to root if processed before its still-deleted parent); batching avoids that by evaluating against the final state.
 export async function POST(req: Request) {
   try {
     const session = await getSession();
@@ -75,11 +65,7 @@ export async function POST(req: Request) {
         .set({ isDeleted: false, deletedAt: null, deletedBy: null, updatedAt: new Date() })
         .where(inArray(pages.id, restoreIds));
 
-      // Re-parent only what genuinely has nowhere to go. A page keeps its
-      // parent when that parent is part of this same restore, or was never
-      // deleted; it's detached to the workspace root only when the parent is
-      // still in the Trash afterwards. Evaluated after the UPDATE above so the
-      // decision is made against the final state, not a partial one.
+      // Detach to workspace root only if the parent is still in Trash after this restore; evaluated post-UPDATE against the final state.
       const restoredSet = new Set(restoreIds);
       const withParents = await tx
         .select({ id: pages.id, parentId: pages.parentId })

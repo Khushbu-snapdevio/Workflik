@@ -17,11 +17,7 @@ export async function GET() {
     // Lets the sign-in UI tell the truth about whether a magic-link email
     // will actually be sent, instead of always claiming one was (§5.9).
     smtpConfigured: isSmtpConfigured(),
-    // No account exists yet anywhere on this instance — the very first
-    // signup bootstraps the instance admin, so the sign-in page forces a
-    // password-only signup view. Once this flips false, the instance is
-    // invite-only: self-serve signup is retired entirely (unless
-    // ALLOW_PUBLIC_REGISTRATION keeps it open — see below).
+    // First-ever signup bootstraps the instance admin; after that, signup is invite-only unless ALLOW_PUBLIC_REGISTRATION.
     isBootstrap: userCount === 0,
     // ALLOW_PUBLIC_REGISTRATION=true keeps self-serve signup available even
     // after the instance is bootstrapped, for organizations that want open

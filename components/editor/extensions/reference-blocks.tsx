@@ -756,10 +756,8 @@ export const LinkedPage = Node.create<LinkedPageOptions>({
 });
 
 // ── Sub-page ───────────────────────────────────────────────────────────────────
-// Unlike LinkedPage (references an existing page via search), this block
-// CREATES a brand-new child page under the current one, then embeds a
-// resolved icon+title card that navigates to it — matches Notion's "Page"
-// block (distinct from "Link to Page").
+// Unlike LinkedPage (references an existing page), this CREATES a new child page and embeds
+// a resolved icon+title card — matches Notion's "Page" block (distinct from "Link to Page").
 
 interface SubPageBlockOptions {
   currentPageId: string;
@@ -792,10 +790,8 @@ function SubPageBlockView({
   const redirectStartedRef = useRef(false);
 
   // ── Hover preview card ────────────────────────────────────────────────────
-  // Matches Notion: hovering a page-reference block shows a small card with
-  // the icon, the parent page's title, the target's own title, and a preview
-  // of its first few blocks — all fetched lazily (and cached) only once the
-  // user actually lingers on the block.
+  // Matches Notion: hovering shows icon/title/parent title/first-few-blocks preview,
+  // fetched lazily (and cached) only once the user actually lingers.
   const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
   const [parentTitle, setParentTitle] = useState<string | null>(null);
   const [previewBlocks, setPreviewBlocks] = useState<{ type: string; content?: unknown }[] | null>(null);
@@ -1360,12 +1356,8 @@ export const InlineDatabase = Node.create<InlineDatabaseOptions>({
   group: "block",
   atom: true,
   draggable: true,
-  // Without this, ProseMirror's default click handling (NodeView.stopEvent)
-  // treats any mousedown inside this atom's own interactive UI (row clicks,
-  // dropdowns, inputs) as a plain click on a selectable node and wraps it in
-  // a NodeSelection — which then satisfies the bubble menu's default
-  // shouldShow (non-empty selection) and pops the text-format toolbar over
-  // the table instead of letting the click (e.g. opening an entry) happen.
+  // Without this, clicking the atom's own interactive UI (rows, dropdowns) gets wrapped in a
+  // NodeSelection, which triggers the bubble menu's toolbar instead of the intended click.
   selectable: false,
 
   addOptions() {

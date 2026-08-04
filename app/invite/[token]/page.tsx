@@ -117,11 +117,8 @@ export default async function InvitePage({ params }: Props) {
   );
 }
 
-// Falls back to the workspace's shareable "invite link" (workspaces.inviteLinkToken)
-// when the token doesn't match any per-email invite in workspaceMembers.
-// Unlike an email invite, there's no invitedEmail restriction and no
-// pre-created member row — anyone who reaches this with an active link
-// token can join at the link's configured role.
+// Fallback for tokens that don't match a per-email invite: the workspace's shareable link.
+// Unlike an email invite, anyone with an active link token can join at its configured role.
 async function renderShareLinkInvite(token: string) {
   const [ws] = await db
     .select({

@@ -8,12 +8,9 @@ export async function getUserCount(): Promise<number> {
   return value;
 }
 
-// Self-hosted instances are invite-only by default: self-serve registration
-// is only ever allowed to bootstrap the very first (instance-admin)
-// account. ALLOW_PUBLIC_REGISTRATION keeps it open indefinitely for
-// organizations that want that instead. This is the single source of truth
-// for the decision — every enforcement point (password signup, magic link,
-// OAuth) and the sign-in UI itself all call this instead of re-deriving it.
+// Self-serve registration is only for bootstrapping the first (admin) account,
+// unless ALLOW_PUBLIC_REGISTRATION keeps it open. Single source of truth — all
+// signup paths and the sign-in UI call this instead of re-deriving it.
 export async function isRegistrationAllowed(): Promise<boolean> {
   if (env.ALLOW_PUBLIC_REGISTRATION) return true;
   return (await getUserCount()) === 0;

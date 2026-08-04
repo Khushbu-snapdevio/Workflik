@@ -103,16 +103,8 @@ const ZOOM_MAX = 400;
 const ZOOM_STEP = 25;
 const WHEEL_SENSITIVITY = 0.2; // zoom-percent per deltaY unit
 
-// Downloads via a temp <a download>. data: URIs are fetched into a blob first
-// — an <a download> pointed straight at a data: URI is blocked/ignored by
-// some browsers for large payloads, same reason FileAttachment below does it.
-// A real http(s) src goes through /api/attachments/download instead of
-// pointing straight at it — that src is typically a cross-origin S3/CDN URL
-// (lib/storage/drivers/s3.ts's getPublicUrl), and `download` is silently
-// ignored by browsers for cross-origin links, so it opened the image instead
-// of downloading it. The proxy route fetches it server-to-server (CORS never
-// applies there) and returns it with a Content-Disposition header that
-// forces the download reliably regardless of the storage host.
+// data: URIs are blobbed first (some browsers ignore `download` on large data: URIs). Real
+// http(s) src goes through /api/attachments/download since `download` is silently ignored cross-origin (S3/CDN).
 function downloadImage(src: string, filename: string) {
  if (src.startsWith("data:")) {
   fetch(src)
@@ -133,11 +125,8 @@ function downloadImage(src: string, filename: string) {
  a.click();
 }
 
-// Where a pan offset bottoms out at the current zoom — image edges are always
-// reachable but never draggable past, so panning can't strand part of the
-// image off-screen with no way back. Mirrors object-contain's own fit math
-// (min of width-fit/height-fit, never upscaling past natural size) so the
-// clamp lines up with what's actually rendered at zoom 100.
+// Clamps pan so the image edge is always reachable but never draggable past; mirrors object-contain's
+// fit math so the clamp matches what's actually rendered at zoom 100.
 function clampPan(
  pan: { x: number; y: number },
  zoomPct: number,
@@ -394,11 +383,8 @@ function renderContent(content: Record<string, unknown> | null): React.ReactNode
    }
   }
 
-  // cell-comment-popover.tsx's composer (used for database-view comment
-  // popovers) stores attachments under this different node shape — url/name/
-  // mimeType instead of image/file's src/alt — so a comment created there
-  // still needs to render correctly wherever else it's viewed (page-level
-  // section, block comments, sidebar panel).
+  // cell-comment-popover.tsx's composer stores attachments as url/name/mimeType (not image/file's src/alt) —
+  // still needs to render correctly wherever else the comment is viewed.
   if (n.type === "attachment") {
    const attrs = n.attrs as { url?: string; name?: string; mimeType?: string } | undefined;
    if (attrs?.url) {
@@ -612,11 +598,8 @@ export function CommentCard({
  const [data, setData]       = useState<CommentsData | null>(null);
  const [loading, setLoading]    = useState(true);
 
- // The thread list is a capped-height scroller, so a newly posted comment
- // lands below the fold once the conversation outgrows it — the user had to
- // scroll down to see what they just wrote. Set when posting; consumed by the
- // effect below once the refetched list has actually been committed to the
- // DOM (scrolling any earlier would measure the pre-insert scrollHeight).
+ // Flag set when posting a comment, consumed once the refetched list is committed to the DOM,
+ // so the capped-height scroller scrolls to the newly posted comment instead of measuring pre-insert scrollHeight.
  const listRef = useRef<HTMLDivElement>(null);
  const scrollToNewestRef = useRef(false);
 
@@ -627,11 +610,8 @@ export function CommentCard({
   if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
  }, [data]);
 
- // `background: true` skips the spinner — used after posting/editing/
- // deleting a comment, so the refetch swaps the data in silently instead of
- // flashing the whole list to a spinner and losing scroll position mid-
- // conversation. A fresh load (mount, or switching to a different block)
- // still shows the spinner as before.
+ // `background: true` skips the spinner so post/edit/delete refetches swap data in silently
+ // without losing scroll position mid-conversation; a fresh load still shows the spinner.
  const loadComments = useCallback(async (opts?: { background?: boolean }) => {
   if (!opts?.background) setLoading(true);
   try {
@@ -682,12 +662,8 @@ export function CommentCard({
  // entirely and is only ever visible via the sidebar "Comments" panel.
  const activeVisible = nonOrphaned.filter((t) => !t.isResolved);
 
- // Inline (page-level) variant: let the user back out of a freshly-opened
- // "Add comment" composer with Escape or a click outside — matching the
- // floating card — so someone who didn't actually want to comment isn't stuck
- // with the box open. Guarded to the bare-composer state: only when there are
- // no threads shown AND nothing has been typed/attached, so existing comments
- // and in-progress drafts are never discarded.
+ // Inline variant: let the user back out of a freshly-opened empty composer via Escape/outside-click
+ // (matching the floating card) — guarded to no-threads + nothing typed so drafts are never discarded.
  useEffect(() => {
   if (variant !== "inline") return;
   if (activeVisible.length > 0 || orphaned.length > 0) return;
@@ -739,19 +715,8 @@ export function CommentCard({
   // kept as-is — newest-first would make an ongoing thread read backwards.
   scrollToNewestRef.current = true;
   notifyChanged();
-  // Floating (block-level) card only: closes after posting — unlike a reply
-  // (createReply below), which deliberately stays open since it's the middle
-  // of an ongoing thread conversation, submitting from a block card's own
-  // top-level composer is a one-off "leave a comment and move on" action.
-  //
-  // The inline (page-level) section must NOT close here. Its onClose is
-  // onDismiss, which unmounts the whole section — and since the comment just
-  // posted makes the page's active count non-zero, the parent immediately
-  // re-shows it, remounting the card into its non-background load path. The
-  // net effect was a visible list → gone → spinner → list flicker, with the
-  // page jumping height at every step. Staying open leaves the new comment
-  // on screen, which is also what Notion does. The composer clears itself
-  // (comment-composer.tsx), so nothing is left behind by not closing.
+  // Floating card closes after posting (one-off action); the inline section must NOT close here —
+  // its onClose unmounts the whole section, which the parent would immediately remount, causing a list→spinner→list flicker.
   if (variant !== "inline") onClose();
  }
 
@@ -780,11 +745,8 @@ export function CommentCard({
   });
  }
 
- // setResolvedLocally updates this card's own UI instantly (no fetch needed).
- // Other listeners (topbar badge, sidebar panel) only know how to refetch from
- // the server, so emitCommentsChanged is fired AFTER the request settles —
- // emitting before would let their refetch race the still-in-flight POST and
- // read pre-persist data, which then never gets corrected.
+ // emitCommentsChanged fires AFTER the request settles — emitting before would let other
+ // listeners' refetch race the still-in-flight POST and read pre-persist data.
  async function resolveThread(id: string) {
   setResolvedLocally(id, true);
   const res = await fetch(`/api/comments/${id}/resolve`, { method: "POST" });
@@ -867,12 +829,8 @@ export function CommentCard({
  }
 
  // ── Floating variant — block-level comment card ───────────────────────────
- // No header (no "Block comment" label/icon, no open/resolved count) and no
- // persistent close button either — matching Notion, which drops straight
- // into the thread list with no chrome at all. A visible corner close button
- // was tried here but collided with each thread's own hover action pill
- // (also top-right of its row); Escape and outside-click already close the
- // card (see the effects above), same as Notion's own convention.
+ // No header/close button (matches Notion) — a corner close button was tried but collided
+ // with each thread's own hover action pill; Escape/outside-click close it instead.
  return (
   <div
    ref={cardRef}

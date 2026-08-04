@@ -6,14 +6,8 @@ import { CaretDownIcon } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 
 /**
- * Native `<details>`/`<summary>` in place of Radix's Accordion. `type="single"`
- * uses `<details name="...">` — browsers make same-named details mutually
- * exclusive (Chrome 120+/Safari 17.4+/Firefox 129+) — instead of JS-managed
- * open state.
- *
- * API note: Radix's controlled `value`/`onValueChange` contract is dropped in
- * favour of native uncontrolled `open`/`defaultOpen` per item. Zero consumers
- * in the app today; revisit if a future consumer needs programmatic control.
+ * Native `<details>`/`<summary>` in place of Radix's Accordion; `type="single"` relies on same-named `<details>` being mutually
+ * exclusive natively. Drops Radix's controlled `value`/`onValueChange` for uncontrolled `open`/`defaultOpen` — no consumers need it yet.
  */
 const AccordionGroupContext = React.createContext<string | undefined>(undefined)
 

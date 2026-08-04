@@ -33,11 +33,8 @@ export interface BlockContent {
   pageId?: string;
   siteName?: string; // for bookmark
   sourceBlockId?: string; // for synced_block reference instances
-  // Whole table grid, stored inline on the `table` block itself rather than as
-  // child block rows — a table's rows/cells aren't independently addressable
-  // blocks anywhere else in the app (no comments, no drag handles, no ids), so
-  // giving each one a DB row would buy nothing and require table_row/table_cell
-  // block types throughout. Mirrors how template_button stores templateBlocks.
+  // Whole table grid stored inline (not as child block rows) since rows/cells aren't
+  // independently addressable elsewhere in the app. Mirrors template_button's templateBlocks.
   tableRows?: {
     cells: {
       colspan?: number;
@@ -716,15 +713,8 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
 
 // Build a flat list of DB blocks from TipTap document JSON (top-level only; nested handled recursively)
 //
-// Every node's `blockId` attr is expected to already be a permanent,
-// client-generated UUID by the time this runs (see editor.tsx's
-// assignMissingBlockIds, which stamps one on synchronously the moment a new
-// block is created, before it's ever saved) — so it's trusted directly here
-// rather than gated against a previously-confirmed id list. Matching against
-// a server-confirmed list instead used to require waiting for a save
-// round-trip and then re-matching newly-created nodes back to their DB row
-// by array position, which broke (and silently duplicated content) the
-// moment the document's shape changed while that request was in flight.
+// Every node's `blockId` is trusted directly (already stamped client-side by editor.tsx's
+// assignMissingBlockIds before this runs) rather than matched to a server-confirmed list by array position.
 export function tiptapDocToBlocks(
   doc: { content?: TipTapNode[] },
   pageId: string
@@ -791,12 +781,8 @@ export function tiptapDocToBlocks(
 }
 
 // Convert flat DB blocks to TipTap document JSON
-// Resolve the TipTap node array for one level of a block tree, rooted at
-// `rootParentBlockId` (null = top-level page blocks). Shared by
-// blocksToTiptapDoc and the synced-block "read-only reference" resolver
-// (app/api/blocks/[id]/synced-content/route.ts), which needs the same
-// children-of-an-arbitrary-block resolution but rooted at a source block
-// instead of the page root.
+// Resolve the TipTap node array for one level of a block tree, rooted at `rootParentBlockId`
+// (null = top-level). Shared by blocksToTiptapDoc and the synced-block reference resolver, rooted at a source block instead.
 export function blocksToTiptapNodes(
   blocks: DbBlock[],
   rootParentBlockId: string | null

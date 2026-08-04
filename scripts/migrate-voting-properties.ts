@@ -1,16 +1,5 @@
-// One-off data migration for the voting feature. Brings pre-existing voting
-// databases (and the stored built-in "Brainstorm Session" template) up to the
-// current shape:
-//   - "Upvoted by": type = "person", config = { ...existing, voteMode: true }
-//   - "Total votes": REMOVED. The vote count now lives on the "Upvoted by"
-//     badge itself (👍 N), so a separate computed column is redundant. This
-//     deletes the property; its property_values cascade away (FK onDelete:
-//     cascade), and any view JSONB references to it are cleaned up.
-//
-// Idempotent: databases/templates already in the target shape are skipped.
-// A "voting database" is identified structurally — any database that has an
-// "Upvoted by" person property (previously we also required "Total votes",
-// but that's exactly what we now remove).
+// One-off migration: sets "Upvoted by" to voteMode and drops the now-redundant
+// "Total votes" property (vote count now lives on the "Upvoted by" badge). Idempotent.
 //
 // Usage: pnpm tsx scripts/migrate-voting-properties.ts
 

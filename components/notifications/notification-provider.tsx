@@ -102,12 +102,7 @@ export function NotificationProvider({ children, workspaceId, workspaceSlug, cur
       freshItems.forEach((n) => seenNotificationIds.current.add(n.id));
 
       setUnreadCount((c) => c + freshItems.length);
-      // Use ref so we always read the current panelOpen (never a stale closure)
-      // Your own actions (e.g. creating a page) still land here as a
-      // confirmation entry in the panel/bell count, but popping a toast for
-      // something you just did yourself — often before you've even renamed
-      // the page — is more startling than useful. Only toast notifications
-      // that originated from someone else.
+      // Ref avoids a stale closure on panelOpen; skip toasting your own actions.
       if (!panelOpenRef.current) {
         const toastable = freshItems.filter((n) => n.senderId !== currentUserId);
         toastable.forEach(showToast);

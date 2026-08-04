@@ -13,19 +13,12 @@ const OPTIONS = [
 
 /**
  * Segmented Light / Dark / System control.
- *
- * Reads `theme` rather than `resolvedTheme` so that "System" stays visibly
- * selected instead of snapping to whichever concrete theme the OS resolved to
- * — the user picked "follow my OS", and the control should keep saying so.
+ * Reads `theme` (not `resolvedTheme`) so "System" stays selected instead of snapping to the resolved OS theme.
  */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
-  /* next-themes cannot know the active theme until it has read localStorage on
-    the client, so the first render would disagree with the server and React
-    would swap the highlighted segment after hydration. Rendering the control
-    disabled until mounted keeps the markup stable and avoids a visible flash
-    of the wrong selection. */
+  /* Render disabled until mounted: theme is unknown until localStorage is read client-side, avoiding a hydration flash. */
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 

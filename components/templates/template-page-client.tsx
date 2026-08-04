@@ -722,21 +722,8 @@ export function TemplatePageClient({
 
  const router = useRouter();
 
- // This whole component is seeded once from server-rendered props —
- // useState(initEntries)/useState(initValues)/useState(initProps) above only
- // ever read their argument on mount. The value-changed listener further up
- // only catches edits made while THIS instance stayed mounted (e.g. an
- // inline cell edit); it does nothing for a value saved on an entry's own,
- // separately-mounted page, since that page's dispatch fires after this
- // instance (and its listener) already unmounted on navigating away. So
- // navigating back here can show whatever was true at the moment this
- // instance last mounted, missing anything changed elsewhere in between.
- // router.refresh() alone doesn't fix this either — it re-renders the
- // Server Component tree above, but new props flowing into an
- // already-mounted client component don't retroactively feed a useState
- // that already ran its initializer. An explicit fetch + setState — the
- // same mechanism components/database/database-page.tsx uses for its own
- // live refresh — sidesteps both problems.
+ // Server-seeded useState never re-reads new props on navigation-back, and router.refresh() doesn't retroactively feed an already-run
+ // initializer — so explicitly refetch entries/props here, same as database-page.tsx's own live refresh.
  useEffect(() => {
   if (page.kind !== "database") return;
   let cancelled = false;
@@ -755,11 +742,7 @@ export function TemplatePageClient({
     if (!cancelled) setProperties(props);
    }
   }
-  // Runs once right away too — not just on visibility/pageshow — because a
-  // plain forward navigation (clicking the breadcrumb back to this database)
-  // is neither a visibility change nor a bfcache restore, yet can still land
-  // on this mount with server props served from Next's router/prefetch
-  // cache rather than a genuinely fresh request.
+  // Also runs immediately on mount: a plain breadcrumb navigation can land here with stale router/prefetch-cached props.
   refetch();
   function onVisibilityChange() { if (document.visibilityState === "visible") refetch(); }
   function onPageShow(e: PageTransitionEvent) { if (e.persisted) refetch(); }
@@ -823,10 +806,7 @@ export function TemplatePageClient({
  const [editingPageTitle, setEditingPageTitle] = useState(false);
  const [showIconPicker,  setShowIconPicker]  = useState(false);
  const [showCoverPicker, setShowCoverPicker] = useState(false);
- // Shared by both icon-trigger buttons below (never rendered at the same
- // time) — passed to IconPicker so its outside-click-to-close doesn't treat
- // a second click on this same button as "outside," which would otherwise
- // close it and then immediately reopen it via the button's own toggle.
+ // Shared by both icon-trigger buttons so IconPicker's outside-click-to-close doesn't treat a re-click on the button as "outside".
  const iconBtnRef = useRef<HTMLButtonElement>(null);
 
  const [showFilter,   setShowFilter]   = useState(false);
@@ -834,11 +814,7 @@ export function TemplatePageClient({
  const [showProperties, setShowProperties] = useState(false);
  const [showAddView,  setShowAddView]  = useState(false);
  const [showLayoutPicker, setShowLayoutPicker] = useState(false);
- // Hydrated from the view's own stored `filters`/`sorts` (same lookup
- // `initView` below repeats) so filters/sort applied before a refresh are
- // still there after one — computed inline here since `initView` isn't
- // declared until after this state, and state initializers must be
- // self-contained.
+ // Hydrated from the view's stored filters/sorts inline (rather than via `initView` below) since state initializers must be self-contained.
  function initViewFor() {
   return initViews.find((v) => v.id === searchParams.get("view"))
    ?? initViews.find((v) => v.id === defaultViewId)
@@ -881,11 +857,7 @@ export function TemplatePageClient({
  const tableViewRef = useRef<HTMLDivElement>(null);
  const scrollAreaRef = useRef<HTMLDivElement>(null);
  const viewToolbarRef = useRef<HTMLDivElement>(null);
- // Notion-style calendar shell: fills exactly the space below the sticky view-tabs
- // toolbar down to the bottom of the viewport, so week rows can divide it evenly
- // (calc(100dvh-Nrem) can't do this accurately since the cover/title/description
- // above the toolbar are variable height). Re-measured on any size change of either
- // the scroll container or the toolbar (e.g. its row wraps on a narrow window).
+ // Measured (not calc(100dvh-Nrem)) since the cover/title/description above the toolbar are variable height; re-measured on resize.
  const [viewHeight, setViewHeight] = useState<number | null>(null);
 
  useLayoutEffect(() => {
@@ -894,20 +866,11 @@ export function TemplatePageClient({
   const toolbarEl = viewToolbarRef.current;
   if (!scrollEl || !toolbarEl) return;
   function measure() {
-   // Distance from the top of the *scrollable content* (not just the
-   // toolbar's own height) down to where the toolbar ends — covers
-   // breadcrumb/cover/title/description too, whatever their combined
-   // height happens to be, so the view gets exactly what's left over
-   // with nothing to scroll. getBoundingClientRect() deltas are
-   // viewport-relative (change with scroll position), so scrollTop is
-   // added back to get the absolute offset within the scrollable content.
+   // Add back scrollTop since getBoundingClientRect() deltas are viewport-relative, not relative to scroll content.
    const headerBottom = toolbarEl!.getBoundingClientRect().bottom
     - scrollEl!.getBoundingClientRect().top
     + scrollEl!.scrollTop;
-   // Floor so a very short viewport (header alone taller than the visible
-   // area) still gets a usable board instead of collapsing to 0/negative —
-   // the page falls back to scrolling past that point, same as it would
-   // for any other view type at that size.
+   // Floor at 240 so a very short viewport still gets a usable board instead of collapsing to 0/negative.
    setViewHeight(Math.max(240, scrollEl!.clientHeight - headerBottom));
   }
   measure();
@@ -941,18 +904,8 @@ export function TemplatePageClient({
    && !!target.closest('[data-slot="select-content"], [data-slot="multi-option-picker"]');
  }
 
- // While a Radix `Select` inside these panels is open, it sets
- // `document.body.style.pointerEvents = "none"` (its `disableOutsidePointerEvents`
- // behavior — not exposed as an opt-out `modal` prop the way Popover/Dialog
- // have one) so every other element, including the panel's own DOM under
- // filterPanelRef/sortPanelRef, stops hit-testing. A click meant to close
- // that Select (its trigger again, or empty space elsewhere in the panel)
- // then resolves `e.target` to `<html>`/`document` instead of anything
- // `contains`ed by the panel's ref, so the plain outside-click check below
- // wrongly reads it as "outside the panel" and closes the whole thing.
- // Radix's own pointerdown listener already handles dismissing just the
- // Select correctly — bailing out here while pointer-events are disabled
- // leaves that alone and stops it from also closing the panel.
+ // While a Radix Select is open it sets pointer-events:none on body, so outside-click e.target resolves to <html> instead of the
+ // panel — bail out here and let Radix's own pointerdown listener handle dismissing the Select without also closing the panel.
  function isRadixModalLayerOpen() {
   return document.body.style.pointerEvents === "none";
  }
@@ -988,10 +941,7 @@ export function TemplatePageClient({
   return () => document.removeEventListener("mousedown", h);
  }, [showProperties]);
 
- // Lock the page's own scroll container while the view menu is open — its
- // position is a one-time snapshot (position:fixed, not re-measured), so
- // letting the page scroll underneath would leave it floating over the wrong
- // spot. Simpler and more robust than continuously repositioning it.
+ // Lock scroll while the view menu is open: its position is a one-time snapshot, not re-measured on scroll.
  useEffect(() => {
   if (!viewMenuTarget) return;
   const el = scrollAreaRef.current;
@@ -1005,13 +955,7 @@ export function TemplatePageClient({
   if (!viewMenuTarget) return;
   function h(e: MouseEvent) {
    const target = e.target as HTMLElement;
-   // The trigger button already toggles open/closed itself in its own onClick —
-   // if this "outside click" check didn't exclude it, a click on the button while
-   // the menu is open would close it here (mousedown fires before click, and
-   // Next.js hydrates the whole document so React's stopPropagation on the
-   // button can't stop this sibling document-level listener from also seeing
-   // it), and then the button's own onClick would immediately reopen it,
-   // reading a just-cleared state — the menu would blink instead of closing.
+   // Exclude the trigger button: mousedown fires before its own onClick toggle, so without this the menu would blink instead of closing.
    if (target.closest("[data-view-menu-trigger]")) return;
    if (viewMenuRef.current && !viewMenuRef.current.contains(target)) {
     setViewMenuTarget(null); setViewMenuRect(null);
@@ -1166,11 +1110,7 @@ export function TemplatePageClient({
  const displayedEntries = useMemo(() => {
   let result = [...entries];
   if (filterRules.length > 0) {
-   // Grouped by property: rules on the SAME property OR together (so
-   // "Priority is Medium" + "Priority is High" as two separate rows shows
-   // entries matching either, not neither — two ANDed conditions on one
-   // property could never both be true at once), rules on DIFFERENT
-   // properties still AND together as before.
+   // Rules on the same property OR together (else two ANDed conditions on one property could never both be true); different properties still AND.
    const groups = new Map<string, FilterRule[]>();
    for (const rule of filterRules) {
     const group = groups.get(rule.propertyId);
@@ -1408,11 +1348,7 @@ export function TemplatePageClient({
    method: "PATCH", headers: { "Content-Type": "application/json" },
    body:  JSON.stringify(patch),
   });
-  // Changing a property's type reshapes its stored value (or, for
-  // formula/rollup/created_by, drops storage entirely in favor of a value
-  // computed on every read) — the client's cached `values` still hold the
-  // old shape until refetched, so cells for this property would otherwise
-  // render blank until the next full page load.
+  // A type change reshapes the stored value, so refetch — otherwise cells render blank (stale shape) until the next full page load.
   if (patch.type && activeView) {
    try {
     const res = await fetch(`/api/databases/${page.id}/entries?viewId=${activeView.id}`);
@@ -1508,11 +1444,7 @@ export function TemplatePageClient({
   });
  }, [page.id, locked]);
 
- // Changes an EXISTING view's layout (e.g. Table → Board) — distinct from
- // addView, which only ever creates a fresh one. Switching a view to "board"
- // with no groupByPropertyId set is picked up automatically by the
- // auto-wire-board-group effect above, which finds (or creates) a Select
- // property for it — no extra step needed here.
+ // Changes an existing view's layout (distinct from addView, which creates a fresh one). Board grouping is auto-wired by the effect above.
  const changeViewType = useCallback(async (viewId: string, type: string) => {
   if (locked) return;
   setViews((prev) => prev.map((v) => v.id === viewId ? { ...v, type } as DatabaseView : v));

@@ -14,11 +14,8 @@ const INDICATOR_HEIGHT = 20;
 interface BlockCount { blockId: string; count: number }
 interface Indicator { blockId: string; count: number; top: number; left: number; inView: boolean }
 
-// These badges are `position: fixed`, so a block scrolled out of the editor's
-// scrollport would otherwise still paint its badge — over the page topbar, or
-// past the bottom of the content area. Clamping needs the editor's own scroll
-// container (the topbar is a fixed-height flex sibling above it, not part of
-// the scrollport), so walk up to the nearest scrollable ancestor.
+// Badges are `position: fixed`, so clamping needs the editor's own scroll container (not window)
+// or a scrolled-out block would still paint its badge over the topbar.
 function getScrollParent(el: HTMLElement): HTMLElement | null {
  let p = el.parentElement;
  while (p) {
@@ -178,12 +175,8 @@ export function CommentGutter({ pageId, editor, blocksRef, onOpen, refresh, acti
  }, [editor, measure]); // stable — measure doesn't change anymore
 
  // ── Render ────────────────────────────────────────────────────────────────
- // Every commented block shows its badge, not just the hovered one — a
- // hover-only indicator gave the reader no way to tell a commented line from
- // an uncommented one without sweeping the mouse down the page, so existing
- // comments were effectively invisible. The block whose card is currently
- // open is skipped (the card itself already marks it), and off-screen badges
- // are filtered by `inView` so nothing paints over the topbar.
+ // Every commented block shows its badge (not just hover) so comments stay visible without
+ // sweeping the mouse; the currently-open block and off-screen badges are filtered out.
  const visible = indicators.filter((i) => i.blockId !== activeBlockId && i.inView);
 
  if (visible.length === 0 || typeof document === "undefined") return null;

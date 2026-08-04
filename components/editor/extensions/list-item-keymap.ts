@@ -3,24 +3,9 @@ import TaskItem from "@tiptap/extension-task-item";
 import { TextSelection } from "@tiptap/pm/state";
 import type { Editor } from "@tiptap/react";
 
-// This app's data model treats every bullet/numbered/checklist block as its
-// own independent top-level DB row: a single list container (bulletList /
-// orderedList / taskList) wrapping exactly one item (see serializer.ts —
-// blockToTipTapNode always builds a one-item container per DB block, and
-// tiptapNodeToBlockContent only ever reads that single item back out).
-//
-// Stock TipTap's listItem/taskItem bind Enter to `splitListItem`, which
-// inserts a new item INSIDE the same container instead of creating a new
-// container — silently violating that one-container-one-item invariant.
-// Since the serializer never walks a second item, its text is saved once and
-// then permanently dropped on the next reload (a real, deterministic data-loss
-// bug, not a race condition). Tab similarly nests one item's list inside
-// another via `sinkListItem`, which the serializer also can't represent.
-//
-// Fix: on Enter, always create a new sibling top-level container (matching
-// how every other block type gets a new block below it) instead of splitting
-// within the same one; on Tab, no-op instead of nesting, since nested lists
-// aren't a feature this schema supports.
+// This schema treats every list block as a one-item container (see serializer.ts); stock
+// splitListItem/sinkListItem would insert/nest a second item that the serializer never reads back, silently
+// dropping it on reload. Override Enter to create a new sibling container instead, and no-op Tab.
 function splitIntoNewBlock(editor: Editor, itemTypeName: string, validContainerTypes: string[]): boolean {
   return editor.commands.command(({ tr, dispatch, state }) => {
     if (!tr.selection.empty) {
@@ -60,11 +45,8 @@ function splitIntoNewBlock(editor: Editor, itemTypeName: string, validContainerT
       tr.setSelection(TextSelection.create(tr.doc, containerStart + 1));
     } else {
       const newItem = itemNode.type.create(null, state.schema.nodes.paragraph.create());
-      // Reset blockId — this is a brand-new block, not a continuation of the
-      // one it split from. Copying the old container's (already-assigned)
-      // blockId here would give two top-level nodes the same id, and the
-      // next save would collapse them into a single DB row, silently
-      // dropping whichever item's content didn't win the write race.
+      // Reset blockId — reusing the source container's id would give two top-level nodes the same
+      // id and collapse them into one DB row on save.
       const newContainer = containerNode.type.create({ ...containerNode.attrs, blockId: null }, newItem);
       tr.insert(containerEnd, newContainer);
       tr.setSelection(TextSelection.create(tr.doc, containerEnd + 3));

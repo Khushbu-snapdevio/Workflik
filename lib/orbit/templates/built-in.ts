@@ -1,10 +1,5 @@
 // Built-in template catalog + default categories.
-//
-// Lives in lib/ (not in the API route that seeds them) because the pg-boss
-// worker imports these too — lib/jobs/register.ts auto-seeds on startup and
-// scaffold-healthcheck re-checks them. Dockerfile.worker only copies lib/,
-// config/, and scripts/ into the worker image, so anything reachable from a
-// job handler must not live under app/.
+// Lives in lib/ (not app/) because the pg-boss worker also imports these, and Dockerfile.worker only copies lib/, config/, scripts/.
 
 type PropOption = { name: string; color: string };
 type Prop = { name: string; type: string; multiple?: boolean; options?: PropOption[]; expression?: string; voteMode?: boolean };

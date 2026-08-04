@@ -95,17 +95,12 @@ export function PageActionsMenu({
    // network error — treat as failed but still redirect for databases
   }
 
-  // Whether this was a first-time soft-delete or a permanent delete of an
-  // already-trashed page, the destination rule is the same: back to the
-  // parent; if this page had none, the nearest other top-level item
-  // (previous, or next if this was first); if it was the only top-level
-  // item, workspace home.
+  // Same destination rule for soft-delete or permanent delete: parent, else
+  // nearest top-level sibling, else workspace home.
   const fallbackShortId = parentShortId ?? rootFallbackShortId ?? null;
 
-  // For databases: always navigate away — never call router.refresh() on the current
-  // database URL after deletion (that re-renders the now-deleted page → 404).
-  // Skipped when onDeleted is provided (list/table context — there's no
-  // "current page" to redirect away from, the row just needs to disappear).
+  // Databases must navigate away — refreshing the current (now-deleted) URL 404s.
+  // Skipped when onDeleted is provided (list context, no "current page" to leave).
   if (pageKind === "database" && !onDeleted) {
    window.location.replace(fallbackShortId ? `/app/${workspaceSlug}/${fallbackShortId}` : `/app/${workspaceSlug}`);
    return;
@@ -163,11 +158,8 @@ export function PageActionsMenu({
     body:  JSON.stringify({ isPrivate: next }),
    });
    setIsPrivate(next);
-   // router.refresh() alone doesn't move the page into/out of the sidebar's
-   // Private section: the sidebar keeps its tree in useState seeded from
-   // props, so re-running the server layout doesn't touch it. Without this
-   // event the change only lands when the page-tree SSE poll next fires
-   // (4s server-side), which read as a ~5s lag.
+   // router.refresh() alone won't move the page in the sidebar's Private section
+   // (its tree is useState seeded from props); dispatch to avoid a ~5s SSE lag.
    window.dispatchEvent(new CustomEvent("pages:refresh"));
    router.refresh();
   });

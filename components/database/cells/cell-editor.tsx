@@ -51,11 +51,8 @@ export function CellEditorPopover(props: CellEditorProps) {
 function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClose, onPropertyConfigChange, onEditProperty, zIndex = 200, hideSearch }: CellEditorProps) {
  const ref = useRef<HTMLDivElement>(null);
 
- // A global (not per-view) "a cell popup is open somewhere" flag — read by
- // CellActionOverlay so the hover comment/copy icon never renders over an
- // open popup, no matter which view mounted this popup or whether that view
- // remembered to thread its own open/closed state into its hover logic.
- // Ref-counted since cascading flyouts can briefly mount a second instance.
+ // Global "a cell popup is open somewhere" flag, read by CellActionOverlay to suppress its hover
+ // icon regardless of which view mounted this popup. Ref-counted since cascading flyouts can nest.
  useEffect(() => {
   const el = document.body;
   const count = Number(el.dataset.cellPopupCount ?? "0") + 1;
@@ -89,19 +86,11 @@ function CellEditorInner({ property, value, cellRect, workspaceId, onSave, onClo
  const spaceAbove = cellRect.top - MARGIN;
  // Prefer below; flip above if significantly more space there
  const openBelow = spaceBelow >= 180 || spaceBelow >= spaceAbove;
- // Capped, not just floored — most editors here (date/person/relation) have a
- // small, fixed content height and never actually grow to fill all available
- // space the way SelectEditor's scrollable list can. Using the full
- // `spaceAbove` when flipping above a trigger near the bottom of a tall page
- // pinned `top` to ~0 regardless of the editor's real height, since `top` is
- // computed as if the editor WILL be `maxH` tall.
+ // Capped (not just floored): most editors have a small fixed height, so using the full
+ // `spaceAbove` when flipping above near a tall page's bottom pinned `top` to ~0.
  const maxH = Math.min(Math.max(openBelow ? spaceBelow : spaceAbove, 160), 420);
- // Above the trigger, anchor off the popover's *actual* measured height, not
- // the capped `maxH` estimate — otherwise a short editor (e.g. FileEditor's
- // collapsed state) renders far above the cell with a big empty gap between
- // it and the cell it's editing, since `top` was computed assuming the box
- // would fill all of `maxH`. Falls back to `maxH` for the very first paint,
- // before the ResizeObserver has measured anything.
+ // Anchor off the actual measured height above the trigger, not the capped `maxH` estimate, or a
+ // short editor renders with a big empty gap. Falls back to `maxH` before ResizeObserver measures.
  const openAboveHeight = Math.min(measuredHeight ?? maxH, maxH);
  const top  = openBelow
   ? cellRect.bottom + 4
@@ -841,12 +830,8 @@ function FileEditor({ value, workspaceId, onSave, onClose }: FileEditorProps) {
  const files = (value as { files?: FileItem[] } | null)?.files ?? [];
  const { upload, uploading, error } = useUpload({ kind: "database_file", workspaceId });
  const [linkUrl, setLinkUrl] = useState("");
- // Always opens on the compact "+ Add a file or image" row — whether the
- // cell has never had a file, or just had its last one deleted. The full
- // Upload/Link tabs only appear once that row is clicked. This also means
- // deleting the last remaining file (via the "…" menu) can never leave the
- // popup stuck in some in-between size/shape — there's only ever one empty
- // appearance, not two.
+ // Always opens on the compact "+ Add" row (never-had-a-file and just-deleted-last-file collapse
+ // to the same empty appearance); Upload/Link tabs only appear once that row is clicked.
  const [showAddForm, setShowAddForm] = useState(false);
  const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1004,11 +989,8 @@ function SortableFileRow({ file, onDelete }: { file: FileItem; onDelete: () => v
 }
 
 // ── Shared file thumbnail card ──────────────────────────────────────────────
-// Renders one FileItem as either an image preview or a name chip, with a
-// hover-revealed "…" menu (Full screen / Download / View original / Delete).
-// Used both inside FileEditor's popup list and inline in the entry panels
-// once the popup has auto-closed after an add, so the same card + menu +
-// (optional) click-to-select behavior is consistent everywhere.
+// Renders one FileItem as an image preview or name chip with a hover "…" menu; shared between
+// FileEditor's popup and the entry panels so behavior stays consistent everywhere.
 export interface FileThumbnailCardProps {
  file: FileItem;
  onDelete: () => void;
@@ -1124,11 +1106,8 @@ export function FileThumbnailCard({ file, onDelete, selected = false, onSelect, 
 }
 
 // ── Inline files property value (entry panels) ──────────────────────────────
-// Once a files-type property has at least one file, panels render this
-// instead of the generic single-line CellDisplay button — a stack of
-// (selectable, menu-bearing) thumbnail cards plus a trailing "+ Add a file or
-// image" row, matching Notion's property-row layout after the add popover
-// (opened via `onAddClick`) has closed.
+// Once a files property has at least one file, panels render this stack of thumbnail cards plus
+// a trailing "+ Add" row instead of the generic CellDisplay button, matching Notion's layout.
 export interface FilesPropertyValueProps {
  files: FileItem[];
  isEditor: boolean;

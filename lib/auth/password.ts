@@ -1,11 +1,7 @@
 import { z } from "zod";
 
-// Single source of truth for the password policy. Before this, the only rule
-// was `min(8)`, hand-repeated across six call sites (two API routes, signup,
-// reset-password, invite set-password, and the profile panel) — so tightening
-// it meant finding all six and keeping their wording in sync. Everything
-// imports from here instead; better-auth's own minPasswordLength/
-// maxPasswordLength in lib/auth/index.ts are kept aligned with MIN/MAX below.
+// Single source of truth for the password policy — keep better-auth's minPasswordLength/maxPasswordLength
+// in lib/auth/index.ts aligned with MIN/MAX below.
 export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 128;
 
@@ -44,11 +40,8 @@ export const PASSWORD_RULES: { id: string; label: string; message: string; test:
     id: "special",
     label: "One special character",
     message: "Password must include at least one special character.",
-    // Anything that is not a letter, a number, or whitespace — in ANY script.
-    // Deliberately not an allow-list of ASCII punctuation, so "£" or "€" from a
-    // password manager still counts; and deliberately \p{L} rather than
-    // [A-Za-z], or an accented letter like "ñ" would satisfy this rule on its
-    // own and let "Contraseña1" through with no symbol at all.
+    // Not an ASCII allow-list (so "£"/"€" count); uses \p{L} not [A-Za-z] so an accented letter like
+    // "ñ" alone can't satisfy this rule (would let "Contraseña1" through with no symbol).
     test: (v) => /[^\p{L}\p{N}\s]/u.test(v),
   },
 ];

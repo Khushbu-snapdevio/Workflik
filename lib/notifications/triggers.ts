@@ -341,13 +341,8 @@ export async function triggerPageUpdateNotification(
   });
 }
 
-// Broadcasts to every *other* active workspace member — the creator is
-// excluded, per Hard Rule 11 (a user never receives a notification for their
-// own action). Still deliberately narrower than "every page create": private
-// pages aren't visible to anyone but their creator (a notification linking to
-// a page you can't open is worse than no notification), and database entries
-// are created far too often (every row added to a tracker) to announce
-// workspace-wide without becoming noise.
+// Excludes the creator (Hard Rule 11) and skips private pages (unopenable link)
+// and entries (too frequent, would become noise).
 export async function triggerPageCreatedNotification(
   tx: AnyTx,
   params: {
@@ -414,11 +409,8 @@ export async function triggerTaskAssignedNotification(
   });
 }
 
-// Fires the instant a page is soft-deleted (DELETE /api/pages/:id), telling
-// the page's creator it moved to Trash. The person who deleted it is never
-// notified for their own action (Hard Rule 11) — so trashing your own page
-// notifies nobody. Same shape as triggerPageUpdateNotification's
-// editorId === createdBy guard.
+// Notifies the creator their page moved to Trash; skipped when they're also the
+// deleter (Hard Rule 11), same shape as triggerPageUpdateNotification's guard.
 export async function triggerPageDeletedNotification(
   tx: AnyTx,
   params: {
@@ -442,11 +434,8 @@ export async function triggerPageDeletedNotification(
   });
 }
 
-// Cron-only (lib/jobs/handlers/warn-expiring-trash.ts) — a forward-looking
-// "this page is 3 days from permanent deletion" alert, not a report of anyone's
-// action. There's no live actor here (deletedBy is read from a historical
-// column), so both the deleter and the creator are warned by design, including
-// when they're the same person.
+// Cron-only forward-looking alert, not tied to a live actor (deletedBy is
+// historical), so deleter and creator are both warned, even if the same person.
 export async function triggerTrashWarningNotification(
   tx: AnyTx,
   params: {

@@ -58,17 +58,11 @@ interface EntryContextMenuProps {
    *  e.g. changing the calendar's date property actually moves the entry to
    *  its new day instead of only updating this flyout's own local copy. */
   onValueChange?: (propId: string, value: unknown) => void | Promise<void>;
-  /** Called whenever a property's own config changes (e.g. a new select
-   *  option created while assigning a value) — without this, the flyout's
-   *  locally-fetched property list is the only thing that learns about the
-   *  new option, so cards elsewhere (e.g. this same entry's calendar chip)
-   *  keep rendering with the stale config and silently drop the value. */
+  /** Propagates config changes (e.g. a new select option) beyond this flyout's own
+   *  fetched property list, so other cards for the same entry don't render stale. */
   onPropertyConfigChange?: (propId: string, patch: Record<string, unknown>) => void | Promise<void>;
-  /** The calling view (Calendar/Gallery) and its own updater — lets "Edit
-   *  property"'s Display As/Wrap content read and write THIS view's own
-   *  override instead of the property's global config, so e.g. Gallery
-   *  showing Status as a checkbox never affects Calendar. Omitted entirely
-   *  (not just falling back to global) when the caller has no view concept. */
+  /** The calling view and its updater, so "Edit property"'s Display As/Wrap content
+   *  writes this view's own override instead of the property's global config. */
   activeView?: DbView | null;
   onUpdateView?: (patch: Record<string, unknown>) => Promise<void>;
 }
@@ -120,11 +114,8 @@ export function EntryContextMenu({
     return () => document.removeEventListener("mousedown", h);
   }, [forcePos, view, onClose]);
 
-  // Positioned once via forcePos (a captured click point) — lock scroll while
-  // open instead of repositioning, so it can't drift away from its anchor.
-  // Also exempts anything under the property flyout/editor/side-panel chain
-  // (all self-portaled outside menuRef's DOM, and each marked with the same
-  // attribute) so scrolling a long option list still works.
+  // Positioned once via forcePos, so scroll is locked instead of repositioning.
+  // Exempts the property flyout/editor/side-panel chain so option lists can still scroll.
   useScrollLockWhileOpen(!!forcePos, (target) =>
     !!menuRef.current?.contains(target) || !!target.closest?.('[data-edit-property-exempt]'));
 
@@ -185,12 +176,8 @@ export function EntryContextMenu({
     );
   }
 
-  // Comment fully replaces the menu too — same reasoning as the icon picker,
-  // and it's already a working, self-contained popover (own outside-click
-  // handling, its own scroll lock) so it doesn't need any wrapper here.
-  // Anchored to the entry's own card rect when available (renders cleanly
-  // below the card) rather than the raw right-click point, which can land
-  // mid-card and make the popover overlap the entry instead of sitting below it.
+  // Comment fully replaces the menu (self-contained popover, no wrapper needed).
+  // Anchors to the card rect when available, not the raw click point, to avoid overlap.
   if (view === "comment") {
     return (
       <CellCommentPopover
@@ -240,11 +227,8 @@ export function EntryContextMenu({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            // Anchored to the menu's own known position (left/top/W, already
-            // used to place the menu itself) rather than this button's own
-            // getBoundingClientRect() — a nested row's rect can end up
-            // reflecting stale/mid-scroll layout in ways that are hard to
-            // reason about; the menu's own stable coordinates aren't.
+            // Anchor to the menu's own known position, not this button's rect, which
+            // can reflect stale/mid-scroll layout for a nested row.
             setPropAnchor(new DOMRect(left + W + 4, top, 0, 0));
           }}
           className={`${itemClass} justify-between ${propAnchor ? "bg-accent" : ""}`}
@@ -370,14 +354,9 @@ function PropertyFlyout({
   const [loading, setLoading] = useState(true);
   const [editor, setEditor] = useState<{ prop: DbProperty; rect: DOMRect } | null>(null);
   const [editPropPanel, setEditPropPanel] = useState<{ propId: string; anchorRect: DOMRect } | null>(null);
-  // CellEditorPopover's "Edit property" footer link calls onEditProperty(rect)
-  // immediately followed by onClose() (its normal "value editor is done"
-  // signal) — for every other caller of that shared component, onClose only
-  // dismisses their own small popover, leaving their separate editPropPanel
-  // state (in the same persistent parent) untouched. Here, onClose instead
-  // unmounts this whole PropertyFlyout, which would destroy the editPropPanel
-  // state we just set in the very same tick. Suppress that one specific
-  // onClose call (refs update synchronously, so this is visible in time).
+  // "Edit property" calls onEditProperty(rect) then onClose() in the same tick;
+  // onClose would unmount this flyout and destroy the editPropPanel state just set, so
+  // suppress that one call (ref updates synchronously in time to catch it).
   const suppressCloseRef = useRef(false);
 
   useEffect(() => {
@@ -417,11 +396,8 @@ function PropertyFlyout({
 
   async function updatePropertyConfig(propId: string, patch: Record<string, unknown>) {
     setProperties((prev) => prev.map((p) => (p.id === propId ? { ...p, ...patch } as DbProperty : p)));
-    // Routes through the caller's own property-update path when given — same
-    // reasoning as save() above: without this, a newly-created select option
-    // only ever lands in this flyout's own fetched copy of the property, so
-    // the calendar card's CellDisplay can't resolve it and silently renders
-    // nothing even though the value itself saved fine.
+    // Route through the caller's own update path so a newly-created option isn't
+    // stuck in this flyout's local copy, leaving other cards unable to resolve it.
     if (onPropertyConfigChange) { await onPropertyConfigChange(propId, patch); return; }
     await fetch(`/api/databases/${databaseId}/properties/${propId}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -460,13 +436,8 @@ function PropertyFlyout({
     : Math.max(8, anchorRect.left - FW - 4);
   const top = Math.max(8, Math.min(anchorRect.top, winH - 320 - 8));
 
-  // The full "Edit property" side panel (reached via the value editor's own
-  // footer link) fully replaces everything else in this cascade — same one
-  // popup convention as the value editor itself. Anchored to the toolbar's
-  // own "+New" button (a single, stable element that's always in the same
-  // place) rather than to wherever the entry happened to be clicked from —
-  // explicitly requested so the panel always opens in the same predictable
-  // spot near the toolbar, regardless of which entry/row triggered it.
+  // The full side panel replaces the cascade (one-popup convention) and anchors to the
+  // stable "+New" toolbar button rather than the triggering entry, for a predictable spot.
   if (editPropPanel && editPropProp) {
     return (
       <EditPropertySidePanel
@@ -477,13 +448,8 @@ function PropertyFlyout({
         getAnchorRect={() => {
           const btn = document.querySelector("[data-new-entry-button]")?.getBoundingClientRect();
           if (!btn) return editPropPanel.anchorRect;
-          // Collapse to the button's own right edge — "+New" sits at the far
-          // right of the toolbar, so anchoring the full-width button rect
-          // (whose *left* edge EditPropertySidePanel prefers to align to)
-          // could still land unpredictably depending on exact viewport width.
-          // Forcing a right-edge-only rect makes the panel's own "flip to
-          // right-align when cramped" logic trigger deterministically, so it
-          // always hangs directly below the button, flush to its right edge.
+          // Collapse to the button's right edge so EditPropertySidePanel's cramped-viewport
+          // right-align logic triggers deterministically, flush below the button.
           return new DOMRect(btn.right, btn.top, 0, btn.height);
         }}
         canDelete={!editPropProp.isSystem}
@@ -503,21 +469,11 @@ function PropertyFlyout({
     );
   }
 
-  // Landing on a property (click) fully replaces this list with its value
-  // editor — same one-popup-at-a-time convention as the menu above. Both the
-  // main menu and this list are now hidden, so there's no cascade left to sit
-  // beside — re-anchor to the entry's own position (entryPos) rather than the
-  // list's cascaded-right position, which would land the editor far from the
-  // entry on narrow layouts like this calendar's day columns.
+  // Clicking a property replaces this list with its value editor; re-anchor to
+  // entryPos (not the cascaded-right position) to avoid landing far away on narrow layouts.
   if (editor && POPOVER_TYPES.has(editor.prop.type)) {
-    // Only a genuine Status property (a grouped select) gets the "Edit
-    // property" footer link out to the full side panel — every other
-    // select/multi-select (Channel, Priority, Tags, ...) is fully editable
-    // in place instead (search, create-with-colored-badge, rename, delete,
-    // reorder, recolor, all inline via hideSearch={isStatus}), so it never
-    // needs to leave this popup at all. This file is the shared entry menu
-    // for Board/Calendar/Gallery — Table has its own separate cell popover
-    // (template-table-view.tsx's SelectPopoverCell) with the same rule.
+    // Only a grouped Status property gets the "Edit property" link to the full side
+    // panel — other select types are fully editable inline via hideSearch={isStatus}.
     const isStatus = !!editor.prop.config?.groupedByStatus;
     return (
       <CellEditorPopover

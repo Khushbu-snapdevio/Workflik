@@ -3,9 +3,8 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /**
- * Plain `overflow-auto` in place of Radix's ScrollArea — scrollbars are
- * already styled globally (globals.css, native `::-webkit-scrollbar` rules),
- * so Radix's custom scrollbar/thumb components weren't adding anything.
+ * Plain `overflow-auto` in place of Radix's ScrollArea — scrollbars are already styled
+ * globally (globals.css `::-webkit-scrollbar`), so Radix's custom thumb added nothing.
  */
 function ScrollArea({
   className,

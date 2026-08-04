@@ -24,17 +24,8 @@ function meetsLevel(effective: AccessLevel, required: AccessLevel): boolean {
 }
 
 /**
- * Resolve the effective permission a user has on a page.
- *
- * Resolution order (non-private pages):
- *   1. Workspace Admin → full_access (ceiling: can_edit for editor, can_view for viewer)
- *   2. Explicit page_permissions row for this page
- *   3. Walk parent_id chain → first explicit row found → inherit
- *   4. Fall back to workspace.default_page_access → shared = can_edit, private = null
- *   5. No match → null (no access)
- *
- * Private pages short-circuit: only creator + explicit grants apply.
- * Workspace Admins are also denied on private pages they don't own/have a grant for.
+ * Resolves effective access: admin ceiling → explicit page_permissions (own or inherited from nearest
+ * ancestor) → workspace default_page_access. Private pages short-circuit to creator + explicit grants only.
  */
 export async function getEffectivePermission(
   userId: string,

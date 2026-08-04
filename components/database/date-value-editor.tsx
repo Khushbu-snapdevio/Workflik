@@ -441,13 +441,9 @@ function MenuRow({ label, value, onClick }: { label: string; value?: string; onC
   );
 }
 
-// Positioned the same way as OptionSubmenu (components/database/option-submenu.tsx) —
-// a portal anchored to a captured trigger rect, flipped above when there's not
-// enough room below, combined with useScrollLockWhileOpen (below) so the
-// DateValueEditor's own scrollable body can't scroll out from under a
-// one-time-positioned flyout. Carries data-edit-property-exempt so the parent
-// CellEditorPopover's outside-click handler doesn't treat clicks inside it as
-// "outside" and close the whole date editor out from under it.
+// Portal anchored to a captured trigger rect (see OptionSubmenu), paired with
+// useScrollLockWhileOpen since it's positioned once and can't track scroll.
+// data-edit-property-exempt keeps the parent popover's outside-click handler from closing it.
 function flyoutPosition(anchorRect: DOMRect, width: number, height: number) {
   const winW = window.innerWidth;
   const winH = window.innerHeight;

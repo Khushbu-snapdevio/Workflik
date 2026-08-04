@@ -156,20 +156,14 @@ export function PageClient({
   });
  }
 
- // Instant, no-refetch path for the common case (resolving/reopening while
- // already viewing the section) — CommentCard reports this synchronously
- // from its own optimistic update. The recheck() effect below still exists
- // as an eventual-consistency fallback (e.g. initial load), but this is what
- // avoids waiting on a second, independent fetch before hiding the section.
+ // Instant, no-refetch path: CommentCard reports this synchronously from its
+ // own optimistic update. recheck() below is just the eventual-consistency fallback.
  function handleActiveCountChange(count: number) {
   setShowComments(count > 0);
  }
 
- // Keep the section visible for as long as an active (unresolved,
- // undeleted) page-level thread exists — and hide it again the moment the
- // last one is resolved or deleted, same as Notion. Re-checks on every
- // comment mutation anywhere on the page (resolve/reopen/delete/create),
- // not just once on mount.
+ // Keep the section visible only while an active page-level thread exists;
+ // re-checks on every comment mutation anywhere on the page, not just on mount.
  useEffect(() => {
   function recheck() {
    fetch(`/api/pages/${pageId}/comments`)

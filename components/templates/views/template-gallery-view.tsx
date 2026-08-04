@@ -134,11 +134,7 @@ interface GalleryCardProps {
   databaseId: string;
   displayProps: DatabaseProperty[];
   dragging?: boolean;
-  /** Wires the grip icon to dnd-kit's activator instead of making the whole
-   *  card a drag surface — the card is covered edge-to-edge by click targets
-   *  (cover, title, buttons) that intentionally stop pointerdown propagation,
-   *  so a whole-card drag zone shrinks to unreliable leftover gaps. Omitted
-   *  for the drag overlay instance, which doesn't need a handle. */
+  /** Grip icon wires to dnd-kit's activator, not the whole card — card content stops pointerdown propagation, so a whole-card drag zone wouldn't work. */
   dragHandleProps?: {
     ref: (el: HTMLElement | null) => void;
   } & Record<string, unknown>;

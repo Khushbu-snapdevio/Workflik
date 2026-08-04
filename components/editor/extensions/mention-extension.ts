@@ -105,12 +105,8 @@ function generateDateItems(query: string): MentionItem[] {
     .filter(({ label }) => !query || label.toLowerCase().startsWith(query))
     .map(({ label, date }) => ({ label, iso: date.toISOString().split("T")[0] }))
     .filter(({ iso }) => {
-      // "Next Monday/Wednesday/Friday" can land on the same calendar date as
-      // Today/Tomorrow/Yesterday — e.g. "next Wednesday" computed from a
-      // Tuesday IS tomorrow — which used to produce two differently-labeled
-      // entries for the identical date (and, since `id` is this same date
-      // string, duplicate React keys). Drop the later duplicate; the
-      // earlier-listed label (Today/Tomorrow/Yesterday) wins.
+      // "Next Weekday" can land on the same date as Today/Tomorrow/Yesterday, which would
+      // duplicate the `id` (the date string) — drop the later duplicate, earlier label wins.
       if (seenDates.has(iso)) return false;
       seenDates.add(iso);
       return true;

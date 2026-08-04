@@ -1,13 +1,7 @@
 import { useEffect } from "react";
 
-/**
- * Blocks wheel/touch scrolling everywhere on the page while `active` is true,
- * except inside elements matched by `isExempt`. Prevents a `position: fixed`
- * popover (positioned once via `getBoundingClientRect()` at open time) from
- * visually drifting away from its trigger when the page scrolls underneath
- * it — used instead of live-repositioning for popovers whose trigger doesn't
- * expose a stable ref to re-measure from.
- */
+// Blocks page scroll while `active` (except inside `isExempt` elements), so a `position: fixed` popover doesn't
+// drift from its trigger — used when the trigger has no stable ref to live-reposition from instead.
 export function useScrollLockWhileOpen(active: boolean, isExempt: (target: HTMLElement) => boolean) {
   useEffect(() => {
     if (!active) return;

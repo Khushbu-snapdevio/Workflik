@@ -166,25 +166,16 @@ function SortableTableRow({
   leaveTimerRef.current = setTimeout(() => setHoveredCell(null), 150);
  }
 
- // The overlay is a `position: fixed` portal anchored to a `rect` snapshotted
- // once on mouseenter. Unlike the click-opened menus below (which lock scroll
- // instead), this is a passive hover affordance, so scrolling should just
- // dismiss it rather than block the table — listen in the capture phase so a
- // scroll on the table's scroll container (an ancestor, not this row) is seen.
+ // Passive hover overlay: scrolling dismisses it rather than locking the table's scroll.
+ // Listen in the capture phase to catch scroll on the table's ancestor container.
  useEffect(() => {
   if (!hoveredCell) return;
   function handleScroll() {
    clearLeaveTimer();
    setHoveredCell(null);
   }
-  // Self-healing: `onMouseLeave` doesn't fire for every way the cursor can
-  // stop being over this cell (e.g. it can be skipped when the pointer jumps
-  // straight to a newly-mounted element, such as a popup, without crossing
-  // the cell's boundary in between) — left unchecked, `hoveredCell` (and its
-  // portal) gets stuck showing at its last position indefinitely. Validate
-  // against the real cursor position on every move and self-clear if it's
-  // drifted outside the snapshotted rect, instead of relying solely on the
-  // leave event.
+  // Self-healing: `onMouseLeave` can be skipped (e.g. pointer jumps straight onto a
+  // newly-mounted popup), so validate against real cursor position on every move too.
   const rect = hoveredCell.rect;
   function handleMove(e: MouseEvent) {
    const r = rect;
@@ -202,23 +193,15 @@ function SortableTableRow({
   // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [hoveredCell]);
 
- // Belt-and-suspenders: the overlay is also blocked from being (re)shown for
- // the active cell in the mouseenter handler below, but if any cell in this
- // row becomes active through a path other than that exact click (e.g. a
- // future keyboard-nav entry point), make sure the hover overlay never stays
- // stuck showing over a cell the user is actively typing into — matching
- // Notion, where the comment/copy icons never appear while editing.
+ // Belt-and-suspenders vs. the mouseenter handler's own check: guards any future
+ // non-click activation path, matching Notion (icons never show while editing).
  useEffect(() => {
   if (activeCell?.entryId === entry.id) setHoveredCell(null);
  }, [activeCell, entry.id]);
 
- // Same belt-and-suspenders reasoning as above, for the popup-editor case —
- // an inline `onClick={() => { setHoveredCell(null); activateCell(...) }}`
- // handles the common path, but Chromium can re-dispatch a synthetic
- // mouseenter when the DOM under a stationary cursor changes shape after the
- // click (e.g. once the popup portal mounts), re-setting hoveredCell after
- // the inline clear already ran. A commit-phase effect clears it again on
- // every render where a popup is open for this row, closing that race.
+ // Same reasoning for the popup-editor case: Chromium can re-dispatch a synthetic
+ // mouseenter once the popup portal mounts, re-setting hoveredCell after the inline
+ // clear ran — this commit-phase effect clears it again to close that race.
  useEffect(() => {
   if (editPop?.entryId === entry.id) setHoveredCell(null);
  }, [editPop, entry.id]);
@@ -412,11 +395,8 @@ function SortableTableRow({
       onClick={(e) => { setHoveredCell(null); activateCell(entry.id, prop.id, e); }}
       onMouseEnter={(e) => {
        clearLeaveTimer();
-       // Suppressed while ANY cell popup is open, not just this exact cell —
-       // a popup can visually extend well past its own trigger cell (e.g.
-       // the files editor spans multiple rows once opened on a short row),
-       // so a hover overlay on a nearby cell could render on top of it
-       // regardless of z-index if the two ever raced on mount order.
+       // Suppressed for ANY open popup, not just this cell — a popup can visually
+       // extend well past its trigger cell (e.g. files editor on a short row).
        if (!isActive && !editPop && !commentPopover) {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         setHoveredCell({ propId: prop.id, prop, rawVal, rect });
@@ -1258,11 +1238,8 @@ function PropHeaderMenu({ menu, prop, properties, workspaceId, onRename, onHide,
   return () => document.removeEventListener("mousedown", h);
  }, [onClose, confirmDelete]);
 
- // `menu.rect` is a one-time snapshot of the column header's "⋯" button, and
- // `getAnchorRect={() => menu.rect}` below always returns that same frozen value —
- // so EditPropertySidePanel's own live-reposition-on-scroll effect has nothing
- // fresh to reposition to. Lock scroll for this whole menu (both the list view and
- // the nested edit-property view) instead, so the frozen anchor never goes stale.
+ // `menu.rect` is a frozen snapshot, so scroll is locked for this whole menu instead
+ // of relying on EditPropertySidePanel's reposition-on-scroll (nothing fresh to use).
  useScrollLockWhileOpen(true, (target) =>
   !!ref.current?.contains(target) || !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]'));
 

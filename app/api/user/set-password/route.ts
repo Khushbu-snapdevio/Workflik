@@ -10,11 +10,8 @@ const setPasswordSchema = z.object({
   newPassword: passwordSchema,
 });
 
-// POST /api/user/set-password — lets a Google-only user (no "credential"
-// account row yet) add a password so email+password sign-in also works.
-// better-auth's setPassword endpoint is server-only (no HTTP route of its
-// own — see lib/auth/index.ts), so this route is what the profile page
-// calls instead.
+// POST /api/user/set-password — lets Google-only users add a password.
+// better-auth's setPassword is server-only, so this route wraps it for the profile page.
 export async function POST(req: Request) {
   try {
     await getSession();

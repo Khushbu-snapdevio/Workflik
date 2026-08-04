@@ -4,12 +4,8 @@ import { AlertTriangle, DatabaseZap, RotateCw } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 
-// A self-hosted instance's most common first-run error is forgetting to run
-// the database migration before starting the app — every query throws, and
-// without this page the visitor would just see Next.js's generic crash
-// screen. Detected best-effort from the error message (only available in
-// development — production redacts server error messages for security, so
-// there we fall back to the generic recovery UI below).
+// Best-effort detection of a missing-migration error, the most common self-hosted first-run failure.
+// Only works in dev — production redacts error messages, so it falls back to the generic UI below.
 const MIGRATION_HINT_PATTERN =
   /relation .* does not exist|column .* does not exist/i;
 

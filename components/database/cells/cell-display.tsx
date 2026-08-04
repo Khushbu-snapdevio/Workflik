@@ -21,12 +21,8 @@ interface CellDisplayProps {
    *  the calendar card so a checkbox-style property can be checked/unchecked
    *  right there, without opening the entry's own full page. */
   onToggleCheckbox?: () => void;
-  /** Resolved by the caller (view-property-resolver.ts, per the active view's
-   *  own propertyOverrides), NOT read from property.config directly here —
-   *  CellDisplay itself has no notion of which view it's rendering inside, so
-   *  the same Status property can render as a checkbox in Board and a badge
-   *  in Table/Calendar/Gallery. Falls back to the property's own global
-   *  config when the caller doesn't pass these (keeps older call sites working). */
+  /** Resolved by the caller (view-property-resolver.ts) so the same Status property can render
+   *  differently per view (e.g. checkbox in Board, badge elsewhere); falls back to property.config. */
   resolvedDisplayAs?: "select" | "checkbox";
   resolvedWrapContent?: boolean;
   /** Person/Created-by avatar chips show a Notion-style hover card (name,
@@ -71,15 +67,8 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
   const [voterTooltip, setVoterTooltip] = useState<{ label: string; rect: DOMRect } | null>(null);
   const [lightboxFile, setLightboxFile] = useState<FileItem | null>(null);
 
-  // Both hover cards are `position: fixed` portals anchored to a rect
-  // snapshotted once on mouseenter, so scrolling moves the chip they point at
-  // while the card stays glued to the viewport — it visibly detaches and, since
-  // the pointer never crosses the chip's boundary, onMouseLeave never fires to
-  // clean it up. Dismiss on scroll instead (same convention as
-  // use-hover-tooltip.ts). Capture-phase so scrolls on any ancestor scroll
-  // container are seen, not just the window. Only bound while a card is open —
-  // CellDisplay renders once per cell, so an always-on document listener would
-  // mean hundreds of them on a large table.
+  // Hover cards are fixed-position portals anchored to a snapshotted rect, so scrolling detaches
+  // them without firing onMouseLeave — dismiss on scroll instead (capture-phase, only while open).
   useEffect(() => {
     if (!(hoveredUser || voterTooltip)) {
       return;
@@ -252,20 +241,12 @@ export function CellDisplay({ property, value, compact, onToggleCheckbox, resolv
       const userIds       = (v as { userIds?: string[] } | null)?.userIds ?? [];
       const cachedMembers = (v as { _members?: { id: string; name: string; email: string }[] } | null)?._members ?? [];
 
-      // Vote-mode: a thumbs-up + count instead of the editable avatar list —
-      // the count is always userIds.length (never a separately-stored
-      // number), and the fill state reflects whether *this* viewer has voted.
-      // No onClick here — the click that toggles a vote is handled by each
-      // view's own cell-activation logic (table-view.tsx's activateCell and
-      // its equivalents), which calls back into this same person value; this
-      // component only ever renders what the current value looks like.
+      // Vote-mode: thumbs-up + count (always userIds.length) instead of the avatar list. No
+      // onClick here — toggling is handled by each view's own cell-activation logic.
       if (property.type === "person" && property.config?.voteMode) {
         const hasVoted = !!session?.user?.id && userIds.includes(session.user.id);
-        // Voter names come straight from the value's own `_members` cache —
-        // no extra fetch. Reuses the comment-reaction name formatter
-        // ("Smit and S28", "X, Y, and N others") so "who voted" reads the
-        // same everywhere. `You` is substituted for the current user, since
-        // the badge is a self-service vote.
+        // Voter names come from the value's own `_members` cache (no extra fetch), reusing the
+        // comment-reaction name formatter so "who voted" reads consistently everywhere.
         const nameById = Object.fromEntries(cachedMembers.map((m) => [m.id, m.name || m.email]));
         const voterLabel = userIds.length
           ? formatReactorNames(

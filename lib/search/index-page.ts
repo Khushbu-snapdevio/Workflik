@@ -20,11 +20,8 @@ export async function upsertPageSearchIndex(
   // "Pages" returned entries too — the type filter was effectively a no-op.
   const sourceType = page.kind === "entry" ? "entry" : "page";
 
-  // Delete any existing index row for this page first (keyed on sourceId alone)
-  // rather than upserting on (sourceType, sourceId): if a page's kind ever
-  // changes, an upsert would leave the old differently-typed row behind and the
-  // page would show under two type filters. sourceId is unique per page, so one
-  // row per page is always correct.
+  // Delete-then-insert (not upsert) because sourceId alone is the key: if kind ever changes, an upsert on
+  // (sourceType, sourceId) would leave a stale differently-typed row behind.
   await dbOrTx.delete(searchIndex).where(eq(searchIndex.sourceId, page.id));
   await dbOrTx
     .insert(searchIndex)
@@ -34,13 +31,8 @@ export async function upsertPageSearchIndex(
       sourceId:     page.id,
       pageId:       page.id,
       title,
-      // 'simple' config, not 'english' — 'english' silently drops stop words
-      // ("just", "the", "and", ...) to zero lexemes, so a page titled e.g.
-      // "JUst" indexed nothing and could never match any search for its own
-      // title. Titles are short identifiers, not prose, so the stemming
-      // 'english' would otherwise provide isn't worth losing stop words for;
-      // prefix matching (`:*` in the search route) already covers most of
-      // what stemming would (e.g. "run:*" matches "running").
+      // 'simple' not 'english' — 'english' drops stop words to zero lexemes (e.g. "JUst" indexed nothing).
+      // Titles are short identifiers, not prose; prefix matching already covers most of what stemming would.
       searchVector: sql`to_tsvector('simple', ${title})`,
     });
 }

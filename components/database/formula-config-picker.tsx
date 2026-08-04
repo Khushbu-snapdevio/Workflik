@@ -16,11 +16,8 @@ interface FormulaConfigPickerProps {
   onPick: (expression: string) => void;
 }
 
-// Mirrors app/api/databases/[id]/entries/route.ts's rawToFormulaValue — kept
-// independent since this is a client-side live preview against one sample
-// entry, not the real per-request computation; formula/rollup properties
-// reuse the server's already-computed `.display` string rather than
-// re-evaluating (avoids duplicating the circular-reference machinery here).
+// Mirrors app/api/databases/[id]/entries/route.ts's rawToFormulaValue for this client-side
+// preview; formula/rollup reuse the server's `.display` string to avoid re-evaluating.
 function rawToFormulaValue(prop: DbProperty, raw: unknown): FormulaValue {
   const v = raw as Record<string, unknown> | null;
   switch (prop.type) {

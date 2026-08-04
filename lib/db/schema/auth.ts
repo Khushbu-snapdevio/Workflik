@@ -64,11 +64,8 @@ export const accounts = pgTable("accounts", {
   updatedAt:            updatedAt(),
 }, (t) => [index("accounts_user_idx").on(t.userId)]);
 
-// Instance-wide toggle for which sign-in methods are offered — a self-hosted
-// single-instance app has one operator, not per-workspace auth policy, so
-// this is a singleton row (id is always 1) rather than workspace-scoped.
-// Enforced server-side in lib/auth/index.ts's `hooks.before`, not just hidden
-// in the UI, so disabling a method actually blocks the endpoint.
+// Singleton row (id always 1) — one operator, not per-workspace auth policy.
+// Enforced server-side in lib/auth/index.ts's `hooks.before`, not just the UI.
 export const authSettings = pgTable("auth_settings", {
   id:                   integer("id").primaryKey().default(1),
   emailPasswordEnabled: boolean("email_password_enabled").notNull().default(true),

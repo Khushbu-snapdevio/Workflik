@@ -1,10 +1,7 @@
 "use client";
 
-// Cross-component notification for "a comment changed on this page" — lets the
-// header Comments button (badge + sidebar panel) and the in-editor block
-// gutter refresh live instead of waiting for their next mount/poll, without
-// prop-drilling through the editor, comment cards, and cell popovers that can
-// all mutate comments independently.
+// Lets independent comment mutators (editor, cards, cell popovers) notify the
+// header badge and gutter without prop-drilling.
 
 const COMMENTS_CHANGED_EVENT = "workflik:comments-changed";
 

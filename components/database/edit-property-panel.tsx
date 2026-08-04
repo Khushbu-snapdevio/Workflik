@@ -44,24 +44,15 @@ interface EditPropertySidePanelProps {
    *  render cards — Table/Board reach this same panel from a column header,
    *  where there's no card to show it on, so they leave this unset. */
   showCardToggle?:     boolean;
-  /** When set, "Display as"/"Wrap content" read and write THIS view's own
-   *  override instead of the property's global config — so e.g. Board
-   *  showing Status as a checkbox never affects Table/Calendar/Gallery.
-   *  Callers with no view concept (the standalone entry-page property panel)
-   *  leave this unset and keep editing the property's global config, same as
-   *  before this existed. */
+  /** When set, "Display as"/"Wrap content" write this view's own override instead of
+   *  the property's global config, so per-view display doesn't leak to other views. */
   viewContext?:        { override: ViewPropertyOverride; onUpdateOverride: (patch: Partial<ViewPropertyOverride>) => void };
 }
 
 const PANEL_WIDTH = 288;
 
-// Remounts the panel body whenever the property's type changes. Several pieces
-// of the body's state (options, groupedByStatus, name) are seeded once from the
-// property's config via lazy useState initialisers and don't reactively follow
-// a changed type — after "Change type" they'd keep rendering the previous
-// type's data (e.g. a Number property still listing the old Select options).
-// Keying here rather than at each call site keeps all six of them correct
-// without having to remember this at every one.
+// Remounts the panel body on type change: its state is seeded once via lazy
+// useState initializers and wouldn't otherwise follow a changed type.
 export function EditPropertySidePanel(props: EditPropertySidePanelProps) {
   return <EditPropertySidePanelBody key={props.property.type} {...props} />;
 }
@@ -89,11 +80,8 @@ function EditPropertySidePanelBody({
   const [submenu, setSubmenu] = useState<{ optionId: string; rect: DOMRect } | null>(null);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  // Adding a new option: typing directly into an inline input at the insertion point
-  // and pressing Enter commits it immediately — same as the search box's "Create …" flow.
-  // Sentinel is distinct from groupOptions()'s own "flat" section key (used for ungrouped
-  // properties) — reusing "flat" here would make both the per-section and the standalone
-  // "Add option" inputs render simultaneously for ungrouped properties.
+  // Sentinel distinct from groupOptions()'s "flat" key — reusing "flat" would make the
+  // per-section and standalone "Add option" inputs both render for ungrouped properties.
   const UNGROUPED = "__ungrouped_add__";
   const [addingTo, setAddingTo] = useState<string | null>(null); // group key, or UNGROUPED
   const [newOptionName, setNewOptionName] = useState("");
@@ -290,13 +278,8 @@ function EditPropertySidePanelBody({
     : Math.min(anchorRect.left, winW - PANEL_WIDTH - MARGIN);
   const spaceBelow = winH - anchorRect.bottom - MARGIN;
   const spaceAbove = anchorRect.top - MARGIN;
-  // Open whichever side actually has more room. A fixed "prefer below past
-  // some threshold" rule used to pick the smaller side whenever a trigger sat
-  // in the lower half of a tall page (e.g. a column header inside an inline
-  // database further down the page) — spaceBelow would clear the threshold
-  // while spaceAbove had far more room, capping maxHeight to the smaller
-  // side and squeezing the Name/Type section into its own inner scrollbar
-  // even though the panel's actual content easily fit in the room above.
+  // Open whichever side has more room; a prior fixed threshold could pick the smaller
+  // side and squeeze content into an unnecessary inner scrollbar.
   const openBelow = spaceBelow >= spaceAbove;
   // Capped, not just floored — when the trigger sits near the top of a tall
   // viewport, `spaceBelow` alone would stretch this to nearly full-viewport

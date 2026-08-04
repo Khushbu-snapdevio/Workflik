@@ -11,11 +11,9 @@ import {
 import { ChevronDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// The one primitive that genuinely needed a real behavior library — a
-// custom-rendered, keyboard-navigable select isn't something daisyUI's CSS
-// can give you. `ListboxSelectedOption` is what makes this viable: it
-// mirrors the selected `SelectItem`'s children into the trigger the same
-// way Radix's `SelectValue` used to, given the same option elements.
+// The one primitive that genuinely needed a real behavior library, since a keyboard-navigable
+// select isn't something daisyUI's CSS can give you. `ListboxSelectedOption` mirrors the selected
+// option's children into the trigger, same as Radix's `SelectValue`.
 
 const SelectOptionsContext = React.createContext<React.ReactNode>(null)
 
@@ -119,13 +117,8 @@ function SelectContent({
       anchor={{ to: anchor, gap: 4 }}
       transition
       className={cn(
-        // z-600 — this app has several elevated stacking tiers (sidebar,
-        // modals); a Select can be triggered from inside any of them, so its
-        // portal-rendered dropdown needs to sit above all of them.
-        // min-w-(--button-width) — Headless UI mirrors the trigger's
-        // measured width into this custom property; floor the panel to that
-        // width so it never renders narrower than its own trigger (still
-        // free to grow wider for long option labels).
+        // z-600: sits above this app's other stacking tiers (sidebar, modals) regardless of trigger context.
+        // min-w-(--button-width): Headless UI's measured trigger width, floors the panel from rendering narrower.
         "z-600 min-w-(--button-width) overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground",
         "shadow-float",
         "transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95",

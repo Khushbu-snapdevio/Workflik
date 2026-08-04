@@ -71,11 +71,7 @@ type Props = {
  initialUserImage: string | null;
  isAdmin?: boolean;
  initialPages: PageItem[];
- // Database entries the current user created and marked private — kept
- // separate from `initialPages` (which excludes all entries) since only the
- // Private section shows them, not the general tree/Favorites/Recently
- // Visited. See private-section.tsx for how the two lists are merged for
- // display without mixing their update paths.
+ // Private database entries, kept separate from `initialPages` since only the Private section shows them.
  initialPrivateEntries: PageItem[];
  initialFavorites: FavoriteItem[];
  initialRecentlyVisited: { id: string; pageId: string; visitedAt: string }[];
@@ -149,11 +145,7 @@ export function Sidebar({
  }, [workspaceId]);
 
  useEffect(() => {
-  // Also re-fetch favorites on every page mutation, not just page-toggled-
-  // favorite ones (the "workflik:favorites-changed" listener below) — a page
-  // that's favorited can be trashed, renamed, etc. from a dozen different
-  // surfaces that all already fire this event, so hooking in here covers all
-  // of them for free instead of teaching each call site about favorites too.
+  // Also re-fetch favorites on every page mutation (not just favorite-toggle) since a favorited page can be trashed/renamed elsewhere.
   function refresh() { fetchPages(); fetchFavorites(); }
   window.addEventListener("pages:refresh", refresh);
   return () => window.removeEventListener("pages:refresh", refresh);
@@ -206,15 +198,7 @@ export function Sidebar({
   };
  }, []);
 
- // "workflik:favorites-changed" exists so components that toggle a favorite
- // without going through handleToggleFavorite (favorite-button.tsx,
- // entry-context-menu.tsx) can tell the sidebar to pick up the change. But
- // handleToggleFavorite's OWN dispatch (fired to keep those same components
- // in sync when the toggle originates *here*) would otherwise also land on
- // this listener and kick off a refetch that races the optimistic update
- // a few lines below it — the GET can resolve with pre-toggle data and
- // silently wipe out the just-applied change. skipNextFavoritesEventRef
- // marks that one dispatch as already handled so it's not double-applied.
+ // Marks handleToggleFavorite's own dispatch as already handled, so the listener's refetch doesn't race and wipe the optimistic update.
  const skipNextFavoritesEventRef = useRef(false);
 
  useEffect(() => {
@@ -774,11 +758,7 @@ function CollapsedSearchItem({ children }: { children: React.ReactNode }) {
  );
 }
 
-// Collapsed rail has no room for a full Favorites section (list + drag
-// reorder), so it's one icon that opens the same "N more" flyout
-// favorites-section.tsx already uses for overflow — showing every favorite,
-// not just the first few, since this popup IS the collapsed view's only
-// access to favorites.
+// Collapsed rail has no room for the full Favorites list, so this icon opens favorites-section.tsx's overflow flyout showing all favorites.
 function CollapsedFavoritesItem({
  favorites,
  pagesMap,

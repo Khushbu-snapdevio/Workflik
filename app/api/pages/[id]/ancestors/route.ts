@@ -11,11 +11,7 @@ import {
 
 type Ctx = { params: Promise<{ id: string }> };
 
-// GET /api/pages/:id/ancestors — workspace + root → self page chain, for the
-// Breadcrumb block. The workspace is included separately (not part of the
-// page_closure chain) so the breadcrumb always has at least two segments —
-// matching Notion, where the workspace itself is always the first, clickable
-// crumb, even for a page with no parent pages.
+// GET /api/pages/:id/ancestors — workspace + root → self chain for the Breadcrumb block; workspace is included separately so a parentless page still gets 2 crumbs.
 export async function GET(_req: Request, { params }: Ctx) {
   try {
     const { id } = await params;

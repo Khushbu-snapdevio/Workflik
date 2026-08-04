@@ -143,11 +143,8 @@ export function DatabasePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIds]);
 
-  // Lock parent <main> scroll for gantt, which manages its own two-axis
-  // internal scroll container. Calendar deliberately does NOT lock: its rows
-  // hold a fixed minimum height, so on a short window (or when zoomed in) the
-  // month has to be taller than the viewport — the page scrolls to reach it
-  // instead of the grid squashing every row until cells clip their contents.
+  // Lock parent <main> scroll for gantt (owns its own scroll container); Calendar
+  // deliberately doesn't, so tall months can grow the page instead of squashing rows.
   useEffect(() => {
     const mainEl = document.querySelector<HTMLElement>("main");
     if (!mainEl) return;
@@ -196,12 +193,8 @@ export function DatabasePage({
     return () => window.removeEventListener("workflik:entry-value-changed", onValueChanged);
   }, []);
 
-  // Catches edits made elsewhere that the event listener above can't see —
-  // browser back/forward restoring this page from bfcache (no remount, no
-  // re-run of the mount effect) or an already-open tab regaining focus after
-  // a value was changed on an entry's own full page in a different tab.
-  // Without this, either scenario keeps showing whatever `rawValues` held at
-  // the moment this page was last actually fetched.
+  // Catches edits the event listener above can't see: bfcache restores and
+  // tab refocus after a value changed elsewhere (e.g. another tab).
   useEffect(() => {
     function refetch() { if (activeViewId) loadEntries(activeViewId); }
     function onVisibilityChange() { if (document.visibilityState === "visible") refetch(); }
@@ -318,11 +311,8 @@ export function DatabasePage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
-    // Changing a property's type reshapes its stored value (or, for
-    // formula/rollup/created_by, drops storage entirely in favor of a value
-    // computed on every read) — the client's cached rawValues still hold the
-    // old shape until refetched, so cells for this property would otherwise
-    // render blank until the next full page load.
+    // Type changes reshape (or drop) stored values; refetch so cached
+    // rawValues don't render blank until the next full page load.
     if (patch.type && activeViewId) await loadEntries(activeViewId);
   }, [databaseId, activeViewId, loadEntries]);
 
@@ -334,13 +324,8 @@ export function DatabasePage({
   }, [databaseId]);
 
   const addView = useCallback(async (name: string, type: string) => {
-    // Board/Calendar render nothing until a group-by/date property is set, so
-    // a freshly created one looks broken/empty — auto-pick the first
-    // candidate property (same filters the toolbar's own Group/Date dropdown
-    // uses); if the database has none at all yet, create a starter one
-    // (server seeds Status's default To-do/In progress/Complete options)
-    // rather than leaving the user to add a property then rediscover the
-    // toolbar's Group/Date dropdown themselves.
+    // Board/Calendar are empty until a group-by/date property exists, so auto-pick
+    // one (or create a starter Status property) instead of showing a broken view.
     const body: Record<string, unknown> = { name, type };
     if (type === "board") {
       let groupProp = properties.find((p) => isGroupableType(p.type) && !p.isSystem);
@@ -501,12 +486,8 @@ export function DatabasePage({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  // Calendar grows past the available height when its rows don't fit, so it
-  // needs a root that can exceed it (min-h-*, no overflow clip) and lets the
-  // page scroll. Every other view stays boxed and scrolls internally.
-  // Embedded (inline) databases size against a fixed 420px box rather than the
-  // viewport — their wrapper in reference-blocks.tsx only sets a min-height
-  // now, so the boxed views have to state that height here.
+  // Calendar can exceed viewport height, so it uses min-h-* (page scrolls) while other
+  // views stay boxed. Inline embeds size against a fixed 420px box, not the viewport.
   const isCalendar = activeView?.type === "calendar";
   const heightCls = isCalendar
     ? (inline ? "min-h-105" : "min-h-full")

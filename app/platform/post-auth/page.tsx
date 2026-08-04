@@ -13,13 +13,8 @@ import { writeAuditLog } from "@/lib/orbit/audit";
 export default async function PostAuthPage() {
   const session = await requireSession();
 
-  // Auto-accept any invites waiting on this account, but only on a brand
-  // new invitee's very first login (no active membership anywhere yet) —
-  // that's the one case where which workspace they belong to is already
-  // decided by the invite itself, so there's nothing to confirm. An
-  // already-established user who picks up an *additional* pending invite
-  // still goes through the explicit "Accept & Join" screen (/invite/[token]),
-  // which also catches an invite addressed to the wrong signed-in account.
+  // Only auto-accept invites on a brand-new user's first login (no active membership yet); an
+  // established user's additional invite still goes through the explicit /invite/[token] screen.
   const [existingActiveMembership] = await db
     .select({ id: workspaceMembers.id })
     .from(workspaceMembers)

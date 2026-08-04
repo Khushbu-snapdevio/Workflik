@@ -49,12 +49,8 @@ export function PublicPageViewer({ blocks }: Props) {
       Callout,
       Toggle,
       ToggleSummary,
-      // Registers the "mention" node type so the schema recognizes it —
-      // without this, TipTap's nodeFromJSON throws on the very first
-      // mention it finds and silently blanks the ENTIRE document (not just
-      // that node). No workspaceSlug here: anonymous public viewers can't
-      // open a page mention's /app/{slug}/... link anyway (see mention-node.ts),
-      // so it renders as plain resolved text instead of a link.
+      // Required so TipTap's nodeFromJSON recognizes "mention" nodes, or it blanks the whole document.
+      // No workspaceSlug: anonymous viewers can't follow a mention link, so it renders as plain text.
       MentionNode,
       ImageBlock,
       VideoBlock,

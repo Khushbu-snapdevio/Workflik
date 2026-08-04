@@ -1,15 +1,7 @@
 /**
- * Single source of truth for select/status option colours.
- *
- * These are *data* colours — a user labelled a column "red", so it stays red in
- * both themes. What has to change across themes is the polarity: a light tint
- * carrying dark text in light mode becomes a deep fill carrying light text in
- * dark mode. Every pair below is measured — badge text clears 4.5:1 against its
- * own fill and dots clear 3:1 against --card, in both themes.
- *
- * This lives outside the token system on purpose. Tokens describe UI chrome and
- * there are only three of them for text; these nine hues are content, and
- * collapsing them onto tokens would make every option look the same.
+ * Single source of truth for select/status option colours. These are *data* colours
+ * (stay red across themes, only fill/text polarity flips) so they live outside the
+ * token system; every pair is measured to clear 4.5:1 (badge text) / 3:1 (dots).
  */
 
 export type OptionColorKey =

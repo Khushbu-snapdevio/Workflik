@@ -10,14 +10,8 @@ interface MentionUser {
   label: string;
 }
 
-// Plain-text "@name" autocomplete for the database cell comment popover's
-// three text inputs (new comment, edit, reply) — those store comments as
-// plain strings, unlike the page editor's rich-text comments (which already
-// have a real TipTap mention node + dropdown, see
-// components/editor/extensions/mention-extension.ts). This mirrors that
-// dropdown's UX (type "@", see matching members, arrow keys + Enter to pick)
-// without needing a rich-text content model: picking a suggestion just
-// splices "@Display Name " into the plain string in place of the typed query.
+// Plain-text "@name" autocomplete for the comment popover's plain-string inputs (unlike the page editor's
+// TipTap mention node in mention-extension.ts). Selecting a suggestion splices "@Display Name " into the string.
 export function useMentionAutocomplete({
   workspaceId,
   getText,
@@ -36,12 +30,8 @@ export function useMentionAutocomplete({
   const [rect, setRect] = useState<{ top: number; left: number } | null>(null);
   const requestIdRef = useRef(0);
 
-  // Call from onChange with the input's new value (e.target.value) — NOT
-  // getText()'s current closure, which is still the pre-keystroke value at
-  // that point since the setText() call earlier in the same handler hasn't
-  // been committed to state yet. Looks at the text up to the caret, not the
-  // whole value, so a "@" earlier in an already-finished mention doesn't
-  // re-trigger the dropdown.
+  // Pass the input's new value (e.target.value), not getText() — that closure is still stale since
+  // setText() hasn't committed yet. Only looks up to the caret so a finished "@mention" earlier doesn't re-trigger.
   function onTextChanged(currentText: string) {
     const el = inputRef.current;
     if (!el) {
@@ -147,12 +137,8 @@ export function useMentionAutocomplete({
     return false;
   }
 
-  // Portaled to <body>, so it isn't a DOM descendant of CellCommentPopover's
-  // own popoverRef — its outside-click handler already checks for
-  // `[data-comment-exempt]` (the same convention comment-card.tsx uses for
-  // its nested portals), so without this attribute here, clicking a
-  // suggestion registered as an "outside click" on the whole comment popover
-  // and closed it before selectItem's own click handler ever ran.
+  // `data-comment-exempt` is required: portaled to <body>, so without it CellCommentPopover's outside-click
+  // handler treats a suggestion click as "outside" and closes before selectItem runs.
   const dropdown =
     query !== null &&
     items.length > 0 &&

@@ -66,13 +66,8 @@ function extractText(node: Record<string, unknown> | null | undefined): string {
   return children.map(extractText).join("");
 }
 
-// The snippet used to only ever show extractText()'s plain-text result, so a
-// comment with an attachment silently looked like it lost the attachment —
-// it was never rendered here at all, on top of comment-composer.tsx's own
-// (now-fixed) data-loss bug. This walks the doc for the first image/file/
-// attachment node (the three shapes used across this app's different
-// composers) and normalizes it so an actual image thumbnail can render here
-// too, matching Notion, instead of just a paperclip icon.
+// Walks the doc for the first image/file/attachment node (the shapes used
+// across this app's composers) so an attachment shows a thumbnail, not just text.
 interface FoundAttachment { src: string; name: string; kind: "image" | "file"; }
 function extractFirstAttachment(node: Record<string, unknown> | null | undefined): FoundAttachment | null {
   if (!node) return null;
@@ -138,11 +133,7 @@ function ThreadAvatar({ name, image }: { name?: string | null; image?: string | 
 }
 
 // ---------- Discussion item ----------
-//
-// Mirrors the same set of actions the inline CommentCard offers (react,
-// resolve/reopen, edit-in-place, copy link, mute, delete) so the sidebar
-// "All discussions" pane is a real Notion-parity surface, not just a
-// read-only jump-to-comment list.
+// Mirrors CommentCard's actions so "All discussions" isn't just a read-only list.
 
 interface DiscussionItemProps {
   thread:        CommentThread;
@@ -423,12 +414,8 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
   );
 }
 
-// Topbar "Comments" button for database entry pages — opens a side panel
-// listing every comment on the page (page-level, block-level, and property
-// comments together, Notion-style "All discussions" pane). Each item
-// supports the same actions as the inline comment card (react, resolve/
-// reopen, edit-in-place, copy link, mute, delete); clicking the item body
-// itself still jumps to wherever it lives on the page.
+// Topbar "Comments" button: opens a side panel listing every comment on the
+// page (page/block/property, "All discussions"-style); clicking an item jumps to it.
 export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);

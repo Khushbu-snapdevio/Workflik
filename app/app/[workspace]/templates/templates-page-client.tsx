@@ -195,11 +195,8 @@ export function TemplatesPageClient({
     refetchTemplates().finally(() => setLoading(false));
   }, [refetchTemplates]);
 
-  // Deep-link support: /templates?open=<name> opens that template's preview
-  // directly (used by the home page's quick-start template chips), and
-  // /templates?openId=<id> does the same by id (used by global search
-  // results, since names aren't guaranteed unique across workspace templates)
-  // — instead of landing on the plain gallery grid.
+  // Deep-link support: ?open=<name> (home page quick-start chips) or ?openId=<id>
+  // (global search, since names aren't guaranteed unique) opens a template's preview directly.
   useEffect(() => {
     const openId = searchParams.get("openId");
     const openName = searchParams.get("open");

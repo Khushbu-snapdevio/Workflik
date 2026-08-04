@@ -88,12 +88,8 @@ export async function POST(req: Request, { params }: Ctx) {
       return apiError(403, "Only the workspace owner can invite someone as an Admin");
     }
 
-    // better-auth always looks up users by a lowercased email, so this row
-    // must be stored lowercase too or the invitee will never be able to sign
-    // in. If this email has never been seen before, pre-create a placeholder
-    // user row now so the invite can attach a workspace membership to it
-    // immediately — they'll set a name/password when accepting via
-    // /invite/[token] (app/api/invite/[token]/set-password).
+    // Email must be lowercase to match better-auth's lookup. Pre-create a placeholder
+    // user row if new, so the invite can attach a membership immediately.
     const { user: existingUser, isNew: isBrandNewInvitee } = await getOrCreateInviteeUser(email);
 
     if (!isBrandNewInvitee) {

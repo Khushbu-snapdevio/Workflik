@@ -5,21 +5,11 @@ import { FormulaEvalError, type FormulaValue } from "./types";
 export { FormulaEvalError, type FormulaValue };
 
 export interface FormulaEvalContext {
-  // Resolves a `prop("Name")` reference to a native value (number/string/
-  // boolean/Date/null) — the caller (lib/formula/index.ts's resolver, built
-  // per-entry in the entries API route) owns turning a property's raw JSONB
-  // shape into one of these, including recursively evaluating a referenced
-  // property that's itself a Formula (subject to that resolver's own
-  // circular-reference guard, not this evaluator's concern).
+  // Resolves `prop("Name")`; caller owns JSONB-to-native conversion and
+  // circular-reference guarding for nested Formula properties.
   resolveProp: (name: string) => FormulaValue;
-  // Resolves `count(prop("Name"))` to how many items a list-valued property
-  // (Person, Multi-select, Relation) holds. Kept separate from resolveProp
-  // rather than folded into FormulaValue (a strict scalar union — see
-  // ./types.ts) because Person/Multi-select already have a meaningful scalar
-  // form there (joined names/labels) that existing formulas may depend on;
-  // count() is how a formula asks for the *list length* instead. Optional —
-  // callers that never expose list-valued properties (e.g. no sample entry
-  // loaded yet) can omit it and let count() raise its own clear error.
+  // Resolves `count(prop("Name"))`'s list length; kept separate from
+  // resolveProp since Person/Multi-select already have a scalar form there. Optional.
   resolveCount?: (name: string) => number;
 }
 
@@ -91,12 +81,8 @@ export function evaluateFormula(node: FormulaNode, ctx: FormulaEvalContext): For
     }
 
     case "call": {
-      // count() is special-cased rather than living in FORMULA_FUNCTIONS: it
-      // needs the raw property reference (to know which list to measure),
-      // not the already-coerced scalar every other function receives — by
-      // the time an argument reaches a normal function, resolveProp has
-      // already collapsed a Person/Multi-select/Relation property down to a
-      // string or number, and the list itself is gone.
+      // count() is special-cased: it needs the raw property reference to know
+      // which list to measure, since resolveProp would collapse it to a scalar.
       if (node.name === "count") {
         const arg = node.args[0];
         if (node.args.length !== 1 || arg.type !== "prop") {

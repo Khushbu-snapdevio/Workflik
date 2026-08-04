@@ -1,10 +1,6 @@
-// Country/region flag emoji are two Unicode "regional indicator" characters
-// (A–Z pairs) that map 1:1 to an ISO 3166-1 alpha-2 code. Windows' system emoji
-// font doesn't draw these as colored flags — it shows the raw letter pair (e.g.
-// 🇹🇲 → "TM") — so anywhere we'd otherwise render the native glyph we instead
-// render the flag-icons SVG set (loaded globally in app/globals.css) via
-// `fi fi-<code> fis`. `flagIconCode` maps an emoji to that `<code>`, or returns
-// null for anything that isn't a flag (render those natively).
+// Windows' emoji font shows flag emoji as raw letter pairs instead of colored
+// flags, so we render the flag-icons SVG set instead; flagIconCode maps an
+// emoji to its `fi-<code>`, or null if it isn't a flag.
 
 const REGIONAL_INDICATOR_BASE = 0x1f1e6;
 

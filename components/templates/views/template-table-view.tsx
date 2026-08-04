@@ -50,11 +50,7 @@ import type { SelectOption, DbPropertyConfig, DbProperty, DbView, ViewPropertyOv
 
 type PropOption   = SelectOption;
 type PropConfig   = DbPropertyConfig;
-// Badge-style properties (colored pill values) and Person (an avatar chip,
-// not really "text" a copy-to-clipboard makes sense for) intentionally get
-// comment-only hover actions — no copy-to-clipboard, unlike plain-value
-// properties. "created_by" doesn't need an entry here — it skips the hover
-// overlay entirely (see the createPortal call below).
+// Badge-style properties (pill values) and Person get comment-only hover actions, no copy-to-clipboard, unlike plain-value properties.
 const BADGE_TYPES = new Set(["select", "multi_select", "person"]);
 type SelectVal   = { optionId?: string };
 type MultiSelectVal = { optionIds?: string[] };
@@ -398,11 +394,7 @@ function MultiSelectCell({
 }
 
 // ── Select / Multi-select cell (non-Status) ──────────────────────────────────
-// Regular Select/Multi-select columns use the same proper Notion-style
-// popover as Board/Gallery (search, create-with-colored-badge preview, drag
-// reorder) via CellEditorPopover, instead of the old flat checkmark-list
-// dropdown above — which is kept ONLY for Status (groupedByStatus) so its
-// already-tuned behavior stays untouched.
+// Regular Select/Multi-select uses the CellEditorPopover shared with Board/Gallery; the old flat dropdown above is kept only for Status.
 function SelectPopoverCell({
  property, value, options, config, resolvedDisplayAs, resolvedWrapContent,
  workspaceId, multi, onSave, onEditProperty, onUpdateProperty,
@@ -539,12 +531,7 @@ function CheckboxCell({ value, onSave }: { value: CheckboxVal | null | undefined
 }
 
 // ── Person cell ───────────────────────────────────────────────────────────────
-// Uses the same shared CellDisplay (read) + CellEditorPopover (edit, workspace-
-// member picker) as every other database view — this used to be its own
-// free-text "type a name" input storing `{ name }`, which didn't match the
-// `{ userIds, _members }` shape every other view saves/reads, so a person
-// picked from the entry's own page (or Board/Gallery/Calendar) always showed
-// as Empty here.
+// Uses the shared CellDisplay/CellEditorPopover so the `{ userIds, _members }` shape matches other views (a prior free-text input didn't).
 function PersonCell({
  property, value, workspaceId, onSave,
 }: {
@@ -869,11 +856,7 @@ function AddPropertyPanel({
  const [pickingRelation, setPickingRelation] = useState(false);
  const [pickingRollup, setPickingRollup]   = useState(false);
  const [pickingFormula, setPickingFormula]  = useState(false);
- // Captured once, at the moment a sub-picker opens — this panel's own div
- // (which `ref` points at) unmounts as soon as we switch to rendering a
- // sub-picker instead, so recomputing the rect from `ref.current` on every
- // render would go stale (or collapse to 0,0) the moment anything inside
- // the sub-picker causes a re-render.
+ // Captured once when a sub-picker opens: `ref`'s div unmounts then, so recomputing from `ref.current` would go stale/collapse to 0,0.
  const [pickerRect, setPickerRect] = useState<DOMRect | null>(null);
  const inputRef = useRef<HTMLInputElement>(null);
  const ref    = useRef<HTMLDivElement>(null);
@@ -1238,11 +1221,7 @@ function SortableRow({
   leaveTimerRef.current = setTimeout(() => setHoveredCell(null), 150);
  }
 
- // The overlay is a `position: fixed` portal anchored to a `rect` snapshotted
- // once on mouseenter. Unlike the click-opened menus (which lock scroll
- // instead), this is a passive hover affordance, so scrolling should just
- // dismiss it rather than block the table — listen in the capture phase so a
- // scroll on the table's scroll container (an ancestor, not this row) is seen.
+ // Unlike click-opened menus (which lock scroll), this passive hover overlay just dismisses on scroll — capture phase so an ancestor scroll is seen.
  useEffect(() => {
   if (!hoveredCell) return;
   function handleScroll() {

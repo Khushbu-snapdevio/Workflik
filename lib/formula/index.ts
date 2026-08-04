@@ -21,11 +21,8 @@ export function formatFormulaValue(value: FormulaValue): string {
   return value;
 }
 
-// Raw (unformatted) parse + evaluate — used internally when one Formula
-// property references another (its resolveProp needs the actual typed
-// number/string/boolean/Date back to keep composing correctly, not a
-// display-formatted string like "Yes" or a locale date string that might not
-// round-trip through the same parser it came from).
+// Raw (unformatted) parse + evaluate — used when one Formula references
+// another, which needs the typed value back, not a display-formatted string.
 export function evaluateFormulaValue(expression: string, ctx: FormulaEvalContext): { value: FormulaValue | null; error: string | null } {
   const { ast, error: parseError } = tryParseFormula(expression);
   if (parseError) return { value: null, error: parseError };

@@ -15,12 +15,8 @@ import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { useUpload } from "@/lib/storage/use-upload";
 import { SaveStatusIndicator, type SaveState } from "@/components/ui/save-status";
 
-// IconPicker renders itself as a fixed-size 352px-wide panel positioned
-// "absolute left-0 top-full" relative to its nearest positioned ancestor —
-// it needs to be portaled to <body> with viewport coordinates, otherwise it
-// gets clipped (and forces horizontal scroll) inside any narrow/scrollable
-// container like this form's 260px sidebar. Same pattern already used in
-// workspace-general-section.tsx and entry-context-menu.tsx.
+// Portaled to <body> with viewport coordinates so it isn't clipped by this
+// form's narrow sidebar (same pattern as workspace-general-section.tsx).
 const ICON_PICKER_WIDTH = 352;
 const ICON_PICKER_HEIGHT = 400;
 
@@ -67,15 +63,9 @@ function stableStringify(v: unknown): string {
   return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(o[k])}`).join(",")}}`;
 }
 
-// Identity of the content itself, used to tell a real edit from editor
-// bookkeeping. Three normalizations matter:
-//   - block ids are excluded, because BlockIdAttr assigns missing ones via a
-//     transaction on mount, firing onChange before the admin touches anything;
-//   - empty paragraphs are dropped, because a brand-new template starts as []
-//     while TipTap normalizes an empty doc to a single empty paragraph;
-//   - key order is normalized, per stableStringify above.
-// Dropping empty paragraphs also matches how publish-validation already
-// decides whether a template "has content".
+// Identity of the content, excluding block ids (auto-assigned on mount) and
+// empty paragraphs (TipTap's normalized empty doc), so bookkeeping doesn't
+// register as a real edit; matches publish-validation's "has content" check.
 function blocksSignature(bs: DbBlock[]): string {
   return stableStringify(
     bs

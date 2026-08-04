@@ -35,14 +35,8 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
   const member = await getWorkspaceMember(ws.id, session.user.id);
   if (!member) {
-    // Page-only guest (doc/CLAUDE.md "Guest bypass"): they have no workspace
-    // seat, only an explicit page_permissions grant. Give them a minimal
-    // shell instead of the full member sidebar — that sidebar's page tree,
-    // favorites, etc. are workspace-wide and would leak content the guest
-    // isn't supposed to see. The actual per-page access check still happens
-    // in the [pageId] route; every other route under this layout keeps its
-    // own membership guard, so a guest can't wander past the page they were
-    // invited to.
+    // Page-only guest: no workspace seat, only an explicit page_permissions grant.
+    // Minimal shell instead of the full sidebar, which would leak workspace-wide content.
     const isPageGuest = await hasWorkspaceGuestAccess(ws.id, session.user.id);
     if (!isPageGuest) {
       redirect("/platform/post-auth");
@@ -97,11 +91,8 @@ export default async function WorkspaceLayout({ children, params }: Props) {
         )
       )
       .orderBy(pages.orderIndex),
-    // Database entries are excluded from the query above (too numerous to
-    // show in the general page tree), but a private entry the current user
-    // created should still surface somewhere — the sidebar's Private section
-    // specifically, not the tree/Favorites/Recently-Visited. Scoped to
-    // isPrivate + own-created to keep this small (never "all entries").
+    // Database entries are excluded above (too numerous for the page tree), but private
+    // ones the user created still need to surface in the sidebar's Private section.
     db
       .select({
         id:         pages.id,
@@ -126,11 +117,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       )
       .orderBy(pages.orderIndex),
     db
-      // Join the page so favorites carry title/icon/shortId even when the page
-      // isn't in the sidebar tree (database entries, etc.); otherwise those
-      // render as "Untitled" with a broken link. Trashed pages are excluded —
-      // matches the GET in app/api/user/favorites/route.ts (see its comment
-      // for why the LEFT JOIN and isNull check are needed together).
+      // Mirrors the GET in app/api/user/favorites/route.ts (LEFT JOIN + isNull, see there).
       .select({
         id:         userFavorites.id,
         pageId:     userFavorites.pageId,

@@ -24,12 +24,7 @@ function toAbsolute(
   }
 }
 
-// Sites that gate real content behind client-side JS (Google Search among
-// them) serve a "please enable JavaScript" shell to any plain server-side
-// fetch — we can't execute JS here to get past it, and neither can any other
-// link-unfurler. Rather than surface that noscript boilerplate as if it were
-// the page's real title/description, treat it as no metadata at all and fall
-// back to a plain hostname card, same as a page with no OG tags at all.
+// Sites gating content behind client-side JS serve a "please enable JavaScript" shell to our fetch; treat that as no metadata rather than showing it as the title/description.
 const JS_REQUIRED_PATTERN =
   /enable javascript|turn on javascript|javascript is (disabled|required|turned off)|javascript.{0,20}(disabled|turned off)/i;
 

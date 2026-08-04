@@ -1,16 +1,6 @@
-// Single source of truth for "what groups (columns/sections) does a group-by
-// property produce, and which group(s) does a given entry belong to." Used by
-// board-view.tsx, gallery-view.tsx, and table-view.tsx so the three views can
-// never disagree about how a database is grouped.
-//
-// select/status: single-membership, groups are the property's own editable
-// `config.options` (colors, names, order all live there — see
-// edit-property-panel.tsx / board-view.tsx's "Add option" UI).
-// checkbox: single-membership, exactly 2 fixed, non-editable groups.
-// person: MULTI-membership — an entry with 2 assignees appears in both
-// people's groups — derived from the person values actually present across
-// entries (there's no property-level "list of people" config to read, unlike
-// select's options), plus a synthetic "no assignee" group.
+// Single source of truth for group membership, shared by board/gallery/table views so
+// they never disagree. Note: person grouping is MULTI-membership (an entry with 2
+// assignees appears in both groups), unlike select/status/checkbox's single-membership.
 
 import type { DbEntry, DbProperty, SelectOption } from "@/components/database/types";
 

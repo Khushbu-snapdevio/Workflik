@@ -1,20 +1,6 @@
-// One-off backfill after switching search_index.search_vector from the
-// 'english' to the 'simple' Postgres text-search config (see
-// lib/search/index-page.ts). 'english' silently strips stop words ("just",
-// "the", "and", ...) to zero lexemes, so any page whose title was or
-// contained a stop word could never match a search for its own title.
-// Existing search_index rows were built with the old 'english' vectors —
-// switching only the query side (app/api/search/route.ts) without also
-// rebuilding stored rows would make previously-matching English-stemmed
-// titles stop matching too, so every row needs to be rebuilt against the
-// new config, not just newly created/renamed pages going forward.
-//
-// Reuses the same upsertPageSearchIndex() the app already calls on page
-// create/rename/reindex — this just runs it once for every existing page
-// across every workspace instead of one workspace at a time via the
-// "Index pages now" button.
-//
-// Idempotent: safe to re-run (upsertPageSearchIndex deletes-then-inserts).
+// One-off backfill after switching search_index.search_vector from 'english' to 'simple'
+// config (see lib/search/index-page.ts) — 'english' stripped stop words, so existing rows
+// need rebuilding to match the new query-side config. Idempotent; safe to re-run.
 //
 // Usage: pnpm tsx scripts/reindex-search-simple-config.ts
 

@@ -1,22 +1,7 @@
-// Hand-rolled tokenizer + recursive-descent parser for the Formula property
-// type's expression language. No parsing dependency — the grammar is small
-// enough to keep in-house and fully auditable, rather than pulling in a
-// third-party expression-parsing library for something this scoped.
-//
-// Grammar (lowest to highest precedence):
-//   expr       := or
-//   or         := and ( "or" and )*
-//   and        := equality ( "and" equality )*
-//   equality   := comparison ( ("==" | "!=") comparison )*
-//   comparison := additive ( ("<" | ">" | "<=" | ">=") additive )*
-//   additive   := multiplicative ( ("+" | "-") multiplicative )*
-//   multiplicative := power ( ("*" | "/" | "%") power )*
-//   power      := unary ( "^" unary )*
-//   unary      := ("not" | "-") unary | primary
-//   primary    := NUMBER | STRING | "true" | "false"
-//              | "prop" "(" STRING ")"
-//              | IDENT "(" (expr ("," expr)*)? ")"
-//              | "(" expr ")"
+// Hand-rolled tokenizer + recursive-descent parser for the Formula expression
+// language — no parsing dependency, kept small enough to stay auditable.
+// Precedence (low to high): or, and, equality, comparison, additive,
+// multiplicative, power, unary, primary.
 
 export type FormulaNode =
   | { type: "number"; value: number }

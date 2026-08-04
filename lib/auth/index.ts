@@ -39,15 +39,8 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
     },
   },
-  // This app never runs a local email-verification flow (see
-  // `emailVerification` below), so `emailVerified` stays `false` on every
-  // account regardless of how it signed up. Better Auth's default account
-  // linking requires the existing local account to be email-verified before
-  // linking a new provider to it — with our accounts always unverified,
-  // that default would permanently block every invited/password user from
-  // ever using "Continue with Google". Trusting Google (which verifies
-  // emails itself) and dropping the local-verification requirement lets
-  // linking proceed instead.
+  // requireLocalEmailVerified must be false: accounts here never get local-verified (no email-verification
+  // flow), and Better Auth's default would otherwise permanently block linking Google to them.
   account: {
     accountLinking: {
       enabled: true,
@@ -55,10 +48,8 @@ export const auth = betterAuth({
       requireLocalEmailVerified: false,
     },
   },
-  // The `enabled` flags below just make the endpoints exist — whether each
-  // method is actually *offered* on this instance is an admin-configurable,
-  // DB-backed toggle (lib/auth/settings.ts), enforced per-request in the
-  // `hooks.before` middleware below. Toggling is instant, no restart needed.
+  // `enabled` below just makes the endpoint exist; whether it's actually offered is the DB-backed toggle
+  // in lib/auth/settings.ts, enforced per-request in `hooks.before` below.
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
@@ -67,11 +58,8 @@ export const auth = betterAuth({
       console.log("[reset-password] sending to:", user.email);
       console.log("[reset-password] link:", url);
 
-      // A user with no existing sign-in method yet (no `accounts` row at
-      // all) is setting a password for the first time — either because
-      // they were just invited to a workspace (see members/route.ts) or
-      // they previously only had magic-link/Google. Personalize that case
-      // with welcome copy instead of "reset" wording.
+      // No `accounts` row means this is a first-time password set (invited user or previously
+      // magic-link/Google only) — use welcome copy instead of "reset" wording.
       const [existingAccount] = await db
         .select({ id: schema.accounts.id })
         .from(schema.accounts)
@@ -123,13 +111,8 @@ export const auth = betterAuth({
       });
     },
   },
-  // Powers the "Change email" flow in Settings → My profile. Deliberately
-  // left at its default (no `sendChangeEmailConfirmation`, no
-  // `updateEmailWithoutVerification`) so every request — regardless of the
-  // account's current emailVerified state — falls through to the single
-  // "send a verification link to the NEW address" path below: the old
-  // email keeps working until that link is clicked, so nobody can lock
-  // themselves out mid-change.
+  // Deliberately left at default (no sendChangeEmailConfirmation/updateEmailWithoutVerification) so every
+  // change-email request verifies the new address first — old email keeps working until then.
   user: {
     changeEmail: {
       enabled: true,
@@ -156,12 +139,8 @@ export const auth = betterAuth({
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path === "/sign-up/email") {
-        // Self-serve signup only ever exists to bootstrap the very first,
-        // instance-admin account (or to stay open indefinitely when
-        // ALLOW_PUBLIC_REGISTRATION=true). Once that's not the case, this
-        // is a private self-hosted instance — new accounts are pre-created
-        // by an admin's invite (members/route.ts) and set their password
-        // via the reset-password flow instead of signing up here.
+        // Self-serve signup only bootstraps the first instance-admin account (or stays open if
+        // ALLOW_PUBLIC_REGISTRATION=true) — otherwise accounts are admin-invited, not self-signed-up.
         if (!(await isRegistrationAllowed())) {
           throw APIError.from("FORBIDDEN", {
             code: "REGISTRATION_DISABLED",
@@ -259,14 +238,8 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        // Catch-all enforcement for the invite-only model: closes the gap
-        // that `hooks.before` above can't reach — magic-link and Google
-        // OAuth both auto-create a new user row directly (no `/sign-up/*`
-        // request path to intercept), so a per-request check on `ctx.path`
-        // alone isn't sufficient. Returning `false` aborts the insert; both
-        // Better Auth flows handle that gracefully by redirecting with an
-        // error instead of crashing (verified against the installed
-        // better-auth version's source — see plan notes).
+        // Catch-all for invite-only enforcement: magic-link/Google auto-create user rows with no
+        // `/sign-up/*` path for `hooks.before` to intercept. Returning `false` aborts the insert safely.
         before: async () => {
           if (await isRegistrationAllowed()) return;
           return false;
@@ -284,11 +257,8 @@ export const auth = betterAuth({
             });
           } catch { /* never fail signup due to audit */ }
 
-          // Self-hosted instances have no separate "request platform admin
-          // access" flow — the very first account created on a fresh
-          // install becomes the instance admin automatically, so there's no
-          // shell/DB-access step required to reach Orbit for the first time.
-          // `pnpm make:admin` remains available to promote additional users.
+          // First account on a fresh install auto-promotes to instance admin (no shell/DB step needed
+          // to reach Orbit); `pnpm make:admin` remains available for additional users.
           try {
             const userCount = await getUserCount();
             if (userCount === 1) {

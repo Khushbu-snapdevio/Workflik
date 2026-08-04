@@ -204,11 +204,7 @@ export async function createDatabaseFromSnapshot(
       });
       config = { options };
     } else if (p.type === "formula") {
-      // Referenced property names (e.g. count(prop("Upvoted by"))) are
-      // resolved by name against the database's full property set at read
-      // time (lib/databases/compute-values.ts), not at insert time here, so
-      // it doesn't matter whether this property is inserted before or after
-      // whatever it references.
+      // Formula refs resolve by name at read time (compute-values.ts), not here, so insertion order doesn't matter.
       config = { expression: p.expression ?? "" };
     } else if (p.type === "person" && p.voteMode) {
       config = { voteMode: true };
@@ -267,14 +263,8 @@ export async function createDatabaseFromSnapshot(
       if (endName)   ganttEndPropertyId   = propLookup.get(endName)?.id ?? null;
     }
 
-    // A "My X" view (filterKey/filterValue in the seed, e.g. filterKey:
-    // "Owner", filterValue: "me") resolves into a real filter rule here.
-    // person/created_by properties get the "@me" sentinel — the same one
-    // entries/route.ts already resolves for default values — so the filter
-    // re-evaluates against whoever is actually viewing it, not whoever
-    // instantiated the template. select/multi_select properties resolve the
-    // option *name* from the seed into the option's generated id, since
-    // that's what evaluateFilter compares against.
+    // "My X" views (filterKey/filterValue in the seed) resolve here: person/created_by get the "@me" sentinel
+    // (same one entries/route.ts uses) so the filter re-evaluates per-viewer; select fields resolve name → generated id.
     let filters: { propertyId: string; operator: string; value: unknown }[] = [];
     if (v.filterKey && v.filterValue !== undefined) {
       const targetProp = propLookup.get(v.filterKey);

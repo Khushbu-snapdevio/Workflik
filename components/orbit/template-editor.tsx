@@ -51,11 +51,8 @@ function serialize(e: { getJSON: () => unknown }): DbBlock[] {
 interface Props {
   initialBlocks: DbBlock[];
   onChange: (blocks: DbBlock[]) => void;
-  /** Fired once with the editor's own serialization of `initialBlocks`, before
-   *  any user input. The parent uses it as the "unchanged" baseline: TipTap
-   *  normalizes on load (assigning block ids, filling in extension attribute
-   *  defaults), so comparing later output against the raw DB snapshot would
-   *  report an edit the admin never made. */
+  /** Fired once with TipTap's normalized serialization, used as the "unchanged"
+   *  baseline since load-time normalization would otherwise look like an edit. */
   onBaseline?: (blocks: DbBlock[]) => void;
 }
 

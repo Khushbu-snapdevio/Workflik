@@ -39,12 +39,8 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
 
   useEffect(() => setSelectedIndex(0), [items]);
 
-  // Position the popup relative to the caret, flipping it *above* the caret
-  // when there isn't enough room below (i.e. the cursor sits low in the
-  // viewport). Without this the list always opened downward with `top =
-  // pos.bottom`, so a tall list — e.g. People + Dates on a near-empty query —
-  // ran off the bottom of the screen. Caps the height so it scrolls instead of
-  // overflowing, and clamps left so it can't spill off the right edge.
+  // Flip the popup above the caret when it doesn't fit below (e.g. a tall list on a near-empty
+  // query), cap height to scroll instead of overflow, and clamp left to the viewport.
   const updatePosition = useCallback(() => {
    const rect = clientRect?.();
    const el = containerRef.current;
@@ -83,13 +79,8 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
    updatePosition();
   }, [updatePosition, suggestionProps]);
 
-  // The popup is `position: fixed`, so scrolling the page (or any scroll
-  // container the editor lives in) moves the caret while the popup stays glued
-  // to the viewport — it would visibly detach from the "@". Close the
-  // suggestion on any scroll *outside* the popup (matches Notion), while still
-  // letting the popup's own capped-height list scroll internally. Resize just
-  // repositions. The scroll listener is capture-phase so it catches scrolls on
-  // any ancestor container, not only the window.
+  // Popup is `position: fixed` so it'd detach from the caret on scroll — close on any scroll
+  // outside the popup itself (capture-phase to catch any ancestor container); resize just repositions.
   useEffect(() => {
    function onScroll(e: Event) {
     if (containerRef.current?.contains(e.target as Node)) return;
@@ -107,16 +98,8 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
    };
   }, [editor, updatePosition]);
 
-  // This popup is `position: fixed`, entirely outside the editor's own DOM —
-  // ProseMirror's Suggestion plugin only re-evaluates whether it's still
-  // "active" on document/selection transactions inside the editor, so a
-  // click anywhere else on the page (sidebar, topbar, another panel) never
-  // triggers one and the popup would otherwise stay open forever. Dispatch
-  // the plugin's own exit transaction directly — the safe way to close a
-  // suggestion without touching the document (see exitSuggestion's own
-  // doc comment in @tiptap/suggestion). Both keys are exited unconditionally
-  // since this list is shared between the "@" and "[[" triggers and only
-  // one of them is ever actually active at a time.
+  // Suggestion plugin only re-evaluates "active" on transactions inside the editor, so an outside
+  // click never closes this fixed-position popup on its own — dispatch its exit transaction directly.
   useEffect(() => {
    function handleMouseDown(e: MouseEvent) {
     if (containerRef.current?.contains(e.target as Node)) return;

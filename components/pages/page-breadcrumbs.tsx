@@ -22,12 +22,8 @@ interface PageBreadcrumbsProps {
   navSource?:    PageNavSource;
 }
 
-// Server-fetched ancestor titles/icons and the current page's own title/icon
-// are otherwise frozen at request time — renaming any page in this chain
-// (this one, or an ancestor, from anywhere else the same event fires) would
-// only show up here after a full reload. Listening for the shared
-// "workflik:page-title-changed" event (dispatched by every title/icon save
-// handler in the app) keeps every crumb live without a server round-trip.
+// Server-fetched titles/icons are frozen at request time; listening for the
+// shared "workflik:page-title-changed" event keeps crumbs live without a reload.
 export function PageBreadcrumbs({
   workspaceSlug, workspaceName, ancestors: initialAncestors,
   currentPageId, initialTitle, initialIcon, navSource,

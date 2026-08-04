@@ -1,14 +1,6 @@
-// Vote-mode Person properties (config.voteMode) store the same
-// `{ userIds, _members }` shape as any other Person value — a "vote" is just
-// the acting user's own id being present in that list. This helper computes
-// the value after the current user toggles their *own* vote on/off, used by
-// every view's click-to-vote handler (table/board/gallery + the template
-// variants + the entry detail page) so the toggle logic lives in one place.
-//
-// The server (app/api/entries/[id]/property-values/[propId]/route.ts)
-// independently enforces that a non-admin write only ever adds/removes the
-// requester's own id — this helper is the UI side of that same rule, never
-// the sole guard.
+// A "vote" is just the acting user's own id present in a Person value's userIds.
+// UI-side toggle only — the server independently re-enforces that a non-admin
+// write may only add/remove the requester's own id.
 
 export interface VoteUser {
   id: string;

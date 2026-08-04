@@ -38,16 +38,8 @@ function cleanAuthErrorMessage(message: string | null | undefined): string | und
   return message.replace(/^\[[^\]]+\]\s*/, "");
 }
 
-// Better Auth redirects here with `?error=<code>` when a magic-link verify
-// or OAuth callback is rejected (e.g. registration disabled) instead of
-// failing inline like the password/magic-link-request paths do. Only
-// "registration_disabled" is ours (thrown as REGISTRATION_DISABLED in
-// lib/auth/index.ts, lowercased by Better Auth's redirect handling). The
-// other two are Better Auth's own generic redirect codes for a blocked
-// user-creation attempt — implementation details of the library, not part
-// of our API contract, kept only as a compatibility fallback so a future
-// better-auth upgrade degrades to a slightly different friendly message
-// instead of a raw code leaking to the user.
+// Better Auth redirects with `?error=<code>` on rejected magic-link/OAuth callbacks. Only
+// "registration_disabled" is ours (lib/auth/index.ts); the rest are Better Auth's own codes, kept as a fallback.
 const REGISTRATION_ERROR_MESSAGES: Record<string, string> = {
   registration_disabled: "This instance is invite-only. Ask an administrator for an invitation.",
   failed_to_create_user: "This instance is invite-only. Ask an administrator for an invitation.",
@@ -150,21 +142,14 @@ function AuthFormInner() {
     return null;
   }
 
-  // Bootstrapping this instance (no account exists anywhere yet) always
-  // forces a password-only signup view, regardless of the admin-configured
-  // toggles below — there's no admin yet to have set them, and Google/magic
-  // link would be extra friction for the one moment every self-hoster must
-  // get through: creating the first, always-available account.
+  // Bootstrap always forces password-only signup — no admin exists yet to have set the toggles below.
   const showGoogle = !methods.isBootstrap && methods.google;
   const showMagicLink = !methods.isBootstrap && methods.magicLink;
   const showPassword = methods.isBootstrap || methods.emailPassword;
   const canSwitchCredentialView = showMagicLink && showPassword;
   const activeView = canSwitchCredentialView ? view : showPassword ? "password" : "magic-link";
-  // Self-serve signup only ever exists to create that first account — once
-  // it exists, this instance is invite-only (an admin invites you, you set
-  // your password via the emailed link, then sign in here) unless
-  // ALLOW_PUBLIC_REGISTRATION keeps signup available, in which case the
-  // toggle below lets a returning visitor switch into it.
+  // Self-serve signup only creates the first account; after that it's invite-only unless
+  // ALLOW_PUBLIC_REGISTRATION lets a returning visitor toggle into it.
   const canToggleSignup = !methods.isBootstrap && methods.allowPublicRegistration;
   const passwordMode: "signin" | "signup" =
     methods.isBootstrap || (canToggleSignup && wantsSignup) ? "signup" : "signin";

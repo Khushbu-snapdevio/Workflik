@@ -4,15 +4,8 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Native `<input type="checkbox" role="switch">` in place of Radix's
- * button+thumb pair. Track and thumb classes are computed from React state
- * (checked/size/disabled), not CSS pseudo-classes — see checkbox.tsx for why.
- *
- * The input is invisible but covers the full track (absolute inset-0) so
- * click, keyboard (Space) and focus all land on it exactly as they did on
- * Radix's Root button; the visible track is drawn on the wrapper span.
- */
+// Native `<input type="checkbox" role="switch">` in place of Radix's button+thumb pair.
+// Input is invisible but covers the full track (inset-0) so click/keyboard/focus behave like Radix's Root button.
 function Switch({
   className,
   size = "default",

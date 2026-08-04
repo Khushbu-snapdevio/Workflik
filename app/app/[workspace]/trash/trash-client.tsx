@@ -167,11 +167,8 @@ export function TrashClient({ pages, workspaceSlug }: { pages: TrashedPage[]; wo
     setRestoringSelected(true);
     const ids = [...selectedIds];
     try {
-      // One transactional request rather than N concurrent ones. Firing a POST
-      // per page raced: a child processed before its parent saw the parent
-      // still deleted and detached itself to the workspace root, so sub-pages
-      // and database entries came back orphaned (and entries, filtered out of
-      // the page tree, looked like they hadn't come back at all).
+      // One transactional request, not N concurrent ones — concurrent POSTs raced,
+      // with a child restoring before its parent and detaching to the workspace root.
       const res = await fetch("/api/pages/restore", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

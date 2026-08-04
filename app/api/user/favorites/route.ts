@@ -15,17 +15,8 @@ export async function GET(req: Request) {
       return apiError(400, "workspaceId is required");
     }
 
-    // Join the page so each favorite carries its title/icon/shortId. Favorited
-    // pages that aren't in the sidebar's page tree — database entries
-    // (kind = "entry"), etc. — otherwise have no metadata on the client and
-    // render as "Untitled" with a broken link. LEFT JOIN so a favorite whose
-    // page was hard-deleted still returns its row (with null metadata).
-    // Trashed (soft-deleted) pages are excluded — their favorite rows are
-    // removed when the page is trashed (see DELETE /api/pages/[id]), but the
-    // `pages.isDeleted = false` check here is belt-and-suspenders against any
-    // that predate that cleanup. `isNull(pages.id)` keeps the LEFT JOIN's
-    // hard-deleted-orphan case above from being filtered out too — those rows
-    // have no page to check isDeleted on.
+    // LEFT JOIN so a hard-deleted favorite's page still returns a row (null metadata);
+    // isDeleted filter is belt-and-suspenders since trashing already removes the favorite row.
     const rows = await db
       .select({
         id:         userFavorites.id,

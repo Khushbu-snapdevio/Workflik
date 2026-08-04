@@ -121,12 +121,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     orderIndex:   Number(maxIdx),
   }).returning();
 
-  // Two-way relation: mirror a back-relation property onto the related
-  // database, named after THIS database (matches Notion: relating "Tasks" to
-  // "Projects" adds a "Tasks" property back on "Projects"). Back-relations
-  // don't count toward the 50-property cap (see the guard above) and are
-  // excluded from the "add property" pickers — they're managed via the
-  // relation they mirror, not created/edited directly.
+  // Two-way relation: mirror a back-relation property onto the related database (Notion-style). Back-relations are exempt from the property cap and add-property pickers.
   if (relatedPage && body.twoWay) {
     const [{ maxIdx: relMaxIdx }] = await db
       .select({ maxIdx: count(databaseProperties.id) })

@@ -49,15 +49,8 @@ function hasDisplayValue(prop: DbProperty, raw: unknown): boolean {
  }
 }
 
-// Card drag ids are tagged with the column they're rendered in
-// ("card\0<colKey>\0<entryId>") rather than just the raw entry id — required
-// once a Person-grouped board can show the SAME entry in more than one
-// column (multi-assignee), since dnd-kit needs a unique id per draggable
-// instance and onDragEnd needs to know which specific column-instance of a
-// possibly-duplicated card was actually dragged. \0 can't appear in a real
-// uuid/cuid2, so splitting back apart is unambiguous. For every other
-// (single-membership) group type this is a no-op change in behavior — an
-// entry only ever has one tagged id to begin with.
+// Tag drag ids with their column ("card\0<colKey>\0<entryId>") since a Person-grouped board can
+// show the same entry in multiple columns (multi-assignee); \0 can't appear in a real uuid/cuid2.
 function cardSortId(colKey: string, entryId: string): string {
  return `card\0${colKey}\0${entryId}`;
 }
@@ -290,10 +283,7 @@ export function BoardView({
   return { ...col, entries: [...sorted, ...extras] };
  });
 
- // Matches Notion: a card shows only its title by default. The one
- // exception is Status, and only once the user explicitly turns on "Show on
- // card" from Status's own Edit Property panel — every other property stays
- // fully editable via the card's own popup but is never rendered on it.
+ // Matches Notion: a card shows only its title, plus Status if "Show on card" is enabled.
  // Same rule as Calendar/Gallery.
  const cardProps = properties.filter((p) => !!p.config?.groupedByStatus && !!p.config?.showOnCard);
  const draggingEntryId = draggingSortId ? parseCardSortId(draggingSortId)?.entryId ?? null : null;
@@ -353,12 +343,8 @@ export function BoardView({
   setDraggingSortId(null);
   if (!over || active.id === over.id) return;
 
-  // Card ids are tagged with their column ("card\0<colKey>\0<entryId>") — see
-  // cardSortId's comment. This is what makes cross-column drag correct even
-  // when the same entry appears in more than one column (Person, multiple
-  // assignees): the id itself says which column-instance was dragged,
-  // instead of searching for "the" column containing this entry (ambiguous
-  // once an entry can be in several at once).
+  // The column-tagged id (see cardSortId) tells us which column-instance was dragged, since an
+  // entry can appear in more than one column and "the" containing column would be ambiguous.
   const overRaw = String(over.id);
   const activeParsed = parseCardSortId(activeRaw);
   if (!activeParsed) return;
@@ -790,10 +776,8 @@ export function BoardView({
 }
 
 // ── SortableColumn ───────────────────────────────────────────────────────────
-// Whole columns are reorderable via drag, using a distinct "colhandle-" id prefix so
-// it never collides with the existing "col-<key>" empty-column drop target. Only the
-// header is the drag handle (passed via render prop) — not the whole column, so
-// dragging a card inside never gets mistaken for dragging the column itself.
+// Uses a distinct "colhandle-" id prefix so column drag never collides with the "col-<key>"
+// drop target; only the header (render prop) is the drag handle, not the whole column.
 
 function SortableColumn({
  colKey, draggable, isDragging, isCollapsed, children,
@@ -917,12 +901,8 @@ function CardShell({ entry, cardProps, properties, valueMap, databaseId, workspa
   !hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null)
  ) : [];
 
- // entry.commentCount is batch-computed server-side (open, page-level threads
- // only — same definition the entries list badge uses everywhere else),
- // so no per-card fetch is needed here. Re-sync whenever a fresh entries
- // fetch updates it; `onCommentAdded` below still bumps it instantly between
- // fetches so adding a comment via this card's own popover doesn't wait on
- // a refetch to show up.
+ // entry.commentCount is batch-computed server-side, so no per-card fetch is needed; re-sync on
+ // refetch, while `onCommentAdded` bumps it instantly in between.
  useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
 
  useEffect(() => {

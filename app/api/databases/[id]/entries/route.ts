@@ -54,13 +54,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const entryIds = entries.map((e) => e.id);
 
-  // Open (unresolved, undeleted, root-level, page-level — matching the
-  // topbar "Comments" badge's definition of "unresolved") comment count per
-  // entry, shown as a small chat-icon badge next to the entry's name across
-  // table/board/gallery views, Notion-style. Must exclude property-scoped
-  // comments (propertyId IS NOT NULL) — clicking the badge only opens the
-  // page-level thread list, so counting property comments here would show a
-  // number higher than what that popover actually displays.
+  // Unresolved page-level comment count per entry (excludes property-scoped comments, which the badge's popover doesn't show).
   const commentCountRows = await db
     .select({ pageId: comments.pageId, count: sql<number>`count(*)::int` })
     .from(comments)
@@ -93,11 +87,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     valMap.get(v.entryId)!.set(v.propertyId, v.value);
   }
 
-  // Rollup, Created-by, and Formula values are computed here, not stored —
-  // appended to `values` in the same {id, entryId, propertyId, value} shape
-  // as a real row, so the client builds its valueMap exactly the same way
-  // regardless of whether a value came from the table or was just derived.
-  // Also folded into `valMap` itself so filters/sorts below already see them.
+  // Computed (rollup/created-by/formula) values are appended in the same shape as real rows, and folded into valMap so filters/sorts see them too.
   const computedValues = await computeDerivedValues(properties, entries, valMap);
   const allValues = [...values, ...computedValues.map((cv) => ({ id: `computed:${cv.propertyId}:${cv.entryId}`, entryId: cv.entryId, propertyId: cv.propertyId, value: cv.value, createdAt: new Date(0), updatedAt: new Date(0) }))];
 
@@ -192,13 +182,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const valuesToInsert = [];
     for (const prop of props) {
       let rawDefault = body.defaultValues?.[prop.id] ?? prop.defaultValue;
-      // Status-style (grouped) select/multi-select properties have no
-      // dedicated "default option" setting anywhere in the UI — fall back
-      // to the first option in the "To-do" group, matching a fresh task's
-      // real starting state ("Not started"). Scoped to grouped properties
-      // only — an ordinary Select/Multi-select (e.g. "Channel") shouldn't
-      // get a value pre-picked just because it happens to be first in the
-      // list; only a genuine Status field has a meaningful "not started yet".
+      // Status-style grouped properties have no explicit default, so fall back to the first "todo"-group option; ordinary Select/Multi-select is left untouched.
       const config = prop.config as { options?: { id: string; group?: string }[]; groupedByStatus?: boolean } | null;
       if (rawDefault == null && config?.groupedByStatus && (prop.type === "select" || prop.type === "status" || prop.type === "multi_select")) {
         const options = config.options ?? [];
@@ -220,11 +204,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return { entry: newEntry, insertedValues: valuesToInsert };
   });
 
-  // Includes every value actually written (explicit defaultValues, a
-  // property's own configured default, AND the grouped-Status fallback) —
-  // callers must use this instead of echoing back just what they themselves
-  // passed, or a server-computed default (like Status → "Not started")
-  // would be saved but invisible in the UI until the next full refetch.
+  // Return every value actually written, not just what the caller passed — otherwise server-computed defaults stay invisible until the next refetch.
   return Response.json({ ...entry, propertyValues: insertedValues }, { status: 201 });
 }
 

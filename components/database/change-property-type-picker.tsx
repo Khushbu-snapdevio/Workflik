@@ -29,22 +29,15 @@ interface ChangePropertyTypePickerProps {
   onUpdateProperty: (patch: Record<string, unknown>) => Promise<void>;
 }
 
-// Converting *to* one of these can't reinterpret whatever's already stored —
-// relation/person need real references a bare value can't become, and
-// formula/rollup/created_by are computed on every read and never consult
-// property_values at all, so anything already stored would just go
-// unreachable. Mirrors the server's own destructiveTypes in
-// app/api/databases/[id]/properties/[propId]/route.ts — confirming here
-// first (rather than round-tripping to find out) means the dialog can name
-// the property up front instead of reacting to a 400.
+// Converting to one of these types makes existing stored values unreachable (relation/person need
+// real references; formula/rollup/created_by are computed, never read from property_values).
+// Mirrors the server's destructiveTypes in .../properties/[propId]/route.ts, checked client-side
+// first so the dialog can name the property instead of reacting to a 400.
 const DESTRUCTIVE_TARGET_TYPES = new Set(["relation", "person", "formula", "rollup", "created_by"]);
 
-// Reuses the exact type list + sub-picker pattern table-view.tsx's
-// AddPropertyMenu uses for creating a new property — this is the same
-// picker, aimed at PATCHing an existing property's type instead of adding a
-// new one. Kept as its own component (rather than exported from table-view,
-// which doesn't export AddPropertyMenu) since "change type" needs the
-// destructive-confirm step creation never has to worry about.
+// Same type list + sub-picker pattern as table-view.tsx's AddPropertyMenu, but PATCHes an
+// existing property instead of creating one — kept separate since "change type" needs a
+// destructive-confirm step creation never does.
 export function ChangePropertyTypePicker({
   rect, property, properties, workspaceId, onBack, onClose, onChanged, onUpdateProperty,
 }: ChangePropertyTypePickerProps) {

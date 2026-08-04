@@ -63,7 +63,7 @@ export default function TermsPage() {
           </Link>
           <Link
             href="/auth/login"
-            className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="rounded-sm border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             Sign in
           </Link>
@@ -81,7 +81,7 @@ export default function TermsPage() {
           <p className="mt-2 text-sm text-muted-foreground">Last updated: {LAST_UPDATED}</p>
 
           {/* Intro card */}
-          <div className="mt-8 rounded-[var(--radius-lg)] border border-border bg-card px-6 py-5">
+          <div className="mt-8 rounded-lg border border-border bg-card px-6 py-5">
             <p className="text-base leading-7 text-muted-foreground">
               By accessing or using {PRODUCT_NAME}, you agree to be bound by these Terms of Service.
               Please read them carefully before using our platform.
@@ -89,7 +89,7 @@ export default function TermsPage() {
           </div>
 
           {/* Self-hosted notice */}
-          <div className="mt-4 rounded-[var(--radius-lg)] border border-warning/30 bg-warning/5 px-6 py-4">
+          <div className="mt-4 rounded-lg border border-warning/30 bg-warning/5 px-6 py-4">
             <p className="text-sm leading-6 text-muted-foreground">
               <strong className="text-foreground">Note for instance operators:</strong> {PRODUCT_NAME} is
               self-hosted software — the organization or individual running this instance, not the {PRODUCT_NAME}
@@ -104,11 +104,11 @@ export default function TermsPage() {
           {SECTIONS.map((section, i) => (
             <div
               key={section.title}
-              className="group rounded-[var(--radius-lg)] border border-border bg-card px-6 py-5 transition-colors hover:border-border"
+              className="group rounded-lg border border-border bg-card px-6 py-5 transition-colors hover:border-border"
             >
               <div className="flex items-start gap-4">
                 {/* Number badge */}
-                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10 text-xs font-bold text-primary">
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-xs font-bold text-primary">
                   {i + 1}
                 </span>
                 <div className="min-w-0">
@@ -124,7 +124,7 @@ export default function TermsPage() {
         <div className="mt-14 flex items-center justify-center border-t border-border pt-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3.5">
               <path d="M10 12L6 8l4-4"/>

@@ -21,7 +21,7 @@ export function WrongAccountError({
   <main className="grid min-h-screen place-items-center bg-page px-4">
    <div className="w-full max-w-md">
     {/* Icon */}
-    <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-warning/10 ring-1 ring-warning/20">
+    <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-lg bg-warning/10 ring-1 ring-warning/20">
      <svg
       className="size-6 text-warning"
       fill="none"
@@ -51,14 +51,14 @@ export function WrongAccountError({
 
     <div className="flex flex-col gap-2.5">
      <button
-      className="inline-flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+      className="inline-flex h-9 w-full items-center justify-center rounded-sm bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
       onClick={handleSwitch}
       type="button"
      >
       Sign out &amp; continue as {invitedEmail}
      </button>
      <Link
-      className="inline-flex h-9 w-full items-center justify-center rounded-[var(--radius-sm)] border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      className="inline-flex h-9 w-full items-center justify-center rounded-sm border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       href="/platform/post-auth"
      >
       Go to your workspace

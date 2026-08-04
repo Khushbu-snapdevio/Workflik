@@ -177,7 +177,7 @@ function InviteError({ message, variant = "warning" }: { message: string; varian
     <main className="grid min-h-screen place-items-center bg-page px-4">
       <div className="w-full max-w-md text-center">
         <div
-          className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-[var(--radius-lg)] ring-1 ${
+          className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-lg ring-1 ${
             variant === "success" ? "bg-primary/10 ring-primary/20" : "bg-warning/10 ring-warning/20"
           }`}
         >

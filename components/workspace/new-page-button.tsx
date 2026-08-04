@@ -15,6 +15,7 @@ interface Props {
   className?: string;
   title?: string;
   onBeforeCreate?: () => void;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 export function NewPageButton({
@@ -26,6 +27,7 @@ export function NewPageButton({
   className,
   title,
   onBeforeCreate,
+  ref,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -56,6 +58,7 @@ export function NewPageButton({
   return (
     <>
       <button
+        ref={ref}
         type="button"
         onClick={handleClick}
         disabled={loading}

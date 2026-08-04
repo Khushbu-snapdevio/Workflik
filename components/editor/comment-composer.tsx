@@ -165,7 +165,7 @@ export function CommentComposer({
       attributes: {
         class: [
           "text-sm text-foreground leading-5 focus:outline-none",
-          "min-h-[24px] max-h-[120px] overflow-y-auto px-3 pt-2.5 pb-1",
+          "min-h-6 max-h-30 overflow-y-auto px-3 pt-2.5 pb-1",
           "[&_p.is-empty:first-child]:before:content-[attr(data-placeholder)]",
           "[&_p.is-empty:first-child]:before:text-muted-foreground",
           "[&_p.is-empty:first-child]:before:pointer-events-none",
@@ -246,7 +246,7 @@ export function CommentComposer({
     : "border-transparent bg-card focus-within:border-border";
 
   return (
-    <div className={`relative rounded-[var(--radius-md)] border transition-colors duration-150 ${containerCls}`}>
+    <div className={`relative rounded-md border transition-colors duration-150 ${containerCls}`}>
       {onCancel && (
         <button
           type="button"
@@ -277,7 +277,7 @@ export function CommentComposer({
       {(attachment || attachLoading) && (
         <div className="px-3 pb-2">
           {attachLoading ? (
-            <div className="flex items-center gap-2 p-2 rounded-[var(--radius-sm)] bg-muted border border-border">
+            <div className="flex items-center gap-2 p-2 rounded-sm bg-muted border border-border">
               <div className="h-3 w-3 rounded-full border-2 border-border border-t-primary animate-spin" />
               <span className="text-xs text-muted-foreground">Loading…</span>
             </div>
@@ -292,19 +292,19 @@ export function CommentComposer({
                   <img
                     src={attachment.preview}
                     alt={attachment.name}
-                    className="max-w-full max-h-[180px] rounded-[var(--radius-sm)] border border-border object-cover"
+                    className="max-w-full max-h-45 rounded-sm border border-border object-cover"
                   />
                 </button>
               ) : (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-sm)] bg-muted border border-border">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-muted border border-border">
                   <Paperclip size={14} className="text-muted-foreground" />
-                  <span className="text-xs text-foreground/70 truncate max-w-[200px]">{attachment.name}</span>
+                  <span className="text-xs text-foreground/70 truncate max-w-50">{attachment.name}</span>
                 </div>
               )}
               <button
                 type="button"
                 onClick={() => setAttachment(null)}
-                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-[var(--radius-sm)] bg-foreground/70 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-sm bg-foreground/70 text-background flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
               >
                 <X size={9} />
               </button>
@@ -327,7 +327,7 @@ export function CommentComposer({
             type="button"
             onMouseEnter={(e) => showTooltip("Attach image or file", e)}
             onMouseLeave={hideTooltip}
-            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
+            className="p-1 rounded-sm text-muted-foreground hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => fileInputRef.current?.click()}
           >
             <Paperclip size={13} />
@@ -337,7 +337,7 @@ export function CommentComposer({
             type="button"
             onMouseEnter={(e) => showTooltip("Mention (@)", e)}
             onMouseLeave={hideTooltip}
-            className="p-1 rounded-[var(--radius-sm)] text-muted-foreground hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
+            className="p-1 rounded-sm text-muted-foreground hover:text-muted-foreground hover:bg-accent transition-colors duration-150"
             onClick={() => {
               editor?.commands.focus("end");
               editor?.commands.insertContent("@");
@@ -353,7 +353,7 @@ export function CommentComposer({
           onMouseLeave={hideTooltip}
           disabled={isEmpty}
           onClick={handleSubmit}
-          className={`p-1 rounded-[var(--radius-sm)] transition-colors duration-150 ${
+          className={`p-1 rounded-sm transition-colors duration-150 ${
             isEmpty
               ? "text-muted-foreground cursor-not-allowed"
               : "text-primary hover:text-primary hover:bg-accent"

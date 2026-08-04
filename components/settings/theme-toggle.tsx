@@ -34,7 +34,7 @@ export function ThemeToggle() {
        native grouping element, so the association survives even where ARIA
        is ignored. The legend is visually hidden because the adjacent settings
        row already labels this control on screen. */
-    <fieldset className="m-0 inline-flex shrink-0 gap-0.5 rounded-[var(--radius-md)] border border-border bg-muted p-0.5">
+    <fieldset className="m-0 inline-flex shrink-0 gap-0.5 rounded-md border border-border bg-muted p-0.5">
       <legend className="sr-only">Colour theme</legend>
       {OPTIONS.map(({ value, label, Icon }) => {
         const selected = mounted && theme === value;
@@ -47,7 +47,7 @@ export function ThemeToggle() {
             aria-label={label}
             aria-pressed={selected}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium",
+              "inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium",
               selected
                 ? "bg-card text-foreground shadow-card"
                 : "text-muted-foreground hover:text-foreground"

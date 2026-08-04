@@ -88,21 +88,21 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
      <div className="flex flex-wrap items-center gap-2">
       <h1 className="text-xl font-bold tracking-tight text-foreground">{user.name ?? "Unnamed"}</h1>
       {isAdmin && (
-       <span className="rounded-[var(--radius-xs)] bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Admin</span>
+       <span className="rounded-xs bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Admin</span>
       )}
       {user.banned && (
-       <span className="rounded-[var(--radius-xs)] bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">Banned</span>
+       <span className="rounded-xs bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">Banned</span>
       )}
      </div>
      <p className="mt-0.5 text-sm text-muted-foreground">{user.email}</p>
      <div className="mt-3 flex flex-wrap items-center gap-2">
-      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
        <strong className="font-bold text-foreground">{totalSessions!.count}</strong> sessions
       </span>
-      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
        <strong className="font-bold text-foreground">{activeSessionsCount!.count}</strong> active
       </span>
-      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
        <strong className="font-bold text-foreground">{memberships.length}</strong> workspaces
       </span>
       <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground-subtle">
@@ -117,7 +117,7 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
     <div className="space-y-4">
 
      {/* Details card */}
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="border-b border-border bg-muted/20 px-5 py-3">
        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account details</h2>
       </div>
@@ -139,7 +139,7 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
      </div>
 
      {/* Admin actions */}
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="border-b border-border bg-muted/20 px-5 py-3">
        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Operator actions</h2>
       </div>
@@ -160,10 +160,10 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
     <div className="space-y-4 lg:col-span-2">
 
      {/* Sessions */}
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border bg-muted/20 px-5 py-3">
        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sessions</h2>
-       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{totalSessions!.count}</span>
+       <span className="rounded-xs bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{totalSessions!.count}</span>
       </div>
       {userSessions.length === 0 ? (
        <p className="px-5 py-10 text-center text-xs text-muted-foreground">No sessions found</p>
@@ -179,7 +179,7 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
             <div className="flex items-center gap-1.5">
              <p className="text-xs font-semibold text-foreground">{expired ? "Expired" : "Active"}</p>
              {isImpersonation && (
-              <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">Impersonation</span>
+              <span className="rounded-xs bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">Impersonation</span>
              )}
             </div>
             <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.userAgent?.slice(0, 60) ?? "—"}</p>
@@ -203,10 +203,10 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
      )}
 
      {/* Workspace memberships */}
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border bg-muted/20 px-5 py-3">
        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workspace memberships</h2>
-       <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{memberships.length}</span>
+       <span className="rounded-xs bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{memberships.length}</span>
       </div>
       {memberships.length === 0 ? (
        <p className="px-5 py-10 text-center text-xs text-muted-foreground">No workspace memberships</p>
@@ -217,7 +217,7 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
          return (
           <Link key={m.id} href={`/orbit-admin/orbit/workspaces/${m.workspaceId}`}
            className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-accent">
-           <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary text-xs font-bold text-primary-foreground">
+           <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
             {letter}
            </span>
            <div className="min-w-0 flex-1">
@@ -225,10 +225,10 @@ export default async function UserDetailPage({ params, searchParams }: Props) {
             <p className="text-xs text-muted-foreground">/{m.wsSlug ?? m.workspaceId}</p>
            </div>
            <div className="flex shrink-0 flex-col items-end gap-1.5">
-            <span className={`rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-semibold ${
+            <span className={`rounded-xs px-2 py-0.5 text-xs font-semibold ${
              m.role === "viewer" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
             }`}>{m.role}</span>
-            <span className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-semibold ${
+            <span className={`inline-flex items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-semibold ${
              m.status === "active" ? "bg-success/10 text-success" : m.status === "invited" ? "bg-warning/10 text-warning" : "bg-muted text-muted-foreground"
             }`}>
              <span className={`size-1.5 rounded-full ${

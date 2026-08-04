@@ -1,5 +1,8 @@
 "use client"
 
+// No consumers anywhere in the app (verified via grep, 2026-08-04 migration audit) —
+// real search UI (search-dialog.tsx) is hand-rolled; kept as a reasonable starting point for a future command palette.
+
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 
@@ -15,7 +18,7 @@ import {
   InputGroup,
   InputGroupAddon,
 } from "@/components/ui/input-group"
-import { MagnifyingGlassIcon, CheckIcon } from "@phosphor-icons/react"
+import { Search, Check } from "lucide-react"
 
 function Command({
   className,
@@ -78,7 +81,7 @@ function CommandInput({
           {...props}
         />
         <InputGroupAddon>
-          <MagnifyingGlassIcon className="size-3.5 shrink-0 opacity-50" />
+          <Search className="size-3.5 shrink-0 opacity-50" />
         </InputGroupAddon>
       </InputGroup>
     </div>
@@ -158,7 +161,7 @@ function CommandItem({
       {...props}
     >
       {children}
-      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+      <Check className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
     </CommandPrimitive.Item>
   )
 }

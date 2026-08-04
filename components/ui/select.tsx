@@ -84,7 +84,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-[var(--radius-md)] border border-input bg-background px-3 text-sm whitespace-nowrap",
+        "flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm whitespace-nowrap",
         "text-foreground transition-colors",
         "hover:bg-accent/40 hover:border-border",
         "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/60",
@@ -119,11 +119,15 @@ function SelectContent({
       anchor={{ to: anchor, gap: 4 }}
       transition
       className={cn(
-        // z-[600] — this app has several elevated stacking tiers (sidebar,
+        // z-600 — this app has several elevated stacking tiers (sidebar,
         // modals); a Select can be triggered from inside any of them, so its
         // portal-rendered dropdown needs to sit above all of them.
-        "z-[600] min-w-32 overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1 text-popover-foreground",
-        "shadow-[var(--shadow-float)]",
+        // min-w-(--button-width) — Headless UI mirrors the trigger's
+        // measured width into this custom property; floor the panel to that
+        // width so it never renders narrower than its own trigger (still
+        // free to grow wider for long option labels).
+        "z-600 min-w-(--button-width) overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground",
+        "shadow-float",
         "transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95",
         className
       )}
@@ -133,6 +137,10 @@ function SelectContent({
   )
 }
 
+type SelectItemSlot = Parameters<
+  Extract<React.ComponentProps<typeof ListboxOption>["children"], (bag: never) => unknown>
+>[0]
+
 function SelectItem({
   className,
   children,
@@ -141,22 +149,32 @@ function SelectItem({
   return (
     <ListboxOption
       data-slot="select-item"
-      className={cn(
-        "relative flex w-full cursor-default scroll-my-1 items-center gap-2 rounded-[var(--radius-sm)] py-2 pl-3 pr-8 text-sm outline-none",
-        "text-foreground transition-colors",
-        "data-focus:bg-primary/10 data-focus:text-primary",
-        "data-selected:font-medium",
-        "data-disabled:pointer-events-none data-disabled:opacity-50",
-        "[&_svg]:pointer-events-none [&_svg]:shrink-0",
-        className
-      )}
+      className={(bag: SelectItemSlot) => {
+        const custom = typeof className === "function" ? className(bag) : className
+        // selectedOption is true when Headless UI mirrors this option into the closed
+        // trigger via SelectValue — the list-item chrome (padding/pr-8) can overflow a narrow trigger, so `contents` makes the wrapper transparent and only the plain label renders there.
+        if (bag.selectedOption) return cn("contents", custom)
+        return cn(
+          "relative flex w-full cursor-default scroll-my-1 items-center gap-2 rounded-sm py-2 pl-3 pr-8 text-sm outline-none",
+          "text-foreground transition-colors",
+          "data-focus:bg-primary/10 data-focus:text-primary",
+          "data-selected:font-medium",
+          "data-disabled:pointer-events-none data-disabled:opacity-50",
+          "[&_svg]:pointer-events-none [&_svg]:shrink-0",
+          custom
+        )
+      }}
       {...props}
     >
-      {({ selected }) => (
+      {({ selected, selectedOption }) => (
         <>
-          <span className="absolute right-2.5 flex size-4 items-center justify-center">
-            {selected && <Check className="size-3.5 text-primary" />}
-          </span>
+          {/* Same reasoning as the className branch above — the checkmark
+              belongs to the open list, not the mirrored trigger copy. */}
+          {!selectedOption && (
+            <span className="absolute right-2.5 flex size-4 items-center justify-center">
+              {selected && <Check className="size-3.5 text-primary" />}
+            </span>
+          )}
           {children}
         </>
       )}

@@ -43,17 +43,17 @@ function MediaPicker({
   };
 
   return (
-    <div className="my-2 space-y-3 rounded-[var(--radius-md)] border border-border bg-muted/30 p-4">
+    <div className="my-2 space-y-3 rounded-md border border-border bg-muted/30 p-4">
       <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground">
         <span className="text-xl leading-none">{icon}</span>
         {label}
       </p>
 
       <div className="flex gap-2">
-        <input
+        <Input
           // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
           autoFocus
-          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground-subtle"
+          className="flex-1"
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && url.trim()) {
@@ -68,15 +68,14 @@ function MediaPicker({
           type="url"
           value={url}
         />
-        <button
-          className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+        <Button
           disabled={!url.trim()}
           onClick={() => url.trim() && onConfirm(url.trim())}
           onMouseDown={(e) => e.preventDefault()}
           type="button"
         >
           Embed ↵
-        </button>
+        </Button>
       </div>
 
       <div className="flex items-center gap-3">
@@ -86,23 +85,24 @@ function MediaPicker({
       </div>
 
       <div className="flex gap-2">
-        <button
-          className="flex-1 rounded-[var(--radius-sm)] border border-dashed border-border py-2 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+        <Button
+          variant="outline"
+          className="flex-1 border-dashed"
           onClick={() => fileRef.current?.click()}
           onMouseDown={(e) => e.preventDefault()}
           type="button"
         >
           Choose file from device
-        </button>
+        </Button>
         {onCancel && (
-          <button
-            className="rounded-[var(--radius-sm)] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          <Button
+            variant="ghost"
             onClick={onCancel}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
           >
             Cancel
-          </button>
+          </Button>
         )}
       </div>
 
@@ -132,7 +132,7 @@ function MediaActions({
     <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
       {onAddCaption && (
         <button
-          className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
+          className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
           onClick={onAddCaption}
           onMouseDown={(e) => e.preventDefault()}
           type="button"
@@ -141,7 +141,7 @@ function MediaActions({
         </button>
       )}
       <button
-        className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
+        className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
         onClick={onDelete}
         onMouseDown={(e) => e.preventDefault()}
         type="button"
@@ -149,7 +149,7 @@ function MediaActions({
         Delete
       </button>
       <button
-        className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
+        className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
         onClick={onChangeDirect}
         onMouseDown={(e) => e.preventDefault()}
         type="button"
@@ -220,7 +220,7 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-border bg-muted/20">
+        <div className="relative overflow-hidden rounded-md border border-border bg-muted/20">
           <img
             alt={captionDraft || "Image"}
             className="block w-full cursor-zoom-in"
@@ -322,7 +322,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-border bg-black">
+        <div className="relative overflow-hidden rounded-md border border-border bg-black">
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <video
             className="block w-full"
@@ -417,7 +417,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-2">
-        <div className="relative flex items-center gap-3 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-4 py-3">
+        <div className="relative flex items-center gap-3 rounded-sm border border-border bg-muted/30 px-4 py-3">
           <span className="text-2xl">🎵</span>
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <audio
@@ -531,7 +531,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="group my-2 flex items-center justify-between rounded-[var(--radius-sm)] border border-border bg-muted/30 px-4 py-3">
+      <div className="group my-2 flex items-center justify-between rounded-sm border border-border bg-muted/30 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-2xl">📎</span>
           <div className="min-w-0">
@@ -682,7 +682,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       return (
         <NodeViewWrapper contentEditable={false}>
           <button
-            className="my-1 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
+            className="my-1 flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
             onClick={() => setExpanded(true)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -697,7 +697,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       <NodeViewWrapper contentEditable={false}>
         <div className="relative my-1 flex flex-col items-center gap-2" ref={popupRef}>
           <button
-            className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
+            className="flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
             onClick={() => setExpanded(false)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -705,7 +705,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
             <span className="text-lg leading-none">📕</span>
             Embed a PDF
           </button>
-          <div className="w-full max-w-sm rounded-[var(--radius-md)] border border-border bg-popover p-4">
+          <div className="w-full max-w-sm rounded-md border border-border bg-popover p-4">
             <Tabs defaultValue="upload">
               <TabsList className="w-full" variant="line">
                 <TabsTrigger value="upload">Upload</TabsTrigger>
@@ -767,7 +767,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-[var(--radius-md)] border border-border bg-muted/20">
+        <div className="relative overflow-hidden rounded-md border border-border bg-muted/20">
           <iframe
             className="block w-full"
             src={src}

@@ -280,7 +280,7 @@ export function TemplatesPageClient({
       {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
       <div className="flex h-11 shrink-0 items-center border-b border-border bg-card px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
-          <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-muted-foreground">
+          <span className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-muted-foreground">
             <LayoutGrid className="shrink-0" size={13} />
             <span className="font-medium text-foreground">Templates</span>
           </span>
@@ -297,7 +297,7 @@ export function TemplatesPageClient({
             sits to the left on @md+ (container-query, since this page sits
             next to the app's own resizable sidebar — a viewport breakpoint
             can't tell how much width that leaves us, only a container one can) ── */}
-        <aside className="flex w-full shrink-0 flex-col border-b border-border bg-sidebar @[768px]:w-[260px] @[768px]:border-b-0 @[768px]:border-r">
+        <aside className="flex w-full shrink-0 flex-col border-b border-border bg-sidebar @[768px]:w-65 @[768px]:border-b-0 @[768px]:border-r">
           {/* Header — shows active category count */}
           <div className="border-b border-border px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">
@@ -323,7 +323,7 @@ export function TemplatesPageClient({
               const allActive = activeTab === "all";
               return (
                 <button
-                  className={`group mb-3 flex w-full items-center gap-3 rounded-[var(--radius-lg)] border px-3.5 py-3 text-left transition-all duration-150 ${
+                  className={`group mb-3 flex w-full items-center gap-3 rounded-lg border px-3.5 py-3 text-left transition-all duration-150 ${
                     allActive
                       ? "border-primary/25 bg-primary/10 text-primary"
                       : "border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
@@ -332,7 +332,7 @@ export function TemplatesPageClient({
                   type="button"
                 >
                   <span
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${
+                    className={`flex size-8 shrink-0 items-center justify-center rounded-md transition-colors duration-150 ${
                       allActive
                         ? "bg-primary/15 text-primary"
                         : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
@@ -346,7 +346,7 @@ export function TemplatesPageClient({
                     All templates
                   </span>
                   <span
-                    className={`shrink-0 rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-bold tabular-nums transition-colors duration-150 ${
+                    className={`shrink-0 rounded-sm px-2 py-0.5 text-xs font-bold tabular-nums transition-colors duration-150 ${
                       allActive
                         ? "bg-primary/15 text-primary"
                         : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
@@ -373,7 +373,7 @@ export function TemplatesPageClient({
                 const CatIcon = resolveCategoryIcon(cat.icon, i);
                 return (
                   <button
-                    className={`group flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left transition-all duration-150 ${
+                    className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-all duration-150 ${
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-sidebar-foreground/70 hover:bg-accent hover:text-foreground"
@@ -383,7 +383,7 @@ export function TemplatesPageClient({
                     type="button"
                   >
                     <span
-                      className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${
+                      className={`flex size-6 shrink-0 items-center justify-center rounded-sm transition-colors duration-150 ${
                         isActive
                           ? "bg-primary/15 text-primary"
                           : "bg-muted/70 text-muted-foreground group-hover:bg-accent-foreground/10 group-hover:text-foreground"
@@ -498,7 +498,7 @@ function GalleryView({
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Search bar */}
       <div className="shrink-0 border-b border-border px-4 py-2.5 @[640px]:px-8 @[1024px]:px-20">
-        <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
           <Search className="shrink-0 text-muted-foreground-subtle" size={13} />
           <input
             className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
@@ -511,7 +511,7 @@ function GalleryView({
           {search && (
             <button
               aria-label="Clear search"
-              className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-primary/10 text-primary transition-colors duration-150 hover:bg-primary/20"
+              className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-primary transition-colors duration-150 hover:bg-primary/20"
               onClick={() => onSearch("")}
               type="button"
             >
@@ -540,7 +540,7 @@ function GalleryView({
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">
                     Workflik templates
                   </p>
-                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                  <span className="rounded-xs bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
                     {filteredBuiltIn.length}
                   </span>
                 </div>
@@ -565,12 +565,12 @@ function GalleryView({
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">
                     Workspace templates
                   </p>
-                  <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
+                  <span className="rounded-xs bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
                     {filteredWorkspace.length}
                   </span>
                 </div>
                 {deleteError && (
-                  <p className="mb-3 rounded-[var(--radius-sm)] bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  <p className="mb-3 rounded-sm bg-destructive/10 px-3 py-2 text-xs text-destructive">
                     {deleteError}
                   </p>
                 )}
@@ -637,7 +637,7 @@ function TemplateCard({
   return (
     <>
       <div
-        className={`group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card text-left transition-all duration-200 ${
+        className={`group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card text-left transition-all duration-200 ${
           disabled
             ? "cursor-not-allowed opacity-60"
             : "cursor-pointer hover:-translate-y-0.5 hover:border-primary/30"
@@ -654,7 +654,7 @@ function TemplateCard({
             <p className="truncate text-sm font-semibold text-foreground">
               {template.name}
             </p>
-            <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-xs bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
               <CatIcon size={9} />
             </span>
           </div>
@@ -668,7 +668,7 @@ function TemplateCard({
               preview as "View Demo", clicking "Use Template" skips it. */}
           <div className="mt-2.5 flex items-center gap-1.5">
             <button
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-sm bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={disabled}
               onClick={(e) => {
                 e.stopPropagation();
@@ -686,7 +686,7 @@ function TemplateCard({
               )}
             </button>
             <button
-              className="flex flex-1 items-center justify-center rounded-[var(--radius-sm)] border border-primary/30 bg-card py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex flex-1 items-center justify-center rounded-sm border border-primary/30 bg-card py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={disabled}
               onClick={(e) => {
                 e.stopPropagation();
@@ -702,7 +702,7 @@ function TemplateCard({
         {/* Delete button — only for workspace templates */}
         {onDelete && (
           <button
-            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-background/80 text-muted-foreground opacity-0 backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-sm bg-background/80 text-muted-foreground opacity-0 backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               setDeleteOpen(true);
@@ -720,15 +720,15 @@ function TemplateCard({
       {deleteOpen &&
         typeof document !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+          <div className="fixed inset-0 z-10000 flex items-center justify-center">
             <div
               className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
               onClick={() => setDeleteOpen(false)}
             />
-            <div className="relative w-[calc(100vw-32px)] max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-background p-6">
+            <div className="relative w-[calc(100vw-32px)] max-w-100 rounded-lg border border-border bg-background p-6">
               {/* Close */}
               <button
-                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                 onClick={() => setDeleteOpen(false)}
                 type="button"
               >
@@ -737,7 +737,7 @@ function TemplateCard({
 
               {/* Icon + title */}
               <div className="mb-4 flex items-start gap-3 pr-8">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10">
                   <AlertTriangle className="text-destructive" size={20} />
                 </div>
                 <div>
@@ -757,7 +757,7 @@ function TemplateCard({
               {/* Actions */}
               <div className="flex items-center justify-end gap-2">
                 <button
-                  className="rounded-[var(--radius-sm)] border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                  className="rounded-sm border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
                   disabled={deleting}
                   onClick={() => setDeleteOpen(false)}
                   type="button"
@@ -765,7 +765,7 @@ function TemplateCard({
                   Cancel
                 </button>
                 <button
-                  className="rounded-[var(--radius-sm)] bg-destructive px-4 py-1.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                  className="rounded-sm bg-destructive px-4 py-1.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
                   disabled={deleting}
                   onClick={handleDelete}
                   type="button"
@@ -843,12 +843,12 @@ function TemplatePreviewModal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-600 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
         onClick={onClose}
       />
-      <div className="relative flex h-[min(640px,88vh)] w-[min(880px,92vw)] overflow-hidden rounded-[var(--radius-xl)] border border-border bg-background shadow-2xl">
+      <div className="relative flex h-[min(640px,88vh)] w-[min(880px,92vw)] overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
         <button
           className="absolute right-3 top-3 z-20 flex size-8 items-center justify-center rounded-full border border-border bg-background/90 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
           onClick={onClose}
@@ -869,9 +869,9 @@ function TemplatePreviewModal({
           )}
 
         {/* ── Left info panel ── */}
-        <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-border bg-background">
+        <div className="flex w-75 shrink-0 flex-col overflow-hidden border-r border-border bg-background">
           <div className="shrink-0 border-b border-border bg-muted/20 px-5 py-6">
-            <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] border border-border bg-card">
+            <div className="mb-4 flex size-14 items-center justify-center rounded-xl border border-border bg-card">
               {template.pageSnapshot.icon ? (
                 <PageIcon icon={template.pageSnapshot.icon} size={30} />
               ) : (
@@ -883,7 +883,7 @@ function TemplatePreviewModal({
             </h2>
             {catLabel && (
               <div className="mt-2">
-                <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-2xs font-semibold text-muted-foreground">
                   <CatIcon size={9} />
                   {catLabel}
                 </span>
@@ -905,10 +905,10 @@ function TemplatePreviewModal({
               />
             ) : blocks.length > 0 ? (
               <div>
-                <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+                <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
                   Includes
                 </p>
-                <div className="space-y-0.5 rounded-[var(--radius-xl)] border border-border bg-muted/20 p-3">
+                <div className="space-y-0.5 rounded-xl border border-border bg-muted/20 p-3">
                   {blocks.slice(0, 12).map((b, i) => (
                     <PreviewBlockRow block={b} key={i} />
                   ))}
@@ -924,7 +924,7 @@ function TemplatePreviewModal({
 
           <div className="shrink-0 border-t border-border bg-background px-5 py-4">
             <button
-              className="flex w-full items-center justify-center gap-2 rounded-[var(--radius-xl)] bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
               disabled={applying}
               onClick={onApply}
               type="button"
@@ -940,7 +940,7 @@ function TemplatePreviewModal({
                 </>
               )}
             </button>
-            <p className="mt-1.5 text-center text-[10px] text-muted-foreground-subtle">
+            <p className="mt-1.5 text-center text-2xs text-muted-foreground-subtle">
               Creates an independent copy
             </p>
           </div>
@@ -949,15 +949,15 @@ function TemplatePreviewModal({
         {/* ── Right preview panel — looks like the real thing ── */}
         <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
           <div className="flex flex-1 flex-col overflow-hidden p-4">
-            <div className="flex flex-1 flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-background">
-              <div className="relative flex h-[70px] shrink-0 items-end bg-gradient-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
+            <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background">
+              <div className="relative flex h-17.5 shrink-0 items-end bg-linear-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
                 {template.pageSnapshot.icon ? (
-                  <span className="translate-y-[20px]">
+                  <span className="translate-y-5">
                     <PageIcon icon={template.pageSnapshot.icon} size={36} />
                   </span>
                 ) : (
                   <CatIcon
-                    className="translate-y-[20px] text-muted-foreground-subtle"
+                    className="translate-y-5 text-muted-foreground-subtle"
                     size={30}
                   />
                 )}
@@ -1067,7 +1067,7 @@ function PreviewDocBlock({
           }`}
         >
           {checked && (
-            <span className="mb-px h-[5px] w-[3px] rotate-45 border-b-2 border-r-2 border-primary-foreground" />
+            <span className="mb-px h-1.25 w-0.75 rotate-45 border-b-2 border-r-2 border-primary-foreground" />
           )}
         </span>
         <span
@@ -1086,7 +1086,7 @@ function PreviewDocBlock({
   if (block.type === "toggle") {
     return (
       <div className="flex items-center gap-2 text-xs leading-relaxed text-foreground">
-        <span className="size-0 shrink-0 border-y-[4px] border-l-[6px] border-y-transparent border-l-primary/50" />
+        <span className="size-0 shrink-0 border-y-4 border-l-[6px] border-y-transparent border-l-primary/50" />
         {text || "—"}
       </div>
     );
@@ -1114,7 +1114,7 @@ function PreviewDocBlock({
 
   if (block.type === "quote") {
     return (
-      <p className="rounded-r-[var(--radius-sm)] border-l-2 border-primary bg-primary/5 py-1.5 pl-3 text-xs italic text-foreground">
+      <p className="rounded-r-sm border-l-2 border-primary bg-primary/5 py-1.5 pl-3 text-xs italic text-foreground">
         {text || <span className="opacity-30">—</span>}
       </p>
     );
@@ -1122,7 +1122,7 @@ function PreviewDocBlock({
 
   if (block.type === "callout") {
     return (
-      <div className="rounded-[var(--radius-md)] border border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs leading-relaxed text-foreground">
+      <div className="rounded-md border border-primary/20 bg-primary/6 px-3 py-2 text-xs leading-relaxed text-foreground">
         {text || <span className="opacity-30">—</span>}
       </div>
     );
@@ -1130,7 +1130,7 @@ function PreviewDocBlock({
 
   if (block.type === "code") {
     return (
-      <pre className="overflow-x-auto rounded-[var(--radius-md)] border border-border bg-muted px-3 py-2 font-mono text-xs text-foreground">
+      <pre className="overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 font-mono text-xs text-foreground">
         {text || "—"}
       </pre>
     );
@@ -1161,7 +1161,7 @@ function PreviewDbSchemaList({
   return (
     <div className="mt-5 space-y-5">
       <div>
-        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -1170,7 +1170,7 @@ function PreviewDbSchemaList({
               type="button"
               onClick={() => onSelectView(v.name)}
               className={[
-                "inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border px-2.5 py-1 text-xs font-medium transition-colors duration-150",
+                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors duration-150",
                 v.name === activeViewName
                   ? "border-primary/20 bg-primary/10 text-primary"
                   : "border-border bg-muted/30 text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -1184,10 +1184,10 @@ function PreviewDbSchemaList({
         </div>
       </div>
       <div>
-        <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
           Properties ({schema.properties.length})
         </p>
-        <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
           {schema.properties.map((p, i) => (
             <div
               className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
@@ -1209,7 +1209,7 @@ function PreviewDbSchemaList({
                     const clr = OPTION_COLORS[o.color] ?? DEFAULT_OPT;
                     return (
                       <span
-                        className={`max-w-[64px] truncate rounded px-1.5 py-0.5 text-[10px] font-medium ${clr.badge}`}
+                        className={`max-w-16 truncate rounded px-1.5 py-0.5 text-2xs font-medium ${clr.badge}`}
                         key={o.name}
                       >
                         {o.name}
@@ -1217,7 +1217,7 @@ function PreviewDbSchemaList({
                     );
                   })}
                   {p.options.length > 2 && (
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-2xs text-muted-foreground">
                       +{p.options.length - 2}
                     </span>
                   )}
@@ -1247,7 +1247,7 @@ function PreviewViewTabs({
           type="button"
           onClick={() => onSelect(v.name)}
           className={[
-            "shrink-0 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium transition-colors duration-150",
+            "shrink-0 rounded-xs px-2 py-0.5 text-xs font-medium transition-colors duration-150",
             v.name === activeName
               ? "bg-accent text-foreground font-semibold"
               : "text-muted-foreground-subtle hover:bg-accent/50 hover:text-foreground",
@@ -1286,7 +1286,7 @@ function PreviewDbTable({
   return (
     <div className="mt-3">
       <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="overflow-hidden rounded-[var(--radius-sm)] border border-border">
+      <div className="overflow-hidden rounded-sm border border-border">
         <div className="flex border-b border-border bg-muted/30">
           {visibleProps.map((p) => (
             <div
@@ -1315,7 +1315,7 @@ function PreviewDbTable({
                 >
                   {opt ? (
                     <span
-                      className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}
+                      className={`rounded-xs px-1.5 py-0.5 text-[9.5px] font-medium ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}
                     >
                       {val}
                     </span>
@@ -1364,7 +1364,7 @@ function PreviewDbBoard({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-[var(--radius-lg)] border border-border bg-background">
+      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-background">
         {columns.map((col, ci) => {
           const colRows = groupByProp
             ? rows.filter((r) => r[groupByProp.name] === col.name)
@@ -1372,7 +1372,7 @@ function PreviewDbBoard({
           const clr = OPTION_COLORS[col.color] ?? DEFAULT_OPT;
           return (
             <div
-              className={`flex min-w-[148px] flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border" : ""}`}
+              className={`flex min-w-37 flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border" : ""}`}
               key={col.name}
             >
               <div className="flex shrink-0 items-center gap-1.5 border-b border-border bg-muted/30 px-3 py-2.5">
@@ -1381,7 +1381,7 @@ function PreviewDbBoard({
                   {col.name}
                 </span>
                 {colRows.length > 0 && (
-                  <span className="tabular-nums text-[10px] text-muted-foreground-subtle">
+                  <span className="tabular-nums text-2xs text-muted-foreground-subtle">
                     {colRows.length}
                   </span>
                 )}
@@ -1397,7 +1397,7 @@ function PreviewDbBoard({
                   );
                   return (
                     <div
-                      className="shrink-0 rounded-[var(--radius-md)] border border-border bg-card p-2.5"
+                      className="shrink-0 rounded-md border border-border bg-card p-2.5"
                       key={i}
                     >
                       <p className="text-[11px] font-medium leading-snug text-foreground">
@@ -1405,7 +1405,7 @@ function PreviewDbBoard({
                       </p>
                       {tagOpt && (
                         <span
-                          className={`mt-1.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}
+                          className={`mt-1.5 inline-flex rounded px-1.5 py-0.5 text-2xs font-medium ${(OPTION_COLORS[tagOpt.color] ?? DEFAULT_OPT).badge}`}
                         >
                           {tagVal}
                         </span>
@@ -1415,7 +1415,7 @@ function PreviewDbBoard({
                 })}
               </div>
               <div className="shrink-0 border-t border-border px-3 py-2">
-                <span className="text-[10px] text-muted-foreground-subtle">
+                <span className="text-2xs text-muted-foreground-subtle">
                   + New
                 </span>
               </div>
@@ -1439,7 +1439,7 @@ function PreviewDbCalendar({
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
       <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border">
         <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/20 px-3 py-1.5">
           <span className="text-xs font-semibold text-foreground/70">
             June 2026
@@ -1523,18 +1523,18 @@ function TemplateCardThumbnail({ template, categories }: { template: Template; c
   const CatIcon = iconForCategory(categories, template.categoryId);
 
   return (
-    <div className="relative h-36 overflow-hidden border-b border-border bg-gradient-to-b from-muted/30 to-muted/10">
+    <div className="relative h-36 overflow-hidden border-b border-border bg-linear-to-b from-muted/30 to-muted/10">
       <div className="flex h-full flex-col justify-center p-3">
         {/* Icon indicator row */}
         <div className="mb-2.5 flex items-center gap-1.5">
           {icon ? (
             <PageIcon icon={icon} size={14} />
           ) : (
-            <div className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted">
+            <div className="flex size-4 shrink-0 items-center justify-center rounded-xs bg-muted">
               <CatIcon className="text-muted-foreground" size={9} />
             </div>
           )}
-          <div className="h-1.5 w-20 rounded-[var(--radius-xs)] bg-foreground/15" />
+          <div className="h-1.5 w-20 rounded-xs bg-foreground/15" />
         </div>
 
         {/* Content preview */}
@@ -1580,7 +1580,7 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
   const rows = schema.sample_rows ?? [];
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-xs)] border border-border text-[8px] leading-none">
+    <div className="overflow-hidden rounded-xs border border-border text-[8px] leading-none">
       {/* Header row */}
       <div className="flex border-b border-border bg-muted/50">
         {props.map((p, i) => (
@@ -1610,13 +1610,13 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
                 >
                   {opt ? (
                     <span
-                      className={`inline-block max-w-full truncate rounded-[var(--radius-xs)] px-1 leading-[10px] ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}
+                      className={`inline-block max-w-full truncate rounded-xs px-1 leading-2.5 ${(OPTION_COLORS[opt.color] ?? DEFAULT_OPT).badge}`}
                     >
                       {String(val).slice(0, 6)}
                     </span>
                   ) : val === undefined ? (
                     <div
-                      className={`${MINI_WIDTHS[(ri * 4 + pi) % MINI_WIDTHS.length]} h-0.5 rounded-[var(--radius-xs)] bg-muted-foreground/15`}
+                      className={`${MINI_WIDTHS[(ri * 4 + pi) % MINI_WIDTHS.length]} h-0.5 rounded-xs bg-muted-foreground/15`}
                     />
                   ) : (
                     <span className="block truncate text-foreground/50">
@@ -1658,7 +1658,7 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
         return (
           <div className="flex-1" key={ci}>
             <div
-              className={`mb-1.5 inline-flex items-center gap-0.5 rounded-[var(--radius-xs)] px-1.5 py-px text-[7px] font-semibold ${clr.badge}`}
+              className={`mb-1.5 inline-flex items-center gap-0.5 rounded-xs px-1.5 py-px text-[7px] font-semibold ${clr.badge}`}
             >
               <div className={`size-1 rounded-full ${clr.dot}`} />
               <span className="truncate">{col.name.slice(0, 8)}</span>
@@ -1670,7 +1670,7 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
                   : undefined;
                 return (
                   <div
-                    className="space-y-0.5 rounded-[var(--radius-xs)] border border-border bg-card p-1.5"
+                    className="space-y-0.5 rounded-xs border border-border bg-card p-1.5"
                     key={ki}
                   >
                     {title !== undefined ? (
@@ -1679,8 +1679,8 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
                       </div>
                     ) : (
                       <>
-                        <div className="h-1 w-4/5 rounded-[var(--radius-xs)] bg-foreground/18" />
-                        <div className="h-1 w-3/5 rounded-[var(--radius-xs)] bg-muted-foreground/15" />
+                        <div className="h-1 w-4/5 rounded-xs bg-foreground/18" />
+                        <div className="h-1 w-3/5 rounded-xs bg-muted-foreground/15" />
                       </>
                     )}
                   </div>
@@ -1697,7 +1697,7 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
 function MiniCalContent() {
   const events = new Set([2, 7, 12, 18, 20]);
   return (
-    <div className="overflow-hidden rounded-[var(--radius-xs)] border border-border">
+    <div className="overflow-hidden rounded-xs border border-border">
       <div className="grid grid-cols-7 border-b border-border bg-muted/30">
         {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
           <div className="py-0.5 text-center" key={i}>
@@ -1743,7 +1743,7 @@ function GallerySkeleton() {
     <div className="grid grid-cols-1 gap-4 @[480px]:grid-cols-2 @[1024px]:grid-cols-3 @[1280px]:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div
-          className="overflow-hidden rounded-[var(--radius-md)] border border-border"
+          className="overflow-hidden rounded-md border border-border"
           key={i}
         >
           <div className="h-40 animate-pulse bg-muted/60" />
@@ -1777,7 +1777,7 @@ function EmptyState({
   if (hasActiveFilter || totalBuiltInCount > 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
+        <div className="flex size-12 items-center justify-center rounded-lg bg-muted/50">
           <LayoutGrid className="text-muted-foreground-subtle" size={22} />
         </div>
         <div>
@@ -1808,7 +1808,7 @@ function EmptyState({
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
+      <div className="flex size-12 items-center justify-center rounded-lg bg-muted/50">
         <LayoutGrid className="text-muted-foreground-subtle" size={22} />
       </div>
       <div>
@@ -1823,7 +1823,7 @@ function EmptyState({
       </div>
       {isPlatformAdmin && (
         <button
-          className="mt-1 inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+          className="mt-1 inline-flex items-center gap-1.5 rounded-sm bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
           disabled={seeding}
           onClick={seedTemplates}
           type="button"

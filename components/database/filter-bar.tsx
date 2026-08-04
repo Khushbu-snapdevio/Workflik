@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
 import { X, Check, ChevronDown } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
-import { getClampedTop, getClampedLeft } from "@/lib/ui/clamp-to-viewport";
 import type { DbProperty, FilterRule } from "./types";
 import type { SelectOption } from "./types";
 
@@ -37,78 +36,49 @@ export function MultiOptionPicker({ options, value, onChange }: {
  value:  string[];
  onChange: (ids: string[]) => void;
 }) {
- const [open, setOpen] = useState(false);
- const [rect, setRect] = useState<DOMRect | null>(null);
- const ref       = useRef<HTMLDivElement>(null);
- const btnRef     = useRef<HTMLButtonElement>(null);
- const menuRef     = useRef<HTMLDivElement>(null);
- const selected    = new Set(value);
-
- useEffect(() => {
-  if (!open) return;
-  function h(e: MouseEvent) {
-   if (ref.current?.contains(e.target as Node)) return;
-   if (menuRef.current?.contains(e.target as Node)) return;
-   setOpen(false);
-  }
-  document.addEventListener("mousedown", h);
-  return () => document.removeEventListener("mousedown", h);
- }, [open]);
-
- function toggle(id: string) {
-  const next = new Set(selected);
-  if (next.has(id)) next.delete(id); else next.add(id);
-  onChange(Array.from(next));
- }
-
  return (
-  <div ref={ref} className="relative">
-   <button
-    ref={btnRef}
-    onClick={() => {
-     if (!open) setRect(btnRef.current?.getBoundingClientRect() ?? null);
-     setOpen((v) => !v);
-    }}
-    className="flex h-7 min-w-[80px] items-center justify-between gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none"
-   >
-    <span className="truncate text-left">
-     {selected.size === 0 ? <span className="text-muted-foreground">Choose…</span> : `${selected.size} option${selected.size === 1 ? "" : "s"}`}
-    </span>
-    <ChevronDown size={10} className="shrink-0 text-muted-foreground" />
-   </button>
-   {open && rect && typeof document !== "undefined" && createPortal(
-    <div
-     ref={menuRef}
-     className="fixed z-50 w-44 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-     style={{ top: getClampedTop(rect, 200, { gap: 4 }), left: getClampedLeft(rect, 176) }}
+  <Listbox value={value} onChange={onChange} multiple>
+   <div className="relative">
+    <ListboxButtonTrigger count={value.length} />
+    <ListboxOptions
+     anchor={{ to: "bottom start", gap: 4 }}
+     transition
+     className="z-600 w-44 overflow-y-auto rounded-md border border-border bg-background p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
     >
      {options.length === 0 ? (
-      <p className="px-3 py-2.5 text-xs text-muted-foreground">No options defined</p>
+      <p className="px-2 py-2.5 text-xs text-muted-foreground">No options defined</p>
      ) : (
-      options.map((o) => {
-       const on = selected.has(o.id);
-       return (
-        <button
-         key={o.id}
-         onClick={() => toggle(o.id)}
-         className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-foreground hover:bg-accent"
-        >
-         <div className={`flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border transition-colors duration-150 ${on ? "border-primary bg-primary" : "border-border"}`}>
-          {on && (
-           <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
-            <polyline points="2 6 5 9 10 3"/>
-           </svg>
-          )}
-         </div>
-         <span className="truncate">{o.name}</span>
-        </button>
-       );
-      })
+      options.map((o) => (
+       <ListboxOption
+        key={o.id}
+        value={o.id}
+        className="flex w-full cursor-default items-center gap-2.5 rounded-sm px-2 py-2 text-left text-xs text-foreground outline-none data-focus:bg-accent"
+       >
+        {({ selected }) => (
+         <>
+          <div className={`flex size-4 shrink-0 items-center justify-center rounded-xs border transition-colors duration-150 ${selected ? "border-primary bg-primary" : "border-border"}`}>
+           {selected && <Check size={9} strokeWidth={2.5} className="text-primary-foreground" />}
+          </div>
+          <span className="truncate">{o.name}</span>
+         </>
+        )}
+       </ListboxOption>
+      ))
      )}
-    </div>,
-    document.body,
-   )}
-  </div>
+    </ListboxOptions>
+   </div>
+  </Listbox>
+ );
+}
+
+function ListboxButtonTrigger({ count }: { count: number }) {
+ return (
+  <ListboxButton className="flex h-7 min-w-20 items-center justify-between gap-1.5 rounded-sm border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none">
+   <span className="truncate text-left">
+    {count === 0 ? <span className="text-muted-foreground">Choose…</span> : `${count} option${count === 1 ? "" : "s"}`}
+   </span>
+   <ChevronDown size={10} className="shrink-0 text-muted-foreground" />
+  </ListboxButton>
  );
 }
 
@@ -157,14 +127,14 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
     {filters.length > 1 && (
      <div className="flex items-center gap-1">
       <span className="text-xs text-muted-foreground">Match</span>
-      <div className="flex items-center rounded-[var(--radius-sm)] border border-border bg-muted/40 p-0.5 gap-0">
+      <div className="flex items-center rounded-sm border border-border bg-muted/40 p-0.5 gap-0">
        {(["and", "or"] as const).map((logic) => (
         <button
          key={logic}
          onClick={() => onFilterLogicChange(logic)}
          className={[
           filterLogic === logic
-           ? "bg-primary text-primary-foreground rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-semibold"
+           ? "bg-primary text-primary-foreground rounded-sm px-2.5 py-1 text-xs font-semibold"
            : "text-muted-foreground px-2.5 py-1 text-xs font-medium hover:text-foreground",
          ].join(" ")}
         >
@@ -192,7 +162,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
         <span className="text-muted-foreground">Where</span>
        ) : (
         <span className={[
-         "inline-flex items-center justify-center rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-bold tracking-wide",
+         "inline-flex items-center justify-center rounded-xs px-1.5 py-0.5 text-xs font-bold tracking-wide",
          filterLogic === "or"
           ? "bg-warning/10 text-warning"
           : "bg-primary/10 text-primary",
@@ -245,7 +215,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
         value={(filter.value as string) || null}
         onChange={(v) => update(idx, { value: v ?? "" })}
         placeholder="Value…"
-        className="h-[26px] w-32 gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs"
+        className="h-6.5 w-32 gap-1.5 rounded-sm px-2 py-1 text-xs"
        />
       )}
 
@@ -255,13 +225,13 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
         value={String(filter.value ?? "")}
         onChange={(e) => update(idx, { value: e.target.value })}
         placeholder="Value…"
-        className="w-32 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+        className="w-32 rounded-sm border border-border bg-card px-2 py-1 text-xs text-foreground focus:border-primary/50 focus:outline-none"
        />
       )}
 
       <button
        onClick={() => remove(idx)}
-       className="ml-auto flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+       className="ml-auto flex size-5 items-center justify-center rounded-xs text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
       >
        <X size={11} />
       </button>
@@ -274,7 +244,7 @@ export function FilterBar({ properties, filters, filterLogic, onChange, onFilter
     disabled={atLimit}
     onMouseEnter={(e) => { if (atLimit) showTooltip("All properties already have a filter", e); }}
     onMouseLeave={hideTooltip}
-    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+    className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
    >
     + Add filter
    </button>

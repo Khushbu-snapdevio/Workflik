@@ -1,6 +1,18 @@
 "use client";
 
 import {
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+  Popover,
+  PopoverPanel,
+} from "@headlessui/react";
+import {
   Expand as ArrowsOut,
   Calendar as CalendarBlank,
   Check,
@@ -26,7 +38,7 @@ import {
   Trash2 as Trash,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   PROPERTY_REGISTRY,
@@ -34,6 +46,7 @@ import {
 } from "@/components/database/property-registry";
 import { PageIcon } from "@/components/pages/page-icon";
 import { isGroupableType } from "@/components/database/grouping";
+import { RectAnchorTrigger } from "@/components/database/rect-popover-anchor";
 import { RelationDatabasePicker } from "@/components/database/relation-database-picker";
 import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
 import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
@@ -128,34 +141,20 @@ export function DatabaseToolbar({
 }: ToolbarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [addViewRect, setAddViewRect] = useState<DOMRect | null>(null);
-  const [contextView, setContextView] = useState<DbView | null>(null);
-  const [contextRect, setContextRect] = useState<DOMRect | null>(null);
   const [showSearch, setShowSearch] = useState(!!searchQuery);
   const [deletingBulk, setDeletingBulk] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [deleteViewTarget, setDeleteViewTarget] = useState<DbView | null>(null);
   const [deletingView, setDeletingView] = useState(false);
+  // propsRect/layoutRect stay DOMRect-based (feed RectAnchorTrigger-based Relation/Rollup/Formula
+  // pickers / opened via menu handoff, no own trigger); rest of file uses live Headless UI anchors.
   const [propsRect, setPropsRect] = useState<DOMRect | null>(null);
-  const [cardsRect, setCardsRect] = useState<DOMRect | null>(null);
-  const [groupRect, setGroupRect] = useState<DOMRect | null>(null);
-  const [dateRect, setDateRect] = useState<DOMRect | null>(null);
-  const [ganttPropRect, setGanttPropRect] = useState<{ field: "start" | "end"; rect: DOMRect } | null>(null);
-  const [creatingQuickProp, setCreatingQuickProp] = useState(false);
-  // "Layout" (change an existing view's type, e.g. Table → Board) — separate
-  // from the "Add a new view" grid (addViewRect), which only ever creates a
-  // fresh view and can't retarget one that already exists.
   const [layoutView, setLayoutView] = useState<DbView | null>(null);
   const [layoutRect, setLayoutRect] = useState<DOMRect | null>(null);
+  const [creatingQuickProp, setCreatingQuickProp] = useState(false);
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const activeTabRef = useRef<HTMLButtonElement>(null);
-  const addViewDropRef = useRef<HTMLDivElement>(null);
-  const contextDropRef = useRef<HTMLDivElement>(null);
   const propsDropRef = useRef<HTMLDivElement>(null);
-  const cardsDropRef = useRef<HTMLDivElement>(null);
-  const groupDropRef = useRef<HTMLDivElement>(null);
-  const dateDropRef = useRef<HTMLDivElement>(null);
-  const ganttPropDropRef = useRef<HTMLDivElement>(null);
   const layoutDropRef = useRef<HTMLDivElement>(null);
 
   const filterCount = ((activeView?.filters as FilterRule[] | undefined) ?? [])
@@ -163,87 +162,40 @@ export function DatabaseToolbar({
   const sortCount = ((activeView?.sorts as SortRule[] | undefined) ?? [])
     .length;
 
-  // Each of these dropdowns is positioned once from a captured DOMRect — lock
-  // scroll while any is open instead of repositioning, so none can drift from
-  // its trigger button.
+  // Everything else is Headless UI Menu/Listbox (self-closing, own outside-click/Escape, live anchor);
+  // propsRect/layoutRect are the exceptions still needing manual scroll lock + outside-click/Escape.
   useScrollLockWhileOpen(
-    !!addViewRect ||
-      !!contextRect ||
-      !!propsRect ||
-      !!cardsRect ||
-      !!groupRect ||
-      !!dateRect ||
-      !!ganttPropRect ||
-      !!layoutRect,
+    !!propsRect || !!layoutRect,
     (target) =>
-      !!addViewDropRef.current?.contains(target) ||
-      !!contextDropRef.current?.contains(target) ||
       !!propsDropRef.current?.contains(target) ||
-      !!cardsDropRef.current?.contains(target) ||
-      !!groupDropRef.current?.contains(target) ||
-      !!dateDropRef.current?.contains(target) ||
-      !!ganttPropDropRef.current?.contains(target) ||
       !!layoutDropRef.current?.contains(target) ||
       !!target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')
   );
 
-  function closeAllLocalDropdowns() {
-    setAddViewRect(null);
-    setContextView(null);
-    setContextRect(null);
-    setPropsRect(null);
-    setCardsRect(null);
-    setGroupRect(null);
-    setDateRect(null);
-    setGanttPropRect(null);
-    setLayoutView(null);
-    setLayoutRect(null);
-  }
-
-  // Close portals on outside click
   useEffect(() => {
-    function h(e: MouseEvent) {
+    function handleMouseDown(e: MouseEvent) {
       const t = e.target as Node;
-      if (addViewDropRef.current && !addViewDropRef.current.contains(t)) {
-        setAddViewRect(null);
-      }
-      // Exclude the trigger button itself — it already toggles open/closed in
-      // its own onClick. Next.js hydrates the whole document, so React's
-      // stopPropagation on the button can't stop this sibling document-level
-      // listener from also seeing the same mousedown; without this exclusion,
-      // clicking the button while its menu is open would close it here first,
-      // then the button's onClick would immediately reopen it (reading the
-      // just-cleared state) — the menu would blink instead of closing.
-      if (
-        contextDropRef.current &&
-        !contextDropRef.current.contains(t) &&
-        !(t as HTMLElement).closest?.("[data-view-context-trigger]")
-      ) {
-        setContextView(null);
-        setContextRect(null);
-      }
       if (propsDropRef.current && !propsDropRef.current.contains(t)) {
         setPropsRect(null);
-      }
-      if (cardsDropRef.current && !cardsDropRef.current.contains(t)) {
-        setCardsRect(null);
-      }
-      if (groupDropRef.current && !groupDropRef.current.contains(t)) {
-        setGroupRect(null);
-      }
-      if (dateDropRef.current && !dateDropRef.current.contains(t)) {
-        setDateRect(null);
-      }
-      if (ganttPropDropRef.current && !ganttPropDropRef.current.contains(t)) {
-        setGanttPropRect(null);
       }
       if (layoutDropRef.current && !layoutDropRef.current.contains(t)) {
         setLayoutView(null);
         setLayoutRect(null);
       }
     }
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setPropsRect(null);
+        setLayoutView(null);
+        setLayoutRect(null);
+      }
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   // Focus search on mount when query exists
@@ -259,6 +211,17 @@ export function DatabaseToolbar({
   useEffect(() => {
     activeTabRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [activeViewId]);
+
+  // Closes the filter/sort bars whenever one of this toolbar's own dropdowns opens, so
+  // a dropdown and an expanded filter/sort bar never show at the same time.
+  function closeFilterSortBars() {
+    if (showFilterBar) {
+      onToggleFilterBar();
+    }
+    if (showSortBar) {
+      onToggleSortBar();
+    }
+  }
 
   function commitRename(view: DbView) {
     const name = editingName.trim() || view.name;
@@ -307,7 +270,7 @@ export function DatabaseToolbar({
       <>
         <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-primary/5 px-4">
           <button
-            className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             onClick={onClearSelection}
           >
             <X size={14} />
@@ -321,7 +284,7 @@ export function DatabaseToolbar({
           </span>
           <div className="flex-1" />
           <button
-            className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-destructive transition-colors duration-150 hover:bg-destructive/10 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-destructive transition-colors duration-150 hover:bg-destructive/10 disabled:opacity-50"
             disabled={deletingBulk}
             onClick={() => setShowBulkConfirm(true)}
           >
@@ -348,7 +311,7 @@ export function DatabaseToolbar({
 
   return (
     <>
-      <div className="flex h-[46px] shrink-0 items-center border-b border-border bg-background">
+      <div className="flex h-11.5 shrink-0 items-center border-b border-border bg-background">
         {/* ── View tabs ── */}
         {/* This strip owns its own horizontal scroll (min-w-0 lets it shrink
             below content width) so a growing number of views never pushes
@@ -363,7 +326,7 @@ export function DatabaseToolbar({
                   <div className="flex items-center px-1">
                     <input
                       autoFocus
-                      className="h-7 rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 text-sm focus:outline-none"
+                      className="h-7 rounded-sm border border-primary/40 bg-background px-2 text-sm focus:outline-none"
                       onBlur={() => commitRename(view)}
                       onChange={(e) => setEditingName(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
@@ -400,40 +363,23 @@ export function DatabaseToolbar({
                 )}
 
                 {isEditor && !editingId && (
-                  <button
-                    data-view-context-trigger
-                    className={[
-                      "flex h-full w-6 items-center justify-center rounded-[var(--radius-xs)] transition-colors duration-150",
-                      contextView?.id === view.id
-                        ? "bg-accent text-foreground"
-                        : "text-transparent hover:bg-accent hover:text-foreground group-hover:text-muted-foreground",
-                    ].join(" ")}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (contextView?.id === view.id) {
-                        setContextView(null);
-                        setContextRect(null);
-                      } else {
-                        const rect = (
-                          e.currentTarget as HTMLElement
-                        ).getBoundingClientRect();
-                        closeAllLocalDropdowns();
-                        if (showFilterBar) {
-                          onToggleFilterBar();
-                        }
-                        if (showSortBar) {
-                          onToggleSortBar();
-                        }
-                        setContextView(view);
-                        setContextRect(rect);
-                      }
+                  <ViewMenu
+                    view={view}
+                    canDelete={views.length > 1}
+                    hideTooltip={hideTooltip}
+                    showTooltip={showTooltip}
+                    onDuplicate={() => onDuplicateView(view.id)}
+                    onOpen={closeFilterSortBars}
+                    onOpenLayout={(rect) => {
+                      setLayoutView(view);
+                      setLayoutRect(rect);
                     }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onMouseEnter={(e) => showTooltip("View options", e)}
-                    onMouseLeave={hideTooltip}
-                  >
-                    <MoreVertical className="shrink-0" size={13} />
-                  </button>
+                    onRename={() => {
+                      setEditingId(view.id);
+                      setEditingName(view.name);
+                    }}
+                    onRequestDelete={() => setDeleteViewTarget(view)}
+                  />
                 )}
               </div>
             );
@@ -446,34 +392,71 @@ export function DatabaseToolbar({
             off-screen in a narrow (e.g. inline) container as views accrue. */}
         {isEditor && (
           <div className="flex shrink-0 items-center pl-2 pr-1">
-            <button
-              className={[
-                "flex h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
-                addViewRect
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
-              ].join(" ")}
-              onClick={(e) => {
-                if (addViewRect) {
-                  setAddViewRect(null);
-                  return;
-                }
-                closeAllLocalDropdowns();
-                if (showFilterBar) {
-                  onToggleFilterBar();
-                }
-                if (showSortBar) {
-                  onToggleSortBar();
-                }
-                setAddViewRect(
-                  (e.currentTarget as HTMLElement).getBoundingClientRect()
-                );
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <Plus className="text-primary/60" size={11} />
-              Add a view
-            </button>
+            <Menu>
+              <MenuButton
+                className={[
+                  "flex h-6.5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
+                  "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
+                  "data-open:border-primary data-open:bg-primary/10 data-open:text-primary",
+                ].join(" ")}
+                onClick={closeFilterSortBars}
+              >
+                <Plus className="text-primary/60" size={11} />
+                Add a view
+              </MenuButton>
+              <MenuItems
+                anchor={{ to: "bottom start", gap: 4 }}
+                className="z-600 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-border bg-card transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                transition
+              >
+                {/* Header */}
+                <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                  <Plus className="text-primary" size={13} />
+                  <p className="text-sm font-semibold text-foreground">
+                    Add a new view
+                  </p>
+                </div>
+
+                {/* View type grid — 4 per row. Each type is capped at one view —
+                    once a Table/Board/Calendar/Gallery view exists, its button is
+                    disabled rather than silently creating another. */}
+                <div className="grid grid-cols-4 gap-1.5 p-3">
+                  {VIEW_TYPES.map((type) => {
+                    const VIcon = VIEW_ICONS[type];
+                    const alreadyExists = views.some((v) => v.type === type);
+                    return (
+                      <MenuItem
+                        as="button"
+                        className="group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-colors duration-150 data-disabled:cursor-not-allowed data-disabled:opacity-40 data-focus:bg-accent"
+                        disabled={alreadyExists}
+                        key={type}
+                        onClick={() => onAddView(VIEW_LABELS[type], type)}
+                        onMouseEnter={(e) => alreadyExists && showTooltip(`A ${VIEW_LABELS[type]} view already exists`, e)}
+                        onMouseLeave={hideTooltip}
+                        type="button"
+                      >
+                        <div className="flex size-12 items-center justify-center rounded-md border border-border bg-muted/50 transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary/10">
+                          <VIcon
+                            className="text-foreground/70 transition-colors duration-150 group-hover:text-primary"
+                            size={24}
+                          />
+                        </div>
+                        <span className="text-xs font-medium leading-tight text-muted-foreground transition-colors duration-150 group-hover:text-primary">
+                          {VIEW_LABELS[type]}
+                        </span>
+                      </MenuItem>
+                    );
+                  })}
+                </div>
+
+                {/* Footer hint */}
+                <div className="border-t border-border px-4 py-2.5">
+                  <p className="text-xs text-muted-foreground">
+                    Click a view type to create it
+                  </p>
+                </div>
+              </MenuItems>
+            </Menu>
           </div>
         )}
 
@@ -494,43 +477,40 @@ export function DatabaseToolbar({
                   Group
                 </span>
               )}
-              <button
-                className={[
-                  "flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-150",
-                  groupRect || activeView.groupByPropertyId
-                    ? "border-primary/30 bg-primary/8 text-primary"
-                    : "border-border bg-background text-foreground/70 hover:border-border hover:bg-accent",
-                ].join(" ")}
-                onClick={(e) => {
-                  if (groupRect) {
-                    setGroupRect(null);
-                    return;
-                  }
-                  closeAllLocalDropdowns();
-                  if (showFilterBar) {
-                    onToggleFilterBar();
-                  }
-                  if (showSortBar) {
-                    onToggleSortBar();
-                  }
-                  setGroupRect(
-                    (e.currentTarget as HTMLElement).getBoundingClientRect()
+              <PropertyPickerListbox
+                buttonContent={
+                  activeView.groupByPropertyId ? (
+                    (groupableProps.find(
+                      (p) => p.id === activeView.groupByPropertyId
+                    )?.name ?? "Group")
+                  ) : (
+                    <span className="text-muted-foreground">None</span>
+                  )
+                }
+                creating={creatingQuickProp}
+                onChange={(id) =>
+                  onUpdateView(activeView.id, { groupByPropertyId: id })
+                }
+                onOpen={closeFilterSortBars}
+                onQuickCreate={() =>
+                  handleQuickCreateProp("status", "Status", (propId) =>
+                    onUpdateView(activeView.id, { groupByPropertyId: propId })
+                  )
+                }
+                options={groupableProps}
+                panelLabel="Group by"
+                quickCreateLabel="New property"
+                renderOptionIcon={(p) => {
+                  const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON] ?? CircleDashed;
+                  const propConfig = (p.config ?? {}) as { icon?: string };
+                  return propConfig.icon ? (
+                    <PageIcon icon={propConfig.icon} size={11} />
+                  ) : (
+                    <TypeIcon className="text-muted-foreground" size={11} />
                   );
                 }}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                {activeView.groupByPropertyId ? (
-                  (groupableProps.find(
-                    (p) => p.id === activeView.groupByPropertyId
-                  )?.name ?? "Group")
-                ) : (
-                  <span className="text-muted-foreground">None</span>
-                )}
-                <ChevronDown
-                  className="shrink-0 text-muted-foreground"
-                  size={10}
-                />
-              </button>
+                value={activeView.groupByPropertyId ?? null}
+              />
             </div>
           )}
 
@@ -542,42 +522,33 @@ export function DatabaseToolbar({
                 Date
               </span>
             )}
-            <button
-              className={[
-                "flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-150",
-                dateRect || activeView.calendarPropertyId
-                  ? "border-primary/30 bg-primary/8 text-primary"
-                  : "border-border bg-background text-foreground/70 hover:border-border hover:bg-accent",
-              ].join(" ")}
-              onClick={(e) => {
-                if (dateRect) {
-                  setDateRect(null);
-                  return;
-                }
-                closeAllLocalDropdowns();
-                if (showFilterBar) {
-                  onToggleFilterBar();
-                }
-                if (showSortBar) {
-                  onToggleSortBar();
-                }
-                setDateRect(
-                  (e.currentTarget as HTMLElement).getBoundingClientRect()
-                );
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              {activeView.calendarPropertyId ? (
-                (dateProps.find((p) => p.id === activeView.calendarPropertyId)
-                  ?.name ?? "Date")
-              ) : (
-                <span className="text-muted-foreground">None</span>
+            <PropertyPickerListbox
+              buttonContent={
+                activeView.calendarPropertyId ? (
+                  (dateProps.find((p) => p.id === activeView.calendarPropertyId)
+                    ?.name ?? "Date")
+                ) : (
+                  <span className="text-muted-foreground">None</span>
+                )
+              }
+              creating={creatingQuickProp}
+              onChange={(id) =>
+                onUpdateView(activeView.id, { calendarPropertyId: id })
+              }
+              onOpen={closeFilterSortBars}
+              onQuickCreate={() =>
+                handleQuickCreateProp("date", "Date", (propId) =>
+                  onUpdateView(activeView.id, { calendarPropertyId: propId })
+                )
+              }
+              options={dateProps}
+              panelLabel="Date property"
+              quickCreateLabel="New property"
+              renderOptionIcon={() => (
+                <CalendarBlank className="text-muted-foreground" size={11} />
               )}
-              <ChevronDown
-                className="shrink-0 text-muted-foreground"
-                size={10}
-              />
-            </button>
+              value={activeView.calendarPropertyId ?? null}
+            />
           </div>
         )}
 
@@ -593,30 +564,39 @@ export function DatabaseToolbar({
                       {field}
                     </span>
                   )}
-                  <button
-                    className={[
-                      "flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-150",
-                      (ganttPropRect?.field === field) || propId
-                        ? "border-primary/30 bg-primary/8 text-primary"
-                        : "border-border bg-background text-foreground/70 hover:border-border hover:bg-accent",
-                    ].join(" ")}
-                    onClick={(e) => {
-                      if (ganttPropRect?.field === field) {
-                        setGanttPropRect(null);
-                        return;
-                      }
-                      closeAllLocalDropdowns();
-                      if (showFilterBar) onToggleFilterBar();
-                      if (showSortBar) onToggleSortBar();
-                      setGanttPropRect({ field, rect: (e.currentTarget as HTMLElement).getBoundingClientRect() });
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    {propId ? (dateProps.find((p) => p.id === propId)?.name ?? field) : (
-                      <span className="text-muted-foreground">None</span>
+                  <PropertyPickerListbox
+                    buttonContent={
+                      propId ? (dateProps.find((p) => p.id === propId)?.name ?? field) : (
+                        <span className="text-muted-foreground">None</span>
+                      )
+                    }
+                    creating={creatingQuickProp}
+                    onChange={(id) =>
+                      onUpdateView(
+                        activeView.id,
+                        field === "start" ? { ganttStartPropertyId: id } : { ganttEndPropertyId: id }
+                      )
+                    }
+                    onOpen={closeFilterSortBars}
+                    onQuickCreate={() =>
+                      handleQuickCreateProp(
+                        "date",
+                        field === "start" ? "Start date" : "End date",
+                        (newPropId) =>
+                          onUpdateView(
+                            activeView.id,
+                            field === "start" ? { ganttStartPropertyId: newPropId } : { ganttEndPropertyId: newPropId }
+                          )
+                      )
+                    }
+                    options={dateProps}
+                    panelLabel={field === "start" ? "Start Date Property" : "End Date Property"}
+                    quickCreateLabel="New property"
+                    renderOptionIcon={() => (
+                      <CalendarBlank className="text-muted-foreground" size={11} />
                     )}
-                    <ChevronDown className="shrink-0 text-muted-foreground" size={10} />
-                  </button>
+                    value={propId ?? null}
+                  />
                 </div>
               );
             })}
@@ -637,7 +617,7 @@ export function DatabaseToolbar({
               return (
                 <button
                   className={[
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold tracking-wide transition-colors duration-150",
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-xs font-bold tracking-wide transition-colors duration-150",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -673,7 +653,7 @@ export function DatabaseToolbar({
               />
               <input
                 autoFocus
-                className="h-8 w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 pl-7 pr-7 text-sm placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:bg-background focus:outline-none"
+                className="h-8 w-full rounded-sm border border-border bg-muted/30 pl-7 pr-7 text-sm placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:bg-background focus:outline-none"
                 onBlur={() => {
                   if (!searchQuery) {
                     setShowSearch(false);
@@ -705,7 +685,7 @@ export function DatabaseToolbar({
             </>
           ) : (
             <button
-              className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
+              className="flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
               onClick={() => setShowSearch(true)}
               onMouseEnter={(e) => showTooltip("Search (⌘K)", e)}
               onMouseLeave={hideTooltip}
@@ -718,20 +698,20 @@ export function DatabaseToolbar({
         {/* ── Filter / Sort / Properties ── */}
         <button
           className={[
-            "flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
+            "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
             showFilterBar || filterCount > 0
               ? "bg-primary/10 text-primary"
               : "text-muted-foreground hover:bg-accent hover:text-foreground",
           ].join(" ")}
           onClick={() => {
-            closeAllLocalDropdowns();
+            setPropsRect(null);
             onToggleFilterBar();
           }}
         >
           <Funnel size={13} />
           {!inline && "Filter"}
           {filterCount > 0 && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-primary-foreground">
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-foreground">
               {filterCount}
             </span>
           )}
@@ -739,20 +719,20 @@ export function DatabaseToolbar({
 
         <button
           className={[
-            "flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
+            "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
             showSortBar || sortCount > 0
               ? "bg-primary/10 text-primary"
               : "text-muted-foreground hover:bg-accent hover:text-foreground",
           ].join(" ")}
           onClick={() => {
-            closeAllLocalDropdowns();
+            setPropsRect(null);
             onToggleSortBar();
           }}
         >
           <SortAscending size={13} />
           {!inline && "Sort"}
           {sortCount > 0 && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-primary-foreground">
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-foreground">
               {sortCount}
             </span>
           )}
@@ -765,7 +745,7 @@ export function DatabaseToolbar({
           return (
             <button
               className={[
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
                 propsRect || hiddenCount > 0
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -775,13 +755,7 @@ export function DatabaseToolbar({
                   setPropsRect(null);
                   return;
                 }
-                closeAllLocalDropdowns();
-                if (showFilterBar) {
-                  onToggleFilterBar();
-                }
-                if (showSortBar) {
-                  onToggleSortBar();
-                }
+                closeFilterSortBars();
                 setPropsRect(
                   (e.currentTarget as HTMLElement).getBoundingClientRect()
                 );
@@ -793,7 +767,7 @@ export function DatabaseToolbar({
               <SlidersHorizontal size={13} />
               {!inline && "Properties"}
               {hiddenCount > 0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-[var(--radius-xs)] bg-primary px-1 text-xs font-bold text-primary-foreground">
+                <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-foreground">
                   {hiddenCount}
                 </span>
               )}
@@ -808,10 +782,10 @@ export function DatabaseToolbar({
             and read as broken — only the full standalone database page
             exposes this preference. */}
         {activeView && !inline && (
-          <div className="flex shrink-0 items-center rounded-[var(--radius-sm)] border border-border bg-muted/30 p-0.5">
+          <div className="flex shrink-0 items-center rounded-sm border border-border bg-muted/30 p-0.5">
             <button
               className={[
-                "flex h-[26px] items-center gap-1.5 rounded-[var(--radius-sm)] px-2 text-xs font-medium transition-colors duration-150",
+                "flex h-6.5 items-center gap-1.5 rounded-sm px-2 text-xs font-medium transition-colors duration-150",
                 (activeView.entryOpenMode ?? "side_panel") === "side_panel"
                   ? "bg-background text-primary"
                   : "text-muted-foreground hover:text-foreground",
@@ -827,7 +801,7 @@ export function DatabaseToolbar({
             </button>
             <button
               className={[
-                "flex h-[26px] items-center gap-1.5 rounded-[var(--radius-sm)] px-2 text-xs font-medium transition-colors duration-150",
+                "flex h-6.5 items-center gap-1.5 rounded-sm px-2 text-xs font-medium transition-colors duration-150",
                 activeView.entryOpenMode === "full_page"
                   ? "bg-background text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -856,7 +830,7 @@ export function DatabaseToolbar({
         {/* ── New entry ── */}
         {isEditor && (
           <button
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-4 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
             data-new-entry-button
             onClick={onCreateEntry}
           >
@@ -867,157 +841,20 @@ export function DatabaseToolbar({
         </div>
       </div>
 
-      {/* ── Portal: Add view dropdown (Notion-style grid) ── */}
-      {addViewRect &&
-        createPortal(
-          <div
-            className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card"
-            onClick={(e) => e.stopPropagation()}
-            ref={addViewDropRef}
-            style={{
-              position: "fixed",
-              top: getClampedTop(addViewRect, 200),
-              left: getClampedLeft(addViewRect, 320, { align: "start" }),
-              zIndex: 300,
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-              <Plus className="text-primary" size={13} />
-              <p className="text-sm font-semibold text-foreground">
-                Add a new view
-              </p>
-            </div>
-
-            {/* View type grid — 4 per row. Each type is capped at one view —
-                once a Table/Board/Calendar/Gallery view exists, its button is
-                disabled rather than silently creating another. */}
-            <div className="grid grid-cols-4 gap-1.5 p-3">
-              {VIEW_TYPES.map((type) => {
-                const VIcon = VIEW_ICONS[type];
-                const alreadyExists = views.some((v) => v.type === type);
-                return (
-                  <button
-                    className={[
-                      "group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-colors duration-150",
-                      alreadyExists ? "cursor-not-allowed opacity-40" : "hover:bg-accent",
-                    ].join(" ")}
-                    aria-disabled={alreadyExists}
-                    key={type}
-                    onClick={() => {
-                      if (alreadyExists) return;
-                      onAddView(VIEW_LABELS[type], type);
-                      setAddViewRect(null);
-                    }}
-                    onMouseEnter={(e) => alreadyExists && showTooltip(`A ${VIEW_LABELS[type]} view already exists`, e)}
-                    onMouseLeave={hideTooltip}
-                  >
-                    <div className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border bg-muted/50 transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary/10">
-                      <VIcon
-                        className="text-foreground/70 transition-colors duration-150 group-hover:text-primary"
-                        size={24}
-                      />
-                    </div>
-                    <span className="text-xs font-medium leading-tight text-muted-foreground transition-colors duration-150 group-hover:text-primary">
-                      {VIEW_LABELS[type]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Footer hint */}
-            <div className="border-t border-border px-4 py-2.5">
-              <p className="text-xs text-muted-foreground">
-                Click a view type to create it
-              </p>
-            </div>
-          </div>,
-          document.body
-        )}
-
-      {/* ── Portal: View context menu ── */}
-      {contextView &&
-        contextRect &&
-        createPortal(
-          <div
-            className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
-            ref={contextDropRef}
-            style={{
-              position: "fixed",
-              top: getClampedTop(contextRect, 140),
-              left: getClampedLeft(contextRect, 192, { align: "start" }),
-              zIndex: 500,
-            }}
-          >
-            <button
-              className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors duration-100 hover:bg-accent"
-              onClick={() => {
-                setEditingId(contextView.id);
-                setEditingName(contextView.name);
-                setContextView(null);
-                setContextRect(null);
-              }}
-            >
-              <Pencil className="shrink-0 text-muted-foreground" size={13} />{" "}
-              Rename
-            </button>
-            <button
-              className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors duration-100 hover:bg-accent"
-              onClick={() => {
-                setLayoutView(contextView);
-                setLayoutRect(contextRect);
-                setContextView(null);
-                setContextRect(null);
-              }}
-            >
-              <Kanban className="shrink-0 text-muted-foreground" size={13} />{" "}
-              Layout
-            </button>
-            <button
-              className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors duration-100 hover:bg-accent"
-              onClick={() => {
-                onDuplicateView(contextView.id);
-                setContextView(null);
-                setContextRect(null);
-              }}
-            >
-              <Copy className="shrink-0 text-muted-foreground" size={13} />{" "}
-              Duplicate view
-            </button>
-            {views.length > 1 && (
-              <>
-                <div className="my-1 h-px bg-border" />
-                <button
-                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-100 hover:bg-destructive/10"
-                  onClick={() => {
-                    setDeleteViewTarget(contextView);
-                    setContextView(null);
-                    setContextRect(null);
-                  }}
-                >
-                  <Trash className="shrink-0" size={13} /> Delete view
-                </button>
-              </>
-            )}
-          </div>,
-          document.body
-        )}
-
-      {/* ── Portal: Change view layout (type) ── */}
-      {layoutView &&
-        layoutRect &&
-        createPortal(
-          <div
+      {/* ── Layout picker (change an existing view's type, e.g. Table → Board) ──
+          Opened via a handoff from the view "⋯" menu rather than its own
+          always-visible trigger, so it's anchored to a captured DOMRect
+          (RectAnchorTrigger) instead of a live Headless UI trigger element —
+          same rationale as the Relation/Rollup/Formula config pickers. */}
+      {layoutView && layoutRect && (
+        <Popover>
+          <RectAnchorTrigger rect={layoutRect} />
+          <PopoverPanel
+            anchor={{ to: "bottom end", gap: 4 }}
+            className="z-600 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-border bg-card"
+            data-edit-property-exempt
             ref={layoutDropRef}
-            className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "fixed",
-              top: getClampedTop(layoutRect, 220),
-              left: getClampedLeft(layoutRect, 320, { align: "start" }),
-              zIndex: 500,
-            }}
+            static
           >
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
               <Kanban className="text-primary" size={13} />
@@ -1032,7 +869,7 @@ export function DatabaseToolbar({
                 const isActive = layoutView.type === type;
                 return (
                   <button
-                    className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-colors duration-150 hover:bg-accent"
+                    className="group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-colors duration-150 hover:bg-accent"
                     key={type}
                     onClick={() => {
                       if (type !== layoutView.type) {
@@ -1041,10 +878,11 @@ export function DatabaseToolbar({
                       setLayoutView(null);
                       setLayoutRect(null);
                     }}
+                    type="button"
                   >
                     <div
                       className={[
-                        "flex size-12 items-center justify-center rounded-[var(--radius-md)] border transition-colors duration-150",
+                        "flex size-12 items-center justify-center rounded-md border transition-colors duration-150",
                         isActive
                           ? "border-primary/40 bg-primary/10"
                           : "border-border bg-muted/50 group-hover:border-primary/40 group-hover:bg-primary/10",
@@ -1080,9 +918,9 @@ export function DatabaseToolbar({
                 </p>
               </div>
             )}
-          </div>,
-          document.body
-        )}
+          </PopoverPanel>
+        </Popover>
+      )}
 
       {/* ── Portal: Properties panel ── */}
       {propsRect &&
@@ -1118,99 +956,6 @@ export function DatabaseToolbar({
           document.body
         )}
 
-      {/* ── Portal: Group by dropdown ── */}
-      {groupRect &&
-        activeView &&
-        createPortal(
-          <div
-            className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-            ref={groupDropRef}
-            style={{
-              position: "fixed",
-              top: getClampedTop(
-                groupRect,
-                Math.min(400, 46 + (groupableProps.length + 2) * 36)
-              ),
-              left: getClampedLeft(groupRect, 192, { align: "start" }),
-              zIndex: 300,
-            }}
-          >
-            <p className="px-3 pb-1 pt-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
-              Group by
-            </p>
-            <div className="p-1.5 pt-0.5">
-              <button
-                className={[
-                  "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
-                  activeView.groupByPropertyId
-                    ? "text-muted-foreground"
-                    : "font-semibold text-primary",
-                ].join(" ")}
-                onClick={() => {
-                  onUpdateView(activeView.id, { groupByPropertyId: null });
-                  setGroupRect(null);
-                }}
-              >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground">
-                  —
-                </span>
-                None
-              </button>
-              {groupableProps.map((p) => {
-                const isActive = activeView.groupByPropertyId === p.id;
-                const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON] ?? CircleDashed;
-                const propConfig = (p.config ?? {}) as { icon?: string };
-                return (
-                  <button
-                    className={[
-                      "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
-                      isActive
-                        ? "font-semibold text-primary"
-                        : "text-foreground",
-                    ].join(" ")}
-                    key={p.id}
-                    onClick={() => {
-                      onUpdateView(activeView.id, { groupByPropertyId: p.id });
-                      setGroupRect(null);
-                    }}
-                  >
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                      {propConfig.icon ? (
-                        <PageIcon icon={propConfig.icon} size={11} />
-                      ) : (
-                        <TypeIcon
-                          className="text-muted-foreground"
-                          size={11}
-                        />
-                      )}
-                    </span>
-                    <span className="flex-1 truncate text-left">{p.name}</span>
-                    {isActive && (
-                      <Check className="shrink-0 text-primary" size={12} />
-                    )}
-                  </button>
-                );
-              })}
-              <div className="my-1 h-px bg-border" />
-              <button
-                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={creatingQuickProp}
-                onClick={() =>
-                  handleQuickCreateProp("status", "Status", (propId) =>
-                    onUpdateView(activeView.id, { groupByPropertyId: propId })
-                  ).then(() => setGroupRect(null))
-                }
-              >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                  <Plus className="text-muted-foreground" size={11} />
-                </span>
-                New property
-              </button>
-            </div>
-          </div>,
-          document.body
-        )}
-
       {/* ── Delete view confirmation ── */}
       <ConfirmDialog
         confirmLabel="Delete view"
@@ -1231,191 +976,6 @@ export function DatabaseToolbar({
         title={`Delete "${deleteViewTarget?.name}"?`}
       />
 
-      {/* ── Portal: Calendar date property dropdown ── */}
-      {dateRect &&
-        activeView?.type === "calendar" &&
-        createPortal(
-          <div
-            className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-            ref={dateDropRef}
-            style={{
-              position: "fixed",
-              top: getClampedTop(
-                dateRect,
-                Math.min(400, 46 + (dateProps.length + 2) * 36)
-              ),
-              left: getClampedLeft(dateRect, 192, { align: "start" }),
-              zIndex: 300,
-            }}
-          >
-            <p className="px-3 pb-1 pt-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
-              Date property
-            </p>
-            <div className="p-1.5 pt-0.5">
-              <button
-                className={[
-                  "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
-                  activeView.calendarPropertyId
-                    ? "text-muted-foreground"
-                    : "font-semibold text-primary",
-                ].join(" ")}
-                onClick={() => {
-                  onUpdateView(activeView.id, { calendarPropertyId: null });
-                  setDateRect(null);
-                }}
-              >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground">
-                  —
-                </span>
-                None
-              </button>
-              {dateProps.map((p) => {
-                const isActive = activeView.calendarPropertyId === p.id;
-                return (
-                  <button
-                    className={[
-                      "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
-                      isActive
-                        ? "font-semibold text-primary"
-                        : "text-foreground",
-                    ].join(" ")}
-                    key={p.id}
-                    onClick={() => {
-                      onUpdateView(activeView.id, { calendarPropertyId: p.id });
-                      setDateRect(null);
-                    }}
-                  >
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                      <CalendarBlank
-                        className="text-muted-foreground"
-                        size={11}
-                      />
-                    </span>
-                    <span className="flex-1 truncate text-left">{p.name}</span>
-                    {isActive && (
-                      <Check className="shrink-0 text-primary" size={12} />
-                    )}
-                  </button>
-                );
-              })}
-              <div className="my-1 h-px bg-border" />
-              <button
-                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={creatingQuickProp}
-                onClick={() =>
-                  handleQuickCreateProp("date", "Date", (propId) =>
-                    onUpdateView(activeView.id, { calendarPropertyId: propId })
-                  ).then(() => setDateRect(null))
-                }
-              >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                  <Plus className="text-muted-foreground" size={11} />
-                </span>
-                New property
-              </button>
-            </div>
-          </div>,
-          document.body
-        )}
-
-      {/* ── Portal: Gantt start/end property dropdown ── */}
-      {ganttPropRect &&
-        activeView?.type === "gantt" &&
-        createPortal(
-          <div
-            className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-            ref={ganttPropDropRef}
-            style={{
-              position: "fixed",
-              top: getClampedTop(
-                ganttPropRect.rect,
-                Math.min(400, 46 + (dateProps.length + 2) * 36)
-              ),
-              left: getClampedLeft(ganttPropRect.rect, 192, { align: "start" }),
-              zIndex: 300,
-            }}
-          >
-            <p className="px-3 pb-1 pt-2.5 text-xs font-semibold capitalize tracking-wide text-muted-foreground">
-              {ganttPropRect.field} date property
-            </p>
-            <div className="p-1.5 pt-0.5">
-              <button
-                className={[
-                  "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
-                  (ganttPropRect.field === "start" ? activeView.ganttStartPropertyId : activeView.ganttEndPropertyId)
-                    ? "text-muted-foreground"
-                    : "font-semibold text-primary",
-                ].join(" ")}
-                onClick={() => {
-                  const patch = ganttPropRect.field === "start" ? { ganttStartPropertyId: null } : { ganttEndPropertyId: null };
-                  onUpdateView(activeView.id, patch);
-                  setGanttPropRect(null);
-                }}
-              >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-xs text-muted-foreground">
-                  —
-                </span>
-                None
-              </button>
-              {dateProps.map((p) => {
-                const isActive = (ganttPropRect.field === "start" ? activeView.ganttStartPropertyId : activeView.ganttEndPropertyId) === p.id;
-                return (
-                  <button
-                    className={[
-                      "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm transition-colors hover:bg-accent",
-                      isActive
-                        ? "font-semibold text-primary"
-                        : "text-foreground",
-                    ].join(" ")}
-                    key={p.id}
-                    onClick={() => {
-                      const patch = ganttPropRect.field === "start" ? { ganttStartPropertyId: p.id } : { ganttEndPropertyId: p.id };
-                      onUpdateView(activeView.id, patch);
-                      setGanttPropRect(null);
-                    }}
-                  >
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                      <CalendarBlank
-                        className="text-muted-foreground"
-                        size={11}
-                      />
-                    </span>
-                    <span className="flex-1 truncate text-left">{p.name}</span>
-                    {isActive && (
-                      <Check className="shrink-0 text-primary" size={12} />
-                    )}
-                  </button>
-                );
-              })}
-              <div className="my-1 h-px bg-border" />
-              <button
-                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={creatingQuickProp}
-                onClick={() => {
-                  const field = ganttPropRect.field;
-                  handleQuickCreateProp(
-                    "date",
-                    field === "start" ? "Start date" : "End date",
-                    (propId) =>
-                      onUpdateView(
-                        activeView.id,
-                        field === "start"
-                          ? { ganttStartPropertyId: propId }
-                          : { ganttEndPropertyId: propId }
-                      )
-                  ).then(() => setGanttPropRect(null));
-                }}
-              >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
-                  <Plus className="text-muted-foreground" size={11} />
-                </span>
-                New property
-              </button>
-            </div>
-          </div>,
-          document.body
-        )}
-
       {tooltip &&
         typeof document !== "undefined" &&
         createPortal(
@@ -1426,115 +986,208 @@ export function DatabaseToolbar({
   );
 }
 
-// ── CardDisplayPanel ──────────────────────────────────────────────────────────
+// ── ViewMenu ──────────────────────────────────────────────────────────────────
+// Live Headless UI Menu anchored to its own trigger. "Layout" hands off to a separate
+// rect-anchored popover instead of swapping content in place, since MenuItem always closes on activation.
 
-import { forwardRef } from "react";
+function ViewMenu({
+  view,
+  canDelete,
+  hideTooltip,
+  showTooltip,
+  onDuplicate,
+  onOpen,
+  onOpenLayout,
+  onRename,
+  onRequestDelete,
+}: {
+  view: DbView;
+  canDelete: boolean;
+  hideTooltip: () => void;
+  showTooltip: (label: string, e: React.MouseEvent<HTMLElement>) => void;
+  onDuplicate: () => void;
+  onOpen: () => void;
+  onOpenLayout: (rect: DOMRect) => void;
+  onRename: () => void;
+  onRequestDelete: () => void;
+}) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
-interface CardDisplayPanelProps {
-  cardDisplayProps: string[];
-  onChange: (ids: string[]) => void;
-  onClose: () => void;
-  properties: import("./types").DbProperty[];
-  rect: DOMRect;
+  return (
+    <Menu>
+      <MenuButton
+        className={[
+          "flex h-full w-6 items-center justify-center rounded-xs text-transparent transition-colors duration-150",
+          "hover:bg-accent hover:text-foreground group-hover:text-muted-foreground",
+          "data-open:bg-accent data-open:text-foreground",
+        ].join(" ")}
+        onClick={onOpen}
+        onMouseEnter={(e) => showTooltip("View options", e)}
+        onMouseLeave={hideTooltip}
+        ref={buttonRef}
+      >
+        <MoreVertical className="shrink-0" size={13} />
+      </MenuButton>
+      <MenuItems
+        anchor={{ to: "bottom end", gap: 4 }}
+        className="z-600 w-48 overflow-hidden rounded-md border border-border bg-popover p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        transition
+      >
+        <MenuItem
+          as="button"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors duration-100 data-focus:bg-accent"
+          onClick={onRename}
+          type="button"
+        >
+          <Pencil className="shrink-0 text-muted-foreground" size={13} /> Rename
+        </MenuItem>
+        <MenuItem
+          as="button"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors duration-100 data-focus:bg-accent"
+          onClick={() => {
+            if (buttonRef.current) {
+              onOpenLayout(buttonRef.current.getBoundingClientRect());
+            }
+          }}
+          type="button"
+        >
+          <Kanban className="shrink-0 text-muted-foreground" size={13} /> Layout
+        </MenuItem>
+        <MenuItem
+          as="button"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors duration-100 data-focus:bg-accent"
+          onClick={onDuplicate}
+          type="button"
+        >
+          <Copy className="shrink-0 text-muted-foreground" size={13} /> Duplicate view
+        </MenuItem>
+        {canDelete && (
+          <>
+            <div className="my-1 h-px bg-border" />
+            <MenuItem
+              as="button"
+              className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-destructive transition-colors duration-100 data-focus:bg-destructive/10"
+              onClick={onRequestDelete}
+              type="button"
+            >
+              <Trash className="shrink-0" size={13} /> Delete view
+            </MenuItem>
+          </>
+        )}
+      </MenuItems>
+    </Menu>
+  );
 }
 
-const CardDisplayPanel = forwardRef<HTMLDivElement, CardDisplayPanelProps>(
-  function CardDisplayPanel(
-    { rect, properties, cardDisplayProps, onChange },
-    ref
-  ) {
-    const selected = new Set(cardDisplayProps);
-    const panelW = 240;
-    const left = getClampedLeft(rect, panelW, { align: "end" });
-    const top = getClampedTop(rect, 296);
+// ── PropertyPickerListbox ─────────────────────────────────────────────────────
+// Shared single-select Listbox (Group-by/Calendar-date/Gantt-start/Gantt-end) with a "None" option
+// and a plain-<button> "New property" footer — not a ListboxOption, so it's excluded from keyboard nav/typeahead.
 
-    function toggle(propId: string) {
-      if (selected.has(propId)) {
-        onChange(cardDisplayProps.filter((id) => id !== propId));
-      } else {
-        onChange([...cardDisplayProps, propId]);
-      }
-    }
+interface PropertyPickerListboxProps {
+  buttonContent: React.ReactNode;
+  creating: boolean;
+  onChange: (id: string | null) => void;
+  onOpen: () => void;
+  onQuickCreate: () => Promise<void>;
+  options: DbProperty[];
+  panelLabel: string;
+  quickCreateLabel: string;
+  renderOptionIcon: (p: DbProperty) => React.ReactNode;
+  value: string | null;
+}
 
-    return (
-      <div
-        className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-        ref={ref}
-        style={{ position: "fixed", top, left, zIndex: 300, width: panelW }}
+function PropertyPickerListbox({
+  buttonContent,
+  creating,
+  onChange,
+  onOpen,
+  onQuickCreate,
+  options,
+  panelLabel,
+  quickCreateLabel,
+  renderOptionIcon,
+  value,
+}: PropertyPickerListboxProps) {
+  // Listbox has no controlled open/close API and the plain-<button> footer doesn't trigger
+  // close-on-select, so remounting via `key` is how it's forced closed after the async quick-create resolves.
+  const [resetKey, setResetKey] = useState(0);
+
+  return (
+    <Listbox key={resetKey} onChange={onChange} value={value}>
+      <ListboxButton
+        className={[
+          "flex h-7 shrink-0 items-center gap-1.5 rounded-sm border px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-150",
+          value
+            ? "border-primary/30 bg-primary/8 text-primary"
+            : "border-border bg-background text-foreground/70 hover:border-border hover:bg-accent",
+          "data-open:border-primary/30 data-open:bg-primary/8 data-open:text-primary",
+        ].join(" ")}
+        onClick={onOpen}
       >
-        <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-          <p className="text-xs font-semibold text-foreground/80">
-            Card properties
-          </p>
-          {properties.length > 0 && (
-            <button
-              className="text-xs font-medium text-primary/70 hover:text-primary"
-              onClick={() =>
-                onChange(
-                  selected.size === properties.length
-                    ? []
-                    : properties.map((p) => p.id)
-                )
-              }
-            >
-              {selected.size === properties.length ? "Clear all" : "Select all"}
-            </button>
-          )}
-        </div>
-        <div className="max-h-56 overflow-y-auto p-1.5">
-          {properties.length === 0 && (
-            <p className="px-3 py-3 text-xs text-muted-foreground">
-              No properties
-            </p>
-          )}
-          {properties.map((prop) => {
-            const Icon =
-              PROPERTY_TYPE_ICON[
-                prop.type as keyof typeof PROPERTY_TYPE_ICON
-              ] ?? TextT;
-            const propConfig = (prop.config ?? {}) as { icon?: string };
-            const on = selected.has(prop.id);
+        {buttonContent}
+        <ChevronDown className="shrink-0 text-muted-foreground" size={10} />
+      </ListboxButton>
+      <ListboxOptions
+        anchor={{ to: "bottom start", gap: 4 }}
+        className="z-600 w-48 overflow-hidden rounded-md border border-border bg-background transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        transition
+      >
+        <p className="px-3 pb-1 pt-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
+          {panelLabel}
+        </p>
+        <div className="p-1.5 pt-0.5">
+          <ListboxOption
+            className={[
+              "flex w-full cursor-default items-center gap-2.5 rounded-sm px-3 py-2 text-sm transition-colors data-focus:bg-accent",
+              value ? "text-muted-foreground" : "font-semibold text-primary",
+            ].join(" ")}
+            value={null}
+          >
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60 text-xs text-muted-foreground">
+              —
+            </span>
+            None
+          </ListboxOption>
+          {options.map((p) => {
+            const isActive = value === p.id;
             return (
-              <button
-                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors hover:bg-accent"
-                key={prop.id}
-                onClick={() => toggle(prop.id)}
+              <ListboxOption
+                className={[
+                  "flex w-full cursor-default items-center gap-2.5 rounded-sm px-3 py-2 text-sm transition-colors data-focus:bg-accent",
+                  isActive ? "font-semibold text-primary" : "text-foreground",
+                ].join(" ")}
+                key={p.id}
+                value={p.id}
               >
-                <span
-                  className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border transition-colors ${
-                    on
-                      ? "border-border bg-muted/30 text-muted-foreground"
-                      : "border-border bg-muted/10 text-muted-foreground"
-                  }`}
-                >
-                  {on ? <Eye size={12} /> : <EyeSlash size={12} />}
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60">
+                  {renderOptionIcon(p)}
                 </span>
-                <span className="flex min-w-0 flex-1 items-center gap-2">
-                  {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} /> : <Icon size={12} />}
-                  <span
-                    className={`truncate text-sm font-medium ${on ? "text-foreground" : "text-muted-foreground"}`}
-                  >
-                    {prop.name}
-                  </span>
-                </span>
-                <span
-                  className={`size-1.5 shrink-0 rounded-full transition-colors ${on ? "bg-success" : "bg-border"}`}
-                />
-              </button>
+                <span className="flex-1 truncate text-left">{p.name}</span>
+                {isActive && (
+                  <Check className="shrink-0 text-primary" size={12} />
+                )}
+              </ListboxOption>
             );
           })}
+          <div className="my-1 h-px bg-border" />
+          <button
+            className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={creating}
+            onClick={() => {
+              onQuickCreate().then(() => setResetKey((k) => k + 1));
+            }}
+            type="button"
+          >
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60">
+              <Plus className="text-muted-foreground" size={11} />
+            </span>
+            {quickCreateLabel}
+          </button>
         </div>
-        <div className="border-t border-border px-3 py-2">
-          <p className="text-xs text-muted-foreground">
-            {selected.size === 0
-              ? "Showing all properties"
-              : `${selected.size} propert${selected.size === 1 ? "y" : "ies"} selected`}
-          </p>
-        </div>
-      </div>
-    );
-  }
-);
+      </ListboxOptions>
+    </Listbox>
+  );
+}
 
 // ── PropertiesPanel ───────────────────────────────────────────────────────────
 
@@ -1641,7 +1294,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
 
     return (
       <div
-        className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+        className="overflow-hidden rounded-md border border-border bg-background"
         ref={ref}
         style={{ position: "fixed", top, left, zIndex: 300, width: panelW }}
       >
@@ -1680,12 +1333,12 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
             const visible = !hiddenSet.has(prop.id);
             return (
               <button
-                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left transition-colors hover:bg-accent"
+                className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors hover:bg-accent"
                 key={prop.id}
                 onClick={() => onToggle(prop.id, visible)}
               >
                 <span
-                  className={`flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border transition-colors ${
+                  className={`flex size-6 shrink-0 items-center justify-center rounded-xs border transition-colors ${
                     visible
                       ? "border-border bg-muted/30 text-muted-foreground"
                       : "border-border bg-muted/10 text-muted-foreground"
@@ -1716,7 +1369,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
               <div className="p-2">
                 <input
                   autoFocus
-                  className="mb-2 w-full rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2.5 py-1.5 text-sm placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
+                  className="mb-2 w-full rounded-sm border border-border bg-muted/30 px-2.5 py-1.5 text-sm placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
@@ -1736,7 +1389,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
                       ] ?? TextT;
                     return (
                       <button
-                        className="flex items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                        className="flex items-center gap-2 rounded-sm px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
                         disabled={saving}
                         key={def.type}
                         onClick={() => {
@@ -1746,7 +1399,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
                           else handleAdd(def.type);
                         }}
                       >
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-muted-foreground">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60 text-muted-foreground">
                           <Icon size={11} />
                         </span>
                         {def.label}
@@ -1755,7 +1408,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
                   })}
                 </div>
                 <button
-                  className="mt-1.5 w-full rounded-[var(--radius-sm)] py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-muted-foreground"
+                  className="mt-1.5 w-full rounded-sm py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-muted-foreground"
                   onClick={() => {
                     setAdding(false);
                     setNewName("");
@@ -1769,7 +1422,7 @@ const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
                 onClick={() => setAdding(true)}
               >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-dashed border-border">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-xs border border-dashed border-border">
                   <Plus size={11} />
                 </span>
                 Add property

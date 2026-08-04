@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUpload } from "@/lib/storage/use-upload";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
@@ -248,27 +249,19 @@ function CoverPicker({
  }
 
  return (
-  <>
-   {/* Backdrop */}
-   <div className="fixed inset-0 z-[590] bg-black/20 backdrop-blur-[2px]" onClick={onClose} />
+  <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+   <DialogContent className="max-w-95">
+    <DialogHeader>
+     <DialogTitle>Page Cover</DialogTitle>
+    </DialogHeader>
 
-   {/* Modal */}
-   <div className="fixed left-1/2 top-1/2 z-[600] w-[calc(100vw-32px)] max-w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius-lg)] border border-border bg-popover">
-    {/* Header */}
-    <div className="flex items-center justify-between border-b border-border px-5 py-4">
-     <span className="text-sm font-semibold text-foreground">Page Cover</span>
-     <button onClick={onClose} className="text-muted-foreground transition-colors hover:text-foreground">
-      <XIcon size={15} />
-     </button>
-    </div>
-
-    <div className="p-5">
+    <div>
      {/* File upload */}
      <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Upload image</p>
      <button
       onClick={() => fileInputRef.current?.click()}
       disabled={uploading}
-      className="mb-1 flex w-full items-center justify-center gap-2 rounded-[var(--radius-md)] border-2 border-dashed border-border py-4 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/30 hover:text-foreground disabled:opacity-50"
+      className="mb-1 flex w-full items-center justify-center gap-2 rounded-md border-2 border-dashed border-border py-4 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/30 hover:text-foreground disabled:opacity-50"
      >
       <ImageIcon size={16} />
       {uploading ? "Uploading…" : "Choose a file to upload"}
@@ -293,7 +286,7 @@ function CoverPicker({
         key={g}
         onClick={() => { onSelect(g); onClose(); }}
         style={{ background: g }}
-        className="h-8 rounded-[var(--radius-sm)] border border-border transition-all hover:scale-105 hover:ring-2 hover:ring-primary/50"
+        className="h-8 rounded-sm border border-border transition-all hover:scale-105 hover:ring-2 hover:ring-primary/50"
        />
       ))}
      </div>
@@ -305,11 +298,11 @@ function CoverPicker({
        value={url}
        onChange={(e) => setUrl(e.target.value)}
        placeholder="https://…"
-       className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+       className="flex-1 rounded-sm border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-primary"
       />
       <button
        onClick={() => { if (url.trim()) { onSelect(url.trim()); onClose(); } }}
-       className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+       className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
       >
        Set
       </button>
@@ -317,13 +310,13 @@ function CoverPicker({
 
      <button
       onClick={() => { onRemove(); onClose(); }}
-      className="mt-3 w-full rounded-[var(--radius-sm)] py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
+      className="mt-3 w-full rounded-sm py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent"
      >
       Remove cover
      </button>
     </div>
-   </div>
-  </>
+   </DialogContent>
+  </Dialog>
  );
 }
 
@@ -365,12 +358,12 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
  function remove(id: string) { onChange(filters.filter((f) => f.id !== id)); }
 
  return (
-  <div className="absolute right-0 top-full z-[400] mt-1 w-[calc(100vw-24px)] max-w-[380px] rounded-[var(--radius-md)] border border-border bg-popover">
+  <div className="absolute right-0 top-full z-400 mt-1 w-[calc(100vw-24px)] max-w-95 rounded-md border border-border bg-popover">
    <div className="flex items-center justify-between border-b border-border px-4 py-3">
     <span className="text-sm font-semibold">Filter</span>
     <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
    </div>
-   <div className="max-h-[320px] overflow-y-auto p-3 space-y-2">
+   <div className="max-h-80 overflow-y-auto p-3 space-y-2">
     {filters.length === 0 && (
      <p className="py-4 text-center text-xs text-muted-foreground">No filters applied. Add one below.</p>
     )}
@@ -389,7 +382,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
      return (
       <div key={f.id} className="flex items-center gap-1.5">
        {i > 0 && (
-        <span className={`shrink-0 rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-bold tracking-wide ${
+        <span className={`shrink-0 rounded-xs px-1.5 py-0.5 text-xs font-bold tracking-wide ${
          isOr ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"
         }`}>
          {isOr ? "or" : "and"}
@@ -453,7 +446,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
          value={String(f.value ?? "")}
          onChange={(e) => update(f.id, { value: e.target.value })}
          placeholder="Value…"
-         className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
+         className="min-w-0 flex-1 rounded-sm border border-border bg-background px-2 py-1.5 text-xs outline-none focus:border-primary"
         />
        )}
        <button onClick={() => remove(f.id)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors">
@@ -474,7 +467,7 @@ function FilterPanel({ properties, filters, onChange, onClear, onClose }: {
      <PlusIcon size={12} /> Add filter
     </button>
     {filters.length > 0 && (
-     <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors">
+     <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors">
       <TrashIcon size={12} /> Clear all
      </button>
     )}
@@ -527,12 +520,12 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
  function remove(id: string) { onChange(sorts.filter((s) => s.id !== id)); }
 
  return (
-  <div className="absolute right-0 top-full z-[400] mt-1 w-[300px] rounded-[var(--radius-md)] border border-border bg-popover">
+  <div className="absolute right-0 top-full z-400 mt-1 w-75 rounded-md border border-border bg-popover">
    <div className="flex items-center justify-between border-b border-border px-4 py-3">
     <span className="text-sm font-semibold">Sort</span>
     <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
    </div>
-   <div className="max-h-[280px] overflow-y-auto p-3 space-y-2">
+   <div className="max-h-70 overflow-y-auto p-3 space-y-2">
     {sorts.length === 0 && (
      <p className="py-4 text-center text-xs text-muted-foreground">No sorts applied.</p>
     )}
@@ -577,7 +570,7 @@ function SortPanel({ properties, sorts, onChange, onClear, onClose }: {
      <PlusIcon size={12} /> Add sort
     </button>
     {sorts.length > 0 && (
-     <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-[var(--radius-sm)] px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors">
+     <button onClick={onClear} className="ml-auto flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors">
       <TrashIcon size={12} /> Clear all
      </button>
     )}
@@ -599,17 +592,17 @@ function PropertiesPanel({ properties, onToggle, onClose }: {
 }) {
  const visible = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
  return (
-  <div className="absolute right-0 top-full z-[400] mt-1 w-[240px] rounded-[var(--radius-md)] border border-border bg-popover">
+  <div className="absolute right-0 top-full z-400 mt-1 w-60 rounded-md border border-border bg-popover">
    <div className="flex items-center justify-between border-b border-border px-4 py-3">
     <span className="text-sm font-semibold">Properties</span>
     <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><XIcon size={14} /></button>
    </div>
-   <div className="max-h-[320px] overflow-y-auto p-2">
+   <div className="max-h-80 overflow-y-auto p-2">
     {visible.map((p) => (
      <button
       key={p.id}
       onClick={() => onToggle(p.id, !p.isHidden)}
-      className="flex w-full items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2 hover:bg-accent transition-colors"
+      className="flex w-full items-center gap-3 rounded-sm px-3 py-2 hover:bg-accent transition-colors"
      >
       <span className={`flex size-4 items-center justify-center rounded border text-xs ${!p.isHidden ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
        {!p.isHidden ? <CheckIcon size={10} /> : ""}
@@ -941,22 +934,11 @@ export function TemplatePageClient({
   return () => document.removeEventListener("mousedown", h);
  }, [showAddView]);
 
- // Filter / Sort / Properties toolbar popups — close on outside click, same
- // pattern as the "Add view" popup above (they were missing this entirely).
- //
- // Radix `Select` (used for the property/operator/value/direction pickers
- // inside these panels) portals its open dropdown to document.body — a
- // sibling of the panel's own DOM subtree, not a descendant — so a click on
- // an option is never `contains`ed by filterPanelRef/sortPanelRef. Since
- // mousedown fires before Radix's own click-based selection commits, this
- // handler was closing (unmounting) the whole panel out from under the
- // click before the value change could apply, which looked like "picking an
- // option just closes the dropdown without selecting anything." Excluding
- // clicks inside a Select's portaled content (`data-slot="select-content"`,
- // set in components/ui/select.tsx) fixes it without needing to special-case
- // every future portal-based control the same way.
+ // Select's dropdown and MultiOptionPicker (filter-bar.tsx) both portal to document.body,
+ // so clicks inside were never `contains`ed by filterPanelRef/sortPanelRef — exclude both by data-slot.
  function isInsideSelectPortal(target: Node) {
-  return target instanceof HTMLElement && !!target.closest('[data-slot="select-content"]');
+  return target instanceof HTMLElement
+   && !!target.closest('[data-slot="select-content"], [data-slot="multi-option-picker"]');
  }
 
  // While a Radix `Select` inside these panels is open, it sets
@@ -1619,7 +1601,7 @@ export function TemplatePageClient({
     <nav className="flex min-w-0 items-center gap-0.5 text-xs">
      <Link
       href={`/app/${workspaceSlug}`}
-      className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
      >
       <HouseIcon size={13} />
       <span className="font-medium">{workspaceName}</span>
@@ -1634,12 +1616,12 @@ export function TemplatePageClient({
         {href ? (
          <Link
           href={href}
-          className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="max-w-30 truncate rounded-sm px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
          >
           {label}
          </Link>
         ) : (
-         <span className="max-w-[120px] truncate px-2 py-1 text-xs text-muted-foreground">
+         <span className="max-w-30 truncate px-2 py-1 text-xs text-muted-foreground">
           {label}
          </span>
         )}
@@ -1652,7 +1634,7 @@ export function TemplatePageClient({
        <CaretRightIcon size={11} className="shrink-0 text-foreground/30" />
        <Link
         href={`/app/${workspaceSlug}/${crumb.shortId}`}
-        className="max-w-[120px] truncate rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        className="max-w-30 truncate rounded-sm px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
        >
         {crumb.title}
        </Link>
@@ -1661,7 +1643,7 @@ export function TemplatePageClient({
 
      <span className="flex min-w-0 items-center gap-0.5">
       <CaretRightIcon size={11} className="shrink-0 text-foreground/30" />
-      <span className="max-w-[240px] truncate px-2 py-1 text-xs font-semibold text-foreground/80">
+      <span className="max-w-60 truncate px-2 py-1 text-xs font-semibold text-foreground/80">
        {pageTitle || "Untitled"}
       </span>
      </span>
@@ -1716,7 +1698,7 @@ export function TemplatePageClient({
 
    {/* Cover */}
    {pageCoverUrl && (
-    <div className="group/cover relative h-[280px] w-full">
+    <div className="group/cover relative h-70 w-full">
      {isCoverGradient
       ? <div className="h-full w-full" style={{ background: pageCoverUrl }} />
       // eslint-disable-next-line @next/next/no-img-element
@@ -1727,7 +1709,7 @@ export function TemplatePageClient({
       <div className="relative">
        <button
         onClick={() => { setShowCoverPicker((p) => !p); setShowIconPicker(false); }}
-        className="rounded-[var(--radius-sm)] bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
+        className="rounded-sm bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors"
        >
         Change cover
        </button>
@@ -1742,7 +1724,7 @@ export function TemplatePageClient({
        )}
       </div>
       <button onClick={() => setRemoveCoverConfirm(true)}
-       className="rounded-[var(--radius-sm)] bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors">
+       className="rounded-sm bg-black/50 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm hover:bg-black/70 transition-colors">
        Remove
       </button>
      </div>
@@ -1751,7 +1733,7 @@ export function TemplatePageClient({
    )}
 
    {/* Page header */}
-   <div className="relative mx-auto w-full max-w-[1100px] px-8 pb-2 pt-6">
+   <div className="relative mx-auto w-full max-w-275 px-8 pb-2 pt-6">
 
     {lockedBanner}
 
@@ -1762,7 +1744,7 @@ export function TemplatePageClient({
        <button
         ref={iconBtnRef}
         onClick={() => { setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
        >
         <SmileyStickerIcon size={13} /> Add icon
        </button>
@@ -1782,7 +1764,7 @@ export function TemplatePageClient({
       <div className="relative">
        <button
         onClick={() => { setShowCoverPicker((p) => !p); setShowIconPicker(false); }}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        className="flex items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
        >
         <ImageIcon size={13} /> Add cover
        </button>
@@ -1806,7 +1788,7 @@ export function TemplatePageClient({
        <button
         ref={iconBtnRef}
         onClick={() => { if (locked) return; setShowIconPicker((p) => !p); setShowCoverPicker(false); }}
-        className="flex size-12 items-center justify-center rounded-[var(--radius-md)] transition-all hover:bg-muted/50"
+        className="flex size-12 items-center justify-center rounded-md transition-all hover:bg-muted/50"
        >
         <PageIcon icon={pageIcon} size={48} />
        </button>
@@ -1884,7 +1866,7 @@ export function TemplatePageClient({
 
    {/* View tabs + toolbar — sticky so it stays visible as cover/header scroll away */}
    <div ref={viewToolbarRef} className="sticky top-0 z-20 bg-card">
-   <div className="mx-auto flex max-w-[1100px] items-end justify-between border-b border-border px-8">
+   <div className="mx-auto flex max-w-275 items-end justify-between border-b border-border px-8">
     <div className="flex items-end self-stretch">
      {views.map((view) => {
       const Icon   = VIEW_ICON[view.type] ?? TableIcon;
@@ -1909,7 +1891,7 @@ export function TemplatePageClient({
             if (e.key === "Enter") renameView(view.id, renamingViewName || view.name);
             if (e.key === "Escape") setRenamingViewId(null);
            }}
-           className="h-7 w-28 rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 text-sm focus:outline-none"
+           className="h-7 w-28 rounded-sm border border-primary/40 bg-background px-2 text-sm focus:outline-none"
           />
          </div>
         ) : (
@@ -1945,7 +1927,7 @@ export function TemplatePageClient({
          style={{ opacity: isHovered || menuOpen ? 1 : 0, pointerEvents: isHovered || menuOpen ? "auto" : "none" }}
         >
          <span className={[
-          "flex size-5 items-center justify-center rounded-[var(--radius-xs)] transition-colors",
+          "flex size-5 items-center justify-center rounded-xs transition-colors",
           menuOpen ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
          ].join(" ")}>
           <MoreVerticalIcon size={13} />
@@ -1963,7 +1945,7 @@ export function TemplatePageClient({
        onMouseEnter={(e) => showTooltip("Add a view", e)}
        onMouseLeave={hideTooltip}
        className={[
-        "flex size-[26px] items-center justify-center rounded-[var(--radius-sm)] border transition-all",
+        "flex size-6.5 items-center justify-center rounded-sm border transition-all",
         showAddView
          ? "border-primary bg-primary/10 text-primary"
          : "border-border text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
@@ -1972,7 +1954,7 @@ export function TemplatePageClient({
        <PlusIcon size={14} />
       </button>
       {showAddView && (
-       <div className="absolute left-0 top-full z-[400] mt-1.5 w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+       <div className="absolute left-0 top-full z-400 mt-1.5 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-border bg-card">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
          <PlusIcon size={13} className="text-primary" />
          <span className="text-sm font-semibold text-foreground">Add a new view</span>
@@ -1997,12 +1979,12 @@ export function TemplatePageClient({
            onMouseEnter={(e) => { if (alreadyAdded) showTooltip(`${label} view already added`, e); }}
            onMouseLeave={hideTooltip}
            className={[
-            "group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all",
+            "group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-all",
             alreadyAdded ? "cursor-not-allowed opacity-40" : "hover:bg-primary/5 active:scale-[0.96]",
            ].join(" ")}
           >
            <div className={[
-            "flex size-12 items-center justify-center rounded-[var(--radius-md)] border border-border bg-muted/50 transition-all",
+            "flex size-12 items-center justify-center rounded-md border border-border bg-muted/50 transition-all",
             alreadyAdded ? "" : "group-hover:border-primary/40 group-hover:bg-primary/10",
            ].join(" ")}>
             <Icon size={24} className={`text-foreground/70 transition-colors ${alreadyAdded ? "" : "group-hover:text-primary"}`} />
@@ -2024,7 +2006,7 @@ export function TemplatePageClient({
      <div ref={filterPanelRef} className="relative">
       <button
        onClick={() => { const next = !showFilter; closeAllToolbarPopups(); setShowFilter(next); }}
-       className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeFilterCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+       className={`flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium transition-colors ${activeFilterCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
       >
        <FunnelIcon size={13} />
        Filter
@@ -2044,7 +2026,7 @@ export function TemplatePageClient({
      <div ref={sortPanelRef} className="relative">
       <button
        onClick={() => { const next = !showSort; closeAllToolbarPopups(); setShowSort(next); }}
-       className={`flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium transition-colors ${activeSortCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+       className={`flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium transition-colors ${activeSortCount > 0 ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
       >
        <SortAscendingIcon size={13} />
        Sort
@@ -2064,7 +2046,7 @@ export function TemplatePageClient({
      <div ref={propertiesPanelRef} className="relative">
       <button
        onClick={() => { const next = !showProperties; closeAllToolbarPopups(); setShowProperties(next); }}
-       className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+       className="flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
        <EyeIcon size={13} /> Properties
       </button>
@@ -2110,7 +2092,7 @@ export function TemplatePageClient({
        if (entry) router.push(`/app/${workspaceSlug}/${entry.shortId}`);
       }}
       disabled={locked}
-      className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
      >
       <PlusIcon size={12} />
       New
@@ -2122,19 +2104,19 @@ export function TemplatePageClient({
    {/* Bulk action bar */}
    {selectedIds.size > 0 && (
     <div className="border-b border-border bg-primary/5">
-    <div className="mx-auto flex max-w-[1100px] items-center gap-3 px-6 py-2">
+    <div className="mx-auto flex max-w-275 items-center gap-3 px-6 py-2">
      <span className="text-sm font-medium">
       {selectedIds.size} {selectedIds.size === 1 ? "row" : "rows"} selected
      </span>
      <button
       onClick={() => setConfirmDeleteSelected(true)}
-      className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+      className="flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
      >
       <TrashIcon size={12} /> Delete
      </button>
      <button
       onClick={() => setSelectedIds(new Set())}
-      className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
+      className="flex items-center gap-1 rounded-sm px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
      >
       <XIcon size={12} /> Cancel
      </button>
@@ -2167,7 +2149,7 @@ export function TemplatePageClient({
     )}
     <div
      ref={tableViewRef}
-     className={`mx-auto w-full max-w-[1100px] ${activeView?.type === "table" ? "overflow-x-auto template-hscroll" : ""} ${activeView?.type === "calendar" ? "flex flex-1 flex-col" : ""} ${activeView?.type === "gantt" ? "h-full" : ""} ${activeView?.type === "board" ? "flex min-h-0 flex-1 flex-col" : ""}`}
+     className={`mx-auto w-full max-w-275 ${activeView?.type === "table" ? "overflow-x-auto template-hscroll" : ""} ${activeView?.type === "calendar" ? "flex flex-1 flex-col" : ""} ${activeView?.type === "gantt" ? "h-full" : ""} ${activeView?.type === "board" ? "flex min-h-0 flex-1 flex-col" : ""}`}
     >
     {activeView?.type === "board" ? (
      <TemplateBoardView
@@ -2301,7 +2283,7 @@ export function TemplatePageClient({
       left: getClampedLeft(viewMenuRect, 320, { align: "start" }),
       zIndex: 500,
      }}
-     className="w-[calc(100vw-24px)] max-w-[320px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card"
+     className="w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-border bg-card"
     >
      <button
       onClick={() => setShowLayoutPicker(false)}
@@ -2322,10 +2304,10 @@ export function TemplatePageClient({
         <button
          key={type}
          onClick={() => changeViewType(viewMenuTarget.id, type)}
-         className="group flex flex-col items-center gap-2 rounded-[var(--radius-md)] px-2 py-3 text-center transition-all hover:bg-primary/5 active:scale-[0.96]"
+         className="group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-all hover:bg-primary/5 active:scale-[0.96]"
         >
          <div className={[
-          "flex size-12 items-center justify-center rounded-[var(--radius-md)] border transition-all",
+          "flex size-12 items-center justify-center rounded-md border transition-all",
           isActive ? "border-primary/40 bg-primary/10" : "border-border bg-muted/50 group-hover:border-primary/40 group-hover:bg-primary/10",
          ].join(" ")}>
           <Icon size={24} className={isActive ? "text-primary" : "text-foreground/70 transition-colors group-hover:text-primary"} />
@@ -2351,7 +2333,7 @@ export function TemplatePageClient({
      left: getClampedLeft(viewMenuRect, 192, { align: "start" }),
      zIndex: 500,
     }}
-    className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover p-1"
+    className="w-48 overflow-hidden rounded-md border border-border bg-popover p-1"
    >
     <button
      onClick={() => {
@@ -2359,19 +2341,19 @@ export function TemplatePageClient({
       setRenamingViewName(viewMenuTarget.name);
       setViewMenuTarget(null); setViewMenuRect(null);
      }}
-     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+     className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     >
      <PencilIcon size={13} className="shrink-0 text-muted-foreground" /> Rename
     </button>
     <button
      onClick={() => setShowLayoutPicker(true)}
-     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+     className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     >
      <SquaresFourIcon size={13} className="shrink-0 text-muted-foreground" /> Layout
     </button>
     <button
      onClick={() => { duplicateView(viewMenuTarget.id); setViewMenuTarget(null); setViewMenuRect(null); }}
-     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+     className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     >
      <CopyIcon size={13} className="shrink-0 text-muted-foreground" /> Duplicate view
     </button>
@@ -2380,7 +2362,7 @@ export function TemplatePageClient({
       <div className="my-1 h-px bg-border" />
       <button
        onClick={() => { setDeleteViewTarget(viewMenuTarget); setViewMenuTarget(null); setViewMenuRect(null); }}
-       className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+       className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
       >
        <TrashIcon size={13} className="shrink-0" /> Delete view
       </button>

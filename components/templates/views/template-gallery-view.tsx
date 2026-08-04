@@ -40,6 +40,7 @@ import type { DbProperty, DbView } from "@/components/database/types";
 import { PageIcon } from "@/components/pages/page-icon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import type { DatabaseProperty, DatabaseView } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
 
@@ -181,10 +182,7 @@ function GalleryCard({
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
   const [commentCount, setCommentCount] = useState<number | null>(entry.commentCount ?? null);
-  const [tooltip, setTooltip] = useState<{
-    label: string;
-    rect: DOMRect;
-  } | null>(null);
+  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(entry.title ?? "");
   const [propEditor, setPropEditor] = useState<{
@@ -238,16 +236,6 @@ function GalleryCard({
     return () => document.removeEventListener("mousedown", h);
   }, [editing, menuPos, commentAnchor, propEditor]);
 
-  // tooltip is a `position: fixed` portal anchored to a rect snapshotted once
-  // on hover — dismiss it on scroll instead of repositioning, since locking
-  // scroll on every card hover would hurt the gallery's own scrolling.
-  useEffect(() => {
-    if (!tooltip) return;
-    function handleScroll() { setTooltip(null); }
-    document.addEventListener("scroll", handleScroll, true);
-    return () => document.removeEventListener("scroll", handleScroll, true);
-  }, [tooltip]);
-
   function commitTitle() {
     const trimmed = editTitle.trim();
     if (trimmed !== (entry.title ?? "")) {
@@ -259,7 +247,7 @@ function GalleryCard({
     <>
       <div
         className={[
-          "relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card transition-colors duration-150",
+          "relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-150",
           dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
         onMouseEnter={() => !dragging && setHovered(true)}
@@ -268,7 +256,7 @@ function GalleryCard({
           if (dragging) return;
           e.preventDefault();
           e.stopPropagation();
-          setTooltip(null);
+          hideTooltip();
           setMenuPos({ x: e.clientX, y: e.clientY });
         }}
         ref={cardRef}
@@ -289,67 +277,43 @@ function GalleryCard({
         >
           {editing ? (
             <button
-              className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
                 onClickEntry(entry.id);
               }}
-              onMouseEnter={(e) =>
-                setTooltip({
-                  label: "Open full page",
-                  rect: (
-                    e.currentTarget as HTMLElement
-                  ).getBoundingClientRect(),
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
+              onMouseEnter={(e) => showTooltip("Open full page", e)}
+              onMouseLeave={hideTooltip}
               onPointerDown={(e) => e.stopPropagation()}
             >
               <PanelRight size={13} />
             </button>
           ) : (
             <button
-              className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
                 if (locked) return;
-                setTooltip({
-                  label: "Open full page",
-                  rect: (
-                    e.currentTarget as HTMLElement
-                  ).getBoundingClientRect(),
-                });
+                showTooltip("Open full page", e);
                 setEditTitle(entry.title ?? "");
                 setEditing(true);
               }}
-              onMouseEnter={(e) =>
-                setTooltip({
-                  label: "Edit",
-                  rect: (
-                    e.currentTarget as HTMLElement
-                  ).getBoundingClientRect(),
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
+              onMouseEnter={(e) => showTooltip("Edit", e)}
+              onMouseLeave={hideTooltip}
               onPointerDown={(e) => e.stopPropagation()}
             >
               <Pencil size={13} />
             </button>
           )}
           <button
-            className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
-              setTooltip(null);
+              hideTooltip();
               setMenuPos({ x: e.clientX, y: e.clientY });
             }}
-            onMouseEnter={(e) =>
-              setTooltip({
-                label: "More options",
-                rect: (e.currentTarget as HTMLElement).getBoundingClientRect(),
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
+            onMouseEnter={(e) => showTooltip("More options", e)}
+            onMouseLeave={hideTooltip}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <MoreHorizontal size={13} />
@@ -358,7 +322,7 @@ function GalleryCard({
 
         {/* Cover area */}
         <button
-          className="relative block h-[140px] w-full shrink-0 overflow-hidden bg-primary/10"
+          className="relative block h-35 w-full shrink-0 overflow-hidden bg-primary/10"
           onClick={() => !dragging && !editing && onClickEntry(entry.id)}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -478,7 +442,7 @@ function GalleryCard({
                     className="flex items-center gap-1.5 overflow-hidden"
                     key={prop.id}
                   >
-                    <span className="w-[76px] shrink-0 truncate text-xs font-medium text-muted-foreground">
+                    <span className="w-19 shrink-0 truncate text-xs font-medium text-muted-foreground">
                       {prop.name}
                     </span>
                     <div className="min-w-0 flex-1 overflow-hidden">
@@ -498,7 +462,7 @@ function GalleryCard({
                   row's height on every card so a card with no comments doesn't
                   end up visibly shorter than one that has them. */}
               <button
-                className={`inline-flex items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
+                className={`inline-flex items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
                 tabIndex={commentCount ? 0 : -1}
                 aria-hidden={!commentCount}
                 // Exempt from CellCommentPopover's capture-phase outside-click
@@ -512,15 +476,8 @@ function GalleryCard({
                   setCommentAnchor((cur) => (cur ? null : rect));
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                onMouseEnter={(e) =>
-                  setTooltip({
-                    label: "View comments",
-                    rect: (
-                      e.currentTarget as HTMLElement
-                    ).getBoundingClientRect(),
-                  })
-                }
-                onMouseLeave={() => setTooltip(null)}
+                onMouseEnter={(e) => showTooltip("View comments", e)}
+                onMouseLeave={hideTooltip}
               >
                 <MessageSquare size={11} />
                 {commentCount || 0}
@@ -540,7 +497,7 @@ function GalleryCard({
                 const propConfig = (prop.config ?? {}) as { icon?: string };
                 return (
                   <button
-                    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -785,7 +742,7 @@ export function TemplateGalleryView({
               {/* New page card — outside SortableContext items */}
               {!locked && (
                 <button
-                  className="flex h-full min-h-[180px] flex-col items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-border text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
+                  className="flex h-full min-h-45 flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-border text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
                   onClick={() => onAddEntry()}
                 >
                   <Plus size={18} />

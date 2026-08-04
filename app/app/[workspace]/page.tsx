@@ -144,7 +144,7 @@ export default async function WorkspacePage({ params }: Props) {
       {/* ── Topbar ── */}
       <div className="flex h-11 shrink-0 items-center justify-between bg-card px-3">
         <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden text-xs">
-          <span className="flex shrink-0 items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-foreground">
+          <span className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-foreground">
             <LayoutGrid size={13} className="shrink-0 text-primary" />
             <span className="truncate font-semibold">{ws.name}</span>
           </span>
@@ -159,7 +159,7 @@ export default async function WorkspacePage({ params }: Props) {
           <NewPageButton
             workspaceId={ws.id}
             workspaceSlug={slug}
-            className="inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-70"
+            className="inline-flex h-8 items-center gap-1.5 rounded-sm bg-primary px-3.5 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-70"
           >
             <Plus size={13} strokeWidth={2.5} />
             New page
@@ -171,11 +171,11 @@ export default async function WorkspacePage({ params }: Props) {
       <div className="flex-1 overflow-y-auto bg-card">
 
         {/* ── Hero card: greeting + stat strip in one unit ── */}
-        <div className="mx-auto w-full max-w-[1200px] px-4 pt-6 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
-            <div className="bg-gradient-to-br from-primary/10 via-transparent to-transparent px-6 py-6 sm:px-8 sm:py-7">
+        <div className="mx-auto w-full max-w-300 px-4 pt-6 sm:px-6 lg:px-8">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="bg-linear-to-br from-primary/10 via-transparent to-transparent px-6 py-6 sm:px-8 sm:py-7">
               <div className="flex min-w-0 items-center gap-4">
-                <div className="flex size-14 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-xl font-bold text-primary-foreground select-none">
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-primary text-xl font-bold text-primary-foreground select-none">
                   {(ws.name ?? "W").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -188,7 +188,7 @@ export default async function WorkspacePage({ params }: Props) {
             </div>
             <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
               <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
                   <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 </span>
                 <div className="min-w-0">
@@ -197,7 +197,7 @@ export default async function WorkspacePage({ params }: Props) {
                 </div>
               </div>
               <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-secondary">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary">
                   <Users size={16} className="text-secondary-foreground" />
                 </span>
                 <div className="min-w-0">
@@ -206,7 +206,7 @@ export default async function WorkspacePage({ params }: Props) {
                 </div>
               </div>
               <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-warning/10">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-warning/10">
                   <Star size={15} className="text-warning" fill="currentColor" />
                 </span>
                 <div className="min-w-0">
@@ -219,7 +219,7 @@ export default async function WorkspacePage({ params }: Props) {
         </div>
 
         {/* ── Main content — single full-width column ── */}
-        <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-300 px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-6">
 
             {/* Quick actions — bento tile row, replaces the old narrow sidebar list */}
@@ -229,9 +229,9 @@ export default async function WorkspacePage({ params }: Props) {
                 <NewPageButton
                   workspaceId={ws.id}
                   workspaceSlug={slug}
-                  className="group flex flex-col items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-card px-4 py-5 text-center transition-all duration-150 hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
+                  className="group flex flex-col items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-5 text-center transition-all duration-150 hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                     <Plus size={18} />
                   </span>
                   <span className="text-xs font-semibold text-foreground">New page</span>
@@ -245,9 +245,9 @@ export default async function WorkspacePage({ params }: Props) {
                   <Link
                     key={action.label}
                     href={action.href}
-                    className="group flex flex-col items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-card px-4 py-5 text-center transition-all duration-150 hover:border-primary/30 hover:bg-primary/5"
+                    className="group flex flex-col items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-5 text-center transition-all duration-150 hover:border-primary/30 hover:bg-primary/5"
                   >
-                    <span className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${action.iconBg}`}>
+                    <span className={`flex size-10 shrink-0 items-center justify-center rounded-md ${action.iconBg}`}>
                       {action.icon}
                     </span>
                     <span className="text-xs font-semibold text-foreground">{action.label}</span>
@@ -263,7 +263,7 @@ export default async function WorkspacePage({ params }: Props) {
                     <div className="flex items-center gap-2">
                       <Clock size={14} className="text-muted-foreground-subtle shrink-0" />
                       <h2 className="text-sm font-semibold text-foreground">Jump back in</h2>
-                      <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{recentPages.length}</span>
+                      <span className="rounded-xs bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{recentPages.length}</span>
                     </div>
                     <Link href={`/app/${slug}/library`} className="flex items-center gap-0.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground">
                       View all <ChevronRight size={12} />
@@ -273,14 +273,14 @@ export default async function WorkspacePage({ params }: Props) {
                       match the sections above/below. Fixed 5-column grid +
                       capping at 5 tiles (below) means every cell is always
                       filled — no wrapped, half-empty row inside the frame. */}
-                  <div className="grid grid-cols-5 gap-3 rounded-[var(--radius-lg)] border border-border bg-muted/20 p-3">
+                  <div className="grid grid-cols-5 gap-3 rounded-lg border border-border bg-muted/20 p-3">
                     {recentPages.slice(0, 5).map((page) => (
                       <Link
                         key={page.id}
                         href={`/app/${slug}/${page.shortId}`}
-                        className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-[var(--radius-md)] border border-border bg-card p-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
+                        className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-md border border-border bg-card p-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-sm"
                       >
-                        <div className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-150 ${chipColorFor(page.id)}`}>
+                        <div className={`flex size-10 shrink-0 items-center justify-center rounded-md transition-colors duration-150 ${chipColorFor(page.id)}`}>
                           <PageIcon icon={page.icon} size="lg" />
                         </div>
                         <div className="min-w-0">
@@ -297,8 +297,8 @@ export default async function WorkspacePage({ params }: Props) {
 
               {/* No recent pages — only show for returning users who haven't visited pages yet */}
               {recentPages.length === 0 && pageCount > 0 && (
-                <div className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-dashed border-border bg-muted/20 px-5 py-5">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted">
+                <div className="flex items-center gap-4 rounded-lg border border-dashed border-border bg-muted/20 px-5 py-5">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
                     <Clock size={18} className="text-muted-foreground-subtle" />
                   </div>
                   <div className="min-w-0">
@@ -327,12 +327,12 @@ export default async function WorkspacePage({ params }: Props) {
                    new user. Gate on <= 1 instead, and reflect step 1 as done
                    once that default page exists. */}
               {pageCount <= 1 && (
-                <div className="overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
+                <div className="overflow-hidden rounded-xl border border-border bg-card">
 
                   {/* Welcome header */}
-                  <div className="border-b border-border bg-gradient-to-r from-primary/5 to-transparent px-6 py-5">
+                  <div className="border-b border-border bg-linear-to-r from-primary/5 to-transparent px-6 py-5">
                     <div className="flex items-center gap-4">
-                      <div className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary/10">
+                      <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                         <svg className="size-5 text-primary" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24">
                           <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
                         </svg>
@@ -341,7 +341,7 @@ export default async function WorkspacePage({ params }: Props) {
                         <h2 className="text-base font-bold text-foreground">Welcome to {PRODUCT_NAME}!</h2>
                         <p className="mt-0.5 text-xs text-muted-foreground">Complete these steps to set up your workspace.</p>
                       </div>
-                      <span className="shrink-0 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                      <span className="shrink-0 rounded-sm bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
                         {onboardingStepsDone} / 3 done
                       </span>
                     </div>
@@ -358,7 +358,7 @@ export default async function WorkspacePage({ params }: Props) {
 
                     {/* Step 1 — Create first page */}
                     <div className={`flex items-center gap-4 px-6 py-4 transition-colors duration-150 ${pageCount >= 1 ? "opacity-50" : "hover:bg-accent/30"}`}>
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
                         {pageCount >= 1 ? (
                           <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
                         ) : (
@@ -370,12 +370,12 @@ export default async function WorkspacePage({ params }: Props) {
                         <p className="mt-0.5 text-xs text-muted-foreground">Start with a blank page, a database, or a template.</p>
                       </div>
                       {pageCount >= 1 ? (
-                        <span className="shrink-0 rounded-[var(--radius-xs)] bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Done</span>
+                        <span className="shrink-0 rounded-xs bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Done</span>
                       ) : (
                         <NewPageButton
                           workspaceId={ws.id}
                           workspaceSlug={slug}
-                          className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-70"
+                          className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-sm bg-primary px-3.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-70"
                         >
                           <Plus size={12} strokeWidth={2.5} /> New page
                         </NewPageButton>
@@ -385,7 +385,7 @@ export default async function WorkspacePage({ params }: Props) {
                     {/* Step 2 — Templates */}
                     <div className="px-6 py-4 hover:bg-accent/30 transition-colors duration-150">
                       <div className="flex items-center gap-4 mb-3">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-warning/10">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-warning/10">
                           <svg className="size-4 text-warning" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                         </div>
                         <div className="min-w-0 flex-1">
@@ -394,7 +394,7 @@ export default async function WorkspacePage({ params }: Props) {
                         </div>
                         <Link
                           href={`/app/${slug}/templates`}
-                          className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                          className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-sm border border-border bg-background px-3.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                         >
                           View all <ChevronRight size={11} />
                         </Link>
@@ -402,7 +402,7 @@ export default async function WorkspacePage({ params }: Props) {
                       {/* Mini template previews — labels are real template
                           names so the link can deep-link straight to that
                           template's preview, not just the generic gallery. */}
-                      <div className="grid grid-cols-4 gap-2 pl-[52px]">
+                      <div className="grid grid-cols-4 gap-2 pl-13">
                         {([
                           { emoji: "📋", label: "Projects" },
                           { emoji: "📝", label: "Meeting Notes" },
@@ -412,7 +412,7 @@ export default async function WorkspacePage({ params }: Props) {
                           <Link
                             key={t.label}
                             href={`/app/${slug}/templates?open=${encodeURIComponent(t.label)}`}
-                            className="group flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-muted/30 px-2.5 py-2 transition-all duration-150 hover:border-primary/20 hover:bg-card"
+                            className="group flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-2 transition-all duration-150 hover:border-primary/20 hover:bg-card"
                           >
                             <span className="text-base leading-none">{t.emoji}</span>
                             <span className="truncate text-xs font-medium text-foreground">{t.label}</span>
@@ -423,7 +423,7 @@ export default async function WorkspacePage({ params }: Props) {
 
                     {/* Step 3 — Invite team */}
                     <div className={`flex items-center gap-4 px-6 py-4 transition-colors duration-150 ${memberCount > 1 ? "opacity-50" : "hover:bg-accent/30"}`}>
-                      <div className={`flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${memberCount > 1 ? "bg-primary/10" : "bg-success/10"}`}>
+                      <div className={`flex size-9 shrink-0 items-center justify-center rounded-md ${memberCount > 1 ? "bg-primary/10" : "bg-success/10"}`}>
                         {memberCount > 1 ? (
                           <svg className="size-4 text-primary" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
                         ) : (
@@ -435,11 +435,11 @@ export default async function WorkspacePage({ params }: Props) {
                         <p className="mt-0.5 text-xs text-muted-foreground">Collaborate in real-time with teammates.</p>
                       </div>
                       {memberCount > 1 ? (
-                        <span className="shrink-0 rounded-[var(--radius-xs)] bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Done</span>
+                        <span className="shrink-0 rounded-xs bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Done</span>
                       ) : (
                         <Link
                           href={`/app/${slug}/settings/members`}
-                          className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                          className="shrink-0 inline-flex h-8 items-center gap-1.5 rounded-sm border border-border bg-background px-3.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
                         >
                           Invite members <ChevronRight size={11} />
                         </Link>
@@ -457,13 +457,13 @@ export default async function WorkspacePage({ params }: Props) {
                     <div className="flex items-center gap-2">
                       <BookOpen size={14} className="text-muted-foreground-subtle shrink-0" />
                       <h2 className="text-sm font-semibold text-foreground">All Pages</h2>
-                      <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{topPageCount}</span>
+                      <span className="rounded-xs bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">{topPageCount}</span>
                     </div>
                     <Link href={`/app/${slug}/library`} className="flex items-center gap-0.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground">
                       View all <ChevronRight size={12} />
                     </Link>
                   </div>
-                  <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+                  <div className="overflow-hidden rounded-lg border border-border bg-card">
                     <div className="divide-y divide-border">
                       {workspacePages.map((page) => (
                         <Link
@@ -471,7 +471,7 @@ export default async function WorkspacePage({ params }: Props) {
                           href={`/app/${slug}/${page.shortId}`}
                           className="group flex items-center gap-3 border-l-2 border-l-transparent px-5 py-3 transition-all duration-150 hover:border-l-primary hover:bg-primary/5"
                         >
-                          <div className={`flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] transition-colors duration-150 ${chipColorFor(page.id)}`}>
+                          <div className={`flex size-8 shrink-0 items-center justify-center rounded-sm transition-colors duration-150 ${chipColorFor(page.id)}`}>
                             <PageIcon icon={page.icon} />
                           </div>
                           <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{page.title || "Untitled"}</p>
@@ -503,8 +503,8 @@ export default async function WorkspacePage({ params }: Props) {
                     { iconBg: "bg-warning/10", icon: <svg className="size-4 text-warning" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>, label: "Templates", desc: "16+ ready-to-use" },
                     { iconBg: "bg-success/10", icon: <svg className="size-4 text-success" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>, label: "Team collaboration", desc: "Members & sharing" },
                   ] as const).map((f) => (
-                    <div key={f.label} className="flex flex-col items-center gap-2.5 rounded-[var(--radius-lg)] border border-border bg-card px-4 py-5 text-center">
-                      <span className={`flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${f.iconBg}`}>{f.icon}</span>
+                    <div key={f.label} className="flex flex-col items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-5 text-center">
+                      <span className={`flex size-10 shrink-0 items-center justify-center rounded-md ${f.iconBg}`}>{f.icon}</span>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-foreground">{f.label}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">{f.desc}</p>

@@ -3,6 +3,7 @@
 @import "katex/dist/katex.min.css";
 @import "flag-icons/css/flag-icons.min.css";
 @plugin "@tailwindcss/typography";
+@source not "../doc";
 
 /* ─── formerly `@import "shadcn/tailwind.css"` ───────────────────────────────
    Inlined so the `shadcn` package could be removed — these variants/utility

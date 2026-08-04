@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react";
 import {
  ChevronDown, Copy, ExternalLink, FileText, Link2, Lock,
  MoreHorizontal, Plus, Star, Trash2, BookOpen,
@@ -55,6 +56,10 @@ export function PrivateSection({
  pages, entries, workspaceId, workspaceSlug, favoritePageIds, onToggleFavorite, onPagesChange, onEntriesChange,
 }: Props) {
  const [expanded, setExpanded] = usePersistedToggle("workflik:sidebar-private-expanded", true);
+ // See favorites-section.tsx for why this key-on-hydrate trick is needed — Disclosure
+ // only reads defaultOpen once at mount, usePersistedToggle resolves its real value slightly later.
+ const [hydrated, setHydrated] = useState(false);
+ useEffect(() => { setHydrated(true); }, []);
  const [popupOpen, setPopupOpen] = useState(false);
  const moreRef = useRef<HTMLButtonElement>(null);
  const popupRef = useRef<HTMLDivElement>(null);
@@ -98,11 +103,11 @@ export function PrivateSection({
 
  return (
   <div className="px-2">
-   <div className="group/header mb-0.5 flex w-full items-center justify-between rounded-[var(--radius-md)] pr-1 transition-colors duration-150 hover:bg-sidebar-accent">
-    <button
-     type="button"
+   <Disclosure key={hydrated ? "loaded" : "loading"} defaultOpen={expanded}>
+   <div className="group/header mb-0.5 flex w-full items-center justify-between rounded-md pr-1 transition-colors duration-150 hover:bg-sidebar-accent">
+    <DisclosureButton
      onClick={() => setExpanded((v) => !v)}
-     className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 group-hover/header:text-sidebar-accent-foreground"
+     className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors duration-150 group-hover/header:text-sidebar-accent-foreground"
     >
      <Lock size={15} className="shrink-0 text-muted-foreground group-hover/header:text-sidebar-accent-foreground" />
      <span className="truncate text-left">Private</span>
@@ -110,22 +115,24 @@ export function PrivateSection({
       size={14}
       className={`shrink-0 text-muted-foreground transition-transform duration-150 group-hover/header:text-sidebar-accent-foreground ${expanded ? "" : "-rotate-90"}`}
      />
-    </button>
+    </DisclosureButton>
     <NewPageButton
      workspaceId={workspaceId}
      workspaceSlug={workspaceSlug}
      isPrivate
      title="Add a page"
      onBeforeCreate={() => setExpanded(true)}
-     className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 opacity-0 transition-colors duration-150 group-hover/header:opacity-100 hover:bg-primary/10 hover:text-sidebar-accent-foreground disabled:opacity-60"
+     className="flex size-6 shrink-0 items-center justify-center rounded-sm text-sidebar-foreground/80 opacity-0 transition-colors duration-150 group-hover/header:opacity-100 hover:bg-primary/10 hover:text-sidebar-accent-foreground disabled:opacity-60"
     >
      <Plus size={14} />
     </NewPageButton>
    </div>
 
    {/* Grid-rows trick animates height without measuring it in JS — see
-       favorites-section.tsx for the full rationale. */}
-   <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+       favorites-section.tsx for the full rationale. `static` keeps the
+       panel always rendered so our own CSS, not Headless UI's, controls
+       visibility. */}
+   <DisclosurePanel static className={`grid transition-[grid-template-rows] duration-200 ease-out ${expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
     <div className="overflow-hidden">
      {visible.map((page) => (
       <PrivateRow
@@ -148,27 +155,28 @@ export function PrivateSection({
        ref={moreRef}
        type="button"
        onClick={openPopup}
-       className="flex w-full items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+       className="flex w-full items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
        <MoreHorizontal size={12} />
        {privatePages.length - VISIBLE_MAX} more
       </button>
      )}
     </div>
-   </div>
+   </DisclosurePanel>
+   </Disclosure>
 
    {/* Popup flyout — portaled to document.body, making it a *sibling* of the
-       sidebar's own wrapper (md:z-[550] in workspace-shell.tsx), not a
-       descendant of it. z-[560] keeps it above that wrapper; anything lower
+       sidebar's own wrapper (md:z-550 in workspace-shell.tsx), not a
+       descendant of it. z-560 keeps it above that wrapper; anything lower
        renders half-hidden behind the sidebar wherever the two overlap. */}
    {popupOpen && popupPos && typeof document !== "undefined" && createPortal(
     <div
      ref={popupRef}
-     className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+     className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-popover"
      style={{ top: popupPos.top, left: popupPos.left }}
     >
      {/* Header */}
-     <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
+     <div className="flex items-center justify-between bg-primary px-3 py-3">
       <span className="text-sm font-semibold text-white">Private</span>
       <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{privatePages.length}</span>
      </div>
@@ -300,7 +308,7 @@ function PrivateRow({
  const menuItem = "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs text-foreground/80 transition-colors duration-150 hover:bg-accent hover:text-foreground cursor-pointer";
 
  return (
-  <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
+  <div className="group relative flex items-center gap-0.5 rounded-sm py-0.5 transition-colors hover:bg-sidebar-accent">
    <Link
     href={`/app/${workspaceSlug}/${page.shortId}`}
     className="flex min-w-0 flex-1 items-center gap-1.5 truncate py-0.5 pl-2.5 text-xs text-sidebar-foreground/80 hover:text-sidebar-accent-foreground"
@@ -321,7 +329,7 @@ function PrivateRow({
      parentId={page.id}
      isPrivate
      title="Add a page inside"
-     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
+     className="flex size-5 items-center justify-center rounded-sm text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
     >
      <Plus size={12} />
     </NewPageButton>
@@ -344,7 +352,7 @@ function PrivateRow({
      }}
      onMouseEnter={(e) => showTooltip("Options", e)}
      onMouseLeave={hideTooltip}
-     className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
+     className="flex size-5 items-center justify-center rounded-sm text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
     >
      <MoreHorizontal size={14} />
     </button>
@@ -354,10 +362,10 @@ function PrivateRow({
    {menuOpen && (
     <div
      ref={menuRef}
-     className="fixed z-[200] min-w-[168px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+     className="fixed z-200 min-w-42 overflow-hidden rounded-md border border-border bg-popover"
      style={{ left: menuPos.x, top: menuPos.y }}
     >
-     <div className="h-[3px] bg-primary" />
+     <div className="h-0.75 bg-primary" />
      <div className="py-1">
       <button
        type="button"
@@ -399,7 +407,7 @@ function PrivateRow({
        Copy link
       </button>
       <div className="my-1 border-t border-border" />
-      <button type="button" className={`${menuItem} !text-destructive hover:!bg-destructive/5`} onClick={handleDelete}>
+      <button type="button" className={`${menuItem} text-destructive! hover:bg-destructive/5!`} onClick={handleDelete}>
        <Trash2 size={14} />
        Move to Trash
       </button>

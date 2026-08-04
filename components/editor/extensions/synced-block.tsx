@@ -190,8 +190,8 @@ function SyncedReferenceView({ sourceBlockId }: { sourceBlockId: string }) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="my-1 rounded-[var(--radius-md)] border border-border bg-muted/20 p-3">
-        <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="my-1 rounded-md border border-border bg-muted/20 p-3">
+        <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
           🔄 Synced
           {data?.sourcePageTitle ? ` from ${data.sourcePageTitle}` : ""}
         </p>
@@ -202,7 +202,7 @@ function SyncedReferenceView({ sourceBlockId }: { sourceBlockId: string }) {
           </p>
         )}
         {!error && !data && (
-          <div className="h-4 w-2/3 animate-pulse rounded-[var(--radius-xs)] bg-muted/40" />
+          <div className="h-4 w-2/3 animate-pulse rounded-xs bg-muted/40" />
         )}
         {data && (
           <div className="space-y-1.5">
@@ -275,16 +275,16 @@ function SyncedSourceView({ node, editor, getPos }: NodeViewProps) {
 
   return (
     <NodeViewWrapper>
-      <div className="my-1 rounded-[var(--radius-md)] border border-border bg-muted/10 p-3">
+      <div className="my-1 rounded-md border border-border bg-muted/10 p-3">
         <div
           className="mb-2 flex items-center justify-between"
           contentEditable={false}
         >
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
             🔄 Synced Block
           </p>
           <button
-            className="rounded-[var(--radius-xs)] px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="rounded-xs px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             onClick={handleCopy}
             onMouseDown={(e) => e.preventDefault()}
             type="button"

@@ -163,7 +163,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
  }
 
  return (
-  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
+  <div className="mx-auto max-w-195 px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {/* ── Stats strip ── */}
    <div className="mb-7 grid grid-cols-3 gap-3">
@@ -172,7 +172,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
      { label: "Admins",    value: active.filter(m => m.role === "admin").length },
      { label: "Pending",    value: invited.length },
     ].map(stat => (
-     <div key={stat.label} className="rounded-[var(--radius-md)] border border-border bg-muted px-4 py-3">
+     <div key={stat.label} className="rounded-md border border-border bg-muted px-4 py-3">
       <p className="text-2xl font-bold leading-tight text-foreground">{stat.value}</p>
       <p className="text-xs text-muted-foreground">{stat.label}</p>
      </div>
@@ -183,7 +183,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
    {isAdmin && (
     <div className="mb-7">
      <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Invite people</p>
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card p-4">
+     <div className="overflow-hidden rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2">
        <Input
         type="email"
@@ -214,21 +214,21 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
    )}
 
    {actionErr && (
-    <p className="mb-4 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+    <p className="mb-4 flex items-center gap-1.5 rounded-sm bg-destructive/5 px-3 py-2 text-xs text-destructive">
      <AlertCircle size={14} className="shrink-0" />
      {actionErr}
     </p>
    )}
 
    {transferErr && (
-    <p className="mb-4 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+    <p className="mb-4 flex items-center gap-1.5 rounded-sm bg-destructive/5 px-3 py-2 text-xs text-destructive">
      <AlertCircle size={14} className="shrink-0" />
      {transferErr}
     </p>
    )}
 
    {transferSent && (
-    <p className="mb-4 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+    <p className="mb-4 rounded-sm border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
      Confirmation email sent to your inbox — the transfer to <strong className="text-foreground">{transferSent}</strong> completes once you click the link there.
     </p>
    )}
@@ -236,7 +236,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
    {/* ── Active members ── */}
    <div className="mb-7">
     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Members</p>
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="overflow-hidden rounded-lg border border-border bg-card">
      {active.map((m, i) => {
       const display  = m.userName?.trim() || m.userEmail?.trim() || m.invitedEmail?.trim() || "Unknown";
       const isMe    = m.userId === currentUserId;
@@ -257,7 +257,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
         <div className="flex-1 min-w-0">
          <div className="flex items-center gap-2">
           <p className="text-sm font-semibold text-foreground truncate">{display}</p>
-          {isMe && <span className="shrink-0 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">you</span>}
+          {isMe && <span className="shrink-0 rounded-xs bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">you</span>}
          </div>
          {m.userName && m.userEmail && <p className="text-xs text-muted-foreground truncate">{m.userEmail}</p>}
         </div>
@@ -268,7 +268,7 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
          <Badge variant="secondary" className={`shrink-0 flex items-center gap-1.5 ${style.badge}`}>
           <span className={`size-1.5 rounded-full ${style.dot}`} />
           {ROLE_LABELS[m.role] ?? m.role}
-          {isOwnerRow && <span className="text-[10px] font-normal text-muted-foreground">(owner)</span>}
+          {isOwnerRow && <span className="text-2xs font-normal text-muted-foreground">(owner)</span>}
          </Badge>
         )}
         {/* Transfer ownership — owner only, to anyone else active */}
@@ -315,14 +315,14 @@ export function WorkspaceMembersSection({ workspaceId, currentUserId, isAdmin, i
     <div>
      <div className="mb-2 flex items-center gap-2">
       <p className="text-xs font-semibold tracking-wide text-muted-foreground">Pending invitations</p>
-      <span className="rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{invited.length}</span>
+      <span className="rounded-xs bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{invited.length}</span>
      </div>
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       {invited.map((m, i) => {
        const addr = m.invitedEmail ?? m.userEmail ?? "—";
        return (
         <div key={m.id} className={`flex items-center gap-3.5 px-5 py-3.5 ${i < invited.length - 1 ? "border-b border-border" : ""}`}>
-         <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-dashed border-border text-xs font-bold text-muted-foreground">
+         <div className="flex size-9 shrink-0 items-center justify-center rounded-sm border border-dashed border-border text-xs font-bold text-muted-foreground">
           {addr.slice(0,2).toUpperCase()}
          </div>
          <div className="flex-1 min-w-0">

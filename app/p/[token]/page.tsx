@@ -76,7 +76,7 @@ export default async function PublicPage({ params }: Props) {
         </a>
         <a
           href={`/auth/login?next=${encodeURIComponent(`/p/${token}`)}`}
-          className="rounded-[var(--radius-sm)] bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+          className="rounded-sm bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Sign in to Workflik
         </a>
@@ -84,7 +84,7 @@ export default async function PublicPage({ params }: Props) {
 
       {/* Cover image */}
       {page.coverUrl && (
-        <div className="relative h-64 w-full overflow-hidden bg-muted sm:h-[300px]">
+        <div className="relative h-64 w-full overflow-hidden bg-muted sm:h-75">
           <img
             src={page.coverUrl}
             alt=""
@@ -135,7 +135,7 @@ function NotPublicScreen({ token }: { token: string }) {
       </p>
       <a
         href={`/auth/login?next=${encodeURIComponent(`/p/${token}`)}`}
-        className="mt-6 rounded-[var(--radius-sm)] bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+        className="mt-6 rounded-sm bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
       >
         Sign in to Workflik
       </a>

@@ -205,8 +205,8 @@ export default async function OrbitOverviewPage() {
       {/* ── Secondary strip ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Link href="/orbit-admin/orbit/analytics"
-          className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+          className="group flex items-center gap-4 rounded-lg border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-primary">
               <path d="M1.5 12.5l4-4 3 3 5-6"/>
             </svg>
@@ -220,8 +220,8 @@ export default async function OrbitOverviewPage() {
           </svg>
         </Link>
         <Link href="/orbit-admin/orbit/workspaces"
-          className="group flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-success/10">
+          className="group flex items-center gap-4 rounded-lg border border-border bg-card px-5 py-4 transition-colors hover:bg-accent">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-success/10">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-4 text-success">
               <path d="M2 5.5h12M2 10.5h12M5.5 2v12M10.5 2v12"/><rect x="1.5" y="1.5" width="13" height="13" rx="2"/>
             </svg>
@@ -234,8 +234,8 @@ export default async function OrbitOverviewPage() {
             <path d="M2 6h8M7 3l3 3-3 3"/>
           </svg>
         </Link>
-        <div className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-border bg-card px-5 py-4">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-success/10">
+        <div className="flex items-center gap-4 rounded-lg border border-border bg-card px-5 py-4">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-success/10">
             <span className="relative flex size-2.5">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
               <span className="relative inline-flex size-2.5 rounded-full bg-success" />
@@ -252,7 +252,7 @@ export default async function OrbitOverviewPage() {
       <div className="grid gap-4 lg:grid-cols-2">
 
         {/* Recent registrations */}
-        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Recent registrations</h2>
@@ -288,7 +288,7 @@ export default async function OrbitOverviewPage() {
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <span className="text-xs text-muted-foreground">{ago(u.createdAt)}</span>
                     {u.isPlatformAdmin && (
-                      <span className="rounded-[var(--radius-xs)] bg-primary/10 px-1.5 py-px text-xs font-semibold text-primary">Admin</span>
+                      <span className="rounded-xs bg-primary/10 px-1.5 py-px text-xs font-semibold text-primary">Admin</span>
                     )}
                   </div>
                 </Link>
@@ -298,7 +298,7 @@ export default async function OrbitOverviewPage() {
         </div>
 
         {/* Recent audit events */}
-        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Audit events</h2>
@@ -313,7 +313,7 @@ export default async function OrbitOverviewPage() {
           <div className="divide-y divide-border">
             {recentAudit.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-3 flex size-10 items-center justify-center rounded-[var(--radius-lg)] bg-muted/50">
+                <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-muted/50">
                   <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-5 text-muted-foreground-subtle">
                     <path d="M4 4.5h10M4 8.5h10M4 12.5h6"/>
                   </svg>
@@ -326,13 +326,13 @@ export default async function OrbitOverviewPage() {
                 const meta = ACTION_META[ev.action];
                 return (
                   <div key={ev.id} className="flex items-center gap-3.5 px-5 py-3 transition-colors hover:bg-accent">
-                    <div className={`flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${meta?.iconCls ?? "bg-muted text-muted-foreground"}`}>
+                    <div className={`flex size-7 shrink-0 items-center justify-center rounded-md ${meta?.iconCls ?? "bg-muted text-muted-foreground"}`}>
                       {meta?.icon ?? <span className="size-2 rounded-full bg-muted-foreground/40" />}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-foreground">{meta?.label ?? ev.action}</p>
                       <div className="mt-0.5 flex items-center gap-1.5">
-                        <span className={`rounded-[var(--radius-xs)] border px-1.5 py-px text-xs font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}>
+                        <span className={`rounded-xs border px-1.5 py-px text-xs font-semibold ${meta?.pill ?? "bg-muted text-muted-foreground border-border"}`}>
                           {ev.targetType}
                         </span>
                         <span className="font-mono text-xs text-muted-foreground-subtle">{ev.targetId?.slice(0, 8) ?? "—"}…</span>
@@ -359,9 +359,9 @@ function StatCard({
 }) {
   return (
     <Link href={href}
-      className="group flex flex-col gap-4 rounded-[var(--radius-lg)] border border-border bg-card p-5 transition-colors duration-150 hover:bg-accent">
+      className="group flex flex-col gap-4 rounded-lg border border-border bg-card p-5 transition-colors duration-150 hover:bg-accent">
       <div className="flex items-start justify-between">
-        <div className="flex size-8 items-center justify-center rounded-[var(--radius-md)] bg-primary/10 text-primary">
+        <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary">
           {icon}
         </div>
         <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"

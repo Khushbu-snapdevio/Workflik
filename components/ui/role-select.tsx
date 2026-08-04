@@ -27,7 +27,7 @@ export function RoleSelect({
     <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger
         size="sm"
-        className={triggerClassName ?? "w-[104px] border-border bg-card"}
+        className={triggerClassName ?? "w-26 border-border bg-card"}
       >
         <SelectValue />
       </SelectTrigger>

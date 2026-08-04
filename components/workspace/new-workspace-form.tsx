@@ -27,12 +27,12 @@ export function NewWorkspaceForm() {
     <h1 className="mb-2 text-center text-[1.75rem] font-black leading-tight tracking-tight text-foreground">
      Create your workspace
     </h1>
-    <p className="mb-8 max-w-[22rem] text-center text-sm leading-relaxed text-muted-foreground">
+    <p className="mb-8 max-w-88 text-center text-sm leading-relaxed text-muted-foreground">
      A workspace is where your team organises, collaborates, and ships — all in one place.
     </p>
 
     {/* Card */}
-    <div className="w-full rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="w-full rounded-lg border border-border bg-card">
      <form action={createWorkspaceAction} className="space-y-5 p-7">
 
       {/* Workspace type */}
@@ -41,38 +41,36 @@ export function NewWorkspaceForm() {
         Workspace type
        </p>
        <div className="grid grid-cols-2 gap-2.5">
-        <button
-         type="button"
-         onClick={() => setKind("personal")}
-         className={`flex flex-col items-start gap-1.5 rounded-[var(--radius-md)] border p-3.5 text-left transition-all ${
-          kind === "personal"
-           ? "border-primary bg-secondary"
-           : "border-border bg-background hover:border-primary/40 hover:bg-accent"
-         }`}
-        >
+        <label className="group flex cursor-pointer flex-col items-start gap-1.5 rounded-md border border-border bg-background p-3.5 text-left transition-all has-checked:border-primary has-checked:bg-secondary hover:border-primary/40 hover:bg-accent">
+         <input
+          type="radio"
+          name="kind"
+          value="personal"
+          defaultChecked
+          onChange={() => setKind("personal")}
+          className="sr-only"
+         />
          <span className="text-xl leading-none">👤</span>
-         <p className={`text-xs font-semibold ${kind === "personal" ? "text-primary" : "text-foreground"}`}>
+         <p className="text-xs font-semibold text-foreground group-has-checked:text-primary">
           Personal
          </p>
          <p className="text-xs leading-tight text-muted-foreground">Solo work, private by default</p>
-        </button>
-        <button
-         type="button"
-         onClick={() => setKind("team")}
-         className={`flex flex-col items-start gap-1.5 rounded-[var(--radius-md)] border p-3.5 text-left transition-all ${
-          kind === "team"
-           ? "border-primary bg-secondary"
-           : "border-border bg-background hover:border-primary/40 hover:bg-accent"
-         }`}
-        >
+        </label>
+        <label className="group flex cursor-pointer flex-col items-start gap-1.5 rounded-md border border-border bg-background p-3.5 text-left transition-all has-checked:border-primary has-checked:bg-secondary hover:border-primary/40 hover:bg-accent">
+         <input
+          type="radio"
+          name="kind"
+          value="team"
+          onChange={() => setKind("team")}
+          className="sr-only"
+         />
          <span className="text-xl leading-none">🏢</span>
-         <p className={`text-xs font-semibold ${kind === "team" ? "text-primary" : "text-foreground"}`}>
+         <p className="text-xs font-semibold text-foreground group-has-checked:text-primary">
           Teamspace
          </p>
          <p className="text-xs leading-tight text-muted-foreground">Shared with your team</p>
-        </button>
+        </label>
        </div>
-       <input type="hidden" name="kind" value={kind} />
       </div>
 
       {/* Workspace name */}

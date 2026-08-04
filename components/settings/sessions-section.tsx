@@ -86,13 +86,13 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
  const others = sessions.filter(s => s.token !== currentToken);
 
  return (
-  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
+  <div className="mx-auto max-w-195 px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {/* ── Current session ── */}
    {current && (
     <div className="mb-7">
      <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">Current session</p>
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <SessionCard s={current} isCurrent signingOut={signingOut} onSignOut={handleSignOut} />
      </div>
     </div>
@@ -104,7 +104,7 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
      <div className="mb-2 flex items-center justify-between">
       <p className="text-xs font-semibold tracking-wide text-muted-foreground">
        Other sessions
-       <span className="ml-2 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{others.length}</span>
+       <span className="ml-2 rounded-xs bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">{others.length}</span>
       </p>
       <AlertDialog>
        <AlertDialogTrigger asChild>
@@ -130,7 +130,7 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
        </AlertDialogContent>
       </AlertDialog>
      </div>
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       {others.map((s, i) => (
        <div key={s.id} className={i < others.length - 1 ? "border-b border-border" : ""}>
         <SessionCard s={s} revoking={revoking === s.id} onRevoke={() => revoke(s.id, s.token)} />
@@ -143,7 +143,7 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
    {/* ── Empty state ── */}
    {sessions.length === 0 && (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
-     <div className="flex size-14 items-center justify-center rounded-[var(--radius-md)] bg-primary/10">
+     <div className="flex size-14 items-center justify-center rounded-md bg-primary/10">
       <Shield size={28} className="text-primary" />
      </div>
      <p className="text-sm font-semibold text-foreground">No active sessions</p>
@@ -152,9 +152,9 @@ export function SessionsSection({ sessions: init, currentToken }: Props) {
    )}
 
    {/* ── Security tip ── */}
-   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="overflow-hidden rounded-lg border border-border bg-card">
     <div className="flex items-start gap-4 px-5 py-4">
-     <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10">
+     <div className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-primary/10">
       <Info size={16} className="text-primary" />
      </div>
      <div>
@@ -183,7 +183,7 @@ function SessionCard({ s, isCurrent, revoking, onRevoke, signingOut, onSignOut }
  return (
   <div className="flex items-center gap-4 px-5 py-4">
    {/* Device icon */}
-   <div className={`flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] ${isCurrent ? "bg-primary/10" : "bg-muted/50"}`}>
+   <div className={`flex size-11 shrink-0 items-center justify-center rounded-md ${isCurrent ? "bg-primary/10" : "bg-muted/50"}`}>
     {mob ? (
      <Smartphone size={20} className={isCurrent ? "text-primary" : "text-muted-foreground"} />
     ) : (
@@ -197,7 +197,7 @@ function SessionCard({ s, isCurrent, revoking, onRevoke, signingOut, onSignOut }
      <p className="text-sm font-semibold text-foreground">{b}</p>
      {os && <span className="text-sm text-muted-foreground">on {os}</span>}
      {isCurrent && (
-      <Badge variant="secondary" className="rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-bold">● This device</Badge>
+      <Badge variant="secondary" className="rounded-xs px-2.5 py-0.5 text-xs font-bold">● This device</Badge>
      )}
     </div>
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">

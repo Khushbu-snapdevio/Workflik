@@ -204,14 +204,14 @@ export function PageClient({
   if (result) saveCover(result.fileUrl);
  }
 
- const contentCls = isFullWidth ? "max-w-full px-4 sm:px-8 lg:px-12" : "max-w-[780px] px-4 sm:px-8 lg:px-14";
+ const contentCls = isFullWidth ? "max-w-full px-4 sm:px-8 lg:px-12" : "max-w-195 px-4 sm:px-8 lg:px-14";
 
  return (
   <div id="page-scroll-container" className="flex-1 overflow-y-auto">
 
    {/* ── Cover ── */}
    {coverUrl && (
-    <div className="group/cover relative h-[260px] w-full shrink-0 overflow-hidden bg-muted">
+    <div className="group/cover relative h-65 w-full shrink-0 overflow-hidden bg-muted">
      <div
       className="absolute inset-0 bg-cover bg-center transition-[background-position] duration-300"
       style={{
@@ -225,14 +225,14 @@ export function PageClient({
         type="button"
         onClick={() => coverInput.current?.click()}
         disabled={coverUploading}
-        className="rounded-[var(--radius-sm)] border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors duration-150 hover:bg-card disabled:opacity-50"
+        className="rounded-sm border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors duration-150 hover:bg-card disabled:opacity-50"
        >
         {coverUploading ? "Uploading…" : "Change cover"}
        </button>
        <button
         type="button"
         onClick={() => setRemoveCoverConfirm(true)}
-        className="rounded-[var(--radius-sm)] border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors duration-150 hover:bg-card"
+        className="rounded-sm border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors duration-150 hover:bg-card"
        >
         Remove
        </button>
@@ -268,7 +268,7 @@ export function PageClient({
     {icon && (
      <div
       style={{ marginTop: coverUrl ? "-2.5rem" : 0 }}
-      className={`relative mb-2 ${showPicker ? "z-[600]" : "z-10"}`}
+      className={`relative mb-2 ${showPicker ? "z-600" : "z-10"}`}
      >
       <button
        ref={iconBtnRef}
@@ -276,7 +276,7 @@ export function PageClient({
        disabled={!editable}
        onClick={() => editable && setShowPicker((p) => !p)}
        aria-label="Change icon"
-       className="inline-flex cursor-pointer rounded-[var(--radius-sm)] p-1 leading-none outline-none transition-colors duration-150 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] disabled:cursor-default"
+       className="inline-flex cursor-pointer rounded-sm p-1 leading-none outline-none transition-colors duration-150 hover:bg-black/6 dark:hover:bg-white/8 disabled:cursor-default"
       >
        <PageIcon icon={icon} size={72} />
       </button>
@@ -302,7 +302,7 @@ export function PageClient({
         type="button"
         onClick={() => coverInput.current?.click()}
         disabled={coverUploading}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
+        className="flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
        >
         <ImageIcon size={13} />
         {coverUploading ? "Uploading…" : "Add cover"}
@@ -314,7 +314,7 @@ export function PageClient({
          ref={iconBtnRef}
          type="button"
          onClick={() => setShowPicker((p) => !p)}
-         className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+         className="flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
         >
          <Smile size={13} />
          Add icon
@@ -335,7 +335,7 @@ export function PageClient({
        <button
         type="button"
         onClick={revealComments}
-        className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+        className="flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
        >
         <MessageCircle size={13} />
         Add comment
@@ -370,7 +370,7 @@ export function PageClient({
       }}
       data-placeholder="Untitled"
       className={[
-       "w-full break-words text-[2.5rem] font-bold leading-[1.2] tracking-tight text-foreground outline-none",
+       "w-full wrap-break-word text-[2.5rem] font-bold leading-[1.2] tracking-tight text-foreground outline-none",
        "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
        editable ? "cursor-text" : "cursor-default select-text",
       ].join(" ")}

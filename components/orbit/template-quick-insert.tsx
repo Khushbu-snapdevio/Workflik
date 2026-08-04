@@ -51,7 +51,7 @@ export function TemplateQuickInsert({ editor, variant }: Props) {
             onClick={() => insertBlockType(editor, type)}
             title={def.description}
             className={[
-              "flex items-center gap-1.5 rounded-[var(--radius-sm)] border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+              "flex items-center gap-1.5 rounded-sm border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
               isEmpty
                 ? "border-border bg-background px-2.5 py-1.5 text-xs"
                 : "border-transparent px-2 py-1 text-xs",

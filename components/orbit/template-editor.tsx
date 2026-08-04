@@ -115,7 +115,7 @@ export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
   });
 
   return (
-    <div className="relative min-h-[560px] rounded-[var(--radius-md)] border border-border bg-background">
+    <div className="relative min-h-140 rounded-md border border-border bg-background">
       {editor && <InlineToolbar editor={editor} />}
       {/* Same drag-to-reorder / duplicate / delete grip the page editor uses. */}
       {editor && <BlockHandle editor={editor} />}
@@ -126,18 +126,18 @@ export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
         </div>
       )}
 
-      {/* pl-[72px]: BlockHandle anchors itself 58px to the left of the
+      {/* pl-18: BlockHandle anchors itself 58px to the left of the
           .ProseMirror element (block-handle.tsx getBlockRect). The page editor
           absorbs that in its page margins; here the editor sits in a bordered
           box, so the left padding has to exceed 58px or the grip renders on
           top of — and outside — the border. */}
       <EditorContent
         editor={editor}
-        className="prose prose-neutral dark:prose-invert max-w-none pl-[72px] pr-10 py-6 text-base focus-within:outline-none [&_.ProseMirror]:min-h-[460px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]"
+        className="prose prose-neutral dark:prose-invert max-w-none pl-18 pr-10 py-6 text-base focus-within:outline-none [&_.ProseMirror]:min-h-115 [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]"
       />
 
       {editor && isEmpty && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 pl-[72px] pr-10 pb-6">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 pl-18 pr-10 pb-6">
           <p className="mb-2 text-xs text-muted-foreground">Or start with:</p>
           <div className="pointer-events-auto">
             <TemplateQuickInsert editor={editor} variant="empty" />

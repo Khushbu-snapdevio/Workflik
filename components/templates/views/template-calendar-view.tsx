@@ -129,7 +129,7 @@ function MorePopupEntryRow({ entry, onClick, onDelete, locked }: MorePopupEntryR
 
  return (
   <div
-   className="group/pe flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
+   className="group/pe flex items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent transition-colors cursor-pointer"
    onClick={onClick}
   >
    {entry.icon ? (
@@ -141,7 +141,7 @@ function MorePopupEntryRow({ entry, onClick, onDelete, locked }: MorePopupEntryR
     {entry.title || "Untitled"}
    </span>
    {!!commentCount && (
-    <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+    <span className="flex shrink-0 items-center gap-0.5 text-2xs font-medium text-muted-foreground">
      <MessageSquare size={10} />
      {commentCount}
     </span>
@@ -208,7 +208,7 @@ function DraggableChip({
    style={{ ...style, opacity: isDragging ? 0 : 1, touchAction: "none", userSelect: "none", cursor: locked ? "pointer" : "grab" }}
    {...attributes}
    {...listeners}
-   className="group/event flex flex-col rounded-[var(--radius-sm)] border border-border bg-background hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
+   className="group/event flex flex-col rounded-sm border border-border bg-background hover:border-border hover:bg-accent/30 transition-colors cursor-pointer"
    onClick={(e) => { e.stopPropagation(); onClickEntry(entry.id); }}
    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setMenuPos({ x: e.clientX, y: e.clientY }); }}
   >
@@ -223,7 +223,7 @@ function DraggableChip({
      <button
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.stopPropagation(); setShowComment(true); }}
-      className="flex shrink-0 items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+      className="flex shrink-0 items-center gap-0.5 text-2xs font-medium text-muted-foreground hover:text-foreground transition-colors"
      >
       <MessageSquare size={10} />
       {commentCount}
@@ -482,13 +482,13 @@ export function TemplateCalendarView({
      {MONTH_NAMES[month]} {year}
     </h2>
     <div className="flex items-center gap-1">
-     <button onClick={goPrev} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+     <button onClick={goPrev} className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
       <ChevronLeft size={14} />
      </button>
-     <button onClick={goToday} className="rounded-[var(--radius-sm)] px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+     <button onClick={goToday} className="rounded-sm px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
       Today
      </button>
-     <button onClick={goNext} className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+     <button onClick={goNext} className="flex size-7 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
       <ChevronRight size={14} />
      </button>
     </div>
@@ -547,7 +547,7 @@ export function TemplateCalendarView({
        {/* Day number row */}
        <div className="mb-1 flex items-center justify-between">
         <span className={[
-         "flex size-[22px] items-center justify-center rounded-full text-xs font-medium leading-none",
+         "flex size-5.5 items-center justify-center rounded-full text-xs font-medium leading-none",
          isToday ? "bg-primary text-primary-foreground font-bold" : "text-foreground/70",
         ].join(" ")}>
          {day}
@@ -622,7 +622,7 @@ export function TemplateCalendarView({
        ref={morePopupRef}
        onMouseEnter={cancelClose}
        onMouseLeave={scheduleClose}
-       className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+       className="overflow-hidden rounded-md border border-border bg-popover"
       >
        {/* Date label */}
        <div className="border-b border-border px-3 py-2">
@@ -637,7 +637,7 @@ export function TemplateCalendarView({
        </div>
 
        {/* All entries for this date */}
-       <div className="max-h-[220px] overflow-y-auto p-1">
+       <div className="max-h-55 overflow-y-auto p-1">
         {(dateMap.get(morePopup.key) ?? []).map((e) => (
          <MorePopupEntryRow
           key={e.id}
@@ -658,9 +658,9 @@ export function TemplateCalendarView({
   {/* ── DragOverlay ────────────────────────────────────────────────────────── */}
   <DragOverlay dropAnimation={null}>
    {draggingEntry && (
-    <div className="flex items-center gap-1 rounded-[var(--radius-xs)] bg-primary px-1.5 py-[3px] text-xs font-medium text-primary-foreground cursor-grabbing">
+    <div className="flex items-center gap-1 rounded-xs bg-primary px-1.5 py-0.75 text-xs font-medium text-primary-foreground cursor-grabbing">
      <span className="size-1.5 shrink-0 rounded-full bg-primary-foreground/60" />
-     <span className="max-w-[120px] truncate">{draggingEntry.title || "Untitled"}</span>
+     <span className="max-w-30 truncate">{draggingEntry.title || "Untitled"}</span>
     </div>
    )}
   </DragOverlay>

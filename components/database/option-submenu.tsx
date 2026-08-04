@@ -71,7 +71,7 @@ export function OptionSubmenu({ option, anchorRect, onRename, onDelete, onRecolo
       ref={ref}
       data-edit-property-exempt
       style={{ position: "fixed", top, left, width, zIndex: 500 }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+      className="overflow-hidden rounded-md border border-border bg-background"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Rename */}
@@ -96,7 +96,7 @@ export function OptionSubmenu({ option, anchorRect, onRename, onDelete, onRecolo
         <button
           type="button"
           onClick={() => setConfirmDelete(true)}
-          className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-destructive transition-colors duration-150 hover:bg-destructive/10"
+          className="flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-xs text-destructive transition-colors duration-150 hover:bg-destructive/10"
         >
           <Trash2 size={13} />
           Delete
@@ -106,14 +106,14 @@ export function OptionSubmenu({ option, anchorRect, onRename, onDelete, onRecolo
       <div className="h-px bg-border" />
 
       {/* Colors */}
-      <div className="max-h-[220px] overflow-y-auto p-1">
-        <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Colors</p>
+      <div className="max-h-55 overflow-y-auto p-1">
+        <p className="px-2 py-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Colors</p>
         {OPTION_COLORS.map((c) => (
           <button
             key={c.id}
             type="button"
             onClick={() => onRecolor(c.id)}
-            className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-foreground transition-colors duration-150 hover:bg-accent"
+            className="flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-xs text-foreground transition-colors duration-150 hover:bg-accent"
           >
             <span className="size-3.5 shrink-0 rounded-full" style={{ backgroundColor: c.dot }} />
             <span className="capitalize">{c.id}</span>
@@ -129,8 +129,8 @@ export function OptionSubmenu({ option, anchorRect, onRename, onDelete, onRecolo
         description={`"${option.name}" will be removed from this property. Any entries currently set to it will show as empty.`}
         confirmLabel="Delete"
         onConfirm={() => { onDelete(); onClose(); }}
-        overlayClassName="z-[600]"
-        className="z-[600]"
+        overlayClassName="z-600"
+        className="z-600"
       />
     </div>,
     document.body,

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { ArrowLeft, Check, Database as DatabaseIcon, Search } from "lucide-react";
+import { Popover, PopoverPanel, Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/react";
+import { ArrowLeft, Check, Database as DatabaseIcon, Search, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { getClampedLeft, getClampedTop } from "@/lib/ui/clamp-to-viewport";
+import { RectAnchorTrigger } from "@/components/database/rect-popover-anchor";
+import { cn } from "@/lib/utils";
 
 interface DatabaseOption {
   id: string;
@@ -36,9 +37,18 @@ export function RelationDatabasePicker({ rect, workspaceId, onBack, onClose, onP
   const [twoWay, setTwoWay] = useState(true);
 
   useEffect(() => {
-    function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) onClose(); }
+    function h(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')) return;
+      if (ref.current && !ref.current.contains(target)) onClose();
+    }
+    function keyHandler(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", h);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [onClose]);
 
   useEffect(() => {
@@ -54,85 +64,93 @@ export function RelationDatabasePicker({ rect, workspaceId, onBack, onClose, onP
   }, [search, workspaceId]);
 
   const width = 260;
-  const height = selected ? 220 : 320;
 
-  if (typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={ref}
-      data-edit-property-exempt
-      style={{ position: "fixed", top: getClampedTop(rect, height), left: getClampedLeft(rect, width, { align: "end" }), zIndex: 500, width }}
-      className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-    >
-      <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
-        <button
-          type="button"
-          onClick={selected ? () => setSelected(null) : onBack}
-          aria-label="Back"
-          className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowLeft size={13} />
-        </button>
-        <p className="text-xs font-semibold text-foreground/80">
-          {selected ? "Relate to a database" : "Select related database"}
-        </p>
-      </div>
-
-      {!selected ? (
-        <>
-          <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
-            <Search size={12} className="shrink-0 text-muted-foreground" />
-            <input
-              autoFocus
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search databases…"
-              className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
-            />
-          </div>
-          <div className="max-h-56 overflow-y-auto p-1">
-            {loading && <p className="px-3 py-2.5 text-xs text-muted-foreground">Loading…</p>}
-            {!loading && results.length === 0 && (
-              <p className="px-3 py-2.5 text-xs text-muted-foreground">No databases found</p>
-            )}
-            {!loading && results.map((db) => (
-              <button
-                key={db.id}
-                type="button"
-                onClick={() => setSelected(db)}
-                className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm text-foreground hover:bg-accent"
-              >
-                <DatabaseIcon size={13} className="shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate">{db.title || "Untitled"}</span>
-              </button>
-            ))}
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-col gap-3 p-3">
-          <div className="flex items-center gap-2.5 rounded-[var(--radius-sm)] bg-muted/30 px-2.5 py-2">
-            <DatabaseIcon size={13} className="shrink-0 text-muted-foreground" />
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{selected.title || "Untitled"}</span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm text-foreground">Show on related database</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Adds a matching property there too</p>
-            </div>
-            <Switch checked={twoWay} onCheckedChange={(v) => setTwoWay(!!v)} aria-label="Two-way relation" />
-          </div>
+  return (
+    <Popover>
+      <RectAnchorTrigger rect={rect} />
+      <PopoverPanel
+        ref={ref}
+        static
+        data-edit-property-exempt
+        anchor={{ to: "bottom end", gap: 4 }}
+        style={{ width }}
+        className="z-500 flex flex-col overflow-hidden rounded-md border border-border bg-background"
+      >
+        <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
           <button
             type="button"
-            onClick={() => onPick(selected.id, twoWay)}
-            className="flex items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            onClick={selected ? () => setSelected(null) : onBack}
+            aria-label="Back"
+            className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Check size={12} />
-            Create relation
+            <ArrowLeft size={13} />
           </button>
+          <p className="text-xs font-semibold text-foreground/80">
+            {selected ? "Relate to a database" : "Select related database"}
+          </p>
         </div>
-      )}
-    </div>,
-    document.body,
+
+        {!selected ? (
+          <Combobox value={null} onChange={(db: DatabaseOption | null) => db && setSelected(db)}>
+            <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
+              <Search size={12} className="shrink-0 text-muted-foreground" />
+              <ComboboxInput
+                autoFocus
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search databases…"
+                className="w-full bg-transparent text-xs placeholder:text-muted-foreground-subtle focus:outline-none"
+              />
+            </div>
+            <ComboboxOptions static className="max-h-56 overflow-y-auto p-1">
+              {loading && (
+                <p className="flex items-center gap-1.5 px-3 py-2.5 text-xs text-muted-foreground">
+                  <Loader2 size={12} className="animate-spin" />
+                  Loading…
+                </p>
+              )}
+              {!loading && results.length === 0 && (
+                <p className="px-3 py-2.5 text-xs text-muted-foreground">No databases found</p>
+              )}
+              {!loading && results.map((db) => (
+                <ComboboxOption
+                  key={db.id}
+                  value={db}
+                  className={({ focus }) => cn(
+                    "flex w-full cursor-default items-center gap-2.5 rounded-sm px-2.5 py-2 text-left text-sm text-foreground",
+                    focus && "bg-accent",
+                  )}
+                >
+                  <DatabaseIcon size={13} className="shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{db.title || "Untitled"}</span>
+                </ComboboxOption>
+              ))}
+            </ComboboxOptions>
+          </Combobox>
+        ) : (
+          <div className="flex flex-col gap-3 p-3">
+            <div className="flex items-center gap-2.5 rounded-sm bg-muted/30 px-2.5 py-2">
+              <DatabaseIcon size={13} className="shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{selected.title || "Untitled"}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm text-foreground">Show on related database</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Adds a matching property there too</p>
+              </div>
+              <Switch checked={twoWay} onCheckedChange={(v) => setTwoWay(!!v)} aria-label="Two-way relation" />
+            </div>
+            <button
+              type="button"
+              onClick={() => onPick(selected.id, twoWay)}
+              className="flex items-center justify-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Check size={12} />
+              Create relation
+            </button>
+          </div>
+        )}
+      </PopoverPanel>
+    </Popover>
   );
 }

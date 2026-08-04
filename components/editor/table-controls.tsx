@@ -4,6 +4,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import { TableMap } from "@tiptap/pm/tables";
 import type { Editor } from "@tiptap/react";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import {
   ArrowDown,
   ArrowLeft,
@@ -17,8 +18,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
-import { getClampedLeft, getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 interface TableInfo {
   rect: { top: number; left: number; width: number; height: number };
@@ -34,17 +33,8 @@ interface HoverTarget {
   rowIndex: number | null;
 }
 
-type MenuKind = "row" | "column";
-
-interface OpenMenu {
-  index: number;
-  kind: MenuKind;
-  rect: DOMRect;
-}
-
 const CONTROL_SIZE = 18;
 const MENU_WIDTH = 200;
-const MENU_HEIGHT = 190;
 
 // Resolves the nearest ancestor <table> under the cursor (if any) to its
 // ProseMirror position — tables can sit nested inside other blocks (e.g.
@@ -201,9 +191,10 @@ export function TableControls({ editor }: { editor: Editor }) {
     colIndex: null,
     rowIndex: null,
   });
-  const [menu, setMenu] = useState<OpenMenu | null>(null);
+  // Tracks whether either grip's Menu is open, mirrored into a ref so the mousemove listener
+  // below doesn't need to resubscribe on every open/close.
+  const [menuOpen, setMenuOpen] = useState(false);
   const tableRef = useRef<TableInfo | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const menuOpenRef = useRef(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
@@ -213,8 +204,8 @@ export function TableControls({ editor }: { editor: Editor }) {
     tableRef.current = table;
   }, [table]);
   useEffect(() => {
-    menuOpenRef.current = menu !== null;
-  }, [menu]);
+    menuOpenRef.current = menuOpen;
+  }, [menuOpen]);
 
   // Track which table is hovered, and which row/column within it — the whole
   // point of the contextual-handle design is that only the hovered row and
@@ -290,10 +281,8 @@ export function TableControls({ editor }: { editor: Editor }) {
 
   useEffect(() => {
     const onScroll = () => {
-      // The menu is `position: fixed` and anchored to a rect snapshotted at
-      // open time, so it can't follow a scroll — close it instead of letting
-      // it drift away from its handle.
-      setMenu(null);
+      // Re-measure so the position:fixed handles don't drift on scroll; the Menu itself doesn't
+      // need this since its anchor prop repositions it live against the MenuButton.
       setTable((prev) => {
         if (!prev) {
           return prev;
@@ -309,36 +298,9 @@ export function TableControls({ editor }: { editor: Editor }) {
     return () => document.removeEventListener("scroll", onScroll, true);
   }, [editor]);
 
-  useEffect(() => {
-    if (!menu) {
-      return;
-    }
-    function onDown(e: MouseEvent) {
-      if (menuRef.current?.contains(e.target as Node)) {
-        return;
-      }
-      setMenu(null);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setMenu(null);
-      }
-    }
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menu]);
-
-  useScrollLockWhileOpen(
-    menu !== null,
-    (target) => !!menuRef.current?.contains(target)
-  );
-
   // Every action re-reads `tableRef` rather than closing over `table` so the
-  // handlers stay stable across re-renders while the menu is open.
+  // handlers stay stable across re-renders while the menu is open. Closing
+  // the menu itself is handled by Headless UI (any MenuItem click closes it).
   const run = useCallback(
     (fn: (t: TableInfo) => void) => {
       const t = tableRef.current;
@@ -346,7 +308,6 @@ export function TableControls({ editor }: { editor: Editor }) {
         return;
       }
       fn(t);
-      setMenu(null);
       // The table's geometry changed — re-measure so the handles/add-bars
       // don't sit at stale coordinates until the next mousemove.
       requestAnimationFrame(() => {
@@ -385,7 +346,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Insert row above",
       onClick: () =>
         run((t) => {
-          selectCell(editor, t.tablePos, t.tableNode, menu?.index ?? 0, 0);
+          selectCell(editor, t.tablePos, t.tableNode, hover.rowIndex ?? 0, 0);
           editor.chain().focus().addRowBefore().run();
         }),
     },
@@ -394,7 +355,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Insert row below",
       onClick: () =>
         run((t) => {
-          selectCell(editor, t.tablePos, t.tableNode, menu?.index ?? 0, 0);
+          selectCell(editor, t.tablePos, t.tableNode, hover.rowIndex ?? 0, 0);
           editor.chain().focus().addRowAfter().run();
         }),
     },
@@ -403,7 +364,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Duplicate row",
       onClick: () =>
         run((t) => {
-          const rowIdx = menu?.index ?? 0;
+          const rowIdx = hover.rowIndex ?? 0;
           const text = readRowText(editor, t.tablePos, rowIdx);
           selectCell(editor, t.tablePos, t.tableNode, rowIdx, 0);
           editor.chain().focus().addRowAfter().run();
@@ -420,7 +381,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Delete row",
       onClick: () =>
         run((t) => {
-          selectCell(editor, t.tablePos, t.tableNode, menu?.index ?? 0, 0);
+          selectCell(editor, t.tablePos, t.tableNode, hover.rowIndex ?? 0, 0);
           editor.chain().focus().deleteRow().run();
         }),
       disabled: map.height <= 1,
@@ -433,7 +394,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Insert column left",
       onClick: () =>
         run((t) => {
-          selectCell(editor, t.tablePos, t.tableNode, 0, menu?.index ?? 0);
+          selectCell(editor, t.tablePos, t.tableNode, 0, hover.colIndex ?? 0);
           editor.chain().focus().addColumnBefore().run();
         }),
     },
@@ -442,7 +403,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Insert column right",
       onClick: () =>
         run((t) => {
-          selectCell(editor, t.tablePos, t.tableNode, 0, menu?.index ?? 0);
+          selectCell(editor, t.tablePos, t.tableNode, 0, hover.colIndex ?? 0);
           editor.chain().focus().addColumnAfter().run();
         }),
     },
@@ -454,7 +415,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       // there) rather than opening a dialog that writes the same content.
       onClick: () =>
         run((t) => {
-          const col = menu?.index ?? 0;
+          const col = hover.colIndex ?? 0;
           const node = editor.state.doc.nodeAt(t.tablePos);
           if (!node) {
             return;
@@ -480,7 +441,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Duplicate column",
       onClick: () =>
         run((t) => {
-          const colIdx = menu?.index ?? 0;
+          const colIdx = hover.colIndex ?? 0;
           const text = readColumnText(editor, t.tablePos, colIdx);
           selectCell(editor, t.tablePos, t.tableNode, 0, colIdx);
           editor.chain().focus().addColumnAfter().run();
@@ -497,72 +458,84 @@ export function TableControls({ editor }: { editor: Editor }) {
       label: "Delete column",
       onClick: () =>
         run((t) => {
-          selectCell(editor, t.tablePos, t.tableNode, 0, menu?.index ?? 0);
+          selectCell(editor, t.tablePos, t.tableNode, 0, hover.colIndex ?? 0);
           editor.chain().focus().deleteColumn().run();
         }),
       disabled: map.width <= 1,
     },
   ];
 
-  const items = menu?.kind === "row" ? rowItems : columnItems;
-
   return createPortal(
     <>
-      {/* Row handle — one only, on the row currently under the cursor */}
+      {/* Row handle — one only, on the row currently under the cursor. The
+          grip button doubles as the Headless UI MenuButton; MenuItems uses
+          `anchor` instead of the old hand-written viewport-clamp math. */}
       {hoveredRowRect && (
-        <button
-          aria-label="Row options"
-          className="flex items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground opacity-60 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
-          onClick={(e) =>
-            setMenu({
-              index: hover.rowIndex ?? 0,
-              kind: "row",
-              rect: e.currentTarget.getBoundingClientRect(),
-            })
-          }
-          style={{
-            position: "fixed",
-            top: hoveredRowRect.top,
-            left: left - CONTROL_SIZE - 4,
-            width: CONTROL_SIZE,
-            height: hoveredRowRect.height,
-            zIndex: 40,
-          }}
-          type="button"
-        >
-          <GripVertical size={12} />
-        </button>
+        <Menu>
+          {({ open }) => (
+            <MenuOpenSync open={open} onOpenChange={setMenuOpen}>
+              <MenuButton
+                aria-label="Row options"
+                className="flex items-center justify-center rounded-sm text-muted-foreground opacity-60 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100 data-open:opacity-100 data-open:bg-accent"
+                style={{
+                  position: "fixed",
+                  top: hoveredRowRect.top,
+                  left: left - CONTROL_SIZE - 4,
+                  width: CONTROL_SIZE,
+                  height: hoveredRowRect.height,
+                  zIndex: 40,
+                }}
+              >
+                <GripVertical size={12} />
+              </MenuButton>
+              <MenuItems
+                anchor={{ to: "right start", gap: 4 }}
+                transition
+                className="z-300 overflow-hidden rounded-md border border-border bg-popover py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                style={{ width: MENU_WIDTH }}
+              >
+                {renderMenuItems(rowItems)}
+              </MenuItems>
+            </MenuOpenSync>
+          )}
+        </Menu>
       )}
 
       {/* Column handle — one only, on the column currently under the cursor */}
       {hoveredColRect && (
-        <button
-          aria-label="Column options"
-          className="flex items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground opacity-60 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
-          onClick={(e) =>
-            setMenu({
-              index: hover.colIndex ?? 0,
-              kind: "column",
-              rect: e.currentTarget.getBoundingClientRect(),
-            })
-          }
-          style={{
-            position: "fixed",
-            top: top - CONTROL_SIZE - 4,
-            left: hoveredColRect.left,
-            width: hoveredColRect.width,
-            height: CONTROL_SIZE,
-            zIndex: 40,
-          }}
-          type="button"
-        >
-          <GripVertical size={12} style={{ transform: "rotate(90deg)" }} />
-        </button>
+        <Menu>
+          {({ open }) => (
+            <MenuOpenSync open={open} onOpenChange={setMenuOpen}>
+              <MenuButton
+                aria-label="Column options"
+                className="flex items-center justify-center rounded-sm text-muted-foreground opacity-60 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100 data-open:opacity-100 data-open:bg-accent"
+                style={{
+                  position: "fixed",
+                  top: top - CONTROL_SIZE - 4,
+                  left: hoveredColRect.left,
+                  width: hoveredColRect.width,
+                  height: CONTROL_SIZE,
+                  zIndex: 40,
+                }}
+              >
+                <GripVertical size={12} style={{ transform: "rotate(90deg)" }} />
+              </MenuButton>
+              <MenuItems
+                anchor={{ to: "bottom start", gap: 4 }}
+                transition
+                className="z-300 overflow-hidden rounded-md border border-border bg-popover py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                style={{ width: MENU_WIDTH }}
+              >
+                {renderMenuItems(columnItems)}
+              </MenuItems>
+            </MenuOpenSync>
+          )}
+        </Menu>
       )}
 
       {/* Add row — a single bar along the table's bottom edge */}
       <button
-        className="flex items-center justify-center gap-1 rounded-[var(--radius-sm)] text-muted-foreground opacity-40 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
+        className="flex items-center justify-center gap-1 rounded-sm text-muted-foreground opacity-40 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
         onClick={() =>
           run((t) => {
             selectCell(
@@ -592,7 +565,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       {/* Add column — a single bar along the table's right edge */}
       <button
         aria-label="Add Column"
-        className="flex items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground opacity-40 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
+        className="flex items-center justify-center rounded-sm text-muted-foreground opacity-40 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
         onClick={() =>
           run((t) => {
             selectCell(
@@ -618,45 +591,60 @@ export function TableControls({ editor }: { editor: Editor }) {
         <Plus size={12} />
       </button>
 
-      {/* Contextual menu for whichever handle was clicked */}
-      {menu && (
-        <div
-          className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover py-1"
-          ref={menuRef}
-          style={{
-            position: "fixed",
-            top: getClampedTop(menu.rect, MENU_HEIGHT),
-            left: getClampedLeft(menu.rect, MENU_WIDTH),
-            width: MENU_WIDTH,
-            zIndex: 300,
-          }}
-        >
-          {items.map(({ Icon, label, onClick, danger, disabled }) => (
-            <button
-              className={[
-                "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors",
-                disabled
-                  ? "cursor-not-allowed opacity-40"
-                  : danger
-                    ? "text-destructive hover:bg-destructive/10"
-                    : "text-foreground hover:bg-accent",
-              ].join(" ")}
-              disabled={disabled}
-              key={label}
-              onClick={onClick}
-              onMouseDown={(e) => e.preventDefault()}
-              type="button"
-            >
-              <Icon
-                className={danger ? "" : "text-muted-foreground"}
-                size={14}
-              />
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
     </>,
     document.body
   );
+}
+
+interface MenuItemDef {
+  Icon: typeof Plus;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+  disabled?: boolean;
+}
+
+function renderMenuItems(items: MenuItemDef[]) {
+  return items.map(({ Icon, label, onClick, danger, disabled }) => (
+    <MenuItem key={label} disabled={disabled}>
+      <button
+        className={[
+          "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors",
+          disabled
+            ? "cursor-not-allowed opacity-40"
+            : danger
+              ? "text-destructive data-focus:bg-destructive/10"
+              : "text-foreground data-focus:bg-accent",
+        ].join(" ")}
+        disabled={disabled}
+        onClick={onClick}
+        onMouseDown={(e) => e.preventDefault()}
+        type="button"
+      >
+        <Icon
+          className={danger ? "" : "text-muted-foreground"}
+          size={14}
+        />
+        {label}
+      </button>
+    </MenuItem>
+  ));
+}
+
+// Mirrors a Menu's open state up via callback — Menu has no controlled open prop, only a
+// render-prop, and calling hooks inside that render-prop would violate rules-of-hooks.
+function MenuOpenSync({
+  open,
+  onOpenChange,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    onOpenChange(open);
+    return () => onOpenChange(false);
+  }, [open, onOpenChange]);
+  return <>{children}</>;
 }

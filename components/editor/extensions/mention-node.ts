@@ -50,10 +50,10 @@ export const MentionNode = Node.create<MentionNodeOptions>({
 
     const cls =
       mentionType === "user"
-        ? "text-primary font-medium bg-primary/[0.06] rounded px-0.5 not-prose cursor-pointer"
+        ? "text-primary font-medium bg-primary/6 rounded px-0.5 not-prose cursor-pointer"
         : mentionType === "page"
         ? "text-foreground underline decoration-dotted not-prose cursor-pointer"
-        : "text-accent-foreground font-medium bg-accent-foreground/[0.06] rounded px-0.5 not-prose cursor-pointer";
+        : "text-accent-foreground font-medium bg-accent-foreground/6 rounded px-0.5 not-prose cursor-pointer";
 
     // Only "user" mentions get the "@" prefix — pages show their icon
     // instead, dates read as plain text, matching Notion's conventions.

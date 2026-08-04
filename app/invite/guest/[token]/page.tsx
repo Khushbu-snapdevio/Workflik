@@ -70,7 +70,7 @@ export default function GuestInvitePage() {
 
  return (
   <div className="flex min-h-screen items-center justify-center bg-page px-4">
-   <div className="w-full max-w-md rounded-[var(--radius-lg)] border border-border bg-card p-8">
+   <div className="w-full max-w-md rounded-lg border border-border bg-card p-8">
     {/* Logo */}
     <div className="mb-6 flex justify-center">
      <span className="text-2xl font-black tracking-tight text-foreground">WORKFLIK</span>
@@ -94,7 +94,7 @@ export default function GuestInvitePage() {
        </p>
       </div>
 
-      <div className="mb-6 rounded-[var(--radius-lg)] border border-border bg-page px-4 py-3 text-sm">
+      <div className="mb-6 rounded-lg border border-border bg-page px-4 py-3 text-sm">
        <div className="flex items-center justify-between">
         <span className="text-muted-foreground">Invited email</span>
         <span className="font-medium text-foreground">{invitation.email}</span>
@@ -118,7 +118,7 @@ export default function GuestInvitePage() {
       <button
        type="button"
        onClick={accept}
-       className="w-full rounded-[var(--radius-sm)] bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+       className="w-full rounded-sm bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
       >
        Accept invitation
       </button>

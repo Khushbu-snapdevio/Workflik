@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/react";
 import {
   MessageSquare as ChatTextIcon, FileText, MessageCircle, Tag, CornerDownRight,
   Smile as SmileyIcon, Check as CheckIcon, RotateCcw as ArrowCounterClockwiseIcon,
@@ -159,7 +160,6 @@ interface DiscussionItemProps {
 function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, reactionUsers, onReactionUserResolved, onOpen, onPatch, onDeleted }: DiscussionItemProps) {
   const [isEditing, setIsEditing]     = useState(false);
   const [isMuted, setIsMuted]         = useState(false);
-  const [emojiAnchor, setEmojiAnchor] = useState<DOMRect | null>(null);
   const [pendingDelete, setPendingDelete] = useState(false);
 
   const isAuthor  = thread.author?.id === currentUserId;
@@ -238,30 +238,20 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
   return (
     <li className="group/discussion relative">
       {!thread.deletedAt && !isEditing && (
-        <div className="absolute top-2 right-2 z-10 hidden items-center gap-px rounded-[var(--radius-sm)] border border-border bg-card px-0.5 py-0.5 group-hover/discussion:flex">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setEmojiAnchor(e.currentTarget.getBoundingClientRect()); }}
+        <div className="absolute top-2 right-2 z-10 hidden items-center gap-px rounded-sm border border-border bg-card px-0.5 py-0.5 group-hover/discussion:flex">
+          <EmojiPicker
+            triggerClassName="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
             onMouseEnter={(e) => showTooltip("Add reaction", e)}
             onMouseLeave={hideTooltip}
-            className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
-          >
-            <SmileyIcon size={12} />
-          </button>
-          {emojiAnchor && (
-            <EmojiPicker
-              anchor={emojiAnchor}
-              onSelect={(emoji) => { void toggleReaction(emoji); }}
-              onClose={() => setEmojiAnchor(null)}
-            />
-          )}
+            onSelect={(emoji) => { void toggleReaction(emoji); }}
+          />
           {thread.isResolved ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); void reopenThread(); }}
               onMouseEnter={(e) => showTooltip("Reopen thread", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-primary hover:bg-accent transition-colors duration-150"
+              className="flex size-6 items-center justify-center rounded-sm text-primary hover:bg-accent transition-colors duration-150"
             >
               <ArrowCounterClockwiseIcon size={12} />
             </button>
@@ -271,22 +261,16 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
               onClick={(e) => { e.stopPropagation(); void resolveThread(); }}
               onMouseEnter={(e) => showTooltip("Resolve thread", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+              className="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
             >
               <CheckIcon size={12} />
             </button>
           )}
           <SimpleDropdown
-            trigger={
-              <button
-                type="button"
-                onMouseEnter={(e) => showTooltip("More options", e)}
-                onMouseLeave={hideTooltip}
-                className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
-              >
-                <DotsThreeIcon size={13} />
-              </button>
-            }
+            triggerClassName="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
+            triggerIcon={<DotsThreeIcon size={13} />}
+            onMouseEnter={(e) => showTooltip("More options", e)}
+            onMouseLeave={hideTooltip}
           >
             {isAuthor && (
               <DropdownItem icon={<PencilSimpleIcon size={13} />} onClick={() => setIsEditing(true)}>
@@ -316,7 +300,7 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
       )}
 
       {isEditing ? (
-        <div className="flex items-start gap-2.5 rounded-[var(--radius-md)] px-3 py-2.5">
+        <div className="flex items-start gap-2.5 rounded-md px-3 py-2.5">
           <ThreadAvatar name={thread.author?.name} image={thread.author?.image} />
           <div className="min-w-0 flex-1">
             <span className="mb-1 block truncate text-xs font-semibold text-foreground">
@@ -342,15 +326,15 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
           tabIndex={0}
           onClick={onOpen}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
-          className="flex w-full cursor-pointer flex-col gap-2 rounded-[var(--radius-md)] border border-transparent px-3 py-2.5 text-left transition-colors duration-150 hover:border-border hover:bg-accent"
+          className="flex w-full cursor-pointer flex-col gap-2 rounded-md border border-transparent px-3 py-2.5 text-left transition-colors duration-150 hover:border-border hover:bg-accent"
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex min-w-0 items-center gap-1 rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="inline-flex min-w-0 items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-2xs font-medium text-muted-foreground">
               <KindIcon size={10} className="shrink-0" />
               <span className="truncate">{kindLabel}</span>
             </span>
             {thread.isResolved && !thread.deletedAt && (
-              <span className="shrink-0 rounded-[var(--radius-xs)] bg-success/10 px-1.5 py-0.5 text-[10px] font-semibold text-success">
+              <span className="shrink-0 rounded-xs bg-success/10 px-1.5 py-0.5 text-2xs font-semibold text-success">
                 Resolved
               </span>
             )}
@@ -397,7 +381,7 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
                         onClick={(e) => { e.stopPropagation(); void toggleReaction(emoji); }}
                         onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
                         onMouseLeave={hideTooltip}
-                        className={`flex items-center gap-0.5 rounded-[var(--radius-xs)] border px-1.5 py-0.5 text-[10px] transition-colors duration-150 ${
+                        className={`flex items-center gap-0.5 rounded-xs border px-1.5 py-0.5 text-2xs transition-colors duration-150 ${
                           iMine
                             ? "border-primary/30 bg-primary/10 text-primary"
                             : "border-border bg-muted/50 text-foreground/70 hover:border-border hover:bg-accent"
@@ -541,12 +525,8 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   // jump to — everything else (including deleted-but-replied-to threads,
   // which still render "[Comment deleted]" the same way the block/page
   // comment threads themselves do) stays visible.
-  const grouped = useMemo(() => {
-    const visible = threads
-      .filter((t) => !(t.deletedAt && t.replies.length === 0))
-      .filter((t) => (tab === "open" ? !t.isResolved : t.isResolved));
-    const sorted = [...visible].sort((a, b) => lastActivity(b) - lastActivity(a));
-
+  function groupByDate(list: CommentThread[]) {
+    const sorted = [...list].sort((a, b) => lastActivity(b) - lastActivity(a));
     const buckets = new Map<string, CommentThread[]>();
     for (const t of sorted) {
       const key = dateBucket(new Date(lastActivity(t)).toISOString());
@@ -554,11 +534,79 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
       buckets.get(key)!.push(t);
     }
     return [...buckets.entries()];
-  }, [threads, tab]);
+  }
+
+  const visibleThreads = useMemo(
+    () => threads.filter((t) => !(t.deletedAt && t.replies.length === 0)),
+    [threads]
+  );
+  const openGrouped = useMemo(
+    () => groupByDate(visibleThreads.filter((t) => !t.isResolved)),
+    [visibleThreads]
+  );
+  const resolvedGrouped = useMemo(
+    () => groupByDate(visibleThreads.filter((t) => t.isResolved)),
+    [visibleThreads]
+  );
 
   const openCount = threads.filter((t) => !t.isResolved && !t.deletedAt).length;
   const resolvedCount = threads.filter((t) => t.isResolved && !t.deletedAt).length;
   const { tooltip: triggerTooltip, showTooltip: showTriggerTooltip, hideTooltip: hideTriggerTooltip } = useHoverTooltip();
+
+  function renderThreadList(grouped: [string, CommentThread[]][], emptyTitle: string) {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-16">
+          <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
+        </div>
+      );
+    }
+    if (grouped.length === 0) {
+      return (
+        <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+          <div className="flex size-14 items-center justify-center rounded-lg border border-border bg-muted/50">
+            <MessageCircle size={22} className="text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground/80">
+              {emptyTitle}
+            </p>
+            <p className="mt-1 max-w-55 text-xs leading-relaxed text-muted-foreground">
+              Comments on this page will show up here.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-col gap-5">
+        {grouped.map(([label, group]) => (
+          <div key={label}>
+            <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground-subtle">
+              {label}
+            </p>
+            <ul className="flex flex-col gap-0.5">
+              {group.map((thread) => (
+                <DiscussionItem
+                  key={thread.id}
+                  thread={thread}
+                  pageId={pageId}
+                  workspaceId={workspaceId}
+                  currentUserId={currentUserId}
+                  isAdmin={isAdmin}
+                  reactionUsers={reactionUsers}
+                  onReactionUserResolved={mergeReactionUser}
+                  onOpen={() => openThread(thread)}
+                  onPatch={(patch) => patchThread(thread.id, patch)}
+                  onDeleted={() => removeThread(thread.id)}
+                />
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <Sheet open={open} onOpenChange={(next) => { setOpen(next); if (next) load(true); }}>
@@ -568,11 +616,11 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
         aria-label="Comments"
         onMouseEnter={(e) => showTriggerTooltip("Comments", e)}
         onMouseLeave={hideTriggerTooltip}
-        className="relative flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+        className="relative flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
       >
         <ChatTextIcon size={15} />
         {unresolvedCount != null && unresolvedCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold tabular-nums text-primary-foreground">
+          <span className="absolute -right-0.5 -top-0.5 flex h-3.75 min-w-3.75 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold tabular-nums text-primary-foreground">
             {unresolvedCount}
           </span>
         )}
@@ -594,77 +642,30 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
           if ((e.target as HTMLElement)?.closest?.('[contenteditable="true"]')) e.preventDefault();
         }}
       >
-        <SheetHeader className="gap-3 border-b border-border px-5 pb-4 pt-5">
-          <SheetTitle className="text-base">Comments</SheetTitle>
-          <div className="inline-flex w-fit items-center gap-0.5 rounded-[var(--radius-sm)] bg-muted p-0.5">
-            {(["open", "resolved"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={`flex items-center gap-1.5 rounded-[var(--radius-xs)] border px-2.5 py-1 text-xs font-medium transition-colors duration-150 ${
-                  tab === t
-                    ? "border-border bg-card text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t === "open" ? "Open" : "Resolved"}
-                <span className="tabular-nums text-[11px] text-muted-foreground">
-                  {t === "open" ? openCount : resolvedCount}
-                </span>
-              </button>
-            ))}
-          </div>
-        </SheetHeader>
+        <TabGroup
+          className="contents"
+          selectedIndex={tab === "open" ? 0 : 1}
+          onChange={(i) => setTab(i === 0 ? "open" : "resolved")}
+        >
+          <SheetHeader className="gap-3 border-b border-border px-5 pb-4 pt-5">
+            <SheetTitle className="text-base">Comments</SheetTitle>
+            <TabList className="inline-flex w-fit items-center gap-0.5 rounded-sm bg-muted p-0.5">
+              <Tab className="flex items-center gap-1.5 rounded-xs border border-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground outline-none transition-colors duration-150 hover:text-foreground data-selected:border-border data-selected:bg-card data-selected:text-foreground">
+                Open
+                <span className="tabular-nums text-[11px] text-muted-foreground">{openCount}</span>
+              </Tab>
+              <Tab className="flex items-center gap-1.5 rounded-xs border border-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground outline-none transition-colors duration-150 hover:text-foreground data-selected:border-border data-selected:bg-card data-selected:text-foreground">
+                Resolved
+                <span className="tabular-nums text-[11px] text-muted-foreground">{resolvedCount}</span>
+              </Tab>
+            </TabList>
+          </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-3 py-3">
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
-            </div>
-          ) : grouped.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-              <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
-                <MessageCircle size={22} className="text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground/80">
-                  {tab === "open" ? "No open comments" : "No resolved comments"}
-                </p>
-                <p className="mt-1 max-w-[220px] text-xs leading-relaxed text-muted-foreground">
-                  Comments on this page will show up here.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-5">
-              {grouped.map(([label, group]) => (
-                <div key={label}>
-                  <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground-subtle">
-                    {label}
-                  </p>
-                  <ul className="flex flex-col gap-0.5">
-                    {group.map((thread) => (
-                      <DiscussionItem
-                        key={thread.id}
-                        thread={thread}
-                        pageId={pageId}
-                        workspaceId={workspaceId}
-                        currentUserId={currentUserId}
-                        isAdmin={isAdmin}
-                        reactionUsers={reactionUsers}
-                        onReactionUserResolved={mergeReactionUser}
-                        onOpen={() => openThread(thread)}
-                        onPatch={(patch) => patchThread(thread.id, patch)}
-                        onDeleted={() => removeThread(thread.id)}
-                      />
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          <TabPanels className="flex-1 overflow-y-auto px-3 py-3">
+            <TabPanel>{renderThreadList(openGrouped, "No open comments")}</TabPanel>
+            <TabPanel>{renderThreadList(resolvedGrouped, "No resolved comments")}</TabPanel>
+          </TabPanels>
+        </TabGroup>
       </SheetContent>
     </Sheet>
   );

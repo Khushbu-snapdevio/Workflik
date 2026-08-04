@@ -420,8 +420,8 @@ bg-[#191919]                 ← dark background (Notion's exact dark card color
 text-white
 rounded-xl
 shadow-2xl
-border border-white/[0.08]   ← subtle border
-w-[380px]                    ← fixed width
+border border-white/8   ← subtle border
+w-95                    ← fixed width
 max-h-[520px]
 overflow-y-auto
 ```
@@ -458,7 +458,7 @@ Each comment (root or reply) renders as:
 ```tsx
 <div className="flex items-start gap-2 px-3 py-2.5 hover:bg-white/5 group">
   {/* Avatar — 24px circle, single initial letter */}
-  <div className="flex-shrink-0 h-6 w-6 rounded-full bg-blue-600 flex items-center justify-center text-[11px] font-semibold text-white">
+  <div className="shrink-0 h-6 w-6 rounded-full bg-blue-600 flex items-center justify-center text-[11px] font-semibold text-white">
     {initial}
   </div>
 
@@ -483,7 +483,7 @@ Each comment (root or reply) renders as:
           <DropdownMenuTrigger className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white">
             <DotsThreeIcon size={14} />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[180px] bg-[#2f2f2f] border-white/10 text-white text-sm">
+          <DropdownMenuContent className="w-45 bg-[#2f2f2f] border-white/10 text-white text-sm">
             <DropdownMenuItem>Mark as unread</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setEditingId(comment.id)}>Edit</DropdownMenuItem>
             <DropdownMenuItem>Copy link</DropdownMenuItem>
@@ -764,7 +764,7 @@ Add to the page's top-right action bar:
 >
   <ChatTextIcon size={15} />
   {unresolvedCount > 0 && (
-    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[10px] font-medium text-white">
+    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-2xs font-medium text-white">
       {unresolvedCount > 9 ? "9+" : unresolvedCount}
     </span>
   )}

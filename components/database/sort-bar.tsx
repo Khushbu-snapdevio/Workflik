@@ -74,14 +74,14 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
       </SelectContent>
      </Select>
 
-     <div className="flex items-center rounded-[var(--radius-sm)] border border-border bg-muted/40 p-0.5">
+     <div className="flex items-center rounded-sm border border-border bg-muted/40 p-0.5">
       {(["asc", "desc"] as const).map((dir) => (
        <button
         key={dir}
         onClick={() => update(idx, { direction: dir })}
         className={`flex items-center gap-1 transition-colors ${
          sort.direction === dir
-          ? "bg-primary text-primary-foreground rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-semibold"
+          ? "bg-primary text-primary-foreground rounded-sm px-2.5 py-1 text-xs font-semibold"
           : "text-muted-foreground px-2.5 py-1 text-xs font-medium hover:text-foreground"
         }`}
        >
@@ -93,7 +93,7 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
 
      <button
       onClick={() => remove(idx)}
-      className="ml-auto flex size-5 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+      className="ml-auto flex size-5 items-center justify-center rounded-xs text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
      >
       <X size={11} />
      </button>
@@ -109,7 +109,7 @@ export function SortBar({ properties, sorts, onChange }: SortBarProps) {
      else if (atLimit) showTooltip("All sortable properties are already used", e);
     }}
     onMouseLeave={hideTooltip}
-    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+    className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
    >
     + Add sort
    </button>

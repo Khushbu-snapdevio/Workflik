@@ -218,7 +218,7 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
     const commentCountMap = new Map(commentCountRows.map((r) => [r.pageId, r.count]));
 
     const lockedBanner = page.isLocked && (
-      <div className="mb-5 flex items-center gap-3 rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+      <div className="mb-5 flex items-center gap-3 rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
         This page is <strong className="ml-1">locked</strong> — editing is disabled.
       </div>
     );
@@ -279,7 +279,7 @@ export default async function PageEditorPage({ params, searchParams }: Props) {
         />
       )}
       {page.isLocked && (
-        <div className="mb-5 flex items-center gap-3 rounded-[var(--radius-md)] border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
+        <div className="mb-5 flex items-center gap-3 rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
           This page is <strong className="ml-1">locked</strong> — editing is disabled.
         </div>
       )}

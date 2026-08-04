@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { Search, Shuffle, Clock } from "lucide-react";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { emojiMatches } from "@/lib/emoji-search";
 import { flagIconCode } from "@/lib/emoji-flags";
-import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 
 // ── Emoji categories (Notion-standard 8 categories) ──────────────────────────
@@ -237,19 +236,12 @@ export interface EmojiGridPickerProps {
 export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPickerProps) {
   const [emojiSearch, setEmojiSearch] = useState("");
   const [skinTone, setSkinTone] = useState<string>(() => getSavedTone());
-  const [showSkinTones, setShowSkinTones] = useState(false);
   const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
-  const [skinToneRect, setSkinToneRect] = useState<DOMRect | null>(null);
-  const skinToneBtnRef = useRef<HTMLButtonElement>(null);
-  const skinToneMenuRef = useRef<HTMLDivElement>(null);
   const emojiScrollRef = useRef<HTMLDivElement>(null);
   const catRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   const currentHand = SKIN_TONES.find(s => s.tone === skinTone)?.hand ?? "✋";
-
-  useScrollLockWhileOpen(showSkinTones, (target) =>
-    !!skinToneMenuRef.current?.contains(target) || !!skinToneBtnRef.current?.contains(target));
 
   useEffect(() => {
     setRecentEmojis(getRecent());
@@ -279,7 +271,6 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
   function handleSkinTone(tone: string) {
     setSkinTone(tone);
     saveTone(tone);
-    setShowSkinTones(false);
   }
 
   const EmojiBtn = ({ emoji }: { emoji: string }) => {
@@ -290,7 +281,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
         onDragStart={(e) => e.preventDefault()}
         draggable={false}
         aria-label={emoji}
-        className="flex size-[30px] select-none items-center justify-center rounded-[var(--radius-xs)] text-[19px] leading-none transition-colors hover:bg-accent"
+        className="flex size-7.5 select-none items-center justify-center rounded-xs text-[19px] leading-none transition-colors hover:bg-accent"
       >
         {flagCode ? <span className={`fi fi-${flagCode} fis rounded-[2px]`} /> : emoji}
       </button>
@@ -308,7 +299,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             onChange={(e) => setEmojiSearch(e.target.value)}
             placeholder="Filter..."
             autoFocus
-            className="w-full rounded-[var(--radius-sm)] border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary/50"
+            className="w-full rounded-sm border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary/50"
           />
         </div>
         {onShuffle && (
@@ -319,57 +310,62 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             }}
             onMouseEnter={(e) => showTooltip("Random", e)}
             onMouseLeave={hideTooltip}
-            className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-8 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Shuffle size={13} />
           </button>
         )}
-        {/* Skin tone */}
-        <div className="relative">
-          <button
-            ref={skinToneBtnRef}
-            onClick={() => {
-              const r = skinToneBtnRef.current?.getBoundingClientRect();
-              if (!showSkinTones && r) setSkinToneRect(r);
-              setShowSkinTones(p => !p);
-            }}
+        {/* Skin tone — a Popover nested inside EmojiGridPicker's own outer
+            chrome (icon-picker.tsx's Popover, or callers' own hand-rolled
+            outside-click systems, e.g. comment-card.tsx / cell-comment-popover.tsx).
+            Headless UI wraps every Popover's subtree in a shared "main tree"
+            context (see @headlessui/react's useRootContainers/useNestedPortals);
+            a nested Popover's portaled panel registers itself into that
+            context, so an ancestor Popover's own outside-click correctly
+            treats clicks inside this one as "inside," not outside — no
+            data-*-exempt marker needed for that case. `onMouseDown`
+            stopPropagation is kept anyway as defense-in-depth for
+            cell-comment-popover.tsx's hand-rolled (non-Headless-UI) outside-click
+            listeners, which only check DOM containment against their own refs. */}
+        <Popover>
+          <PopoverButton
             onDragStart={(e) => e.preventDefault()}
             draggable={false}
             onMouseEnter={(e) => showTooltip("Select skin tone", e)}
             onMouseLeave={hideTooltip}
-            className={`flex size-8 shrink-0 select-none items-center justify-center rounded-[var(--radius-sm)] border text-[18px] leading-none transition-colors ${showSkinTones ? "border-primary/50 bg-accent" : "border-border bg-background hover:bg-accent"}`}
+            className="flex size-8 shrink-0 select-none items-center justify-center rounded-sm border border-border bg-background text-[18px] leading-none outline-none transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-open:border-primary/50 data-open:bg-accent"
           >
             {currentHand}
-          </button>
-          {showSkinTones && skinToneRect && typeof document !== "undefined" && createPortal(
-            <div
-              ref={skinToneMenuRef}
-              data-emoji-picker-exempt
-              style={{ position: "fixed", top: getClampedTop(skinToneRect, 50), right: window.innerWidth - skinToneRect.right, zIndex: 9999 }}
-              className="flex items-center gap-0.5 rounded-[var(--radius-md)] border border-border bg-popover p-1.5"
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              {SKIN_TONES.map((s) => (
-                <button
-                  key={s.tone}
-                  onClick={() => handleSkinTone(s.tone)}
-                  onDragStart={(e) => e.preventDefault()}
-                  draggable={false}
-                  onMouseEnter={(e) => showTooltip(s.tone ? "Skin tone" : "Default", e)}
-                  onMouseLeave={hideTooltip}
-                  className={`flex size-8 select-none items-center justify-center rounded-[var(--radius-sm)] text-[18px] leading-none transition-colors hover:bg-accent ${skinTone === s.tone ? "bg-accent ring-1 ring-primary/40" : ""}`}
-                >
-                  {s.hand}
-                </button>
-              ))}
-            </div>,
-            document.body
-          )}
-        </div>
+          </PopoverButton>
+          <PopoverPanel
+            anchor={{ to: "bottom end", gap: 6 }}
+            transition
+            onMouseDown={(e) => e.stopPropagation()}
+            className="z-9999 flex items-center gap-0.5 rounded-md border border-border bg-popover p-1.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+          >
+            {({ close }) => (
+              <>
+                {SKIN_TONES.map((s) => (
+                  <button
+                    key={s.tone}
+                    onClick={() => { handleSkinTone(s.tone); close(); }}
+                    onDragStart={(e) => e.preventDefault()}
+                    draggable={false}
+                    onMouseEnter={(e) => showTooltip(s.tone ? "Skin tone" : "Default", e)}
+                    onMouseLeave={hideTooltip}
+                    className={`flex size-8 select-none items-center justify-center rounded-sm text-[18px] leading-none outline-none transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${skinTone === s.tone ? "bg-accent ring-1 ring-primary/40" : ""}`}
+                  >
+                    {s.hand}
+                  </button>
+                ))}
+              </>
+            )}
+          </PopoverPanel>
+        </Popover>
       </div>
 
       {/* Emoji scroll area */}
-      <div ref={emojiScrollRef} className="h-[232px] overflow-y-auto px-2.5">
+      <div ref={emojiScrollRef} className="h-58 overflow-y-auto px-2.5">
         {emojiSearchResults ? (
           emojiSearchResults.length === 0 ? (
             <p className="py-8 text-center text-xs text-muted-foreground">No emojis found</p>
@@ -412,7 +408,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
           onClick={() => scrollToCategory("recent")}
           onMouseEnter={(e) => showTooltip("Recently used", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <Clock size={13} />
         </button>
@@ -424,7 +420,7 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             draggable={false}
             onMouseEnter={(e) => showTooltip(cat.label, e)}
             onMouseLeave={hideTooltip}
-            className="flex size-7 shrink-0 select-none items-center justify-center rounded-[var(--radius-sm)] text-[15px] leading-none transition-colors hover:bg-accent"
+            className="flex size-7 shrink-0 select-none items-center justify-center rounded-sm text-[15px] leading-none transition-colors hover:bg-accent"
           >
             {cat.icon}
           </button>

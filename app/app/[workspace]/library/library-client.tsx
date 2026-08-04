@@ -404,7 +404,7 @@ export function LibraryClient({
 
       {/* ── Tabs + search row ── */}
       <div className="shrink-0 bg-card">
-        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-300 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center">
             {TABS.map((t) => (
               <button
@@ -419,7 +419,7 @@ export function LibraryClient({
               >
                 <TabIcon id={t.id} />
                 {t.label}
-                <span className={`rounded-[var(--radius-xs)] px-1.5 py-0.5 text-xs font-semibold ${
+                <span className={`rounded-xs px-1.5 py-0.5 text-xs font-semibold ${
                   tab === t.id ? "bg-accent text-foreground" : "bg-muted text-muted-foreground"
                 }`}>
                   {tabCounts[t.id]}
@@ -440,7 +440,7 @@ export function LibraryClient({
                   type="button"
                   disabled={deletingSelected}
                   onClick={() => setSelectedIds(new Set())}
-                  className="flex h-8 items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                  className="flex h-8 items-center gap-1.5 rounded-sm px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
                 >
                   <X size={12} />
                   Clear
@@ -449,7 +449,7 @@ export function LibraryClient({
                   type="button"
                   disabled={deletingSelected}
                   onClick={() => setConfirmDeleteSelected(true)}
-                  className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-destructive/40 bg-destructive/8 px-3 text-xs font-medium text-destructive transition-colors hover:border-destructive/70 hover:bg-destructive/15 disabled:opacity-50"
+                  className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-sm border border-destructive/40 bg-destructive/8 px-3 text-xs font-medium text-destructive transition-colors hover:border-destructive/70 hover:bg-destructive/15 disabled:opacity-50"
                 >
                   {deletingSelected ? (
                     <><Loader2 size={12} className="animate-spin" />Deleting…</>
@@ -462,7 +462,7 @@ export function LibraryClient({
             )}
 
             {/* Search */}
-            <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-xs transition-colors duration-150 focus-within:border-border">
+            <div className="flex items-center gap-1.5 rounded-sm border border-border bg-background px-3 py-1.5 text-xs transition-colors duration-150 focus-within:border-border">
               <Search size={13} className="shrink-0 text-muted-foreground-subtle" />
               <input
                 className="w-40 bg-transparent text-xs text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
@@ -487,23 +487,23 @@ export function LibraryClient({
 
       {/* ── Content ── */}
       <div className="flex-1 overflow-auto">
-        <div key={tab} className="mx-auto w-full max-w-[1200px] animate-in fade-in slide-in-from-bottom-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 duration-200">
+        <div key={tab} className="mx-auto w-full max-w-300 animate-in fade-in slide-in-from-bottom-1 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 duration-200">
 
           {deleteErr && (
-            <p className="mb-3 flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <p className="mb-3 flex items-center gap-1.5 rounded-sm bg-destructive/5 px-3 py-2 text-xs text-destructive">
               <AlertCircle size={14} className="shrink-0" />
               {deleteErr}
             </p>
           )}
 
           {loading && rows.length === 0 ? (
-            <div className="flex items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card py-16">
+            <div className="flex items-center justify-center rounded-lg border border-border bg-card py-16">
               <Loader2 size={20} className="animate-spin text-muted-foreground-subtle" />
             </div>
           ) : rows.length === 0 ? (
-            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
               <div className="flex flex-col items-center py-16 text-center">
-                <div className="mb-4 flex size-12 items-center justify-center rounded-[var(--radius-md)] bg-muted">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-md bg-muted">
                   <BookOpen size={20} className="text-muted-foreground-subtle" />
                 </div>
                 <p className="text-sm font-semibold text-foreground">No pages found</p>
@@ -513,7 +513,7 @@ export function LibraryClient({
               </div>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
 
               {/* Table header */}
               <div className="grid items-center border-b border-border bg-muted/30 px-5 py-2.5" style={{ gridTemplateColumns: "28px 1fr 200px 130px 130px 90px" }}>
@@ -526,7 +526,7 @@ export function LibraryClient({
                     onChange={() => toggleSelectAll()}
                     className="sr-only"
                   />
-                  <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
+                  <span className={`flex size-3.75 shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
                     allSelected
                       ? "border-primary bg-primary"
                       : someSelected
@@ -568,7 +568,7 @@ export function LibraryClient({
                         onChange={() => toggleRow(page.id)}
                         className="sr-only"
                       />
-                      <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
+                      <span className={`flex size-3.75 shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
                         isChecked ? "border-primary bg-primary" : "border-border bg-background hover:border-primary/50"
                       }`}>
                         {isChecked && <Check size={10} className="text-white" strokeWidth={3} />}
@@ -584,14 +584,14 @@ export function LibraryClient({
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); toggleExpand(page.id); }}
-                          className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground-subtle transition-colors duration-150 hover:bg-accent hover:text-foreground"
+                          className="flex size-4 shrink-0 items-center justify-center rounded-xs text-muted-foreground-subtle transition-colors duration-150 hover:bg-accent hover:text-foreground"
                         >
                           {expandedIds.has(page.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                         </button>
                       ) : page.depth > 0 ? (
                         <span className="size-4 shrink-0" />
                       ) : null}
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background">
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border border-border bg-background">
                         <PageIcon icon={page.icon} kind={page.kind} />
                       </span>
                       <span className={`min-w-0 flex-1 truncate text-sm text-foreground ${page.depth > 0 ? "font-normal" : "font-medium"}`}>
@@ -610,7 +610,7 @@ export function LibraryClient({
                         >
                           {page.isPrivate ? <EyeOff size={12} /> : <Eye size={12} />}
                         </button>
-                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/private:opacity-100">
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-sm border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/private:opacity-100">
                           <p className="text-xs font-semibold text-popover-foreground">
                             {page.isPrivate ? "Private — only you and invited people can access" : "Make private"}
                           </p>
@@ -630,7 +630,7 @@ export function LibraryClient({
                         >
                           <Lock size={12} />
                         </button>
-                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/locked:opacity-100">
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-sm border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/locked:opacity-100">
                           <p className="text-xs font-semibold text-popover-foreground">
                             {page.isLocked ? "Locked — editing disabled" : "Lock page"}
                           </p>
@@ -650,7 +650,7 @@ export function LibraryClient({
                         >
                           <Star size={13} fill={page.isFavorited ? "currentColor" : "none"} />
                         </button>
-                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/fav:opacity-100">
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-sm border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/fav:opacity-100">
                           <p className="text-xs font-semibold text-popover-foreground">
                             {page.isFavorited ? "Remove from favorites" : "Add to favorites"}
                           </p>
@@ -722,7 +722,7 @@ export function LibraryClient({
                       }}
                       // w-16, not w-12: pl-2 + pr-5 eats 28px of the box, so a
                       // 3-digit value like "100" was clipped at the old width.
-                      className="w-16 rounded-[var(--radius-sm)] border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
+                      className="w-16 rounded-sm border border-border bg-card py-1 pl-2 pr-5 text-xs text-foreground focus:border-primary/50 focus:outline-none"
                     />
                     <div className="absolute right-1 flex flex-col">
                       <button
@@ -761,13 +761,13 @@ export function LibraryClient({
                     // filter this field accepted arbitrary text.
                     onChange={(e) => setGoToPageInput(e.target.value.replace(/[^0-9]/g, ""))}
                     onKeyDown={(e) => { if (e.key === "Enter") submitGoToPage(); }}
-                    className="w-20 rounded-[var(--radius-sm)] border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
+                    className="w-20 rounded-sm border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/50 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => submitGoToPage()}
                     disabled={!goToPageInput}
-                    className="rounded-[var(--radius-sm)] border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
+                    className="rounded-sm border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:opacity-40"
                   >
                     GO
                   </button>
@@ -778,7 +778,7 @@ export function LibraryClient({
                     type="button"
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage <= 1}
-                    className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                    className="flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                   >
                     <ChevronLeft size={12} />
                     Previous
@@ -792,7 +792,7 @@ export function LibraryClient({
                         key={p}
                         type="button"
                         onClick={() => goToPage(p)}
-                        className={`flex size-6 items-center justify-center rounded-[var(--radius-sm)] border text-xs font-medium transition-colors duration-150 ${
+                        className={`flex size-6 items-center justify-center rounded-sm border text-xs font-medium transition-colors duration-150 ${
                           p === currentPage
                             ? "border-primary/50 bg-primary/10 text-primary"
                             : "border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -807,7 +807,7 @@ export function LibraryClient({
                     type="button"
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage >= totalPages}
-                    className="flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                    className="flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                   >
                     Next
                     <ChevronRight size={12} />

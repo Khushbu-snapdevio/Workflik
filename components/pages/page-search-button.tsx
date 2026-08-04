@@ -13,7 +13,7 @@ export function PageSearchButton() {
       icon={<Search size={15} />}
       label="Search"
       onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-      className="flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+      className="flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
     />
   );
 }

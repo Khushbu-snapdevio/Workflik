@@ -8,6 +8,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from "@headlessui/react";
 import { X, ArrowLeft, Search, ChevronRight, GripVertical, Eye, EyeOff, Pin, PinOff, Check } from "lucide-react";
 import { getOptionColor, STATUS_GROUPS, PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
 import { PageIcon } from "@/components/pages/page-icon";
@@ -58,8 +59,6 @@ export function GroupSettingsPanel({
   const [anchorRect, setAnchorRect] = useState<DOMRect>(getAnchorRect);
   const [view, setView] = useState<"main" | "groupBy">("main");
   const [groupBySearch, setGroupBySearch] = useState("");
-  const [showStatusByPicker, setShowStatusByPicker] = useState(false);
-  const [showSortPicker, setShowSortPicker] = useState(false);
   const [submenu, setSubmenu] = useState<{ optionId: string; rect: DOMRect } | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
@@ -191,7 +190,7 @@ export function GroupSettingsPanel({
       ref={ref}
       data-edit-property-exempt
       style={{ position: "fixed", top, left, width: PANEL_WIDTH, maxHeight, zIndex: 400 }}
-      className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+      className="flex flex-col overflow-hidden rounded-md border border-border bg-background"
     >
       {view === "groupBy" ? (
         <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
@@ -203,63 +202,67 @@ export function GroupSettingsPanel({
             <ArrowLeft size={14} className="text-muted-foreground" />
             Group by
           </button>
-          <button type="button" onClick={onClose} className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground">
+          <button type="button" onClick={onClose} className="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground">
             <X size={13} />
           </button>
         </div>
       ) : (
         <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
           <span className="text-sm font-semibold text-foreground">Group</span>
-          <button type="button" onClick={onClose} className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground">
+          <button type="button" onClick={onClose} className="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground">
             <X size={13} />
           </button>
         </div>
       )}
 
       {view === "groupBy" ? (
-        <div className="flex flex-col overflow-hidden">
-          <div className="shrink-0 p-2">
-            <div className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-muted/30 px-2 py-1.5">
-              <Search size={13} className="shrink-0 text-muted-foreground" />
-              <input
-                autoFocus
-                value={groupBySearch}
-                onChange={(e) => setGroupBySearch(e.target.value)}
-                placeholder="Search for a property…"
-                className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
-              />
+        <Combobox
+          value={null}
+          onChange={(p: DbProperty | null) => { if (!p) return; onUpdateView({ groupByPropertyId: p.id }); setView("main"); setGroupBySearch(""); }}
+        >
+          <div className="flex flex-col overflow-hidden">
+            <div className="shrink-0 p-2">
+              <div className="flex items-center gap-1.5 rounded-sm border border-border bg-muted/30 px-2 py-1.5">
+                <Search size={13} className="shrink-0 text-muted-foreground" />
+                <ComboboxInput
+                  autoFocus
+                  value={groupBySearch}
+                  onChange={(e) => setGroupBySearch(e.target.value)}
+                  placeholder="Search for a property…"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
+                />
+              </div>
             </div>
+            <ComboboxOptions static className="flex flex-col gap-0.5 overflow-y-auto p-2 pt-0">
+              {filteredSelectProps.map((p) => {
+                const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON];
+                const propConfig = (p.config ?? {}) as { icon?: string };
+                const isActive = p.id === groupProp.id;
+                return (
+                  <ComboboxOption
+                    key={p.id}
+                    value={p}
+                    className={({ focus }) => `flex w-full cursor-default items-center gap-2.5 rounded-sm px-2 py-1.5 text-sm ${focus ? "bg-accent" : ""} ${isActive ? "font-medium text-foreground" : "text-foreground"}`}
+                  >
+                    {propConfig.icon ? <PageIcon icon={propConfig.icon} size={14} className="shrink-0" /> : <TypeIcon size={14} className="shrink-0 text-muted-foreground" />}
+                    <span className="flex-1 truncate text-left">{p.name}</span>
+                    {isActive && <Check size={13} className="shrink-0 text-primary" />}
+                  </ComboboxOption>
+                );
+              })}
+              {filteredSelectProps.length === 0 && (
+                <p className="px-2 py-3 text-center text-xs text-muted-foreground">No matching properties</p>
+              )}
+            </ComboboxOptions>
           </div>
-          <div className="flex flex-col gap-0.5 overflow-y-auto p-2 pt-0">
-            {filteredSelectProps.map((p) => {
-              const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON];
-              const propConfig = (p.config ?? {}) as { icon?: string };
-              const isActive = p.id === groupProp.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => { onUpdateView({ groupByPropertyId: p.id }); setView("main"); setGroupBySearch(""); }}
-                  className={`flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-sm transition-colors hover:bg-accent ${isActive ? "font-medium text-foreground" : "text-foreground"}`}
-                >
-                  {propConfig.icon ? <PageIcon icon={propConfig.icon} size={14} className="shrink-0" /> : <TypeIcon size={14} className="shrink-0 text-muted-foreground" />}
-                  <span className="flex-1 truncate text-left">{p.name}</span>
-                  {isActive && <Check size={13} className="shrink-0 text-primary" />}
-                </button>
-              );
-            })}
-            {filteredSelectProps.length === 0 && (
-              <p className="px-2 py-3 text-center text-xs text-muted-foreground">No matching properties</p>
-            )}
-          </div>
-        </div>
+        </Combobox>
       ) : (
       <div className="flex flex-col gap-2.5 overflow-y-auto p-3">
         {/* Group by */}
         <button
           type="button"
           onClick={() => setView("groupBy")}
-          className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-0.5 py-1 text-sm text-foreground hover:bg-accent"
+          className="flex w-full items-center justify-between rounded-sm px-0.5 py-1 text-sm text-foreground hover:bg-accent"
         >
           <span className="text-muted-foreground">Group by</span>
           <span className="flex items-center gap-1 font-medium">
@@ -270,68 +273,62 @@ export function GroupSettingsPanel({
 
         {/* Status by — Status-style properties only */}
         {groupedByStatus && (
-          <div>
-            <button
-              type="button"
-              onClick={() => { setShowStatusByPicker((v) => !v); setShowSortPicker(false); }}
-              className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-0.5 py-1 text-sm text-foreground hover:bg-accent"
-            >
-              <span className="text-muted-foreground">Status by</span>
-              <span className="flex items-center gap-1 font-medium">
-                {statusBy === "group" ? "Group" : "Option"}
-                <ChevronRight size={13} className={`text-muted-foreground transition-transform duration-150 ${showStatusByPicker ? "rotate-90" : ""}`} />
-              </span>
-            </button>
-            {showStatusByPicker && (
-              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1">
-                {([
-                  { key: "group" as const, label: "Group" },
-                  { key: "option" as const, label: "Option" },
-                ]).map((mode) => (
-                  <button
-                    key={mode.key}
-                    type="button"
-                    onClick={() => { updateBoardSettings({ statusBy: mode.key }); setShowStatusByPicker(false); }}
-                    className="flex w-full items-center gap-2 rounded-[var(--radius-xs)] px-2 py-1.5 text-xs text-foreground hover:bg-accent"
-                  >
-                    <span className="flex-1 truncate text-left">{mode.label}</span>
-                    {statusBy === mode.key && <Check size={12} className="shrink-0 text-primary" />}
-                  </button>
-                ))}
+          <Listbox value={statusBy} onChange={(mode: "group" | "option") => updateBoardSettings({ statusBy: mode })}>
+            {({ open }) => (
+              <div>
+                <ListboxButton className="flex w-full items-center justify-between rounded-sm px-0.5 py-1 text-sm text-foreground hover:bg-accent">
+                  <span className="text-muted-foreground">Status by</span>
+                  <span className="flex items-center gap-1 font-medium">
+                    {statusBy === "group" ? "Group" : "Option"}
+                    <ChevronRight size={13} className={`text-muted-foreground transition-transform duration-150 ${open ? "rotate-90" : ""}`} />
+                  </span>
+                </ListboxButton>
+                <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-border bg-popover p-1">
+                  {([
+                    { key: "group" as const, label: "Group" },
+                    { key: "option" as const, label: "Option" },
+                  ]).map((mode) => (
+                    <ListboxOption
+                      key={mode.key}
+                      value={mode.key}
+                      className={({ focus }) => `flex w-full items-center gap-2 rounded-xs px-2 py-1.5 text-xs text-foreground ${focus ? "bg-accent" : ""}`}
+                    >
+                      <span className="flex-1 truncate text-left">{mode.label}</span>
+                      {statusBy === mode.key && <Check size={12} className="shrink-0 text-primary" />}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
               </div>
             )}
-          </div>
+          </Listbox>
         )}
 
         {/* Sort */}
-        <div>
-          <button
-            type="button"
-            onClick={() => { setShowSortPicker((v) => !v); setShowStatusByPicker(false); }}
-            className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-0.5 py-1 text-sm text-foreground hover:bg-accent"
-          >
-            <span className="text-muted-foreground">Sort</span>
-            <span className="flex items-center gap-1 font-medium">
-              {SORT_LABEL[sortDirection]}
-              <ChevronRight size={13} className={`text-muted-foreground transition-transform duration-150 ${showSortPicker ? "rotate-90" : ""}`} />
-            </span>
-          </button>
-          {showSortPicker && (
-            <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1">
-              {(["manual", "asc", "desc"] as const).map((dir) => (
-                <button
-                  key={dir}
-                  type="button"
-                  onClick={() => { updateBoardSettings({ sortDirection: dir }); setShowSortPicker(false); }}
-                  className="flex w-full items-center gap-2 rounded-[var(--radius-xs)] px-2 py-1.5 text-xs text-foreground hover:bg-accent"
-                >
-                  <span className="flex-1 truncate text-left">{SORT_LABEL[dir]}</span>
-                  {sortDirection === dir && <Check size={12} className="shrink-0 text-primary" />}
-                </button>
-              ))}
+        <Listbox value={sortDirection} onChange={(dir: "manual" | "asc" | "desc") => updateBoardSettings({ sortDirection: dir })}>
+          {({ open }) => (
+            <div>
+              <ListboxButton className="flex w-full items-center justify-between rounded-sm px-0.5 py-1 text-sm text-foreground hover:bg-accent">
+                <span className="text-muted-foreground">Sort</span>
+                <span className="flex items-center gap-1 font-medium">
+                  {SORT_LABEL[sortDirection]}
+                  <ChevronRight size={13} className={`text-muted-foreground transition-transform duration-150 ${open ? "rotate-90" : ""}`} />
+                </span>
+              </ListboxButton>
+              <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-border bg-popover p-1">
+                {(["manual", "asc", "desc"] as const).map((dir) => (
+                  <ListboxOption
+                    key={dir}
+                    value={dir}
+                    className={({ focus }) => `flex w-full items-center gap-2 rounded-xs px-2 py-1.5 text-xs text-foreground ${focus ? "bg-accent" : ""}`}
+                  >
+                    <span className="flex-1 truncate text-left">{SORT_LABEL[dir]}</span>
+                    {sortDirection === dir && <Check size={12} className="shrink-0 text-primary" />}
+                  </ListboxOption>
+                ))}
+              </ListboxOptions>
             </div>
           )}
-        </div>
+        </Listbox>
 
         {/* Hide empty groups */}
         <div className="flex items-center justify-between px-0.5 py-1">
@@ -356,7 +353,7 @@ export function GroupSettingsPanel({
         {/* Groups list */}
         <div className="mt-1 border-t border-border pt-2.5">
           <div className="mb-1 flex items-center justify-between px-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Groups</span>
+            <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Groups</span>
             {(statusBy === "group" ? true : options.length > 0) && (
               <button
                 type="button"
@@ -382,12 +379,12 @@ export function GroupSettingsPanel({
                 const isHidden = hiddenGroupKeys.includes(g.key);
                 const isPinned = pinnedGroupKeys.includes(g.key);
                 return (
-                  <div key={g.key} className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
+                  <div key={g.key} className="group/opt flex items-center gap-1 rounded-sm px-1 py-1 hover:bg-accent">
                     <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground-subtle">
                       <GripVertical size={12} />
                     </span>
                     <span
-                      className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium"
+                      className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-xs px-2 py-0.5 text-xs font-medium"
                       style={{ backgroundColor: color.bg, color: color.text, opacity: isHidden ? 0.5 : 1 }}
                     >
                       <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
@@ -398,7 +395,7 @@ export function GroupSettingsPanel({
                       onClick={() => togglePinnedGroupKey(g.key)}
                       onMouseEnter={(e) => showTooltip(isPinned ? "Unpin group" : "Pin group", e)}
                       onMouseLeave={hideTooltip}
-                      className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground"}`}
+                      className={`flex size-5 shrink-0 items-center justify-center rounded-xs hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground"}`}
                     >
                       {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
                     </button>
@@ -407,7 +404,7 @@ export function GroupSettingsPanel({
                       onClick={() => toggleHiddenGroupKey(g.key)}
                       onMouseEnter={(e) => showTooltip(isHidden ? "Show group" : "Hide group", e)}
                       onMouseLeave={hideTooltip}
-                      className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
+                      className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                     >
                       {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
                     </button>
@@ -437,11 +434,11 @@ export function GroupSettingsPanel({
             </DndContext>
           )}
           {/* Pinned "No status" row — not backed by a real option, so no rename/color/drag */}
-          <div className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
+          <div className="group/opt flex items-center gap-1 rounded-sm px-1 py-1 hover:bg-accent">
             <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground-subtle">
               <GripVertical size={12} />
             </span>
-            <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-xs bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
               <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/30" />
               No {groupProp.name}
             </span>
@@ -492,7 +489,7 @@ function SortableGroupRow({
 
   return (
     <>
-    <div ref={setNodeRef} style={style} className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
+    <div ref={setNodeRef} style={style} className="group/opt flex items-center gap-1 rounded-sm px-1 py-1 hover:bg-accent">
       <span
         {...(draggable ? attributes : {})}
         {...(draggable ? listeners : {})}
@@ -504,7 +501,7 @@ function SortableGroupRow({
       <button
         type="button"
         onClick={(e) => onOpenSubmenu((e.currentTarget as HTMLElement).getBoundingClientRect())}
-        className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-left text-xs font-medium"
+        className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-xs px-2 py-0.5 text-left text-xs font-medium"
         style={{ backgroundColor: color.bg, color: color.text }}
       >
         <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
@@ -515,7 +512,7 @@ function SortableGroupRow({
         onClick={onTogglePinned}
         onMouseEnter={(e) => showTooltip(isPinned ? "Unpin group" : "Pin group", e)}
         onMouseLeave={hideTooltip}
-        className={`flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground"}`}
+        className={`flex size-5 shrink-0 items-center justify-center rounded-xs hover:bg-accent hover:text-foreground ${isPinned ? "text-primary" : "text-muted-foreground"}`}
       >
         {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
       </button>
@@ -524,7 +521,7 @@ function SortableGroupRow({
         onClick={onToggleHidden}
         onMouseEnter={(e) => showTooltip(isHidden ? "Show group" : "Hide group", e)}
         onMouseLeave={hideTooltip}
-        className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
+        className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         {isHidden ? <EyeOff size={13} /> : <Eye size={13} />}
       </button>

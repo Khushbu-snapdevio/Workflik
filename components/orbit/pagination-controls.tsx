@@ -27,7 +27,7 @@ export function PaginationControls({ page, pageSize, totalCount, basePath, query
   }
 
   return (
-    <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-border bg-card px-5 py-3">
+    <div className="flex items-center justify-between rounded-lg border border-border bg-card px-5 py-3">
       <p className="text-xs text-muted-foreground">
         Showing <span className="font-semibold text-foreground">{from}–{to}</span> of{" "}
         <span className="font-semibold text-foreground">{totalCount}</span>
@@ -35,11 +35,11 @@ export function PaginationControls({ page, pageSize, totalCount, basePath, query
       <div className="flex items-center gap-1.5">
         {page > 1 ? (
           <Link href={hrefFor(page - 1)}
-            className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+            className="flex items-center gap-1 rounded-sm border border-border px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
             <ChevronLeft size={12} /> Prev
           </Link>
         ) : (
-          <span className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground-subtle">
+          <span className="flex items-center gap-1 rounded-sm border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground-subtle">
             <ChevronLeft size={12} /> Prev
           </span>
         )}
@@ -48,11 +48,11 @@ export function PaginationControls({ page, pageSize, totalCount, basePath, query
         </span>
         {page < totalPages ? (
           <Link href={hrefFor(page + 1)}
-            className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+            className="flex items-center gap-1 rounded-sm border border-border px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent">
             Next <ChevronRight size={12} />
           </Link>
         ) : (
-          <span className="flex items-center gap-1 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground-subtle">
+          <span className="flex items-center gap-1 rounded-sm border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground-subtle">
             Next <ChevronRight size={12} />
           </span>
         )}

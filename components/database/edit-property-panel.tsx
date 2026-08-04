@@ -8,11 +8,13 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Listbox, ListboxButton, ListboxOptions, ListboxOption, Popover, PopoverPanel } from "@headlessui/react";
 import { X, ArrowLeft, ChevronRight, Plus, GripVertical, Copy, Trash2, Check, SquareCheck, CircleDot } from "lucide-react";
 import { createId } from "@paralleldrive/cuid2";
 import { PROPERTY_REGISTRY, PROPERTY_TYPE_ICON, OPTION_COLORS, getOptionColor, groupOptions, inferStatusGroups } from "@/components/database/property-registry";
 import { OptionSubmenu } from "@/components/database/option-submenu";
 import { ChangePropertyTypePicker } from "@/components/database/change-property-type-picker";
+import { RectAnchorTrigger } from "@/components/database/rect-popover-anchor";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ICON_REGISTRY, PageIcon } from "@/components/pages/page-icon";
@@ -85,7 +87,6 @@ function EditPropertySidePanelBody({
     shouldAutoGroup ? inferStatusGroups(config.options ?? []) : (config.options ?? []));
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [submenu, setSubmenu] = useState<{ optionId: string; rect: DOMRect } | null>(null);
-  const [showDisplayAs, setShowDisplayAs] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   // Adding a new option: typing directly into an inline input at the insertion point
@@ -169,7 +170,6 @@ function EditPropertySidePanelBody({
       if (e.key !== "Escape") return;
       if (showTypePicker) { setShowTypePicker(false); return; }
       if (showIconPicker) { setShowIconPicker(false); return; }
-      if (showDisplayAs)  { setShowDisplayAs(false);  return; }
       if (submenu)        { setSubmenu(null);         return; }
       onClose();
     }
@@ -179,7 +179,7 @@ function EditPropertySidePanelBody({
       document.removeEventListener("mousedown", handler);
       document.removeEventListener("keydown", keyHandler);
     };
-  }, [onClose, showTypePicker, showIconPicker, showDisplayAs, submenu]);
+  }, [onClose, showTypePicker, showIconPicker, submenu]);
 
   function persist(next: SelectOption[]) {
     onUpdateProperty({ config: { ...config, options: next } });
@@ -312,7 +312,7 @@ function EditPropertySidePanelBody({
         ref={ref}
         data-edit-property-exempt
         style={{ position: "fixed", top, left, width: PANEL_WIDTH, maxHeight, zIndex: 400 }}
-        className="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+        className="flex flex-col overflow-hidden rounded-md border border-border bg-background"
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
           {onBack ? (
@@ -323,21 +323,21 @@ function EditPropertySidePanelBody({
           ) : (
             <span className="text-sm font-semibold text-foreground">Edit property</span>
           )}
-          <button type="button" onClick={onClose} className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground hover:bg-accent hover:text-foreground">
+          <button type="button" onClick={onClose} className="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground">
             <X size={13} />
           </button>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
           {/* Name */}
-          <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border px-2.5 py-1.5">
+          <div className="flex items-center gap-2 rounded-sm border border-border px-2.5 py-1.5">
             <button
               ref={iconBtnRef}
               type="button"
               onClick={() => setShowIconPicker((v) => !v)}
               onMouseEnter={(e) => showTooltip("Change icon", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-sm text-muted-foreground hover:bg-accent"
+              className="flex size-5 shrink-0 items-center justify-center rounded-xs text-sm text-muted-foreground hover:bg-accent"
             >
               {config.icon ? <PageIcon icon={config.icon} size={15} /> : <TypeIcon size={15} />}
             </button>
@@ -355,7 +355,7 @@ function EditPropertySidePanelBody({
             ref={typeRowRef}
             type="button"
             onClick={() => setShowTypePicker(true)}
-            className="flex items-center justify-between rounded-[var(--radius-sm)] px-0.5 py-1 text-xs transition-colors duration-150 hover:bg-accent"
+            className="flex items-center justify-between rounded-sm px-0.5 py-1 text-xs transition-colors duration-150 hover:bg-accent"
           >
             <span className="text-muted-foreground">Type</span>
             <span className="flex items-center gap-1 text-muted-foreground">
@@ -372,11 +372,11 @@ function EditPropertySidePanelBody({
                 <GroupDropTarget key={section.key} groupKey={section.key}>
                   {section.label && (
                     <div className="mb-1 flex items-center justify-between px-0.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</span>
+                      <span className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">{section.label}</span>
                       <button
                         type="button"
                         onClick={() => setAddingTo(section.key)}
-                        className="flex size-4 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground hover:bg-accent hover:text-foreground"
+                        className="flex size-4 items-center justify-center rounded-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                       >
                         <Plus size={11} />
                       </button>
@@ -403,11 +403,11 @@ function EditPropertySidePanelBody({
                             if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelNewOption(); }
                           }}
                           placeholder="Option name…"
-                          className="rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                          className="rounded-sm border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
                         />
                       )}
                       {section.options.length === 0 && addingTo !== section.key && (
-                        <div className="rounded-[var(--radius-sm)] border border-dashed border-border py-2 text-center text-[11px] text-muted-foreground-subtle">
+                        <div className="rounded-sm border border-dashed border-border py-2 text-center text-[11px] text-muted-foreground-subtle">
                           Drop here
                         </div>
                       )}
@@ -428,13 +428,13 @@ function EditPropertySidePanelBody({
                       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelNewOption(); }
                     }}
                     placeholder="Option name…"
-                    className="rounded-[var(--radius-sm)] border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
+                    className="rounded-sm border border-primary/40 bg-background px-2 py-1 text-xs text-foreground outline-none"
                   />
                 ) : (
                   <button
                     type="button"
                     onClick={() => setAddingTo(UNGROUPED)}
-                    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
                   >
                     <Plus size={12} /> Add option
                   </button>
@@ -452,7 +452,7 @@ function EditPropertySidePanelBody({
             capped max-height with no visible affordance to scroll to it). */}
         <div className="flex shrink-0 flex-col gap-3 border-t border-border p-3">
           {viewContext && (
-            <p className="-mb-1 text-[10px] text-muted-foreground">Only affects this view</p>
+            <p className="-mb-1 text-2xs text-muted-foreground">Only affects this view</p>
           )}
 
           {/* Wrap content */}
@@ -467,35 +467,32 @@ function EditPropertySidePanelBody({
 
           {/* Display as */}
           {isSelectType && (
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowDisplayAs((v) => !v)}
-              className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-0.5 py-1 text-sm text-foreground hover:bg-accent"
-            >
-              <span>Display as</span>
-              <span className="flex items-center gap-1 text-muted-foreground">
-                {displayAs === "checkbox" ? "Checkbox" : "Select"}
-                <ChevronRight size={13} className={`transition-transform duration-150 ${showDisplayAs ? "rotate-90" : ""}`} />
-              </span>
-            </button>
-            {showDisplayAs && (
-              <div className="mt-1 flex flex-col gap-0.5 rounded-[var(--radius-sm)] border border-border bg-popover p-1">
-                {(["checkbox", "select"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => { updateDisplayAs(mode); setShowDisplayAs(false); }}
-                    className="flex w-full items-center gap-2 rounded-[var(--radius-xs)] px-2 py-1.5 text-xs text-foreground hover:bg-accent"
-                  >
-                    {mode === "checkbox" ? <SquareCheck size={13} className="text-muted-foreground" /> : <CircleDot size={13} className="text-muted-foreground" />}
-                    <span className="flex-1 text-left">{mode === "checkbox" ? "Checkbox" : "Select"}</span>
-                    {displayAs === mode && <Check size={12} className="text-primary" />}
-                  </button>
-                ))}
+          <Listbox value={displayAs} onChange={(mode: "select" | "checkbox") => updateDisplayAs(mode)}>
+            {({ open }) => (
+              <div>
+                <ListboxButton className="flex w-full items-center justify-between rounded-sm px-0.5 py-1 text-sm text-foreground hover:bg-accent">
+                  <span>Display as</span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    {displayAs === "checkbox" ? "Checkbox" : "Select"}
+                    <ChevronRight size={13} className={`transition-transform duration-150 ${open ? "rotate-90" : ""}`} />
+                  </span>
+                </ListboxButton>
+                <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-border bg-popover p-1">
+                  {(["checkbox", "select"] as const).map((mode) => (
+                    <ListboxOption
+                      key={mode}
+                      value={mode}
+                      className={({ focus }) => `flex w-full items-center gap-2 rounded-xs px-2 py-1.5 text-xs text-foreground ${focus ? "bg-accent" : ""}`}
+                    >
+                      {mode === "checkbox" ? <SquareCheck size={13} className="text-muted-foreground" /> : <CircleDot size={13} className="text-muted-foreground" />}
+                      <span className="flex-1 text-left">{mode === "checkbox" ? "Checkbox" : "Select"}</span>
+                      {displayAs === mode && <Check size={12} className="text-primary" />}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
               </div>
             )}
-          </div>
+          </Listbox>
           )}
 
           <div className="h-px bg-border" />
@@ -504,7 +501,7 @@ function EditPropertySidePanelBody({
           <button
             type="button"
             onClick={onDuplicateProperty}
-            className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-0.5 py-1.5 text-sm text-foreground hover:bg-accent"
+            className="flex items-center gap-2.5 rounded-sm px-0.5 py-1.5 text-sm text-foreground hover:bg-accent"
           >
             <Copy size={14} className="text-muted-foreground" />
             Duplicate property
@@ -513,7 +510,7 @@ function EditPropertySidePanelBody({
             type="button"
             disabled={!canDelete}
             onClick={() => setConfirmDelete(true)}
-            className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-0.5 py-1.5 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5 disabled:cursor-not-allowed disabled:text-muted-foreground-subtle disabled:hover:bg-transparent"
+            className="flex items-center gap-2.5 rounded-sm px-0.5 py-1.5 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5 disabled:cursor-not-allowed disabled:text-muted-foreground-subtle disabled:hover:bg-transparent"
           >
             <Trash2 size={14} />
             Delete property
@@ -568,8 +565,8 @@ function EditPropertySidePanelBody({
         description={`"${property.name}" and all its data will be permanently removed. This cannot be undone.`}
         confirmLabel="Delete property"
         onConfirm={() => { onDeleteProperty(); onClose(); }}
-        overlayClassName="z-[500]"
-        className="z-[500]"
+        overlayClassName="z-500"
+        className="z-500"
       />
 
       {tooltip && typeof document !== "undefined" && createPortal(
@@ -601,7 +598,7 @@ function SortableOptionRow({ option, isDragging, onOpenSubmenu }: { option: Sele
   const color = getOptionColor(option.color);
 
   return (
-    <div ref={setNodeRef} style={style} className="group/opt flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 hover:bg-accent">
+    <div ref={setNodeRef} style={style} className="group/opt flex items-center gap-1 rounded-sm px-1 py-1 hover:bg-accent">
       <span
         {...attributes}
         {...listeners}
@@ -610,14 +607,14 @@ function SortableOptionRow({ option, isDragging, onOpenSubmenu }: { option: Sele
       >
         <GripVertical size={12} />
       </span>
-      <span className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-[var(--radius-xs)] px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
+      <span className="inline-flex min-w-0 flex-1 items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
         <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: color.dot }} />
         <span className="truncate">{option.name}</span>
       </span>
       <button
         type="button"
         onClick={(e) => onOpenSubmenu((e.currentTarget as HTMLElement).getBoundingClientRect())}
-        className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] text-muted-foreground opacity-0 hover:bg-accent group-hover/opt:opacity-100"
+        className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground opacity-0 hover:bg-accent group-hover/opt:opacity-100"
       >
         <ChevronRight size={13} />
       </button>
@@ -643,57 +640,56 @@ function SimpleIconPicker({
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      const target = e.target as HTMLElement;
+      if (ref.current && !ref.current.contains(target)) onClose();
     }
+    function keyHandler(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [onClose]);
 
-  if (typeof document === "undefined") return null;
-
-  const winW = window.innerWidth;
-  const winH = window.innerHeight;
-  const width = 240;
-  const maxHeight = 260;
-  const left = Math.max(8, Math.min(anchorRect.left, winW - width - 8));
-  const top = anchorRect.bottom + 4 + maxHeight > winH
-    ? Math.max(8, anchorRect.top - maxHeight - 4)
-    : anchorRect.bottom + 4;
-
-  return createPortal(
+  return (
     <>
-      <div
-        ref={ref}
-        data-edit-property-exempt
-        style={{ position: "fixed", top, left, width, zIndex: 500 }}
-        className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
-      >
-        {hasIcon && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="flex w-full items-center gap-2 border-b border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent"
-          >
-            <X size={12} /> Remove icon
-          </button>
-        )}
-        <div className="grid max-h-[220px] grid-cols-6 gap-0.5 overflow-y-auto p-2">
-          {Object.entries(ICON_REGISTRY).map(([name, Icon]) => (
+      <Popover>
+        <RectAnchorTrigger rect={anchorRect} />
+        <PopoverPanel
+          ref={ref}
+          static
+          data-edit-property-exempt
+          anchor={{ to: "bottom start", gap: 4 }}
+          style={{ width: 240 }}
+          className="z-500 overflow-hidden rounded-md border border-border bg-background"
+        >
+          {hasIcon && (
             <button
-              key={name}
               type="button"
-              onClick={() => onSelect(JSON.stringify({ type: "icon", name, color: "#6b7280" }))}
-              onMouseEnter={(e) => showTooltip(name, e)}
-              onMouseLeave={hideTooltip}
-              className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              onClick={onRemove}
+              className="flex w-full items-center gap-2 border-b border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:bg-accent"
             >
-              <Icon size={15} />
+              <X size={12} /> Remove icon
             </button>
-          ))}
-        </div>
-      </div>
+          )}
+          <div className="grid max-h-55 grid-cols-6 gap-0.5 overflow-y-auto p-2">
+            {Object.entries(ICON_REGISTRY).map(([name, Icon]) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => onSelect(JSON.stringify({ type: "icon", name, color: "#6b7280" }))}
+                onMouseEnter={(e) => showTooltip(name, e)}
+                onMouseLeave={hideTooltip}
+                className="flex size-8 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+          </div>
+        </PopoverPanel>
+      </Popover>
       {tooltip && <IconTooltip rect={tooltip.rect} label={tooltip.label} />}
-    </>,
-    document.body,
+    </>
   );
 }

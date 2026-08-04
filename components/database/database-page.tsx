@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/pages/page-header";
 import { DatabaseToolbar } from "@/components/database/toolbar";
 import { FilterBar } from "@/components/database/filter-bar";
@@ -474,20 +476,20 @@ export function DatabasePage({
 
   if (loading) {
     return (
-      <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col">
+      <div className="mx-auto flex h-full w-full max-w-275 flex-col">
         <div className="shrink-0">
           <div className="px-4 pt-6 pb-4 sm:px-8 sm:pt-8 lg:px-16 lg:pt-10 lg:pb-6">
-            <div className="mb-3 h-10 w-64 animate-pulse rounded-[var(--radius-md)] bg-muted/50" />
-            <div className="h-4 w-40 animate-pulse rounded-[var(--radius-sm)] bg-muted/30" />
+            <Skeleton className="mb-3 h-10 w-64 rounded-md bg-muted/50" />
+            <Skeleton className="h-4 w-40 bg-muted/30" />
           </div>
         </div>
-        <div className="h-11 shrink-0 animate-pulse border-y border-border bg-muted/10" />
+        <Skeleton className="h-11 shrink-0 rounded-none border-y border-border bg-muted/10" />
         <div className="flex-1">
           <div className="px-4 pt-3 sm:px-8 lg:px-16 lg:pt-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div
+              <Skeleton
                 key={i}
-                className="mb-0.5 h-11 animate-pulse rounded-[var(--radius-sm)] bg-muted/20"
+                className="mb-0.5 h-11 bg-muted/20"
                 style={{ animationDelay: `${i * 50}ms`, opacity: 1 - i * 0.1 }}
               />
             ))}
@@ -507,11 +509,11 @@ export function DatabasePage({
   // now, so the boxed views have to state that height here.
   const isCalendar = activeView?.type === "calendar";
   const heightCls = isCalendar
-    ? (inline ? "min-h-[420px]" : "min-h-full")
-    : (inline ? "h-[420px] overflow-hidden" : "h-full overflow-hidden");
+    ? (inline ? "min-h-105" : "min-h-full")
+    : (inline ? "h-105 overflow-hidden" : "h-full overflow-hidden");
 
   return (
-    <div className={`mx-auto flex w-full max-w-[1100px] flex-col bg-card isolate ${heightCls}`}>
+    <div className={`mx-auto flex w-full max-w-275 flex-col bg-card isolate ${heightCls}`}>
 
       {/* ── Page title / icon (hidden in inline/embedded mode) ── */}
       {!inline && (
@@ -593,8 +595,18 @@ export function DatabasePage({
       <div className={`min-h-0 flex-1 ${isCalendar ? "flex flex-col" : activeView?.type === "gantt" ? "overflow-hidden" : activeView?.type === "table" ? "" : "overflow-y-auto overflow-x-hidden"}`}>
         <div className={isCalendar ? "flex w-full flex-1 flex-col" : activeView?.type === "gantt" || activeView?.type === "table" ? "h-full w-full" : "min-h-full w-full"}>
           {!activeView && (
-            <div className="flex h-full items-center justify-center">
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
               <p className="text-sm text-muted-foreground">No views configured.</p>
+              {isEditor && (
+                <button
+                  type="button"
+                  onClick={() => addView("Table", "table")}
+                  className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+                >
+                  <Plus size={14} />
+                  Add a view
+                </button>
+              )}
             </div>
           )}
           {activeView?.type === "table"    && <TableView    {...sharedViewProps} />}
@@ -617,6 +629,7 @@ export function DatabasePage({
           onUpdateTitle={updateTitle}
           onUpdateValue={updateValue}
           onDeleteEntry={deleteEntry}
+          onAddProperty={addProperty}
         />
       )}
 

@@ -27,7 +27,7 @@ function fmtRelative(iso: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-const itemClass = "flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-foreground hover:bg-accent transition-colors";
+const itemClass = "flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-sm text-foreground hover:bg-accent transition-colors";
 
 // Matches CellEditorPopover's own supported types (select/status/multi_select/
 // date/person/relation/files) — everything else (text/number/url/email/phone/checkbox)
@@ -221,11 +221,11 @@ export function EntryContextMenu({
       ref={menuRef}
       data-edit-property-exempt
       style={{ position: "fixed", top, left, zIndex: 9999, width: W }}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+      className="overflow-hidden rounded-md border border-border bg-popover"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="p-1">
-        <p className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Page</p>
+        <p className="px-2 py-0.5 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Page</p>
 
         <button onClick={(e) => { e.stopPropagation(); toggleFavorite(); }} className={itemClass}>
           <Star size={13} className={`shrink-0 ${favorited ? "text-warning" : "text-muted-foreground"}`} fill={favorited ? "currentColor" : "none"} />
@@ -300,7 +300,7 @@ export function EntryContextMenu({
             className={`${itemClass} justify-between`}
           >
             <span className="flex items-center gap-2.5"><Copy size={13} className="shrink-0 text-muted-foreground" />Duplicate</span>
-            <span className="text-[10px] text-muted-foreground-subtle">Ctrl+D</span>
+            <span className="text-2xs text-muted-foreground-subtle">Ctrl+D</span>
           </button>
         )}
 
@@ -308,16 +308,16 @@ export function EntryContextMenu({
 
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); onClose(); }}
-          className="flex w-full items-center justify-between rounded-[var(--radius-sm)] px-2.5 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+          className="flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
         >
           <span className="flex items-center gap-2.5"><Trash2 size={13} className="shrink-0" />Move to Trash</span>
-          <span className="text-[10px] text-destructive/40">Del</span>
+          <span className="text-2xs text-destructive/40">Del</span>
         </button>
       </div>
 
       {updatedAt && (
         <div className="border-t border-border px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">Last edited {fmtRelative(updatedAt)}</p>
+          <p className="text-2xs text-muted-foreground">Last edited {fmtRelative(updatedAt)}</p>
         </div>
       )}
     </div>,
@@ -559,7 +559,7 @@ function PropertyFlyout({
     <div
       data-edit-property-exempt
       style={{ position: "fixed", top, left, zIndex: 9999, width: FW }}
-      className="max-h-[320px] overflow-y-auto rounded-[var(--radius-md)] border border-border bg-popover p-1"
+      className="max-h-80 overflow-y-auto rounded-md border border-border bg-popover p-1"
       onClick={(e) => e.stopPropagation()}
     >
       {loading && <p className="px-2.5 py-2 text-xs text-muted-foreground">Loading…</p>}
@@ -662,7 +662,7 @@ function InlineValueEditor({
       ref={ref}
       data-edit-property-exempt
       style={{ position: "fixed", top, left, zIndex: 9999, width: W }}
-      className="rounded-[var(--radius-md)] border border-border bg-popover p-2"
+      className="rounded-md border border-border bg-popover p-2"
       onClick={(e) => e.stopPropagation()}
     >
       <input
@@ -675,7 +675,7 @@ function InlineValueEditor({
           if (e.key === "Escape") { committedRef.current = true; onClose(); }
         }}
         placeholder={property.name}
-        className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-2 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary/50"
+        className="w-full rounded-sm border border-border bg-background px-2 py-1.5 text-sm text-foreground focus:outline-none focus:border-primary/50"
       />
     </div>,
     document.body,

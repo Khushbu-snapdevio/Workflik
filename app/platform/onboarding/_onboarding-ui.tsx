@@ -278,7 +278,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
         onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
         placeholder="Your full name"
         maxLength={80}
-        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="h-11 w-full rounded-md border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
        />
        <input
         type="text"
@@ -287,7 +287,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
         onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
         placeholder="Job title (optional)"
         maxLength={80}
-        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="h-11 w-full rounded-md border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
        />
       </div>
      </>
@@ -303,7 +303,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
        {QUESTION_STEPS[step - 1].subtitle}
       </p>
 
-      <div className="mb-6 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="mb-6 w-full overflow-hidden rounded-lg border border-border bg-card">
        {QUESTION_STEPS[step - 1].options.map((opt, idx) => {
         const isSelected = selections[step - 1] === opt.value;
         return (
@@ -316,7 +316,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
           } ${isSelected ? "bg-primary/5" : "hover:bg-accent"}`}
          >
           {isSelected && (
-           <span className="absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary" />
+           <span className="absolute inset-y-0 left-0 w-0.75 rounded-r-sm bg-primary" />
           )}
           <div className="flex-1 min-w-0 pl-1">
            <p className={`text-[14.5px] font-semibold leading-snug ${isSelected ? "text-primary" : "text-foreground"}`}>
@@ -324,10 +324,10 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
            </p>
            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{opt.description}</p>
           </div>
-          <div className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
+          <div className={`flex size-4.5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
            isSelected ? "border-primary bg-primary" : "border-border"
           }`}>
-           {isSelected && <span className="size-[6px] rounded-full bg-primary-foreground" />}
+           {isSelected && <span className="size-1.5 rounded-full bg-primary-foreground" />}
           </div>
          </button>
         );
@@ -357,7 +357,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
         onKeyDown={(e) => { if (e.key === "Enter" && canContinue) handleContinue(); }}
         placeholder={isTeam ? "e.g. Acme Corp" : "e.g. My Projects"}
         maxLength={100}
-        className="h-11 w-full rounded-[var(--radius-md)] border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="h-11 w-full rounded-md border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
        />
        <p className="mt-2 text-xs text-muted-foreground-subtle">
         You can rename or create more workspaces later in settings.
@@ -379,7 +379,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
         : "Email isn’t configured on this instance yet, so invite links won’t be emailed — you’ll need to share them manually from workspace settings."}
       </p>
 
-      <div className="mb-3 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="mb-3 w-full overflow-hidden rounded-lg border border-border bg-card">
        {invites.map((inv, i) => {
         const showInviteError = invitesTouched[i] && isInviteEmailInvalid(inv.email);
         return (
@@ -412,7 +412,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
             type="button"
             onClick={() => setPendingRemoveIndex(i)}
             aria-label="Remove this invite"
-            className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+            className="flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
            >
             <X size={14} />
            </button>
@@ -471,7 +471,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
        Pick a template or start blank — you can always add more later.
       </p>
 
-      <div className="mb-6 w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="mb-6 w-full overflow-hidden rounded-lg border border-border bg-card">
        {TEMPLATES.map((tpl, idx) => {
         const isSelected = templateKey === tpl.key;
         return (
@@ -484,7 +484,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
           } ${isSelected ? "bg-primary/5" : "hover:bg-accent"}`}
          >
           {isSelected && (
-           <span className="absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary" />
+           <span className="absolute inset-y-0 left-0 w-0.75 rounded-r-sm bg-primary" />
           )}
           <div className="flex-1 min-w-0 pl-1">
            <p className={`text-[14.5px] font-semibold leading-snug ${isSelected ? "text-primary" : "text-foreground"}`}>
@@ -492,10 +492,10 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
            </p>
            <p className="mt-0.5 text-xs text-muted-foreground">{tpl.desc}</p>
           </div>
-          <div className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
+          <div className={`flex size-4.5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150 ${
            isSelected ? "border-primary bg-primary" : "border-border"
           }`}>
-           {isSelected && <span className="size-[6px] rounded-full bg-primary-foreground" />}
+           {isSelected && <span className="size-1.5 rounded-full bg-primary-foreground" />}
           </div>
          </button>
         );
@@ -511,7 +511,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
        type="button"
        onClick={handleBack}
        disabled={pending}
-       className="flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+       className="flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors duration-150 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
        <svg className="size-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} viewBox="0 0 24 24">
         <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -523,7 +523,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
       type="button"
       onClick={handleContinue}
       disabled={!canContinue || pending}
-      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
      >
       {btnLabel}
       {!pending && !isLast && !isInviteStep && (

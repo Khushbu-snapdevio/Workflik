@@ -57,7 +57,7 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
      {statusCounts.map(s => {
       const cls = STATUS_CLS[s.status] ?? STATUS_CLS.queued!;
       return (
-       <span key={s.status} className={`inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground`}>
+       <span key={s.status} className={`inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground`}>
         <span className={`size-1.5 rounded-full ${cls.dot}`} />
         <strong className="font-bold text-foreground">{s.cnt}</strong> {s.status}
        </span>
@@ -67,18 +67,18 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
    </div>
 
    {/* Table */}
-   <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="overflow-hidden rounded-lg border border-border bg-card">
     <div className="flex items-center justify-between border-b border-border bg-muted/20 px-5 py-3.5">
      <div>
       <h2 className="text-sm font-semibold text-foreground">Outbox</h2>
       <p className="text-xs text-muted-foreground">All transactional emails, most recent first</p>
      </div>
-     <span className="rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{totalCount} total</span>
+     <span className="rounded-xs bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">{totalCount} total</span>
     </div>
 
     {outbox.length === 0 ? (
      <div className="flex flex-col items-center justify-center py-20">
-      <div className="mb-3 flex size-12 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
+      <div className="mb-3 flex size-12 items-center justify-center rounded-xl bg-muted/50">
        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="size-6 text-muted-foreground-subtle">
         <rect x="2" y="4" width="16" height="12" rx="2"/><path d="M2 7l8 5 8-5"/>
        </svg>
@@ -109,7 +109,7 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
            <td className="px-5 py-3.5">
             <p className="truncate text-xs font-semibold text-foreground">{email.recipientEmail}</p>
            </td>
-           <td className="max-w-[220px] px-5 py-3.5">
+           <td className="max-w-55 px-5 py-3.5">
             <p className="truncate text-xs text-foreground/70">{email.subject}</p>
            </td>
            <td className="px-5 py-3.5">
@@ -117,20 +117,20 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
              {TYPE_LABEL[email.type] ?? email.type}
             </span>
            </td>
-           <td className="max-w-[220px] px-5 py-3.5">
+           <td className="max-w-55 px-5 py-3.5">
             <div className="flex items-center gap-2">
              <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls.pill}`}>
               <span className={`size-1.5 rounded-full ${cls.dot}`} />
               {email.status}
              </span>
              {email.attemptCount > 1 && (
-              <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{email.attemptCount} attempts</span>
+              <span className="shrink-0 text-2xs font-medium text-muted-foreground">{email.attemptCount} attempts</span>
              )}
             </div>
             {email.status === "failed" && (
-             <div className="mt-2 rounded-[var(--radius-sm)] border border-destructive/20 bg-destructive/5 px-2.5 py-2">
+             <div className="mt-2 rounded-sm border border-destructive/20 bg-destructive/5 px-2.5 py-2">
               {email.lastError && (
-               <p className="break-words text-[10px] leading-relaxed text-destructive">
+               <p className="wrap-break-word text-2xs leading-relaxed text-destructive">
                 {email.lastError}
                </p>
               )}
@@ -142,7 +142,7 @@ export default async function OrbitEmailPage({ searchParams }: Props) {
            </td>
            <td className="whitespace-nowrap px-5 py-3.5 text-xs text-muted-foreground">
             <p>{formatDateTime(isSent ? email.updatedAt : email.createdAt)}</p>
-            <p className="text-[10px] text-muted-foreground">{isSent ? "Sent" : "Queued"}</p>
+            <p className="text-2xs text-muted-foreground">{isSent ? "Sent" : "Queued"}</p>
            </td>
           </tr>
          );

@@ -24,7 +24,9 @@ import { NewPageButton } from "@/components/workspace/new-page-button";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { PageIcon } from "@/components/pages/page-icon";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
@@ -183,8 +185,8 @@ export function PageTree({
   return (
    <div className="space-y-1 px-1 py-2">
     {[80, 65, 90].map((w) => (
-     <div key={w} className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-1 py-1">
-      <div className="size-3.5 shrink-0 rounded-[var(--radius-xs)] bg-sidebar-foreground/10 animate-pulse" />
+     <div key={w} className="flex items-center gap-1.5 rounded-sm px-1 py-1">
+      <div className="size-3.5 shrink-0 rounded-xs bg-sidebar-foreground/10 animate-pulse" />
       <div className="h-2.5 rounded bg-sidebar-foreground/10 animate-pulse" style={{ width: `${w}%` }} />
      </div>
     ))}
@@ -238,7 +240,7 @@ export function PageTree({
      ref={moreRef}
      type="button"
      onClick={openMorePopup}
-     className="flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+     className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1.5 text-xs text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
     >
      <MoreHorizontal size={12} />
      {hiddenCount} more
@@ -246,17 +248,17 @@ export function PageTree({
    )}
 
    {/* Portaled to document.body, making it a *sibling* of the sidebar's own
-       wrapper (md:z-[550] in workspace-shell.tsx), not a descendant of it.
-       z-[560] keeps it above that wrapper; anything lower renders half-hidden
+       wrapper (md:z-550 in workspace-shell.tsx), not a descendant of it.
+       z-560 keeps it above that wrapper; anything lower renders half-hidden
        behind the sidebar wherever the two overlap. */}
    {moreOpen && popupPos && typeof document !== "undefined" && createPortal(
     <div
      ref={popupRef}
-     className="fixed z-[560] w-72 overflow-hidden rounded-[var(--radius-xl)] border border-primary/20 bg-popover"
+     className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-popover"
      style={{ top: popupPos.top, left: popupPos.left }}
     >
      {/* Header */}
-     <div className="flex items-center justify-between bg-gradient-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
+     <div className="flex items-center justify-between bg-linear-to-r from-[#0369A1] to-[#38BDF8] px-3 py-3">
       <span className="text-sm font-semibold text-white">Pages</span>
       <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">{tree.length}</span>
      </div>
@@ -472,7 +474,7 @@ function PageTreeNode({
 
  return (
   <div ref={setNodeRef} style={style} {...attributes}>
-   <div className="group relative flex items-center gap-0.5 rounded-[var(--radius-sm)] py-0.5 transition-colors hover:bg-sidebar-accent">
+   <div className="group relative flex items-center gap-0.5 rounded-sm py-0.5 transition-colors hover:bg-sidebar-accent">
     {/* Expand/collapse */}
     <button
      className="flex size-5 shrink-0 items-center justify-center text-sidebar-foreground/70 hover:text-sidebar-accent-foreground"
@@ -496,9 +498,12 @@ function PageTreeNode({
      )}
      <span className="min-w-0 truncate">{node.title || "Untitled"}</span>
      {node.isDraft && (
-      <span className="shrink-0 rounded-[var(--radius-xs)] bg-[#fef9c3] px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-[#92400e] dark:bg-[#713f12] dark:text-[#fde68a]">
+      <Badge
+       variant="outline"
+       className="shrink-0 border-warning/20 bg-warning/10 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-warning"
+      >
        Draft
-      </span>
+      </Badge>
      )}
     </Link>
 
@@ -509,13 +514,13 @@ function PageTreeNode({
       workspaceSlug={workspaceSlug}
       parentId={node.id}
       title="Add subpage"
-      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
+      className="flex size-5 items-center justify-center rounded-sm text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
      >
       <Plus size={12} />
      </NewPageButton>
      <button
       ref={btnRef}
-      className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
+      className="flex size-5 items-center justify-center rounded-sm text-sidebar-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground"
       onClick={(e) => {
        e.stopPropagation();
        const rect = btnRef.current?.getBoundingClientRect();
@@ -543,11 +548,11 @@ function PageTreeNode({
     {menuOpen && (
      <div
       ref={menuRef}
-      className="fixed z-[200] min-w-[168px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+      className="fixed z-200 min-w-42 overflow-hidden rounded-md border border-border bg-popover"
       style={{ left: menuPos.x, top: menuPos.y }}
      >
       {/* Colored accent bar at top */}
-      <div className="h-[3px] bg-primary" />
+      <div className="h-0.75 bg-primary" />
       <div className="py-1">
        <button
         className={menuItem}
@@ -596,7 +601,7 @@ function PageTreeNode({
         Copy link
        </button>
        <div className="my-1 border-t border-border" />
-       <button className={`${menuItem} !text-destructive hover:!bg-destructive/5`} onClick={handleDelete} type="button">
+       <button className={`${menuItem} text-destructive! hover:bg-destructive/5!`} onClick={handleDelete} type="button">
         <Trash2 size={14} />
         Move to Trash
        </button>
@@ -709,14 +714,6 @@ function MoveToDialog({
 
  useEffect(() => { inputRef.current?.focus(); }, []);
 
- useEffect(() => {
-  function onKey(e: KeyboardEvent) {
-   if (e.key === "Escape") onClose();
-  }
-  document.addEventListener("keydown", onKey);
-  return () => document.removeEventListener("keydown", onKey);
- }, [onClose]);
-
  // A page can't be moved into itself or one of its own subpages — exclude
  // that whole subtree from the destination list rather than letting the
  // user pick an invalid target and find out from a server error.
@@ -756,9 +753,11 @@ function MoveToDialog({
  }
 
  return (
-  <>
-   <div className="fixed inset-0 z-[800] bg-black/40" onClick={onClose} />
-   <div className="fixed left-1/2 top-[16vh] z-[810] w-full max-w-sm -translate-x-1/2 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-background">
+  <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+   <DialogContent
+    showCloseButton={false}
+    className="top-[16vh] w-full max-w-sm translate-y-0 gap-0 rounded-lg bg-background p-0 ring-0 backdrop:bg-black/40"
+   >
     <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
      <Search size={15} className="shrink-0 text-muted-foreground" />
      <input
@@ -797,7 +796,7 @@ function MoveToDialog({
       <MoveToRow key={n.id} node={n} depth={0} onSelect={handleSelect} />
      ))}
     </div>
-   </div>
-  </>
+   </DialogContent>
+  </Dialog>
  );
 }

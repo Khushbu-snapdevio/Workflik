@@ -84,7 +84,7 @@ export function UserHoverCard({ userId, workspaceId, currentUserId, cachedName, 
   return createPortal(
     <div
       style={{ position: "fixed", top, left, width: WIDTH, zIndex: 9999, pointerEvents: "none" }}
-      className="rounded-[var(--radius-md)] border border-border bg-popover px-2.5 py-2 shadow-lg"
+      className="rounded-md border border-border bg-popover px-2.5 py-2 shadow-lg"
     >
       <div className="flex items-center gap-2">
         {member?.userImage ? (

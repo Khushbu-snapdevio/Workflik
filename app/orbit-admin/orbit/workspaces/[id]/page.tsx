@@ -68,7 +68,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
    {/* Breadcrumb */}
    <div className="mb-4 flex items-center gap-2">
     <Link href="/orbit-admin/orbit/workspaces"
-     className="flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
+     className="flex items-center gap-1.5 rounded-sm border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/30 hover:bg-primary/5 hover:text-primary">
      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-3">
       <path d="M7.5 2.5L4 6l3.5 3.5"/>
      </svg>
@@ -79,7 +79,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
    </div>
 
    {/* Header */}
-   <div className="mb-6 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+   <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
     <div className="p-6">
      <div className="flex items-start justify-between gap-4">
       <div>
@@ -87,7 +87,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
        <p className="mt-1 font-mono text-sm text-muted-foreground">/{ws.slug}</p>
       </div>
       <div className="shrink-0 text-right">
-       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Workspace ID</p>
+       <p className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Workspace ID</p>
        <p className="mt-0.5 font-mono text-xs text-muted-foreground break-all">{ws.id}</p>
       </div>
      </div>
@@ -110,7 +110,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
       <p className="text-xs text-muted-foreground">Storage ({storagePct.toFixed(1)}% of 5 GB)</p>
      </div>
      <div className="ml-auto px-6 py-4 text-right">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground-subtle">Created</p>
+      <p className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Created</p>
       <p className="text-xs text-muted-foreground">{formatDateTime(ws.createdAt)}</p>
      </div>
     </div>
@@ -119,7 +119,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
    <div className="grid gap-5 lg:grid-cols-3">
     {/* Details */}
     <div className="space-y-4">
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-xs font-bold text-foreground">Workspace details</h2>
       </div>
@@ -140,7 +140,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
      </div>
 
      {/* Danger zone */}
-     <div className="overflow-hidden rounded-[var(--radius-xl)] border border-destructive/20 bg-card">
+     <div className="overflow-hidden rounded-xl border border-destructive/20 bg-card">
       <div className="border-b border-destructive/10 bg-destructive/5 px-5 py-3.5">
        <h2 className="text-xs font-bold text-destructive">Danger zone</h2>
       </div>
@@ -155,7 +155,7 @@ export default async function WorkspaceDetailPage({ params }: { params: Promise<
 
     {/* Members */}
     <div className="lg:col-span-2">
-     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="border-b border-border px-5 py-3.5">
        <h2 className="text-xs font-bold text-foreground">Members <span className="ml-1 rounded-full bg-muted/50 px-2 py-0.5 text-xs font-semibold text-muted-foreground">{members.length}</span></h2>
       </div>

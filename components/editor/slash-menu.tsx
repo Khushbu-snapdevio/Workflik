@@ -101,7 +101,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, Props>(
   return (
    <div
     ref={containerRef}
-    className="fixed z-[300] w-72 overflow-hidden rounded-[var(--radius-md)] border border-border bg-popover"
+    className="fixed z-300 w-72 overflow-hidden rounded-md border border-border bg-popover"
     style={{ left: menuLeft, top: menuTop }}
    >
     {query && (
@@ -160,7 +160,7 @@ function MenuItem({ def, selected, onClick }: { def: BlockDefinition; selected: 
     selected ? "bg-accent" : "hover:bg-accent",
    ].join(" ")}
   >
-   <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-xs font-medium">
+   <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-xs font-medium">
     {def.icon}
    </span>
    <div className="min-w-0">

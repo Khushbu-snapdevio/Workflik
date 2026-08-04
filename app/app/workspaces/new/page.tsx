@@ -35,7 +35,7 @@ export default async function NewWorkspacePage({ searchParams }: Props) {
     </p>
 
     {/* Form card */}
-    <div className="w-full overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <div className="w-full overflow-hidden rounded-lg border border-border bg-card">
      <form action={createWorkspaceAction} className="px-7 pt-7 pb-5">
       <input type="hidden" name="kind" value={isTeam ? "team" : "personal"} />
 

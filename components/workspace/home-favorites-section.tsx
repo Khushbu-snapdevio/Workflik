@@ -4,6 +4,7 @@ import { ChevronRight, FileText, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type FavPage = {
   id: string;
@@ -48,12 +49,12 @@ export function HomeFavoritesSection({
       <div className="mb-3 flex items-center gap-2">
         <Star size={14} className="shrink-0 text-warning" fill="currentColor" />
         <h2 className="text-sm font-semibold text-foreground">Favorites</h2>
-        <span className="rounded-[var(--radius-xs)] bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
+        <span className="rounded-xs bg-muted px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
           {pages.length}
         </span>
       </div>
 
-      <div className="divide-y divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+      <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
         {pages.map((page) => (
           <div
             key={page.id}
@@ -62,7 +63,7 @@ export function HomeFavoritesSection({
             {/* Full-row link */}
             <Link href={`/app/${workspaceSlug}/${page.shortId}`} className="absolute inset-0" aria-label={page.title || "Untitled"} />
 
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-background text-sm leading-none">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-sm leading-none">
               <PageIcon icon={page.icon} />
             </span>
 
@@ -71,17 +72,19 @@ export function HomeFavoritesSection({
             </span>
 
             {/* Unfavorite button with tooltip */}
-            <div className="group/fav relative z-10 shrink-0">
-              <button
-                type="button"
-                onClick={() => removeFavorite(page.pageId)}
-                className="flex size-6 items-center justify-center rounded text-warning opacity-0 transition-all duration-150 group-hover/row:opacity-100 hover:text-warning/60"
-              >
-                <Star size={13} fill="currentColor" />
-              </button>
-              <div className="pointer-events-none absolute right-full top-1/2 z-50 mr-2 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-sm)] border border-border bg-popover px-2.5 py-1.5 opacity-0 transition-opacity duration-150 group-hover/fav:opacity-100">
-                <p className="text-xs font-semibold text-popover-foreground">Remove from favorites</p>
-              </div>
+            <div className="relative z-10 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => removeFavorite(page.pageId)}
+                    className="flex size-6 items-center justify-center rounded text-warning opacity-0 transition-all duration-150 group-hover/row:opacity-100 hover:text-warning/60"
+                  >
+                    <Star size={13} fill="currentColor" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Remove from favorites</TooltipContent>
+              </Tooltip>
             </div>
 
             <ChevronRight size={12} className="relative z-10 shrink-0 text-muted-foreground-subtle opacity-0 transition-opacity group-hover/row:opacity-100" />

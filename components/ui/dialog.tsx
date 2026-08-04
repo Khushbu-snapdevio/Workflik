@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+// `Portal.Group` shows as deprecated in favor of a standalone `PortalGroup`
+// export, but that export isn't re-exported from the package root yet.
+import { Portal } from "@headlessui/react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -10,7 +13,7 @@ import { XIcon } from "@phosphor-icons/react"
 // Built on the native <dialog> element instead of Radix: showModal()/close()
 // give focus-trap, Escape handling, and top-layer stacking for free (the
 // browser puts every open <dialog> above all regular content and orders
-// nested dialogs itself, which is what the old z-[580]/z-[590] tiers in
+// nested dialogs itself, which is what the old z-580/z-590 tiers in
 // alert-dialog.tsx were working around by hand). Entry/exit animation is
 // pure CSS (@starting-style, see globals.css) — no animation-end listeners.
 
@@ -134,6 +137,7 @@ function DialogContent({
   onEscapeKeyDown?: (event: { target: EventTarget | null; preventDefault: () => void }) => void
 }) {
   const { open, setOpen, dialogRef } = useDialogContext("DialogContent")
+  const contentRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     const el = dialogRef.current
@@ -162,14 +166,29 @@ function DialogContent({
         if (event.target === dialogRef.current) setOpen(false)
       }}
       className={cn(
-        "fixed top-1/2 left-1/2 z-50 m-0 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-[var(--radius-md)] bg-popover p-6 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-md",
+        "fixed top-1/2 left-1/2 z-50 m-0 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md bg-popover p-6 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-md",
         className
       )}
       {...props}
     >
+      {/* Headless UI portals (Select's ListboxOptions, a Popover panel, …)
+          default to document.body, outside this <dialog>'s top layer — they'd
+          render invisibly behind the modal regardless of z-index, so
+          Portal.Group redirects them into this subtree instead. It targets
+          this inner wrapper rather than the <dialog> itself because the
+          dialog carries a `transform` (centering + the open/close scale
+          animation), which becomes the containing block for the portaled
+          panel's `position: absolute` coordinates and throws floating-ui's
+          math off by the dialog's own centering offset. `relative` here,
+          with no offset of its own, re-establishes the containing block one
+          level in, without one. */}
       {open && (
         <>
-          {children}
+          <Portal.Group target={contentRef}>
+            <div ref={contentRef} className="relative grid gap-6">
+              {children}
+            </div>
+          </Portal.Group>
           {showCloseButton && (
             <DialogClose asChild>
               <Button

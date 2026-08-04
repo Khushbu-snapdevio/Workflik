@@ -64,16 +64,16 @@ export default async function OrbitWorkspacesPage({ searchParams }: Props) {
       <h1 className="text-xl font-bold tracking-tight text-foreground">Workspaces</h1>
       <p className="mt-1 text-sm text-muted-foreground">All workspaces on this instance — inspect members, force delete.</p>
      </div>
-     <Suspense fallback={<div className="h-9 w-64 rounded-[var(--radius-md)] bg-muted animate-pulse" />}>
+     <Suspense fallback={<div className="h-9 w-64 rounded-md bg-muted animate-pulse" />}>
       <AdminSearchBox placeholder="Search by name or slug…" />
      </Suspense>
     </div>
     <div className="mt-3 flex items-center gap-2">
-     <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+     <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <strong className="font-bold text-foreground">{totalCount!.count}</strong> total
      </span>
      {q && (
-      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
        <strong className="font-bold text-foreground">{filteredCount!.count}</strong> matching "{q}"
       </span>
      )}
@@ -87,9 +87,9 @@ export default async function OrbitWorkspacesPage({ searchParams }: Props) {
      const letter = (ws.icon && ws.icon.length <= 2 ? ws.icon : ws.name?.slice(0, 1) ?? "W").toUpperCase();
      return (
       <Link key={ws.id} href={`/orbit-admin/orbit/workspaces/${ws.id}`}
-       className="group flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-card p-5 transition">
+       className="group flex flex-col gap-3 rounded-lg border border-border bg-card p-5 transition">
        <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-primary text-sm font-bold text-primary-foreground">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
          {letter}
         </span>
         <div className="min-w-0 flex-1">
@@ -114,7 +114,7 @@ export default async function OrbitWorkspacesPage({ searchParams }: Props) {
 
    {allWorkspaces.length === 0 && (
     <div className="flex flex-col items-center justify-center py-24">
-     <div className="mb-4 flex size-14 items-center justify-center rounded-[var(--radius-xl)] bg-muted/50">
+     <div className="mb-4 flex size-14 items-center justify-center rounded-xl bg-muted/50">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="size-7">
        <path d="M3 7h14M3 13h14M7 2v16M13 2v16" strokeLinecap="round"/>
       </svg>

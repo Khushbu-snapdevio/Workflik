@@ -170,7 +170,7 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
      overflowX: "hidden",
      zIndex: 400,
     }}
-    className="w-[240px] rounded-[var(--radius-md)] border border-border bg-popover py-1"
+    className="w-60 rounded-md border border-border bg-popover py-1"
    >
     {people.length > 0 && (
      <Section label="People">
@@ -308,12 +308,12 @@ function UserAvatar({ name, image }: { name: string; image?: string }) {
    <img
     src={image}
     alt={name}
-    className="h-5 w-5 rounded-full object-cover flex-shrink-0"
+    className="h-5 w-5 rounded-full object-cover shrink-0"
    />
   );
  }
  return (
-  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground flex-shrink-0 select-none">
+  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground shrink-0 select-none">
    {name[0]?.toUpperCase()}
   </div>
  );

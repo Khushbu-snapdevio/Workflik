@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
- X, ExternalLink as ArrowSquareOut, Trash2 as Trash, ArrowLeft,
+ X, ExternalLink as ArrowSquareOut, Trash2 as Trash, ArrowLeft, Plus,
  Type as TextT,
- FileText, Pencil as PencilSimple,
+ FileText, Pencil as PencilSimple, Loader2,
 } from "lucide-react";
 import { useSession } from "@/lib/auth/client";
 import { toggleSelfVote } from "@/lib/databases/vote";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover, FilesPropertyValue } from "@/components/database/cells/cell-editor";
 import { PageEditor } from "@/components/editor/editor";
@@ -34,11 +35,14 @@ interface EntrySidePanelProps {
  onUpdateTitle: (entryId: string, title: string) => Promise<void>;
  onUpdateValue: (entryId: string, propId: string, value: unknown) => Promise<void>;
  onDeleteEntry: (entryId: string) => Promise<void>;
+ // Optional: lets the empty-properties state offer a real "Add a property" CTA (Hard Rule 28)
+ // via the parent's existing addProperty mutation, instead of this panel owning its own flow.
+ onAddProperty?: (name: string, type: string) => Promise<DbProperty | undefined>;
 }
 
 export function EntrySidePanel({
  entry, properties, valueMap, workspaceSlug, workspaceId,
- isEditor, onClose, onUpdateTitle, onUpdateValue, onDeleteEntry,
+ isEditor, onClose, onUpdateTitle, onUpdateValue, onDeleteEntry, onAddProperty,
 }: EntrySidePanelProps) {
  const { data: session } = useSession();
  const [title, setTitle]         = useState(entry.title ?? "");
@@ -46,16 +50,10 @@ export function EntrySidePanel({
  const [inlineEdit, setInlineEdit]    = useState<{ propId: string; value: string } | null>(null);
  const [confirmDelete, setConfirmDelete] = useState(false);
  const [deleting, setDeleting]      = useState(false);
- const panelRef             = useRef<HTMLDivElement>(null);
+ const [addingProperty, setAddingProperty] = useState(false);
  const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
  useEffect(() => { setTitle(entry.title ?? ""); }, [entry.id, entry.title]);
-
- useEffect(() => {
-  function handler(e: KeyboardEvent) { if (e.key === "Escape" && !editPop) onClose(); }
-  document.addEventListener("keydown", handler);
-  return () => document.removeEventListener("keydown", handler);
- }, [onClose, editPop]);
 
  const visibleProps = properties.filter((p) => !p.isSystem);
  const entryValues = valueMap.get(entry.id) ?? new Map();
@@ -93,24 +91,18 @@ export function EntrySidePanel({
 
  return (
   <>
-   {/* Backdrop */}
-   <div
-    className="fixed inset-0 z-40 bg-foreground/20"
-    onClick={onClose}
-   />
-
-   {/* Panel */}
-   <div
-    ref={panelRef}
-    className="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden bg-card border-l border-border sm:w-[460px]"
-    style={{ animation: "sidePanelIn 0.25s cubic-bezier(0.22,1,0.36,1)" }}
-   >
+   <Sheet open onOpenChange={(open) => { if (!open) onClose(); }}>
+    <SheetContent
+     side="right"
+     showCloseButton={false}
+     className="overflow-hidden bg-card data-[side=right]:w-full data-[side=right]:sm:max-w-115 data-[side=right]:sm:w-115"
+    >
 
     {/* ── Top nav bar ─────────────────────────────────────────────────── */}
     <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-3 py-2.5">
      <button
       onClick={onClose}
-      className="flex items-center gap-1.5 rounded-[var(--radius-sm)] px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+      className="flex items-center gap-1.5 rounded-sm px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
      >
       <ArrowLeft size={13} />
       Back
@@ -120,7 +112,7 @@ export function EntrySidePanel({
       {isEditor && (
        <button
         onClick={() => setConfirmDelete(true)}
-        className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+        className="flex size-8 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
         onMouseEnter={(e) => showTooltip("Delete entry", e)}
         onMouseLeave={hideTooltip}
        >
@@ -130,7 +122,7 @@ export function EntrySidePanel({
       <button
        onClick={onClose}
        aria-label="Close"
-       className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+       className="flex size-8 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
       >
        <X size={15} />
       </button>
@@ -144,11 +136,11 @@ export function EntrySidePanel({
       {/* Icon */}
       <div className="mb-4">
        {entry.icon ? (
-        <span className="inline-block rounded-[var(--radius-lg)] bg-card p-2 leading-none">
+        <span className="inline-block rounded-lg bg-card p-2 leading-none">
          <PageIcon icon={entry.icon} size={36} />
         </span>
        ) : (
-        <div className="inline-flex size-12 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-card">
+        <div className="inline-flex size-12 items-center justify-center rounded-lg border border-border bg-card">
          <FileText size={20} className="text-muted-foreground" />
         </div>
        )}
@@ -196,7 +188,7 @@ export function EntrySidePanel({
        </div>
 
        {/* Property rows */}
-       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card dark:bg-card/4">
+       <div className="overflow-hidden rounded-lg border border-border bg-card dark:bg-card/4">
         {visibleProps.map((prop, idx) => {
          const Icon      = PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON] ?? TextT;
          const raw       = getVal(prop.id);
@@ -209,13 +201,13 @@ export function EntrySidePanel({
           <div
            key={prop.id}
            className={[
-            "group/prop flex min-h-[36px] items-center transition-colors duration-150 hover:bg-accent/50",
+            "group/prop flex min-h-9 items-center transition-colors duration-150 hover:bg-accent/50",
             !isLast ? "border-b border-border" : "",
            ].join(" ")}
           >
            {/* Property label */}
-           <div className="flex w-[140px] shrink-0 items-center gap-2 px-3.5 py-2.5 text-xs font-medium text-muted-foreground">
-            <div className="flex size-[22px] shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60 text-muted-foreground">
+           <div className="flex w-35 shrink-0 items-center gap-2 px-3.5 py-2.5 text-xs font-medium text-muted-foreground">
+            <div className="flex size-5.5 shrink-0 items-center justify-center rounded-xs bg-muted/60 text-muted-foreground">
              {prop.config?.icon ? <PageIcon icon={prop.config.icon} size={11} /> : <Icon size={11} />}
             </div>
             <span className="truncate">{prop.name}</span>
@@ -227,7 +219,7 @@ export function EntrySidePanel({
            {/* Value */}
            <div
             className={[
-             "flex min-h-[36px] flex-1 items-center px-3.5 py-2.5 text-sm transition-colors duration-150",
+             "flex min-h-9 flex-1 items-center px-3.5 py-2.5 text-sm transition-colors duration-150",
              hasFiles ? "" : "cursor-pointer",
              isEditor && !hasFiles ? "hover:bg-accent" : "",
              !isEditor ? "cursor-default" : "",
@@ -273,11 +265,26 @@ export function EntrySidePanel({
       </div>
      ) : (
       <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-       <div className="flex size-12 items-center justify-center rounded-[var(--radius-lg)] bg-muted/40">
+       <div className="flex size-12 items-center justify-center rounded-lg bg-muted/40">
         <FileText size={20} className="text-muted-foreground" />
        </div>
        <p className="text-sm font-medium text-muted-foreground">No properties yet</p>
        <p className="text-xs text-muted-foreground">Add properties from the table view</p>
+       {isEditor && onAddProperty && (
+        <button
+         type="button"
+         disabled={addingProperty}
+         onClick={async () => {
+          setAddingProperty(true);
+          await onAddProperty("Property", "text");
+          setAddingProperty(false);
+         }}
+         className="mt-1 inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+        >
+         {addingProperty ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+         Add a property
+        </button>
+       )}
       </div>
      )}
 
@@ -289,7 +296,7 @@ export function EntrySidePanel({
        </span>
        <div className="h-px flex-1 bg-border" />
       </div>
-      <div className="rounded-[var(--radius-lg)] border border-border bg-card px-4 py-3 dark:bg-card/4">
+      <div className="rounded-lg border border-border bg-card px-4 py-3 dark:bg-card/4">
        <PageEditor
         pageId={entry.id}
         isLocked={false}
@@ -309,13 +316,13 @@ export function EntrySidePanel({
     <div className="shrink-0 border-t border-border bg-card px-4 pb-5 pt-3">
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="group inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-4 py-2 text-sm font-semibold !text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
+      className="group inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground! transition-colors duration-150 hover:bg-primary/90"
      >
-      <FileText size={14} className="!text-white" />
+      <FileText size={14} className="text-white!" />
       Open full page
       <ArrowSquareOut
        size={13}
-       className="shrink-0 !text-white/70"
+       className="shrink-0 text-white/70!"
       />
      </Link>
     </div>
@@ -353,19 +360,13 @@ export function EntrySidePanel({
       onClose();
      }}
     />
-   </div>
+    </SheetContent>
+   </Sheet>
 
    {tooltip && typeof document !== "undefined" && createPortal(
     <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
     document.body,
    )}
-
-   <style>{`
-    @keyframes sidePanelIn {
-     from { transform: translateX(100%); opacity: 0.5; }
-     to  { transform: translateX(0);  opacity: 1; }
-    }
-   `}</style>
   </>
  );
 }

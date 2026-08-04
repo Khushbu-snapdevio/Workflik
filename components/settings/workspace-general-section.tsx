@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, ChevronDown, ExternalLink, Link2 } from "lucide-react";
+import { AlertTriangle, ExternalLink, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IconPicker } from "@/components/pages/icon-picker";
@@ -51,7 +51,7 @@ function WorkspaceIconPicker({
  function handleOpen() {
   if (!open && btnRef.current) {
    const rect = btnRef.current.getBoundingClientRect();
-   // IconPicker is a fixed w-[352px] panel positioned "absolute left-0" —
+   // IconPicker is a fixed w-88 panel positioned "absolute left-0" —
    // anchor via `left` (not `right`) and clamp to the viewport, matching the
    // pattern used elsewhere (entry-context-menu.tsx). A `right`-anchored
    // wrapper collapses to zero width here (its only child is absolutely
@@ -88,7 +88,7 @@ function WorkspaceIconPicker({
    <button ref={btnRef} type="button" onClick={handleOpen}
     onMouseEnter={(e) => showTooltip("Change icon", e)}
     onMouseLeave={hideTooltip}
-    className="flex size-12 items-center justify-center rounded-[var(--radius-md)] border-2 border-dashed border-border bg-muted/30 transition-colors duration-150 hover:border-border hover:bg-accent active:scale-[0.97]">
+    className="flex size-12 items-center justify-center rounded-md border-2 border-dashed border-border bg-muted/30 transition-colors duration-150 hover:border-border hover:bg-accent active:scale-[0.97]">
     {value ? <PageIcon icon={value} size={28} /> : <span className="text-3xl leading-none">📁</span>}
    </button>
    {tooltip && typeof document !== "undefined" && createPortal(
@@ -126,7 +126,7 @@ function SectionLabel({ label }: { label: string }) {
 }
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
  return (
-  <div className={`overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card ${className}`}>
+  <div className={`overflow-hidden rounded-lg border border-border bg-card ${className}`}>
    {children}
   </div>
  );
@@ -145,94 +145,6 @@ function CardRow({ label, desc, control, last, feedback }: { label: string; desc
   </div>
  );
 }
-function ChevronSelect({ value, options, onChange }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
- const [open, setOpen] = useState(false);
- const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
- const [mounted, setMounted] = useState(false);
- const btnRef = useRef<HTMLButtonElement>(null);
- const menuRef = useRef<HTMLDivElement>(null);
- const selected = options.find(o => o.value === value);
-
- useEffect(() => { setMounted(true); }, []);
-
- useEffect(() => {
-  if (!open) return;
-  function handleClick(e: MouseEvent) {
-   const t = e.target as Node;
-   if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
-   setOpen(false);
-  }
-  function handleKey(e: KeyboardEvent) {
-   if (e.key === "Escape") setOpen(false);
-  }
-  document.addEventListener("mousedown", handleClick);
-  document.addEventListener("keydown", handleKey);
-  return () => {
-   document.removeEventListener("mousedown", handleClick);
-   document.removeEventListener("keydown", handleKey);
-  };
- }, [open]);
-
- useScrollLockWhileOpen(open, (target) =>
-  !!menuRef.current?.contains(target) || !!btnRef.current?.contains(target));
-
- function handleOpen() {
-  if (!open && btnRef.current) {
-   const rect = btnRef.current.getBoundingClientRect();
-   setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-  }
-  setOpen(o => !o);
- }
-
- const menu = mounted && open && pos ? createPortal(
-  <div
-   ref={menuRef}
-   style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 9999 }}
-   className="min-w-[160px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-card py-1"
-  >
-   {options.map(o => (
-    <button
-     key={o.value}
-     type="button"
-     onClick={() => { onChange(o.value); setOpen(false); }}
-     className={[
-      "flex w-full items-center justify-between gap-3 px-3 py-2 text-sm transition-colors duration-150",
-      o.value === value
-       ? "bg-accent text-foreground font-medium"
-       : "text-foreground hover:bg-accent",
-     ].join(" ")}
-    >
-     {o.label}
-     {o.value === value && <Check size={13} className="shrink-0 text-foreground" />}
-    </button>
-   ))}
-  </div>,
-  document.body
- ) : null;
-
- return (
-  <>
-   <button
-    ref={btnRef}
-    type="button"
-    onClick={handleOpen}
-    className={[
-     "flex items-center gap-2 rounded-[var(--radius-sm)] border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors duration-150",
-     "focus-visible:outline-none",
-     open ? "border-primary" : "border-border hover:border-border",
-    ].join(" ")}
-   >
-    <span className="min-w-[110px] text-left">{selected?.label ?? value}</span>
-    <ChevronDown
-     size={14}
-     className={`shrink-0 text-muted-foreground transition-transform duration-150 ${open ? "rotate-180" : ""}`}
-    />
-   </button>
-   {menu}
-  </>
- );
-}
-
 /* ── Main component ───────────────────────────────────────── */
 export function WorkspaceGeneralSection({ workspace }: Props) {
  const router = useRouter();
@@ -364,7 +276,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
  }
 
  return (
-  <div className="mx-auto max-w-[780px] px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
+  <div className="mx-auto max-w-195 px-4 pt-4 pb-8 sm:px-6 md:px-8 md:pt-6 md:pb-10">
 
    {/* ── WORKSPACE IDENTITY ── */}
    <div className="mb-7">
@@ -372,14 +284,14 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
     <Card>
      {/* Live preview banner */}
      <div className="flex items-center gap-3.5 border-b border-border bg-muted/20 px-5 py-4">
-      <span className="flex size-10 items-center justify-center rounded-[var(--radius-sm)] bg-card text-2xl">
+      <span className="flex size-10 items-center justify-center rounded-sm bg-card text-2xl">
        {icon ? <PageIcon icon={icon} size={22} /> : "📁"}
       </span>
       <div>
        <p className="text-[14.5px] font-semibold text-foreground">{name || "Workspace name"}</p>
        <p className="text-xs text-muted-foreground">Sidebar preview</p>
       </div>
-      <div className="ml-auto rounded-[var(--radius-xs)] bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Preview</div>
+      <div className="ml-auto rounded-xs bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Preview</div>
      </div>
 
      {/* Icon row — removing happens inside the picker itself (its own
@@ -402,7 +314,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
       <div className="relative shrink-0">
        <Input value={name} onChange={e => { setName(e.target.value); setNameError(""); }}
         onBlur={saveName}
-        className="w-[220px] focus-visible:border-primary" />
+        className="w-55 focus-visible:border-primary" />
        {saved === "name" && <span className="absolute -bottom-5 right-0 text-xs text-muted-foreground">Saved ✓</span>}
        {nameError && <span className="absolute -bottom-5 right-0 text-xs text-destructive">{nameError}</span>}
       </div>
@@ -420,7 +332,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
        : patchError?.field === "defaultPageAccess" ? <span className="text-xs text-destructive">{patchError.message}</span>
        : null
       }
-      control={<ChevronSelect value={access} options={ACCESS} onChange={v => {
+      control={<RoleSelect value={access} options={ACCESS} triggerClassName="w-37.5 border-border bg-card" onChange={v => {
        const prev = access; setAccess(v);
        patchWs({ defaultPageAccess: v }, () => setAccess(prev));
       }} />}
@@ -436,7 +348,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
       {/* URL bar */}
       <div className="border-b border-border bg-muted/20 px-5 py-4">
        <div className="flex items-center gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-primary/10">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-primary/10">
          <ExternalLink size={16} className="text-primary" />
         </div>
         <div className="min-w-0 flex-1">
@@ -482,7 +394,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
     ) : (
      <Card>
       <div className="flex items-center gap-4 px-5 py-5">
-       <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-muted/50">
+       <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted/50">
         <Link2 size={20} className="text-muted-foreground" />
        </div>
        <div className="flex-1 min-w-0">
@@ -500,10 +412,10 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
    {/* ── DANGER ZONE ── */}
    <div>
     <SectionLabel label="Danger zone" />
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-destructive/20 bg-destructive/5">
+    <div className="overflow-hidden rounded-lg border border-destructive/20 bg-destructive/5">
      <div className="px-5 py-5">
       <div className="flex items-start gap-4">
-       <div className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-destructive/10">
+       <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10">
         <AlertTriangle size={20} className="text-destructive" />
        </div>
        <div className="flex-1">

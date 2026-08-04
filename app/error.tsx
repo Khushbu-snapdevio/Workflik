@@ -33,7 +33,7 @@ export default function GlobalErrorPage({
     return (
       <main className="grid min-h-screen place-items-center bg-page px-4">
         <div className="w-full max-w-lg text-center">
-          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-warning/10 ring-1 ring-warning/20">
+          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-lg bg-warning/10 ring-1 ring-warning/20">
             <DatabaseZap className="size-6 text-warning" strokeWidth={1.5} />
           </div>
           <h1 className="mb-2 text-lg font-bold text-foreground">
@@ -43,17 +43,17 @@ export default function GlobalErrorPage({
             The database is missing tables this app expects — the migration step
             hasn't been run.
           </p>
-          <div className="mt-5 space-y-2 rounded-[var(--radius-md)] border border-border bg-card p-4 text-left">
+          <div className="mt-5 space-y-2 rounded-md border border-border bg-card p-4 text-left">
             <p className="text-xs font-semibold text-muted-foreground">
               Docker:
             </p>
-            <code className="block rounded-[var(--radius-sm)] bg-muted px-3 py-2 text-xs text-foreground">
+            <code className="block rounded-sm bg-muted px-3 py-2 text-xs text-foreground">
               docker compose run --rm migrate
             </code>
             <p className="pt-1 text-xs font-semibold text-muted-foreground">
               Manual / Node:
             </p>
-            <code className="block rounded-[var(--radius-sm)] bg-muted px-3 py-2 text-xs text-foreground">
+            <code className="block rounded-sm bg-muted px-3 py-2 text-xs text-foreground">
               pnpm db:migrate
             </code>
           </div>
@@ -69,7 +69,7 @@ export default function GlobalErrorPage({
   return (
     <main className="grid min-h-screen place-items-center bg-page px-4">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-[var(--radius-lg)] bg-destructive/10 ring-1 ring-destructive/20">
+        <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-lg bg-destructive/10 ring-1 ring-destructive/20">
           <AlertTriangle
             className="size-6 text-destructive"
             strokeWidth={1.5}

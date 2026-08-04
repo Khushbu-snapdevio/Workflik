@@ -53,9 +53,9 @@ export default async function SettingsLayout({ children, params }: Props) {
 
 function SettingsPageSkeleton() {
   return (
-    <div className="mx-auto max-w-[700px] animate-pulse px-4 py-6 sm:px-6 md:px-10 md:py-10">
+    <div className="mx-auto max-w-175 animate-pulse px-4 py-6 sm:px-6 md:px-10 md:py-10">
       {/* Card 1 */}
-      <div className="mb-5 rounded-[var(--radius-lg)] border border-border bg-card p-5">
+      <div className="mb-5 rounded-lg border border-border bg-card p-5">
         <div className="mb-4 h-3 w-24 rounded bg-muted/60" />
         <div className="flex items-center gap-4">
           <div className="size-16 rounded-full bg-muted" />
@@ -66,19 +66,19 @@ function SettingsPageSkeleton() {
         </div>
       </div>
       {/* Card 2 */}
-      <div className="mb-5 rounded-[var(--radius-lg)] border border-border bg-card p-5">
+      <div className="mb-5 rounded-lg border border-border bg-card p-5">
         <div className="mb-4 h-3 w-20 rounded bg-muted/60" />
         <div className="space-y-3">
-          <div className="h-9 w-full rounded-[var(--radius-sm)] bg-muted" />
-          <div className="h-9 w-full rounded-[var(--radius-sm)] bg-muted" />
+          <div className="h-9 w-full rounded-sm bg-muted" />
+          <div className="h-9 w-full rounded-sm bg-muted" />
         </div>
       </div>
       {/* Card 3 */}
-      <div className="rounded-[var(--radius-lg)] border border-border bg-card p-5">
+      <div className="rounded-lg border border-border bg-card p-5">
         <div className="mb-4 h-3 w-28 rounded bg-muted/60" />
         <div className="space-y-3">
-          <div className="h-9 w-full rounded-[var(--radius-sm)] bg-muted" />
-          <div className="h-9 w-3/4 rounded-[var(--radius-sm)] bg-muted" />
+          <div className="h-9 w-full rounded-sm bg-muted" />
+          <div className="h-9 w-3/4 rounded-sm bg-muted" />
         </div>
       </div>
     </div>

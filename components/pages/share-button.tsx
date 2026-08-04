@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useRef } from "react";
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { Share2 } from "lucide-react";
 import { SharePanel } from "@/components/pages/share-panel";
 import { usePagePrivacy } from "@/components/pages/page-privacy-context";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
-import { getClampedTop } from "@/lib/ui/clamp-to-viewport";
 
 interface Props {
  pageId:      string;
@@ -23,23 +21,17 @@ export function ShareButton({
  pageId, pageShortId, workspaceSlug, currentUserId, currentUserName, currentUserEmail, currentUserImage,
 }: Props) {
  const { isPrivate: pagePrivate, setIsPrivate: setPagePrivate } = usePagePrivacy();
- const [open, setOpen]    = useState(false);
- const [anchor, setAnchor] = useState<DOMRect | null>(null);
- const panelRef = useRef<HTMLDivElement>(null);
- const btnRef  = useRef<HTMLButtonElement>(null);
-
- useScrollLockWhileOpen(open, (target) =>
-  !!panelRef.current?.contains(target) || !!target.closest?.('[role="alertdialog"]'));
+ const btnRef = useRef<HTMLButtonElement>(null);
 
  // Lets CopyLinkButton (a topbar sibling with no shared state) reopen this
  // same panel for its "Give access" action on a private-page link copy.
+ // Popover has no externally-controlled open prop, so this simulates the same click gesture that opens it normally (no-op if already open).
  useEffect(() => {
   function handler(e: Event) {
    const detail = (e as CustomEvent<{ pageId: string }>).detail;
    if (detail?.pageId !== pageId) return;
-   const rect = btnRef.current?.getBoundingClientRect();
-   if (rect) setAnchor(rect);
-   setOpen(true);
+   const btn = btnRef.current;
+   if (btn && btn.getAttribute("aria-expanded") !== "true") btn.click();
   }
   window.addEventListener("workflik:open-share", handler);
   return () => window.removeEventListener("workflik:open-share", handler);
@@ -58,43 +50,22 @@ export function ShareButton({
   window.dispatchEvent(new CustomEvent("pages:refresh"));
  }, [pageId, setPagePrivate]);
 
- function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
-  setAnchor(e.currentTarget.getBoundingClientRect());
-  setOpen((v) => !v);
- }
-
- function close() { setOpen(false); setAnchor(null); }
-
  return (
-  <>
-   <button
-    ref={btnRef}
-    type="button"
-    onClick={handleClick}
-    className="flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97]"
-   >
-    <Share2 size={14} />
-    Share
-   </button>
-
-   {open && anchor && typeof document !== "undefined" && createPortal(
+  <Popover>
+   {({ close }) => (
     <>
-     {/* Invisible backdrop — blocks badge clicks behind the panel */}
-     <div
-      className="fixed inset-0"
-      style={{ zIndex: 200 }}
-      onClick={close}
-     />
-     {/* Panel — right-aligned below the Share button, clamped to viewport */}
-     <div
-      ref={panelRef}
-      style={{
-       position: "fixed",
-       top:   getClampedTop(anchor, 480, { gap: 8 }),
-       // align panel's right edge with button's right edge, but never push off left edge
-       right:  Math.max(16, window.innerWidth - anchor.right),
-       zIndex:  201,
-      }}
+     <PopoverButton
+      ref={btnRef}
+      className="flex items-center gap-1.5 rounded-sm bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.97]"
+     >
+      <Share2 size={14} />
+      Share
+     </PopoverButton>
+
+     <PopoverPanel
+      anchor={{ to: "bottom end", gap: 8 }}
+      transition
+      className="z-600 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
      >
       <SharePanel
        pageId={pageId}
@@ -108,10 +79,9 @@ export function ShareButton({
        onClose={close}
        onPrivateToggle={handlePrivateToggle}
       />
-     </div>
-    </>,
-    document.body,
+     </PopoverPanel>
+    </>
    )}
-  </>
+  </Popover>
  );
 }

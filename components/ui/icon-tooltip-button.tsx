@@ -35,7 +35,7 @@ export function IconTooltipButton({ icon, label, href, onClick, danger, classNam
     return () => document.removeEventListener("scroll", handleScroll, true);
   }, [rect]);
 
-  const className = classNameProp ?? `flex size-7 items-center justify-center rounded-[var(--radius-xs)] transition-colors duration-150 ${
+  const className = classNameProp ?? `flex size-7 items-center justify-center rounded-xs transition-colors duration-150 ${
     danger
       ? "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
       : "text-muted-foreground hover:bg-accent hover:text-foreground"

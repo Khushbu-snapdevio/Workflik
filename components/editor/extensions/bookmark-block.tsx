@@ -16,12 +16,13 @@ import {
   MessageSquare,
   Pencil,
   Trash2,
-  X as XIcon,
 } from "lucide-react";
 import type { LinkPreview } from "@/app/api/link-preview/route";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
@@ -49,16 +50,16 @@ function UrlPicker({
 }) {
   const [url, setUrl] = useState("");
   return (
-    <div className="my-2 space-y-3 rounded-[var(--radius-md)] border border-border bg-muted/30 p-4">
+    <div className="my-2 space-y-3 rounded-md border border-border bg-muted/30 p-4">
       <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground">
         <span className="text-xl leading-none">{icon}</span>
         {label}
       </p>
       <div className="flex gap-2">
-        <input
+        <Input
           // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
           autoFocus
-          className="flex-1 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground-subtle disabled:opacity-50"
+          className="flex-1"
           disabled={loading}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => {
@@ -74,26 +75,28 @@ function UrlPicker({
           type="url"
           value={url}
         />
-        <button
-          className="rounded-[var(--radius-sm)] bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-40"
+        <Button
           disabled={!url.trim() || loading}
           onClick={() => url.trim() && onConfirm(url.trim())}
           onMouseDown={(e) => e.preventDefault()}
+          size="sm"
           type="button"
         >
           {loading ? "Loading…" : "Embed ↵"}
-        </button>
+        </Button>
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}
       {onCancel && (
-        <button
-          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+        <Button
+          className="text-muted-foreground"
           onClick={onCancel}
           onMouseDown={(e) => e.preventDefault()}
+          size="sm"
           type="button"
+          variant="ghost"
         >
           Cancel
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -157,7 +160,7 @@ function BookmarkCard({
         <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
           {onDelete && (
             <button
-              className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
+              className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
               onMouseDown={(e) => {
                 e.preventDefault();
                 onDelete();
@@ -169,7 +172,7 @@ function BookmarkCard({
           )}
           {onChange && (
             <button
-              className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
+              className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-black/80"
               onMouseDown={(e) => {
                 e.preventDefault();
                 onChange();
@@ -394,7 +397,7 @@ function EmbedToolbar({
     <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
       {onComment && (
         <button
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
+          className="flex size-6 items-center justify-center rounded-sm bg-black/70 text-white hover:bg-black/80"
           onClick={onComment}
           onMouseDown={(e) => e.preventDefault()}
           onMouseEnter={(e) => showTooltip("Comment", e)}
@@ -406,7 +409,7 @@ function EmbedToolbar({
       )}
       {onZoom && (
         <button
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
+          className="flex size-6 items-center justify-center rounded-sm bg-black/70 text-white hover:bg-black/80"
           onClick={onZoom}
           onMouseDown={(e) => e.preventDefault()}
           onMouseEnter={(e) => showTooltip("Expand", e)}
@@ -418,7 +421,7 @@ function EmbedToolbar({
       )}
       {download && (
         <a
-          className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
+          className="flex size-6 items-center justify-center rounded-sm bg-black/70 text-white hover:bg-black/80"
           download={download.name}
           href={download.url}
           onClick={(e) => e.stopPropagation()}
@@ -430,7 +433,7 @@ function EmbedToolbar({
         </a>
       )}
       <button
-        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-black/80"
+        className="flex size-6 items-center justify-center rounded-sm bg-black/70 text-white hover:bg-black/80"
         onClick={onChangeDirect}
         onMouseDown={(e) => e.preventDefault()}
         onMouseEnter={(e) => showTooltip("Change", e)}
@@ -440,7 +443,7 @@ function EmbedToolbar({
         <Pencil size={12} />
       </button>
       <button
-        className="flex size-6 items-center justify-center rounded-[var(--radius-sm)] bg-black/70 text-white hover:bg-destructive/80"
+        className="flex size-6 items-center justify-center rounded-sm bg-black/70 text-white hover:bg-destructive/80"
         onClick={onDelete}
         onMouseDown={(e) => e.preventDefault()}
         onMouseEnter={(e) => showTooltip("Delete", e)}
@@ -457,9 +460,8 @@ function EmbedToolbar({
   );
 }
 
-// Same overlay convention as comment-card.tsx's ImageLightbox, generalized to
-// render either an iframe (PDF/known-provider embeds) or an image (uploaded
-// image files) at a larger size.
+// Renders an iframe or image at larger size on the shared native-<dialog> Dialog; unlike
+// comment-card.tsx's hand-rolled ImageLightbox (zoom/pan), this has no interaction beyond backdrop/Escape close.
 function EmbedLightbox({
   src,
   isImage,
@@ -471,48 +473,25 @@ function EmbedLightbox({
   title: string;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70"
-      onClick={onClose}
-    >
-      <div
-        className="relative h-[90vh] w-[90vw] max-w-5xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="h-[90vh] w-[90vw] max-w-none gap-0 border-none bg-transparent p-0 ring-0 backdrop:bg-black/70 sm:max-w-none">
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             alt={title}
-            className="mx-auto h-full max-w-full rounded-[var(--radius-md)] object-contain"
+            className="mx-auto h-full max-w-full rounded-md object-contain"
             src={src}
           />
         ) : (
           <iframe
-            className="size-full rounded-[var(--radius-md)] bg-card"
+            className="size-full rounded-md bg-card"
             src={src}
             title={title}
           />
         )}
-        <button
-          className="absolute -top-3 -right-3 flex size-7 items-center justify-center rounded-[var(--radius-sm)] border border-border bg-card text-foreground transition-colors duration-150 hover:bg-accent"
-          onClick={onClose}
-          type="button"
-        >
-          <XIcon size={14} />
-        </button>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -634,7 +613,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       return (
         <NodeViewWrapper contentEditable={false}>
           <button
-            className="my-1 flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
+            className="my-1 flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
             onClick={() => setExpanded(true)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -649,7 +628,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       <NodeViewWrapper contentEditable={false}>
         <div className="relative my-1 flex flex-col items-center gap-2" ref={popupRef}>
           <button
-            className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
+            className="flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
             onClick={() => setExpanded(false)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -657,17 +636,16 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
             <span className="text-lg leading-none">🌐</span>
             Embed anything (PDFs, Google Docs, Google Maps, Spotify…)
           </button>
-          <div className="w-full max-w-sm rounded-[var(--radius-md)] border border-border bg-popover p-4">
+          <div className="w-full max-w-sm rounded-md border border-border bg-popover p-4">
             <Tabs defaultValue="link">
               <TabsList className="w-full" variant="line">
                 <TabsTrigger value="link">Link</TabsTrigger>
                 <TabsTrigger value="upload">Upload</TabsTrigger>
               </TabsList>
               <TabsContent className="mt-3 space-y-2" value="link">
-                <input
+                <Input
                   // biome-ignore lint/a11y/noAutofocus: intentional — tab just opened
                   autoFocus
-                  className="w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground-subtle"
                   onChange={(e) => setLinkUrl(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && linkUrl.trim()) {
@@ -728,13 +706,13 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
         <NodeViewWrapper contentEditable={false}>
           <div
             ref={wrapperRef}
-            className="group relative my-2 overflow-hidden rounded-[var(--radius-md)] border border-border bg-muted/20"
+            className="group relative my-2 overflow-hidden rounded-md border border-border bg-muted/20"
           >
             {isUploadedImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={fileName}
-                className="block max-h-[480px] w-full cursor-zoom-in object-contain"
+                className="block max-h-120 w-full cursor-zoom-in object-contain"
                 onClick={() => setZooming(true)}
                 src={url}
               />
@@ -777,7 +755,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       <NodeViewWrapper contentEditable={false}>
         <div
           ref={wrapperRef}
-          className="group relative my-2 flex items-center gap-2.5 rounded-[var(--radius-md)] border border-border bg-muted/20 px-3.5 py-2.5"
+          className="group relative my-2 flex items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5"
         >
           <FileIcon className="shrink-0 text-muted-foreground" size={18} />
           <span className="min-w-0 flex-1 truncate text-sm text-foreground">
@@ -805,7 +783,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       <NodeViewWrapper contentEditable={false}>
         <div
           ref={wrapperRef}
-          className="group relative my-2 overflow-hidden rounded-[var(--radius-md)] border border-border bg-black"
+          className="group relative my-2 overflow-hidden rounded-md border border-border bg-black"
         >
           <iframe
             allow="autoplay; fullscreen; clipboard-write; encrypted-media; picture-in-picture"
@@ -837,7 +815,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       {previewError ? (
-        <div className="my-2 rounded-[var(--radius-md)] border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+        <div className="my-2 rounded-md border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
           Couldn&rsquo;t embed this link.{" "}
           <a
             className="text-primary hover:underline"

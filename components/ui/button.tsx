@@ -48,13 +48,13 @@ const buttonVariants = cva(
         // --size / --btn-p re-declared per step: daisy's own scale does not
         // land on any of these except `default`.
         default: "[--size:2.25rem] [--btn-p:1rem] gap-1.5 text-sm",
-        xs: "[--size:1.5rem] [--btn-p:0.625rem] gap-1 text-xs rounded-[var(--radius-sm)] [&_svg:not([class*='size-'])]:size-3",
+        xs: "[--size:1.5rem] [--btn-p:0.625rem] gap-1 text-xs rounded-sm [&_svg:not([class*='size-'])]:size-3",
         sm: "[--size:2rem] [--btn-p:0.75rem] gap-1 text-xs",
         lg: "[--size:2.5rem] [--btn-p:1.5rem] gap-1.5 text-sm",
         xl: "[--size:2.75rem] [--btn-p:1.75rem] gap-2 text-base",
         icon: "btn-square [--size:2.25rem]",
         "icon-xs":
-          "btn-square [--size:1.5rem] rounded-[var(--radius-sm)] [&_svg:not([class*='size-'])]:size-3",
+          "btn-square [--size:1.5rem] rounded-sm [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "btn-square [--size:2rem]",
         "icon-lg": "btn-square [--size:2.5rem]",
       },

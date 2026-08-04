@@ -82,7 +82,7 @@ const FullEmojiPicker = React.forwardRef<HTMLDivElement, {
     <div
       ref={ref}
       style={{ position: "fixed", top, left, zIndex: 9999, width: pickerW }}
-      className="rounded-[var(--radius-lg)] border border-border bg-popover overflow-hidden"
+      className="rounded-lg border border-border bg-popover overflow-hidden"
       onClick={e => e.stopPropagation()}
       onPointerDown={e => e.stopPropagation()}
     >
@@ -761,7 +761,7 @@ export function CellCommentPopover({
   // replyInputRef/replyAttachments instead of the edit box's state.
   function renderReplyToolbar() {
     return (
-      <div className="mt-1 ml-[24px] flex items-center gap-0.5">
+      <div className="mt-1 ml-6 flex items-center gap-0.5">
         <button
           type="button"
           disabled={replyAttachLoading}
@@ -837,7 +837,7 @@ export function CellCommentPopover({
       <div
         ref={popoverRef}
         style={{ position: "fixed", top, bottom, left, width: POP_W, zIndex: 800, maxHeight, display: "flex", flexDirection: "column" }}
-        className="rounded-[var(--radius-md)] border border-border bg-card overflow-hidden"
+        className="rounded-md border border-border bg-card overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
@@ -873,7 +873,7 @@ export function CellCommentPopover({
                           <span className="text-xs font-semibold text-foreground leading-none truncate">
                             {getDisplayName(t.author)}
                           </span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground">
+                          <span className="shrink-0 text-2xs text-muted-foreground">
                             {timeAgo(t.createdAt)}
                             {t.editedAt && <span className="ml-0.5">(edited)</span>}
                           </span>
@@ -884,7 +884,7 @@ export function CellCommentPopover({
                               onClick={(e) => openEmojiMenu(e, t.id)}
                               onMouseEnter={(e) => showTooltip("Add reaction", e)}
                               onMouseLeave={hideTooltip}
-                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-sm"
+                              className="flex size-4.5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-sm"
                             >
                               <Smile size={12} />
                             </button>
@@ -893,7 +893,7 @@ export function CellCommentPopover({
                               onClick={() => startReply(t.id)}
                               onMouseEnter={(e) => showTooltip("Reply", e)}
                               onMouseLeave={hideTooltip}
-                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                              className="flex size-4.5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                             >
                               <Reply size={12} />
                             </button>
@@ -902,7 +902,7 @@ export function CellCommentPopover({
                               onClick={(e) => openMoreMenu(e, t.id, false, isOwn)}
                               onMouseEnter={(e) => showTooltip("More options", e)}
                               onMouseLeave={hideTooltip}
-                              className="flex size-[18px] items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                              className="flex size-4.5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                             >
                               <MoreHorizontal size={12} />
                             </button>
@@ -917,7 +917,7 @@ export function CellCommentPopover({
                                 {editAttachments.map((att, ai) => (
                                   <div key={ai} className="group/editatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
                                     <Paperclip size={9} className="shrink-0 text-muted-foreground" />
-                                    <span className="min-w-0 truncate text-[10px] text-foreground/80">{att.name}</span>
+                                    <span className="min-w-0 truncate text-2xs text-foreground/80">{att.name}</span>
                                     <button
                                       type="button"
                                       onClick={() => setEditAttachments((prev) => prev.filter((_, i) => i !== ai))}
@@ -982,14 +982,14 @@ export function CellCommentPopover({
                                       {images.map((att, ai) => (
                                         <div
                                           key={ai}
-                                          className="group/img relative cursor-pointer overflow-hidden rounded-[var(--radius-sm)] border border-border bg-muted"
+                                          className="group/img relative cursor-pointer overflow-hidden rounded-sm border border-border bg-muted"
                                           onClick={() => setLightbox(att.url)}
                                         >
                                           <img
                                             src={att.url}
                                             alt={att.name}
                                             onLoad={scrollListToBottom}
-                                            className={`w-full object-cover block ${grid ? "h-[70px]" : "max-h-[140px]"}`}
+                                            className={`w-full object-cover block ${grid ? "h-17.5" : "max-h-35"}`}
                                           />
                                           <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 transition-colors group-hover/img:bg-black/40">
                                             <span className={`flex items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto ${grid ? "size-5" : "size-7"}`}>
@@ -1068,7 +1068,7 @@ export function CellCommentPopover({
                                   <span className="text-[11px] font-semibold text-foreground leading-none truncate">
                                     {getDisplayName(rep.author)}
                                   </span>
-                                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                                  <span className="shrink-0 text-2xs text-muted-foreground">
                                     {timeAgo(rep.createdAt)}
                                   </span>
                                   <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/reply:opacity-100 transition-opacity shrink-0">
@@ -1087,7 +1087,7 @@ export function CellCommentPopover({
                                         {editAttachments.map((att, ai) => (
                                           <div key={ai} className="group/editatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
                                             <Paperclip size={9} className="shrink-0 text-muted-foreground" />
-                                            <span className="min-w-0 truncate text-[10px] text-foreground/80">{att.name}</span>
+                                            <span className="min-w-0 truncate text-2xs text-foreground/80">{att.name}</span>
                                             <button
                                               type="button"
                                               onClick={() => setEditAttachments((prev) => prev.filter((_, i) => i !== ai))}
@@ -1149,11 +1149,11 @@ export function CellCommentPopover({
                   {replyToId === t.id && (
                     <div className="px-3 pb-2 pt-0.5">
                       {replyAttachments.length > 0 && (
-                        <div className="mb-1 ml-[24px] flex flex-wrap gap-1.5">
+                        <div className="mb-1 ml-6 flex flex-wrap gap-1.5">
                           {replyAttachments.map((att, ai) => (
                             <div key={ai} className="group/replyatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
                               <Paperclip size={9} className="shrink-0 text-muted-foreground" />
-                              <span className="min-w-0 truncate text-[10px] text-foreground/80">{att.name}</span>
+                              <span className="min-w-0 truncate text-2xs text-foreground/80">{att.name}</span>
                               <button
                                 type="button"
                                 onClick={() => setReplyAttachments((prev) => prev.filter((_, i) => i !== ai))}
@@ -1244,13 +1244,13 @@ export function CellCommentPopover({
               <div key={i} className="group/thumb relative">
                 {af.previewUrl ? (
                   <>
-                    <div className="relative h-[64px] w-[84px] overflow-hidden rounded-[var(--radius-sm)] border border-border bg-muted">
+                    <div className="relative h-16 w-21 overflow-hidden rounded-sm border border-border bg-muted">
                       <img src={af.previewUrl} alt={af.file.name} className="h-full w-full object-cover block" />
                     </div>
-                    <p className="mt-0.5 max-w-[84px] truncate text-[10px] text-muted-foreground">{af.file.name}</p>
+                    <p className="mt-0.5 max-w-21 truncate text-2xs text-muted-foreground">{af.file.name}</p>
                   </>
                 ) : (
-                  <div className="flex h-[36px] items-center gap-1.5 rounded-[var(--radius-sm)] border border-border bg-muted/60 px-2 max-w-[140px]">
+                  <div className="flex h-9 items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 max-w-35">
                     <Paperclip size={10} className="shrink-0 text-muted-foreground" />
                     <span className="min-w-0 truncate text-[11px] text-foreground/80">{af.file.name}</span>
                   </div>
@@ -1365,7 +1365,7 @@ export function CellCommentPopover({
             zIndex: 900,
             width: 148,
           }}
-          className="overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover py-0.5"
+          className="overflow-hidden rounded-sm border border-border bg-popover py-0.5"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -1460,8 +1460,8 @@ export function CellCommentPopover({
             : "This comment and all its replies will be permanently deleted."
         }
         onConfirm={() => { if (pendingDelete) deleteComment(pendingDelete.id); }}
-        overlayClassName="z-[10000]"
-        className="z-[10000]"
+        overlayClassName="z-10000"
+        className="z-10000"
       />
 
       {tooltip && (

@@ -291,27 +291,19 @@ function SortableTableRow({
    >
     {isEditor ? (
      <label className="relative flex size-5 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
-      <input
-       type="checkbox"
-       checked={isSelected}
-       onChange={(e) => onSelectEntry(entry.id, e.target.checked)}
-       className="sr-only"
-      />
       {/* Row number — fades out on hover/select */}
       <span className="absolute select-none text-xs tabular-nums text-muted-foreground transition-opacity duration-150"
        style={{ opacity: isSelected || isRowHovered ? 0 : 1 }}>
        {rowIdx + 1}
       </span>
       {/* Checkbox — fades in on hover/select */}
-      <span className={`flex size-[15px] shrink-0 items-center justify-center rounded border transition-colors duration-150 ${
-       isSelected ? "border-primary bg-primary" : "border-border bg-background"
-      }`} style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}>
-       {isSelected && (
-        <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
-         <polyline points="2 6 5 9 10 3"/>
-        </svg>
-       )}
-      </span>
+      <input
+       type="checkbox"
+       checked={isSelected}
+       onChange={(e) => onSelectEntry(entry.id, e.target.checked)}
+       className="checkbox checkbox-xs checkbox-primary absolute transition-opacity duration-150"
+       style={{ opacity: isSelected || isRowHovered ? 1 : 0 }}
+      />
      </label>
     ) : (
      <span className="select-none text-xs tabular-nums text-muted-foreground">{rowIdx + 1}</span>
@@ -326,7 +318,7 @@ function SortableTableRow({
     {entry.icon ? (
      <PageIcon icon={entry.icon} size={14} className="shrink-0" />
     ) : (
-     <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] border border-border bg-muted/20">
+     <span className="flex size-5 shrink-0 items-center justify-center rounded-xs border border-border bg-muted/20">
       <FileText size={11} className="text-muted-foreground" />
      </span>
     )}
@@ -375,7 +367,7 @@ function SortableTableRow({
       }}
       onMouseEnter={(e) => showTooltip("View comments", e)}
       onMouseLeave={hideTooltip}
-      className="flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] px-1 text-[11px] text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground"
+      className="badge badge-sm flex shrink-0 items-center gap-1 rounded-sm border-none bg-transparent px-1 text-[11px] text-muted-foreground transition-opacity duration-150 hover:bg-accent hover:text-foreground"
       style={{ opacity: isRowHovered ? 1 : 0 }}
      >
       <MessageSquareIcon size={11} />
@@ -388,7 +380,7 @@ function SortableTableRow({
      style={{ opacity: isRowHovered ? 1 : 0 }}>
      <Link
       href={`/app/${workspaceSlug}/${entry.shortId}`}
-      className="flex items-center gap-[3px] rounded-[var(--radius-sm)] border border-border bg-background px-1.5 py-[3px] text-[10px] font-semibold tracking-wide text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
+      className="badge badge-sm flex items-center gap-0.75 rounded-sm border border-border bg-background px-1.5 py-0.75 text-2xs font-semibold tracking-wide text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground transition-colors"
       onMouseEnter={(e) => showTooltip("Open full page", e)}
       onMouseLeave={hideTooltip}
       onClick={(e) => e.stopPropagation()}
@@ -757,24 +749,8 @@ export function TableView({
          onChange={(e) => {
           entries.forEach((entry) => onSelectEntry(entry.id, e.target.checked));
          }}
-         className="sr-only"
+         className="checkbox checkbox-xs checkbox-primary"
         />
-        <span className={`flex size-[15px] items-center justify-center rounded border transition-colors duration-150 ${
-         allSelected
-          ? "border-primary bg-primary"
-          : someSelected
-           ? "border-primary bg-primary/20"
-           : "border-border bg-background hover:border-primary/50"
-        }`}>
-         {allSelected && (
-          <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: "translate(0.6px, -0.2px)" }}>
-           <polyline points="2 6 5 9 10 3"/>
-          </svg>
-         )}
-         {someSelected && !allSelected && (
-          <span className="block h-0.5 w-2 rounded-full bg-primary" />
-         )}
-        </span>
        </label>
       )}
      </div>
@@ -784,7 +760,7 @@ export function TableView({
       className="flex shrink-0 items-center gap-2 bg-muted/30 px-3 py-0"
       style={{ width: TITLE_COL_W, minWidth: TITLE_COL_W, height: 34, borderRight: "1px solid var(--color-border)" }}
      >
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/60">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60">
        <TextT size={10} className="text-muted-foreground" />
       </span>
       <span className="text-xs font-semibold text-muted-foreground tracking-wide">Name</span>
@@ -857,13 +833,13 @@ export function TableView({
        {group.id && group.color ? (() => {
         const c = getOptionColor(group.color);
         return (
-         <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: c.bg, color: c.text }}>
+         <span className="badge badge-sm inline-flex items-center gap-1.5 rounded-xs border-none px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: c.bg, color: c.text }}>
           <span className="size-1.5 rounded-full" style={{ backgroundColor: c.dot }} />
           {group.label}
          </span>
         );
        })() : (
-        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-xs)] bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+        <span className="badge badge-sm inline-flex items-center gap-1.5 rounded-xs border-none bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
          <span className="size-1.5 rounded-full bg-muted-foreground/30" />
          {group.label}
         </span>
@@ -916,7 +892,7 @@ export function TableView({
        </SortableContext>
        <DragOverlay>
         {draggingEntry && (
-         <div className="flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
+         <div className="flex items-center gap-2 rounded-sm border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
           <GripVertical size={13} className="text-muted-foreground-subtle" />
           {draggingEntry.title || "Untitled"}
          </div>
@@ -931,7 +907,7 @@ export function TableView({
     {/* ═══════════ EMPTY STATE ═══════════ */}
     {entries.length === 0 && (
      <div className="flex flex-col items-center justify-center gap-6 py-24">
-      <div className="flex size-14 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted/50">
+      <div className="flex size-14 items-center justify-center rounded-lg border border-border bg-muted/50">
        <Table2 size={24} className="text-muted-foreground" />
       </div>
       <div className="text-center">
@@ -943,7 +919,7 @@ export function TableView({
       {isEditor && (
        <button
         onClick={() => onCreateEntry()}
-        className="flex items-center gap-2 rounded-[var(--radius-md)] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150"
+        className="flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors duration-150"
        >
         <Plus size={14} />
         Add first entry
@@ -1150,7 +1126,7 @@ function SortableColumnHeader({ prop, width, isEditor, isRenaming, renameVal, on
        <GripVertical size={11} />
       </span>
      )}
-     <span className="flex size-4 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50">
+     <span className="flex size-4 shrink-0 items-center justify-center rounded-xs bg-muted/50">
       {propConfig.icon ? <PageIcon icon={propConfig.icon} size={10} /> : <Icon size={10} />}
      </span>
      <span className="truncate text-xs font-semibold text-muted-foreground tracking-wide">{prop.name}</span>
@@ -1202,18 +1178,18 @@ function RowContextMenu({ menu, workspaceSlug, onCommentClick, onDuplicate, onDe
     left: getClampedLeft(menu.rect, menuWidth),
     zIndex: 300,
    }}
-   className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
+   className="w-48 overflow-hidden rounded-md border border-border bg-background p-1.5"
   >
    <Link
     href={`/app/${workspaceSlug}/${menu.shortId}`}
-    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+    className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     onClick={onClose}
    >
     <ArrowSquareOut size={13} className="shrink-0 text-muted-foreground" /> Open full page
    </Link>
    <button
     onClick={(e) => onCommentClick((e.currentTarget as HTMLElement).getBoundingClientRect())}
-    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+    className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
    >
     <MessageSquareIcon size={13} className="shrink-0 text-muted-foreground" /> Comment
    </button>
@@ -1225,14 +1201,14 @@ function RowContextMenu({ menu, workspaceSlug, onCommentClick, onDuplicate, onDe
      toast.success("Link copied to clipboard", { duration: 2000 });
      onClose();
     }}
-    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+    className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
    >
     <Link2Icon size={13} className="shrink-0 text-muted-foreground" /> Copy link
    </button>
    {onDuplicate && (
     <button
      onClick={onDuplicate}
-     className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+     className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
     >
      <CopyIcon size={13} className="shrink-0 text-muted-foreground" /> Duplicate
     </button>
@@ -1240,7 +1216,7 @@ function RowContextMenu({ menu, workspaceSlug, onCommentClick, onDuplicate, onDe
    <div className="my-1 h-px bg-border" />
    <button
     onClick={onDeleteRequest}
-    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"
+    className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-destructive transition-colors duration-150 hover:bg-destructive/5"
    >
     <Trash size={13} /> Delete entry
    </button>
@@ -1331,22 +1307,22 @@ function PropHeaderMenu({ menu, prop, properties, workspaceId, onRename, onHide,
      left: getClampedLeft(menu.rect, menuWidth),
      zIndex: 300,
     }}
-    className="w-48 overflow-hidden rounded-[var(--radius-md)] border border-border bg-background p-1.5"
+    className="w-48 overflow-hidden rounded-md border border-border bg-background p-1.5"
    >
     {sortable && (
      <>
-      <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
-      <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
+      <button onClick={() => onSort(menu.propId, "asc")} className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortAscending size={13} /> Sort A → Z</button>
+      <button onClick={() => onSort(menu.propId, "desc")} className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><SortDescending size={13} /> Sort Z → A</button>
       <div className="my-1 h-px bg-border" />
      </>
     )}
-    <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><PencilIcon size={13} /> Rename</button>
+    <button onClick={() => onRename(menu.propId)} className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><PencilIcon size={13} /> Rename</button>
     {canEditProperty && (
-     <button onClick={() => setEditingProperty(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><GearIcon size={13} /> Edit property</button>
+     <button onClick={() => setEditingProperty(true)} className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><GearIcon size={13} /> Edit property</button>
     )}
-    <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
+    <button onClick={() => onHide(menu.propId)} className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-foreground hover:bg-accent"><EyeSlash size={13} /> Hide column</button>
     <div className="my-1 h-px bg-border" />
-    <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"><Trash size={13} /> Delete column</button>
+    <button onClick={() => setConfirmDelete(true)} className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-normal text-destructive transition-colors duration-150 hover:bg-destructive/5"><Trash size={13} /> Delete column</button>
    </div>
    <ConfirmDialog
     open={confirmDelete}
@@ -1439,7 +1415,7 @@ function AddPropertyMenu({ rect, propName, workspaceId, databaseId, properties, 
     zIndex: 300,
     width: menuWidth,
    }}
-   className="overflow-hidden rounded-[var(--radius-md)] border border-border bg-background"
+   className="overflow-hidden rounded-md border border-border bg-background"
   >
    <div className="border-b border-border px-3 py-2.5">
     <p className="mb-1.5 text-xs font-medium tracking-wide text-muted-foreground">New property</p>
@@ -1464,9 +1440,9 @@ function AddPropertyMenu({ rect, propName, workspaceId, databaseId, properties, 
         else if (def.type === "formula") setPickingFormula(true);
         else onAdd(propName.trim() || def.label, def.type);
        }}
-       className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-sm text-foreground hover:bg-accent"
+       className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-sm text-foreground hover:bg-accent"
       >
-       <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--radius-xs)] bg-muted/50 text-muted-foreground">
+       <span className="flex size-6 shrink-0 items-center justify-center rounded-xs bg-muted/50 text-muted-foreground">
         <Icon size={12} />
        </span>
        {def.label}

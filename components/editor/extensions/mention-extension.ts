@@ -1,12 +1,21 @@
-import { Extension } from "@tiptap/react";
-import Suggestion from "@tiptap/suggestion";
-import type { SuggestionProps, SuggestionKeyDownProps } from "@tiptap/suggestion";
 import { PluginKey } from "@tiptap/pm/state";
+import { Extension } from "@tiptap/react";
+import type {
+  SuggestionKeyDownProps,
+  SuggestionProps,
+} from "@tiptap/suggestion";
+import Suggestion from "@tiptap/suggestion";
 import { resolveDisplayName } from "@/lib/users/display-name";
 
 export type MentionItem =
   | { mentionType: "user"; id: string; label: string; image?: string | null }
-  | { mentionType: "page"; id: string; label: string; icon?: string | null; shortId?: string | null }
+  | {
+      mentionType: "page";
+      id: string;
+      label: string;
+      icon?: string | null;
+      shortId?: string | null;
+    }
   | { mentionType: "date"; id: string; label: string }
   // Synthetic row shown by "[[" when no result matches the typed name —
   // selecting it creates a brand-new page (nested under the current one),
@@ -22,13 +31,16 @@ export const MENTION_PLUGIN_KEY = new PluginKey("mentionCommands");
 export const PAGE_LINK_PLUGIN_KEY = new PluginKey("pageLinkCommands");
 
 export interface MentionOptions {
-  workspaceId:   string;
   currentPageId: string;
-  onUpdate:      (props: MentionSuggestionProps | null) => void;
-  onKeyDown:     (event: KeyboardEvent) => boolean;
+  onKeyDown: (event: KeyboardEvent) => boolean;
+  onUpdate: (props: MentionSuggestionProps | null) => void;
+  workspaceId: string;
 }
 
-async function fetchMentionItems(query: string, workspaceId: string): Promise<MentionItem[]> {
+async function fetchMentionItems(
+  query: string,
+  workspaceId: string
+): Promise<MentionItem[]> {
   const q = query.trim().toLowerCase();
   const items: MentionItem[] = [];
 
@@ -41,22 +53,37 @@ async function fetchMentionItems(query: string, workspaceId: string): Promise<Me
     if (res.ok) {
       const data = await res.json();
       const members: Array<{
-        userId?:  string | null;
-        status?:  string;
+        userId?: string | null;
+        status?: string;
         userName?: string | null;
         userEmail?: string | null;
         userImage?: string | null;
       }> = data.members ?? data ?? [];
       for (const m of members) {
-        if (items.length >= 5) break;
-        if (m.status !== "active" || !m.userId) continue;
+        if (items.length >= 5) {
+          break;
+        }
+        if (m.status !== "active" || !m.userId) {
+          continue;
+        }
         const label = resolveDisplayName(m.userName, m.userEmail);
-        if (!label) continue;
-        if (q && !label.toLowerCase().includes(q)) continue;
-        items.push({ mentionType: "user", id: m.userId, label, image: m.userImage });
+        if (!label) {
+          continue;
+        }
+        if (q && !label.toLowerCase().includes(q)) {
+          continue;
+        }
+        items.push({
+          mentionType: "user",
+          id: m.userId,
+          label,
+          image: m.userImage,
+        });
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   // Pages
   items.push(...(await fetchPageMentionItems(query, workspaceId)));
@@ -67,19 +94,37 @@ async function fetchMentionItems(query: string, workspaceId: string): Promise<Me
   return items.slice(0, 10);
 }
 
-async function fetchPageMentionItems(query: string, workspaceId: string): Promise<MentionItem[]> {
+async function fetchPageMentionItems(
+  query: string,
+  workspaceId: string
+): Promise<MentionItem[]> {
   try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&workspaceId=${workspaceId}&type=page&limit=5`);
-    if (!res.ok) return [];
+    const res = await fetch(
+      `/api/search?q=${encodeURIComponent(query)}&workspaceId=${workspaceId}&type=page&limit=5`
+    );
+    if (!res.ok) {
+      return [];
+    }
     const data = await res.json();
-    const results: Array<{ id?: string; pageId?: string; title?: string; icon?: string | null; shortId?: string }> =
-      data.results ?? [];
+    const results: Array<{
+      id?: string;
+      pageId?: string;
+      title?: string;
+      icon?: string | null;
+      shortId?: string;
+    }> = data.results ?? [];
     const items: MentionItem[] = [];
     for (const r of results.slice(0, 5)) {
       const id = r.pageId ?? r.id;
       const title = r.title;
       if (id && title) {
-        items.push({ mentionType: "page", id, label: title, icon: r.icon, shortId: r.shortId });
+        items.push({
+          mentionType: "page",
+          id,
+          label: title,
+          icon: r.icon,
+          shortId: r.shortId,
+        });
       }
     }
     return items;
@@ -91,30 +136,35 @@ async function fetchPageMentionItems(query: string, workspaceId: string): Promis
 function generateDateItems(query: string): MentionItem[] {
   const now = new Date();
   const candidates = [
-    { label: "Today",     date: addDays(now, 0) },
-    { label: "Tomorrow",  date: addDays(now, 1) },
+    { label: "Today", date: addDays(now, 0) },
+    { label: "Tomorrow", date: addDays(now, 1) },
     { label: "Yesterday", date: addDays(now, -1) },
-    { label: "Next Monday",    date: nextWeekdayDate(1) },
+    { label: "Next Monday", date: nextWeekdayDate(1) },
     { label: "Next Wednesday", date: nextWeekdayDate(3) },
-    { label: "Next Friday",    date: nextWeekdayDate(5) },
+    { label: "Next Friday", date: nextWeekdayDate(5) },
   ];
 
   const seenDates = new Set<string>();
 
   return candidates
     .filter(({ label }) => !query || label.toLowerCase().startsWith(query))
-    .map(({ label, date }) => ({ label, iso: date.toISOString().split("T")[0] }))
+    .map(({ label, date }) => ({
+      label,
+      iso: date.toISOString().split("T")[0],
+    }))
     .filter(({ iso }) => {
       // "Next Weekday" can land on the same date as Today/Tomorrow/Yesterday, which would
       // duplicate the `id` (the date string) — drop the later duplicate, earlier label wins.
-      if (seenDates.has(iso)) return false;
+      if (seenDates.has(iso)) {
+        return false;
+      }
       seenDates.add(iso);
       return true;
     })
     .map(({ label, iso }) => ({
       mentionType: "date" as const,
-      id:    iso,
-      label: label,
+      id: iso,
+      label,
     }));
 }
 
@@ -139,10 +189,10 @@ export const MentionCommands = Extension.create<MentionOptions>({
 
   addOptions() {
     return {
-      workspaceId:   "",
+      workspaceId: "",
       currentPageId: "",
-      onUpdate:      () => {},
-      onKeyDown:     () => false,
+      onUpdate: () => {},
+      onKeyDown: () => false,
     };
   },
 
@@ -152,10 +202,10 @@ export const MentionCommands = Extension.create<MentionOptions>({
     return [
       Suggestion<MentionItem>({
         pluginKey: MENTION_PLUGIN_KEY,
-        editor:        this.editor,
-        char:          "@",
-        startOfLine:   false,
-        allowSpaces:   false,
+        editor: this.editor,
+        char: "@",
+        startOfLine: false,
+        allowSpaces: false,
 
         items: ({ query }) => fetchMentionItems(query, opts.workspaceId),
 
@@ -177,33 +227,33 @@ export const MentionCommands = Extension.create<MentionOptions>({
               type: "mention",
               attrs: {
                 mentionType: item.mentionType,
-                id:          item.id,
-                label:       item.label,
-                icon:        item.mentionType === "page" ? item.icon ?? null : null,
-                shortId:     item.mentionType === "page" ? item.shortId ?? null : null,
+                id: item.id,
+                label: item.label,
+                icon: item.mentionType === "page" ? (item.icon ?? null) : null,
+                shortId:
+                  item.mentionType === "page" ? (item.shortId ?? null) : null,
               },
             })
             .run();
         },
 
-        render: () => {
-          return {
-            onStart: (props: MentionSuggestionProps) => opts.onUpdate(props),
-            onUpdate: (props: MentionSuggestionProps) => opts.onUpdate(props),
-            onKeyDown: (props: SuggestionKeyDownProps) => opts.onKeyDown(props.event),
-            onExit: () => opts.onUpdate(null),
-          };
-        },
+        render: () => ({
+          onStart: (props: MentionSuggestionProps) => opts.onUpdate(props),
+          onUpdate: (props: MentionSuggestionProps) => opts.onUpdate(props),
+          onKeyDown: (props: SuggestionKeyDownProps) =>
+            opts.onKeyDown(props.event),
+          onExit: () => opts.onUpdate(null),
+        }),
       }),
 
       // "[[" — Notion's other page-linking shortcut, alongside "/link to page".
       // Inserts the same inline page mention as "@page", just scoped to pages only.
       Suggestion<MentionItem>({
         pluginKey: PAGE_LINK_PLUGIN_KEY,
-        editor:        this.editor,
-        char:          "[[",
-        startOfLine:   false,
-        allowSpaces:   false,
+        editor: this.editor,
+        char: "[[",
+        startOfLine: false,
+        allowSpaces: false,
 
         items: async ({ query }) => {
           const pages = await fetchPageMentionItems(query, opts.workspaceId);
@@ -224,7 +274,7 @@ export const MentionCommands = Extension.create<MentionOptions>({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 workspaceId: opts.workspaceId,
-                parentId:    opts.currentPageId || null,
+                parentId: opts.currentPageId || null,
                 title,
               }),
             })
@@ -248,10 +298,10 @@ export const MentionCommands = Extension.create<MentionOptions>({
                       type: "mention",
                       attrs: {
                         mentionType: "page",
-                        id:          page.id,
-                        label:       page.title || title,
-                        icon:        page.icon,
-                        shortId:     page.shortId,
+                        id: page.id,
+                        label: page.title || title,
+                        icon: page.icon,
+                        shortId: page.shortId,
                       },
                     })
                     .run();
@@ -268,30 +318,34 @@ export const MentionCommands = Extension.create<MentionOptions>({
               type: "mention",
               attrs: {
                 mentionType: item.mentionType,
-                id:          item.id,
-                label:       item.label,
-                icon:        item.mentionType === "page" ? item.icon ?? null : null,
-                shortId:     item.mentionType === "page" ? item.shortId ?? null : null,
+                id: item.id,
+                label: item.label,
+                icon: item.mentionType === "page" ? (item.icon ?? null) : null,
+                shortId:
+                  item.mentionType === "page" ? (item.shortId ?? null) : null,
               },
             })
             .run();
         },
 
-        render: () => {
-          return {
-            onStart: (props: MentionSuggestionProps) => opts.onUpdate(props),
-            onUpdate: (props: MentionSuggestionProps) => opts.onUpdate(props),
-            onKeyDown: (props: SuggestionKeyDownProps) => opts.onKeyDown(props.event),
-            onExit: () => opts.onUpdate(null),
-          };
-        },
+        render: () => ({
+          onStart: (props: MentionSuggestionProps) => opts.onUpdate(props),
+          onUpdate: (props: MentionSuggestionProps) => opts.onUpdate(props),
+          onKeyDown: (props: SuggestionKeyDownProps) =>
+            opts.onKeyDown(props.event),
+          onExit: () => opts.onUpdate(null),
+        }),
       }),
     ];
   },
 });
 
 export function getMentionClass(mentionType: string): string {
-  if (mentionType === "user") return "text-primary font-medium bg-primary/6 rounded px-0.5 not-prose cursor-pointer";
-  if (mentionType === "page") return "text-foreground underline decoration-dotted not-prose cursor-pointer";
-  return "text-accent-foreground font-medium not-prose cursor-pointer";
+  if (mentionType === "user") {
+    return "text-primary font-medium bg-primary/6 rounded px-0.5 not-prose cursor-pointer";
+  }
+  if (mentionType === "page") {
+    return "text-base-content underline decoration-dotted not-prose cursor-pointer";
+  }
+  return "text-primary font-medium not-prose cursor-pointer";
 }

@@ -2,7 +2,7 @@ import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
-import { apiError, ApiError, getSession } from "@/lib/workspaces/auth";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 const deleteSchema = z.object({ email: z.string().email() });
 
@@ -12,9 +12,11 @@ const deleteSchema = z.object({ email: z.string().email() });
 export async function DELETE(req: Request) {
   try {
     const session = await getSession();
-    const body    = await req.json();
-    const parsed  = deleteSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, "Invalid input");
+    const body = await req.json();
+    const parsed = deleteSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(400, "Invalid input");
+    }
 
     if (parsed.data.email.toLowerCase() !== session.user.email.toLowerCase()) {
       return apiError(400, "Email does not match your account email");
@@ -24,8 +26,8 @@ export async function DELETE(req: Request) {
     const adminMemberships = await db
       .select({
         workspaceId: workspaceMembers.workspaceId,
-        name:        workspaces.name,
-        slug:        workspaces.slug,
+        name: workspaces.name,
+        slug: workspaces.slug,
       })
       .from(workspaceMembers)
       .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
@@ -33,7 +35,7 @@ export async function DELETE(req: Request) {
         and(
           eq(workspaceMembers.userId, session.user.id),
           eq(workspaceMembers.role, "admin"),
-          eq(workspaceMembers.status, "active"),
+          eq(workspaceMembers.status, "active")
         )
       );
 
@@ -47,17 +49,17 @@ export async function DELETE(req: Request) {
           and(
             eq(workspaceMembers.workspaceId, m.workspaceId),
             eq(workspaceMembers.status, "active"),
-            ne(workspaceMembers.userId, session.user.id),
+            ne(workspaceMembers.userId, session.user.id)
           )
         );
 
-      const hasOtherAdmin = otherActiveMembers.some(o => o.role === "admin");
+      const hasOtherAdmin = otherActiveMembers.some((o) => o.role === "admin");
 
       if (!hasOtherAdmin) {
         blockingWorkspaces.push({
-          id:              m.workspaceId,
-          name:            m.name,
-          slug:            m.slug,
+          id: m.workspaceId,
+          name: m.name,
+          slug: m.slug,
           hasOtherMembers: otherActiveMembers.length > 0,
         });
       }
@@ -69,10 +71,11 @@ export async function DELETE(req: Request) {
     if (blockingWorkspaces.length > 0) {
       return Response.json(
         {
-          error: "You're the only Admin in one or more workspaces. Promote another member or transfer ownership before deleting your account.",
+          error:
+            "You're the only Admin in one or more workspaces. Promote another member or transfer ownership before deleting your account.",
           blockingWorkspaces,
         },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -80,7 +83,9 @@ export async function DELETE(req: Request) {
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

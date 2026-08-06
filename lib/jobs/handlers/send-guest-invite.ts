@@ -16,14 +16,14 @@ async function processGuestInvite(data: GuestInviteSendPayload) {
   const acceptUrl = `${env.NEXT_PUBLIC_APP_URL}/invite/guest/${data.inviteToken}`;
 
   const { html, text } = await guestInviteTemplate({
-    inviterName:  data.inviterName,
-    pageTitle:    data.pageTitle,
-    accessLevel:  data.accessLevel,
+    inviterName: data.inviterName,
+    pageTitle: data.pageTitle,
+    accessLevel: data.accessLevel,
     acceptUrl,
   });
 
   await enqueueEmail({
-    to:      data.email,
+    to: data.email,
     subject: `${data.inviterName} shared "${data.pageTitle}" with you`,
     html,
     text,

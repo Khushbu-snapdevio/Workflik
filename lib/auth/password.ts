@@ -9,7 +9,12 @@ export const PASSWORD_MAX = 128;
 // (length before character classes), rather than whichever regex happened to
 // be listed first. `label` is the checklist text shown live under the field;
 // `message` is the sentence shown once submission is blocked.
-export const PASSWORD_RULES: { id: string; label: string; message: string; test: (v: string) => boolean }[] = [
+export const PASSWORD_RULES: {
+  id: string;
+  label: string;
+  message: string;
+  test: (v: string) => boolean;
+}[] = [
   {
     id: "length",
     label: `At least ${PASSWORD_MIN} characters`,
@@ -49,7 +54,9 @@ export const PASSWORD_RULES: { id: string; label: string; message: string; test:
 /** The first unmet rule's message, or null when the password satisfies all of
  *  them. Used for the inline field error on every password form. */
 export function passwordError(value: string): string | null {
-  if (value.length > PASSWORD_MAX) return `Password must be at most ${PASSWORD_MAX} characters.`;
+  if (value.length > PASSWORD_MAX) {
+    return `Password must be at most ${PASSWORD_MAX} characters.`;
+  }
   return PASSWORD_RULES.find((r) => !r.test(value))?.message ?? null;
 }
 
@@ -65,5 +72,7 @@ export const passwordSchema = z
   .max(PASSWORD_MAX, `Password must be at most ${PASSWORD_MAX} characters.`)
   .superRefine((value, ctx) => {
     const message = passwordError(value);
-    if (message) ctx.addIssue({ code: "custom", message });
+    if (message) {
+      ctx.addIssue({ code: "custom", message });
+    }
   });

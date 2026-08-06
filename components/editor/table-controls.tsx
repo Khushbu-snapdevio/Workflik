@@ -1,10 +1,10 @@
 "use client";
 
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { Selection } from "@tiptap/pm/state";
 import { TableMap } from "@tiptap/pm/tables";
 import type { Editor } from "@tiptap/react";
-import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import {
   ArrowDown,
   ArrowLeft,
@@ -473,10 +473,10 @@ export function TableControls({ editor }: { editor: Editor }) {
       {hoveredRowRect && (
         <Menu>
           {({ open }) => (
-            <MenuOpenSync open={open} onOpenChange={setMenuOpen}>
+            <MenuOpenSync onOpenChange={setMenuOpen} open={open}>
               <MenuButton
                 aria-label="Row options"
-                className="flex items-center justify-center rounded-sm text-muted-foreground opacity-60 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100 data-open:opacity-100 data-open:bg-accent"
+                className="flex items-center justify-center rounded-sm text-base-content/70 opacity-60 transition-opacity duration-100 hover:bg-base-200 hover:text-base-content hover:opacity-100 data-open:opacity-100 data-open:bg-base-200"
                 style={{
                   position: "fixed",
                   top: hoveredRowRect.top,
@@ -490,9 +490,9 @@ export function TableControls({ editor }: { editor: Editor }) {
               </MenuButton>
               <MenuItems
                 anchor={{ to: "right start", gap: 4 }}
-                transition
-                className="z-300 overflow-hidden rounded-md border border-border bg-popover py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-300 overflow-hidden rounded-md border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
                 style={{ width: MENU_WIDTH }}
+                transition
               >
                 {renderMenuItems(rowItems)}
               </MenuItems>
@@ -505,10 +505,10 @@ export function TableControls({ editor }: { editor: Editor }) {
       {hoveredColRect && (
         <Menu>
           {({ open }) => (
-            <MenuOpenSync open={open} onOpenChange={setMenuOpen}>
+            <MenuOpenSync onOpenChange={setMenuOpen} open={open}>
               <MenuButton
                 aria-label="Column options"
-                className="flex items-center justify-center rounded-sm text-muted-foreground opacity-60 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100 data-open:opacity-100 data-open:bg-accent"
+                className="flex items-center justify-center rounded-sm text-base-content/70 opacity-60 transition-opacity duration-100 hover:bg-base-200 hover:text-base-content hover:opacity-100 data-open:opacity-100 data-open:bg-base-200"
                 style={{
                   position: "fixed",
                   top: top - CONTROL_SIZE - 4,
@@ -518,13 +518,16 @@ export function TableControls({ editor }: { editor: Editor }) {
                   zIndex: 40,
                 }}
               >
-                <GripVertical size={12} style={{ transform: "rotate(90deg)" }} />
+                <GripVertical
+                  size={12}
+                  style={{ transform: "rotate(90deg)" }}
+                />
               </MenuButton>
               <MenuItems
                 anchor={{ to: "bottom start", gap: 4 }}
-                transition
-                className="z-300 overflow-hidden rounded-md border border-border bg-popover py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-300 overflow-hidden rounded-md border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
                 style={{ width: MENU_WIDTH }}
+                transition
               >
                 {renderMenuItems(columnItems)}
               </MenuItems>
@@ -535,7 +538,7 @@ export function TableControls({ editor }: { editor: Editor }) {
 
       {/* Add row — a single bar along the table's bottom edge */}
       <button
-        className="flex items-center justify-center gap-1 rounded-sm text-muted-foreground opacity-40 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
+        className="flex items-center justify-center gap-1 rounded-sm text-base-content/70 opacity-40 transition-opacity duration-100 hover:bg-base-200 hover:text-base-content hover:opacity-100"
         onClick={() =>
           run((t) => {
             selectCell(
@@ -565,7 +568,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       {/* Add column — a single bar along the table's right edge */}
       <button
         aria-label="Add Column"
-        className="flex items-center justify-center rounded-sm text-muted-foreground opacity-40 transition-opacity duration-100 hover:bg-accent hover:text-foreground hover:opacity-100"
+        className="flex items-center justify-center rounded-sm text-base-content/70 opacity-40 transition-opacity duration-100 hover:bg-base-200 hover:text-base-content hover:opacity-100"
         onClick={() =>
           run((t) => {
             selectCell(
@@ -590,41 +593,37 @@ export function TableControls({ editor }: { editor: Editor }) {
       >
         <Plus size={12} />
       </button>
-
     </>,
     document.body
   );
 }
 
 interface MenuItemDef {
+  danger?: boolean;
+  disabled?: boolean;
   Icon: typeof Plus;
   label: string;
   onClick: () => void;
-  danger?: boolean;
-  disabled?: boolean;
 }
 
 function renderMenuItems(items: MenuItemDef[]) {
   return items.map(({ Icon, label, onClick, danger, disabled }) => (
-    <MenuItem key={label} disabled={disabled}>
+    <MenuItem disabled={disabled} key={label}>
       <button
         className={[
           "flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors",
           disabled
             ? "cursor-not-allowed opacity-40"
             : danger
-              ? "text-destructive data-focus:bg-destructive/10"
-              : "text-foreground data-focus:bg-accent",
+              ? "text-error data-focus:bg-error/10"
+              : "text-base-content data-focus:bg-base-200",
         ].join(" ")}
         disabled={disabled}
         onClick={onClick}
         onMouseDown={(e) => e.preventDefault()}
         type="button"
       >
-        <Icon
-          className={danger ? "" : "text-muted-foreground"}
-          size={14}
-        />
+        <Icon className={danger ? "" : "text-base-content/70"} size={14} />
         {label}
       </button>
     </MenuItem>

@@ -1,22 +1,43 @@
 import { and, eq } from "drizzle-orm";
 import { requireSession } from "@/lib/authz";
-import { db } from "@/lib/db";
-import { databaseProperties, pages, propertyValues, workspaceMembers } from "@/lib/db/schema";
 import { computeDerivedValues } from "@/lib/databases/compute-values";
+import { db } from "@/lib/db";
+import {
+  databaseProperties,
+  pages,
+  propertyValues,
+  workspaceMembers,
+} from "@/lib/db/schema";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { id: entryId } = await params;
   const session = await requireSession();
 
-  const [entry] = await db.select().from(pages).where(eq(pages.id, entryId)).limit(1);
-  if (!entry) return Response.json({ error: "not_found" }, { status: 404 });
+  const [entry] = await db
+    .select()
+    .from(pages)
+    .where(eq(pages.id, entryId))
+    .limit(1);
+  if (!entry) {
+    return Response.json({ error: "not_found" }, { status: 404 });
+  }
 
   const [member] = await db
     .select()
     .from(workspaceMembers)
-    .where(and(eq(workspaceMembers.workspaceId, entry.workspaceId), eq(workspaceMembers.userId, session.user.id)))
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, entry.workspaceId),
+        eq(workspaceMembers.userId, session.user.id)
+      )
+    )
     .limit(1);
-  if (!member) return Response.json({ error: "forbidden" }, { status: 403 });
+  if (!member) {
+    return Response.json({ error: "forbidden" }, { status: 403 });
+  }
 
   const values = await db
     .select()
@@ -36,11 +57,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     const valMap = new Map<string, Map<string, unknown>>();
     for (const v of values) {
-      if (!valMap.has(v.entryId)) valMap.set(v.entryId, new Map());
+      if (!valMap.has(v.entryId)) {
+        valMap.set(v.entryId, new Map());
+      }
       valMap.get(v.entryId)!.set(v.propertyId, v.value);
     }
 
-    const computedValues = await computeDerivedValues(properties, [entry], valMap);
+    const computedValues = await computeDerivedValues(
+      properties,
+      [entry],
+      valMap
+    );
     allValues = [
       ...values,
       ...computedValues.map((cv) => ({

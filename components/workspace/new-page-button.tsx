@@ -1,21 +1,21 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 
 interface Props {
-  workspaceId: string;
-  workspaceSlug: string;
-  parentId?: string;
-  isPrivate?: boolean;
   children: React.ReactNode;
   className?: string;
-  title?: string;
+  isPrivate?: boolean;
   onBeforeCreate?: () => void;
+  parentId?: string;
   ref?: React.Ref<HTMLButtonElement>;
+  title?: string;
+  workspaceId: string;
+  workspaceSlug: string;
 }
 
 export function NewPageButton({
@@ -34,14 +34,21 @@ export function NewPageButton({
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   async function handleClick() {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     onBeforeCreate?.();
     setLoading(true);
     try {
       const res = await fetch("/api/pages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspaceId, parentId: parentId ?? null, title: "Untitled", isPrivate }),
+        body: JSON.stringify({
+          workspaceId,
+          parentId: parentId ?? null,
+          title: "Untitled",
+          isPrivate,
+        }),
       });
       if (res.ok) {
         const page = await res.json();
@@ -58,20 +65,26 @@ export function NewPageButton({
   return (
     <>
       <button
+        className={className}
+        disabled={loading}
+        onClick={handleClick}
+        onMouseEnter={(e) => {
+          if (title) {
+            showTooltip(title, e);
+          }
+        }}
+        onMouseLeave={hideTooltip}
         ref={ref}
         type="button"
-        onClick={handleClick}
-        disabled={loading}
-        className={className}
-        onMouseEnter={(e) => { if (title) showTooltip(title, e); }}
-        onMouseLeave={hideTooltip}
       >
         {children}
       </button>
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
+          document.body
+        )}
     </>
   );
 }

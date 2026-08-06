@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { getClampedLeft, getClampedTop } from "@/lib/ui/clamp-to-viewport";
 import type { WorkspaceMember } from "@/components/database/types";
+import { useAnchorPosition } from "@/lib/ui/use-anchor-position";
 
 // One in-flight/resolved fetch per workspace, shared across every hover card
 // on the page — hovering several avatars in the same view (or the same
@@ -21,13 +21,21 @@ function fetchMembers(workspaceId: string): Promise<WorkspaceMember[]> {
 }
 
 function roleLabel(member: WorkspaceMember | null): string {
-  if (!member) return "Workspace member";
-  if (member.isOwner) return "Workspace Owner";
+  if (!member) {
+    return "Workspace member";
+  }
+  if (member.isOwner) {
+    return "Workspace Owner";
+  }
   switch (member.role) {
-    case "admin":  return "Admin";
-    case "editor": return "Editor";
-    case "viewer": return "Viewer";
-    default:       return "Workspace member";
+    case "admin":
+      return "Admin";
+    case "editor":
+      return "Editor";
+    case "viewer":
+      return "Viewer";
+    default:
+      return "Workspace member";
   }
 }
 
@@ -35,10 +43,14 @@ function roleLabel(member: WorkspaceMember | null): string {
 // the person's OWN timezone (their profile setting), matching what hovering
 // a person actually tells you: what time it is for them right now.
 function localTimeLabel(timezone: string | null | undefined): string | null {
-  if (!timezone) return null;
+  if (!timezone) {
+    return null;
+  }
   try {
     const formatted = new Intl.DateTimeFormat(undefined, {
-      hour: "numeric", minute: "2-digit", timeZone: timezone,
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone,
     }).format(new Date());
     return `${formatted} local time`;
   } catch {
@@ -47,65 +59,96 @@ function localTimeLabel(timezone: string | null | undefined): string | null {
 }
 
 interface Props {
-  userId:        string;
-  workspaceId:   string;
+  cachedEmail?: string;
+  cachedName?: string;
   currentUserId: string | null | undefined;
-  cachedName?:   string;
-  cachedEmail?:  string;
-  rect:          DOMRect;
+  rect: DOMRect;
+  userId: string;
+  workspaceId: string;
 }
 
-export function UserHoverCard({ userId, workspaceId, currentUserId, cachedName, cachedEmail, rect }: Props) {
+export function UserHoverCard({
+  userId,
+  workspaceId,
+  currentUserId,
+  cachedName,
+  cachedEmail,
+  rect,
+}: Props) {
   const [member, setMember] = useState<WorkspaceMember | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetchMembers(workspaceId).then((members) => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       setMember(members.find((m) => m.userId === userId) ?? null);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [workspaceId, userId]);
 
   // `||`, not `??` — a stale cached name/email that's genuinely an empty
   // string shouldn't win over a real fetched value just because it's defined.
-  const name    = member?.userName || cachedName || member?.userEmail || cachedEmail || "Unknown";
-  const isYou   = !!currentUserId && userId === currentUserId;
+  const name =
+    member?.userName ||
+    cachedName ||
+    member?.userEmail ||
+    cachedEmail ||
+    "Unknown";
+  const isYou = !!currentUserId && userId === currentUserId;
   const initial = name.slice(0, 1).toUpperCase();
   const timeLabel = localTimeLabel(member?.userTimezone);
 
   const WIDTH = 220;
-  const left = getClampedLeft(
-    { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.left + WIDTH },
-    WIDTH,
-  );
-  const top = getClampedTop(rect, 76);
+  const { setFloating, x, y } = useAnchorPosition({
+    anchorRect: rect,
+    placement: "bottom-start",
+  });
 
   return createPortal(
     <div
-      style={{ position: "fixed", top, left, width: WIDTH, zIndex: 9999, pointerEvents: "none" }}
-      className="rounded-md border border-border bg-popover px-2.5 py-2 shadow-lg"
+      className="rounded-md border border-base-300 bg-base-100 px-2.5 py-2 shadow-lg"
+      ref={setFloating}
+      style={{
+        position: "fixed",
+        top: y,
+        left: x,
+        width: WIDTH,
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
     >
       <div className="flex items-center gap-2">
         {member?.userImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={member.userImage} alt={name} className="size-7 shrink-0 rounded-full object-cover" />
+          // biome-ignore lint/performance/noImgElement: avatar src is an OAuth provider URL (Google) or a STORAGE_DRIVER CDN host, neither of which is in next.config images.remotePatterns
+          <img
+            alt={name}
+            className="size-7 shrink-0 rounded-full object-cover"
+            src={member.userImage}
+          />
         ) : (
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-content">
             {initial}
           </div>
         )}
         <div className="min-w-0">
-          <p className="truncate text-xs font-semibold text-popover-foreground">
-            {name}{isYou ? " (You)" : ""}
+          <p className="truncate text-xs font-semibold text-base-content">
+            {name}
+            {isYou ? " (You)" : ""}
           </p>
-          <p className="truncate text-[11px] text-muted-foreground">{roleLabel(member)}</p>
+          <p className="truncate text-[11px] text-base-content/70">
+            {roleLabel(member)}
+          </p>
         </div>
       </div>
       {timeLabel && (
-        <p className="mt-1 text-[11px] text-muted-foreground">{timeLabel}</p>
+        <p className="mt-1 text-[11px] text-base-content/70">{timeLabel}</p>
       )}
     </div>,
-    document.body,
+    document.body
   );
 }

@@ -1,24 +1,32 @@
+import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { randomUUID } from "crypto";
 import { db } from "@/lib/db";
 import { fileUploads, users, workspaceStorageUsage } from "@/lib/db/schema";
-import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 import {
-  getStorage,
-  SIZE_LIMITS,
   BLOCK_MEDIA_MIME_LIMITS,
+  getStorage,
   IMAGE_MIME_TYPES,
+  SIZE_LIMITS,
   WORKSPACE_QUOTA_BYTES,
 } from "@/lib/storage";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 const signSchema = z.object({
-  kind:          z.enum(["page_cover", "page_icon", "block_media", "user_avatar", "workspace_icon", "database_file", "template_cover"]),
-  mimeType:      z.string().min(1),
+  kind: z.enum([
+    "page_cover",
+    "page_icon",
+    "block_media",
+    "user_avatar",
+    "workspace_icon",
+    "database_file",
+    "template_cover",
+  ]),
+  mimeType: z.string().min(1),
   fileSizeBytes: z.number().int().positive(),
-  workspaceId:   z.string().uuid().optional(),
-  pageId:        z.string().uuid().optional(),
-  blockId:       z.string().uuid().optional(),
+  workspaceId: z.string().uuid().optional(),
+  pageId: z.string().uuid().optional(),
+  blockId: z.string().uuid().optional(),
 });
 
 // POST /api/uploads/sign
@@ -28,14 +36,26 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const parsed = signSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    if (!parsed.success) {
+      return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    }
 
-    const { kind, mimeType, fileSizeBytes, workspaceId, pageId, blockId } = parsed.data;
+    const { kind, mimeType, fileSizeBytes, workspaceId, pageId, blockId } =
+      parsed.data;
 
     // ── MIME type validation ───────────────────────────────────────────────
-    const imageOnlyKinds = new Set(["page_cover", "page_icon", "user_avatar", "workspace_icon", "template_cover"]);
+    const imageOnlyKinds = new Set([
+      "page_cover",
+      "page_icon",
+      "user_avatar",
+      "workspace_icon",
+      "template_cover",
+    ]);
     if (imageOnlyKinds.has(kind) && !IMAGE_MIME_TYPES.has(mimeType)) {
-      return apiError(400, `${kind} only accepts image/jpeg, image/png, image/webp, or image/gif`);
+      return apiError(
+        400,
+        `${kind} only accepts image/jpeg, image/png, image/webp, or image/gif`
+      );
     }
 
     // Built-in template covers are workspace-less, so they escape the
@@ -46,7 +66,9 @@ export async function POST(req: Request) {
         .from(users)
         .where(eq(users.id, session.user.id))
         .limit(1);
-      if (!user || user.role !== "admin") return apiError(403, "Forbidden");
+      if (user?.role !== "admin") {
+        return apiError(403, "Forbidden");
+      }
     }
 
     // ── Size validation ────────────────────────────────────────────────────
@@ -55,7 +77,9 @@ export async function POST(req: Request) {
         ? (BLOCK_MEDIA_MIME_LIMITS[mimeType] ?? SIZE_LIMITS.block_media)
         : SIZE_LIMITS[kind];
 
-    if (!sizeLimit) return apiError(400, "Unknown upload kind");
+    if (!sizeLimit) {
+      return apiError(400, "Unknown upload kind");
+    }
     if (fileSizeBytes > sizeLimit) {
       const limitMB = Math.round(sizeLimit / 1024 / 1024);
       return apiError(400, `File exceeds the ${limitMB} MB limit for ${kind}`);
@@ -93,21 +117,28 @@ export async function POST(req: Request) {
     const [fileUpload] = await db
       .insert(fileUploads)
       .values({
-        workspaceId:   kind === "user_avatar" || kind === "template_cover" ? null : workspaceId ?? null,
+        workspaceId:
+          kind === "user_avatar" || kind === "template_cover"
+            ? null
+            : (workspaceId ?? null),
         kind,
-        pageId:        pageId ?? null,
-        blockId:       blockId ?? null,
+        pageId: pageId ?? null,
+        blockId: blockId ?? null,
         objectKey,
         fileUrl,
         mimeType,
         fileSizeBytes,
-        uploadedBy:    session.user.id,
-        confirmedAt:   null,
+        uploadedBy: session.user.id,
+        confirmedAt: null,
       })
       .returning({ id: fileUploads.id });
 
     // ── Generate upload slot ───────────────────────────────────────────────
-    const upload = await storage.createUploadSlot({ objectKey, mimeType, fileSizeBytes });
+    const upload = await storage.createUploadSlot({
+      objectKey,
+      mimeType,
+      fileSizeBytes,
+    });
 
     return Response.json({
       fileUploadId: fileUpload.id,
@@ -116,7 +147,9 @@ export async function POST(req: Request) {
       upload,
     });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }

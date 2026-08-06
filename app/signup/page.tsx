@@ -1,9 +1,9 @@
-import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 import { isRegistrationAllowed } from "@/lib/auth/registration";
 import { env } from "@/lib/env";
-import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Sign up" };
 
@@ -19,27 +19,32 @@ export default async function SignupPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-page px-4">
+    <main className="grid min-h-screen place-items-center bg-base-200 px-4">
       <div className="w-full max-w-95">
-        <Link href="/" className="mb-10 flex flex-col items-center gap-3">
-          <Logo width={180} height={45} className="h-10 w-auto" />
+        <Link className="mb-10 flex flex-col items-center gap-3" href="/">
+          <Logo className="h-10 w-auto" height={45} width={180} />
         </Link>
 
-        <div className="rounded-xl border border-border bg-card px-8 py-8 text-center">
-          <h1 className="mb-2 text-xl font-bold text-foreground">
+        <div className="rounded-xl border border-base-300 bg-base-100 px-8 py-8 text-center">
+          <h1 className="mb-2 text-xl font-bold text-base-content">
             Registration is disabled
           </h1>
-          <p className="mb-7 text-sm text-muted-foreground">
+          <p className="mb-7 text-sm text-base-content/70">
             This WorkFlik instance uses invite-only registration. Ask your
             administrator to send you an invitation.
           </p>
 
           <div className="space-y-2.5">
-            <Button asChild size="default" className="w-full">
+            <Button asChild className="w-full" size="default">
               <Link href="/auth/login">Go to Sign In</Link>
             </Button>
             {env.NEXT_PUBLIC_SHOW_LANDING_PAGE && (
-              <Button asChild variant="outline" size="default" className="w-full bg-muted/40">
+              <Button
+                asChild
+                className="w-full bg-base-200/40"
+                size="default"
+                variant="outline"
+              >
                 <Link href="/">Back to Home</Link>
               </Button>
             )}

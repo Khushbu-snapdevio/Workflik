@@ -1,7 +1,12 @@
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { fileUploads, workspaceStorageUsage } from "@/lib/db/schema";
-import { apiError, ApiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -10,9 +15,9 @@ const QUOTA_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
 // GET /api/workspaces/:id/storage
 export async function GET(_req: Request, { params }: Ctx) {
   try {
-    const { id }  = await params;
+    const { id } = await params;
     const session = await getSession();
-    const member  = await requireWorkspaceMember(id, session.user.id);
+    const member = await requireWorkspaceMember(id, session.user.id);
 
     const [row] = await db
       .select({ bytesUsed: workspaceStorageUsage.bytesUsed })
@@ -26,19 +31,22 @@ export async function GET(_req: Request, { params }: Ctx) {
     if (member.role === "admin") {
       const rows = await db
         .select({
-          kind:  fileUploads.kind,
+          kind: fileUploads.kind,
           bytes: sql<string>`COALESCE(SUM(${fileUploads.fileSizeBytes}), 0)`,
         })
         .from(fileUploads)
         .where(
           and(
             eq(fileUploads.workspaceId, id),
-            isNotNull(fileUploads.confirmedAt),
+            isNotNull(fileUploads.confirmedAt)
           )
         )
         .groupBy(fileUploads.kind);
 
-      breakdown = rows.map((r) => ({ kind: r.kind ?? "other", bytes: Number(r.bytes) }));
+      breakdown = rows.map((r) => ({
+        kind: r.kind ?? "other",
+        bytes: Number(r.bytes),
+      }));
     }
 
     return Response.json({
@@ -48,7 +56,9 @@ export async function GET(_req: Request, { params }: Ctx) {
       breakdown,
     });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

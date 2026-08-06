@@ -54,7 +54,12 @@ export async function PATCH(req: Request, { params }: Ctx) {
       const [cycle] = await db
         .select({ ancestorId: pageClosure.ancestorId })
         .from(pageClosure)
-        .where(and(eq(pageClosure.ancestorId, pageId), eq(pageClosure.descendantId, parentId)))
+        .where(
+          and(
+            eq(pageClosure.ancestorId, pageId),
+            eq(pageClosure.descendantId, parentId)
+          )
+        )
         .limit(1);
       if (cycle) {
         return apiError(400, "Can't move a page into one of its own subpages");

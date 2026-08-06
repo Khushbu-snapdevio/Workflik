@@ -18,11 +18,10 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { usePageDraft } from "@/components/pages/page-draft-context";
 import { SaveStatusIndicator } from "@/components/ui/save-status";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { BlockHandle } from "./block-handle";
-import { TableControls } from "./table-controls";
 import { CommentCard } from "./comment-card";
 import { CommentGutter } from "./comment-gutter";
 import { BlockIdAttr } from "./extensions/block-id-attr";
@@ -70,6 +69,7 @@ import { MentionList, type MentionListHandle } from "./mention-list";
 import type { DbBlock } from "./serializer";
 import { blocksToTiptapDoc, tiptapDocToBlocks } from "./serializer";
 import { SlashMenu, type SlashMenuHandle } from "./slash-menu";
+import { TableControls } from "./table-controls";
 
 const lowlight = createLowlight(common);
 
@@ -100,7 +100,10 @@ function assignMissingBlockIds(editor: Editor): boolean {
     }
     const current = node.attrs.blockId as string | null;
     if (!current || seen.has(current)) {
-      tr.setNodeMarkup(pos, undefined, { ...node.attrs, blockId: crypto.randomUUID() });
+      tr.setNodeMarkup(pos, undefined, {
+        ...node.attrs,
+        blockId: crypto.randomUUID(),
+      });
       mutated = true;
     } else {
       seen.add(current);
@@ -176,7 +179,9 @@ export function PageEditor({
   // indicator elsewhere (page-client.tsx) already auto-hides after a beat;
   // this matches that instead of leaving a stale confirmation up permanently.
   useEffect(() => {
-    if (saveState !== "saved") return;
+    if (saveState !== "saved") {
+      return;
+    }
     const t = setTimeout(() => setSaveState("idle"), 2500);
     return () => clearTimeout(t);
   }, [saveState]);
@@ -198,67 +203,91 @@ export function PageEditor({
     blockY: number; // viewport-absolute Y (px) — matches getBoundingClientRect/coordsAtPos
   } | null>(null);
 
-  function openCommentCard(
-    blockId: string | null,
-    anchorStart: number | null,
-    anchorEnd: number | null,
-    blockY = 0
-  ) {
-    setCommentCard({ blockId, anchorStart, anchorEnd, blockY });
-  }
-  function closeCommentCard() {
+  // These three are useCallback'd because the effects below depend on them;
+  // they only touch setState and refs, so the deps stay empty and the effects
+  // keep running exactly as often as they did before.
+  const openCommentCard = useCallback(
+    (
+      blockId: string | null,
+      anchorStart: number | null,
+      anchorEnd: number | null,
+      blockY = 0
+    ) => {
+      setCommentCard({ blockId, anchorStart, anchorEnd, blockY });
+    },
+    []
+  );
+  const closeCommentCard = useCallback(() => {
     setCommentCard(null);
     setGutterRefresh((n) => n + 1);
-  }
+  }, []);
 
   // Resolve a block's on-screen Y position (from its persisted order in
   // currentBlocksRef) and open its comment card there — shared by the gutter
   // badge click and by the "jump to this comment" action from the comments panel.
-  function openBlockComment(blockId: string) {
-    const sorted = [...currentBlocksRef.current].sort(
-      (a, b) => a.orderIndex - b.orderIndex
-    );
-    const idx = sorted.findIndex((b) => b.id === blockId);
-    let blockY = 0;
-    if (idx >= 0 && editorRef.current) {
-      let nodeOffset: number | null = null;
-      editorRef.current.state.doc.forEach((_n, offset, di) => {
-        if (di === idx) {
-          nodeOffset = offset;
-        }
-      });
-      if (nodeOffset !== null) {
-        try {
-          const editorEl = editorRef.current.view.dom as HTMLElement;
-          const domInfo = editorRef.current.view.domAtPos(nodeOffset + 1);
-          let el = domInfo.node as HTMLElement;
-          if (el.nodeType === Node.TEXT_NODE) {
-            el = el.parentElement!;
+  const openBlockComment = useCallback(
+    (blockId: string) => {
+      const sorted = [...currentBlocksRef.current].sort(
+        (a, b) => a.orderIndex - b.orderIndex
+      );
+      const idx = sorted.findIndex((b) => b.id === blockId);
+      let blockY = 0;
+      if (idx >= 0 && editorRef.current) {
+        let nodeOffset: number | null = null;
+        editorRef.current.state.doc.forEach((_n, offset, di) => {
+          if (di === idx) {
+            nodeOffset = offset;
           }
-          while (el.parentElement && el.parentElement !== editorEl) {
-            el = el.parentElement;
+        });
+        if (nodeOffset !== null) {
+          try {
+            const editorEl = editorRef.current.view.dom as HTMLElement;
+            const domInfo = editorRef.current.view.domAtPos(nodeOffset + 1);
+            let el = domInfo.node as HTMLElement;
+            if (el.nodeType === Node.TEXT_NODE) {
+              el = el.parentElement!;
+            }
+            while (el.parentElement && el.parentElement !== editorEl) {
+              el = el.parentElement;
+            }
+            blockY = el.getBoundingClientRect().top - 20;
+          } catch {
+            /* ignore */
           }
-          blockY = el.getBoundingClientRect().top - 20;
-        } catch {
-          /* ignore */
         }
       }
-    }
-    openCommentCard(blockId, null, null, blockY);
-  }
+      openCommentCard(blockId, null, null, blockY);
+    },
+    [openCommentCard]
+  );
 
   // Lets the topbar "Comments" panel (which lives outside the editor) jump to
   // a specific block comment without prop-drilling — same effect as clicking
   // that block's gutter badge.
   useEffect(() => {
     function onJumpToComment(e: Event) {
-      const detail = (e as CustomEvent<{ pageId: string; blockId?: string; propertyId?: string }>).detail;
-      if (!detail || detail.pageId !== pageId || !detail.blockId) return;
+      const detail = (
+        e as CustomEvent<{
+          pageId: string;
+          blockId?: string;
+          propertyId?: string;
+        }>
+      ).detail;
+      if (!detail || detail.pageId !== pageId || !detail.blockId) {
+        return;
+      }
       openBlockComment(detail.blockId);
     }
-    window.addEventListener("workflik:jump-to-page-comment", onJumpToComment);
-    return () => window.removeEventListener("workflik:jump-to-page-comment", onJumpToComment);
-  }, [pageId]);
+    window.addEventListener(
+      "workflik:jump-to-base-200-comment",
+      onJumpToComment
+    );
+    return () =>
+      window.removeEventListener(
+        "workflik:jump-to-base-200-comment",
+        onJumpToComment
+      );
+  }, [pageId, openBlockComment]);
 
   // `commentCard.blockY` is a one-time pixel offset computed when the card
   // opens — there's no live anchor to reposition from as the page scrolls, so
@@ -277,29 +306,39 @@ export function PageEditor({
   const commentDialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const el = commentDialogRef.current;
-    if (!el) return;
-    if (commentCard && !el.open) el.showModal();
-    else if (!commentCard && el.open) el.close();
+    if (!el) {
+      return;
+    }
+    if (commentCard && !el.open) {
+      el.showModal();
+    } else if (!commentCard && el.open) {
+      el.close();
+    }
   }, [commentCard]);
   useEffect(() => {
     const el = commentDialogRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     function handleClose() {
       closeCommentCard();
     }
     el.addEventListener("close", handleClose);
     return () => el.removeEventListener("close", handleClose);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [closeCommentCard]);
 
   // Belt-and-suspenders: useScrollLockWhileOpen only blocks wheel/touch, which
   // misses scrollbar-drag and keyboard scrolling (Space/PageDown/arrows).
   // Freezing the actual scroll container's overflow catches every input
   // method and always restores cleanly on close via the effect cleanup.
   useEffect(() => {
-    if (!commentCard) return;
+    if (!commentCard) {
+      return;
+    }
     const scrollEl = document.getElementById("page-scroll-container");
-    if (!scrollEl) return;
+    if (!scrollEl) {
+      return;
+    }
     const prevOverflow = scrollEl.style.overflow;
     scrollEl.style.overflow = "hidden";
     return () => {
@@ -351,12 +390,16 @@ export function PageEditor({
 
         // Diff against the last-persisted set to catch blocks removed from the doc — tiptapDocToBlocks
         // only walks the current doc, so a removed block wouldn't otherwise get flagged for server-side deletion.
-        const outgoingIds = new Set(outgoing.map((b) => b.id).filter((id): id is string => !!id));
+        const outgoingIds = new Set(
+          outgoing.map((b) => b.id).filter((id): id is string => !!id)
+        );
         const missingIds = currentBlocksRef.current
           .map((b) => b.id)
           .filter((id) => !outgoingIds.has(id));
         if (missingIds.length > 0) {
-          deletedIds.current = Array.from(new Set([...deletedIds.current, ...missingIds]));
+          deletedIds.current = Array.from(
+            new Set([...deletedIds.current, ...missingIds])
+          );
         }
 
         const res = await fetch("/api/blocks/batch", {
@@ -373,11 +416,17 @@ export function PageEditor({
           throw new Error("save failed");
         }
 
-        const data = (await res.json()) as { ok: boolean; blocks?: DbBlock[]; promoted?: boolean };
+        const data = (await res.json()) as {
+          ok: boolean;
+          blocks?: DbBlock[];
+          promoted?: boolean;
+        };
         if (data.blocks) {
           currentBlocksRef.current = data.blocks;
         }
-        if (data.promoted) setIsDraft(false);
+        if (data.promoted) {
+          setIsDraft(false);
+        }
 
         deletedIds.current = [];
         // No blockId sync-back needed — assignMissingBlockIds stamps ids client-side before save,
@@ -419,7 +468,10 @@ export function PageEditor({
             const resolved = editor.state.doc.resolve(pos);
             for (let depth = resolved.depth; depth >= 0; depth--) {
               const ancestorType = resolved.node(depth).type.name;
-              if (ancestorType === "tableCell" || ancestorType === "tableHeader") {
+              if (
+                ancestorType === "tableCell" ||
+                ancestorType === "tableHeader"
+              ) {
                 return "";
               }
             }
@@ -465,7 +517,8 @@ export function PageEditor({
         EmbedBlock.configure({
           workspaceId,
           pageId,
-          onComment: (blockId: string, blockY: number) => openCommentCard(blockId, null, null, blockY),
+          onComment: (blockId: string, blockY: number) =>
+            openCommentCard(blockId, null, null, blockY),
         }),
         CommentHighlight,
         // Slash command menu — uses @tiptap/suggestion so the range is always
@@ -539,6 +592,7 @@ export function PageEditor({
     []
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: gutterRefresh is a refetch trigger, not a value read here — closeCommentCard() bumps it so the highlight set reloads after a comment is added or resolved. Dropping it would leave stale highlights in the doc.
   useEffect(() => {
     if (!editor) {
       return;
@@ -629,7 +683,7 @@ export function PageEditor({
     }
     editorEl.addEventListener("click", handleClick);
     return () => editorEl.removeEventListener("click", handleClick);
-  }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, openCommentCard]);
 
   // Ctrl+Shift+Alt+X → open comment card on active block
   useEffect(() => {
@@ -641,14 +695,14 @@ export function PageEditor({
     }
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [openCommentCard]);
 
   if (initialBlocks === null) {
     return (
       <div className="space-y-3 animate-pulse">
         {[90, 60, 75, 45].map((w) => (
           <div
-            className="h-4 rounded bg-foreground/8"
+            className="h-4 rounded bg-base-content/8"
             key={w}
             style={{ width: `${w}%` }}
           />
@@ -761,61 +815,81 @@ export function PageEditor({
           anchor — this popup has no single DOM trigger element common to its
           4 open paths (gutter badge, block handle, inline-toolbar selection,
           keyboard shortcut) for a library to anchor against. */}
-      {workspaceId && editor && typeof document !== "undefined" && (() => {
-        const CARD_WIDTH = 380;
-        const CARD_MAX_HEIGHT = 550; // header + capped thread list + composer
-        const VIEWPORT_MARGIN = 16;
-        const CARD_GAP = 20;
+      {workspaceId &&
+        editor &&
+        typeof document !== "undefined" &&
+        (() => {
+          const CARD_WIDTH = 380;
+          const CARD_MAX_HEIGHT = 550; // header + capped thread list + composer
+          const VIEWPORT_MARGIN = 16;
+          const CARD_GAP = 20;
 
-        let left = 0;
-        let top = 0;
-        if (commentCard) {
-          const editorRect = editor.view.dom.getBoundingClientRect();
+          let left = 0;
+          let top = 0;
+          if (commentCard) {
+            const editorRect = editor.view.dom.getBoundingClientRect();
 
-          // Measure free space from the sidebar's right edge, not x=0, or a left-anchored card
-          // could land partly hidden underneath the sidebar.
-          const sidebarRight = document.getElementById("workspace-sidebar")?.getBoundingClientRect().right ?? 0;
+            // Measure free space from the sidebar's right edge, not x=0, or a left-anchored card
+            // could land partly hidden underneath the sidebar.
+            const sidebarRight =
+              document
+                .getElementById("workspace-sidebar")
+                ?.getBoundingClientRect().right ?? 0;
 
-          // Anchor beside the editor column, preferring whichever margin has more room; no centered
-          // fallback since that made the card's position feel inconsistent between opens.
-          const spaceRight = window.innerWidth - editorRect.right - VIEWPORT_MARGIN;
-          const spaceLeft = editorRect.left - sidebarRight - VIEWPORT_MARGIN;
-          left = spaceRight >= spaceLeft
-           ? editorRect.right + CARD_GAP
-           : editorRect.left - CARD_GAP - CARD_WIDTH;
-          left = Math.min(left, window.innerWidth - CARD_WIDTH - VIEWPORT_MARGIN);
-          left = Math.max(left, sidebarRight + VIEWPORT_MARGIN);
+            // Anchor beside the editor column, preferring whichever margin has more room; no centered
+            // fallback since that made the card's position feel inconsistent between opens.
+            const spaceRight =
+              window.innerWidth - editorRect.right - VIEWPORT_MARGIN;
+            const spaceLeft = editorRect.left - sidebarRight - VIEWPORT_MARGIN;
+            left =
+              spaceRight >= spaceLeft
+                ? editorRect.right + CARD_GAP
+                : editorRect.left - CARD_GAP - CARD_WIDTH;
+            left = Math.min(
+              left,
+              window.innerWidth - CARD_WIDTH - VIEWPORT_MARGIN
+            );
+            left = Math.max(left, sidebarRight + VIEWPORT_MARGIN);
 
-          const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - CARD_MAX_HEIGHT - VIEWPORT_MARGIN);
-          top = Math.min(Math.max(VIEWPORT_MARGIN, commentCard.blockY), maxTop);
-        }
+            const maxTop = Math.max(
+              VIEWPORT_MARGIN,
+              window.innerHeight - CARD_MAX_HEIGHT - VIEWPORT_MARGIN
+            );
+            top = Math.min(
+              Math.max(VIEWPORT_MARGIN, commentCard.blockY),
+              maxTop
+            );
+          }
 
-        return (
-          <dialog
-            ref={commentDialogRef}
-            onClick={(e) => {
-              if (e.target === commentDialogRef.current) closeCommentCard();
-            }}
-            className="m-0 max-w-none border-none bg-transparent p-0 outline-none backdrop:bg-black/5 dark:backdrop:bg-black/20"
-            style={{ position: "fixed", left, top }}
-          >
-            {commentCard && (
-              <div ref={commentCardRef}>
-                <CommentCard
-                  anchorEnd={commentCard.anchorEnd}
-                  anchorStart={commentCard.anchorStart}
-                  blockId={commentCard.blockId}
-                  currentUserId={currentUserId}
-                  isAdmin={isAdmin}
-                  onClose={closeCommentCard}
-                  pageId={pageId}
-                  workspaceId={workspaceId}
-                />
-              </div>
-            )}
-          </dialog>
-        );
-      })()}
+          return (
+            // biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: click-outside-to-dismiss on a native <dialog>. The handler fires only when the target is the dialog element itself (the backdrop area), never a child, so it is a dismissal shortcut rather than a control. The keyboard equivalent already exists and is provided by the platform: <dialog> closes on Escape without any handler of ours.
+            <dialog
+              className="m-0 max-w-none border-none bg-transparent p-0 outline-none backdrop:bg-black/5 dark:backdrop:bg-black/20"
+              onClick={(e) => {
+                if (e.target === commentDialogRef.current) {
+                  closeCommentCard();
+                }
+              }}
+              ref={commentDialogRef}
+              style={{ position: "fixed", left, top }}
+            >
+              {commentCard && (
+                <div ref={commentCardRef}>
+                  <CommentCard
+                    anchorEnd={commentCard.anchorEnd}
+                    anchorStart={commentCard.anchorStart}
+                    blockId={commentCard.blockId}
+                    currentUserId={currentUserId}
+                    isAdmin={isAdmin}
+                    onClose={closeCommentCard}
+                    pageId={pageId}
+                    workspaceId={workspaceId}
+                  />
+                </div>
+              )}
+            </dialog>
+          );
+        })()}
     </div>
   );
 }

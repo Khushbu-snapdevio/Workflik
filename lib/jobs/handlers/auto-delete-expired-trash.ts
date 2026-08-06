@@ -30,7 +30,9 @@ export async function handleAutoDeleteExpiredTrash(
       )
     );
 
-  if (expiredRoots.length === 0) return;
+  if (expiredRoots.length === 0) {
+    return;
+  }
 
   const rootIds = expiredRoots.map((p) => p.id);
 
@@ -45,5 +47,7 @@ export async function handleAutoDeleteExpiredTrash(
   // Hard delete — ON DELETE CASCADE removes blocks, page_closure, page_versions
   await db.delete(pages).where(inArray(pages.id, allIds));
 
-  console.log(`[auto-delete-expired-trash] Permanently deleted ${allIds.length} pages.`);
+  console.log(
+    `[auto-delete-expired-trash] Permanently deleted ${allIds.length} pages.`
+  );
 }

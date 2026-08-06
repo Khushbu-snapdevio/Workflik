@@ -1,10 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type Tx } from "@/lib/db";
 import { users, workspaceMembers } from "@/lib/db/schema";
 import { triggerWorkspaceInviteAcceptedNotification } from "@/lib/notifications/triggers";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyTx = any;
 
 // Looks up a user by email; if none exists yet, pre-creates a placeholder
 // row so an invite's workspaceMembers.userId can be set immediately instead
@@ -16,7 +13,9 @@ export async function getOrCreateInviteeUser(email: string) {
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
-  if (existing) return { user: existing, isNew: false as const };
+  if (existing) {
+    return { user: existing, isNew: false as const };
+  }
 
   const [created] = await db
     .insert(users)
@@ -29,12 +28,12 @@ export async function getOrCreateInviteeUser(email: string) {
 // by /api/invite/[token]/accept (already-signed-in user) and
 // /api/invite/[token]/set-password (brand-new invitee setting a password).
 export async function acceptWorkspaceInviteTx(
-  tx: AnyTx,
+  tx: Tx,
   params: {
-    memberId:     string;
-    workspaceId:  string;
-    userId:       string;
-    invitedBy:    string | null;
+    memberId: string;
+    workspaceId: string;
+    userId: string;
+    invitedBy: string | null;
     accepterName: string;
   }
 ) {
@@ -44,8 +43,8 @@ export async function acceptWorkspaceInviteTx(
     .update(workspaceMembers)
     .set({
       userId,
-      status:      "active",
-      joinedAt:    new Date(),
+      status: "active",
+      joinedAt: new Date(),
       inviteToken: null,
     })
     .where(eq(workspaceMembers.id, memberId));
@@ -53,8 +52,8 @@ export async function acceptWorkspaceInviteTx(
   if (invitedBy) {
     await triggerWorkspaceInviteAcceptedNotification(tx, {
       workspaceId,
-      inviterId:    invitedBy,
-      accepterId:   userId,
+      inviterId: invitedBy,
+      accepterId: userId,
       memberId,
       accepterName,
     });
@@ -65,15 +64,24 @@ export async function acceptWorkspaceInviteTx(
 // Reuses any existing non-active row for the user, keeping its original role,
 // since the unique (workspaceId, userId) index forbids a second row.
 export async function joinWorkspaceViaLinkTx(
-  tx: AnyTx,
-  params: { workspaceId: string; userId: string; role: "admin" | "editor" | "viewer" }
+  tx: Tx,
+  params: {
+    workspaceId: string;
+    userId: string;
+    role: "admin" | "editor" | "viewer";
+  }
 ) {
   const { workspaceId, userId, role } = params;
 
   const [existing] = await tx
     .select({ id: workspaceMembers.id })
     .from(workspaceMembers)
-    .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, userId)))
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        eq(workspaceMembers.userId, userId)
+      )
+    )
     .limit(1);
 
   if (existing) {
@@ -82,8 +90,12 @@ export async function joinWorkspaceViaLinkTx(
       .set({ status: "active", joinedAt: new Date(), inviteToken: null })
       .where(eq(workspaceMembers.id, existing.id));
   } else {
-    await tx
-      .insert(workspaceMembers)
-      .values({ workspaceId, userId, role, status: "active", joinedAt: new Date() });
+    await tx.insert(workspaceMembers).values({
+      workspaceId,
+      userId,
+      role,
+      status: "active",
+      joinedAt: new Date(),
+    });
   }
 }

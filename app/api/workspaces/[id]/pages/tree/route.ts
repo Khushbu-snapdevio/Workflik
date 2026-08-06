@@ -1,7 +1,12 @@
 import { and, eq, ne, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -17,15 +22,15 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     const rows = await db
       .select({
-        id:          pages.id,
-        shortId:     pages.shortId,
-        parentId:    pages.parentId,
-        title:       pages.title,
-        icon:        pages.icon,
-        orderIndex:  pages.orderIndex,
-        kind:        pages.kind,
-        isPrivate:   pages.isPrivate,
-        isDraft:     pages.isDraft,
+        id: pages.id,
+        shortId: pages.shortId,
+        parentId: pages.parentId,
+        title: pages.title,
+        icon: pages.icon,
+        orderIndex: pages.orderIndex,
+        kind: pages.kind,
+        isPrivate: pages.isPrivate,
+        isDraft: pages.isDraft,
       })
       .from(pages)
       .where(
@@ -33,21 +38,17 @@ export async function GET(_req: Request, { params }: Ctx) {
           eq(pages.workspaceId, workspaceId),
           eq(pages.isDeleted, false),
           ne(pages.kind, "entry"),
-          or(
-            eq(pages.isPrivate, false),
-            eq(pages.createdBy, session.user.id)
-          ),
-          or(
-            eq(pages.isDraft, false),
-            eq(pages.createdBy, session.user.id)
-          )
+          or(eq(pages.isPrivate, false), eq(pages.createdBy, session.user.id)),
+          or(eq(pages.isDraft, false), eq(pages.createdBy, session.user.id))
         )
       )
       .orderBy(pages.orderIndex);
 
     return Response.json(rows);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

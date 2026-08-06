@@ -2,17 +2,26 @@
 // they never disagree. Note: person grouping is MULTI-membership (an entry with 2
 // assignees appears in both groups), unlike select/status/checkbox's single-membership.
 
-import type { DbEntry, DbProperty, SelectOption } from "@/components/database/types";
+import type {
+  DbEntry,
+  DbProperty,
+  SelectOption,
+} from "@/components/database/types";
 
 export type GroupableType = "select" | "status" | "checkbox" | "person";
 
 export interface GroupDef {
+  color: string | null;
   id: string | null;
   label: string;
-  color: string | null;
 }
 
-const GROUPABLE_TYPES: ReadonlySet<string> = new Set(["select", "status", "checkbox", "person"]);
+const GROUPABLE_TYPES: ReadonlySet<string> = new Set([
+  "select",
+  "status",
+  "checkbox",
+  "person",
+]);
 
 export function isGroupableType(type: string): type is GroupableType {
   return GROUPABLE_TYPES.has(type);
@@ -26,11 +35,21 @@ export function areGroupsEditable(type: string): boolean {
   return type === "select" || type === "status";
 }
 
-function personLabel(userId: string, entries: DbEntry[], valueMap: Map<string, Map<string, unknown>>, propId: string): string {
+function personLabel(
+  userId: string,
+  entries: DbEntry[],
+  valueMap: Map<string, Map<string, unknown>>,
+  propId: string
+): string {
   for (const entry of entries) {
-    const v = valueMap.get(entry.id)?.get(propId) as { userIds?: string[]; _members?: { id: string; name: string; email: string }[] } | null;
+    const v = valueMap.get(entry.id)?.get(propId) as {
+      userIds?: string[];
+      _members?: { id: string; name: string; email: string }[];
+    } | null;
     const member = v?._members?.find((m) => m.id === userId);
-    if (member) return member.name || member.email || userId;
+    if (member) {
+      return member.name || member.email || userId;
+    }
   }
   return userId;
 }
@@ -38,7 +57,7 @@ function personLabel(userId: string, entries: DbEntry[], valueMap: Map<string, M
 export function deriveGroups(
   property: DbProperty,
   entries: DbEntry[],
-  valueMap: Map<string, Map<string, unknown>>,
+  valueMap: Map<string, Map<string, unknown>>
 ): GroupDef[] {
   switch (property.type) {
     case "select":
@@ -55,11 +74,19 @@ export function deriveGroups(
       const seen = new Set<string>();
       const groups: GroupDef[] = [];
       for (const entry of entries) {
-        const v = valueMap.get(entry.id)?.get(property.id) as { userIds?: string[] } | null;
+        const v = valueMap.get(entry.id)?.get(property.id) as {
+          userIds?: string[];
+        } | null;
         for (const id of v?.userIds ?? []) {
-          if (seen.has(id)) continue;
+          if (seen.has(id)) {
+            continue;
+          }
           seen.add(id);
-          groups.push({ id, label: personLabel(id, entries, valueMap, property.id), color: null });
+          groups.push({
+            id,
+            label: personLabel(id, entries, valueMap, property.id),
+            color: null,
+          });
         }
       }
       return groups;
@@ -72,7 +99,10 @@ export function deriveGroups(
 // The ids a single entry's raw value belongs to. select/status/checkbox
 // always return exactly one id (never more) — person can return several, or
 // none (unassigned, folded into the `null` "no group" bucket by callers).
-export function getEntryGroupIds(property: DbProperty, value: unknown): (string | null)[] {
+export function getEntryGroupIds(
+  property: DbProperty,
+  value: unknown
+): (string | null)[] {
   const v = value as Record<string, unknown> | null;
   switch (property.type) {
     case "select":
@@ -93,7 +123,10 @@ export function getEntryGroupIds(property: DbProperty, value: unknown): (string 
 // inside a given group/column (e.g. Board's "+ Add entry" button, Gallery's
 // "+ New entry"). `groupId: null` means the ungrouped/ambiguous bucket, which
 // for every groupable type just means "don't set a value."
-export function defaultValueForGroup(property: DbProperty, groupId: string | null): unknown {
+export function defaultValueForGroup(
+  property: DbProperty,
+  groupId: string | null
+): unknown {
   switch (property.type) {
     case "select":
     case "status":
@@ -103,7 +136,7 @@ export function defaultValueForGroup(property: DbProperty, groupId: string | nul
     case "person":
       return groupId ? { userIds: [groupId] } : undefined;
     default:
-      return undefined;
+      return;
   }
 }
 
@@ -115,12 +148,19 @@ export function valueAfterGroupMove(
   property: DbProperty,
   currentValue: unknown,
   fromGroupId: string | null,
-  toGroupId: string | null,
+  toGroupId: string | null
 ): unknown {
   if (property.type === "person") {
-    const ids = ((currentValue as { userIds?: string[] } | null)?.userIds ?? []).filter((id) => id !== fromGroupId);
-    if (toGroupId && !ids.includes(toGroupId)) ids.push(toGroupId);
+    const ids = (
+      (currentValue as { userIds?: string[] } | null)?.userIds ?? []
+    ).filter((id) => id !== fromGroupId);
+    if (toGroupId && !ids.includes(toGroupId)) {
+      ids.push(toGroupId);
+    }
     return { userIds: ids };
   }
-  return defaultValueForGroup(property, toGroupId) ?? (property.type === "checkbox" ? { checked: false } : { optionId: null });
+  return (
+    defaultValueForGroup(property, toGroupId) ??
+    (property.type === "checkbox" ? { checked: false } : { optionId: null })
+  );
 }

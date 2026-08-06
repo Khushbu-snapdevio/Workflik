@@ -7,9 +7,8 @@ import { PopoverButton } from "@headlessui/react";
 export function RectAnchorTrigger({ rect }: { rect: DOMRect }) {
   return (
     <PopoverButton
-      as="div"
       aria-hidden
-      tabIndex={-1}
+      as="div"
       style={{
         position: "fixed",
         top: rect.top,
@@ -18,6 +17,7 @@ export function RectAnchorTrigger({ rect }: { rect: DOMRect }) {
         height: rect.height,
         pointerEvents: "none",
       }}
+      tabIndex={-1}
     />
   );
 }

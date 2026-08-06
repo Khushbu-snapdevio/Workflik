@@ -1,19 +1,19 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { workspaceMembers, users } from "@/lib/db/schema";
+import { users, workspaceMembers } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
 import { triggerWorkspaceInviteNotification } from "@/lib/notifications/triggers";
+import { writeAuditLog } from "@/lib/orbit/audit";
 import {
-  apiError,
   ApiError,
+  apiError,
   getSession,
   getWorkspace,
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
 import { getOrCreateInviteeUser } from "@/lib/workspaces/invites";
-import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -27,18 +27,18 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     const members = await db
       .select({
-        id:           workspaceMembers.id,
-        workspaceId:  workspaceMembers.workspaceId,
-        userId:       workspaceMembers.userId,
-        role:         workspaceMembers.role,
-        status:       workspaceMembers.status,
+        id: workspaceMembers.id,
+        workspaceId: workspaceMembers.workspaceId,
+        userId: workspaceMembers.userId,
+        role: workspaceMembers.role,
+        status: workspaceMembers.status,
         invitedEmail: workspaceMembers.invitedEmail,
-        inviteExpires:workspaceMembers.inviteExpires,
-        joinedAt:     workspaceMembers.joinedAt,
-        createdAt:    workspaceMembers.createdAt,
-        userName:     users.name,
-        userEmail:    users.email,
-        userImage:    users.image,
+        inviteExpires: workspaceMembers.inviteExpires,
+        joinedAt: workspaceMembers.joinedAt,
+        createdAt: workspaceMembers.createdAt,
+        userName: users.name,
+        userEmail: users.email,
+        userImage: users.image,
         userTimezone: users.timezone,
       })
       .from(workspaceMembers)
@@ -49,18 +49,23 @@ export async function GET(_req: Request, { params }: Ctx) {
     // "admin" role, which can be held by more than one member) — surfaced
     // per-row so callers like the person hover card can label them
     // "Workspace Owner" without a second request just to look this up.
-    const withOwner = members.map((m) => ({ ...m, isOwner: !!m.userId && m.userId === workspace.createdBy }));
+    const withOwner = members.map((m) => ({
+      ...m,
+      isOwner: !!m.userId && m.userId === workspace.createdBy,
+    }));
 
     return Response.json(withOwner);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
 
 const inviteSchema = z.object({
   email: z.email(),
-  role:  z.enum(["admin", "editor", "viewer"]).default("editor"),
+  role: z.enum(["admin", "editor", "viewer"]).default("editor"),
 });
 
 // POST /api/workspaces/:id/members — invite a user by email
@@ -68,7 +73,7 @@ export async function POST(req: Request, { params }: Ctx) {
   try {
     const { id } = await params;
     const session = await getSession();
-    const inviter = await requireWorkspaceMember(id, session.user.id, "admin");
+    const _inviter = await requireWorkspaceMember(id, session.user.id, "admin");
 
     const body = await req.json();
     const parsed = inviteSchema.safeParse(body);
@@ -83,14 +88,19 @@ export async function POST(req: Request, { params }: Ctx) {
     // Only the workspace owner can hand out the Admin role — any other
     // admin can still invite editors/viewers freely. Falls back to "any
     // admin" if the original owner's account no longer exists.
-    const isOwner = workspace.createdBy === null || workspace.createdBy === session.user.id;
+    const isOwner =
+      workspace.createdBy === null || workspace.createdBy === session.user.id;
     if (role === "admin" && !isOwner) {
-      return apiError(403, "Only the workspace owner can invite someone as an Admin");
+      return apiError(
+        403,
+        "Only the workspace owner can invite someone as an Admin"
+      );
     }
 
     // Email must be lowercase to match better-auth's lookup. Pre-create a placeholder
     // user row if new, so the invite can attach a membership immediately.
-    const { user: existingUser, isNew: isBrandNewInvitee } = await getOrCreateInviteeUser(email);
+    const { user: existingUser, isNew: isBrandNewInvitee } =
+      await getOrCreateInviteeUser(email);
 
     if (!isBrandNewInvitee) {
       const [activeMember] = await db
@@ -125,21 +135,21 @@ export async function POST(req: Request, { params }: Ctx) {
       return apiError(409, "An invite has already been sent to this email");
     }
 
-    const inviteToken   = crypto.randomUUID();
+    const inviteToken = crypto.randomUUID();
     const inviteExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const [member] = await db.transaction(async (tx) => {
       const [m] = await tx
         .insert(workspaceMembers)
         .values({
-          workspaceId:  id,
-          userId:       existingUser.id,
+          workspaceId: id,
+          userId: existingUser.id,
           role,
-          status:       "invited",
+          status: "invited",
           invitedEmail: email,
           inviteToken,
           inviteExpires,
-          invitedBy:    session.user.id,
+          invitedBy: session.user.id,
         })
         .returning();
 
@@ -148,40 +158,44 @@ export async function POST(req: Request, { params }: Ctx) {
       if (!isBrandNewInvitee) {
         await triggerWorkspaceInviteNotification(tx, {
           workspaceId: id,
-          inviterId:   session.user.id,
+          inviterId: session.user.id,
           recipientId: existingUser.id,
-          memberId:    m.id,
+          memberId: m.id,
         });
       }
 
       return [m];
     });
 
-    console.log(`[invite] ${session.user.email} invited ${email} as "${role}" to workspace "${workspace.name}"${isBrandNewInvitee ? " (new account)" : " (existing account)"}`);
+    console.log(
+      `[invite] ${session.user.email} invited ${email} as "${role}" to workspace "${workspace.name}"${isBrandNewInvitee ? " (new account)" : " (existing account)"}`
+    );
 
     // Same "click to accept" link for everyone, whether they already have an
     // account or not — /invite/[token] detects which case it is and either
     // asks them to sign in or lets them set a password right there.
     await enqueueJob(JOB_NAMES.WORKSPACE_INVITE_SEND, {
-      memberId:      member.id,
-      workspaceId:   id,
-      invitedEmail:  email,
-      inviterName:   session.user.name ?? session.user.email,
+      memberId: member.id,
+      workspaceId: id,
+      invitedEmail: email,
+      inviterName: session.user.name ?? session.user.email,
       workspaceName: workspace.name,
       inviteToken,
     });
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "member.invited",
+      actorId: session.user.id,
+      action: "member.invited",
       targetType: "workspace",
-      targetId:   id,
-      metadata:   { invitedEmail: email, role, workspaceName: workspace.name },
+      targetId: id,
+      metadata: { invitedEmail: email, role, workspaceName: workspace.name },
     });
 
     return Response.json(member, { status: 201 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

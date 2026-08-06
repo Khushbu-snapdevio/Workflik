@@ -4,8 +4,22 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-// Native `<input type="checkbox" role="switch">` in place of Radix's button+thumb pair.
-// Input is invisible but covers the full track (inset-0) so click/keyboard/focus behave like Radix's Root button.
+/**
+ * Native `<input type="checkbox" role="switch">` carrying daisy's own `toggle`
+ * class. daisy renders the track on the input and the knob as a `::before` in
+ * its grid, keyed off the real `:checked` pseudo-class, so the wrapper `<span>`,
+ * the thumb `<span>` and the React mirror of the checked state are all gone —
+ * uncontrolled usage is now genuinely uncontrolled.
+ *
+ * This adopts daisy's appearance rather than reproducing the old one: checked
+ * is a base-100 track with a primary knob (the inverse of the previous primary
+ * track / light knob), unchecked is a bordered transparent track, and the width
+ * is daisy's own computed value rather than the previous 33px/25px.
+ *
+ * `data-slot` and `peer` sit on the input itself now (they were on the removed
+ * wrapper) — label.tsx's `peer-data-[slot=switch]:` selectors depend on exactly
+ * those two, and sibling order is unchanged.
+ */
 function Switch({
   className,
   size = "default",
@@ -20,46 +34,31 @@ function Switch({
   defaultChecked?: boolean
   onCheckedChange?: (checked: boolean) => void
 }) {
-  const [uncontrolledChecked, setUncontrolledChecked] = React.useState(defaultChecked ?? false)
-  const isChecked = checked ?? uncontrolledChecked
-
   return (
-    <span
+    <input
+      type="checkbox"
+      role="switch"
       data-slot="switch"
+      disabled={disabled}
+      checked={checked}
+      defaultChecked={checked === undefined ? defaultChecked : undefined}
+      onChange={(event) => onCheckedChange?.(event.target.checked)}
       className={cn(
-        "peer relative inline-flex shrink-0 items-center rounded-full border transition-all",
-        size === "default" ? "h-4.5 w-8.25" : "h-3.5 w-6.25",
-        isChecked ? "border-primary bg-primary" : "border-input bg-input",
-        disabled && "cursor-not-allowed opacity-50",
-        props["aria-invalid"] &&
-          "border-destructive ring-2 ring-destructive/20 dark:border-destructive/50 dark:ring-destructive/40",
+        "peer toggle toggle-primary",
+        // daisy derives both track and knob geometry from --size; its own
+        // default is 24px. These keep the two existing heights (18px / 14px).
+        size === "default" ? "[--size:1.125rem]" : "[--size:0.875rem]",
+        // daisy computes a rounded-rect from --radius-selector, which is
+        // neither a pill nor on the documented 5-step radius scale.
+        "rounded-full",
+        // daisy ships `outline: 2px solid` on :focus-visible; the design
+        // checklist mandates the ring system instead.
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+        "aria-invalid:border-error aria-invalid:ring-2 aria-invalid:ring-error/20 dark:aria-invalid:border-error/50 dark:aria-invalid:ring-error/40",
         className
       )}
-    >
-      <input
-        type="checkbox"
-        role="switch"
-        disabled={disabled}
-        checked={checked === undefined ? undefined : isChecked}
-        defaultChecked={checked === undefined ? defaultChecked : undefined}
-        onChange={(event) => {
-          setUncontrolledChecked(event.target.checked)
-          onCheckedChange?.(event.target.checked)
-        }}
-        className="absolute inset-0 size-full cursor-pointer appearance-none rounded-full outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
-        {...props}
-      />
-      <span
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none block rounded-full bg-background ring-0 transition-transform",
-          size === "default" ? "size-3.5" : "size-2.5",
-          isChecked
-            ? "translate-x-[calc(100%+2px)] dark:bg-primary-foreground"
-            : "translate-x-0.25 dark:bg-foreground"
-        )}
-      />
-    </span>
+      {...props}
+    />
   )
 }
 

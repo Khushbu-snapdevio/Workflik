@@ -8,27 +8,31 @@ import { getStorage } from "@/lib/storage";
 // Deletes files that are no longer referenced by any active block AND are not
 // referenced by any page_version created within the last 7 days.
 // Usage: decrements workspace bytes_used when the file is actually removed.
-export async function handleCleanupOrphanedMedia(_jobs: Job<Record<string, never>>[]) {
-  const storage    = getStorage();
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+export async function handleCleanupOrphanedMedia(
+  _jobs: Job<Record<string, never>>[]
+) {
+  const storage = getStorage();
+  const _sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   // All confirmed block_media uploads
   const candidates = await db
     .select({
-      id:            fileUploads.id,
-      objectKey:     fileUploads.objectKey,
+      id: fileUploads.id,
+      objectKey: fileUploads.objectKey,
       fileSizeBytes: fileUploads.fileSizeBytes,
-      workspaceId:   fileUploads.workspaceId,
+      workspaceId: fileUploads.workspaceId,
     })
     .from(fileUploads)
     .where(
       and(
         isNotNull(fileUploads.confirmedAt),
-        sql`${fileUploads.kind} = 'block_media'`,
-      ),
+        sql`${fileUploads.kind} = 'block_media'`
+      )
     );
 
-  if (candidates.length === 0) return { cleaned: 0 };
+  if (candidates.length === 0) {
+    return { cleaned: 0 };
+  }
 
   // Object keys still referenced by active blocks
   const activeKeys = await db
@@ -42,7 +46,9 @@ export async function handleCleanupOrphanedMedia(_jobs: Job<Record<string, never
   // stores a snapshot of block content with objectKeys (Phase 5 extension).
 
   const orphaned = candidates.filter((c) => !activeSet.has(c.objectKey));
-  if (orphaned.length === 0) return { cleaned: 0 };
+  if (orphaned.length === 0) {
+    return { cleaned: 0 };
+  }
 
   // Delete from storage
   await Promise.allSettled(orphaned.map((r) => storage.delete(r.objectKey)));

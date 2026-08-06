@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils"
 /**
  * Native `<input type="radio">` group: sharing one `name` gives arrow-key nav for free, no roving-tabindex JS needed.
  * `name` auto-generated via `useId` when omitted, since native grouping requires a shared `name`.
+ *
+ * Items carry daisy's `radio` class, which draws both the ring and the dot
+ * (a `::before`) off the input's own `:checked` state — so the wrapper `<span>`
+ * and the dot `<span>` are gone. `data-slot` and `peer` moved onto the input
+ * with them: label.tsx's `peer-data-[slot=radio-group-item]:` selectors depend
+ * on exactly those two, and sibling order is unchanged.
  */
 type RadioGroupContextValue = {
   name: string
@@ -69,36 +75,33 @@ function RadioGroupItem({
   const isChecked = context.value === value
 
   return (
-    <span
+    <input
+      type="radio"
       data-slot="radio-group-item"
+      name={context.name}
+      value={value}
+      checked={isChecked}
+      disabled={disabled}
+      onChange={() => context.onValueChange?.(value)}
       className={cn(
-        "peer relative inline-flex aspect-square size-4.5 shrink-0 items-center justify-center rounded-full border bg-transparent",
-        isChecked ? "border-foreground" : "border-input",
-        disabled && "cursor-not-allowed opacity-50",
+        // Plain `radio`, no colour modifier: daisy leaves --input-color unset,
+        // so the ring and dot both resolve to currentColor — i.e. base-content,
+        // exactly the colour this component drew by hand before. The dot size
+        // falls out of daisy's own geometry: 18px box − 2×4px padding − 2×1px
+        // border = the same 8px dot as the removed `size-2` span.
+        "peer radio [--size:1.125rem]",
+        // daisy's unchecked ring is color-mix(currentColor 20%), not a token.
+        "not-checked:border-base-300",
+        // daisy ships `outline: 2px solid` on :focus-visible; the design
+        // checklist mandates the ring system instead.
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
         props["aria-invalid"] &&
-          (isChecked
-            ? "border-foreground"
-            : "border-destructive ring-2 ring-destructive/20 dark:border-destructive/50 dark:ring-destructive/40"),
+          !isChecked &&
+          "border-error ring-2 ring-error/20 dark:border-error/50 dark:ring-error/40",
         className
       )}
-    >
-      <input
-        type="radio"
-        name={context.name}
-        value={value}
-        checked={isChecked}
-        disabled={disabled}
-        onChange={() => context.onValueChange?.(value)}
-        className="absolute inset-0 size-full cursor-pointer appearance-none rounded-full outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
-        {...props}
-      />
-      {isChecked && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground"
-        />
-      )}
-    </span>
+      {...props}
+    />
   )
 }
 

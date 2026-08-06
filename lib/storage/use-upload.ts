@@ -2,19 +2,26 @@
 
 import { useCallback, useState } from "react";
 
-export type UploadKind = "page_cover" | "page_icon" | "block_media" | "user_avatar" | "workspace_icon" | "database_file" | "template_cover";
+export type UploadKind =
+  | "page_cover"
+  | "page_icon"
+  | "block_media"
+  | "user_avatar"
+  | "workspace_icon"
+  | "database_file"
+  | "template_cover";
 
 interface UseUploadOptions {
-  kind: UploadKind;
-  workspaceId?: string;
-  pageId?: string;
   blockId?: string;
+  kind: UploadKind;
+  pageId?: string;
+  workspaceId?: string;
 }
 
 interface UploadResult {
   fileUploadId: string;
-  objectKey: string;
   fileUrl: string;
+  objectKey: string;
 }
 
 export function useUpload(opts: UseUploadOptions) {
@@ -43,14 +50,21 @@ export function useUpload(opts: UseUploadOptions) {
 
         if (!signRes.ok) {
           const json = await signRes.json().catch(() => ({}));
-          throw new Error((json as { error?: string }).error ?? `Sign failed (${signRes.status})`);
+          throw new Error(
+            (json as { error?: string }).error ??
+              `Sign failed (${signRes.status})`
+          );
         }
 
-        const signed = await signRes.json() as {
+        const signed = (await signRes.json()) as {
           fileUploadId: string;
           objectKey: string;
           fileUrl: string;
-          upload: { url: string; method: "PUT" | "POST"; headers: Record<string, string> };
+          upload: {
+            url: string;
+            method: "PUT" | "POST";
+            headers: Record<string, string>;
+          };
         };
 
         // 2. Upload — PUT for S3/R2, POST multipart for local driver
@@ -60,7 +74,9 @@ export function useUpload(opts: UseUploadOptions) {
             headers: { "Content-Type": file.type, ...signed.upload.headers },
             body: file,
           });
-          if (!putRes.ok) throw new Error(`Upload failed (${putRes.status})`);
+          if (!putRes.ok) {
+            throw new Error(`Upload failed (${putRes.status})`);
+          }
         } else {
           const form = new FormData();
           form.append("objectKey", signed.objectKey);
@@ -72,7 +88,10 @@ export function useUpload(opts: UseUploadOptions) {
           });
           if (!postRes.ok) {
             const json = await postRes.json().catch(() => ({}));
-            throw new Error((json as { error?: string }).error ?? `Upload failed (${postRes.status})`);
+            throw new Error(
+              (json as { error?: string }).error ??
+                `Upload failed (${postRes.status})`
+            );
           }
         }
 
@@ -85,7 +104,10 @@ export function useUpload(opts: UseUploadOptions) {
 
         if (!confirmRes.ok) {
           const json = await confirmRes.json().catch(() => ({}));
-          throw new Error((json as { error?: string }).error ?? `Confirm failed (${confirmRes.status})`);
+          throw new Error(
+            (json as { error?: string }).error ??
+              `Confirm failed (${confirmRes.status})`
+          );
         }
 
         return {
@@ -101,7 +123,7 @@ export function useUpload(opts: UseUploadOptions) {
         setUploading(false);
       }
     },
-    [opts.kind, opts.workspaceId, opts.pageId, opts.blockId],
+    [opts.kind, opts.workspaceId, opts.pageId, opts.blockId]
   );
 
   return { upload, uploading, error };

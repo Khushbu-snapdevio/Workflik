@@ -12,7 +12,10 @@ export default async function OnboardingPage() {
   const session = await requireSession();
 
   const [user] = await db
-    .select({ onboardingCompleted: users.onboardingCompleted, name: users.name })
+    .select({
+      onboardingCompleted: users.onboardingCompleted,
+      name: users.name,
+    })
     .from(users)
     .where(eq(users.id, session.user.id))
     .limit(1);
@@ -22,5 +25,10 @@ export default async function OnboardingPage() {
     redirect("/platform/post-auth");
   }
 
-  return <OnboardingUI initialName={user?.name ?? ""} smtpConfigured={isSmtpConfigured()} />;
+  return (
+    <OnboardingUI
+      initialName={user?.name ?? ""}
+      smtpConfigured={isSmtpConfigured()}
+    />
+  );
 }

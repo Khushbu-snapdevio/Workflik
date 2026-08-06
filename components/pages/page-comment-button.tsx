@@ -1,107 +1,161 @@
 "use client";
 
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/react";
+import {
+  RotateCcw as ArrowCounterClockwiseIcon,
+  BellOff as BellSlashIcon,
+  MessageSquare as ChatTextIcon,
+  Check as CheckIcon,
+  CornerDownRight,
+  MoreHorizontal as DotsThreeIcon,
+  FileText,
+  Link as LinkIcon,
+  MessageCircle,
+  Paperclip,
+  Pencil as PencilSimpleIcon,
+  Tag,
+  Trash2 as TrashIcon,
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/react";
 import {
-  MessageSquare as ChatTextIcon, FileText, MessageCircle, Tag, CornerDownRight,
-  Smile as SmileyIcon, Check as CheckIcon, RotateCcw as ArrowCounterClockwiseIcon,
-  MoreHorizontal as DotsThreeIcon, Pencil as PencilSimpleIcon, Link as LinkIcon,
-  BellOff as BellSlashIcon, Trash2 as TrashIcon, Paperclip,
-} from "lucide-react";
-import { useSearchParams, useRouter } from "next/navigation";
+  DropdownItem,
+  DropdownSeparator,
+  EmojiPicker,
+  FileAttachment,
+  ImageAttachment,
+  SimpleDropdown,
+} from "@/components/editor/comment-card";
+import { CommentComposer } from "@/components/editor/comment-composer";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CommentComposer } from "@/components/editor/comment-composer";
-import { EmojiPicker, SimpleDropdown, DropdownItem, DropdownSeparator, ImageAttachment, FileAttachment } from "@/components/editor/comment-card";
-import { IconTooltip } from "@/components/ui/icon-tooltip";
-import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
-import { onCommentsChanged, emitCommentsChanged } from "@/lib/comments/comment-events";
-import { formatReactionTooltip, formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
+import {
+  emitCommentsChanged,
+  onCommentsChanged,
+} from "@/lib/comments/comment-events";
+import {
+  formatReactionTooltip,
+  formatReactorNames,
+} from "@/lib/comments/format-reaction-tooltip";
 
 interface CommentAuthor {
-  id:    string | null;
-  name:  string | null;
+  id: string | null;
   image: string | null;
+  name: string | null;
 }
 
 interface CommentReply {
-  id:        string;
   createdAt: string;
+  id: string;
 }
 
 interface CommentThread {
-  id:                 string;
-  blockId:            string | null;
-  propertyId:         string | null;
-  propertyName:       string | null;
+  author: CommentAuthor | null;
+  blockId: string | null;
+  content: Record<string, unknown> | null;
+  createdAt: string;
+  deletedAt: string | null;
+  editedAt: string | null;
+  id: string;
+  isResolved: boolean;
+  propertyId: string | null;
+  propertyName: string | null;
   propertyValueLabel: string | null;
-  isResolved:         boolean;
-  deletedAt:          string | null;
-  editedAt:           string | null;
-  content:            Record<string, unknown> | null;
-  reactions:          Record<string, string[]>;
-  createdAt:          string;
-  author:             CommentAuthor | null;
-  replies:            CommentReply[];
+  reactions: Record<string, string[]>;
+  replies: CommentReply[];
 }
 
 interface Props {
-  pageId:        string;
-  workspaceId:   string;
   currentUserId: string;
-  isAdmin:       boolean;
+  isAdmin: boolean;
+  pageId: string;
+  workspaceId: string;
 }
 
 function extractText(node: Record<string, unknown> | null | undefined): string {
-  if (!node) return "";
-  if (node.type === "text") return String(node.text ?? "");
+  if (!node) {
+    return "";
+  }
+  if (node.type === "text") {
+    return String(node.text ?? "");
+  }
   const children = (node.content as Record<string, unknown>[]) ?? [];
   return children.map(extractText).join("");
 }
 
 // Walks the doc for the first image/file/attachment node (the shapes used
 // across this app's composers) so an attachment shows a thumbnail, not just text.
-interface FoundAttachment { src: string; name: string; kind: "image" | "file"; }
-function extractFirstAttachment(node: Record<string, unknown> | null | undefined): FoundAttachment | null {
-  if (!node) return null;
+interface FoundAttachment {
+  kind: "image" | "file";
+  name: string;
+  src: string;
+}
+function extractFirstAttachment(
+  node: Record<string, unknown> | null | undefined
+): FoundAttachment | null {
+  if (!node) {
+    return null;
+  }
   const type = node.type as string | undefined;
   const attrs = (node.attrs ?? {}) as Record<string, unknown>;
   if (type === "image") {
     const src = attrs.src as string | undefined;
-    if (src) return { src, name: (attrs.alt as string) ?? "image", kind: "image" };
+    if (src) {
+      return { src, name: (attrs.alt as string) ?? "image", kind: "image" };
+    }
   }
   if (type === "file" || type === "attachment") {
-    const src = (attrs.src as string | undefined) ?? (attrs.url as string | undefined);
+    const src =
+      (attrs.src as string | undefined) ?? (attrs.url as string | undefined);
     if (src) {
       const mimeType = attrs.mimeType as string | undefined;
-      return { src, name: (attrs.name as string) ?? "file", kind: mimeType?.startsWith("image/") ? "image" : "file" };
+      return {
+        src,
+        name: (attrs.name as string) ?? "file",
+        kind: mimeType?.startsWith("image/") ? "image" : "file",
+      };
     }
   }
   const children = (node.content as Record<string, unknown>[]) ?? [];
   for (const child of children) {
     const found = extractFirstAttachment(child);
-    if (found) return found;
+    if (found) {
+      return found;
+    }
   }
   return null;
 }
 
 function timeAgo(iso: string) {
-  const diff  = Date.now() - new Date(iso).getTime();
-  const mins  = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
-  if (mins < 1)   return "Just now";
-  if (mins < 60)  return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7)   return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  const hours = Math.floor(diff / 3_600_000);
+  const days = Math.floor(diff / 86_400_000);
+  if (mins < 1) {
+    return "Just now";
+  }
+  if (mins < 60) {
+    return `${mins}m ago`;
+  }
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  if (days < 7) {
+    return `${days}d ago`;
+  }
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 // Groups threads the way Notion's comment pane does — most recently active
@@ -109,24 +163,60 @@ function timeAgo(iso: string) {
 function dateBucket(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
-  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const diffDays = Math.round((startOf(now) - startOf(d)) / 86400000);
-  if (diffDays <= 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  const startOf = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOf(now) - startOf(d)) / 86_400_000);
+  if (diffDays <= 0) {
+    return "Today";
+  }
+  if (diffDays === 1) {
+    return "Yesterday";
+  }
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
 
 function lastActivity(thread: CommentThread): number {
-  const times = [new Date(thread.createdAt).getTime(), ...thread.replies.map((r) => new Date(r.createdAt).getTime())];
+  const times = [
+    new Date(thread.createdAt).getTime(),
+    ...thread.replies.map((r) => new Date(r.createdAt).getTime()),
+  ];
   return Math.max(...times);
 }
 
-function ThreadAvatar({ name, image }: { name?: string | null; image?: string | null }) {
+// Pure formatting helper — lives at module scope so it is a stable reference and
+// the useMemo calls that use it do not need it as a dependency.
+function groupByDate(list: CommentThread[]) {
+  const sorted = [...list].sort((a, b) => lastActivity(b) - lastActivity(a));
+  const buckets = new Map<string, CommentThread[]>();
+  for (const t of sorted) {
+    const key = dateBucket(new Date(lastActivity(t)).toISOString());
+    if (!buckets.has(key)) {
+      buckets.set(key, []);
+    }
+    buckets.get(key)!.push(t);
+  }
+  return [...buckets.entries()];
+}
+
+function ThreadAvatar({
+  name,
+  image,
+}: {
+  name?: string | null;
+  image?: string | null;
+}) {
   if (image) {
-    return <img src={image} alt={name ?? ""} className="size-7 shrink-0 rounded-full object-cover" />;
+    return (
+      // biome-ignore lint/performance/noImgElement: avatar src is an OAuth provider URL (Google) or a STORAGE_DRIVER CDN host, neither of which is in next.config images.remotePatterns
+      <img
+        alt={name ?? ""}
+        className="size-7 shrink-0 rounded-full object-cover"
+        src={image}
+      />
+    );
   }
   return (
-    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground select-none">
+    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-content select-none">
       {name?.[0]?.toUpperCase() ?? "?"}
     </div>
   );
@@ -136,24 +226,35 @@ function ThreadAvatar({ name, image }: { name?: string | null; image?: string | 
 // Mirrors CommentCard's actions so "All discussions" isn't just a read-only list.
 
 interface DiscussionItemProps {
-  thread:        CommentThread;
-  pageId:        string;
-  workspaceId:   string;
   currentUserId: string;
-  isAdmin:       boolean;
-  reactionUsers: Record<string, string | null>;
+  isAdmin: boolean;
+  onDeleted: () => void;
+  onOpen: () => void;
+  onPatch: (patch: Partial<CommentThread>) => void;
   onReactionUserResolved: (id: string, name: string | null) => void;
-  onOpen:        () => void;
-  onPatch:       (patch: Partial<CommentThread>) => void;
-  onDeleted:     () => void;
+  pageId: string;
+  reactionUsers: Record<string, string | null>;
+  thread: CommentThread;
+  workspaceId: string;
 }
 
-function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, reactionUsers, onReactionUserResolved, onOpen, onPatch, onDeleted }: DiscussionItemProps) {
-  const [isEditing, setIsEditing]     = useState(false);
-  const [isMuted, setIsMuted]         = useState(false);
+function DiscussionItem({
+  thread,
+  pageId,
+  workspaceId,
+  currentUserId,
+  isAdmin,
+  reactionUsers,
+  onReactionUserResolved,
+  onOpen,
+  onPatch,
+  onDeleted,
+}: DiscussionItemProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
 
-  const isAuthor  = thread.author?.id === currentUserId;
+  const isAuthor = thread.author?.id === currentUserId;
   const reactions = thread.reactions ?? {};
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
@@ -162,9 +263,13 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
     const next: Record<string, string[]> = {};
     for (const [e, userIds] of Object.entries(reactions)) {
       const filtered = userIds.filter((u) => u !== currentUserId);
-      if (filtered.length > 0) next[e] = filtered;
+      if (filtered.length > 0) {
+        next[e] = filtered;
+      }
     }
-    if (!hadThisEmoji) next[emoji] = [...(next[emoji] ?? []), currentUserId];
+    if (!hadThisEmoji) {
+      next[emoji] = [...(next[emoji] ?? []), currentUserId];
+    }
     onPatch({ reactions: next });
     const res = await fetch(`/api/comments/${thread.id}/react`, {
       method: "POST",
@@ -172,7 +277,11 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
       body: JSON.stringify({ emoji }),
     });
     if (res.ok) {
-      const data = await res.json() as { reactions: Record<string, string[]>; reactorId: string; reactorName: string | null };
+      const data = (await res.json()) as {
+        reactions: Record<string, string[]>;
+        reactorId: string;
+        reactorName: string | null;
+      };
       onPatch({ reactions: data.reactions });
       onReactionUserResolved(data.reactorId, data.reactorName);
     }
@@ -184,15 +293,24 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
   // pre-persist state (see the same fix in comment-card.tsx).
   async function resolveThread() {
     onPatch({ isResolved: true });
-    const res = await fetch(`/api/comments/${thread.id}/resolve`, { method: "POST" });
-    if (!res.ok) onPatch({ isResolved: false });
+    const res = await fetch(`/api/comments/${thread.id}/resolve`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      onPatch({ isResolved: false });
+    }
     emitCommentsChanged(pageId);
   }
 
   async function reopenThread() {
     onPatch({ isResolved: false });
-    const res = await fetch(`/api/comments/${thread.id}/reopen`, { method: "POST" });
-    if (!res.ok) { onPatch({ isResolved: true }); return; }
+    const res = await fetch(`/api/comments/${thread.id}/reopen`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      onPatch({ isResolved: true });
+      return;
+    }
     emitCommentsChanged(pageId);
     // Matching Notion — reopening jumps you to the comment's own location
     // (its block, or the page-level thread) instead of leaving you looking
@@ -217,54 +335,73 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
     emitCommentsChanged(pageId);
   }
 
-  const snippet = thread.deletedAt ? "[Comment deleted]" : extractText(thread.content).trim() || "…";
-  const attachment = !thread.deletedAt ? extractFirstAttachment(thread.content) : null;
+  const snippet = thread.deletedAt
+    ? "[Comment deleted]"
+    : extractText(thread.content).trim() || "…";
+  const attachment = thread.deletedAt
+    ? null
+    : extractFirstAttachment(thread.content);
   const kindLabel = thread.blockId
     ? "Comment on a block"
     : thread.propertyId
       ? `${thread.propertyName ?? "Property"}${thread.propertyValueLabel ? `: ${thread.propertyValueLabel}` : ""}`
       : "Page comment";
-  const KindIcon = thread.blockId ? MessageCircle : thread.propertyId ? Tag : FileText;
+  const KindIcon = thread.blockId
+    ? MessageCircle
+    : thread.propertyId
+      ? Tag
+      : FileText;
 
   return (
     <li className="group/discussion relative">
       {!thread.deletedAt && !isEditing && (
-        <div className="absolute top-2 right-2 z-10 hidden items-center gap-px rounded-sm border border-border bg-card px-0.5 py-0.5 group-hover/discussion:flex">
+        <div className="absolute top-2 right-2 z-10 hidden items-center gap-px rounded-sm border border-base-300 bg-base-100 px-0.5 py-0.5 group-hover/discussion:flex">
           <EmojiPicker
-            triggerClassName="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
             onMouseEnter={(e) => showTooltip("Add reaction", e)}
             onMouseLeave={hideTooltip}
-            onSelect={(emoji) => { void toggleReaction(emoji); }}
+            onSelect={(emoji) => {
+              void toggleReaction(emoji);
+            }}
+            triggerClassName="flex size-6 items-center justify-center rounded-sm text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors duration-150 data-open:bg-base-200 data-open:text-base-content"
           />
           {thread.isResolved ? (
             <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); void reopenThread(); }}
+              className="flex size-6 items-center justify-center rounded-sm text-primary hover:bg-base-200 transition-colors duration-150"
+              onClick={(e) => {
+                e.stopPropagation();
+                void reopenThread();
+              }}
               onMouseEnter={(e) => showTooltip("Reopen thread", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded-sm text-primary hover:bg-accent transition-colors duration-150"
+              type="button"
             >
               <ArrowCounterClockwiseIcon size={12} />
             </button>
           ) : (
             <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); void resolveThread(); }}
+              className="flex size-6 items-center justify-center rounded-sm text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors duration-150"
+              onClick={(e) => {
+                e.stopPropagation();
+                void resolveThread();
+              }}
               onMouseEnter={(e) => showTooltip("Resolve thread", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+              type="button"
             >
               <CheckIcon size={12} />
             </button>
           )}
           <SimpleDropdown
-            triggerClassName="flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 data-open:bg-accent data-open:text-foreground"
-            triggerIcon={<DotsThreeIcon size={13} />}
             onMouseEnter={(e) => showTooltip("More options", e)}
             onMouseLeave={hideTooltip}
+            triggerClassName="flex size-6 items-center justify-center rounded-sm text-base-content/70 hover:text-base-content hover:bg-base-200 transition-colors duration-150 data-open:bg-base-200 data-open:text-base-content"
+            triggerIcon={<DotsThreeIcon size={13} />}
           >
             {isAuthor && (
-              <DropdownItem icon={<PencilSimpleIcon size={13} />} onClick={() => setIsEditing(true)}>
+              <DropdownItem
+                icon={<PencilSimpleIcon size={13} />}
+                onClick={() => setIsEditing(true)}
+              >
                 Edit
               </DropdownItem>
             )}
@@ -278,11 +415,18 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
               Copy link
             </DropdownItem>
             <DropdownSeparator />
-            <DropdownItem icon={<BellSlashIcon size={13} />} onClick={() => setIsMuted((v) => !v)}>
+            <DropdownItem
+              icon={<BellSlashIcon size={13} />}
+              onClick={() => setIsMuted((v) => !v)}
+            >
               {isMuted ? "Unmute replies" : "Mute replies"}
             </DropdownItem>
             {(isAuthor || isAdmin) && (
-              <DropdownItem icon={<TrashIcon size={13} />} danger onClick={() => setPendingDelete(true)}>
+              <DropdownItem
+                danger
+                icon={<TrashIcon size={13} />}
+                onClick={() => setPendingDelete(true)}
+              >
                 Delete
               </DropdownItem>
             )}
@@ -292,36 +436,41 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
 
       {isEditing ? (
         <div className="flex items-start gap-2.5 rounded-md px-3 py-2.5">
-          <ThreadAvatar name={thread.author?.name} image={thread.author?.image} />
+          <ThreadAvatar
+            image={thread.author?.image}
+            name={thread.author?.name}
+          />
           <div className="min-w-0 flex-1">
-            <span className="mb-1 block truncate text-xs font-semibold text-foreground">
+            <span className="mb-1 block truncate text-xs font-semibold text-base-content">
               {thread.author?.name ?? "Former Member"}
             </span>
             <CommentComposer
-              workspaceId={workspaceId}
-              mode="edit"
-              initialContent={thread.content ?? undefined}
               autoFocus
-              onSubmit={handleEditSubmit}
+              initialContent={thread.content ?? undefined}
+              mode="edit"
               onCancel={() => setIsEditing(false)}
+              onSubmit={handleEditSubmit}
+              workspaceId={workspaceId}
             />
           </div>
         </div>
       ) : (
-        // A plain clickable div, not a <button> — the reaction pills below
-        // need to be real, independently-clickable <button>s (toggling a
-        // reaction, not opening the thread), and a <button> can't legally
-        // nest another <button> inside it.
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={onOpen}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
-          className="flex w-full cursor-pointer flex-col gap-2 rounded-md border border-transparent px-3 py-2.5 text-left transition-colors duration-150 hover:border-border hover:bg-accent"
-        >
+        // The card stays a plain div — the reaction pills and the attachment
+        // preview below are independently clickable, and a <button> may not
+        // nest another <button>. The "open thread" action is instead a real
+        // button stretched over the card: static content sits beneath it (so
+        // clicking the text still opens the thread, as before), while the
+        // nested controls are positioned above it and keep their own clicks.
+        <div className="relative flex w-full cursor-pointer flex-col gap-2 rounded-md border border-transparent px-3 py-2.5 text-left transition-colors duration-150 hover:border-base-300 hover:bg-base-200">
+          <button
+            aria-label="Open comment thread"
+            className="absolute inset-0 rounded-md"
+            onClick={onOpen}
+            type="button"
+          />
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex min-w-0 items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-2xs font-medium text-muted-foreground">
-              <KindIcon size={10} className="shrink-0" />
+            <span className="inline-flex min-w-0 items-center gap-1 rounded-xs bg-base-200 px-1.5 py-0.5 text-2xs font-medium text-base-content/70">
+              <KindIcon className="shrink-0" size={10} />
               <span className="truncate">{kindLabel}</span>
             </span>
             {thread.isResolved && !thread.deletedAt && (
@@ -331,52 +480,82 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
             )}
           </div>
           <div className="flex items-start gap-2.5">
-            <ThreadAvatar name={thread.author?.name} image={thread.author?.image} />
+            <ThreadAvatar
+              image={thread.author?.image}
+              name={thread.author?.name}
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-xs font-semibold text-foreground">
+                <span className="truncate text-xs font-semibold text-base-content">
                   {thread.author?.name ?? "Former Member"}
                 </span>
-                <span className="shrink-0 text-[11px] text-muted-foreground">
+                <span className="shrink-0 text-[11px] text-base-content/70">
                   {timeAgo(thread.createdAt)}
                   {thread.editedAt && !thread.deletedAt ? " (edited)" : ""}
                 </span>
               </div>
               <div className="mt-0.5 flex items-start gap-1">
-                {attachment?.kind === "file" && <Paperclip size={11} className="mt-0.5 shrink-0 text-muted-foreground" />}
-                <p className={`line-clamp-2 min-w-0 flex-1 text-xs leading-relaxed ${thread.deletedAt ? "italic text-muted-foreground-subtle" : "text-foreground/75"}`}>
+                {attachment?.kind === "file" && (
+                  <Paperclip
+                    className="mt-0.5 shrink-0 text-base-content/70"
+                    size={11}
+                  />
+                )}
+                <p
+                  className={`line-clamp-2 min-w-0 flex-1 text-xs leading-relaxed ${thread.deletedAt ? "italic text-base-content/50" : "text-base-content/75"}`}
+                >
                   {snippet}
                 </p>
               </div>
               {attachment && (
-                // stopPropagation — this whole row is one clickable "open
-                // thread" surface; without it, clicking the thumbnail (or its
-                // own lightbox trigger) would also navigate away instead of
-                // just previewing the image, same fix as the reaction pills.
-                <div onClick={(e) => e.stopPropagation()}>
+                // Positioned so it paints above the stretched "open thread"
+                // button, keeping the thumbnail's own lightbox click intact —
+                // this replaces the stopPropagation that used to be needed
+                // when the whole card was one bubbling click surface.
+                <div className="relative z-10">
                   {attachment.kind === "image" ? (
-                    <ImageAttachment src={attachment.src} alt={attachment.name} />
+                    <ImageAttachment
+                      alt={attachment.name}
+                      src={attachment.src}
+                    />
                   ) : (
-                    <FileAttachment src={attachment.src} name={attachment.name} />
+                    <FileAttachment
+                      name={attachment.name}
+                      src={attachment.src}
+                    />
                   )}
                 </div>
               )}
               {Object.keys(reactions).length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1">
+                <div className="relative z-10 mt-1 flex flex-wrap gap-1">
                   {Object.entries(reactions).map(([emoji, userIds]) => {
                     const iMine = userIds.includes(currentUserId);
                     return (
                       <button
-                        key={emoji}
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); void toggleReaction(emoji); }}
-                        onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
-                        onMouseLeave={hideTooltip}
                         className={`flex items-center gap-0.5 rounded-xs border px-1.5 py-0.5 text-2xs transition-colors duration-150 ${
                           iMine
                             ? "border-primary/30 bg-primary/10 text-primary"
-                            : "border-border bg-muted/50 text-foreground/70 hover:border-border hover:bg-accent"
+                            : "border-base-300 bg-base-200/50 text-base-content/70 hover:border-base-300 hover:bg-base-200"
                         }`}
+                        key={emoji}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void toggleReaction(emoji);
+                        }}
+                        onMouseEnter={(e) =>
+                          showTooltip(
+                            formatReactionTooltip(
+                              emoji,
+                              userIds,
+                              reactionUsers
+                            ),
+                            e,
+                            emoji,
+                            formatReactorNames(userIds, reactionUsers)
+                          )
+                        }
+                        onMouseLeave={hideTooltip}
+                        type="button"
                       >
                         {emoji}
                         <span className="font-semibold">{userIds.length}</span>
@@ -386,9 +565,10 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
                 </div>
               )}
               {thread.replies.length > 0 && (
-                <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <CornerDownRight size={10} className="shrink-0" />
-                  {thread.replies.length} repl{thread.replies.length === 1 ? "y" : "ies"}
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-base-content/70">
+                  <CornerDownRight className="shrink-0" size={10} />
+                  {thread.replies.length} repl
+                  {thread.replies.length === 1 ? "y" : "ies"}
                 </p>
               )}
             </div>
@@ -397,32 +577,48 @@ function DiscussionItem({ thread, pageId, workspaceId, currentUserId, isAdmin, r
       )}
 
       <ConfirmDialog
-        open={pendingDelete}
-        onOpenChange={setPendingDelete}
-        title="Delete this comment?"
-        description="The entire thread and all replies will be permanently deleted."
         confirmLabel="Delete"
+        description="The entire thread and all replies will be permanently deleted."
         onConfirm={handleDelete}
+        onOpenChange={setPendingDelete}
+        open={pendingDelete}
+        title="Delete this comment?"
       />
-      {tooltip && typeof document !== "undefined" && createPortal(
-        tooltip.emoji
-          ? <ReactionTooltip rect={tooltip.rect} emoji={tooltip.emoji} label={tooltip.label} who={tooltip.who} />
-          : <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          tooltip.emoji ? (
+            <ReactionTooltip
+              emoji={tooltip.emoji}
+              label={tooltip.label}
+              rect={tooltip.rect}
+              who={tooltip.who}
+            />
+          ) : (
+            <IconTooltip label={tooltip.label} rect={tooltip.rect} />
+          ),
+          document.body
+        )}
     </li>
   );
 }
 
 // Topbar "Comments" button: opens a side panel listing every comment on the
 // page (page/block/property, "All discussions"-style); clicking an item jumps to it.
-export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin }: Props) {
+export function PageCommentButton({
+  pageId,
+  workspaceId,
+  currentUserId,
+  isAdmin,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [threads, setThreads] = useState<CommentThread[]>([]);
   // Reactions only carry reactor user IDs — this resolves them to display
   // names for the "X reacted with 😀" hover tooltip (see format-reaction-tooltip.ts).
-  const [reactionUsers, setReactionUsers] = useState<Record<string, string | null>>({});
+  const [reactionUsers, setReactionUsers] = useState<
+    Record<string, string | null>
+  >({});
   const [unresolvedCount, setUnresolvedCount] = useState<number | null>(null);
   const [tab, setTab] = useState<"open" | "resolved">("open");
   // Two loads can overlap (e.g. opening the sheet right as an emitCommentsChanged
@@ -432,23 +628,41 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   const requestId = useRef(0);
 
   function load(showSpinner: boolean) {
-    if (showSpinner) setLoading(true);
+    if (showSpinner) {
+      setLoading(true);
+    }
     const thisRequest = ++requestId.current;
     fetch(`/api/pages/${pageId}/comments`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!data || thisRequest !== requestId.current) return;
+        if (!data || thisRequest !== requestId.current) {
+          return;
+        }
         const all = data.comments as CommentThread[];
         setThreads(all);
         setReactionUsers(data.reactionUsers ?? {});
-        setUnresolvedCount(all.filter((t) => !t.isResolved && !t.deletedAt).length);
+        setUnresolvedCount(
+          all.filter((t) => !t.isResolved && !t.deletedAt).length
+        );
       })
       .catch(() => {})
-      .finally(() => { if (thisRequest === requestId.current) setLoading(false); });
+      .finally(() => {
+        if (thisRequest === requestId.current) {
+          setLoading(false);
+        }
+      });
   }
 
+  // `load` is a plain function declaration, so it is a new value every render.
+  // Listing it in the effects below would refetch on every render (load ->
+  // setState -> render -> new load -> load...), so they call the latest version
+  // through this ref instead.
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pageId is a reset trigger, not a value read here — `load` closes over it, and this effect exists to refetch when the page changes.
   useEffect(() => {
-    load(false);
+    loadRef.current(false);
   }, [pageId]);
 
   // A user's *first* reaction on a page won't be in reactionUsers yet (it's
@@ -463,7 +677,10 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   // thread, property popover, or this panel's own items) re-fetches here too
   // — keeps the badge count and thread list live instead of only refreshing
   // on next mount/open.
-  useEffect(() => onCommentsChanged(pageId, () => load(false)), [pageId]);
+  useEffect(
+    () => onCommentsChanged(pageId, () => loadRef.current(false)),
+    [pageId]
+  );
 
   // Auto-open on arrival — set by "View all in full page" links elsewhere
   // (e.g. the table row's comment popover, once there are more comments than
@@ -472,17 +689,20 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   const searchParams = useSearchParams();
   const router = useRouter();
   useEffect(() => {
-    if (searchParams.get("comments") !== "1") return;
+    if (searchParams.get("comments") !== "1") {
+      return;
+    }
     setOpen(true);
-    load(true);
+    loadRef.current(true);
     const url = new URL(window.location.href);
     url.searchParams.delete("comments");
     router.replace(url.pathname + url.search, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, router.replace]);
 
   function patchThread(id: string, patch: Partial<CommentThread>) {
-    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    setThreads((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...patch } : t))
+    );
   }
 
   function removeThread(id: string) {
@@ -493,18 +713,24 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
     setOpen(false);
     if (thread.blockId) {
       window.dispatchEvent(
-        new CustomEvent("workflik:jump-to-page-comment", { detail: { pageId, blockId: thread.blockId } })
+        new CustomEvent("workflik:jump-to-base-200-comment", {
+          detail: { pageId, blockId: thread.blockId },
+        })
       );
     } else if (thread.propertyId) {
       window.dispatchEvent(
-        new CustomEvent("workflik:jump-to-page-comment", { detail: { pageId, propertyId: thread.propertyId } })
+        new CustomEvent("workflik:jump-to-base-200-comment", {
+          detail: { pageId, propertyId: thread.propertyId },
+        })
       );
     } else {
       // The page-level section may not be rendered yet (page-client.tsx hides
       // it until "Add comment" is used or a thread already exists) — ask it
       // to reveal itself first rather than scrolling to an element that may
       // not exist in the DOM.
-      window.dispatchEvent(new CustomEvent("workflik:show-page-comments", { detail: { pageId } }));
+      window.dispatchEvent(
+        new CustomEvent("workflik:show-page-comments", { detail: { pageId } })
+      );
     }
   }
 
@@ -512,17 +738,6 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   // jump to — everything else (including deleted-but-replied-to threads,
   // which still render "[Comment deleted]" the same way the block/page
   // comment threads themselves do) stays visible.
-  function groupByDate(list: CommentThread[]) {
-    const sorted = [...list].sort((a, b) => lastActivity(b) - lastActivity(a));
-    const buckets = new Map<string, CommentThread[]>();
-    for (const t of sorted) {
-      const key = dateBucket(new Date(lastActivity(t)).toISOString());
-      if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key)!.push(t);
-    }
-    return [...buckets.entries()];
-  }
-
   const visibleThreads = useMemo(
     () => threads.filter((t) => !(t.deletedAt && t.replies.length === 0)),
     [threads]
@@ -537,28 +752,37 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   );
 
   const openCount = threads.filter((t) => !t.isResolved && !t.deletedAt).length;
-  const resolvedCount = threads.filter((t) => t.isResolved && !t.deletedAt).length;
-  const { tooltip: triggerTooltip, showTooltip: showTriggerTooltip, hideTooltip: hideTriggerTooltip } = useHoverTooltip();
+  const resolvedCount = threads.filter(
+    (t) => t.isResolved && !t.deletedAt
+  ).length;
+  const {
+    tooltip: triggerTooltip,
+    showTooltip: showTriggerTooltip,
+    hideTooltip: hideTriggerTooltip,
+  } = useHoverTooltip();
 
-  function renderThreadList(grouped: [string, CommentThread[]][], emptyTitle: string) {
+  function renderThreadList(
+    grouped: [string, CommentThread[]][],
+    emptyTitle: string
+  ) {
     if (loading) {
       return (
         <div className="flex items-center justify-center py-16">
-          <div className="h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
+          <div className="h-4 w-4 rounded-full border-2 border-base-300 border-t-primary animate-spin" />
         </div>
       );
     }
     if (grouped.length === 0) {
       return (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-          <div className="flex size-14 items-center justify-center rounded-lg border border-border bg-muted/50">
-            <MessageCircle size={22} className="text-muted-foreground" />
+          <div className="flex size-14 items-center justify-center rounded-lg border border-base-300 bg-base-200/50">
+            <MessageCircle className="text-base-content/70" size={22} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground/80">
+            <p className="text-sm font-semibold text-base-content/80">
               {emptyTitle}
             </p>
-            <p className="mt-1 max-w-55 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-1 max-w-55 text-xs leading-relaxed text-base-content/70">
               Comments on this page will show up here.
             </p>
           </div>
@@ -569,23 +793,23 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
       <div className="flex flex-col gap-5">
         {grouped.map(([label, group]) => (
           <div key={label}>
-            <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground-subtle">
+            <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-base-content/50">
               {label}
             </p>
             <ul className="flex flex-col gap-0.5">
               {group.map((thread) => (
                 <DiscussionItem
-                  key={thread.id}
-                  thread={thread}
-                  pageId={pageId}
-                  workspaceId={workspaceId}
                   currentUserId={currentUserId}
                   isAdmin={isAdmin}
-                  reactionUsers={reactionUsers}
-                  onReactionUserResolved={mergeReactionUser}
+                  key={thread.id}
+                  onDeleted={() => removeThread(thread.id)}
                   onOpen={() => openThread(thread)}
                   onPatch={(patch) => patchThread(thread.id, patch)}
-                  onDeleted={() => removeThread(thread.id)}
+                  onReactionUserResolved={mergeReactionUser}
+                  pageId={pageId}
+                  reactionUsers={reactionUsers}
+                  thread={thread}
+                  workspaceId={workspaceId}
                 />
               ))}
             </ul>
@@ -596,61 +820,86 @@ export function PageCommentButton({ pageId, workspaceId, currentUserId, isAdmin 
   }
 
   return (
-    <Sheet open={open} onOpenChange={(next) => { setOpen(next); if (next) load(true); }}>
+    <Sheet
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          load(true);
+        }
+      }}
+      open={open}
+    >
       <button
-        type="button"
-        onClick={() => setOpen(true)}
         aria-label="Comments"
+        className="relative flex size-7 items-center justify-center rounded-sm text-base-content/70 transition-colors duration-150 hover:bg-base-200 hover:text-base-content"
+        onClick={() => setOpen(true)}
         onMouseEnter={(e) => showTriggerTooltip("Comments", e)}
         onMouseLeave={hideTriggerTooltip}
-        className="relative flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+        type="button"
       >
         <ChatTextIcon size={15} />
         {unresolvedCount != null && unresolvedCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-3.75 min-w-3.75 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold tabular-nums text-primary-foreground">
+          <span className="absolute -right-0.5 -top-0.5 flex h-3.75 min-w-3.75 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold tabular-nums text-primary-content">
             {unresolvedCount}
           </span>
         )}
       </button>
 
-      {triggerTooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={triggerTooltip.rect} label={triggerTooltip.label} />,
-        document.body,
-      )}
+      {triggerTooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip
+            label={triggerTooltip.label}
+            rect={triggerTooltip.rect}
+          />,
+          document.body
+        )}
 
       <SheetContent
-        side="right"
         className="w-full gap-0 p-0 sm:max-w-sm"
         // Radix listens for Escape at the document level in the capture
         // phase, so it would otherwise close this whole panel before an
         // inline comment composer's own Escape handler (cancel-this-edit)
         // ever gets a chance to run. Let the composer handle it instead.
         onEscapeKeyDown={(e) => {
-          if ((e.target as HTMLElement)?.closest?.('[contenteditable="true"]')) e.preventDefault();
+          if (
+            (e.target as HTMLElement)?.closest?.('[contenteditable="true"]')
+          ) {
+            e.preventDefault();
+          }
         }}
+        side="right"
       >
         <TabGroup
           className="contents"
-          selectedIndex={tab === "open" ? 0 : 1}
           onChange={(i) => setTab(i === 0 ? "open" : "resolved")}
+          selectedIndex={tab === "open" ? 0 : 1}
         >
-          <SheetHeader className="gap-3 border-b border-border px-5 pb-4 pt-5">
+          <SheetHeader className="gap-3 border-b border-base-300 px-5 pb-4 pt-5">
             <SheetTitle className="text-base">Comments</SheetTitle>
-            <TabList className="inline-flex w-fit items-center gap-0.5 rounded-sm bg-muted p-0.5">
-              <Tab className="flex items-center gap-1.5 rounded-xs border border-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground outline-none transition-colors duration-150 hover:text-foreground data-selected:border-border data-selected:bg-card data-selected:text-foreground">
+            <TabList className="inline-flex w-fit items-center gap-0.5 rounded-sm bg-base-200 p-0.5">
+              <Tab className="flex items-center gap-1.5 rounded-xs border border-transparent px-2.5 py-1 text-xs font-medium text-base-content/70 outline-none transition-colors duration-150 hover:text-base-content data-selected:border-base-300 data-selected:bg-base-100 data-selected:text-base-content">
                 Open
-                <span className="tabular-nums text-[11px] text-muted-foreground">{openCount}</span>
+                <span className="tabular-nums text-[11px] text-base-content/70">
+                  {openCount}
+                </span>
               </Tab>
-              <Tab className="flex items-center gap-1.5 rounded-xs border border-transparent px-2.5 py-1 text-xs font-medium text-muted-foreground outline-none transition-colors duration-150 hover:text-foreground data-selected:border-border data-selected:bg-card data-selected:text-foreground">
+              <Tab className="flex items-center gap-1.5 rounded-xs border border-transparent px-2.5 py-1 text-xs font-medium text-base-content/70 outline-none transition-colors duration-150 hover:text-base-content data-selected:border-base-300 data-selected:bg-base-100 data-selected:text-base-content">
                 Resolved
-                <span className="tabular-nums text-[11px] text-muted-foreground">{resolvedCount}</span>
+                <span className="tabular-nums text-[11px] text-base-content/70">
+                  {resolvedCount}
+                </span>
               </Tab>
             </TabList>
           </SheetHeader>
 
           <TabPanels className="flex-1 overflow-y-auto px-3 py-3">
-            <TabPanel>{renderThreadList(openGrouped, "No open comments")}</TabPanel>
-            <TabPanel>{renderThreadList(resolvedGrouped, "No resolved comments")}</TabPanel>
+            <TabPanel>
+              {renderThreadList(openGrouped, "No open comments")}
+            </TabPanel>
+            <TabPanel>
+              {renderThreadList(resolvedGrouped, "No resolved comments")}
+            </TabPanel>
           </TabPanels>
         </TabGroup>
       </SheetContent>

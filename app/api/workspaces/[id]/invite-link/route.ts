@@ -2,8 +2,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { workspaces } from "@/lib/db/schema";
 import {
-  apiError,
   ApiError,
+  apiError,
   getSession,
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
@@ -19,18 +19,22 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     const [ws] = await db
       .select({
-        inviteLinkToken:  workspaces.inviteLinkToken,
+        inviteLinkToken: workspaces.inviteLinkToken,
         inviteLinkActive: workspaces.inviteLinkActive,
-        inviteLinkRole:   workspaces.inviteLinkRole,
+        inviteLinkRole: workspaces.inviteLinkRole,
       })
       .from(workspaces)
       .where(eq(workspaces.id, id))
       .limit(1);
 
-    if (!ws) return apiError(404, "Workspace not found");
+    if (!ws) {
+      return apiError(404, "Workspace not found");
+    }
     return Response.json(ws);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
@@ -45,20 +49,22 @@ export async function POST(_req: Request, { params }: Ctx) {
     const [updated] = await db
       .update(workspaces)
       .set({
-        inviteLinkToken:  crypto.randomUUID(),
+        inviteLinkToken: crypto.randomUUID(),
         inviteLinkActive: true,
-        updatedAt:        new Date(),
+        updatedAt: new Date(),
       })
       .where(eq(workspaces.id, id))
       .returning({
-        inviteLinkToken:  workspaces.inviteLinkToken,
+        inviteLinkToken: workspaces.inviteLinkToken,
         inviteLinkActive: workspaces.inviteLinkActive,
-        inviteLinkRole:   workspaces.inviteLinkRole,
+        inviteLinkRole: workspaces.inviteLinkRole,
       });
 
     return Response.json(updated);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
@@ -74,15 +80,17 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     await db
       .update(workspaces)
       .set({
-        inviteLinkToken:  crypto.randomUUID(),
+        inviteLinkToken: crypto.randomUUID(),
         inviteLinkActive: false,
-        updatedAt:        new Date(),
+        updatedAt: new Date(),
       })
       .where(eq(workspaces.id, id));
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

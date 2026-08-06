@@ -26,17 +26,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <AlertTriangle className="size-4.5 text-warning" />
         ),
         error: (
-          <XCircle className="size-4.5 text-destructive" />
+          <XCircle className="size-4.5 text-error" />
         ),
         loading: (
-          <LoaderCircle className="size-4.5 animate-spin text-muted-foreground" />
+          <LoaderCircle className="size-4.5 animate-spin text-base-content/70" />
         ),
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          "--normal-bg": "var(--color-base-100)",
+          "--normal-text": "var(--color-base-content)",
+          "--normal-border": "var(--color-base-300)",
           "--border-radius": "var(--radius-md)",
         } as React.CSSProperties
       }

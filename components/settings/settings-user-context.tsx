@@ -2,8 +2,15 @@
 
 import { createContext, useContext, useState } from "react";
 
-interface SettingsUser { name: string | null; email: string; image: string | null }
-interface Ctx { user: SettingsUser; updateUser: (patch: Partial<SettingsUser>) => void }
+interface SettingsUser {
+  email: string;
+  image: string | null;
+  name: string | null;
+}
+interface Ctx {
+  updateUser: (patch: Partial<SettingsUser>) => void;
+  user: SettingsUser;
+}
 
 const SettingsUserCtx = createContext<Ctx>({
   user: { name: null, email: "", image: null },
@@ -11,11 +18,15 @@ const SettingsUserCtx = createContext<Ctx>({
 });
 
 export function SettingsUserProvider({
-  initial, children,
-}: { initial: SettingsUser; children: React.ReactNode }) {
+  initial,
+  children,
+}: {
+  initial: SettingsUser;
+  children: React.ReactNode;
+}) {
   const [user, setUser] = useState<SettingsUser>(initial);
   function updateUser(patch: Partial<SettingsUser>) {
-    setUser(u => ({ ...u, ...patch }));
+    setUser((u) => ({ ...u, ...patch }));
   }
   return (
     <SettingsUserCtx.Provider value={{ user, updateUser }}>
@@ -24,4 +35,6 @@ export function SettingsUserProvider({
   );
 }
 
-export function useSettingsUser() { return useContext(SettingsUserCtx); }
+export function useSettingsUser() {
+  return useContext(SettingsUserCtx);
+}

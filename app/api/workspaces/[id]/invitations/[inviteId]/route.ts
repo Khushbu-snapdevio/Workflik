@@ -1,7 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { workspaceMembers } from "@/lib/db/schema";
-import { apiError, ApiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string; inviteId: string }> };
 
@@ -19,20 +24,22 @@ export async function DELETE(_req: Request, { params }: Ctx) {
         and(
           eq(workspaceMembers.id, inviteId),
           eq(workspaceMembers.workspaceId, id),
-          eq(workspaceMembers.status, "invited"),
+          eq(workspaceMembers.status, "invited")
         )
       )
       .limit(1);
 
-    if (!invite) return apiError(404, "Invitation not found");
+    if (!invite) {
+      return apiError(404, "Invitation not found");
+    }
 
-    await db
-      .delete(workspaceMembers)
-      .where(eq(workspaceMembers.id, inviteId));
+    await db.delete(workspaceMembers).where(eq(workspaceMembers.id, inviteId));
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

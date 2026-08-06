@@ -12,6 +12,8 @@ export async function getUserCount(): Promise<number> {
 // unless ALLOW_PUBLIC_REGISTRATION keeps it open. Single source of truth — all
 // signup paths and the sign-in UI call this instead of re-deriving it.
 export async function isRegistrationAllowed(): Promise<boolean> {
-  if (env.ALLOW_PUBLIC_REGISTRATION) return true;
+  if (env.ALLOW_PUBLIC_REGISTRATION) {
+    return true;
+  }
   return (await getUserCount()) === 0;
 }

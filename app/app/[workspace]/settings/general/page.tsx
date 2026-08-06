@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { WorkspaceGeneralSection } from "@/components/settings/workspace-general-section";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces } from "@/lib/db/schema";
-import { WorkspaceGeneralSection } from "@/components/settings/workspace-general-section";
 
 export const metadata: Metadata = { title: "General — Settings" };
 
@@ -20,7 +20,9 @@ export default async function GeneralSettingsPage({ params }: Props) {
     .where(eq(workspaces.slug, slug))
     .limit(1);
 
-  if (!ws) notFound();
+  if (!ws) {
+    notFound();
+  }
 
   const [member] = await db
     .select({ role: workspaceMembers.role })
@@ -28,24 +30,26 @@ export default async function GeneralSettingsPage({ params }: Props) {
     .where(
       and(
         eq(workspaceMembers.workspaceId, ws.id),
-        eq(workspaceMembers.userId, session.user.id),
-      ),
+        eq(workspaceMembers.userId, session.user.id)
+      )
     )
     .limit(1);
 
-  if (!member || member.role !== "admin") notFound();
+  if (member?.role !== "admin") {
+    notFound();
+  }
 
   return (
     <WorkspaceGeneralSection
       workspace={{
-        id:               ws.id,
-        name:             ws.name,
-        slug:             ws.slug,
-        icon:             ws.icon,
+        id: ws.id,
+        name: ws.name,
+        slug: ws.slug,
+        icon: ws.icon,
         defaultPageAccess: ws.defaultPageAccess,
-        inviteLinkToken:  ws.inviteLinkToken,
+        inviteLinkToken: ws.inviteLinkToken,
         inviteLinkActive: ws.inviteLinkActive,
-        inviteLinkRole:   ws.inviteLinkRole,
+        inviteLinkRole: ws.inviteLinkRole,
       }}
     />
   );

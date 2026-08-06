@@ -3,13 +3,13 @@ import { PRODUCT_NAME } from "@/config/platform";
 import { EmailLayout, emailStyles } from "@/lib/email/components/layout";
 
 interface DigestItem {
-  who: string;
   snippet: string | null;
+  who: string;
 }
 
 interface DigestSection {
-  pageTitle: string;
   items: DigestItem[];
+  pageTitle: string;
 }
 
 export function DigestEmail({
@@ -49,7 +49,11 @@ export function DigestEmail({
           {s.items.map((it, j) => (
             <Text
               key={j}
-              style={{ ...emailStyles.paragraph, fontSize: "14px", margin: "0 0 6px" }}
+              style={{
+                ...emailStyles.paragraph,
+                fontSize: "14px",
+                margin: "0 0 6px",
+              }}
             >
               <strong style={{ color: "#0C2340" }}>{it.who}</strong>
               {it.snippet ? `: "${it.snippet}"` : ""}

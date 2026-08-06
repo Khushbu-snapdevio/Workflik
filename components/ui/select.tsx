@@ -8,12 +8,20 @@ import {
   ListboxOption,
   ListboxSelectedOption,
 } from "@headlessui/react"
-import { ChevronDown, Check } from "lucide-react"
+import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // The one primitive that genuinely needed a real behavior library, since a keyboard-navigable
 // select isn't something daisyUI's CSS can give you. `ListboxSelectedOption` mirrors the selected
 // option's children into the trigger, same as Radix's `SelectValue`.
+//
+// Split of responsibility: Headless UI's `Listbox` owns behavior (keyboard
+// navigation, focus, ARIA, open state, anchoring); daisyUI's `select` class
+// styles the trigger, including drawing the caret itself — which is why no
+// chevron icon is rendered here. The floating panel keeps hand-written
+// surface classes built from daisy's own theme tokens: daisy's
+// `dropdown-content` is inert outside a `.dropdown` ancestor and would fight
+// Headless UI's anchoring, so there is no daisy class for this surface.
 
 const SelectOptionsContext = React.createContext<React.ReactNode>(null)
 
@@ -62,7 +70,7 @@ function SelectValue({
     <span data-slot="select-value" className={cn("min-w-0 flex-1 truncate text-left", className)}>
       <ListboxSelectedOption
         options={optionsChildren}
-        placeholder={<span className="text-muted-foreground-subtle">{placeholder}</span>}
+        placeholder={<span className="text-base-content/50">{placeholder}</span>}
       />
     </span>
   )
@@ -82,20 +90,23 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm whitespace-nowrap",
-        "text-foreground transition-colors",
-        "hover:bg-accent/40 hover:border-border",
-        "focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-primary/60",
+        // daisy's `select` owns the caret, the padding (including the
+        // inline-end room the caret sits in), the radius and the appearance
+        // reset. Overridden here: `w-full` (daisy clamps to 20rem), the
+        // base-200 surface and base-300 border shared with the app's other
+        // field chrome, and an explicit height so the trigger matches
+        // `input`'s 36px rather than daisy's 40px.
+        "select w-full border border-base-300 bg-base-200 text-sm text-base-content transition-colors",
+        "hover:bg-base-200/40 hover:border-base-300",
+        "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/60",
         "disabled:cursor-not-allowed disabled:opacity-50",
         size === "default" && "h-9",
         size === "sm" && "h-8 text-xs",
-        "[&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       {...props}
     >
       {children}
-      <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
     </ListboxButton>
   )
 }
@@ -119,7 +130,7 @@ function SelectContent({
       className={cn(
         // z-600: sits above this app's other stacking tiers (sidebar, modals) regardless of trigger context.
         // min-w-(--button-width): Headless UI's measured trigger width, floors the panel from rendering narrower.
-        "z-600 min-w-(--button-width) overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground",
+        "z-600 min-w-(--button-width) overflow-y-auto rounded-md border border-base-300 bg-base-100 p-1 text-base-content",
         "shadow-float",
         "transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95",
         className
@@ -149,7 +160,7 @@ function SelectItem({
         if (bag.selectedOption) return cn("contents", custom)
         return cn(
           "relative flex w-full cursor-default scroll-my-1 items-center gap-2 rounded-sm py-2 pl-3 pr-8 text-sm outline-none",
-          "text-foreground transition-colors",
+          "text-base-content transition-colors",
           "data-focus:bg-primary/10 data-focus:text-primary",
           "data-selected:font-medium",
           "data-disabled:pointer-events-none data-disabled:opacity-50",

@@ -1,4 +1,4 @@
-import { Node, mergeAttributes } from "@tiptap/react";
+import { mergeAttributes, Node } from "@tiptap/react";
 
 export const Callout = Node.create({
   name: "callout",
@@ -9,8 +9,8 @@ export const Callout = Node.create({
   addAttributes() {
     return {
       blockId: { default: null },
-      icon:    { default: "💡" },
-      color:   { default: "" },
+      icon: { default: "💡" },
+      color: { default: "" },
     };
   },
 
@@ -19,6 +19,10 @@ export const Callout = Node.create({
   },
 
   renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, unknown> }) {
-    return ["div", mergeAttributes(HTMLAttributes, { "data-type": "callout" }), 0];
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { "data-type": "callout" }),
+      0,
+    ];
   },
 });

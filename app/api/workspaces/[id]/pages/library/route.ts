@@ -1,5 +1,10 @@
 import { getLibraryPage } from "@/lib/pages/library";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -15,15 +20,17 @@ export async function GET(req: Request, { params }: Ctx) {
 
     const { searchParams } = new URL(req.url);
     const result = await getLibraryPage(workspaceId, session.user.id, {
-      tab:    searchParams.get("tab"),
-      search:  searchParams.get("search") ?? "",
-      page:   Number.parseInt(searchParams.get("page") ?? "1", 10),
+      tab: searchParams.get("tab"),
+      search: searchParams.get("search") ?? "",
+      page: Number.parseInt(searchParams.get("page") ?? "1", 10),
       pageSize: Number.parseInt(searchParams.get("pageSize") ?? "", 10),
     });
 
     return Response.json(result);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error("[library]", err);
     return apiError(500, "Internal server error");
   }

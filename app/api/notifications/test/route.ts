@@ -4,26 +4,35 @@ import { notifications, pages, workspaceMembers } from "@/lib/db/schema";
 import { apiError, getSession } from "@/lib/workspaces/auth";
 
 const VALID_TYPES = [
-  "mention", "comment", "reply", "resolved", "reopened",
-  "access_granted", "workspace_invite", "workspace_invite_accepted", "guest_accepted",
-  "trash_warning", "page_update", "task_assigned",
+  "mention",
+  "comment",
+  "reply",
+  "resolved",
+  "reopened",
+  "access_granted",
+  "workspace_invite",
+  "workspace_invite_accepted",
+  "guest_accepted",
+  "trash_warning",
+  "page_update",
+  "task_assigned",
 ] as const;
 
-type NotifType = typeof VALID_TYPES[number];
+type NotifType = (typeof VALID_TYPES)[number];
 
 const SNIPPETS: Record<NotifType, string> = {
-  mention:          "Hey @you, take a look at this section",
-  comment:          "This looks great, but we should revisit the design",
-  reply:            "Agreed! Let's schedule a call to discuss",
-  resolved:         "",
-  reopened:         "",
-  access_granted:   "",
+  mention: "Hey @you, take a look at this section",
+  comment: "This looks great, but we should revisit the design",
+  reply: "Agreed! Let's schedule a call to discuss",
+  resolved: "",
+  reopened: "",
+  access_granted: "",
   workspace_invite: "",
   workspace_invite_accepted: "Test User",
-  guest_accepted:   "Test User",
-  trash_warning:    "Q4 Planning Document",
-  page_update:      "Q4 Planning Document",
-  task_assigned:    "Design landing page",
+  guest_accepted: "Test User",
+  trash_warning: "Q4 Planning Document",
+  page_update: "Q4 Planning Document",
+  task_assigned: "Design landing page",
 };
 
 // POST /api/notifications/test?workspaceId=xxx&type=mention
@@ -38,9 +47,11 @@ export async function POST(req: Request) {
     const session = await getSession();
     const { searchParams } = new URL(req.url);
     const workspaceId = searchParams.get("workspaceId");
-    const type        = searchParams.get("type") as NotifType | null;
+    const type = searchParams.get("type") as NotifType | null;
 
-    if (!workspaceId) return apiError(400, "workspaceId required");
+    if (!workspaceId) {
+      return apiError(400, "workspaceId required");
+    }
     if (!type || !VALID_TYPES.includes(type)) {
       return apiError(400, `type must be one of: ${VALID_TYPES.join(", ")}`);
     }
@@ -49,12 +60,16 @@ export async function POST(req: Request) {
     const [member] = await db
       .select({ id: workspaceMembers.id })
       .from(workspaceMembers)
-      .where(and(
-        eq(workspaceMembers.workspaceId, workspaceId),
-        eq(workspaceMembers.userId, session.user.id),
-      ))
+      .where(
+        and(
+          eq(workspaceMembers.workspaceId, workspaceId),
+          eq(workspaceMembers.userId, session.user.id)
+        )
+      )
       .limit(1);
-    if (!member) return apiError(403, "Not a workspace member");
+    if (!member) {
+      return apiError(403, "Not a workspace member");
+    }
 
     // Pick any page in the workspace as the notification target
     const [page] = await db
@@ -67,13 +82,13 @@ export async function POST(req: Request) {
       .insert(notifications)
       .values({
         workspaceId,
-        recipientId:    session.user.id,
-        senderId:       session.user.id,
+        recipientId: session.user.id,
+        senderId: session.user.id,
         type,
-        pageId:         page?.id ?? null,
-        sourceId:       page?.id ?? null,
+        pageId: page?.id ?? null,
+        sourceId: page?.id ?? null,
         contentSnippet: SNIPPETS[type] || null,
-        isRead:         false,
+        isRead: false,
       })
       .returning({ id: notifications.id });
 
@@ -94,7 +109,9 @@ export async function DELETE(req: Request) {
     const session = await getSession();
     const { searchParams } = new URL(req.url);
     const workspaceId = searchParams.get("workspaceId");
-    if (!workspaceId) return apiError(400, "workspaceId required");
+    if (!workspaceId) {
+      return apiError(400, "workspaceId required");
+    }
 
     await db
       .delete(notifications)

@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 import { db } from "@/lib/db";
-import { publicLinks, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import { pages, publicLinks } from "@/lib/db/schema";
 import { requirePagePermission } from "@/lib/permissions/resolver";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -19,7 +19,9 @@ export async function GET(_req: Request, { params }: Ctx) {
       .from(pages)
       .where(eq(pages.id, pageId))
       .limit(1);
-    if (!page) return apiError(404, "Page not found");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
 
     await requirePagePermission(session.user.id, pageId, "full_access");
 
@@ -31,14 +33,16 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     return Response.json({ link: link ?? null });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }
 }
 
 const updateSchema = z.object({
-  isActive:    z.boolean(),
+  isActive: z.boolean(),
   accessLevel: z.enum(["can_view", "can_comment"]).optional(),
 });
 
@@ -53,13 +57,17 @@ export async function POST(req: Request, { params }: Ctx) {
       .from(pages)
       .where(eq(pages.id, pageId))
       .limit(1);
-    if (!page) return apiError(404, "Page not found");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
 
     await requirePagePermission(session.user.id, pageId, "full_access");
 
     const body = await req.json();
     const parsed = updateSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.issues[0].message);
+    if (!parsed.success) {
+      return apiError(400, parsed.error.issues[0].message);
+    }
 
     const { isActive, accessLevel } = parsed.data;
 
@@ -75,10 +83,10 @@ export async function POST(req: Request, { params }: Ctx) {
         .insert(publicLinks)
         .values({
           pageId,
-          token:       nanoid(21),
+          token: nanoid(21),
           accessLevel: accessLevel ?? "can_view",
           isActive,
-          createdBy:   session.user.id,
+          createdBy: session.user.id,
         })
         .returning();
       return Response.json({ link: created });
@@ -99,7 +107,9 @@ export async function POST(req: Request, { params }: Ctx) {
 
     return Response.json({ link: updated });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }
@@ -120,7 +130,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
     return Response.json({ ok: true });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }

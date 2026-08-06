@@ -13,22 +13,26 @@ export async function handleWorkspaceInviteSend(
 }
 
 async function processInvite(data: WorkspaceInviteSendPayload) {
-  console.log(`[invite-email] preparing invite email for ${data.invitedEmail} (workspace "${data.workspaceName}")`);
+  console.log(
+    `[invite-email] preparing invite email for ${data.invitedEmail} (workspace "${data.workspaceName}")`
+  );
 
   const acceptUrl = `${env.NEXT_PUBLIC_APP_URL}/invite/${data.inviteToken}`;
 
   const { html, text } = await workspaceInviteTemplate({
-    inviterName:   data.inviterName,
+    inviterName: data.inviterName,
     workspaceName: data.workspaceName,
     acceptUrl,
   });
 
   await enqueueEmail({
-    to:      data.invitedEmail,
+    to: data.invitedEmail,
     subject: `You've been invited to ${data.workspaceName}`,
     html,
     text,
   });
 
-  console.log(`[invite-email] queued into email outbox for ${data.invitedEmail} — will be sent via SMTP by the email.send job`);
+  console.log(
+    `[invite-email] queued into email outbox for ${data.invitedEmail} — will be sent via SMTP by the email.send job`
+  );
 }

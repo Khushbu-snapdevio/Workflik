@@ -1,12 +1,12 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Logo } from "@/components/ui/logo";
 import { requestPasswordReset } from "@/lib/auth/client";
 
 export default function ForgotPasswordPage() {
@@ -42,13 +42,13 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-page px-4">
+    <main className="grid min-h-screen place-items-center bg-base-200 px-4">
       <div className="w-full max-w-95">
         <Link className="mb-10 flex flex-col items-center gap-3" href="/">
           <Logo className="h-10 w-auto" height={45} width={180} />
         </Link>
 
-        <div className="rounded-xl border border-border bg-card px-8 py-8">
+        <div className="rounded-xl border border-base-300 bg-base-100 px-8 py-8">
           {sent ? (
             <div className="text-center">
               <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-success/10">
@@ -64,16 +64,16 @@ export default function ForgotPasswordPage() {
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>
-              <h1 className="mb-2 text-xl font-bold text-foreground">
+              <h1 className="mb-2 text-xl font-bold text-base-content">
                 Check your inbox
               </h1>
-              <p className="mb-1 text-sm text-muted-foreground">
+              <p className="mb-1 text-sm text-base-content/70">
                 If an account exists for
               </p>
-              <p className="mb-7 text-sm font-semibold text-foreground">
+              <p className="mb-7 text-sm font-semibold text-base-content">
                 {email}
               </p>
-              <p className="mb-6 text-xs text-muted-foreground">
+              <p className="mb-6 text-xs text-base-content/70">
                 you'll receive a password reset link shortly. If email isn't
                 configured on this instance, check the background worker's
                 console output for the link instead.
@@ -90,10 +90,10 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <div className="mb-7">
-                <h1 className="text-xl font-bold text-foreground">
+                <h1 className="text-xl font-bold text-base-content">
                   Reset your password
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-base-content/70">
                   We'll send a reset link to your email.
                 </p>
               </div>
@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
               <form className="space-y-4" noValidate onSubmit={onSubmit}>
                 <div>
                   <Label
-                    className="mb-1.5 block text-sm font-medium text-foreground"
+                    className="mb-1.5 block text-sm font-medium text-base-content"
                     htmlFor="email"
                   >
                     Work email
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
                 </div>
 
                 {error && (
-                  <p className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
+                  <p className="rounded-sm border border-error/20 bg-error/5 px-3.5 py-2.5 text-sm text-error">
                     {error}
                   </p>
                 )}
@@ -133,9 +133,9 @@ export default function ForgotPasswordPage() {
                   {submitting ? "Sending…" : "Send reset link"}
                 </Button>
 
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-center text-sm text-base-content/70">
                   <Link
-                    className="font-medium text-foreground underline underline-offset-2 transition-colors duration-150 hover:text-primary"
+                    className="font-medium text-base-content underline underline-offset-2 transition-colors duration-150 hover:text-primary"
                     href="/auth/login"
                   >
                     Back to sign in

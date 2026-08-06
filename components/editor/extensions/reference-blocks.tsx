@@ -1,3 +1,9 @@
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+} from "@headlessui/react";
 import type { NodeViewProps } from "@tiptap/react";
 import {
   mergeAttributes,
@@ -5,25 +11,24 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from "@headlessui/react";
 import { Check, ChevronDown, FileText } from "lucide-react";
 import dynamic from "next/dynamic";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
+import { MiniPageContent } from "@/components/editor/mini-page-content";
+import { PageIcon } from "@/components/pages/page-icon";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
-import { PageIcon } from "@/components/pages/page-icon";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
-import { MiniPageContent } from "@/components/editor/mini-page-content";
 
 const DatabasePage = dynamic(
   () =>
@@ -31,7 +36,7 @@ const DatabasePage = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-40 animate-pulse rounded-md bg-muted/30" />
+      <div className="h-40 animate-pulse rounded-md bg-base-200/30" />
     ),
   }
 );
@@ -59,31 +64,34 @@ function BlockTypeSelect({
     BLOCK_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? "Paragraph";
 
   return (
-    <Listbox value={value} onChange={onChange}>
+    <Listbox onChange={onChange} value={value}>
       <div className="relative w-30 shrink-0">
-        <ListboxButton
-          className="group flex w-full items-center justify-between rounded-sm border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors hover:border-border data-open:border-primary data-open:ring-2 data-open:ring-primary/20"
-        >
+        <ListboxButton className="group flex w-full items-center justify-between rounded-sm border border-base-300 bg-base-200 px-2.5 py-1.5 text-xs text-base-content outline-none transition-colors hover:border-base-300 data-open:border-primary data-open:ring-2 data-open:ring-primary/20">
           <span>{label}</span>
           <ChevronDown
+            className="shrink-0 text-base-content/70 transition-transform group-data-open:rotate-180"
             size={10}
-            className="shrink-0 text-muted-foreground transition-transform group-data-open:rotate-180"
           />
         </ListboxButton>
         <ListboxOptions
           anchor={{ to: "bottom start", gap: 4 }}
+          className="z-200 min-w-30 overflow-hidden rounded-md border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+          modal={false}
           transition
-          className="z-200 min-w-30 overflow-hidden rounded-md border border-border bg-popover py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
         >
           {BLOCK_TYPE_OPTIONS.map((opt) => (
             <ListboxOption
-              className="flex w-full cursor-default items-center gap-2 px-3 py-1.5 text-left text-xs text-foreground transition-colors data-focus:bg-accent data-selected:font-semibold"
+              className="flex w-full cursor-default items-center gap-2 px-3 py-1.5 text-left text-xs text-base-content transition-colors data-focus:bg-base-200 data-selected:font-semibold"
               key={opt.value}
               value={opt.value}
             >
               {({ selected }) => (
                 <>
-                  {selected ? <Check size={12} className="text-primary" /> : <span className="w-3" />}
+                  {selected ? (
+                    <Check className="text-primary" size={12} />
+                  ) : (
+                    <span className="w-3" />
+                  )}
                   {opt.label}
                 </>
               )}
@@ -106,13 +114,18 @@ interface LinkedPageOptions {
 }
 
 interface PageSearchResult {
+  breadcrumb: string;
+  icon: string | null;
   pageId: string;
   title: string;
-  icon: string | null;
-  breadcrumb: string;
 }
 
-function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeViewProps) {
+function LinkedPageView({
+  node,
+  updateAttributes,
+  deleteNode,
+  extension,
+}: NodeViewProps) {
   const pageId = (node.attrs.pageId as string) || "";
   const { workspaceId, workspaceSlug } = extension.options as LinkedPageOptions;
 
@@ -140,7 +153,11 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
       .then((r) => (r.ok ? r.json() : null))
       .then(
         (
-          page: { title: string | null; icon: string | null; shortId: string } | null
+          page: {
+            title: string | null;
+            icon: string | null;
+            shortId: string;
+          } | null
         ) => {
           if (cancelled || !page) {
             return;
@@ -166,16 +183,31 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
   // leaves this mention showing its old title for as long as it stays mounted.
   useEffect(() => {
     function onTitleChanged(e: Event) {
-      const detail = (e as CustomEvent<{ pageId: string; title?: string; icon?: string | null }>).detail;
-      if (!detail || detail.pageId !== pageId) return;
-      setResolved((prev) => prev && {
-        ...prev,
-        title: detail.title !== undefined ? (detail.title || "Untitled") : prev.title,
-        icon: detail.icon !== undefined ? detail.icon : prev.icon,
-      });
+      const detail = (
+        e as CustomEvent<{
+          pageId: string;
+          title?: string;
+          icon?: string | null;
+        }>
+      ).detail;
+      if (!detail || detail.pageId !== pageId) {
+        return;
+      }
+      setResolved(
+        (prev) =>
+          prev && {
+            ...prev,
+            title:
+              detail.title === undefined
+                ? prev.title
+                : detail.title || "Untitled",
+            icon: detail.icon === undefined ? prev.icon : detail.icon,
+          }
+      );
     }
     window.addEventListener("workflik:page-title-changed", onTitleChanged);
-    return () => window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+    return () =>
+      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
   }, [pageId]);
 
   // Live search-as-you-type while not yet linked — falls back to recently
@@ -208,7 +240,10 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
             );
           } else {
             setIsRecent(true);
-            type RecentRow = { pageId: string; page: { title: string | null; icon: string | null } };
+            type RecentRow = {
+              pageId: string;
+              page: { title: string | null; icon: string | null };
+            };
             setResults(
               (data as RecentRow[]).map((r) => ({
                 pageId: r.pageId,
@@ -253,12 +288,11 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
     return (
       <NodeViewWrapper contentEditable={false}>
         <div className="relative my-1" ref={wrapperRef}>
-          <div className="flex items-center gap-2 rounded-sm border border-border bg-background px-2 py-1.5">
+          <div className="flex items-center gap-2 rounded-sm border border-base-300 bg-base-200 px-2 py-1.5">
             <span className="font-semibold text-primary">↗</span>
             <input
-              // biome-ignore lint/a11y/noAutofocus: intentional — block was just inserted
               autoFocus
-              className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/70"
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
@@ -287,14 +321,14 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
             />
           </div>
           {results.length > 0 && (
-            <div className="absolute left-0 top-[calc(100%+4px)] z-200 max-h-64 w-full min-w-65 overflow-y-auto rounded-md border border-border bg-popover py-1">
-              <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="absolute left-0 top-[calc(100%+4px)] z-200 max-h-64 w-full min-w-65 overflow-y-auto rounded-md border border-base-300 bg-base-100 py-1">
+              <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-base-content/70">
                 {isRecent ? "Recent" : "Pages"}
               </p>
               {results.map((r, i) => (
                 <button
                   className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
-                    i === selectedIndex ? "bg-accent" : "hover:bg-accent"
+                    i === selectedIndex ? "bg-base-200" : "hover:bg-base-200"
                   }`}
                   key={r.pageId}
                   onClick={() => selectPage(r)}
@@ -306,13 +340,20 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
                     {r.icon ? (
                       <PageIcon icon={r.icon} size={16} />
                     ) : (
-                      <FileText className="shrink-0 text-muted-foreground" size={16} />
+                      <FileText
+                        className="shrink-0 text-base-content/70"
+                        size={16}
+                      />
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-foreground">{r.title}</span>
+                    <span className="block truncate text-base-content">
+                      {r.title}
+                    </span>
                     {r.breadcrumb && (
-                      <span className="block truncate text-xs text-muted-foreground">{r.breadcrumb}</span>
+                      <span className="block truncate text-xs text-base-content/70">
+                        {r.breadcrumb}
+                      </span>
                     )}
                   </span>
                 </button>
@@ -320,7 +361,7 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
             </div>
           )}
           {query.trim() && results.length === 0 && (
-            <div className="absolute left-0 top-[calc(100%+4px)] z-200 w-full rounded-md border border-border bg-popover px-3 py-2 text-sm text-muted-foreground">
+            <div className="absolute left-0 top-[calc(100%+4px)] z-200 w-full rounded-md border border-base-300 bg-base-100 px-3 py-2 text-sm text-base-content/70">
               No matching pages
             </div>
           )}
@@ -333,8 +374,8 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
     return (
       <NodeViewWrapper contentEditable={false}>
         <div className="my-0.5 flex items-center gap-2 rounded-sm px-2 py-1.5">
-          <div className="size-4.5 animate-pulse rounded bg-muted/50" />
-          <div className="h-4 w-32 animate-pulse rounded bg-muted/40" />
+          <div className="size-4.5 animate-pulse rounded bg-base-200/50" />
+          <div className="h-4 w-32 animate-pulse rounded bg-base-200/40" />
         </div>
       </NodeViewWrapper>
     );
@@ -343,14 +384,14 @@ function LinkedPageView({ node, updateAttributes, deleteNode, extension }: NodeV
   return (
     <NodeViewWrapper contentEditable={false}>
       <a
-        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-sm px-2 py-1.5 transition-colors hover:bg-accent"
+        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-sm px-2 py-1.5 transition-colors hover:bg-base-200"
         href={`/app/${workspaceSlug}/${resolved.shortId}`}
         onClick={(e) => e.stopPropagation()}
       >
         {resolved.icon ? (
           <PageIcon icon={resolved.icon} size={18} />
         ) : (
-          <FileText className="shrink-0 text-muted-foreground" size={18} />
+          <FileText className="shrink-0 text-base-content/70" size={18} />
         )}
         <span className="text-sm font-medium text-primary underline decoration-primary/40 underline-offset-2 transition-colors group-hover:decoration-primary">
           {resolved.title}
@@ -447,13 +488,16 @@ function TemplateButtonView({
 
           {/* Label */}
           <div className="mb-3">
-            <label className="mb-1 block text-xs font-medium text-foreground/70">
+            <label
+              className="mb-1 block text-xs font-medium text-base-content/70"
+              htmlFor="template-button-label"
+            >
               Button label
             </label>
             <input
-              // biome-ignore lint/a11y/noAutofocus: intentional — edit panel just opened
               autoFocus
-              className="w-full rounded-sm border border-border bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-sm border border-base-300 bg-base-200 px-3 py-1.5 text-sm text-base-content outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              id="template-button-label"
               onChange={(e) => setDraftLabel(e.target.value)}
               placeholder="e.g. + Add Today's Log"
               type="text"
@@ -463,9 +507,10 @@ function TemplateButtonView({
 
           {/* Insert location */}
           <div className="mb-3">
-            <label className="mb-1.5 block text-xs font-medium text-foreground/70">
+            {/* Not a <label>: heads a pair of toggle buttons, not a control. */}
+            <p className="mb-1.5 block text-xs font-medium text-base-content/70">
               Insert location
-            </label>
+            </p>
             <div className="flex gap-2">
               {(
                 [
@@ -478,7 +523,7 @@ function TemplateButtonView({
                     "rounded-sm border px-3 py-1 text-xs font-medium transition-colors",
                     draftLocation === opt.key
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:bg-accent",
+                      : "border-base-300 text-base-content/70 hover:bg-base-200",
                   ].join(" ")}
                   key={opt.key}
                   onClick={() => setDraftLocation(opt.key)}
@@ -492,11 +537,14 @@ function TemplateButtonView({
 
           {/* Template blocks */}
           <div className="mb-3">
-            <label className="mb-1.5 block text-xs font-medium text-foreground/70">
+            {/* Not a <label>: heads a repeating list of block rows, each with
+               its own controls, rather than a single form control. */}
+            <p className="mb-1.5 block text-xs font-medium text-base-content/70">
               Template content
-            </label>
+            </p>
             <div className="flex flex-col gap-1.5">
               {draftBlocks.map((b, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: KNOWN DEBT, needs a data-model decision. `draftBlocks` is written straight into this node's TipTap attributes, so an added id would change stored document JSON — which Hard Rule 5 requires a schema_version bump and migration path for. Every mutation below already addresses rows positionally for the same reason.
                 <div className="flex items-center gap-2" key={i}>
                   <BlockTypeSelect
                     onChange={(v) => {
@@ -507,7 +555,7 @@ function TemplateButtonView({
                     value={b.type}
                   />
                   <input
-                    className="flex-1 rounded-sm border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground-subtle focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 rounded-sm border border-base-300 bg-base-200 px-2.5 py-1.5 text-xs text-base-content outline-none transition-colors placeholder:text-base-content/50 focus:border-primary focus:ring-2 focus:ring-primary/20"
                     onChange={(e) => {
                       const next = [...draftBlocks];
                       next[i] = { ...next[i], text: e.target.value };
@@ -518,7 +566,7 @@ function TemplateButtonView({
                     value={b.text}
                   />
                   <button
-                    className="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground-subtle hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="flex size-5 shrink-0 items-center justify-center rounded-sm text-base-content/50 hover:bg-error/10 hover:text-error transition-colors"
                     onClick={() =>
                       setDraftBlocks(draftBlocks.filter((_, j) => j !== i))
                     }
@@ -536,7 +584,7 @@ function TemplateButtonView({
                 </div>
               ))}
               <button
-                className="mt-0.5 self-start rounded-sm border border-dashed border-border px-3 py-1 text-xs text-muted-foreground hover:border-primary/30 hover:text-primary"
+                className="mt-0.5 self-start rounded-sm border border-dashed border-base-300 px-3 py-1 text-xs text-base-content/70 hover:border-primary/30 hover:text-primary"
                 onClick={() =>
                   setDraftBlocks([
                     ...draftBlocks,
@@ -553,7 +601,7 @@ function TemplateButtonView({
           {/* Actions */}
           <div className="flex items-center gap-2">
             <button
-              className="rounded-sm bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              className="rounded-sm bg-primary px-3 py-1.5 text-xs font-medium text-primary-content hover:bg-primary/90"
               onClick={saveEdit}
               onMouseDown={(e) => e.preventDefault()}
               type="button"
@@ -561,7 +609,7 @@ function TemplateButtonView({
               Save ↵
             </button>
             <button
-              className="rounded-sm border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+              className="rounded-sm border border-base-300 px-3 py-1.5 text-xs text-base-content/70 hover:bg-base-200"
               onClick={cancelEdit}
               onMouseDown={(e) => e.preventDefault()}
               type="button"
@@ -578,7 +626,7 @@ function TemplateButtonView({
     <NodeViewWrapper contentEditable={false}>
       <div className="my-0.5 flex items-center gap-2">
         <button
-          className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:bg-accent"
+          className="inline-flex items-center gap-1.5 rounded-sm border border-base-300 bg-secondary px-4 py-2 text-sm font-medium text-secondary-content transition-colors hover:bg-base-200"
           onClick={handleClick}
           onMouseDown={(e) => e.preventDefault()}
           type="button"
@@ -587,7 +635,7 @@ function TemplateButtonView({
           <span>{label}</span>
         </button>
         <button
-          className="rounded-sm px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-muted-foreground"
+          className="rounded-sm px-2 py-1 text-xs text-base-content/70 hover:bg-base-200 hover:text-base-content/70"
           onClick={() => {
             setDraftLabel(label);
             setDraftLocation(insertLocation);
@@ -632,15 +680,14 @@ function MathBlockView({ node, updateAttributes, selected }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       {editing ? (
-        <div className="my-2 flex flex-col gap-2 rounded-sm border border-border bg-muted p-3">
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground">
+        <div className="my-2 flex flex-col gap-2 rounded-sm border border-base-300 bg-base-200 p-3">
+          <span className="text-xs font-semibold tracking-wide text-base-content/70">
             ∑ Equation — LaTeX
           </span>
           <div className="flex gap-2">
             <input
-              // biome-ignore lint/a11y/noAutofocus: intentional — block was just inserted
               autoFocus
-              className="flex-1 rounded-sm border border-border bg-background px-3 py-1.5 font-mono text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/25"
+              className="flex-1 rounded-sm border border-base-300 bg-base-200 px-3 py-1.5 font-mono text-sm text-base-content outline-none focus:border-primary focus:ring-2 focus:ring-primary/25"
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -656,7 +703,7 @@ function MathBlockView({ node, updateAttributes, selected }: NodeViewProps) {
               value={draft}
             />
             <button
-              className="rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-content hover:bg-primary/90 transition-colors"
               onClick={commit}
               type="button"
             >
@@ -665,29 +712,37 @@ function MathBlockView({ node, updateAttributes, selected }: NodeViewProps) {
           </div>
           {rendered && (
             <div
-              className="border-t border-border pt-2 text-center"
+              className="border-t border-base-300 pt-2 text-center"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: `rendered` is KaTeX output, never raw user input — katex.renderToString() (see the useMemo above) escapes its LaTeX input and, with `trust` left at its default of false, refuses \href/\url with a javascript: or data: protocol. That default is the load-bearing control here: the equation is authored by an editor and persisted into the document, so it is re-rendered for other viewers. Do not pass trust:true or strict:false without revisiting this. There is no non-HTML API for mounting KaTeX output.
               dangerouslySetInnerHTML={{ __html: rendered }}
             />
           )}
         </div>
       ) : (
-        <div
+        <button
           className={[
-            "my-2 cursor-pointer rounded-sm border p-4 text-center transition-colors",
+            "my-2 block w-full cursor-pointer rounded-sm border p-4 text-center transition-colors",
             selected
               ? "border-primary bg-primary/5"
-              : "border-transparent hover:border-border hover:bg-accent",
+              : "border-transparent hover:border-base-300 hover:bg-base-200",
           ].join(" ")}
           onClick={() => setEditing(true)}
+          type="button"
         >
           {rendered ? (
-            <div dangerouslySetInnerHTML={{ __html: rendered }} />
+            // A <span>, not a <div>: this is inside a <button>, whose content
+            // model is phrasing content. KaTeX's own output is all spans.
+            <span
+              className="block"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: same KaTeX output as the editing branch above — escaped by katex.renderToString() with `trust` at its default of false. See the fuller note there before changing either call site.
+              dangerouslySetInnerHTML={{ __html: rendered }}
+            />
           ) : (
-            <span className="text-sm italic text-muted-foreground">
+            <span className="text-sm italic text-base-content/70">
               Click to add equation…
             </span>
           )}
-        </div>
+        </button>
       )}
     </NodeViewWrapper>
   );
@@ -794,30 +849,53 @@ function SubPageBlockView({
   // fetched lazily (and cached) only once the user actually lingers.
   const [previewRect, setPreviewRect] = useState<DOMRect | null>(null);
   const [parentTitle, setParentTitle] = useState<string | null>(null);
-  const [previewBlocks, setPreviewBlocks] = useState<{ type: string; content?: unknown }[] | null>(null);
+  const [previewBlocks, setPreviewBlocks] = useState<
+    { type: string; content?: unknown }[] | null
+  >(null);
   const previewFetchedRef = useRef(false);
-  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
 
-  const handlePreviewEnter = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const target = e.currentTarget;
-    clearTimeout(previewTimerRef.current);
-    previewTimerRef.current = setTimeout(() => {
-      setPreviewRect(target.getBoundingClientRect());
-      if (!previewFetchedRef.current && currentPageId) {
-        previewFetchedRef.current = true;
-        fetch(`/api/pages/${currentPageId}`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((page: { title: string | null } | null) => {
-            if (page) setParentTitle(page.title || "Untitled");
-          });
-        fetch(`/api/pages/${pageId}/blocks`)
-          .then((r) => (r.ok ? r.json() : null))
-          .then((blockRows: { type: string; content?: unknown; parentBlockId: string | null }[] | null) => {
-            if (blockRows) setPreviewBlocks(blockRows.filter((b) => !b.parentBlockId).slice(0, 5));
-          });
-      }
-    }, 400);
-  }, [currentPageId, pageId]);
+  const handlePreviewEnter = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      const target = e.currentTarget;
+      clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = setTimeout(() => {
+        setPreviewRect(target.getBoundingClientRect());
+        if (!previewFetchedRef.current && currentPageId) {
+          previewFetchedRef.current = true;
+          fetch(`/api/pages/${currentPageId}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((page: { title: string | null } | null) => {
+              if (page) {
+                setParentTitle(page.title || "Untitled");
+              }
+            });
+          fetch(`/api/pages/${pageId}/blocks`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then(
+              (
+                blockRows:
+                  | {
+                      type: string;
+                      content?: unknown;
+                      parentBlockId: string | null;
+                    }[]
+                  | null
+              ) => {
+                if (blockRows) {
+                  setPreviewBlocks(
+                    blockRows.filter((b) => !b.parentBlockId).slice(0, 5)
+                  );
+                }
+              }
+            );
+        }
+      }, 400);
+    },
+    [currentPageId, pageId]
+  );
 
   const handlePreviewLeave = useCallback(() => {
     clearTimeout(previewTimerRef.current);
@@ -893,16 +971,31 @@ function SubPageBlockView({
   // as long as it stays mounted here in the parent page's content.
   useEffect(() => {
     function onTitleChanged(e: Event) {
-      const detail = (e as CustomEvent<{ pageId: string; title?: string; icon?: string | null }>).detail;
-      if (!detail || detail.pageId !== pageId) return;
-      setResolved((prev) => prev && {
-        ...prev,
-        title: detail.title !== undefined ? (detail.title || "Untitled") : prev.title,
-        icon: detail.icon !== undefined ? detail.icon : prev.icon,
-      });
+      const detail = (
+        e as CustomEvent<{
+          pageId: string;
+          title?: string;
+          icon?: string | null;
+        }>
+      ).detail;
+      if (!detail || detail.pageId !== pageId) {
+        return;
+      }
+      setResolved(
+        (prev) =>
+          prev && {
+            ...prev,
+            title:
+              detail.title === undefined
+                ? prev.title
+                : detail.title || "Untitled",
+            icon: detail.icon === undefined ? prev.icon : detail.icon,
+          }
+      );
     }
     window.addEventListener("workflik:page-title-changed", onTitleChanged);
-    return () => window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+    return () =>
+      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
   }, [pageId]);
 
   // Once the freshly-created page resolves, navigate straight into it —
@@ -922,8 +1015,8 @@ function SubPageBlockView({
     return (
       <NodeViewWrapper contentEditable={false}>
         <div className="my-0.5 flex items-center gap-2 rounded-sm px-2 py-1.5">
-          <div className="size-4.5 animate-pulse rounded bg-muted/50" />
-          <div className="h-4 w-32 animate-pulse rounded bg-muted/40" />
+          <div className="size-4.5 animate-pulse rounded bg-base-200/50" />
+          <div className="h-4 w-32 animate-pulse rounded bg-base-200/40" />
         </div>
       </NodeViewWrapper>
     );
@@ -932,7 +1025,7 @@ function SubPageBlockView({
   return (
     <NodeViewWrapper contentEditable={false}>
       <a
-        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-sm px-2 py-1.5 transition-colors hover:bg-accent"
+        className="group my-0.5 flex w-fit items-center gap-1.5 rounded-sm px-2 py-1.5 transition-colors hover:bg-base-200"
         href={`/app/${workspaceSlug}/${resolved.shortId}`}
         onClick={(e) => e.stopPropagation()}
         onMouseEnter={handlePreviewEnter}
@@ -941,39 +1034,50 @@ function SubPageBlockView({
         {resolved.icon ? (
           <PageIcon icon={resolved.icon} size={18} />
         ) : (
-          <FileText className="shrink-0 text-muted-foreground" size={18} />
+          <FileText className="shrink-0 text-base-content/70" size={18} />
         )}
         <span className="text-sm font-medium text-primary underline decoration-primary/40 underline-offset-2 transition-colors group-hover:decoration-primary">
           {resolved.title}
         </span>
       </a>
 
-      {previewRect && typeof document !== "undefined" && createPortal(
-        <div
-          style={{ position: "fixed", top: previewRect.bottom + 6, left: previewRect.left, zIndex: 9999 }}
-          className="w-56 rounded-md border border-border bg-popover p-3 shadow-lg pointer-events-none"
-        >
-          <div className="mb-2 flex size-8 items-center justify-center rounded-sm border border-border bg-background">
-            {resolved.icon ? (
-              <PageIcon icon={resolved.icon} size={18} />
-            ) : (
-              <FileText size={18} className="text-muted-foreground" />
-            )}
-          </div>
-          {parentTitle && (
-            <p className="truncate text-xs text-muted-foreground">{parentTitle}</p>
-          )}
-          <p className="truncate text-sm font-semibold text-foreground">{resolved.title}</p>
-
-          {previewBlocks && previewBlocks.length > 0 && (
-            <div className="relative mt-3 max-h-24 overflow-hidden">
-              <MiniPageContent blocks={previewBlocks} />
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-popover to-transparent" />
+      {previewRect &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="w-56 rounded-md border border-base-300 bg-base-100 p-3 shadow-lg pointer-events-none"
+            style={{
+              position: "fixed",
+              top: previewRect.bottom + 6,
+              left: previewRect.left,
+              zIndex: 9999,
+            }}
+          >
+            <div className="mb-2 flex size-8 items-center justify-center rounded-sm border border-base-300 bg-base-200">
+              {resolved.icon ? (
+                <PageIcon icon={resolved.icon} size={18} />
+              ) : (
+                <FileText className="text-base-content/70" size={18} />
+              )}
             </div>
-          )}
-        </div>,
-        document.body,
-      )}
+            {parentTitle && (
+              <p className="truncate text-xs text-base-content/70">
+                {parentTitle}
+              </p>
+            )}
+            <p className="truncate text-sm font-semibold text-base-content">
+              {resolved.title}
+            </p>
+
+            {previewBlocks && previewBlocks.length > 0 && (
+              <div className="relative mt-3 max-h-24 overflow-hidden">
+                <MiniPageContent blocks={previewBlocks} />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-base-100 to-transparent" />
+              </div>
+            )}
+          </div>,
+          document.body
+        )}
     </NodeViewWrapper>
   );
 }
@@ -1046,11 +1150,15 @@ function InlineDatabaseView({
   // empty shortId, which silently hides the "Open" full-page link below with
   // no way to recover it — backfill it from the database's own host page.
   useEffect(() => {
-    if (!databaseId || shortId || !isEditor) return;
+    if (!databaseId || shortId || !isEditor) {
+      return;
+    }
     fetch(`/api/databases/${databaseId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { database?: { shortId?: string } } | null) => {
-        if (data?.database?.shortId) updateAttributes({ shortId: data.database.shortId });
+        if (data?.database?.shortId) {
+          updateAttributes({ shortId: data.database.shortId });
+        }
       })
       .catch(() => {});
   }, [databaseId, shortId, isEditor, updateAttributes]);
@@ -1103,12 +1211,16 @@ function InlineDatabaseView({
       return;
     }
     setCreating(true);
-    const res = await fetch(`/api/workspaces/${workspaceId}/databases`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "Untitled Database" }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/workspaces/${workspaceId}/databases`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Untitled Database" }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to create database — try again");
+        return;
+      }
       const db = (await res.json()) as {
         id: string;
         shortId: string;
@@ -1119,8 +1231,11 @@ function InlineDatabaseView({
         shortId: db.shortId ?? "",
         defaultViewId: db.defaultViewId ?? "",
       });
+    } catch {
+      toast.error("Failed to create database — try again");
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   }
 
   function handleLink(id: string, sid: string) {
@@ -1133,31 +1248,32 @@ function InlineDatabaseView({
     if (searching) {
       return (
         <NodeViewWrapper contentEditable={false}>
-          <div className="my-1 rounded-md border border-border bg-background p-4">
-            <p className="mb-2 text-xs font-semibold text-muted-foreground">
+          <div className="my-1 rounded-md border border-base-300 bg-base-200 p-4">
+            <p className="mb-2 text-xs font-semibold text-base-content/70">
               Link an existing database
             </p>
             <input
               autoFocus
-              className="w-full rounded-sm border border-border bg-muted/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
+              className="w-full rounded-sm border border-base-300 bg-base-200/30 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40"
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search databases…"
               ref={inputRef}
               value={query}
             />
             {searchLoading && (
-              <p className="mt-2 text-xs text-muted-foreground">Searching…</p>
+              <p className="mt-2 text-xs text-base-content/70">Searching…</p>
             )}
             {results.length > 0 && (
               <div className="mt-2 flex flex-col gap-0.5">
                 {results.map((r) => (
                   <button
-                    className="flex items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground hover:bg-accent"
+                    className="flex items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-base-content hover:bg-base-200"
                     key={r.id}
                     onClick={() => handleLink(r.id, r.shortId)}
+                    type="button"
                   >
                     <svg
-                      className="size-3.5 shrink-0 text-muted-foreground"
+                      className="size-3.5 shrink-0 text-base-content/70"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={1.5}
@@ -1173,17 +1289,18 @@ function InlineDatabaseView({
               </div>
             )}
             {!searchLoading && query && results.length === 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-base-content/70">
                 No databases found
               </p>
             )}
             <button
-              className="mt-3 text-xs text-muted-foreground hover:text-muted-foreground"
+              className="mt-3 text-xs text-base-content/70 hover:text-base-content/70"
               onClick={() => {
                 setSearching(false);
                 setQuery("");
                 setResults([]);
               }}
+              type="button"
             >
               ← Back
             </button>
@@ -1194,10 +1311,10 @@ function InlineDatabaseView({
 
     return (
       <NodeViewWrapper contentEditable={false}>
-        <div className="my-1 flex items-center gap-3 rounded-md border border-dashed border-border bg-muted/20 p-4">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-muted/50">
+        <div className="my-1 flex items-center gap-3 rounded-md border border-dashed border-base-300 bg-base-200/20 p-4">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-base-200/50">
             <svg
-              className="size-4 text-muted-foreground"
+              className="size-4 text-base-content/70"
               fill="none"
               stroke="currentColor"
               strokeWidth={1.5}
@@ -1209,28 +1326,30 @@ function InlineDatabaseView({
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-foreground/70">
+            <p className="text-sm font-medium text-base-content/70">
               Add a database
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-base-content/70">
               Create a new database or embed an existing one
             </p>
           </div>
           {isEditor && (
             <div className="flex items-center gap-2">
               <button
-                className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                className="rounded-sm bg-primary px-3 py-1.5 text-xs font-semibold text-primary-content hover:bg-primary/90 disabled:opacity-60"
                 disabled={creating}
                 onClick={handleCreateNew}
+                type="button"
               >
                 {creating ? "Creating…" : "New database"}
               </button>
               <button
-                className="rounded-sm border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent"
+                className="rounded-sm border border-base-300 bg-base-200 px-3 py-1.5 text-xs font-medium text-base-content hover:bg-base-200"
                 onClick={() => {
                   setSearching(true);
                   setTimeout(() => inputRef.current?.focus(), 50);
                 }}
+                type="button"
               >
                 Link existing
               </button>
@@ -1244,11 +1363,11 @@ function InlineDatabaseView({
   // Render the embedded database
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="my-3 overflow-hidden rounded-lg border border-border bg-background">
+      <div className="my-3 overflow-hidden rounded-lg border border-base-300 bg-base-200">
         {/* Inline header bar */}
-        <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-3 py-2">
+        <div className="flex items-center gap-2 border-b border-base-300 bg-base-200/20 px-3 py-2">
           <svg
-            className="size-3.5 shrink-0 text-muted-foreground"
+            className="size-3.5 shrink-0 text-base-content/70"
             fill="none"
             stroke="currentColor"
             strokeWidth={1.5}
@@ -1258,17 +1377,18 @@ function InlineDatabaseView({
             <line x1="1" x2="15" y1="5" y2="5" />
             <line x1="5" x2="5" y1="5" y2="15" />
           </svg>
-          <span className="text-xs font-semibold text-muted-foreground tracking-wide">
+          <span className="text-xs font-semibold text-base-content/70 tracking-wide">
             Inline database
           </span>
           <div className="ml-auto flex items-center gap-0.5">
             {isEditor && (
               <>
                 <button
-                  className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
+                  className="flex size-6 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content/70"
                   onMouseDown={handleDuplicate}
                   onMouseEnter={(e) => showTooltip("Duplicate block", e)}
                   onMouseLeave={hideTooltip}
+                  type="button"
                 >
                   <svg
                     className="size-3.5"
@@ -1282,10 +1402,11 @@ function InlineDatabaseView({
                   </svg>
                 </button>
                 <button
-                  className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="flex size-6 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-error/10 hover:text-error"
                   onMouseDown={handleDelete}
                   onMouseEnter={(e) => showTooltip("Delete block", e)}
                   onMouseLeave={hideTooltip}
+                  type="button"
                 >
                   <svg
                     className="size-3.5"
@@ -1304,7 +1425,7 @@ function InlineDatabaseView({
             )}
             {workspaceSlug && shortId && (
               <a
-                className="ml-1 flex items-center gap-1 rounded-sm px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+                className="ml-1 flex items-center gap-1 rounded-sm px-1.5 py-1 text-xs text-base-content/70 transition-colors hover:bg-base-200 hover:text-primary"
                 href={`/app/${workspaceSlug}/${shortId}`}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -1343,10 +1464,12 @@ function InlineDatabaseView({
           />
         </div>
       </div>
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
+          document.body
+        )}
     </NodeViewWrapper>
   );
 }
@@ -1423,8 +1546,8 @@ export const TemplateButton = Node.create({
 // current document's heading nodes, re-scanned on every editor update so it
 // stays in sync as headings are added/removed/renamed, matching Notion.
 interface TocHeading {
-  pos: number;
   level: number;
+  pos: number;
   text: string;
 }
 
@@ -1463,15 +1586,15 @@ function TableOfContentsView({ editor }: NodeViewProps) {
     <NodeViewWrapper contentEditable={false}>
       <div className="my-1">
         {headings.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground">
+          <p className="text-sm italic text-base-content/70">
             Table of contents — headings you add on this page will show up here.
           </p>
         ) : (
           <div className="flex flex-col">
-            {headings.map((h, i) => (
+            {headings.map((h) => (
               <button
-                className="w-full truncate rounded-xs py-0.5 text-left text-sm text-muted-foreground transition-colors hover:text-primary hover:underline"
-                key={i}
+                className="w-full truncate rounded-xs py-0.5 text-left text-sm text-base-content/70 transition-colors hover:text-primary hover:underline"
+                key={h.pos}
                 onClick={() => handleClick(h.pos)}
                 onMouseDown={(e) => e.preventDefault()}
                 style={{ paddingLeft: `${(h.level - 1) * 20}px` }}
@@ -1527,9 +1650,9 @@ type AncestorCrumb = {
 };
 
 interface WorkspaceCrumb {
-  slug: string;
-  name: string;
   icon: string | null;
+  name: string;
+  slug: string;
 }
 
 function BreadcrumbBlockView({ extension }: NodeViewProps) {
@@ -1545,12 +1668,16 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
     let cancelled = false;
     fetch(`/api/pages/${currentPageId}/ancestors`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { workspace: WorkspaceCrumb; ancestors: AncestorCrumb[] } | null) => {
-        if (!cancelled && data) {
-          setCrumbs(data.ancestors);
-          setWorkspace(data.workspace);
+      .then(
+        (
+          data: { workspace: WorkspaceCrumb; ancestors: AncestorCrumb[] } | null
+        ) => {
+          if (!cancelled && data) {
+            setCrumbs(data.ancestors);
+            setWorkspace(data.workspace);
+          }
         }
-      })
+      )
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -1562,14 +1689,33 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
   // showing a stale title for as long as it stays mounted.
   useEffect(() => {
     function onTitleChanged(e: Event) {
-      const detail = (e as CustomEvent<{ pageId: string; title?: string; icon?: string | null }>).detail;
-      if (!detail) return;
-      setCrumbs((prev) => prev && prev.map((c) => c.id === detail.pageId
-        ? { ...c, title: detail.title !== undefined ? detail.title : c.title, icon: detail.icon !== undefined ? detail.icon : c.icon }
-        : c));
+      const detail = (
+        e as CustomEvent<{
+          pageId: string;
+          title?: string;
+          icon?: string | null;
+        }>
+      ).detail;
+      if (!detail) {
+        return;
+      }
+      setCrumbs((prev) =>
+        prev === null
+          ? null
+          : prev.map((c) =>
+              c.id === detail.pageId
+                ? {
+                    ...c,
+                    title: detail.title === undefined ? c.title : detail.title,
+                    icon: detail.icon === undefined ? c.icon : detail.icon,
+                  }
+                : c
+            )
+      );
     }
     window.addEventListener("workflik:page-title-changed", onTitleChanged);
-    return () => window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+    return () =>
+      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
   }, []);
 
   return (
@@ -1577,57 +1723,57 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
       <div className="my-1">
         {crumbs ? (
           <Breadcrumb>
-            <BreadcrumbList className="flex-nowrap normal-case">
+            {/* Items are the list's *direct* children on purpose: daisy's
+                `breadcrumbs` draws each separator as the `::before` of the
+                element following an `<li>`, so an intervening wrapper would
+                suppress it. */}
+            <BreadcrumbList className="normal-case">
               {/* The workspace itself is always the first, clickable crumb —
                   matching Notion, where even a page with no parent pages
                   still shows at least two segments, not just its own title
                   rendered as plain, non-clickable text. */}
               {workspace && (
-                <span className="inline-flex items-center gap-1.5">
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild>
-                      <NextLink
-                        className="flex items-center gap-1"
-                        href={`/app/${workspaceSlug}`}
-                      >
-                        {workspace.icon && <PageIcon icon={workspace.icon} size={14} />}
-                        {workspace.name}
-                      </NextLink>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                </span>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <NextLink
+                      className="flex items-center gap-1"
+                      href={`/app/${workspaceSlug}`}
+                    >
+                      {workspace.icon && (
+                        <PageIcon icon={workspace.icon} size={14} />
+                      )}
+                      {workspace.name}
+                    </NextLink>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
               )}
               {crumbs.map((c, i) => {
                 const isLast = i === crumbs.length - 1;
                 return (
-                  <span className="inline-flex items-center gap-1.5" key={c.id}>
-                    <BreadcrumbItem>
-                      {isLast ? (
-                        <BreadcrumbPage className="flex items-center gap-1">
+                  <BreadcrumbItem key={c.id}>
+                    {isLast ? (
+                      <BreadcrumbPage className="flex items-center gap-1">
+                        {c.icon && <PageIcon icon={c.icon} size={14} />}
+                        {c.title || "Untitled"}
+                      </BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink asChild>
+                        <NextLink
+                          className="flex items-center gap-1"
+                          href={`/app/${workspaceSlug}/${c.shortId}`}
+                        >
                           {c.icon && <PageIcon icon={c.icon} size={14} />}
                           {c.title || "Untitled"}
-                        </BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink asChild>
-                          <NextLink
-                            className="flex items-center gap-1"
-                            href={`/app/${workspaceSlug}/${c.shortId}`}
-                          >
-                            {c.icon && <PageIcon icon={c.icon} size={14} />}
-                            {c.title || "Untitled"}
-                          </NextLink>
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                    {!isLast && <BreadcrumbSeparator />}
-                  </span>
+                        </NextLink>
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
                 );
               })}
             </BreadcrumbList>
           </Breadcrumb>
         ) : (
-          <div className="h-4 w-40 animate-pulse rounded-xs bg-muted/40" />
+          <div className="h-4 w-40 animate-pulse rounded-xs bg-base-200/40" />
         )}
       </div>
     </NodeViewWrapper>

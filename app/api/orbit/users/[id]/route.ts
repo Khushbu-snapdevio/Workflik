@@ -1,16 +1,21 @@
 import { eq } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { sessions, users, workspaceMembers, workspaces } from "@/lib/db/schema";
-import { requireAdmin } from "@/lib/authz";
 import { apiError } from "@/lib/workspaces/auth";
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   await requireAdmin();
   const { id } = await params;
 
   const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  if (!user) return apiError(404, "User not found");
+  if (!user) {
+    return apiError(404, "User not found");
+  }
 
   const userSessions = await db
     .select()
@@ -20,10 +25,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const memberships = await db
     .select({
-      workspaceId:   workspaceMembers.workspaceId,
-      role:          workspaceMembers.role,
-      status:        workspaceMembers.status,
-      joinedAt:      workspaceMembers.joinedAt,
+      workspaceId: workspaceMembers.workspaceId,
+      role: workspaceMembers.role,
+      status: workspaceMembers.status,
+      joinedAt: workspaceMembers.joinedAt,
       workspaceName: workspaces.name,
       workspaceSlug: workspaces.slug,
       workspaceIcon: workspaces.icon,

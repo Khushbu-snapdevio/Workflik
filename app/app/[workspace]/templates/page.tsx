@@ -21,10 +21,14 @@ export default async function TemplatesPage({ params }: Props) {
     .where(eq(workspaces.slug, slug))
     .limit(1);
 
-  if (!ws) notFound();
+  if (!ws) {
+    notFound();
+  }
 
   const member = await getWorkspaceMember(ws.id, session.user.id);
-  if (!member) notFound();
+  if (!member) {
+    notFound();
+  }
 
   const [freshUser] = await db
     .select({ isPlatformAdmin: users.isPlatformAdmin })
@@ -35,11 +39,11 @@ export default async function TemplatesPage({ params }: Props) {
   return (
     <Suspense>
       <TemplatesPageClient
+        currentUserId={session.user.id}
+        isPlatformAdmin={Boolean(freshUser?.isPlatformAdmin)}
+        isWorkspaceAdmin={member.role === "admin"}
         workspaceId={ws.id}
         workspaceSlug={slug}
-        isPlatformAdmin={Boolean(freshUser?.isPlatformAdmin)}
-        currentUserId={session.user.id}
-        isWorkspaceAdmin={member.role === "admin"}
       />
     </Suspense>
   );

@@ -2,11 +2,9 @@
 // Skipping this corrupts the entire page hierarchy and all permission checks that depend on it.
 
 import { createId } from "@paralleldrive/cuid2";
-import { max, sql, eq, and, isNull } from "drizzle-orm";
-import type { db } from "@/lib/db";
+import { and, eq, isNull, max, sql } from "drizzle-orm";
+import type { Tx } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export async function insertPageWithClosure(
   tx: Tx,
@@ -72,12 +70,12 @@ export async function deletePageClosure(
 export async function createPageWithClosure(
   tx: Tx,
   opts: {
-    workspaceId:  string;
-    title:        string;
-    kind:         "page" | "database" | "entry";
-    parentId:     string | null;
-    databaseId?:  string | null;
-    createdBy:    string;
+    workspaceId: string;
+    title: string;
+    kind: "page" | "database" | "entry";
+    parentId: string | null;
+    databaseId?: string | null;
+    createdBy: string;
   }
 ): Promise<typeof pages.$inferSelect> {
   const { workspaceId, title, kind, parentId, databaseId, createdBy } = opts;
@@ -94,7 +92,7 @@ export async function createPageWithClosure(
       )
     );
 
-  const shortId    = createId().slice(0, 10);
+  const shortId = createId().slice(0, 10);
   const orderIndex = (maxIdx ?? -1) + 1;
 
   const [page] = await tx

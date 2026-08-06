@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
-import postgres from "postgres";
 import { readMigrationFiles } from "drizzle-orm/migrator";
+import postgres from "postgres";
 
 if (existsSync(".env")) {
   process.loadEnvFile();
@@ -33,14 +33,21 @@ async function main() {
 
   let applied = 0;
   for (const migration of migrations) {
-    if (lastDbMigration && Number(lastDbMigration.created_at) >= migration.folderMillis) continue;
+    if (
+      lastDbMigration &&
+      Number(lastDbMigration.created_at) >= migration.folderMillis
+    ) {
+      continue;
+    }
 
     // Each migration commits in its own transaction: Postgres forbids using a value
     // added via ALTER TYPE ... ADD VALUE in the same transaction that added it
     // (migration 0008 uses an enum value 0003 adds), which breaks drizzle's default single-transaction migrator.
     await sql.begin(async (tx) => {
       for (const stmt of migration.sql) {
-        if (stmt.trim()) await tx.unsafe(stmt);
+        if (stmt.trim()) {
+          await tx.unsafe(stmt);
+        }
       }
       await tx.unsafe(
         `insert into ${MIGRATIONS_TABLE} (hash, created_at) values ($1, $2)`,
@@ -48,10 +55,16 @@ async function main() {
       );
     });
     applied++;
-    console.log(`Applied migration: ${migration.hash.slice(0, 12)} (${new Date(migration.folderMillis).toISOString()})`);
+    console.log(
+      `Applied migration: ${migration.hash.slice(0, 12)} (${new Date(migration.folderMillis).toISOString()})`
+    );
   }
 
-  console.log(applied === 0 ? "No pending migrations." : `Applied ${applied} migration(s).`);
+  console.log(
+    applied === 0
+      ? "No pending migrations."
+      : `Applied ${applied} migration(s).`
+  );
   await sql.end();
 }
 

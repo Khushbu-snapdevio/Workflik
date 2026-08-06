@@ -1,5 +1,5 @@
-import { emailOutbox } from "@/lib/db/schema";
 import { db } from "@/lib/db";
+import { emailOutbox } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
 
@@ -16,10 +16,10 @@ export async function enqueueEmail(options: SendEmailOptions) {
     .insert(emailOutbox)
     .values({
       recipientEmail: options.to,
-      subject:        options.subject,
-      htmlBody:       options.html,
-      type:           options.type ?? "notification_email",
-      status:         "queued",
+      subject: options.subject,
+      htmlBody: options.html,
+      type: options.type ?? "notification_email",
+      status: "queued",
     })
     .returning({ id: emailOutbox.id });
 

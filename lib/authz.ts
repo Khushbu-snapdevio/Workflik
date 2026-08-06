@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { users } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 
 export async function getCurrentSession() {
   return auth.api.getSession({ headers: await headers() });
@@ -21,10 +21,10 @@ export async function requireAdmin() {
   const session = await requireSession();
   const [freshUser] = await db
     .select({
-      banned:          users.banned,
-      email:           users.email,
-      id:              users.id,
-      role:            users.role,
+      banned: users.banned,
+      email: users.email,
+      id: users.id,
+      role: users.role,
       isPlatformAdmin: users.isPlatformAdmin,
     })
     .from(users)
@@ -39,9 +39,9 @@ export async function requireAdmin() {
     ...session,
     user: {
       ...session.user,
-      banned:          freshUser.banned,
-      email:           freshUser.email,
-      role:            freshUser.role,
+      banned: freshUser.banned,
+      email: freshUser.email,
+      role: freshUser.role,
       isPlatformAdmin: freshUser.isPlatformAdmin,
     },
   };

@@ -7,8 +7,6 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
 } from "@tiptap/react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Download as DownloadIcon,
   FileIcon,
@@ -17,6 +15,8 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { LinkPreview } from "@/app/api/link-preview/route";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -50,14 +50,13 @@ function UrlPicker({
 }) {
   const [url, setUrl] = useState("");
   return (
-    <div className="my-2 space-y-3 rounded-md border border-border bg-muted/30 p-4">
-      <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground">
+    <div className="my-2 space-y-3 rounded-md border border-base-300 bg-base-200/30 p-4">
+      <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-base-content/70">
         <span className="text-xl leading-none">{icon}</span>
         {label}
       </p>
       <div className="flex gap-2">
         <Input
-          // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
           autoFocus
           className="flex-1"
           disabled={loading}
@@ -85,10 +84,10 @@ function UrlPicker({
           {loading ? "Loading…" : "Embed ↵"}
         </Button>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-error">{error}</p>}
       {onCancel && (
         <Button
-          className="text-muted-foreground"
+          className="text-base-content/70"
           onClick={onCancel}
           onMouseDown={(e) => e.preventDefault()}
           size="sm"
@@ -121,17 +120,19 @@ function BookmarkCard({
       >
         <Card className="flex-row overflow-hidden p-0 transition-colors hover:border-primary/40">
           <div className="min-w-0 flex-1 space-y-1 p-3.5">
-            <p className="truncate text-sm font-semibold text-foreground">
+            <p className="truncate text-sm font-semibold text-base-content">
               {preview.title || preview.url}
             </p>
             {preview.description && (
-              <p className="line-clamp-2 text-xs text-muted-foreground">
+              <p className="line-clamp-2 text-xs text-base-content/70">
                 {preview.description}
               </p>
             )}
-            <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 pt-1 text-xs text-base-content/70">
               {preview.favicon && (
                 // eslint-disable-next-line @next/next/no-img-element
+                // biome-ignore lint/performance/noImgElement: src is an arbitrary third-party/user-supplied URL; next/image would need a wildcard remotePatterns entry
+                // biome-ignore lint/a11y/noNoninteractiveElementInteractions: onError is a browser resource-lifecycle event, not a user interaction — it hides the favicon when the remote site has none. The icon is decorative (alt=""), so there is nothing here for a keyboard or screen-reader user to reach.
                 <img
                   alt=""
                   className="size-3.5 shrink-0"
@@ -148,6 +149,7 @@ function BookmarkCard({
           </div>
           {preview.image && (
             // eslint-disable-next-line @next/next/no-img-element
+            // biome-ignore lint/performance/noImgElement: src is an arbitrary third-party/user-supplied URL; next/image would need a wildcard remotePatterns entry
             <img
               alt=""
               className="h-full w-32 shrink-0 object-cover"
@@ -160,7 +162,7 @@ function BookmarkCard({
         <div className="absolute right-2 top-2 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
           {onDelete && (
             <button
-              className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
+              className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-error/80"
               onMouseDown={(e) => {
                 e.preventDefault();
                 onDelete();
@@ -443,7 +445,7 @@ function EmbedToolbar({
         <Pencil size={12} />
       </button>
       <button
-        className="flex size-6 items-center justify-center rounded-sm bg-black/70 text-white hover:bg-destructive/80"
+        className="flex size-6 items-center justify-center rounded-sm bg-black/70 text-white hover:bg-error/80"
         onClick={onDelete}
         onMouseDown={(e) => e.preventDefault()}
         onMouseEnter={(e) => showTooltip("Delete", e)}
@@ -452,10 +454,12 @@ function EmbedToolbar({
       >
         <Trash2 size={12} />
       </button>
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
+          document.body
+        )}
     </div>
   );
 }
@@ -474,10 +478,11 @@ function EmbedLightbox({
   onClose: () => void;
 }) {
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
+    <Dialog onOpenChange={(open) => !open && onClose()} open>
       <DialogContent className="h-[90vh] w-[90vw] max-w-none gap-0 border-none bg-transparent p-0 ring-0 backdrop:bg-black/70 sm:max-w-none">
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: src is an uploaded asset served from the configured STORAGE_DRIVER (local or s3/r2 CDN); that host is not in next.config images.remotePatterns
           <img
             alt={title}
             className="mx-auto h-full max-w-full rounded-md object-contain"
@@ -485,7 +490,7 @@ function EmbedLightbox({
           />
         ) : (
           <iframe
-            className="size-full rounded-md bg-card"
+            className="size-full rounded-md bg-base-100"
             src={src}
             title={title}
           />
@@ -496,9 +501,9 @@ function EmbedLightbox({
 }
 
 interface EmbedBlockOptions {
-  workspaceId: string;
-  pageId: string;
   onComment?: (blockId: string, blockY: number) => void;
+  pageId: string;
+  workspaceId: string;
 }
 
 function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
@@ -506,8 +511,13 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   const fileName = (node.attrs.fileName as string) || "";
   const mimeType = (node.attrs.mimeType as string) || "";
   const blockId = (node.attrs.blockId as string | null) || undefined;
-  const { workspaceId, pageId, onComment } = extension.options as EmbedBlockOptions;
-  const { upload, uploading, error: uploadError } = useUpload({
+  const { workspaceId, pageId, onComment } =
+    extension.options as EmbedBlockOptions;
+  const {
+    upload,
+    uploading,
+    error: uploadError,
+  } = useUpload({
     kind: "block_media",
     workspaceId,
     pageId,
@@ -590,7 +600,9 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
 
   function onChangeFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     e.target.value = "";
     uploadFile(file);
   }
@@ -603,7 +615,9 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   }
 
   function handleComment() {
-    if (!onComment || !blockId) return;
+    if (!onComment || !blockId) {
+      return;
+    }
     const top = wrapperRef.current?.getBoundingClientRect().top ?? 0;
     onComment(blockId, top - 20);
   }
@@ -613,7 +627,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       return (
         <NodeViewWrapper contentEditable={false}>
           <button
-            className="my-1 flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
+            className="my-1 flex w-full items-center gap-2.5 rounded-md border border-base-300 bg-base-200/20 px-3.5 py-2.5 text-sm text-base-content/70 transition-colors hover:border-primary/40 hover:bg-base-200 hover:text-base-content"
             onClick={() => setExpanded(true)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -626,9 +640,12 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
     }
     return (
       <NodeViewWrapper contentEditable={false}>
-        <div className="relative my-1 flex flex-col items-center gap-2" ref={popupRef}>
+        <div
+          className="relative my-1 flex flex-col items-center gap-2"
+          ref={popupRef}
+        >
           <button
-            className="flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
+            className="flex w-full items-center gap-2.5 rounded-md border border-base-300 bg-base-200/20 px-3.5 py-2.5 text-sm text-base-content/70"
             onClick={() => setExpanded(false)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -636,7 +653,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
             <span className="text-lg leading-none">🌐</span>
             Embed anything (PDFs, Google Docs, Google Maps, Spotify…)
           </button>
-          <div className="w-full max-w-sm rounded-md border border-border bg-popover p-4">
+          <div className="w-full max-w-sm rounded-md border border-base-300 bg-base-100 p-4">
             <Tabs defaultValue="link">
               <TabsList className="w-full" variant="line">
                 <TabsTrigger value="link">Link</TabsTrigger>
@@ -644,7 +661,6 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
               </TabsList>
               <TabsContent className="mt-3 space-y-2" value="link">
                 <Input
-                  // biome-ignore lint/a11y/noAutofocus: intentional — tab just opened
                   autoFocus
                   onChange={(e) => setLinkUrl(e.target.value)}
                   onKeyDown={(e) => {
@@ -665,7 +681,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
                 >
                   Embed link
                 </Button>
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-xs text-base-content/70">
                   Works with links of PDFs, Google Drive, Google Maps, CodePen…
                 </p>
               </TabsContent>
@@ -682,7 +698,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
               </TabsContent>
             </Tabs>
             {uploadError && (
-              <p className="mt-2 text-xs text-destructive">{uploadError}</p>
+              <p className="mt-2 text-xs text-error">{uploadError}</p>
             )}
           </div>
           <input
@@ -705,17 +721,23 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       return (
         <NodeViewWrapper contentEditable={false}>
           <div
+            className="group relative my-2 overflow-hidden rounded-md border border-base-300 bg-base-200/20"
             ref={wrapperRef}
-            className="group relative my-2 overflow-hidden rounded-md border border-border bg-muted/20"
           >
             {isUploadedImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                alt={fileName}
-                className="block max-h-120 w-full cursor-zoom-in object-contain"
+              <button
+                aria-label={`Zoom ${fileName || "image"}`}
+                className="block w-full cursor-zoom-in"
                 onClick={() => setZooming(true)}
-                src={url}
-              />
+                type="button"
+              >
+                {/* biome-ignore lint/performance/noImgElement: src is an uploaded asset served from the configured STORAGE_DRIVER (local or s3/r2 CDN); that host is not in next.config images.remotePatterns */}
+                <img
+                  alt={fileName}
+                  className="block max-h-120 w-full object-contain"
+                  src={url}
+                />
+              </button>
             ) : (
               <iframe
                 className="block w-full"
@@ -754,11 +776,11 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
     return (
       <NodeViewWrapper contentEditable={false}>
         <div
+          className="group relative my-2 flex items-center gap-2.5 rounded-md border border-base-300 bg-base-200/20 px-3.5 py-2.5"
           ref={wrapperRef}
-          className="group relative my-2 flex items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5"
         >
-          <FileIcon className="shrink-0 text-muted-foreground" size={18} />
-          <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+          <FileIcon className="shrink-0 text-base-content/70" size={18} />
+          <span className="min-w-0 flex-1 truncate text-sm text-base-content">
             {fileName || url}
           </span>
           <EmbedToolbar
@@ -782,8 +804,8 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
     return (
       <NodeViewWrapper contentEditable={false}>
         <div
+          className="group relative my-2 overflow-hidden rounded-md border border-base-300 bg-black"
           ref={wrapperRef}
-          className="group relative my-2 overflow-hidden rounded-md border border-border bg-black"
         >
           <iframe
             allow="autoplay; fullscreen; clipboard-write; encrypted-media; picture-in-picture"
@@ -815,7 +837,7 @@ function EmbedBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       {previewError ? (
-        <div className="my-2 rounded-md border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+        <div className="my-2 rounded-md border border-base-300 bg-base-200/20 p-3 text-xs text-base-content/70">
           Couldn&rsquo;t embed this link.{" "}
           <a
             className="text-primary hover:underline"

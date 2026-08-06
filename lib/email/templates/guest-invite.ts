@@ -9,10 +9,10 @@ export async function guestInviteTemplate({
   accessLevel,
   acceptUrl,
 }: {
-  inviterName:  string;
-  pageTitle:    string;
-  accessLevel:  string;
-  acceptUrl:    string;
+  inviterName: string;
+  pageTitle: string;
+  accessLevel: string;
+  acceptUrl: string;
 }) {
   const html = await renderEmailTemplate(
     createElement(GuestInviteEmail, {

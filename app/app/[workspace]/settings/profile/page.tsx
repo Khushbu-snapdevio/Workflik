@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
+import { ProfileSection } from "@/components/settings/profile-section";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { accounts, users } from "@/lib/db/schema";
 import { isSmtpConfigured } from "@/lib/smtp/client";
-import { ProfileSection } from "@/components/settings/profile-section";
 
 export const metadata: Metadata = { title: "My Profile — Settings" };
 
@@ -16,12 +16,12 @@ export default async function ProfileSettingsPage({ params }: Props) {
 
   const [user] = await db
     .select({
-      id:       users.id,
-      name:     users.name,
-      email:    users.email,
+      id: users.id,
+      name: users.name,
+      email: users.email,
       jobTitle: users.jobTitle,
       timezone: users.timezone,
-      image:    users.image,
+      image: users.image,
     })
     .from(users)
     .where(eq(users.id, session.user.id))
@@ -34,8 +34,19 @@ export default async function ProfileSettingsPage({ params }: Props) {
   const [credential] = await db
     .select({ id: accounts.id })
     .from(accounts)
-    .where(and(eq(accounts.userId, session.user.id), eq(accounts.providerId, "credential")))
+    .where(
+      and(
+        eq(accounts.userId, session.user.id),
+        eq(accounts.providerId, "credential")
+      )
+    )
     .limit(1);
 
-  return <ProfileSection smtpConfigured={isSmtpConfigured()} user={user!} hasPassword={!!credential} />;
+  return (
+    <ProfileSection
+      hasPassword={!!credential}
+      smtpConfigured={isSmtpConfigured()}
+      user={user!}
+    />
+  );
 }

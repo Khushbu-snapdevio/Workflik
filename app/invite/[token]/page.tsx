@@ -1,12 +1,12 @@
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { accounts, workspaceMembers, workspaces } from "@/lib/db/schema";
-import { Button } from "@/components/ui/button";
 import { AcceptInviteClient } from "./accept-invite-client";
 import { SetPasswordAcceptClient } from "./set-password-client";
 import { WrongAccountError } from "./wrong-account";
@@ -19,13 +19,13 @@ export default async function InvitePage({ params }: Props) {
   // Look up the invite
   const [member] = await db
     .select({
-      id:           workspaceMembers.id,
-      workspaceId:  workspaceMembers.workspaceId,
-      userId:       workspaceMembers.userId,
-      role:         workspaceMembers.role,
-      status:       workspaceMembers.status,
+      id: workspaceMembers.id,
+      workspaceId: workspaceMembers.workspaceId,
+      userId: workspaceMembers.userId,
+      role: workspaceMembers.role,
+      status: workspaceMembers.status,
       invitedEmail: workspaceMembers.invitedEmail,
-      inviteExpires:workspaceMembers.inviteExpires,
+      inviteExpires: workspaceMembers.inviteExpires,
       workspaceName: workspaces.name,
       workspaceSlug: workspaces.slug,
       workspaceIcon: workspaces.icon,
@@ -39,12 +39,20 @@ export default async function InvitePage({ params }: Props) {
     return renderShareLinkInvite(token);
   }
 
-  if (member.status === "expired" || (member.inviteExpires && member.inviteExpires < new Date())) {
+  if (
+    member.status === "expired" ||
+    (member.inviteExpires && member.inviteExpires < new Date())
+  ) {
     return <InviteError message="This invite link has expired." />;
   }
 
   if (member.status === "active") {
-    return <InviteError message="This invite has already been accepted." variant="success" />;
+    return (
+      <InviteError
+        message="This invite has already been accepted."
+        variant="success"
+      />
+    );
   }
 
   // Check if viewer is signed in
@@ -65,11 +73,11 @@ export default async function InvitePage({ params }: Props) {
     if (member.userId && !existingAccount) {
       return (
         <SetPasswordAcceptClient
-          token={token}
-          workspaceName={member.workspaceName}
-          workspaceIcon={member.workspaceIcon ?? null}
-          role={member.role}
           invitedEmail={member.invitedEmail}
+          role={member.role}
+          token={token}
+          workspaceIcon={member.workspaceIcon ?? null}
+          workspaceName={member.workspaceName}
         />
       );
     }
@@ -83,8 +91,8 @@ export default async function InvitePage({ params }: Props) {
   if (member.invitedEmail && member.invitedEmail !== session.user.email) {
     return (
       <WrongAccountError
-        invitedEmail={member.invitedEmail}
         currentEmail={session.user.email}
+        invitedEmail={member.invitedEmail}
         token={token}
       />
     );
@@ -104,15 +112,15 @@ export default async function InvitePage({ params }: Props) {
     .limit(1);
 
   if (existing) {
-    redirect(`/platform/post-auth`);
+    redirect("/platform/post-auth");
   }
 
   return (
     <AcceptInviteClient
-      token={token}
-      workspaceName={member.workspaceName}
-      workspaceIcon={member.workspaceIcon ?? null}
       role={member.role}
+      token={token}
+      workspaceIcon={member.workspaceIcon ?? null}
+      workspaceName={member.workspaceName}
     />
   );
 }
@@ -122,18 +130,18 @@ export default async function InvitePage({ params }: Props) {
 async function renderShareLinkInvite(token: string) {
   const [ws] = await db
     .select({
-      id:               workspaces.id,
-      slug:             workspaces.slug,
-      name:             workspaces.name,
-      icon:             workspaces.icon,
+      id: workspaces.id,
+      slug: workspaces.slug,
+      name: workspaces.name,
+      icon: workspaces.icon,
       inviteLinkActive: workspaces.inviteLinkActive,
-      inviteLinkRole:   workspaces.inviteLinkRole,
+      inviteLinkRole: workspaces.inviteLinkRole,
     })
     .from(workspaces)
     .where(eq(workspaces.inviteLinkToken, token))
     .limit(1);
 
-  if (!ws || !ws.inviteLinkActive) {
+  if (!ws?.inviteLinkActive) {
     return <InviteError message="This invite link is invalid." />;
   }
 
@@ -155,33 +163,48 @@ async function renderShareLinkInvite(token: string) {
     .limit(1);
 
   if (existing) {
-    redirect(`/platform/post-auth`);
+    redirect("/platform/post-auth");
   }
 
   return (
     <AcceptInviteClient
-      token={token}
-      workspaceName={ws.name}
-      workspaceIcon={ws.icon ?? null}
       role={ws.inviteLinkRole}
+      token={token}
+      workspaceIcon={ws.icon ?? null}
+      workspaceName={ws.name}
     />
   );
 }
 
-function InviteError({ message, variant = "warning" }: { message: string; variant?: "warning" | "success" }) {
+function InviteError({
+  message,
+  variant = "warning",
+}: {
+  message: string;
+  variant?: "warning" | "success";
+}) {
   const Icon = variant === "success" ? CheckCircle2 : AlertCircle;
   return (
-    <main className="grid min-h-screen place-items-center bg-page px-4">
+    <main className="grid min-h-screen place-items-center bg-base-200 px-4">
       <div className="w-full max-w-md text-center">
         <div
           className={`mx-auto mb-5 flex size-14 items-center justify-center rounded-lg ring-1 ${
-            variant === "success" ? "bg-primary/10 ring-primary/20" : "bg-warning/10 ring-warning/20"
+            variant === "success"
+              ? "bg-primary/10 ring-primary/20"
+              : "bg-warning/10 ring-warning/20"
           }`}
         >
-          <Icon className={`size-6 ${variant === "success" ? "text-primary" : "text-warning"}`} strokeWidth={1.5} />
+          <Icon
+            className={`size-6 ${variant === "success" ? "text-primary" : "text-warning"}`}
+            strokeWidth={1.5}
+          />
         </div>
-        <h1 className="mb-2 text-lg font-bold text-foreground">Invite Unavailable</h1>
-        <p className="text-sm leading-relaxed text-muted-foreground">{message}</p>
+        <h1 className="mb-2 text-lg font-bold text-base-content">
+          Invite Unavailable
+        </h1>
+        <p className="text-sm leading-relaxed text-base-content/70">
+          {message}
+        </p>
         <Button asChild className="mt-6">
           <Link href="/platform/post-auth">Go to your workspace</Link>
         </Button>

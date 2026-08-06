@@ -16,7 +16,11 @@ function keywordsFor(emoji: string): string[] {
 // "smile") or by literal glyph (pasting the emoji itself still works).
 export function emojiMatches(emoji: string, query: string): boolean {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
-  if (emoji.includes(query.trim())) return true;
+  if (!q) {
+    return true;
+  }
+  if (emoji.includes(query.trim())) {
+    return true;
+  }
   return keywordsFor(emoji).some((k) => k.toLowerCase().includes(q));
 }

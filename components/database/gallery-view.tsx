@@ -29,32 +29,44 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "@/lib/auth/client";
-import { toggleSelfVote } from "@/lib/databases/vote";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellDisplay } from "@/components/database/cells/cell-display";
-import { PageIcon } from "@/components/pages/page-icon";
-import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { EntryContextMenu } from "@/components/database/entry-context-menu";
+import {
+  defaultValueForGroup,
+  deriveGroups,
+  getEntryGroupIds,
+  isGroupableType,
+} from "@/components/database/grouping";
 import {
   getOptionColor,
   PROPERTY_TYPE_ICON,
 } from "@/components/database/property-registry";
-import { isGroupableType, deriveGroups, getEntryGroupIds, defaultValueForGroup } from "@/components/database/grouping";
 import type {
   DbEntry,
   DbProperty,
   SelectOption,
   SharedViewProps,
 } from "@/components/database/types";
+import {
+  resolveDisplayAs,
+  resolveWrapContent,
+} from "@/components/database/view-property-resolver";
+import { PageIcon } from "@/components/pages/page-icon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 
 // Same rule board-view.tsx uses to decide whether a property has a
 // display-worthy value — kept in sync so gallery cards and board cards
 // agree on what counts as "filled".
-function hasDisplayValue(prop: DbProperty, raw: unknown, displayAs?: "select" | "checkbox"): boolean {
+function hasDisplayValue(
+  prop: DbProperty,
+  raw: unknown,
+  displayAs?: "select" | "checkbox"
+): boolean {
   const v = raw as Record<string, unknown> | null;
   switch (prop.type) {
     case "text":
@@ -64,7 +76,10 @@ function hasDisplayValue(prop: DbProperty, raw: unknown, displayAs?: "select" | 
     // Checkbox-display is meaningful even unset (an empty checkbox is still a
     // real state to show, unlike an empty pill, which has nothing to render).
     case "select":
-      return displayAs === "checkbox" || !!(v as { optionId?: string } | null)?.optionId;
+      return (
+        displayAs === "checkbox" ||
+        !!(v as { optionId?: string } | null)?.optionId
+      );
     case "multi_select":
       return (
         displayAs === "checkbox" ||
@@ -93,9 +108,15 @@ function hasDisplayValue(prop: DbProperty, raw: unknown, displayAs?: "select" | 
 // value; checking picks the first "complete"-group option if the property is
 // grouped (marking it "done", matching what the checkbox visually implies),
 // falling back to the first option at all for an ungrouped select.
-function nextCheckboxSelectValue(prop: DbProperty, raw: unknown): { optionId: string | null } {
-  const optionId = (raw as { optionId?: string | null } | null)?.optionId ?? null;
-  if (optionId) return { optionId: null };
+function nextCheckboxSelectValue(
+  prop: DbProperty,
+  raw: unknown
+): { optionId: string | null } {
+  const optionId =
+    (raw as { optionId?: string | null } | null)?.optionId ?? null;
+  if (optionId) {
+    return { optionId: null };
+  }
   const options = (prop.config?.options ?? []) as SelectOption[];
   const target = options.find((o) => o.group === "complete") ?? options[0];
   return { optionId: target?.id ?? null };
@@ -104,9 +125,14 @@ function nextCheckboxSelectValue(prop: DbProperty, raw: unknown): { optionId: st
 // Same idea for multi-select: unchecking clears every selected option;
 // checking sets just the first "complete"-group (or first) option, same
 // single-value semantic a checkbox implies even for a multi-select field.
-function nextCheckboxMultiSelectValue(prop: DbProperty, raw: unknown): { optionIds: string[] } {
+function nextCheckboxMultiSelectValue(
+  prop: DbProperty,
+  raw: unknown
+): { optionIds: string[] } {
   const optionIds = (raw as { optionIds?: string[] } | null)?.optionIds ?? [];
-  if (optionIds.length > 0) return { optionIds: [] };
+  if (optionIds.length > 0) {
+    return { optionIds: [] };
+  }
   const options = (prop.config?.options ?? []) as SelectOption[];
   const target = options.find((o) => o.group === "complete") ?? options[0];
   return { optionIds: target ? [target.id] : [] };
@@ -152,10 +178,10 @@ export function GalleryView({
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   // Reset order when entries change (add/delete)
-  const entryIdKey = entries.map((e) => e.id).join(",");
+  const _entryIdKey = entries.map((e) => e.id).join(",");
   useEffect(() => {
     setLocalOrder([]);
-  }, [entryIdKey]);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -165,7 +191,9 @@ export function GalleryView({
   // exception is Status, and only once the user explicitly turns on "Show on
   // card" from Status's own Edit Property panel — every other property stays
   // fully editable via the entry's popup but is never rendered on the card.
-  const displayProps = properties.filter((p) => !!p.config?.groupedByStatus && !!p.config?.showOnCard);
+  const displayProps = properties.filter(
+    (p) => !!p.config?.groupedByStatus && !!p.config?.showOnCard
+  );
 
   // Grouping
   const groupPropId = activeView?.groupByPropertyId;
@@ -183,7 +211,10 @@ export function GalleryView({
   if (groupProp) {
     groups = [
       { id: null, label: `No ${groupProp.name}`, color: null, entries: [] },
-      ...deriveGroups(groupProp, entries, valueMap).map((g) => ({ ...g, entries: [] as DbEntry[] })),
+      ...deriveGroups(groupProp, entries, valueMap).map((g) => ({
+        ...g,
+        entries: [] as DbEntry[],
+      })),
     ];
     for (const entry of entries) {
       const val = valueMap.get(entry.id)?.get(groupPropId!) ?? null;
@@ -198,6 +229,7 @@ export function GalleryView({
   function renderCards(list: DbEntry[]) {
     return list.map((entry) => (
       <GalleryCard
+        activeView={activeView}
         cardSize={cardSize}
         databaseId={databaseId}
         displayProps={displayProps}
@@ -213,11 +245,10 @@ export function GalleryView({
         onUpdateProperty={onUpdateProperty}
         onUpdateTitle={onUpdateTitle}
         onUpdateValue={onUpdateValue}
+        onUpdateView={onUpdateView}
         valueMap={valueMap}
         workspaceId={workspaceId}
         workspaceSlug={workspaceSlug}
-        activeView={activeView}
-        onUpdateView={onUpdateView}
       />
     ));
   }
@@ -236,32 +267,39 @@ export function GalleryView({
                       className="inline-flex items-center gap-1.5 rounded-xs px-2.5 py-1 text-xs font-semibold tracking-wide"
                       style={{ backgroundColor: color.bg, color: color.text }}
                     >
-                      <span className="size-1.5 rounded-full" style={{ backgroundColor: color.dot }} />
+                      <span
+                        className="size-1.5 rounded-full"
+                        style={{ backgroundColor: color.dot }}
+                      />
                       {group.label}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-xs bg-muted px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
-                      <span className="size-1.5 rounded-full bg-muted-foreground/30" />
+                    <span className="inline-flex items-center gap-1.5 rounded-xs bg-base-200 px-2.5 py-1 text-xs font-semibold tracking-wide text-base-content/70">
+                      <span className="size-1.5 rounded-full bg-base-content/30" />
                       {group.label}
                     </span>
                   )}
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-base-content/70">
                     {group.entries.length}
                   </span>
-                  <div className="h-px flex-1 bg-border" />
+                  <div className="h-px flex-1 bg-base-300" />
                 </div>
                 <div className={`grid gap-4 ${SIZE_GRID[cardSize]}`}>
                   {renderCards(group.entries)}
                   {isEditor && (
                     <button
                       className={[
-                        "flex h-full min-h-24 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20",
-                        "text-muted-foreground transition-colors duration-150 hover:border-border hover:bg-accent hover:text-muted-foreground",
+                        "flex h-full min-h-24 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-base-300 bg-base-200/20",
+                        "text-base-content/70 transition-colors duration-150 hover:border-base-300 hover:bg-base-200 hover:text-base-content/70",
                       ].join(" ")}
                       onClick={() => {
-                        const dv = groupProp && group.id ? defaultValueForGroup(groupProp, group.id) : undefined;
+                        const dv =
+                          groupProp && group.id
+                            ? defaultValueForGroup(groupProp, group.id)
+                            : undefined;
                         onCreateEntry(dv ? { [groupPropId!]: dv } : {});
                       }}
+                      type="button"
                     >
                       <Plus size={16} />
                       <span className="text-xs font-medium">New entry</span>
@@ -351,6 +389,7 @@ export function GalleryView({
             <div className={`grid gap-4 ${SIZE_GRID[cardSize]}`}>
               {orderedEntries.map((entry) => (
                 <SortableGalleryCard
+                  activeView={activeView}
                   cardSize={cardSize}
                   databaseId={databaseId}
                   displayProps={displayProps}
@@ -366,11 +405,10 @@ export function GalleryView({
                   onUpdateProperty={onUpdateProperty}
                   onUpdateTitle={onUpdateTitle}
                   onUpdateValue={onUpdateValue}
+                  onUpdateView={onUpdateView}
                   valueMap={valueMap}
                   workspaceId={workspaceId}
                   workspaceSlug={workspaceSlug}
-                  activeView={activeView}
-                  onUpdateView={onUpdateView}
                 />
               ))}
 
@@ -378,10 +416,11 @@ export function GalleryView({
               {isEditor && (
                 <button
                   className={[
-                    "flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20",
-                    "text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
+                    "flex h-full min-h-28 flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-base-300 bg-base-200/20",
+                    "text-base-content/70 transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
                   ].join(" ")}
                   onClick={() => onCreateEntry()}
+                  type="button"
                 >
                   <Plus size={20} />
                   <span className="text-xs font-medium">New entry</span>
@@ -394,6 +433,7 @@ export function GalleryView({
         <DragOverlay>
           {draggingEntry && (
             <GalleryCard
+              activeView={activeView}
               cardSize={cardSize}
               databaseId={databaseId}
               displayProps={displayProps}
@@ -408,11 +448,10 @@ export function GalleryView({
               onUpdateProperty={onUpdateProperty}
               onUpdateTitle={onUpdateTitle}
               onUpdateValue={onUpdateValue}
+              onUpdateView={onUpdateView}
               valueMap={valueMap}
               workspaceId={workspaceId}
               workspaceSlug={workspaceSlug}
-              activeView={activeView}
-              onUpdateView={onUpdateView}
             />
           )}
         </DragOverlay>
@@ -470,7 +509,7 @@ function SortableGalleryCard(props: SortableGalleryCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="h-full">
+    <div className="h-full" ref={setNodeRef} style={style}>
       <GalleryCard
         {...props}
         dragHandleProps={{
@@ -486,6 +525,7 @@ function SortableGalleryCard(props: SortableGalleryCardProps) {
 // ── Gallery card ──────────────────────────────────────────────────────────────
 
 interface GalleryCardProps {
+  activeView: SharedViewProps["activeView"];
   cardSize: string;
   databaseId: string;
   displayProps: SharedViewProps["properties"];
@@ -506,11 +546,10 @@ interface GalleryCardProps {
   onUpdateProperty: SharedViewProps["onUpdateProperty"];
   onUpdateTitle: SharedViewProps["onUpdateTitle"];
   onUpdateValue: SharedViewProps["onUpdateValue"];
+  onUpdateView: SharedViewProps["onUpdateView"];
   valueMap: Map<string, Map<string, unknown>>;
   workspaceId: string;
   workspaceSlug: string;
-  activeView: SharedViewProps["activeView"];
-  onUpdateView: SharedViewProps["onUpdateView"];
 }
 
 function GalleryCard({
@@ -538,7 +577,9 @@ function GalleryCard({
   const [hovered, setHovered] = useState(false);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
-  const [commentCount, setCommentCount] = useState<number | null>(entry.commentCount ?? null);
+  const [commentCount, setCommentCount] = useState<number | null>(
+    entry.commentCount ?? null
+  );
   const [tooltip, setTooltip] = useState<{
     label: string;
     rect: DOMRect;
@@ -557,19 +598,38 @@ function GalleryCard({
   // activateCell, enforced independently server-side either way. Returns
   // true if it handled the click (caller should skip opening the picker).
   function handleVoteClick(prop: DbProperty): boolean {
-    if (prop.type !== "person" || !prop.config?.voteMode) return false;
-    if (!session?.user?.id) return true;
-    onUpdateValue(entry.id, prop.id, toggleSelfVote(valueMap.get(entry.id)?.get(prop.id) as { userIds?: string[] } | null, session.user));
+    if (prop.type !== "person" || !prop.config?.voteMode) {
+      return false;
+    }
+    if (!session?.user?.id) {
+      return true;
+    }
+    onUpdateValue(
+      entry.id,
+      prop.id,
+      toggleSelfVote(
+        valueMap.get(entry.id)?.get(prop.id) as { userIds?: string[] } | null,
+        session.user
+      )
+    );
     return true;
   }
 
   const filledProps = displayProps.filter((prop) =>
-    hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null, resolveDisplayAs(prop, activeView))
+    hasDisplayValue(
+      prop,
+      valueMap.get(entry.id)?.get(prop.id) ?? null,
+      resolveDisplayAs(prop, activeView)
+    )
   );
   const emptyProps = editing
     ? displayProps.filter(
         (prop) =>
-          !hasDisplayValue(prop, valueMap.get(entry.id)?.get(prop.id) ?? null, resolveDisplayAs(prop, activeView))
+          !hasDisplayValue(
+            prop,
+            valueMap.get(entry.id)?.get(prop.id) ?? null,
+            resolveDisplayAs(prop, activeView)
+          )
       )
     : [];
 
@@ -577,7 +637,9 @@ function GalleryCard({
   // threads only), so no per-card fetch is needed — see board-view.tsx's
   // CardShell for the same change. `onCommentAdded` below still bumps this
   // instantly between fetches.
-  useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
+  useEffect(() => {
+    setCommentCount(entry.commentCount ?? 0);
+  }, [entry.commentCount]);
 
   useEffect(() => {
     if (!editing) {
@@ -600,8 +662,12 @@ function GalleryCard({
   // on hover — dismiss it on scroll instead of repositioning, since locking
   // scroll on every card hover would hurt the gallery's own scrolling.
   useEffect(() => {
-    if (!tooltip) return;
-    function handleScroll() { setTooltip(null); }
+    if (!tooltip) {
+      return;
+    }
+    function handleScroll() {
+      setTooltip(null);
+    }
     document.addEventListener("scroll", handleScroll, true);
     return () => document.removeEventListener("scroll", handleScroll, true);
   }, [tooltip]);
@@ -617,20 +683,23 @@ function GalleryCard({
 
   return (
     <>
+      {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/noStaticElementInteractions: card shell, not a control — its handlers are a right-click affordance plus hover tracking, neither of which is an activation. Right-click has no keyboard equivalent to add, and per AGENTS.md §24 the same actions are also on the card's visible "⋯" menu button, which is a native focusable button. Opening the card is likewise a separate focusable element inside. */}
       <div
         className={[
-          "relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-150",
+          "relative flex h-full flex-col overflow-hidden rounded-lg border border-base-300 bg-base-100 transition-colors duration-150",
           dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
-        onMouseEnter={() => !dragging && setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         onContextMenu={(e) => {
-          if (dragging) return;
+          if (dragging) {
+            return;
+          }
           e.preventDefault();
           e.stopPropagation();
           setTooltip(null);
           setMenuPos({ x: e.clientX, y: e.clientY });
         }}
+        onMouseEnter={() => !dragging && setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         ref={cardRef}
       >
         {/* Grip icon — top-left, visible on hover; the actual drag handle */}
@@ -639,7 +708,7 @@ function GalleryCard({
           style={{ opacity: hovered ? 0.6 : 0 }}
           {...dragHandleProps}
         >
-          <GripVertical className="text-foreground/70" size={14} />
+          <GripVertical className="text-base-content/70" size={14} />
         </div>
 
         {/* Action buttons — top-right, visible on hover — mirrors board-view's
@@ -651,7 +720,7 @@ function GalleryCard({
         >
           {isEditor && !editing ? (
             <button
-              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-base-100 text-base-content/60 transition-colors hover:bg-base-200 hover:text-base-content"
               onClick={(e) => {
                 e.stopPropagation();
                 setTooltip({
@@ -673,12 +742,13 @@ function GalleryCard({
               }
               onMouseLeave={() => setTooltip(null)}
               onPointerDown={(e) => e.stopPropagation()}
+              type="button"
             >
               <Pencil size={13} />
             </button>
           ) : (
             <Link
-              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-base-100 text-base-content/60 transition-colors hover:bg-base-200 hover:text-base-content"
               href={`/app/${workspaceSlug}/${entry.shortId}`}
               onClick={(e) => e.stopPropagation()}
               onMouseEnter={(e) =>
@@ -697,7 +767,7 @@ function GalleryCard({
           )}
           {isEditor && (
             <button
-              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-base-100 text-base-content/60 transition-colors hover:bg-base-200 hover:text-base-content"
               onClick={(e) => {
                 e.stopPropagation();
                 setTooltip(null);
@@ -713,6 +783,7 @@ function GalleryCard({
               }
               onMouseLeave={() => setTooltip(null)}
               onPointerDown={(e) => e.stopPropagation()}
+              type="button"
             >
               <MoreHorizontal size={13} />
             </button>
@@ -725,17 +796,19 @@ function GalleryCard({
             className={`relative block w-full shrink-0 overflow-hidden ${SIZE_COVER[cardSize]}`}
             onClick={() => !dragging && !editing && onOpenEntry!(entry)}
             onPointerDown={(e) => e.stopPropagation()}
+            type="button"
           >
             {entry.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
+              // biome-ignore lint/performance/noImgElement: src is an uploaded asset served from the configured STORAGE_DRIVER (local or s3/r2 CDN); that host is not in next.config images.remotePatterns
               <img
                 alt={entry.title ?? "Entry cover"}
                 className="size-full object-cover"
                 src={entry.coverUrl}
               />
             ) : (
-              <div className="flex size-full items-center justify-center bg-muted">
-                <LayoutGrid className="text-muted-foreground" size={28} />
+              <div className="flex size-full items-center justify-center bg-base-200">
+                <LayoutGrid className="text-base-content/70" size={28} />
               </div>
             )}
           </button>
@@ -748,14 +821,15 @@ function GalleryCard({
           >
             {entry.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
+              // biome-ignore lint/performance/noImgElement: src is an uploaded asset served from the configured STORAGE_DRIVER (local or s3/r2 CDN); that host is not in next.config images.remotePatterns
               <img
                 alt={entry.title ?? "Entry cover"}
                 className="size-full object-cover"
                 src={entry.coverUrl}
               />
             ) : (
-              <div className="flex size-full items-center justify-center bg-muted">
-                <LayoutGrid className="text-muted-foreground" size={28} />
+              <div className="flex size-full items-center justify-center bg-base-200">
+                <LayoutGrid className="text-base-content/70" size={28} />
               </div>
             )}
           </Link>
@@ -769,19 +843,23 @@ function GalleryCard({
                 sitting at a manually-guessed offset from the row's top. */}
             <span className="flex h-5 shrink-0 items-center">
               {entry.icon ? (
-                <PageIcon icon={entry.icon} size={14} className="shrink-0" />
+                <PageIcon className="shrink-0" icon={entry.icon} size={14} />
               ) : (
-                <FileText className="shrink-0 text-muted-foreground" size={12} />
+                <FileText className="shrink-0 text-base-content/70" size={12} />
               )}
             </span>
             {editing ? (
               <input
                 autoFocus
-                className="min-w-0 flex-1 bg-transparent text-sm font-semibold leading-snug text-foreground outline-none"
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold leading-snug text-base-content outline-none"
                 onBlur={commitTitle}
                 onChange={(e) => {
                   setEditTitle(e.target.value);
-                  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entry.id, title: e.target.value } }));
+                  window.dispatchEvent(
+                    new CustomEvent("workflik:page-title-changed", {
+                      detail: { pageId: entry.id, title: e.target.value },
+                    })
+                  );
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -803,10 +881,11 @@ function GalleryCard({
                 className="min-w-0 flex-1 text-left"
                 onClick={() => !dragging && onOpenEntry!(entry)}
                 onPointerDown={(e) => e.stopPropagation()}
+                type="button"
               >
-                <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
+                <p className="line-clamp-2 text-sm font-semibold leading-snug text-base-content transition-colors duration-150 hover:text-base-content/70">
                   {entry.title || (
-                    <span className="font-normal text-muted-foreground">
+                    <span className="font-normal text-base-content/70">
                       Untitled
                     </span>
                   )}
@@ -818,9 +897,9 @@ function GalleryCard({
                 href={`/app/${workspaceSlug}/${entry.shortId}`}
                 onPointerDown={(e) => e.stopPropagation()}
               >
-                <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
+                <p className="line-clamp-2 text-sm font-semibold leading-snug text-base-content transition-colors duration-150 hover:text-base-content/70">
                   {entry.title || (
-                    <span className="font-normal text-muted-foreground">
+                    <span className="font-normal text-base-content/70">
                       Untitled
                     </span>
                   )}
@@ -835,100 +914,126 @@ function GalleryCard({
               the same row land on identical natural heights instead of some
               being visibly shorter with a dead gap at the bottom. */}
           <div className="mt-1.5 space-y-0.5">
-              {filledProps.map((prop) => {
-                const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
-                const resolvedDisplayAs = resolveDisplayAs(prop, activeView);
-                const resolvedWrapContent = resolveWrapContent(prop, activeView);
-                const isCheckboxDisplay =
-                  (prop.type === "select" || prop.type === "multi_select") &&
-                  resolvedDisplayAs === "checkbox";
-                // Checkbox display already renders its own "☐ Property name"
-                // label internally — wrapping it in the usual "label: value"
-                // row would show the property name twice.
-                if (isCheckboxDisplay) {
-                  return (
-                    <div key={prop.id} className="overflow-hidden">
-                      <CellDisplay
-                        compact
-                        property={prop}
-                        value={raw}
-                        resolvedDisplayAs={resolvedDisplayAs}
-                        resolvedWrapContent={resolvedWrapContent}
-                        workspaceId={workspaceId}
-                        onToggleCheckbox={() => {
-                          const next = prop.type === "multi_select"
+            {filledProps.map((prop) => {
+              const raw = valueMap.get(entry.id)?.get(prop.id) ?? null;
+              const resolvedDisplayAs = resolveDisplayAs(prop, activeView);
+              const resolvedWrapContent = resolveWrapContent(prop, activeView);
+              const isCheckboxDisplay =
+                (prop.type === "select" || prop.type === "multi_select") &&
+                resolvedDisplayAs === "checkbox";
+              // Checkbox display already renders its own "☐ Property name"
+              // label internally — wrapping it in the usual "label: value"
+              // row would show the property name twice.
+              if (isCheckboxDisplay) {
+                return (
+                  <div className="overflow-hidden" key={prop.id}>
+                    <CellDisplay
+                      compact
+                      onToggleCheckbox={() => {
+                        const next =
+                          prop.type === "multi_select"
                             ? nextCheckboxMultiSelectValue(prop, raw)
                             : nextCheckboxSelectValue(prop, raw);
-                          onUpdateValue(entry.id, prop.id, next);
-                        }}
-                      />
-                    </div>
-                  );
-                }
-                // Vote-mode already renders its own self-explanatory "👍 N"
-                // badge — same reasoning as checkbox-display above, no
-                // "label: value" row needed, just a clickable wrapper.
-                if (prop.type === "person" && prop.config?.voteMode) {
-                  return (
-                    <button
-                      key={prop.id}
-                      type="button"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => { e.stopPropagation(); handleVoteClick(prop); }}
-                      className="overflow-hidden text-left"
-                    >
-                      <CellDisplay compact property={prop} value={raw} workspaceId={workspaceId} />
-                    </button>
-                  );
-                }
-                return (
-                  <div
-                    className="flex items-center gap-1.5 overflow-hidden"
-                    key={prop.id}
-                  >
-                    <span className="w-19 shrink-0 truncate text-xs font-medium text-muted-foreground">
-                      {prop.name}
-                    </span>
-                    <div className="min-w-0 flex-1 overflow-hidden">
-                      <CellDisplay compact property={prop} value={raw} resolvedDisplayAs={resolvedDisplayAs} resolvedWrapContent={resolvedWrapContent} workspaceId={workspaceId} />
-                    </div>
+                        onUpdateValue(entry.id, prop.id, next);
+                      }}
+                      property={prop}
+                      resolvedDisplayAs={resolvedDisplayAs}
+                      resolvedWrapContent={resolvedWrapContent}
+                      value={raw}
+                      workspaceId={workspaceId}
+                    />
                   </div>
                 );
-              })}
-              {/* Rendered even with 0 comments (just invisible) — reserves this
+              }
+              // Vote-mode already renders its own self-explanatory "👍 N"
+              // badge — same reasoning as checkbox-display above, no
+              // "label: value" row needed, just a clickable wrapper.
+              if (prop.type === "person" && prop.config?.voteMode) {
+                return (
+                  <button
+                    className="overflow-hidden text-left"
+                    key={prop.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVoteClick(prop);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    type="button"
+                  >
+                    <CellDisplay
+                      compact
+                      property={prop}
+                      value={raw}
+                      workspaceId={workspaceId}
+                    />
+                  </button>
+                );
+              }
+              return (
+                <div
+                  className="flex items-center gap-1.5 overflow-hidden"
+                  key={prop.id}
+                >
+                  <span className="w-19 shrink-0 truncate text-xs font-medium text-base-content/70">
+                    {prop.name}
+                  </span>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <CellDisplay
+                      compact
+                      property={prop}
+                      resolvedDisplayAs={resolvedDisplayAs}
+                      resolvedWrapContent={resolvedWrapContent}
+                      value={raw}
+                      workspaceId={workspaceId}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            {/* Rendered even with 0 comments (just invisible) — reserves this
                   row's height on every card so a card with no comments doesn't
                   end up visibly shorter than one that has them. */}
-              <button
-                className={`inline-flex items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
-                tabIndex={commentCount ? 0 : -1}
-                aria-hidden={!commentCount}
-                // Exempt from CellCommentPopover's capture-phase outside-click
-                // close. Without it that fires first and closes the popover,
-                // then the toggle below sees "closed" and reopens it — so the
-                // popover could never be dismissed from its own badge.
-                data-comment-exempt
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Toggle: a second click on the badge closes the popover it
-                  // opened. Assigning the rect unconditionally just replaced
-                  // it with an identical one, leaving the popover stuck open.
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  setCommentAnchor((cur) => (cur ? null : rect));
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                onMouseEnter={(e) => setTooltip({ label: "View comments", rect: (e.currentTarget as HTMLElement).getBoundingClientRect() })}
-                onMouseLeave={() => setTooltip(null)}
-              >
-                <MessageSquare size={11} />
-                {commentCount || 0}
-              </button>
-            </div>
+            <button
+              aria-hidden={!commentCount}
+              className={`inline-flex items-center gap-1 rounded-xs bg-base-200 px-1.5 py-0.5 text-xs font-medium text-base-content/70 transition-colors hover:bg-base-200/70 ${commentCount ? "" : "invisible"}`}
+              // Exempt from CellCommentPopover's capture-phase outside-click
+              // close. Without it that fires first and closes the popover,
+              // then the toggle below sees "closed" and reopens it — so the
+              // popover could never be dismissed from its own badge.
+              data-comment-exempt
+              onClick={(e) => {
+                e.stopPropagation();
+                // Toggle: a second click on the badge closes the popover it
+                // opened. Assigning the rect unconditionally just replaced
+                // it with an identical one, leaving the popover stuck open.
+                const rect = (
+                  e.currentTarget as HTMLElement
+                ).getBoundingClientRect();
+                setCommentAnchor((cur) => (cur ? null : rect));
+              }}
+              onMouseEnter={(e) =>
+                setTooltip({
+                  label: "View comments",
+                  rect: (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect(),
+                })
+              }
+              onMouseLeave={() => setTooltip(null)}
+              onPointerDown={(e) => e.stopPropagation()}
+              tabIndex={commentCount ? 0 : -1}
+              type="button"
+            >
+              <MessageSquare size={11} />
+              {commentCount || 0}
+            </button>
+          </div>
 
           {/* Quick-add empty properties — only while editing, matching board-view's
        inline card editor so gallery cards can be filled in without opening
        the full page. */}
           {emptyProps.length > 0 && (
-            <div className="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
+            <div className="mt-2 flex flex-col gap-0.5 border-t border-base-300 pt-2">
               {emptyProps.map((prop) => {
                 const TypeIcon =
                   PROPERTY_TYPE_ICON[
@@ -937,11 +1042,13 @@ function GalleryCard({
                 const propConfig = (prop.config ?? {}) as { icon?: string };
                 return (
                   <button
-                    className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-base-content/70 hover:bg-base-200 hover:text-base-content"
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (handleVoteClick(prop)) return;
+                      if (handleVoteClick(prop)) {
+                        return;
+                      }
                       setPropEditor({
                         prop,
                         rect: (
@@ -952,8 +1059,18 @@ function GalleryCard({
                     onPointerDown={(e) => e.stopPropagation()}
                     type="button"
                   >
-                    {propConfig.icon ? <PageIcon icon={propConfig.icon} className="shrink-0" size={12} /> : <TypeIcon className="shrink-0" size={12} />}
-                    {prop.type === "person" && prop.config?.voteMode ? prop.name : `Add ${prop.name}`}
+                    {propConfig.icon ? (
+                      <PageIcon
+                        className="shrink-0"
+                        icon={propConfig.icon}
+                        size={12}
+                      />
+                    ) : (
+                      <TypeIcon className="shrink-0" size={12} />
+                    )}
+                    {prop.type === "person" && prop.config?.voteMode
+                      ? prop.name
+                      : `Add ${prop.name}`}
                   </button>
                 );
               })}
@@ -970,6 +1087,7 @@ function GalleryCard({
         )}
 
       <EntryContextMenu
+        activeView={activeView}
         databaseId={databaseId}
         entryIcon={entry.icon ?? null}
         entryId={entry.id}
@@ -992,25 +1110,24 @@ function GalleryCard({
             : undefined
         }
         onPropertyConfigChange={onUpdateProperty}
+        onUpdateView={onUpdateView}
         onValueChange={(propId, value) =>
           onUpdateValue(entry.id, propId, value)
         }
         updatedAt={entry.updatedAt ?? null}
         workspaceId={workspaceId}
         workspaceSlug={workspaceSlug}
-        activeView={activeView}
-        onUpdateView={onUpdateView}
       />
 
       {commentAnchor && (
         <CellCommentPopover
           anchorRect={commentAnchor}
+          entryShortId={entry.shortId}
           onClose={() => setCommentAnchor(null)}
           onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
           pageId={entry.id}
           workspaceId={workspaceId}
           workspaceSlug={workspaceSlug}
-          entryShortId={entry.shortId}
         />
       )}
 

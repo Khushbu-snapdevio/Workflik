@@ -13,10 +13,14 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  blockText,
+  MINI_WIDTHS,
+  MiniPageContent,
+} from "@/components/editor/mini-page-content";
 import { PageIcon } from "@/components/pages/page-icon";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
-import { MINI_WIDTHS, MiniPageContent, blockText } from "@/components/editor/mini-page-content";
 import { resolveCategoryIcon } from "@/lib/orbit/category-icons";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -55,28 +59,42 @@ type Template = {
   };
 };
 
-type TemplateCategoryRow = { id: string; key: string; label: string; icon?: string | null; orderIndex: number };
+type TemplateCategoryRow = {
+  id: string;
+  key: string;
+  label: string;
+  icon?: string | null;
+  orderIndex: number;
+};
 
 // Uses the icon the admin picked when creating the category. Categories that
 // predate the icon column have none stored and fall back to the old
 // positional cycle (see resolveCategoryIcon).
-function iconForCategory(categories: TemplateCategoryRow[], categoryId: string): LucideIcon {
+function iconForCategory(
+  categories: TemplateCategoryRow[],
+  categoryId: string
+): LucideIcon {
   const idx = categories.findIndex((c) => c.id === categoryId);
-  return idx === -1 ? LayoutGrid : resolveCategoryIcon(categories[idx]?.icon, idx);
+  return idx === -1
+    ? LayoutGrid
+    : resolveCategoryIcon(categories[idx]?.icon, idx);
 }
 
-function labelForCategory(categories: TemplateCategoryRow[], categoryId: string): string | undefined {
+function labelForCategory(
+  categories: TemplateCategoryRow[],
+  categoryId: string
+): string | undefined {
   return categories.find((c) => c.id === categoryId)?.label;
 }
 
 const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
   gray: {
-    dot: "bg-muted-foreground/40",
-    badge: "bg-muted text-muted-foreground",
+    dot: "bg-base-content/40",
+    badge: "bg-base-200 text-base-content/70",
   },
   red: {
-    dot: "bg-destructive/50",
-    badge: "bg-destructive/10 text-destructive",
+    dot: "bg-error/50",
+    badge: "bg-error/10 text-error",
   },
   orange: { dot: "bg-warning/50", badge: "bg-warning/10 text-warning" },
   yellow: { dot: "bg-warning/40", badge: "bg-warning/10 text-warning" },
@@ -85,13 +103,13 @@ const OPTION_COLORS: Record<string, { dot: string; badge: string }> = {
   blue: { dot: "bg-primary/50", badge: "bg-primary/10 text-primary" },
   purple: { dot: "bg-primary/40", badge: "bg-primary/10 text-primary/80" },
   pink: {
-    dot: "bg-destructive/40",
-    badge: "bg-destructive/10 text-destructive/80",
+    dot: "bg-error/40",
+    badge: "bg-error/10 text-error/80",
   },
 };
 const DEFAULT_OPT = {
-  dot: "bg-muted-foreground/40",
-  badge: "bg-muted text-muted-foreground",
+  dot: "bg-base-content/40",
+  badge: "bg-base-200 text-base-content/70",
 };
 
 const PROP_TYPE_ICON: Record<string, string> = {
@@ -145,12 +163,12 @@ const CAL_WEEKS = [
 ];
 
 interface Props {
+  currentUserId: string;
+  isPlatformAdmin: boolean;
+  isWorkspaceAdmin: boolean;
   parentId?: string | null;
   workspaceId: string;
   workspaceSlug: string;
-  isPlatformAdmin: boolean;
-  currentUserId: string;
-  isWorkspaceAdmin: boolean;
 }
 
 // ── Main page component ────────────────────────────────────────────────────────
@@ -177,19 +195,21 @@ export function TemplatesPageClient({
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [deleteError, setDeleteError] = useState("");
 
-  const refetchTemplates = useCallback(() => {
-    return Promise.all([
-      fetch("/api/templates").then((r) => (r.ok ? r.json() : [])),
-      fetch(`/api/workspaces/${workspaceId}/templates`).then((r) =>
-        r.ok ? r.json() : []
-      ),
-      fetch("/api/templates/categories").then((r) => (r.ok ? r.json() : [])),
-    ]).then(([bi, ws, cats]) => {
-      setBuiltIn(Array.isArray(bi) ? bi : []);
-      setWorkspace(Array.isArray(ws) ? ws : []);
-      setCategories(Array.isArray(cats) ? cats : []);
-    });
-  }, [workspaceId]);
+  const refetchTemplates = useCallback(
+    () =>
+      Promise.all([
+        fetch("/api/templates").then((r) => (r.ok ? r.json() : [])),
+        fetch(`/api/workspaces/${workspaceId}/templates`).then((r) =>
+          r.ok ? r.json() : []
+        ),
+        fetch("/api/templates/categories").then((r) => (r.ok ? r.json() : [])),
+      ]).then(([bi, ws, cats]) => {
+        setBuiltIn(Array.isArray(bi) ? bi : []);
+        setWorkspace(Array.isArray(ws) ? ws : []);
+        setCategories(Array.isArray(cats) ? cats : []);
+      }),
+    [workspaceId]
+  );
 
   useEffect(() => {
     refetchTemplates().finally(() => setLoading(false));
@@ -200,16 +220,23 @@ export function TemplatesPageClient({
   useEffect(() => {
     const openId = searchParams.get("openId");
     const openName = searchParams.get("open");
-    if (!openId && !openName) return;
-    if (builtIn.length === 0 && workspace.length === 0) return;
+    if (!openId && !openName) {
+      return;
+    }
+    if (builtIn.length === 0 && workspace.length === 0) {
+      return;
+    }
     const all = [...builtIn, ...workspace];
     const match = openId
       ? all.find((t) => t.id === openId)
       : all.find((t) => t.name.toLowerCase() === openName!.toLowerCase());
-    if (match) setPreviewTemplate(match);
+    if (match) {
+      setPreviewTemplate(match);
+    }
     router.replace(`/app/${workspaceSlug}/templates`, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [builtIn, workspace]);
+    // `searchParams` is safe to depend on: the `router.replace` below strips
+    // both params, so the re-run it triggers hits the early return above.
+  }, [builtIn, workspace, searchParams, router, workspaceSlug]);
 
   const q = search.toLowerCase().trim();
   const matches = (t: Template) =>
@@ -225,7 +252,8 @@ export function TemplatesPageClient({
     if (key === "all") {
       return builtIn.length + workspace.length;
     }
-    return [...builtIn, ...workspace].filter((t) => t.categoryId === key).length;
+    return [...builtIn, ...workspace].filter((t) => t.categoryId === key)
+      .length;
   }
 
   async function deleteTemplate(tpl: Template) {
@@ -246,7 +274,9 @@ export function TemplatesPageClient({
   }
 
   async function applyTemplate(tpl: Template) {
-    if (applyingId) return; // already creating a page from another card — ignore
+    if (applyingId) {
+      return; // already creating a page from another card — ignore
+    }
     setApplyingId(tpl.id);
     try {
       const res = await fetch(`/api/templates/${tpl.id}/use`, {
@@ -273,16 +303,16 @@ export function TemplatesPageClient({
   }
 
   return (
-    <div className="@container flex h-full flex-col overflow-hidden bg-card">
+    <div className="@container flex h-full flex-col overflow-hidden bg-base-100">
       {/* ── Page header — h-11 matches sidebar top row and all other topbars ── */}
-      <div className="flex h-11 shrink-0 items-center border-b border-border bg-card px-3">
+      <div className="flex h-11 shrink-0 items-center border-b border-base-300 bg-base-100 px-3">
         <nav className="flex min-w-0 items-center gap-0.5 text-xs">
-          <span className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-muted-foreground">
+          <span className="flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-base-content/70">
             <LayoutGrid className="shrink-0" size={13} />
-            <span className="font-medium text-foreground">Templates</span>
+            <span className="font-medium text-base-content">Templates</span>
           </span>
-          <span className="text-muted-foreground-subtle">·</span>
-          <span className="truncate px-1 text-muted-foreground">
+          <span className="text-base-content/50">·</span>
+          <span className="truncate px-1 text-base-content/70">
             Pick a starting point for your next page or database
           </span>
         </nav>
@@ -294,17 +324,17 @@ export function TemplatesPageClient({
             sits to the left on @md+ (container-query, since this page sits
             next to the app's own resizable sidebar — a viewport breakpoint
             can't tell how much width that leaves us, only a container one can) ── */}
-        <aside className="flex w-full shrink-0 flex-col border-b border-border bg-sidebar @[768px]:w-65 @[768px]:border-b-0 @[768px]:border-r">
+        <aside className="flex w-full shrink-0 flex-col border-b border-base-300 bg-base-200 @[768px]:w-65 @[768px]:border-b-0 @[768px]:border-r">
           {/* Header — shows active category count */}
-          <div className="border-b border-border px-5 py-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">
+          <div className="border-b border-base-300 px-5 py-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-base-content/50">
               Categories
             </p>
             <div className="mt-1.5 flex items-end gap-1.5">
-              <span className="text-2xl font-black leading-none text-foreground">
+              <span className="text-2xl font-black leading-none text-base-content">
                 {countForTab(activeTab)}
               </span>
-              <span className="mb-0.5 text-sm font-medium text-muted-foreground">
+              <span className="mb-0.5 text-sm font-medium text-base-content/70">
                 {activeTab === "all"
                   ? "templates"
                   : labelForCategory(categories, activeTab)?.toLowerCase()}
@@ -323,7 +353,7 @@ export function TemplatesPageClient({
                   className={`group mb-3 flex w-full items-center gap-3 rounded-lg border px-3.5 py-3 text-left transition-all duration-150 ${
                     allActive
                       ? "border-primary/25 bg-primary/10 text-primary"
-                      : "border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
+                      : "border-base-300 bg-base-100 text-base-content hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
                   }`}
                   onClick={() => handleCategoryClick("all")}
                   type="button"
@@ -332,7 +362,7 @@ export function TemplatesPageClient({
                     className={`flex size-8 shrink-0 items-center justify-center rounded-md transition-colors duration-150 ${
                       allActive
                         ? "bg-primary/15 text-primary"
-                        : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                        : "bg-base-200 text-base-content/70 group-hover:bg-primary/10 group-hover:text-primary"
                     }`}
                   >
                     <LayoutGrid size={15} />
@@ -346,7 +376,7 @@ export function TemplatesPageClient({
                     className={`shrink-0 rounded-sm px-2 py-0.5 text-xs font-bold tabular-nums transition-colors duration-150 ${
                       allActive
                         ? "bg-primary/15 text-primary"
-                        : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                        : "bg-base-200 text-base-content/70 group-hover:bg-primary/10 group-hover:text-primary"
                     }`}
                   >
                     {allCnt}
@@ -373,7 +403,7 @@ export function TemplatesPageClient({
                     className={`group flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-all duration-150 ${
                       isActive
                         ? "bg-primary/10 text-primary"
-                        : "text-sidebar-foreground/70 hover:bg-accent hover:text-foreground"
+                        : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
                     }`}
                     key={cat.id}
                     onClick={() => handleCategoryClick(cat.id)}
@@ -383,7 +413,7 @@ export function TemplatesPageClient({
                       className={`flex size-6 shrink-0 items-center justify-center rounded-sm transition-colors duration-150 ${
                         isActive
                           ? "bg-primary/15 text-primary"
-                          : "bg-muted/70 text-muted-foreground group-hover:bg-accent-foreground/10 group-hover:text-foreground"
+                          : "bg-base-200/70 text-base-content/70 group-hover:bg-primary/10 group-hover:text-base-content"
                       }`}
                     >
                       <CatIcon size={12} />
@@ -398,7 +428,7 @@ export function TemplatesPageClient({
                         className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums transition-colors duration-150 ${
                           isActive
                             ? "bg-primary/15 text-primary"
-                            : "bg-muted text-muted-foreground"
+                            : "bg-base-200 text-base-content/70"
                         }`}
                       >
                         {cnt}
@@ -494,11 +524,11 @@ function GalleryView({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Search bar */}
-      <div className="shrink-0 border-b border-border px-4 py-2.5 @[640px]:px-8 @[1024px]:px-20">
-        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-card">
-          <Search className="shrink-0 text-muted-foreground-subtle" size={13} />
+      <div className="shrink-0 border-b border-base-300 px-4 py-2.5 @[640px]:px-8 @[1024px]:px-20">
+        <div className="flex items-center gap-2 rounded-md border border-base-300 bg-base-200/30 px-3 py-1.5 transition-colors focus-within:border-primary/40 focus-within:bg-base-100">
+          <Search className="shrink-0 text-base-content/50" size={13} />
           <input
-            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle"
+            className="flex-1 bg-transparent text-sm text-base-content outline-none placeholder:text-base-content/50"
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search templates…"
             ref={searchRef}
@@ -567,7 +597,7 @@ function GalleryView({
                   </span>
                 </div>
                 {deleteError && (
-                  <p className="mb-3 rounded-sm bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                  <p className="mb-3 rounded-sm bg-error/10 px-3 py-2 text-xs text-error">
                     {deleteError}
                   </p>
                 )}
@@ -634,21 +664,31 @@ function TemplateCard({
   return (
     <>
       <div
-        className={`group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card text-left transition-all duration-200 ${
+        className={`group relative flex flex-col overflow-hidden rounded-lg border border-base-300 bg-base-100 text-left transition-all duration-200 ${
           disabled
             ? "cursor-not-allowed opacity-60"
             : "cursor-pointer hover:-translate-y-0.5 hover:border-primary/30"
         }`}
-        onClick={() => {
-          if (!disabled) onPreview();
-        }}
       >
         <TemplateCardThumbnail categories={categories} template={template} />
+
+        {/* The card's action, as a real button stretched over the card. Placed
+           after the thumbnail (which is `relative`) so it paints above it; the
+           info text below is static and also sits beneath it, so clicking the
+           card body still opens the preview exactly as before. The action
+           buttons and the delete button are positioned above it. */}
+        <button
+          aria-label={`Preview ${template.name}`}
+          className="absolute inset-0"
+          disabled={disabled}
+          onClick={onPreview}
+          type="button"
+        />
 
         {/* Info */}
         <div className="flex flex-1 flex-col px-4 py-2.5">
           <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-sm font-semibold text-foreground">
+            <p className="truncate text-sm font-semibold text-base-content">
               {template.name}
             </p>
             <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-xs bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary opacity-0 transition-opacity duration-150 group-hover:opacity-100">
@@ -656,26 +696,28 @@ function TemplateCard({
             </span>
           </div>
           {template.description && (
-            <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-base-content/70">
               {template.description}
             </p>
           )}
 
           {/* Actions — always visible; clicking the card body opens the same
               preview as "View Demo", clicking "Use Template" skips it. */}
-          <div className="mt-2.5 flex items-center gap-1.5">
+          <div className="relative z-10 mt-2.5 flex items-center gap-1.5">
             <button
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-sm bg-primary py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-sm bg-primary py-1.5 text-xs font-semibold text-primary-content transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={disabled}
               onClick={(e) => {
                 e.stopPropagation();
-                if (!disabled) onUse();
+                if (!disabled) {
+                  onUse();
+                }
               }}
               type="button"
             >
               {applying ? (
                 <>
-                  <span className="size-3 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+                  <span className="size-3 animate-spin rounded-full border-2 border-primary-content/30 border-t-primary-content" />
                   Creating…
                 </>
               ) : (
@@ -683,11 +725,13 @@ function TemplateCard({
               )}
             </button>
             <button
-              className="flex flex-1 items-center justify-center rounded-sm border border-primary/30 bg-card py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex flex-1 items-center justify-center rounded-sm border border-primary/30 bg-base-100 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={disabled}
               onClick={(e) => {
                 e.stopPropagation();
-                if (!disabled) onPreview();
+                if (!disabled) {
+                  onPreview();
+                }
               }}
               type="button"
             >
@@ -699,7 +743,7 @@ function TemplateCard({
         {/* Delete button — only for workspace templates */}
         {onDelete && (
           <button
-            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-sm bg-background/80 text-muted-foreground opacity-0 backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+            className="absolute right-2 top-2 z-10 flex size-7 items-center justify-center rounded-sm bg-base-200/80 text-base-content/70 opacity-0 backdrop-blur-sm transition-all duration-150 group-hover:opacity-100 hover:bg-error/10 hover:text-error"
             onClick={(e) => {
               e.stopPropagation();
               setDeleteOpen(true);
@@ -718,14 +762,16 @@ function TemplateCard({
         typeof document !== "undefined" &&
         createPortal(
           <div className="fixed inset-0 z-10000 flex items-center justify-center">
-            <div
+            <button
+              aria-label="Close dialog"
               className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
               onClick={() => setDeleteOpen(false)}
+              type="button"
             />
-            <div className="relative w-[calc(100vw-32px)] max-w-100 rounded-lg border border-border bg-background p-6">
+            <div className="relative w-[calc(100vw-32px)] max-w-100 rounded-lg border border-base-300 bg-base-200 p-6">
               {/* Close */}
               <button
-                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
                 onClick={() => setDeleteOpen(false)}
                 type="button"
               >
@@ -734,16 +780,16 @@ function TemplateCard({
 
               {/* Icon + title */}
               <div className="mb-4 flex items-start gap-3 pr-8">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-destructive/10">
-                  <AlertTriangle className="text-destructive" size={20} />
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-error/10">
+                  <AlertTriangle className="text-error" size={20} />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-foreground">
+                  <h2 className="text-sm font-bold text-base-content">
                     Delete template
                   </h2>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-base-content/70">
                     Are you sure you want to delete{" "}
-                    <span className="font-semibold text-foreground">
+                    <span className="font-semibold text-base-content">
                       "{template.name}"
                     </span>
                     ? This cannot be undone.
@@ -754,7 +800,7 @@ function TemplateCard({
               {/* Actions */}
               <div className="flex items-center justify-end gap-2">
                 <button
-                  className="rounded-sm border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+                  className="rounded-sm border border-base-300 px-4 py-1.5 text-sm font-medium text-base-content transition-colors hover:bg-base-200 disabled:opacity-50"
                   disabled={deleting}
                   onClick={() => setDeleteOpen(false)}
                   type="button"
@@ -762,7 +808,7 @@ function TemplateCard({
                   Cancel
                 </button>
                 <button
-                  className="rounded-sm bg-destructive px-4 py-1.5 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+                  className="rounded-sm bg-error px-4 py-1.5 text-sm font-semibold text-error-content transition-colors hover:bg-error/90 disabled:opacity-50"
                   disabled={deleting}
                   onClick={handleDelete}
                   type="button"
@@ -777,8 +823,8 @@ function TemplateCard({
       {tooltip &&
         typeof document !== "undefined" &&
         createPortal(
-          <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-          document.body,
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
+          document.body
         )}
     </>
   );
@@ -829,7 +875,9 @@ function TemplatePreviewModal({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+      }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -841,13 +889,15 @@ function TemplatePreviewModal({
 
   return createPortal(
     <div className="fixed inset-0 z-600 flex items-center justify-center p-4">
-      <div
+      <button
+        aria-label="Close dialog"
         className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
         onClick={onClose}
+        type="button"
       />
-      <div className="relative flex h-[min(640px,88vh)] w-[min(880px,92vw)] overflow-hidden rounded-xl border border-border bg-background shadow-2xl">
+      <div className="relative flex h-[min(640px,88vh)] w-[min(880px,92vw)] overflow-hidden rounded-xl border border-base-300 bg-base-200 shadow-2xl">
         <button
-          className="absolute right-3 top-3 z-20 flex size-8 items-center justify-center rounded-full border border-border bg-background/90 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-accent hover:text-foreground"
+          className="absolute right-3 top-3 z-20 flex size-8 items-center justify-center rounded-full border border-base-300 bg-base-200/90 text-base-content/70 shadow-sm backdrop-blur-sm transition-colors hover:bg-base-200 hover:text-base-content"
           onClick={onClose}
           onMouseEnter={(e) =>
             setCloseTooltipRect(
@@ -866,28 +916,28 @@ function TemplatePreviewModal({
           )}
 
         {/* ── Left info panel ── */}
-        <div className="flex w-75 shrink-0 flex-col overflow-hidden border-r border-border bg-background">
-          <div className="shrink-0 border-b border-border bg-muted/20 px-5 py-6">
-            <div className="mb-4 flex size-14 items-center justify-center rounded-xl border border-border bg-card">
+        <div className="flex w-75 shrink-0 flex-col overflow-hidden border-r border-base-300 bg-base-200">
+          <div className="shrink-0 border-b border-base-300 bg-base-200/20 px-5 py-6">
+            <div className="mb-4 flex size-14 items-center justify-center rounded-xl border border-base-300 bg-base-100">
               {template.pageSnapshot.icon ? (
                 <PageIcon icon={template.pageSnapshot.icon} size={30} />
               ) : (
-                <CatIcon className="text-muted-foreground" size={26} />
+                <CatIcon className="text-base-content/70" size={26} />
               )}
             </div>
-            <h2 className="pr-6 text-base font-bold leading-snug text-foreground">
+            <h2 className="pr-6 text-base font-bold leading-snug text-base-content">
               {template.name}
             </h2>
             {catLabel && (
               <div className="mt-2">
-                <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-2xs font-semibold text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-base-300 bg-base-200/40 px-2 py-0.5 text-2xs font-semibold text-base-content/70">
                   <CatIcon size={9} />
                   {catLabel}
                 </span>
               </div>
             )}
             {template.description && (
-              <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-3 text-xs leading-relaxed text-base-content/70">
                 {template.description}
               </p>
             )}
@@ -896,21 +946,22 @@ function TemplatePreviewModal({
           <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5">
             {schema ? (
               <PreviewDbSchemaList
-                schema={schema}
                 activeViewName={activeViewName}
                 onSelectView={setActiveViewName}
+                schema={schema}
               />
             ) : blocks.length > 0 ? (
               <div>
-                <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+                <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-base-content/50">
                   Includes
                 </p>
-                <div className="space-y-0.5 rounded-xl border border-border bg-muted/20 p-3">
+                <div className="space-y-0.5 rounded-xl border border-base-300 bg-base-200/20 p-3">
                   {blocks.slice(0, 12).map((b, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: read-only preview of a template's authored block list; the block shape has no id and the slice is never reordered or spliced, so position is the identity.
                     <PreviewBlockRow block={b} key={i} />
                   ))}
                   {blocks.length > 12 && (
-                    <p className="pt-1 text-xs text-muted-foreground-subtle">
+                    <p className="pt-1 text-xs text-base-content/50">
                       +{blocks.length - 12} more
                     </p>
                   )}
@@ -919,9 +970,9 @@ function TemplatePreviewModal({
             ) : null}
           </div>
 
-          <div className="shrink-0 border-t border-border bg-background px-5 py-4">
+          <div className="shrink-0 border-t border-base-300 bg-base-200 px-5 py-4">
             <button
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-60"
               disabled={applying}
               onClick={onApply}
               type="button"
@@ -937,24 +988,24 @@ function TemplatePreviewModal({
                 </>
               )}
             </button>
-            <p className="mt-1.5 text-center text-2xs text-muted-foreground-subtle">
+            <p className="mt-1.5 text-center text-2xs text-base-content/50">
               Creates an independent copy
             </p>
           </div>
         </div>
 
         {/* ── Right preview panel — looks like the real thing ── */}
-        <div className="flex flex-1 flex-col overflow-hidden bg-muted/30">
+        <div className="flex flex-1 flex-col overflow-hidden bg-base-200/30">
           <div className="flex flex-1 flex-col overflow-hidden p-4">
-            <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background">
-              <div className="relative flex h-17.5 shrink-0 items-end bg-linear-to-r from-primary/10 via-muted/30 to-muted/10 px-8 pb-0">
+            <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-base-300 bg-base-200">
+              <div className="relative flex h-17.5 shrink-0 items-end bg-linear-to-r from-primary/10 via-base-200/30 to-base-200/10 px-8 pb-0">
                 {template.pageSnapshot.icon ? (
                   <span className="translate-y-5">
                     <PageIcon icon={template.pageSnapshot.icon} size={36} />
                   </span>
                 ) : (
                   <CatIcon
-                    className="translate-y-5 text-muted-foreground-subtle"
+                    className="translate-y-5 text-base-content/50"
                     size={30}
                   />
                 )}
@@ -962,25 +1013,26 @@ function TemplatePreviewModal({
               <div
                 className={`flex flex-col px-8 pt-9 pb-8 ${schema ? "min-h-0 flex-1 overflow-hidden" : "flex-1 overflow-y-auto"}`}
               >
-                <h1 className="mb-1 shrink-0 text-lg font-bold text-foreground">
+                <h1 className="mb-1 shrink-0 text-lg font-bold text-base-content">
                   {template.pageSnapshot.title || template.name}
                 </h1>
                 {template.description && (
-                  <p className="mb-4 shrink-0 text-sm text-muted-foreground">
+                  <p className="mb-4 shrink-0 text-sm text-base-content/70">
                     {template.description}
                   </p>
                 )}
                 {schema ? (
                   <PreviewDbContent
-                    schema={schema}
                     activeViewName={activeViewName}
                     onSelectView={setActiveViewName}
+                    schema={schema}
                   />
                 ) : (
                   <div className="space-y-2">
                     {blocks.slice(0, 16).map((b, i, arr) => (
                       <PreviewDocBlock
                         block={b}
+                        // biome-ignore lint/suspicious/noArrayIndexKey: read-only preview of a template's authored block list; the block shape has no id, and `ordinal` below is computed from this same index, so position is the identity by construction.
                         key={i}
                         ordinal={
                           b.type === "numbered"
@@ -1007,20 +1059,17 @@ function PreviewBlockRow({
   block: { type: string; content?: unknown };
 }) {
   const text = blockText(block.content);
-  const checked = (block.content as { checked?: boolean } | undefined)
-    ?.checked;
+  const checked = (block.content as { checked?: boolean } | undefined)?.checked;
   const icon =
     block.type === "todo" && checked ? "☑" : (BLOCK_ICONS[block.type] ?? "·");
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-muted-foreground-subtle">
+      <span className="mt-px w-5 shrink-0 text-center text-xs font-bold text-base-content/50">
         {icon}
       </span>
-      <span className="min-w-0 flex-1 truncate text-xs text-foreground/60">
+      <span className="min-w-0 flex-1 truncate text-xs text-base-content/60">
         {text || (
-          <span className="italic text-muted-foreground-subtle">
-            {block.type}
-          </span>
+          <span className="italic text-base-content/50">{block.type}</span>
         )}
       </span>
     </div>
@@ -1032,7 +1081,9 @@ function PreviewBlockRow({
 // consecutive "numbered" blocks precede (and include) it.
 function numberedOrdinal(blocks: { type: string }[], index: number): number {
   let n = 0;
-  for (let i = index; i >= 0 && blocks[i]?.type === "numbered"; i--) n++;
+  for (let i = index; i >= 0 && blocks[i]?.type === "numbered"; i--) {
+    n++;
+  }
   return n;
 }
 
@@ -1048,11 +1099,10 @@ function PreviewDocBlock({
   ordinal?: number;
 }) {
   const text = blockText(block.content);
-  const checked = (block.content as { checked?: boolean } | undefined)
-    ?.checked;
+  const checked = (block.content as { checked?: boolean } | undefined)?.checked;
 
   if (block.type === "divider") {
-    return <div className="my-2 h-0.5 rounded-full bg-border" />;
+    return <div className="my-2 h-0.5 rounded-full bg-base-300" />;
   }
 
   if (block.type === "todo") {
@@ -1060,18 +1110,16 @@ function PreviewDocBlock({
       <div className="flex items-center gap-2 text-xs leading-relaxed">
         <span
           className={`flex size-3.5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors ${
-            checked ? "border-primary bg-primary" : "border-border"
+            checked ? "border-primary bg-primary" : "border-base-300"
           }`}
         >
           {checked && (
-            <span className="mb-px h-1.25 w-0.75 rotate-45 border-b-2 border-r-2 border-primary-foreground" />
+            <span className="mb-px h-1.25 w-0.75 rotate-45 border-b-2 border-r-2 border-primary-content" />
           )}
         </span>
         <span
           className={
-            checked
-              ? "text-muted-foreground line-through"
-              : "text-foreground"
+            checked ? "text-base-content/70 line-through" : "text-base-content"
           }
         >
           {text || "—"}
@@ -1082,7 +1130,7 @@ function PreviewDocBlock({
 
   if (block.type === "toggle") {
     return (
-      <div className="flex items-center gap-2 text-xs leading-relaxed text-foreground">
+      <div className="flex items-center gap-2 text-xs leading-relaxed text-base-content">
         <span className="size-0 shrink-0 border-y-4 border-l-[6px] border-y-transparent border-l-primary/50" />
         {text || "—"}
       </div>
@@ -1091,7 +1139,7 @@ function PreviewDocBlock({
 
   if (block.type === "bullet") {
     return (
-      <div className="flex items-center gap-2 pl-1 text-xs leading-relaxed text-foreground">
+      <div className="flex items-center gap-2 pl-1 text-xs leading-relaxed text-base-content">
         <span className="size-1.5 shrink-0 rounded-full bg-primary/45" />
         {text || "—"}
       </div>
@@ -1100,7 +1148,7 @@ function PreviewDocBlock({
 
   if (block.type === "numbered") {
     return (
-      <div className="flex items-baseline gap-2 pl-1 text-xs leading-relaxed text-foreground">
+      <div className="flex items-baseline gap-2 pl-1 text-xs leading-relaxed text-base-content">
         <span className="shrink-0 text-[11px] font-medium tabular-nums text-primary">
           {ordinal ?? 1}.
         </span>
@@ -1111,7 +1159,7 @@ function PreviewDocBlock({
 
   if (block.type === "quote") {
     return (
-      <p className="rounded-r-sm border-l-2 border-primary bg-primary/5 py-1.5 pl-3 text-xs italic text-foreground">
+      <p className="rounded-r-sm border-l-2 border-primary bg-primary/5 py-1.5 pl-3 text-xs italic text-base-content">
         {text || <span className="opacity-30">—</span>}
       </p>
     );
@@ -1119,7 +1167,7 @@ function PreviewDocBlock({
 
   if (block.type === "callout") {
     return (
-      <div className="rounded-md border border-primary/20 bg-primary/6 px-3 py-2 text-xs leading-relaxed text-foreground">
+      <div className="rounded-md border border-primary/20 bg-primary/6 px-3 py-2 text-xs leading-relaxed text-base-content">
         {text || <span className="opacity-30">—</span>}
       </div>
     );
@@ -1127,20 +1175,20 @@ function PreviewDocBlock({
 
   if (block.type === "code") {
     return (
-      <pre className="overflow-x-auto rounded-md border border-border bg-muted px-3 py-2 font-mono text-xs text-foreground">
+      <pre className="overflow-x-auto rounded-md border border-base-300 bg-base-200 px-3 py-2 font-mono text-xs text-base-content">
         {text || "—"}
       </pre>
     );
   }
 
   const cls: Record<string, string> = {
-    h1: "text-base font-bold text-foreground mt-3 first:mt-0",
-    h2: "text-sm font-bold text-foreground mt-2 first:mt-0",
-    h3: "text-sm font-semibold text-foreground mt-1.5",
-    paragraph: "text-xs leading-relaxed text-foreground",
+    h1: "text-base font-bold text-base-content mt-3 first:mt-0",
+    h2: "text-sm font-bold text-base-content mt-2 first:mt-0",
+    h3: "text-sm font-semibold text-base-content mt-1.5",
+    paragraph: "text-xs leading-relaxed text-base-content",
   };
   return (
-    <p className={cls[block.type] ?? "text-xs text-muted-foreground-subtle"}>
+    <p className={cls[block.type] ?? "text-xs text-base-content/50"}>
       {text || <span className="opacity-30">—</span>}
     </p>
   );
@@ -1158,21 +1206,21 @@ function PreviewDbSchemaList({
   return (
     <div className="mt-5 space-y-5">
       <div>
-        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-base-content/50">
           Views
         </p>
         <div className="flex flex-wrap gap-1.5">
           {schema.views.map((v) => (
             <button
-              type="button"
-              onClick={() => onSelectView(v.name)}
               className={[
                 "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors duration-150",
                 v.name === activeViewName
                   ? "border-primary/20 bg-primary/10 text-primary"
-                  : "border-border bg-muted/30 text-muted-foreground hover:bg-accent hover:text-foreground",
+                  : "border-base-300 bg-base-200/30 text-base-content/70 hover:bg-base-200 hover:text-base-content",
               ].join(" ")}
               key={v.name}
+              onClick={() => onSelectView(v.name)}
+              type="button"
             >
               {v.type === "board" ? "⊞" : v.type === "calendar" ? "📅" : "☰"}{" "}
               {v.name}
@@ -1181,23 +1229,23 @@ function PreviewDbSchemaList({
         </div>
       </div>
       <div>
-        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-muted-foreground-subtle">
+        <p className="mb-2.5 text-2xs font-semibold uppercase tracking-widest text-base-content/50">
           Properties ({schema.properties.length})
         </p>
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-hidden rounded-xl border border-base-300 bg-base-100">
           {schema.properties.map((p, i) => (
             <div
               className={`flex min-w-0 items-center gap-2.5 px-3.5 py-2.5 ${
                 i < schema.properties.length - 1
-                  ? "border-b border-border"
+                  ? "border-b border-base-300"
                   : ""
               }`}
               key={p.name}
             >
-              <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">
+              <span className="w-5 shrink-0 text-center text-xs font-bold text-base-content/70">
                 {PROP_TYPE_ICON[p.type] ?? "·"}
               </span>
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground/80">
+              <span className="min-w-0 flex-1 truncate text-xs font-medium text-base-content/80">
                 {p.name}
               </span>
               {p.options && p.options.length > 0 && (
@@ -1214,7 +1262,7 @@ function PreviewDbSchemaList({
                     );
                   })}
                   {p.options.length > 2 && (
-                    <span className="text-2xs text-muted-foreground">
+                    <span className="text-2xs text-base-content/70">
                       +{p.options.length - 2}
                     </span>
                   )}
@@ -1238,18 +1286,18 @@ function PreviewViewTabs({
   onSelect: (name: string) => void;
 }) {
   return (
-    <div className="mb-3 flex items-center gap-1 overflow-x-auto border-b border-border pb-2">
+    <div className="mb-3 flex items-center gap-1 overflow-x-auto border-b border-base-300 pb-2">
       {views.map((v) => (
         <button
-          type="button"
-          onClick={() => onSelect(v.name)}
           className={[
             "shrink-0 rounded-xs px-2 py-0.5 text-xs font-medium transition-colors duration-150",
             v.name === activeName
-              ? "bg-accent text-foreground font-semibold"
-              : "text-muted-foreground-subtle hover:bg-accent/50 hover:text-foreground",
+              ? "bg-base-200 text-base-content font-semibold"
+              : "text-base-content/50 hover:bg-base-200/50 hover:text-base-content",
           ].join(" ")}
           key={v.name}
+          onClick={() => onSelect(v.name)}
+          type="button"
         >
           {v.name}
         </button>
@@ -1282,12 +1330,16 @@ function PreviewDbTable({
 
   return (
     <div className="mt-3">
-      <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="overflow-hidden rounded-sm border border-border">
-        <div className="flex border-b border-border bg-muted/30">
+      <PreviewViewTabs
+        activeName={activeViewName}
+        onSelect={onSelectView}
+        views={schema.views}
+      />
+      <div className="overflow-hidden rounded-sm border border-base-300">
+        <div className="flex border-b border-base-300 bg-base-200/30">
           {visibleProps.map((p) => (
             <div
-              className="min-w-0 flex-1 truncate px-2 py-1.5 text-[9.5px] font-semibold text-muted-foreground"
+              className="min-w-0 flex-1 truncate px-2 py-1.5 text-[9.5px] font-semibold text-base-content/70"
               key={p.name}
             >
               <span className="mr-1 opacity-50">
@@ -1298,17 +1350,15 @@ function PreviewDbTable({
           ))}
         </div>
         {rows.slice(0, 3).map((row, ri) => (
-          <div
-            className="flex border-b border-border last:border-0"
-            key={ri}
-          >
-            {visibleProps.map((p, pi) => {
+          // biome-ignore lint/suspicious/noArrayIndexKey: read-only preview of a template's authored sample_rows — never reordered or spliced, and the rows carry no id, so row order is their only identity.
+          <div className="flex border-b border-base-300 last:border-0" key={ri}>
+            {visibleProps.map((p) => {
               const val = row[p.name];
               const opt = p.options?.find((o) => o.name === val);
               return (
                 <div
-                  className="min-w-0 flex-1 px-2 py-1.5 text-xs text-foreground/80"
-                  key={pi}
+                  className="min-w-0 flex-1 px-2 py-1.5 text-xs text-base-content/80"
+                  key={p.name}
                 >
                   {opt ? (
                     <span
@@ -1317,7 +1367,7 @@ function PreviewDbTable({
                       {val}
                     </span>
                   ) : val === undefined ? (
-                    <span className="text-muted-foreground-subtle">—</span>
+                    <span className="text-base-content/50">—</span>
                   ) : (
                     <span className="block truncate">{String(val)}</span>
                   )}
@@ -1327,7 +1377,7 @@ function PreviewDbTable({
           </div>
         ))}
         {rows.length === 0 && (
-          <div className="py-3 text-center text-xs text-muted-foreground-subtle">
+          <div className="py-3 text-center text-xs text-base-content/50">
             No sample data
           </div>
         )}
@@ -1360,8 +1410,12 @@ function PreviewDbBoard({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-border bg-background">
+      <PreviewViewTabs
+        activeName={activeViewName}
+        onSelect={onSelectView}
+        views={schema.views}
+      />
+      <div className="mt-3 flex min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-base-300 bg-base-200">
         {columns.map((col, ci) => {
           const colRows = groupByProp
             ? rows.filter((r) => r[groupByProp.name] === col.name)
@@ -1369,16 +1423,16 @@ function PreviewDbBoard({
           const clr = OPTION_COLORS[col.color] ?? DEFAULT_OPT;
           return (
             <div
-              className={`flex min-w-37 flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-border" : ""}`}
+              className={`flex min-w-37 flex-1 flex-col ${ci < columns.length - 1 ? "border-r border-base-300" : ""}`}
               key={col.name}
             >
-              <div className="flex shrink-0 items-center gap-1.5 border-b border-border bg-muted/30 px-3 py-2.5">
+              <div className="flex shrink-0 items-center gap-1.5 border-b border-base-300 bg-base-200/30 px-3 py-2.5">
                 <span className={`size-1.5 shrink-0 rounded-full ${clr.dot}`} />
-                <span className="flex-1 truncate text-[11px] font-semibold text-foreground/70">
+                <span className="flex-1 truncate text-[11px] font-semibold text-base-content/70">
                   {col.name}
                 </span>
                 {colRows.length > 0 && (
-                  <span className="tabular-nums text-2xs text-muted-foreground-subtle">
+                  <span className="tabular-nums text-2xs text-base-content/50">
                     {colRows.length}
                   </span>
                 )}
@@ -1394,10 +1448,11 @@ function PreviewDbBoard({
                   );
                   return (
                     <div
-                      className="shrink-0 rounded-md border border-border bg-card p-2.5"
+                      className="shrink-0 rounded-md border border-base-300 bg-base-100 p-2.5"
+                      // biome-ignore lint/suspicious/noArrayIndexKey: read-only board preview built from a template's authored sample_rows — never reordered or spliced, and the rows carry no id.
                       key={i}
                     >
-                      <p className="text-[11px] font-medium leading-snug text-foreground">
+                      <p className="text-[11px] font-medium leading-snug text-base-content">
                         {title}
                       </p>
                       {tagOpt && (
@@ -1411,10 +1466,8 @@ function PreviewDbBoard({
                   );
                 })}
               </div>
-              <div className="shrink-0 border-t border-border px-3 py-2">
-                <span className="text-2xs text-muted-foreground-subtle">
-                  + New
-                </span>
+              <div className="shrink-0 border-t border-base-300 px-3 py-2">
+                <span className="text-2xs text-base-content/50">+ New</span>
               </div>
             </div>
           );
@@ -1435,21 +1488,25 @@ function PreviewDbCalendar({
 }) {
   return (
     <div className="mt-3 flex min-h-0 flex-1 flex-col">
-      <PreviewViewTabs views={schema.views} activeName={activeViewName} onSelect={onSelectView} />
-      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border">
-        <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/20 px-3 py-1.5">
-          <span className="text-xs font-semibold text-foreground/70">
+      <PreviewViewTabs
+        activeName={activeViewName}
+        onSelect={onSelectView}
+        views={schema.views}
+      />
+      <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-base-300">
+        <div className="flex shrink-0 items-center justify-between border-b border-base-300 bg-base-200/20 px-3 py-1.5">
+          <span className="text-xs font-semibold text-base-content/70">
             June 2026
           </span>
-          <div className="flex gap-2 text-xs text-muted-foreground-subtle">
+          <div className="flex gap-2 text-xs text-base-content/50">
             <span>‹</span>
             <span>›</span>
           </div>
         </div>
-        <div className="grid shrink-0 grid-cols-7 border-b border-border bg-muted/10">
+        <div className="grid shrink-0 grid-cols-7 border-b border-base-300 bg-base-200/10">
           {CAL_DAYS.map((d) => (
             <div
-              className="py-1 text-center text-[8.5px] font-semibold text-muted-foreground-subtle"
+              className="py-1 text-center text-[8.5px] font-semibold text-base-content/50"
               key={d}
             >
               {d}
@@ -1459,20 +1516,22 @@ function PreviewDbCalendar({
         <div className="flex min-h-0 flex-1 flex-col">
           {CAL_WEEKS.map((week, wi) => (
             <div
-              className="grid flex-1 grid-cols-7 border-b border-border last:border-0"
+              className="grid flex-1 grid-cols-7 border-b border-base-300 last:border-0"
+              // biome-ignore lint/suspicious/noArrayIndexKey: CAL_WEEKS is a module-level constant grid rendered as a static preview — the week's row position is its identity and the array can never reorder.
               key={wi}
             >
               {week.map((date, di) => (
                 <div
-                  className="border-r border-border p-1 last:border-0"
+                  className="border-r border-base-300 p-1 last:border-0"
+                  // biome-ignore lint/suspicious/noArrayIndexKey: fixed 7-column grid from the CAL_WEEKS constant; blank days are all 0, so the column position is the only identity available.
                   key={di}
                 >
                   {date > 0 && (
                     <span
                       className={
                         date === 19
-                          ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground"
-                          : "text-xs text-muted-foreground-subtle"
+                          ? "flex size-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-content"
+                          : "text-xs text-base-content/50"
                       }
                     >
                       {date}
@@ -1513,25 +1572,31 @@ function PreviewDbContent({
 
 // ── Template card thumbnail ────────────────────────────────────────────────────
 
-function TemplateCardThumbnail({ template, categories }: { template: Template; categories: TemplateCategoryRow[] }) {
+function TemplateCardThumbnail({
+  template,
+  categories,
+}: {
+  template: Template;
+  categories: TemplateCategoryRow[];
+}) {
   const icon = template.pageSnapshot.icon;
   const schema = template.pageSnapshot.database_schema;
   const blocks = template.pageSnapshot.blocks ?? [];
   const CatIcon = iconForCategory(categories, template.categoryId);
 
   return (
-    <div className="relative h-36 overflow-hidden border-b border-border bg-linear-to-b from-muted/30 to-muted/10">
+    <div className="relative h-36 overflow-hidden border-b border-base-300 bg-linear-to-b from-base-200/30 to-base-200/10">
       <div className="flex h-full flex-col justify-center p-3">
         {/* Icon indicator row */}
         <div className="mb-2.5 flex items-center gap-1.5">
           {icon ? (
             <PageIcon icon={icon} size={14} />
           ) : (
-            <div className="flex size-4 shrink-0 items-center justify-center rounded-xs bg-muted">
-              <CatIcon className="text-muted-foreground" size={9} />
+            <div className="flex size-4 shrink-0 items-center justify-center rounded-xs bg-base-200">
+              <CatIcon className="text-base-content/70" size={9} />
             </div>
           )}
-          <div className="h-1.5 w-20 rounded-xs bg-foreground/15" />
+          <div className="h-1.5 w-20 rounded-xs bg-base-content/15" />
         </div>
 
         {/* Content preview */}
@@ -1577,26 +1642,24 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
   const rows = schema.sample_rows ?? [];
 
   return (
-    <div className="overflow-hidden rounded-xs border border-border text-[8px] leading-none">
+    <div className="overflow-hidden rounded-xs border border-base-300 text-[8px] leading-none">
       {/* Header row */}
-      <div className="flex border-b border-border bg-muted/50">
-        {props.map((p, i) => (
+      <div className="flex border-b border-base-300 bg-base-200/50">
+        {props.map((p) => (
           <div
-            className="min-w-0 flex-1 truncate px-1.5 py-1 font-semibold text-muted-foreground-subtle"
-            key={i}
+            className="min-w-0 flex-1 truncate px-1.5 py-1 font-semibold text-base-content/50"
+            key={p.name}
           >
             {PROP_TYPE_ICON[p.type] ?? "·"} {p.name.slice(0, 5)}
           </div>
         ))}
       </div>
       {/* Data rows */}
+      {/* biome-ignore-start lint/suspicious/noArrayIndexKey: fixed-length placeholder list (skeleton/progress dots) — never reordered and has no per-item state, so the index is the stable identity */}
       {Array.from({ length: 3 }).map((_, ri) => {
         const row = rows[ri];
         return (
-          <div
-            className="flex border-b border-border last:border-0"
-            key={ri}
-          >
+          <div className="flex border-b border-base-300 last:border-0" key={ri}>
             {props.map((p, pi) => {
               const val = row?.[p.name];
               const opt = val ? p.options?.find((o) => o.name === val) : null;
@@ -1613,10 +1676,10 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
                     </span>
                   ) : val === undefined ? (
                     <div
-                      className={`${MINI_WIDTHS[(ri * 4 + pi) % MINI_WIDTHS.length]} h-0.5 rounded-xs bg-muted-foreground/15`}
+                      className={`${MINI_WIDTHS[(ri * 4 + pi) % MINI_WIDTHS.length]} h-0.5 rounded-xs bg-base-content/15`}
                     />
                   ) : (
-                    <span className="block truncate text-foreground/50">
+                    <span className="block truncate text-base-content/50">
                       {String(val).slice(0, 7)}
                     </span>
                   )}
@@ -1626,6 +1689,7 @@ function MiniTableContent({ schema }: { schema: SchemaForPreview }) {
           </div>
         );
       })}
+      {/* biome-ignore-end lint/suspicious/noArrayIndexKey: end of placeholder list */}
     </div>
   );
 }
@@ -1653,7 +1717,7 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
           colRows.length > 0 ? colRows.length : ci === 0 ? 2 : ci === 1 ? 2 : 1;
 
         return (
-          <div className="flex-1" key={ci}>
+          <div className="flex-1" key={col.name}>
             <div
               className={`mb-1.5 inline-flex items-center gap-0.5 rounded-xs px-1.5 py-px text-[7px] font-semibold ${clr.badge}`}
             >
@@ -1661,28 +1725,30 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
               <span className="truncate">{col.name.slice(0, 8)}</span>
             </div>
             <div className="space-y-1">
+              {/* biome-ignore-start lint/suspicious/noArrayIndexKey: fixed-length placeholder list (skeleton/progress dots) — never reordered and has no per-item state, so the index is the stable identity */}
               {Array.from({ length: cardCount }).map((_, ki) => {
                 const title = titleProp
                   ? colRows[ki]?.[titleProp.name]
                   : undefined;
                 return (
                   <div
-                    className="space-y-0.5 rounded-xs border border-border bg-card p-1.5"
+                    className="space-y-0.5 rounded-xs border border-base-300 bg-base-100 p-1.5"
                     key={ki}
                   >
-                    {title !== undefined ? (
-                      <div className="truncate text-[7px] leading-tight text-foreground/70">
+                    {title === undefined ? (
+                      <>
+                        <div className="h-1 w-4/5 rounded-xs bg-base-content/18" />
+                        <div className="h-1 w-3/5 rounded-xs bg-base-content/15" />
+                      </>
+                    ) : (
+                      <div className="truncate text-[7px] leading-tight text-base-content/70">
                         {String(title)}
                       </div>
-                    ) : (
-                      <>
-                        <div className="h-1 w-4/5 rounded-xs bg-foreground/18" />
-                        <div className="h-1 w-3/5 rounded-xs bg-muted-foreground/15" />
-                      </>
                     )}
                   </div>
                 );
               })}
+              {/* biome-ignore-end lint/suspicious/noArrayIndexKey: end of placeholder list */}
             </div>
           </div>
         );
@@ -1694,31 +1760,33 @@ function MiniBoardContent({ schema }: { schema: SchemaForPreview }) {
 function MiniCalContent() {
   const events = new Set([2, 7, 12, 18, 20]);
   return (
-    <div className="overflow-hidden rounded-xs border border-border">
-      <div className="grid grid-cols-7 border-b border-border bg-muted/30">
+    <div className="overflow-hidden rounded-xs border border-base-300">
+      <div className="grid grid-cols-7 border-b border-base-300 bg-base-200/30">
         {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: hardcoded weekday header of a static thumbnail; the letters repeat ("T", "S"), so the column position is the only identity available.
           <div className="py-0.5 text-center" key={i}>
-            <span className="text-[6.5px] font-semibold text-muted-foreground-subtle">
+            <span className="text-[6.5px] font-semibold text-base-content/50">
               {d}
             </span>
           </div>
         ))}
       </div>
       <div className="grid grid-cols-7">
+        {/* biome-ignore-start lint/suspicious/noArrayIndexKey: fixed-length placeholder list (skeleton/progress dots) — never reordered and has no per-item state, so the index is the stable identity */}
         {Array.from({ length: 21 }).map((_, i) => (
           <div
-            className="relative h-4 border-b border-r border-border p-0.5 last:border-r-0"
+            className="relative h-4 border-b border-r border-base-300 p-0.5 last:border-r-0"
             key={i}
           >
             {i === 14 ? (
               <div className="flex size-3 items-center justify-center rounded-full bg-primary">
-                <span className="text-[5px] font-bold text-primary-foreground">
+                <span className="text-[5px] font-bold text-primary-content">
                   {i + 1}
                 </span>
               </div>
             ) : (
               <>
-                <span className="text-[5.5px] text-muted-foreground-subtle">
+                <span className="text-[5.5px] text-base-content/50">
                   {i + 1}
                 </span>
                 {events.has(i) && (
@@ -1728,6 +1796,7 @@ function MiniCalContent() {
             )}
           </div>
         ))}
+        {/* biome-ignore-end lint/suspicious/noArrayIndexKey: end of placeholder list */}
       </div>
     </div>
   );
@@ -1738,18 +1807,20 @@ function MiniCalContent() {
 function GallerySkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 @[480px]:grid-cols-2 @[1024px]:grid-cols-3 @[1280px]:grid-cols-4">
+      {/* biome-ignore-start lint/suspicious/noArrayIndexKey: fixed-length placeholder list (skeleton/progress dots) — never reordered and has no per-item state, so the index is the stable identity */}
       {Array.from({ length: 8 }).map((_, i) => (
         <div
-          className="overflow-hidden rounded-md border border-border"
+          className="overflow-hidden rounded-md border border-base-300"
           key={i}
         >
-          <div className="h-40 animate-pulse bg-muted/60" />
+          <div className="h-40 animate-pulse bg-base-200/60" />
           <div className="space-y-2 p-3">
-            <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
-            <div className="h-2.5 w-full animate-pulse rounded bg-muted/60" />
+            <div className="h-3 w-3/4 animate-pulse rounded bg-base-200" />
+            <div className="h-2.5 w-full animate-pulse rounded bg-base-200/60" />
           </div>
         </div>
       ))}
+      {/* biome-ignore-end lint/suspicious/noArrayIndexKey: end of placeholder list */}
     </div>
   );
 }
@@ -1774,14 +1845,14 @@ function EmptyState({
   if (hasActiveFilter || totalBuiltInCount > 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-        <div className="flex size-12 items-center justify-center rounded-lg bg-muted/50">
-          <LayoutGrid className="text-muted-foreground-subtle" size={22} />
+        <div className="flex size-12 items-center justify-center rounded-lg bg-base-200/50">
+          <LayoutGrid className="text-base-content/50" size={22} />
         </div>
         <div>
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-sm font-semibold text-base-content">
             No templates found
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-base-content/70">
             Try a different search or category.
           </p>
         </div>
@@ -1805,14 +1876,14 @@ function EmptyState({
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <div className="flex size-12 items-center justify-center rounded-lg bg-muted/50">
-        <LayoutGrid className="text-muted-foreground-subtle" size={22} />
+      <div className="flex size-12 items-center justify-center rounded-lg bg-base-200/50">
+        <LayoutGrid className="text-base-content/50" size={22} />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground">
+        <p className="text-sm font-semibold text-base-content">
           No templates yet
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-base-content/70">
           {isPlatformAdmin
             ? "This instance doesn't have any built-in templates seeded yet."
             : "Ask your instance admin to seed the built-in templates from Orbit Admin."}
@@ -1820,7 +1891,7 @@ function EmptyState({
       </div>
       {isPlatformAdmin && (
         <button
-          className="mt-1 inline-flex items-center gap-1.5 rounded-sm bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
+          className="mt-1 inline-flex items-center gap-1.5 rounded-sm bg-primary px-3.5 py-2 text-xs font-semibold text-primary-content transition-colors duration-150 hover:bg-primary/90 disabled:opacity-60"
           disabled={seeding}
           onClick={seedTemplates}
           type="button"

@@ -1,10 +1,10 @@
 import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
-import { WorkspaceMembersSection } from "@/components/settings/workspace-members-section";
 
 export const metadata: Metadata = { title: "Members — Settings" };
 
@@ -15,12 +15,19 @@ export default async function MembersSettingsPage({ params }: Props) {
   const session = await requireSession();
 
   const [ws] = await db
-    .select({ id: workspaces.id, name: workspaces.name, slug: workspaces.slug, createdBy: workspaces.createdBy })
+    .select({
+      id: workspaces.id,
+      name: workspaces.name,
+      slug: workspaces.slug,
+      createdBy: workspaces.createdBy,
+    })
     .from(workspaces)
     .where(eq(workspaces.slug, slug))
     .limit(1);
 
-  if (!ws) notFound();
+  if (!ws) {
+    notFound();
+  }
 
   const [myMember] = await db
     .select({ role: workspaceMembers.role })
@@ -28,26 +35,28 @@ export default async function MembersSettingsPage({ params }: Props) {
     .where(
       and(
         eq(workspaceMembers.workspaceId, ws.id),
-        eq(workspaceMembers.userId, session.user.id),
-      ),
+        eq(workspaceMembers.userId, session.user.id)
+      )
     )
     .limit(1);
 
-  if (!myMember) notFound();
+  if (!myMember) {
+    notFound();
+  }
 
   const members = await db
     .select({
-      id:           workspaceMembers.id,
-      userId:       workspaceMembers.userId,
-      role:         workspaceMembers.role,
-      status:       workspaceMembers.status,
+      id: workspaceMembers.id,
+      userId: workspaceMembers.userId,
+      role: workspaceMembers.role,
+      status: workspaceMembers.status,
       invitedEmail: workspaceMembers.invitedEmail,
       inviteExpires: workspaceMembers.inviteExpires,
-      joinedAt:     workspaceMembers.joinedAt,
-      createdAt:    workspaceMembers.createdAt,
-      userName:     users.name,
-      userEmail:    users.email,
-      userImage:    users.image,
+      joinedAt: workspaceMembers.joinedAt,
+      createdAt: workspaceMembers.createdAt,
+      userName: users.name,
+      userEmail: users.email,
+      userImage: users.image,
     })
     .from(workspaceMembers)
     .leftJoin(users, eq(users.id, workspaceMembers.userId))
@@ -60,13 +69,13 @@ export default async function MembersSettingsPage({ params }: Props) {
 
   return (
     <WorkspaceMembersSection
-      workspaceId={ws.id}
-      workspaceName={ws.name}
       currentUserId={session.user.id}
       isAdmin={myMember.role === "admin"}
       isOwner={isOwner}
-      ownerUserId={ws.createdBy}
       members={members}
+      ownerUserId={ws.createdBy}
+      workspaceId={ws.id}
+      workspaceName={ws.name}
     />
   );
 }

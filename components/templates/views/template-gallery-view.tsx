@@ -28,26 +28,33 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "@/lib/auth/client";
-import { toggleSelfVote } from "@/lib/databases/vote";
 import { CellCommentPopover } from "@/components/database/cell-comment-popover";
 import { CellDisplay } from "@/components/database/cells/cell-display";
 import { CellEditorPopover } from "@/components/database/cells/cell-editor";
 import { EntryContextMenu } from "@/components/database/entry-context-menu";
 import { PROPERTY_TYPE_ICON } from "@/components/database/property-registry";
-import { resolveDisplayAs, resolveWrapContent } from "@/components/database/view-property-resolver";
 import type { DbProperty, DbView } from "@/components/database/types";
+import {
+  resolveDisplayAs,
+  resolveWrapContent,
+} from "@/components/database/view-property-resolver";
 import { PageIcon } from "@/components/pages/page-icon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { useSession } from "@/lib/auth/client";
+import { toggleSelfVote } from "@/lib/databases/vote";
 import type { DatabaseProperty, DatabaseView } from "@/lib/db/schema";
 import type { TemplateEntry } from "../template-page-client";
 
 // Same rule board-view.tsx uses to decide whether a property has a
 // display-worthy value — kept in sync so gallery cards and board cards
 // agree on what counts as "filled".
-function hasDisplayValue(prop: DatabaseProperty, raw: unknown, displayAs?: "select" | "checkbox"): boolean {
+function hasDisplayValue(
+  prop: DatabaseProperty,
+  raw: unknown,
+  displayAs?: "select" | "checkbox"
+): boolean {
   const v = raw as Record<string, unknown> | null;
   switch (prop.type) {
     case "text":
@@ -57,7 +64,10 @@ function hasDisplayValue(prop: DatabaseProperty, raw: unknown, displayAs?: "sele
     // Checkbox-display is meaningful even unset (an empty checkbox is still a
     // real state to show, unlike an empty pill, which has nothing to render).
     case "select":
-      return displayAs === "checkbox" || !!(v as { optionId?: string } | null)?.optionId;
+      return (
+        displayAs === "checkbox" ||
+        !!(v as { optionId?: string } | null)?.optionId
+      );
     case "multi_select":
       return (
         displayAs === "checkbox" ||
@@ -86,10 +96,18 @@ function hasDisplayValue(prop: DatabaseProperty, raw: unknown, displayAs?: "sele
 // value; checking picks the first "complete"-group option if the property is
 // grouped (marking it "done", matching what the checkbox visually implies),
 // falling back to the first option at all for an ungrouped select.
-function nextCheckboxSelectValue(prop: DatabaseProperty, raw: unknown): { optionId: string | null } {
-  const optionId = (raw as { optionId?: string | null } | null)?.optionId ?? null;
-  if (optionId) return { optionId: null };
-  const options = ((prop.config as { options?: { id: string; group?: string }[] } | null)?.options ?? []);
+function nextCheckboxSelectValue(
+  prop: DatabaseProperty,
+  raw: unknown
+): { optionId: string | null } {
+  const optionId =
+    (raw as { optionId?: string | null } | null)?.optionId ?? null;
+  if (optionId) {
+    return { optionId: null };
+  }
+  const options =
+    (prop.config as { options?: { id: string; group?: string }[] } | null)
+      ?.options ?? [];
   const target = options.find((o) => o.group === "complete") ?? options[0];
   return { optionId: target?.id ?? null };
 }
@@ -97,10 +115,17 @@ function nextCheckboxSelectValue(prop: DatabaseProperty, raw: unknown): { option
 // Same idea for multi-select: unchecking clears every selected option;
 // checking sets just the first "complete"-group (or first) option, same
 // single-value semantic a checkbox implies even for a multi-select field.
-function nextCheckboxMultiSelectValue(prop: DatabaseProperty, raw: unknown): { optionIds: string[] } {
+function nextCheckboxMultiSelectValue(
+  prop: DatabaseProperty,
+  raw: unknown
+): { optionIds: string[] } {
   const optionIds = (raw as { optionIds?: string[] } | null)?.optionIds ?? [];
-  if (optionIds.length > 0) return { optionIds: [] };
-  const options = ((prop.config as { options?: { id: string; group?: string }[] } | null)?.options ?? []);
+  if (optionIds.length > 0) {
+    return { optionIds: [] };
+  }
+  const options =
+    (prop.config as { options?: { id: string; group?: string }[] } | null)
+      ?.options ?? [];
   const target = options.find((o) => o.group === "complete") ?? options[0];
   return { optionIds: target ? [target.id] : [] };
 }
@@ -131,6 +156,7 @@ interface Props {
 // identically to board cards, just with a cover area up top.
 
 interface GalleryCardProps {
+  activeView?: DatabaseView | null;
   databaseId: string;
   displayProps: DatabaseProperty[];
   dragging?: boolean;
@@ -147,11 +173,10 @@ interface GalleryCardProps {
   onUpdateEntryIcon?: (entryId: string, icon: string) => void;
   onUpdateProperty: (propId: string, patch: Record<string, unknown>) => void;
   onUpdatePropValue: (entryId: string, propId: string, value: unknown) => void;
+  onUpdateView?: (patch: Record<string, unknown>) => Promise<void>;
   valueMap: Map<string, Map<string, unknown>>;
   workspaceId: string;
   workspaceSlug: string;
-  activeView?: DatabaseView | null;
-  onUpdateView?: (patch: Record<string, unknown>) => Promise<void>;
 }
 
 function GalleryCard({
@@ -177,7 +202,9 @@ function GalleryCard({
   const [hovered, setHovered] = useState(false);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [commentAnchor, setCommentAnchor] = useState<DOMRect | null>(null);
-  const [commentCount, setCommentCount] = useState<number | null>(entry.commentCount ?? null);
+  const [commentCount, setCommentCount] = useState<number | null>(
+    entry.commentCount ?? null
+  );
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(entry.title ?? "");
@@ -193,19 +220,50 @@ function GalleryCard({
   // Vote-mode person: toggle the current viewer's own vote directly instead of
   // opening the people picker — returns true if handled (caller skips the picker).
   function handleVoteClick(prop: DatabaseProperty): boolean {
-    if (prop.type !== "person" || !(prop.config as { voteMode?: boolean } | null)?.voteMode) return false;
-    if (locked) return true;
-    if (!session?.user?.id) return true;
-    onUpdatePropValue(entry.id, prop.id, toggleSelfVote(valMap.get(prop.id) as { userIds?: string[] } | null, session.user));
+    if (
+      prop.type !== "person" ||
+      !(prop.config as { voteMode?: boolean } | null)?.voteMode
+    ) {
+      return false;
+    }
+    if (locked) {
+      return true;
+    }
+    if (!session?.user?.id) {
+      return true;
+    }
+    onUpdatePropValue(
+      entry.id,
+      prop.id,
+      toggleSelfVote(
+        valMap.get(prop.id) as { userIds?: string[] } | null,
+        session.user
+      )
+    );
     return true;
   }
 
   const filledProps = displayProps.filter((prop) =>
-    hasDisplayValue(prop, valMap.get(prop.id) ?? null, resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined))
+    hasDisplayValue(
+      prop,
+      valMap.get(prop.id) ?? null,
+      resolveDisplayAs(
+        prop as unknown as DbProperty,
+        activeView as unknown as DbView | null | undefined
+      )
+    )
   );
   const emptyProps = editing
     ? displayProps.filter(
-        (prop) => !hasDisplayValue(prop, valMap.get(prop.id) ?? null, resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined))
+        (prop) =>
+          !hasDisplayValue(
+            prop,
+            valMap.get(prop.id) ?? null,
+            resolveDisplayAs(
+              prop as unknown as DbProperty,
+              activeView as unknown as DbView | null | undefined
+            )
+          )
       )
     : [];
 
@@ -213,7 +271,9 @@ function GalleryCard({
   // threads only) — see components/database/board-view.tsx's CardShell for
   // the same change. `onCommentAdded` below still bumps this instantly
   // between fetches.
-  useEffect(() => { setCommentCount(entry.commentCount ?? 0); }, [entry.commentCount]);
+  useEffect(() => {
+    setCommentCount(entry.commentCount ?? 0);
+  }, [entry.commentCount]);
 
   useEffect(() => {
     if (!editing) {
@@ -241,20 +301,23 @@ function GalleryCard({
 
   return (
     <>
+      {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/noStaticElementInteractions: card shell, not a control — its handlers are a right-click affordance plus hover tracking, neither of which is an activation. Right-click has no keyboard equivalent to add, and per AGENTS.md §24 the same actions are also on the card's visible "⋯" menu button, which is a native focusable button. */}
       <div
         className={[
-          "relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors duration-150",
+          "relative flex h-full flex-col overflow-hidden rounded-lg border border-base-300 bg-base-100 transition-colors duration-150",
           dragging ? "ring-2 ring-primary/40 opacity-90" : "",
         ].join(" ")}
-        onMouseEnter={() => !dragging && setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         onContextMenu={(e) => {
-          if (dragging) return;
+          if (dragging) {
+            return;
+          }
           e.preventDefault();
           e.stopPropagation();
           hideTooltip();
           setMenuPos({ x: e.clientX, y: e.clientY });
         }}
+        onMouseEnter={() => !dragging && setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         ref={cardRef}
       >
         {/* Grip icon — top-left, visible on hover; the actual drag handle */}
@@ -263,7 +326,7 @@ function GalleryCard({
           style={{ opacity: hovered ? 0.6 : 0 }}
           {...dragHandleProps}
         >
-          <GripVertical className="text-foreground/70" size={14} />
+          <GripVertical className="text-base-content/70" size={14} />
         </div>
 
         {/* Action buttons — top-right, visible on hover */}
@@ -273,7 +336,7 @@ function GalleryCard({
         >
           {editing ? (
             <button
-              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-base-100 text-base-content/60 transition-colors hover:bg-base-200 hover:text-base-content"
               onClick={(e) => {
                 e.stopPropagation();
                 onClickEntry(entry.id);
@@ -281,15 +344,18 @@ function GalleryCard({
               onMouseEnter={(e) => showTooltip("Open full page", e)}
               onMouseLeave={hideTooltip}
               onPointerDown={(e) => e.stopPropagation()}
+              type="button"
             >
               <PanelRight size={13} />
             </button>
           ) : (
             <button
-              className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-sm bg-base-100 text-base-content/60 transition-colors hover:bg-base-200 hover:text-base-content"
               onClick={(e) => {
                 e.stopPropagation();
-                if (locked) return;
+                if (locked) {
+                  return;
+                }
                 showTooltip("Open full page", e);
                 setEditTitle(entry.title ?? "");
                 setEditing(true);
@@ -297,12 +363,13 @@ function GalleryCard({
               onMouseEnter={(e) => showTooltip("Edit", e)}
               onMouseLeave={hideTooltip}
               onPointerDown={(e) => e.stopPropagation()}
+              type="button"
             >
               <Pencil size={13} />
             </button>
           )}
           <button
-            className="flex size-7 items-center justify-center rounded-sm bg-card text-foreground/60 transition-colors hover:bg-background hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-sm bg-base-100 text-base-content/60 transition-colors hover:bg-base-200 hover:text-base-content"
             onClick={(e) => {
               e.stopPropagation();
               hideTooltip();
@@ -311,6 +378,7 @@ function GalleryCard({
             onMouseEnter={(e) => showTooltip("More options", e)}
             onMouseLeave={hideTooltip}
             onPointerDown={(e) => e.stopPropagation()}
+            type="button"
           >
             <MoreHorizontal size={13} />
           </button>
@@ -321,9 +389,10 @@ function GalleryCard({
           className="relative block h-35 w-full shrink-0 overflow-hidden bg-primary/10"
           onClick={() => !dragging && !editing && onClickEntry(entry.id)}
           onPointerDown={(e) => e.stopPropagation()}
+          type="button"
         >
           <div className="flex size-full items-center justify-center">
-            <LayoutGrid className="text-muted-foreground" size={28} />
+            <LayoutGrid className="text-base-content/70" size={28} />
           </div>
         </button>
 
@@ -337,17 +406,21 @@ function GalleryCard({
               {entry.icon ? (
                 <PageIcon className="shrink-0" icon={entry.icon} size={16} />
               ) : (
-                <FileText className="shrink-0 text-muted-foreground" size={12} />
+                <FileText className="shrink-0 text-base-content/70" size={12} />
               )}
             </span>
             {editing ? (
               <input
                 autoFocus
-                className="min-w-0 flex-1 bg-transparent text-sm font-semibold leading-snug text-foreground outline-none"
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold leading-snug text-base-content outline-none"
                 onBlur={commitTitle}
                 onChange={(e) => {
                   setEditTitle(e.target.value);
-                  window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId: entry.id, title: e.target.value } }));
+                  window.dispatchEvent(
+                    new CustomEvent("workflik:page-title-changed", {
+                      detail: { pageId: entry.id, title: e.target.value },
+                    })
+                  );
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -369,10 +442,11 @@ function GalleryCard({
                 className="min-w-0 flex-1 text-left"
                 onClick={() => !dragging && onClickEntry(entry.id)}
                 onPointerDown={(e) => e.stopPropagation()}
+                type="button"
               >
-                <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 hover:text-muted-foreground">
+                <p className="line-clamp-2 text-sm font-semibold leading-snug text-base-content transition-colors duration-150 hover:text-base-content/70">
                   {entry.title || (
-                    <span className="font-normal text-muted-foreground">
+                    <span className="font-normal text-base-content/70">
                       Untitled
                     </span>
                   )}
@@ -387,104 +461,127 @@ function GalleryCard({
               the same row land on identical natural heights instead of some
               being visibly shorter with a dead gap at the bottom. */}
           <div className="mt-1.5 space-y-0.5">
-              {filledProps.map((prop) => {
-                const raw = valMap.get(prop.id) ?? null;
-                const resolvedDisplayAs = resolveDisplayAs(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined);
-                const resolvedWrapContent = resolveWrapContent(prop as unknown as DbProperty, activeView as unknown as DbView | null | undefined);
-                const isCheckboxDisplay =
-                  (prop.type === "select" || prop.type === "multi_select") &&
-                  resolvedDisplayAs === "checkbox";
-                // Checkbox display already renders its own "☐ Property name"
-                // label internally — wrapping it in the usual "label: value"
-                // row would show the property name twice.
-                if (isCheckboxDisplay) {
-                  return (
-                    <div key={prop.id} className="overflow-hidden">
-                      <CellDisplay
-                        compact
-                        property={prop as unknown as DbProperty}
-                        value={raw}
-                        resolvedDisplayAs={resolvedDisplayAs}
-                        resolvedWrapContent={resolvedWrapContent}
-                        workspaceId={workspaceId}
-                        onToggleCheckbox={() => {
-                          if (locked) return;
-                          const next = prop.type === "multi_select"
+            {filledProps.map((prop) => {
+              const raw = valMap.get(prop.id) ?? null;
+              const resolvedDisplayAs = resolveDisplayAs(
+                prop as unknown as DbProperty,
+                activeView as unknown as DbView | null | undefined
+              );
+              const resolvedWrapContent = resolveWrapContent(
+                prop as unknown as DbProperty,
+                activeView as unknown as DbView | null | undefined
+              );
+              const isCheckboxDisplay =
+                (prop.type === "select" || prop.type === "multi_select") &&
+                resolvedDisplayAs === "checkbox";
+              // Checkbox display already renders its own "☐ Property name"
+              // label internally — wrapping it in the usual "label: value"
+              // row would show the property name twice.
+              if (isCheckboxDisplay) {
+                return (
+                  <div className="overflow-hidden" key={prop.id}>
+                    <CellDisplay
+                      compact
+                      onToggleCheckbox={() => {
+                        if (locked) {
+                          return;
+                        }
+                        const next =
+                          prop.type === "multi_select"
                             ? nextCheckboxMultiSelectValue(prop, raw)
                             : nextCheckboxSelectValue(prop, raw);
-                          onUpdatePropValue(entry.id, prop.id, next);
-                        }}
-                      />
-                    </div>
-                  );
-                }
-                // Vote-mode renders its own "👍 N" badge — a clickable wrapper
-                // that toggles the viewer's own vote, no "label: value" row.
-                if (prop.type === "person" && (prop.config as { voteMode?: boolean } | null)?.voteMode) {
-                  return (
-                    <button
-                      key={prop.id}
-                      type="button"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => { e.stopPropagation(); handleVoteClick(prop); }}
-                      className="overflow-hidden text-left"
-                    >
-                      <CellDisplay compact property={prop as unknown as DbProperty} value={raw} workspaceId={workspaceId} />
-                    </button>
-                  );
-                }
-                return (
-                  <div
-                    className="flex items-center gap-1.5 overflow-hidden"
-                    key={prop.id}
-                  >
-                    <span className="w-19 shrink-0 truncate text-xs font-medium text-muted-foreground">
-                      {prop.name}
-                    </span>
-                    <div className="min-w-0 flex-1 overflow-hidden">
-                      <CellDisplay
-                        compact
-                        property={prop as unknown as DbProperty}
-                        value={raw}
-                        resolvedDisplayAs={resolvedDisplayAs}
-                        resolvedWrapContent={resolvedWrapContent}
-                        workspaceId={workspaceId}
-                      />
-                    </div>
+                        onUpdatePropValue(entry.id, prop.id, next);
+                      }}
+                      property={prop as unknown as DbProperty}
+                      resolvedDisplayAs={resolvedDisplayAs}
+                      resolvedWrapContent={resolvedWrapContent}
+                      value={raw}
+                      workspaceId={workspaceId}
+                    />
                   </div>
                 );
-              })}
-              {/* Rendered even with 0 comments (just invisible) — reserves this
+              }
+              // Vote-mode renders its own "👍 N" badge — a clickable wrapper
+              // that toggles the viewer's own vote, no "label: value" row.
+              if (
+                prop.type === "person" &&
+                (prop.config as { voteMode?: boolean } | null)?.voteMode
+              ) {
+                return (
+                  <button
+                    className="overflow-hidden text-left"
+                    key={prop.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVoteClick(prop);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    type="button"
+                  >
+                    <CellDisplay
+                      compact
+                      property={prop as unknown as DbProperty}
+                      value={raw}
+                      workspaceId={workspaceId}
+                    />
+                  </button>
+                );
+              }
+              return (
+                <div
+                  className="flex items-center gap-1.5 overflow-hidden"
+                  key={prop.id}
+                >
+                  <span className="w-19 shrink-0 truncate text-xs font-medium text-base-content/70">
+                    {prop.name}
+                  </span>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <CellDisplay
+                      compact
+                      property={prop as unknown as DbProperty}
+                      resolvedDisplayAs={resolvedDisplayAs}
+                      resolvedWrapContent={resolvedWrapContent}
+                      value={raw}
+                      workspaceId={workspaceId}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+            {/* Rendered even with 0 comments (just invisible) — reserves this
                   row's height on every card so a card with no comments doesn't
                   end up visibly shorter than one that has them. */}
-              <button
-                className={`inline-flex items-center gap-1 rounded-xs bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/70 ${!commentCount ? "invisible" : ""}`}
-                tabIndex={commentCount ? 0 : -1}
-                aria-hidden={!commentCount}
-                // Exempt from CellCommentPopover's capture-phase outside-click
-                // close, which would otherwise close the popover just before
-                // the toggle below reopened it.
-                data-comment-exempt
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Toggle: a second click closes the popover this badge opened.
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  setCommentAnchor((cur) => (cur ? null : rect));
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                onMouseEnter={(e) => showTooltip("View comments", e)}
-                onMouseLeave={hideTooltip}
-              >
-                <MessageSquare size={11} />
-                {commentCount || 0}
-              </button>
-            </div>
+            <button
+              aria-hidden={!commentCount}
+              className={`inline-flex items-center gap-1 rounded-xs bg-base-200 px-1.5 py-0.5 text-xs font-medium text-base-content/70 transition-colors hover:bg-base-200/70 ${commentCount ? "" : "invisible"}`}
+              // Exempt from CellCommentPopover's capture-phase outside-click
+              // close, which would otherwise close the popover just before
+              // the toggle below reopened it.
+              data-comment-exempt
+              onClick={(e) => {
+                e.stopPropagation();
+                // Toggle: a second click closes the popover this badge opened.
+                const rect = (
+                  e.currentTarget as HTMLElement
+                ).getBoundingClientRect();
+                setCommentAnchor((cur) => (cur ? null : rect));
+              }}
+              onMouseEnter={(e) => showTooltip("View comments", e)}
+              onMouseLeave={hideTooltip}
+              onPointerDown={(e) => e.stopPropagation()}
+              tabIndex={commentCount ? 0 : -1}
+              type="button"
+            >
+              <MessageSquare size={11} />
+              {commentCount || 0}
+            </button>
+          </div>
 
           {/* Quick-add empty properties — only while editing, matching board-view's
             inline card editor so gallery cards can be filled in without opening
             the full page. */}
           {emptyProps.length > 0 && (
-            <div className="mt-2 flex flex-col gap-0.5 border-t border-border pt-2">
+            <div className="mt-2 flex flex-col gap-0.5 border-t border-base-300 pt-2">
               {emptyProps.map((prop) => {
                 const TypeIcon =
                   PROPERTY_TYPE_ICON[
@@ -493,12 +590,16 @@ function GalleryCard({
                 const propConfig = (prop.config ?? {}) as { icon?: string };
                 return (
                   <button
-                    className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-left text-xs text-base-content/70 hover:bg-base-200 hover:text-base-content"
                     key={prop.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (locked) return;
-                      if (handleVoteClick(prop)) return;
+                      if (locked) {
+                        return;
+                      }
+                      if (handleVoteClick(prop)) {
+                        return;
+                      }
                       setPropEditor({
                         prop,
                         rect: (
@@ -509,8 +610,19 @@ function GalleryCard({
                     onPointerDown={(e) => e.stopPropagation()}
                     type="button"
                   >
-                    {propConfig.icon ? <PageIcon icon={propConfig.icon} className="shrink-0" size={12} /> : <TypeIcon className="shrink-0" size={12} />}
-                    {prop.type === "person" && (prop.config as { voteMode?: boolean } | null)?.voteMode ? prop.name : `Add ${prop.name}`}
+                    {propConfig.icon ? (
+                      <PageIcon
+                        className="shrink-0"
+                        icon={propConfig.icon}
+                        size={12}
+                      />
+                    ) : (
+                      <TypeIcon className="shrink-0" size={12} />
+                    )}
+                    {prop.type === "person" &&
+                    (prop.config as { voteMode?: boolean } | null)?.voteMode
+                      ? prop.name
+                      : `Add ${prop.name}`}
                   </button>
                 );
               })}
@@ -527,6 +639,7 @@ function GalleryCard({
         )}
 
       <EntryContextMenu
+        activeView={activeView as unknown as DbView | null}
         databaseId={databaseId}
         entryIcon={entry.icon ?? null}
         entryId={entry.id}
@@ -536,35 +649,40 @@ function GalleryCard({
         onClose={() => setMenuPos(null)}
         onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
         onDelete={() => {
-          if (locked) return;
+          if (locked) {
+            return;
+          }
           setHovered(false);
           onDeleteRequest(entry.id);
         }}
         onDuplicate={locked ? undefined : () => onDuplicateEntry(entry.id)}
         onIconChange={(icon) => {
-          if (locked) return;
+          if (locked) {
+            return;
+          }
           onUpdateEntryIcon?.(entry.id, icon);
         }}
         onPropertyConfigChange={locked ? () => {} : onUpdateProperty}
-        onValueChange={locked ? () => {} : (propId, value) =>
-          onUpdatePropValue(entry.id, propId, value)
+        onUpdateView={onUpdateView}
+        onValueChange={
+          locked
+            ? () => {}
+            : (propId, value) => onUpdatePropValue(entry.id, propId, value)
         }
         updatedAt={entry.updatedAt ?? null}
         workspaceId={workspaceId}
         workspaceSlug={workspaceSlug}
-        activeView={activeView as unknown as DbView | null}
-        onUpdateView={onUpdateView}
       />
 
       {commentAnchor && (
         <CellCommentPopover
           anchorRect={commentAnchor}
+          entryShortId={entry.shortId}
           onClose={() => setCommentAnchor(null)}
           onCommentAdded={() => setCommentCount((c) => (c ?? 0) + 1)}
           pageId={entry.id}
           workspaceId={workspaceId}
           workspaceSlug={workspaceSlug}
-          entryShortId={entry.shortId}
         />
       )}
 
@@ -608,14 +726,18 @@ function SortableGalleryCard(props: GalleryCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="h-full">
+    <div className="h-full" ref={setNodeRef} style={style}>
       <GalleryCard
         {...props}
-        dragHandleProps={props.locked ? undefined : {
-          ref: setActivatorNodeRef,
-          ...attributes,
-          ...listeners,
-        }}
+        dragHandleProps={
+          props.locked
+            ? undefined
+            : {
+                ref: setActivatorNodeRef,
+                ...attributes,
+                ...listeners,
+              }
+        }
       />
     </div>
   );
@@ -651,15 +773,18 @@ export function TemplateGalleryView({
   // card" from Status's own Edit Property panel — every other property stays
   // fully editable via the entry's popup but is never rendered on the card.
   const displayProps = properties.filter((p) => {
-    const config = p.config as { groupedByStatus?: boolean; showOnCard?: boolean } | null;
+    const config = p.config as {
+      groupedByStatus?: boolean;
+      showOnCard?: boolean;
+    } | null;
     return !!config?.groupedByStatus && !!config?.showOnCard;
   });
 
   // Reset order when entries change (add/delete)
-  const entryIdKey = entries.map((e) => e.id).join(",");
+  const _entryIdKey = entries.map((e) => e.id).join(",");
   useEffect(() => {
     setLocalOrder([]);
-  }, [entryIdKey]);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -678,12 +803,16 @@ export function TemplateGalleryView({
     : null;
 
   function handleDragStart(event: DragStartEvent) {
-    if (locked) return;
+    if (locked) {
+      return;
+    }
     setDraggingId(String(event.active.id));
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    if (locked) return;
+    if (locked) {
+      return;
+    }
     const { active, over } = event;
     setDraggingId(null);
     if (!over || active.id === over.id) {
@@ -715,6 +844,7 @@ export function TemplateGalleryView({
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {orderedEntries.map((entry) => (
                 <SortableGalleryCard
+                  activeView={activeView}
                   databaseId={databaseId}
                   displayProps={displayProps}
                   entry={entry}
@@ -727,19 +857,19 @@ export function TemplateGalleryView({
                   onUpdateEntryIcon={onUpdateEntryIcon}
                   onUpdateProperty={onUpdateProperty}
                   onUpdatePropValue={onUpdatePropValue}
+                  onUpdateView={onUpdateView}
                   valueMap={entryValueMap}
                   workspaceId={workspaceId}
                   workspaceSlug={workspaceSlug}
-                  activeView={activeView}
-                  onUpdateView={onUpdateView}
                 />
               ))}
 
               {/* New page card — outside SortableContext items */}
               {!locked && (
                 <button
-                  className="flex h-full min-h-45 flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-border text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
+                  className="flex h-full min-h-45 flex-col items-center justify-center gap-2 rounded-sm border border-dashed border-base-300 text-base-content/70 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary/60"
                   onClick={() => onAddEntry()}
+                  type="button"
                 >
                   <Plus size={18} />
                   <span className="text-sm font-medium">New page</span>
@@ -752,6 +882,7 @@ export function TemplateGalleryView({
         <DragOverlay>
           {draggingEntry && (
             <GalleryCard
+              activeView={activeView}
               databaseId={databaseId}
               displayProps={displayProps}
               dragging
@@ -763,11 +894,10 @@ export function TemplateGalleryView({
               onSaveTitle={() => {}}
               onUpdateProperty={() => {}}
               onUpdatePropValue={() => {}}
+              onUpdateView={onUpdateView}
               valueMap={entryValueMap}
               workspaceId={workspaceId}
               workspaceSlug={workspaceSlug}
-              activeView={activeView}
-              onUpdateView={onUpdateView}
             />
           )}
         </DragOverlay>

@@ -1,9 +1,9 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 
 interface PagePrivacyContextValue {
-  isPrivate:  boolean;
+  isPrivate: boolean;
   setIsPrivate: (v: boolean) => void;
 }
 
@@ -14,10 +14,11 @@ const PagePrivacyContext = createContext<PagePrivacyContextValue | null>(null);
 // changes it — both read/write the same state instead of maintaining their
 // own copies and re-syncing after the fact.
 export function PagePrivacyProvider({
-  initialIsPrivate, children,
+  initialIsPrivate,
+  children,
 }: {
   initialIsPrivate: boolean;
-  children:     ReactNode;
+  children: ReactNode;
 }) {
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
   return (
@@ -29,6 +30,8 @@ export function PagePrivacyProvider({
 
 export function usePagePrivacy() {
   const ctx = useContext(PagePrivacyContext);
-  if (!ctx) throw new Error("usePagePrivacy must be used within a PagePrivacyProvider");
+  if (!ctx) {
+    throw new Error("usePagePrivacy must be used within a PagePrivacyProvider");
+  }
   return ctx;
 }

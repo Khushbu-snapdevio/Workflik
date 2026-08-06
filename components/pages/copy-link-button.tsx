@@ -1,11 +1,11 @@
 "use client";
 
-import { createPortal } from "react-dom";
 import { Link } from "lucide-react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { usePagePrivacy } from "@/components/pages/page-privacy-context";
-import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 
 interface Props {
   pageId: string;
@@ -28,7 +28,10 @@ export function CopyLinkButton({ pageId }: Props) {
         duration: 6000,
         action: {
           label: "Give access",
-          onClick: () => window.dispatchEvent(new CustomEvent("workflik:open-share", { detail: { pageId } })),
+          onClick: () =>
+            window.dispatchEvent(
+              new CustomEvent("workflik:open-share", { detail: { pageId } })
+            ),
         },
       });
     } else {
@@ -42,20 +45,22 @@ export function CopyLinkButton({ pageId }: Props) {
   return (
     <>
       <button
-        type="button"
-        onClick={copyLink}
         aria-label="Copy link"
+        className="flex size-7 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
+        onClick={copyLink}
         onMouseEnter={(e) => showTooltip("Copy link", e)}
         onMouseLeave={hideTooltip}
-        className="flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        type="button"
       >
         <Link size={15} />
       </button>
 
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
+          document.body
+        )}
     </>
   );
 }

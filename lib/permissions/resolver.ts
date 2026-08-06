@@ -1,22 +1,26 @@
-import { and, eq, isNull, or, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pagePermissions, pages, workspaceMembers } from "@/lib/db/schema";
 import { ApiError } from "@/lib/workspaces/auth";
 
 export type WorkspaceRole = "admin" | "editor" | "viewer";
-export type AccessLevel   = "full_access" | "can_edit" | "can_comment" | "can_view";
+export type AccessLevel =
+  | "full_access"
+  | "can_edit"
+  | "can_comment"
+  | "can_view";
 
 const ACCESS_RANK: Record<AccessLevel, number> = {
-  can_view:    0,
+  can_view: 0,
   can_comment: 1,
-  can_edit:    2,
+  can_edit: 2,
   full_access: 3,
 };
 
 const ROLE_MAX_ACCESS: Record<WorkspaceRole, AccessLevel> = {
   viewer: "can_view",
   editor: "can_edit",
-  admin:  "full_access",
+  admin: "full_access",
 };
 
 function meetsLevel(effective: AccessLevel, required: AccessLevel): boolean {
@@ -29,22 +33,24 @@ function meetsLevel(effective: AccessLevel, required: AccessLevel): boolean {
  */
 export async function getEffectivePermission(
   userId: string,
-  pageId: string,
+  pageId: string
 ): Promise<AccessLevel | null> {
   // Load the page + workspace member in parallel
   const [pageRow] = await db
     .select({
-      id:         pages.id,
+      id: pages.id,
       workspaceId: pages.workspaceId,
-      parentId:   pages.parentId,
-      isPrivate:  pages.isPrivate,
-      createdBy:  pages.createdBy,
+      parentId: pages.parentId,
+      isPrivate: pages.isPrivate,
+      createdBy: pages.createdBy,
     })
     .from(pages)
     .where(eq(pages.id, pageId))
     .limit(1);
 
-  if (!pageRow) return null;
+  if (!pageRow) {
+    return null;
+  }
 
   const [member] = await db
     .select({ role: workspaceMembers.role })
@@ -53,8 +59,8 @@ export async function getEffectivePermission(
       and(
         eq(workspaceMembers.workspaceId, pageRow.workspaceId),
         eq(workspaceMembers.userId, userId),
-        eq(workspaceMembers.status, "active"),
-      ),
+        eq(workspaceMembers.status, "active")
+      )
     )
     .limit(1);
 
@@ -63,7 +69,9 @@ export async function getEffectivePermission(
 
   // ── Private page: only creator + explicit grants ──────────────────────────
   if (pageRow.isPrivate) {
-    if (isCreator) return "full_access";
+    if (isCreator) {
+      return "full_access";
+    }
     const explicit = await getExplicitPermission(userId, pageId);
     return explicit;
   }
@@ -74,7 +82,9 @@ export async function getEffectivePermission(
   }
 
   // ── Workspace Admin gets full_access on all non-private pages ────────────
-  if (role === "admin") return "full_access";
+  if (role === "admin") {
+    return "full_access";
+  }
 
   // ── Look for explicit permission on this exact page ───────────────────────
   const explicit = await getExplicitPermission(userId, pageId);
@@ -85,10 +95,12 @@ export async function getEffectivePermission(
 
   // ── Walk the ancestor chain for inherited permission ──────────────────────
   const inherited = await walkAncestorsForPermission(userId, pageId, role);
-  if (inherited !== null) return inherited;
+  if (inherited !== null) {
+    return inherited;
+  }
 
   // ── Workspace default fallback ────────────────────────────────────────────
-  const [ws] = await db
+  const [_ws] = await db
     .select({ defaultPageAccess: sql<string>`${pageRow.workspaceId}` })
     .from(workspaceMembers)
     .where(eq(workspaceMembers.workspaceId, pageRow.workspaceId))
@@ -100,15 +112,18 @@ export async function getEffectivePermission(
   return capToRole(defaultLevel, role);
 }
 
-async function getExplicitPermission(userId: string, pageId: string): Promise<AccessLevel | null> {
+async function getExplicitPermission(
+  userId: string,
+  pageId: string
+): Promise<AccessLevel | null> {
   const [row] = await db
     .select({ accessLevel: pagePermissions.accessLevel })
     .from(pagePermissions)
     .where(
       and(
         eq(pagePermissions.pageId, pageId),
-        eq(pagePermissions.userId, userId),
-      ),
+        eq(pagePermissions.userId, userId)
+      )
     )
     .limit(1);
   return (row?.accessLevel as AccessLevel) ?? null;
@@ -117,7 +132,7 @@ async function getExplicitPermission(userId: string, pageId: string): Promise<Ac
 async function walkAncestorsForPermission(
   userId: string,
   pageId: string,
-  role: WorkspaceRole,
+  role: WorkspaceRole
 ): Promise<AccessLevel | null> {
   // Use a CTE to walk the parent chain efficiently
   const result = await db.execute(sql`
@@ -138,9 +153,11 @@ async function walkAncestorsForPermission(
     LIMIT 1
   `);
 
-  const rows  = result as unknown as Array<{ access_level: string }>;
+  const rows = result as unknown as Array<{ access_level: string }>;
   const level = rows[0]?.access_level as AccessLevel | undefined;
-  if (!level) return null;
+  if (!level) {
+    return null;
+  }
   return capToRole(level, role);
 }
 
@@ -156,7 +173,7 @@ function capToRole(level: AccessLevel, role: WorkspaceRole): AccessLevel {
 export async function requirePagePermission(
   userId: string,
   pageId: string,
-  minLevel: AccessLevel,
+  minLevel: AccessLevel
 ): Promise<{ effectiveLevel: AccessLevel }> {
   const level = await getEffectivePermission(userId, pageId);
   if (!level || !meetsLevel(level, minLevel)) {
@@ -171,7 +188,7 @@ export async function requirePagePermission(
  */
 export function capAccessToRole(
   requested: AccessLevel,
-  role: WorkspaceRole,
+  role: WorkspaceRole
 ): AccessLevel {
   return capToRole(requested, role);
 }

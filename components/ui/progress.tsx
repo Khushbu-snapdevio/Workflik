@@ -36,7 +36,7 @@ function Progress({
       data-value={isIndeterminate ? undefined : clamped}
       data-max={max}
       className={cn(
-        "relative flex h-0.5 w-full items-center overflow-x-hidden rounded-none bg-muted",
+        "relative flex h-0.5 w-full items-center overflow-x-hidden rounded-none bg-base-200",
         className
       )}
       {...props}

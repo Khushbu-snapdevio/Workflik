@@ -1,35 +1,49 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
-import TaskList from "@tiptap/extension-task-list";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
-import { TextStyle } from "@tiptap/extension-text-style";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
 import { Table } from "@tiptap/extension-table";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableRow } from "@tiptap/extension-table-row";
+import TaskList from "@tiptap/extension-task-list";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Underline from "@tiptap/extension-underline";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
 import { useRef, useState } from "react";
-
-import { Callout } from "@/components/editor/extensions/callout";
-import { Toggle, ToggleSummary } from "@/components/editor/extensions/toggle";
-import { BookmarkBlock, EmbedBlock } from "@/components/editor/extensions/bookmark-block";
-import { ListItemBlock, TaskItemBlock } from "@/components/editor/extensions/list-item-keymap";
-import { Columns, TableOfContents } from "@/components/editor/extensions/reference-blocks";
-import { SlashCommands } from "@/components/editor/extensions/slash-commands";
-import type { SlashSuggestionProps } from "@/components/editor/extensions/slash-commands";
-import { SlashMenu, type SlashMenuHandle } from "@/components/editor/slash-menu";
-import { InlineToolbar } from "@/components/editor/inline-toolbar";
 import { BlockHandle } from "@/components/editor/block-handle";
 import { BlockIdAttr } from "@/components/editor/extensions/block-id-attr";
-import { blocksToTiptapDoc, tiptapDocToBlocks } from "@/components/editor/serializer";
+import {
+  BookmarkBlock,
+  EmbedBlock,
+} from "@/components/editor/extensions/bookmark-block";
+import { Callout } from "@/components/editor/extensions/callout";
+import {
+  ListItemBlock,
+  TaskItemBlock,
+} from "@/components/editor/extensions/list-item-keymap";
+import {
+  Columns,
+  TableOfContents,
+} from "@/components/editor/extensions/reference-blocks";
+import type { SlashSuggestionProps } from "@/components/editor/extensions/slash-commands";
+import { SlashCommands } from "@/components/editor/extensions/slash-commands";
+import { Toggle, ToggleSummary } from "@/components/editor/extensions/toggle";
+import { InlineToolbar } from "@/components/editor/inline-toolbar";
 import type { DbBlock } from "@/components/editor/serializer";
+import {
+  blocksToTiptapDoc,
+  tiptapDocToBlocks,
+} from "@/components/editor/serializer";
+import {
+  SlashMenu,
+  type SlashMenuHandle,
+} from "@/components/editor/slash-menu";
 import { TemplateQuickInsert } from "./template-quick-insert";
 
 const lowlight = createLowlight(common);
@@ -37,35 +51,42 @@ const lowlight = createLowlight(common);
 function serialize(e: { getJSON: () => unknown }): DbBlock[] {
   const raw = tiptapDocToBlocks(
     e.getJSON() as unknown as { content?: never[] },
-    "template",
+    "template"
   );
   return raw.map((b, i) => ({
-    id:            b.id ?? `tmp-${i}`,
-    type:          b.type,
-    content:       b.content,
-    orderIndex:    i,
+    id: b.id ?? `tmp-${i}`,
+    type: b.type,
+    content: b.content,
+    orderIndex: i,
     parentBlockId: b.parentBlockId,
   }));
 }
 
 interface Props {
   initialBlocks: DbBlock[];
-  onChange: (blocks: DbBlock[]) => void;
   /** Fired once with TipTap's normalized serialization, used as the "unchanged"
    *  baseline since load-time normalization would otherwise look like an edit. */
   onBaseline?: (blocks: DbBlock[]) => void;
+  onChange: (blocks: DbBlock[]) => void;
 }
 
 export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
-  const [slashProps, setSlashProps] = useState<SlashSuggestionProps | null>(null);
+  const [slashProps, setSlashProps] = useState<SlashSuggestionProps | null>(
+    null
+  );
   const [isEmpty, setIsEmpty] = useState(initialBlocks.length === 0);
   const slashMenuRef = useRef<SlashMenuHandle>(null);
-  const changeTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const changeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit.configure({ codeBlock: false, link: false, underline: false, listItem: false }),
+      StarterKit.configure({
+        codeBlock: false,
+        link: false,
+        underline: false,
+        listItem: false,
+      }),
       Placeholder.configure({
         placeholder: ({ node }) =>
           node.type.name === "heading"
@@ -95,7 +116,7 @@ export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
       EmbedBlock,
       BlockIdAttr,
       SlashCommands.configure({
-        onUpdate:  (props) => setSlashProps(props),
+        onUpdate: (props) => setSlashProps(props),
         onKeyDown: (event) => slashMenuRef.current?.onKeyDown(event) ?? false,
       }),
     ],
@@ -106,19 +127,21 @@ export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
     },
     onUpdate({ editor: e }) {
       setIsEmpty(e.isEmpty);
-      if (changeTimer.current) clearTimeout(changeTimer.current);
+      if (changeTimer.current) {
+        clearTimeout(changeTimer.current);
+      }
       changeTimer.current = setTimeout(() => onChange(serialize(e)), 300);
     },
   });
 
   return (
-    <div className="relative min-h-140 rounded-md border border-border bg-background">
+    <div className="relative min-h-140 rounded-md border border-base-300 bg-base-200">
       {editor && <InlineToolbar editor={editor} />}
       {/* Same drag-to-reorder / duplicate / delete grip the page editor uses. */}
       {editor && <BlockHandle editor={editor} />}
 
       {editor && (
-        <div className="flex items-center gap-1 border-b border-border px-4 py-1.5">
+        <div className="flex items-center gap-1 border-b border-base-300 px-4 py-1.5">
           <TemplateQuickInsert editor={editor} variant="toolbar" />
         </div>
       )}
@@ -129,13 +152,13 @@ export function TemplateEditor({ initialBlocks, onChange, onBaseline }: Props) {
           box, so the left padding has to exceed 58px or the grip renders on
           top of — and outside — the border. */}
       <EditorContent
+        className="prose prose-neutral dark:prose-invert max-w-none pl-18 pr-10 py-6 text-base focus-within:outline-none [&_.ProseMirror]:min-h-115 [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-base-content/70 [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]"
         editor={editor}
-        className="prose prose-neutral dark:prose-invert max-w-none pl-18 pr-10 py-6 text-base focus-within:outline-none [&_.ProseMirror]:min-h-115 [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:pointer-events-none [&_.ProseMirror_p.is-editor-empty:first-child]:before:float-left [&_.ProseMirror_p.is-editor-empty:first-child]:before:h-0 [&_.ProseMirror_p.is-editor-empty:first-child]:before:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]"
       />
 
       {editor && isEmpty && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 pl-18 pr-10 pb-6">
-          <p className="mb-2 text-xs text-muted-foreground">Or start with:</p>
+          <p className="mb-2 text-xs text-base-content/70">Or start with:</p>
           <div className="pointer-events-auto">
             <TemplateQuickInsert editor={editor} variant="empty" />
           </div>

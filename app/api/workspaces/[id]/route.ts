@@ -1,16 +1,15 @@
 import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { workspaceMembers, workspaces, workspaceSlugRedirects } from "@/lib/db/schema";
+import { workspaceSlugRedirects, workspaces } from "@/lib/db/schema";
+import { writeAuditLog } from "@/lib/orbit/audit";
 import {
-  apiError,
   ApiError,
+  apiError,
   getSession,
   getWorkspace,
   requireWorkspaceMember,
-  slugify,
 } from "@/lib/workspaces/auth";
-import { writeAuditLog } from "@/lib/orbit/audit";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -23,7 +22,9 @@ export async function GET(_req: Request, { params }: Ctx) {
     const workspace = await getWorkspace(id);
     return Response.json(workspace);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
@@ -31,8 +32,18 @@ export async function GET(_req: Request, { params }: Ctx) {
 const patchSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   icon: z.string().max(256).nullable().optional(),
-  slug: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, "Slug may only contain lowercase letters, numbers, and hyphens").optional(),
-  defaultPageAccess: z.enum(["private", "can_view", "can_comment", "can_edit", "full_access"]).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Slug may only contain lowercase letters, numbers, and hyphens"
+    )
+    .optional(),
+  defaultPageAccess: z
+    .enum(["private", "can_view", "can_comment", "can_edit", "full_access"])
+    .optional(),
 });
 
 // PATCH /api/workspaces/:id
@@ -61,12 +72,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
             .from(workspaces)
             .where(and(eq(workspaces.slug, slug), ne(workspaces.id, id)))
             .limit(1);
-          if (existing) throw new ApiError(409, "Slug is already taken");
+          if (existing) {
+            throw new ApiError(409, "Slug is already taken");
+          }
 
-          await tx.insert(workspaceSlugRedirects).values({
-            workspaceId: id,
-            oldSlug:     current.slug,
-          }).onConflictDoNothing();
+          await tx
+            .insert(workspaceSlugRedirects)
+            .values({
+              workspaceId: id,
+              oldSlug: current.slug,
+            })
+            .onConflictDoNothing();
         }
       }
 
@@ -86,11 +102,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
     });
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "workspace.updated",
+      actorId: session.user.id,
+      action: "workspace.updated",
       targetType: "workspace",
-      targetId:   id,
-      metadata:   {
+      targetId: id,
+      metadata: {
         ...(name !== undefined && { name }),
         ...(slug !== undefined && { slug }),
         ...(defaultPageAccess !== undefined && { defaultPageAccess }),
@@ -99,7 +115,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
     return Response.json(workspace);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
@@ -115,16 +133,18 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     await db.delete(workspaces).where(eq(workspaces.id, id));
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "workspace.deleted",
+      actorId: session.user.id,
+      action: "workspace.deleted",
       targetType: "workspace",
-      targetId:   id,
-      metadata:   { name: workspace.name, slug: workspace.slug },
+      targetId: id,
+      metadata: { name: workspace.name, slug: workspace.slug },
     });
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

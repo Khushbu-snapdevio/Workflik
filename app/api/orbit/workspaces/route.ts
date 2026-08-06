@@ -1,18 +1,18 @@
 import { count, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces } from "@/lib/db/schema";
-import { requireAdmin } from "@/lib/authz";
 
 export async function GET() {
   await requireAdmin();
 
   const rows = await db
     .select({
-      id:        workspaces.id,
-      name:      workspaces.name,
-      slug:      workspaces.slug,
-      icon:      workspaces.icon,
+      id: workspaces.id,
+      name: workspaces.name,
+      slug: workspaces.slug,
+      icon: workspaces.icon,
       createdAt: workspaces.createdAt,
     })
     .from(workspaces)
@@ -24,9 +24,9 @@ export async function GET() {
     .where(eq(workspaceMembers.status, "active"))
     .groupBy(workspaceMembers.workspaceId);
 
-  const countMap = new Map(memberCounts.map(r => [r.workspaceId, r.count]));
+  const countMap = new Map(memberCounts.map((r) => [r.workspaceId, r.count]));
 
-  const result = rows.map(ws => ({
+  const result = rows.map((ws) => ({
     ...ws,
     memberCount: countMap.get(ws.id) ?? 0,
   }));

@@ -2,16 +2,24 @@ import { and, eq, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { templates, templateCategories, users } from "@/lib/db/schema";
-import { apiError } from "@/lib/workspaces/auth";
+import { templateCategories, templates, users } from "@/lib/db/schema";
 import { writeAuditLog } from "@/lib/orbit/audit";
 import { BUILT_IN_TEMPLATES } from "@/lib/orbit/templates/built-in";
+import { apiError } from "@/lib/workspaces/auth";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
-  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, session.user.id)).limit(1);
-  if (!user || user.role !== "admin") return null;
+  if (!session) {
+    return null;
+  }
+  const [user] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+  if (user?.role !== "admin") {
+    return null;
+  }
   return session;
 }
 
@@ -19,9 +27,11 @@ async function requirePlatformAdmin() {
 // Body: { force?: boolean } — if force=true, delete all existing built-ins first
 export async function POST(req: Request) {
   const session = await requirePlatformAdmin();
-  if (!session) return apiError(403, "Forbidden");
+  if (!session) {
+    return apiError(403, "Forbidden");
+  }
 
-  const body = await req.json().catch(() => ({})) as { force?: boolean };
+  const body = (await req.json().catch(() => ({}))) as { force?: boolean };
 
   if (body.force) {
     await db
@@ -29,10 +39,10 @@ export async function POST(req: Request) {
       .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "template.reseeded",
+      actorId: session.user.id,
+      action: "template.reseeded",
       targetType: "template",
-      metadata:   { force: true },
+      metadata: { force: true },
     });
   }
 
@@ -57,15 +67,17 @@ export async function POST(req: Request) {
 
   const rows = missing.map((t) => {
     const categoryId = categoryIdByKey.get(t.category);
-    if (!categoryId) throw new Error(`Unknown template category key: ${t.category}`);
+    if (!categoryId) {
+      throw new Error(`Unknown template category key: ${t.category}`);
+    }
     return {
-      name:         t.name,
-      description:  t.description,
+      name: t.name,
+      description: t.description,
       categoryId,
-      isBuiltIn:    true,
-      status:       "published" as const,
-      workspaceId:  null,
-      createdBy:    null,
+      isBuiltIn: true,
+      status: "published" as const,
+      workspaceId: null,
+      createdBy: null,
       pageSnapshot: t.pageSnapshot,
     };
   });
@@ -73,19 +85,24 @@ export async function POST(req: Request) {
   await db.insert(templates).values(rows);
 
   await writeAuditLog({
-    actorId:    session.user.id,
-    action:     "template.seeded",
+    actorId: session.user.id,
+    action: "template.seeded",
     targetType: "template",
-    metadata:   { count: rows.length, names: rows.map((r) => r.name) },
+    metadata: { count: rows.length, names: rows.map((r) => r.name) },
   });
 
-  return Response.json({ message: "Seeded", count: rows.length }, { status: 201 });
+  return Response.json(
+    { message: "Seeded", count: rows.length },
+    { status: 201 }
+  );
 }
 
 // PATCH /api/orbit/templates/seed — update icons for all existing built-in templates
 export async function PATCH(_req: Request) {
   const session = await requirePlatformAdmin();
-  if (!session) return apiError(403, "Forbidden");
+  if (!session) {
+    return apiError(403, "Forbidden");
+  }
 
   // Build a name → icon map from the current BUILT_IN_TEMPLATES
   const iconMap: Record<string, string> = {};
@@ -95,17 +112,25 @@ export async function PATCH(_req: Request) {
 
   // Fetch all built-in templates from DB
   const existing = await db
-    .select({ id: templates.id, name: templates.name, pageSnapshot: templates.pageSnapshot })
+    .select({
+      id: templates.id,
+      name: templates.name,
+      pageSnapshot: templates.pageSnapshot,
+    })
     .from(templates)
     .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
 
   let updated = 0;
   for (const row of existing) {
     const newIcon = iconMap[row.name];
-    if (!newIcon) continue;
+    if (!newIcon) {
+      continue;
+    }
 
     const snap = (row.pageSnapshot ?? {}) as Record<string, unknown>;
-    if (snap.icon === newIcon) continue; // already up to date
+    if (snap.icon === newIcon) {
+      continue; // already up to date
+    }
 
     await db
       .update(templates)
@@ -116,10 +141,10 @@ export async function PATCH(_req: Request) {
 
   if (updated > 0) {
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "template.icons_updated",
+      actorId: session.user.id,
+      action: "template.icons_updated",
       targetType: "template",
-      metadata:   { updated },
+      metadata: { updated },
     });
   }
 

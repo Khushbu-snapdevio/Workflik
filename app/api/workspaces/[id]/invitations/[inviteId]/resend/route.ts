@@ -3,7 +3,12 @@ import { db } from "@/lib/db";
 import { users, workspaceMembers, workspaces } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { JOB_NAMES } from "@/lib/jobs/job-names";
-import { apiError, ApiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string; inviteId: string }> };
 
@@ -16,23 +21,25 @@ export async function POST(_req: Request, { params }: Ctx) {
 
     const [invite] = await db
       .select({
-        id:           workspaceMembers.id,
+        id: workspaceMembers.id,
         invitedEmail: workspaceMembers.invitedEmail,
-        status:       workspaceMembers.status,
+        status: workspaceMembers.status,
       })
       .from(workspaceMembers)
       .where(
         and(
           eq(workspaceMembers.id, inviteId),
           eq(workspaceMembers.workspaceId, id),
-          eq(workspaceMembers.status, "invited"),
+          eq(workspaceMembers.status, "invited")
         )
       )
       .limit(1);
 
-    if (!invite) return apiError(404, "Invitation not found");
+    if (!invite) {
+      return apiError(404, "Invitation not found");
+    }
 
-    const newToken   = crypto.randomUUID();
+    const newToken = crypto.randomUUID();
     const newExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     await db
@@ -53,17 +60,19 @@ export async function POST(_req: Request, { params }: Ctx) {
       .limit(1);
 
     await enqueueJob(JOB_NAMES.WORKSPACE_INVITE_SEND, {
-      memberId:      inviteId,
-      workspaceId:   id,
-      invitedEmail:  invite.invitedEmail ?? "",
-      inviterName:   inviter?.name ?? inviter?.email ?? "A teammate",
+      memberId: inviteId,
+      workspaceId: id,
+      invitedEmail: invite.invitedEmail ?? "",
+      inviterName: inviter?.name ?? inviter?.email ?? "A teammate",
       workspaceName: ws?.name ?? "Workflik",
-      inviteToken:   newToken,
+      inviteToken: newToken,
     });
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

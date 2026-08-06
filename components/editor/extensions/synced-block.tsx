@@ -40,7 +40,7 @@ function ReadOnlyInline({
         el = <s>{el}</s>;
       } else if (mark.type === "code") {
         el = (
-          <code className="rounded bg-muted px-1 py-0.5 text-[0.85em]">
+          <code className="rounded bg-base-200 px-1 py-0.5 text-[0.85em]">
             {el}
           </code>
         );
@@ -54,6 +54,17 @@ function ReadOnlyInline({
 // Small, dependency-free renderer for the common text-bearing node types —
 // avoids mounting a second full TipTap editor instance just to display
 // read-only synced content.
+//
+// Every child list below is keyed by array index, and each one carries its own
+// suppression for noArrayIndexKey. The reason is the same throughout and is
+// structural rather than incidental: this walks a ProseMirror document
+// fragment, where a node's position in its parent's `content` array *is* its
+// identity — that is how ProseMirror addresses nodes, and the nodes have no id
+// attribute to key on instead. The render is also read-only and stateless (no
+// inputs, no local state, no handlers), so even a full remount on an upstream
+// edit is inert. Giving these nodes synthetic ids would mean writing them into
+// the stored document JSON, which Hard Rule 5 forbids without a schema_version
+// bump and migration.
 function ReadOnlyNode({
   node,
 }: {
@@ -69,8 +80,9 @@ function ReadOnlyNode({
   switch (node.type) {
     case "paragraph":
       return (
-        <p className="text-sm text-foreground">
+        <p className="text-sm text-base-content">
           {kids.map((k, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
             <ReadOnlyInline key={i} node={k} />
           ))}
         </p>
@@ -79,8 +91,9 @@ function ReadOnlyNode({
       const level = (node.attrs?.level as number) ?? 1;
       const Tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
       return (
-        <Tag className="font-semibold text-foreground">
+        <Tag className="font-semibold text-base-content">
           {kids.map((k, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
             <ReadOnlyInline key={i} node={k} />
           ))}
         </Tag>
@@ -88,11 +101,12 @@ function ReadOnlyNode({
     }
     case "bulletList":
       return (
-        <ul className="list-disc pl-5 text-sm text-foreground">
+        <ul className="list-disc pl-5 text-sm text-base-content">
           {(
             (node.content as { type: string; content?: unknown[] }[]) ?? []
           ).map((li, i) => (
             <ReadOnlyNode
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
               key={i}
               node={{ type: "listItem", content: li.content }}
             />
@@ -101,11 +115,12 @@ function ReadOnlyNode({
       );
     case "orderedList":
       return (
-        <ol className="list-decimal pl-5 text-sm text-foreground">
+        <ol className="list-decimal pl-5 text-sm text-base-content">
           {(
             (node.content as { type: string; content?: unknown[] }[]) ?? []
           ).map((li, i) => (
             <ReadOnlyNode
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
               key={i}
               node={{ type: "listItem", content: li.content }}
             />
@@ -118,24 +133,27 @@ function ReadOnlyNode({
           {(
             (node.content as { type: string; content?: unknown[] }[]) ?? []
           ).map((p, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
             <ReadOnlyNode key={i} node={p} />
           ))}
         </li>
       );
     case "blockquote":
       return (
-        <blockquote className="border-l-2 border-border pl-3 text-sm italic text-muted-foreground">
+        <blockquote className="border-l-2 border-base-300 pl-3 text-sm italic text-base-content/70">
           {(
             (node.content as { type: string; content?: unknown[] }[]) ?? []
           ).map((p, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
             <ReadOnlyNode key={i} node={p} />
           ))}
         </blockquote>
       );
     default:
       return kids.length ? (
-        <p className="text-sm text-foreground">
+        <p className="text-sm text-base-content">
           {kids.map((k, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
             <ReadOnlyInline key={i} node={k} />
           ))}
         </p>
@@ -178,26 +196,27 @@ function SyncedReferenceView({ sourceBlockId }: { sourceBlockId: string }) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="my-1 rounded-md border border-border bg-muted/20 p-3">
-        <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="my-1 rounded-md border border-base-300 bg-base-200/20 p-3">
+        <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-base-content/70">
           🔄 Synced
           {data?.sourcePageTitle ? ` from ${data.sourcePageTitle}` : ""}
         </p>
         {error && (
-          <p className="text-xs text-destructive">
+          <p className="text-xs text-error">
             Couldn&rsquo;t load synced content — the source may have been
             deleted.
           </p>
         )}
         {!error && !data && (
-          <div className="h-4 w-2/3 animate-pulse rounded-xs bg-muted/40" />
+          <div className="h-4 w-2/3 animate-pulse rounded-xs bg-base-200/40" />
         )}
         {data && (
           <div className="space-y-1.5">
             {data.content.length === 0 && (
-              <p className="text-xs text-muted-foreground">Empty</p>
+              <p className="text-xs text-base-content/70">Empty</p>
             )}
             {data.content.map((node, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional ProseMirror node — see the note on ReadOnlyNode.
               <ReadOnlyNode key={i} node={node} />
             ))}
           </div>
@@ -263,16 +282,16 @@ function SyncedSourceView({ node, editor, getPos }: NodeViewProps) {
 
   return (
     <NodeViewWrapper>
-      <div className="my-1 rounded-md border border-border bg-muted/10 p-3">
+      <div className="my-1 rounded-md border border-base-300 bg-base-200/10 p-3">
         <div
           className="mb-2 flex items-center justify-between"
           contentEditable={false}
         >
-          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-base-content/70">
             🔄 Synced Block
           </p>
           <button
-            className="rounded-xs px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="rounded-xs px-2 py-0.5 text-xs text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
             onClick={handleCopy}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -280,7 +299,7 @@ function SyncedSourceView({ node, editor, getPos }: NodeViewProps) {
             Copy
           </button>
         </div>
-        <NodeViewContent className="space-y-1 text-sm text-foreground" />
+        <NodeViewContent className="space-y-1 text-sm text-base-content" />
       </div>
     </NodeViewWrapper>
   );

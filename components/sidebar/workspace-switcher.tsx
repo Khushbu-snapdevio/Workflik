@@ -1,11 +1,11 @@
 "use client";
 
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { Check, ChevronDown, Mail, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
-import { Check, ChevronDown, Mail, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { PageIcon } from "@/components/pages/page-icon";
+import { Button } from "@/components/ui/button";
 import { InviteMembersModal } from "@/components/workspace/invite-members-modal";
 import { useSession } from "@/lib/auth/client";
 
@@ -48,18 +48,32 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
   // This switcher never remounts when Settings → General saves icon/name changes, so listen for the events instead of a stale reload.
   useEffect(() => {
     function onIconChanged(e: Event) {
-      const { workspaceId, icon } = (e as CustomEvent<{ workspaceId: string; icon: string | null }>).detail;
-      setWorkspaces((prev) => prev.map((w) => (w.id === workspaceId ? { ...w, icon } : w)));
+      const { workspaceId, icon } = (
+        e as CustomEvent<{ workspaceId: string; icon: string | null }>
+      ).detail;
+      setWorkspaces((prev) =>
+        prev.map((w) => (w.id === workspaceId ? { ...w, icon } : w))
+      );
     }
     function onNameChanged(e: Event) {
-      const { workspaceId, name } = (e as CustomEvent<{ workspaceId: string; name: string }>).detail;
-      setWorkspaces((prev) => prev.map((w) => (w.id === workspaceId ? { ...w, name } : w)));
+      const { workspaceId, name } = (
+        e as CustomEvent<{ workspaceId: string; name: string }>
+      ).detail;
+      setWorkspaces((prev) =>
+        prev.map((w) => (w.id === workspaceId ? { ...w, name } : w))
+      );
     }
     window.addEventListener("workflik:workspace-icon-changed", onIconChanged);
     window.addEventListener("workflik:workspace-name-changed", onNameChanged);
     return () => {
-      window.removeEventListener("workflik:workspace-icon-changed", onIconChanged);
-      window.removeEventListener("workflik:workspace-name-changed", onNameChanged);
+      window.removeEventListener(
+        "workflik:workspace-icon-changed",
+        onIconChanged
+      );
+      window.removeEventListener(
+        "workflik:workspace-name-changed",
+        onNameChanged
+      );
     };
   }, []);
 
@@ -73,8 +87,8 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
   if (loading) {
     return (
       <div className="flex h-9 items-center gap-2 px-2">
-        <span className="size-6 animate-pulse rounded bg-sidebar-accent" />
-        <span className="h-3 w-24 animate-pulse rounded bg-sidebar-accent" />
+        <span className="size-6 animate-pulse rounded bg-base-300" />
+        <span className="h-3 w-24 animate-pulse rounded bg-base-300" />
       </div>
     );
   }
@@ -90,20 +104,23 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
             icon={current?.icon ?? null}
             name={current?.name ?? "…"}
           />
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-sidebar-foreground">
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-base-content">
             {current?.name ?? "Select workspace"}
           </span>
-          <ChevronDown className="size-4 shrink-0 text-sidebar-foreground/80 transition-transform data-open:rotate-180" strokeWidth={2} />
+          <ChevronDown
+            className="size-4 shrink-0 text-base-content/80 transition-transform data-open:rotate-180"
+            strokeWidth={2}
+          />
         </MenuButton>
 
         <MenuItems
           anchor={{ to: "bottom start", gap: 4 }}
+          className="z-600 w-72 overflow-hidden rounded-lg border border-base-300 bg-base-100 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
           transition
-          className="z-600 w-72 overflow-hidden rounded-lg border border-border bg-popover transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
         >
           {/* Workspace list */}
           <div className="p-1.5">
-            <p className="mb-1 px-2 text-2xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="mb-1 px-2 text-2xs font-semibold uppercase tracking-widest text-base-content/70">
               Workspaces
             </p>
             {workspaces.map((ws) => {
@@ -111,20 +128,27 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
               return (
                 <MenuItem key={ws.id}>
                   <button
-                    className={`flex w-full min-w-0 items-center gap-2.5 rounded-sm px-2 py-2 text-left transition-colors duration-100 focus:outline-none data-focus:bg-muted hover:bg-muted ${isActive ? "bg-muted" : ""}`}
+                    className={`flex w-full min-w-0 items-center gap-2.5 rounded-sm px-2 py-2 text-left transition-colors duration-100 focus:outline-none data-focus:bg-base-200 hover:bg-base-200 ${isActive ? "bg-base-200" : ""}`}
                     onClick={() => switchTo(ws.slug)}
                     type="button"
                   >
                     <WorkspaceAvatar icon={ws.icon} name={ws.name} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-popover-foreground">
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-base-content">
                       {ws.name}
                     </span>
-                    <span className={`shrink-0 rounded-xs px-1.5 py-0.5 text-2xs font-semibold text-muted-foreground ${isActive ? "bg-background" : "bg-muted"}`}>
+                    <span
+                      className={`shrink-0 rounded-xs px-1.5 py-0.5 text-2xs font-semibold text-base-content/70 ${isActive ? "bg-base-200" : "bg-base-200"}`}
+                    >
                       {ws.role}
                     </span>
                     {/* Always reserve the same 14px slot — prevents layout shift when checkmark appears */}
                     <span className="flex size-3.5 shrink-0 items-center justify-center">
-                      {isActive && <Check className="size-3.5 text-primary" strokeWidth={2.5} />}
+                      {isActive && (
+                        <Check
+                          className="size-3.5 text-primary"
+                          strokeWidth={2.5}
+                        />
+                      )}
                     </span>
                   </button>
                 </MenuItem>
@@ -133,10 +157,10 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-border p-1.5">
+          <div className="border-t border-base-300 p-1.5">
             <MenuItem>
               <Button
-                className="w-full justify-start gap-2 px-2 font-medium text-muted-foreground data-focus:bg-accent data-focus:text-foreground hover:text-foreground"
+                className="w-full justify-start gap-2 px-2 font-medium text-base-content/70 data-focus:bg-base-200 data-focus:text-base-content hover:text-base-content"
                 onClick={() => router.push("/app/workspaces/new")}
                 size="sm"
                 type="button"
@@ -148,7 +172,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
             </MenuItem>
             <MenuItem>
               <Button
-                className="w-full justify-start gap-2 px-2 font-medium text-muted-foreground data-focus:bg-accent data-focus:text-foreground hover:text-foreground"
+                className="w-full justify-start gap-2 px-2 font-medium text-base-content/70 data-focus:bg-base-200 data-focus:text-base-content hover:text-base-content"
                 onClick={() => setShowInvite(true)}
                 size="sm"
                 type="button"
@@ -164,9 +188,9 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
 
       {showInvite && current && (
         <InviteMembersModal
-          workspaceId={current.id}
           isOwner={!!session?.user?.id && current.createdBy === session.user.id}
           onClose={() => setShowInvite(false)}
+          workspaceId={current.id}
         />
       )}
     </div>
@@ -183,12 +207,12 @@ function WorkspaceAvatar({
   if (icon) {
     return (
       <span className="flex size-6 shrink-0 items-center justify-center">
-        <PageIcon icon={icon} size={20} className="rounded-sm object-cover" />
+        <PageIcon className="rounded-sm object-cover" icon={icon} size={20} />
       </span>
     );
   }
   return (
-    <span className="grid size-6 shrink-0 place-items-center rounded-sm bg-primary font-bold text-primary-foreground text-xs">
+    <span className="grid size-6 shrink-0 place-items-center rounded-sm bg-primary font-bold text-primary-content text-xs">
       {name.charAt(0).toUpperCase()}
     </span>
   );

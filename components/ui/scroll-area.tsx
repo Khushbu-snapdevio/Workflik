@@ -15,7 +15,7 @@ function ScrollArea({
     <div data-slot="scroll-area" className={cn("relative", className)} {...props}>
       <div
         data-slot="scroll-area-viewport"
-        className="size-full overflow-auto rounded-[inherit] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="size-full overflow-auto rounded-[inherit] outline-none focus-visible:ring-[3px] focus-visible:ring-primary/50"
       >
         {children}
       </div>

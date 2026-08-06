@@ -73,5 +73,23 @@
         "noNamespaceImport": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      // react-email templates are rendered exactly once to a static HTML
+      // string by @react-email/render inside a pg-boss job — there is no
+      // reconciler, no component state, and no reorder. React keys are inert
+      // here, so noArrayIndexKey cannot describe a real defect in this
+      // directory. Scoped rather than inline-suppressed because it applies
+      // structurally to every email template, present and future.
+      "includes": ["lib/email/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    }
+  ]
 }

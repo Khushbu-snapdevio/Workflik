@@ -692,8 +692,13 @@ export function tiptapNodeToBlockContent(node: TipTapNode): {
         type: "template_button",
         content: {
           label: (node.attrs?.label as string) ?? "Template",
-          insertLocation: (node.attrs?.insertLocation as "below_button" | "bottom_of_page") ?? "below_button",
-          templateBlocks: (node.attrs?.templateBlocks as { type: string; text: string }[]) ?? [{ type: "paragraph", text: "" }],
+          insertLocation:
+            (node.attrs?.insertLocation as "below_button" | "bottom_of_page") ??
+            "below_button",
+          templateBlocks: (node.attrs?.templateBlocks as {
+            type: string;
+            text: string;
+          }[]) ?? [{ type: "paragraph", text: "" }],
         },
       };
 

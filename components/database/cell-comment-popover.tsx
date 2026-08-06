@@ -1,59 +1,85 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import {
-  Loader2, Paperclip, AtSign, ArrowUp, MoreHorizontal, Check,
-  Pencil, Trash2, Link2, Reply, Smile, X, ZoomIn, Download, ExternalLink,
+  ArrowUp,
+  AtSign,
+  Check,
+  Download,
+  ExternalLink,
+  Link2,
+  Loader2,
+  MoreHorizontal,
+  Paperclip,
+  Pencil,
+  Reply,
+  Smile,
+  Trash2,
+  X,
+  ZoomIn,
 } from "lucide-react";
-import { useSession } from "@/lib/auth/client";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ImageLightbox } from "@/components/editor/comment-card";
-import { emitCommentsChanged } from "@/lib/comments/comment-events";
-import { formatReactionTooltip, formatReactorNames } from "@/lib/comments/format-reaction-tooltip";
-import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
-import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete";
+import { EmojiGridPicker } from "@/components/pages/emoji-grid-picker";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { ReactionTooltip } from "@/components/ui/reaction-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { useMentionAutocomplete } from "@/hooks/use-mention-autocomplete";
+import { useSession } from "@/lib/auth/client";
+import { emitCommentsChanged } from "@/lib/comments/comment-events";
+import {
+  formatReactionTooltip,
+  formatReactorNames,
+} from "@/lib/comments/format-reaction-tooltip";
+import { useAnchorPosition, useMergedRef } from "@/lib/ui/use-anchor-position";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface CommentAuthor {
-  id: string | null;
-  name: string | null;
   email: string | null;
+  id: string | null;
   image: string | null;
+  name: string | null;
 }
 
 interface CommentReply {
-  id: string;
+  author: CommentAuthor | null;
   content: Record<string, unknown> | null;
   createdAt: string;
-  editedAt: string | null;
   deletedAt: string | null;
-  author: CommentAuthor | null;
+  editedAt: string | null;
+  id: string;
 }
 
 interface CommentThread {
-  id: string;
+  author: CommentAuthor | null;
   blockId: string | null;
   content: Record<string, unknown> | null;
-  reactions: Record<string, string[]>;
+  createdAt: string;
+  deletedAt: string | null;
+  editedAt: string | null;
+  id: string;
+  isResolved: boolean;
   propertyId: string | null;
   propertyName: string | null;
   propertyValueLabel: string | null;
-  createdAt: string;
-  editedAt: string | null;
-  deletedAt: string | null;
-  isResolved: boolean;
-  author: CommentAuthor | null;
+  reactions: Record<string, string[]>;
   replies: CommentReply[];
 }
 
-interface MoreMenuState { commentId: string; isReply: boolean; isOwn: boolean; rect: DOMRect }
-interface EmojiMenuState { commentId: string; rect: DOMRect }
+interface MoreMenuState {
+  commentId: string;
+  isOwn: boolean;
+  isReply: boolean;
+  rect: DOMRect;
+}
+interface EmojiMenuState {
+  commentId: string;
+  rect: DOMRect;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -62,39 +88,86 @@ interface EmojiMenuState { commentId: string; rect: DOMRect }
 // comment reactions, so every emoji-picking surface in the app looks and
 // behaves identically (search, recents, skin tone, category shortcut bar).
 
-const FullEmojiPicker = React.forwardRef<HTMLDivElement, {
+const FullEmojiPicker = function FullEmojiPicker({
+  rect,
+  onSelect,
+  onClose,
+  ref,
+}: {
   rect: DOMRect;
-  winH: number;
-  winW: number;
   onSelect: (emoji: string) => void;
   onClose: () => void;
-}>(function FullEmojiPicker({ rect, winH, winW, onSelect, onClose }, ref) {
+  ref?: React.RefObject<HTMLDivElement | null>;
+}) {
   const pickerW = 352;
-  const pickerH = 322;
-  const left = Math.max(8, Math.min(rect.right - pickerW, winW - pickerW - 8));
-  const top  = rect.bottom + 6 + pickerH > winH
-    ? Math.max(8, rect.top - pickerH - 6)
-    : rect.bottom + 6;
+  const {
+    setFloating,
+    x: left,
+    y: top,
+  } = useAnchorPosition({
+    anchorRect: rect,
+    placement: "bottom-end",
+  });
+  const mergedRef = useMergedRef(ref, setFloating);
 
-  if (typeof document === "undefined") return null;
+  if (typeof document === "undefined") {
+    return null;
+  }
 
   return createPortal(
+    // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handlers are stopPropagation. This renders through createPortal, so its React-tree parent is the cell that opened the picker; unguarded clicks/pointerdowns would also fire that cell's handlers and dismiss the popover. There is no activation to key-handle, every real control inside is a native button, and adding role/tabIndex here would create a tab stop that does nothing.
     <div
-      ref={ref}
+      className="rounded-lg border border-base-300 bg-base-100 overflow-hidden"
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      ref={mergedRef}
       style={{ position: "fixed", top, left, zIndex: 9999, width: pickerW }}
-      className="rounded-lg border border-border bg-popover overflow-hidden"
-      onClick={e => e.stopPropagation()}
-      onPointerDown={e => e.stopPropagation()}
     >
-      <EmojiGridPicker onSelect={onSelect} onClose={onClose} />
+      <EmojiGridPicker onClose={onClose} onSelect={onSelect} />
     </div>,
-    document.body,
+    document.body
   );
-});
+};
+
+// Positions the "⋯" comment/reply action menu — a thin wrapper so useAnchorPosition
+// (a hook) has its own component boundary; children keep closing over the parent's
+// handlers/state exactly as before, just no longer inline JSX in a conditional block.
+function MoreMenuPortal({
+  rect,
+  menuRef,
+  children,
+}: {
+  rect: DOMRect;
+  menuRef: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}) {
+  const { setFloating, x, y } = useAnchorPosition({
+    anchorRect: rect,
+    placement: "bottom-end",
+    gap: 4,
+  });
+  const mergedRef = useMergedRef(menuRef, setFloating);
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handlers are stopPropagation, keeping clicks inside the "⋯" menu from reaching the comment row it is anchored to. There is no activation to key-handle, every real control inside is a native button, and adding role/tabIndex here would create a tab stop that does nothing.
+    <div
+      className="overflow-hidden rounded-sm border border-base-300 bg-base-100 py-0.5"
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      ref={mergedRef}
+      style={{ position: "fixed", top: y, left: x, zIndex: 900, width: 148 }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function extractText(node: Record<string, unknown>): string {
-  if (!node) return "";
-  if (node.type === "text") return String(node.text ?? "");
+  if (!node) {
+    return "";
+  }
+  if (node.type === "text") {
+    return String(node.text ?? "");
+  }
   const children = (node.content as Record<string, unknown>[]) ?? [];
   return children.map(extractText).join("");
 }
@@ -114,70 +187,121 @@ function downloadAttachment(url: string, name: string) {
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  const mins = Math.floor(ms / 60_000);
+  if (mins < 1) {
+    return "Just now";
+  }
+  if (mins < 60) {
+    return `${mins}m ago`;
+  }
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
+  if (hrs < 24) {
+    return `${hrs}h ago`;
+  }
   const days = Math.floor(hrs / 24);
   return days < 7
     ? `${days}d ago`
-    : new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    : new Date(iso).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
 }
 
 function getDisplayName(author: CommentAuthor | null): string {
-  if (!author) return "Unknown";
+  if (!author) {
+    return "Unknown";
+  }
   return author.name?.trim() || author.email?.split("@")[0] || "Unknown";
 }
 
 function getInitial(author: CommentAuthor | null): string {
-  if (!author) return "?";
+  if (!author) {
+    return "?";
+  }
   const src = author.name?.trim() || author.email?.trim() || author.id || "";
   const ch = src.charAt(0).toUpperCase();
   return ch || "?";
 }
 
-function makeContent(text: string, attachments: { url: string; name: string; mimeType: string }[] = []): Record<string, unknown> {
+function makeContent(
+  text: string,
+  attachments: { url: string; name: string; mimeType: string }[] = []
+): Record<string, unknown> {
   return {
     type: "doc",
     content: [
-      ...(text ? [{ type: "paragraph", content: [{ type: "text", text }] }] : []),
-      ...attachments.map((a) => ({ type: "attachment", attrs: { url: a.url, name: a.name, mimeType: a.mimeType } })),
+      ...(text
+        ? [{ type: "paragraph", content: [{ type: "text", text }] }]
+        : []),
+      ...attachments.map((a) => ({
+        type: "attachment",
+        attrs: { url: a.url, name: a.name, mimeType: a.mimeType },
+      })),
     ],
   };
 }
 
-function extractAttachments(content: Record<string, unknown>): { url: string; name: string; mimeType: string }[] {
+function extractAttachments(
+  content: Record<string, unknown>
+): { url: string; name: string; mimeType: string }[] {
   const nodes = (content?.content as Record<string, unknown>[]) ?? [];
   return nodes
     .filter((n) => n.type === "attachment")
     .map((n) => {
-      const attrs = (n.attrs ?? {}) as { url?: string; name?: string; mimeType?: string };
-      return { url: attrs.url ?? "", name: attrs.name ?? "file", mimeType: attrs.mimeType ?? "" };
+      const attrs = (n.attrs ?? {}) as {
+        url?: string;
+        name?: string;
+        mimeType?: string;
+      };
+      return {
+        url: attrs.url ?? "",
+        name: attrs.name ?? "file",
+        mimeType: attrs.mimeType ?? "",
+      };
     })
     .filter((a) => a.url);
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
-function UserAvatar({ author, px = 24 }: { author: CommentAuthor | null; px?: number }) {
+function UserAvatar({
+  author,
+  px = 24,
+}: {
+  author: CommentAuthor | null;
+  px?: number;
+}) {
   const initial = getInitial(author);
   if (author?.image) {
     return (
+      // biome-ignore lint/performance/noImgElement: avatar src is an OAuth provider URL (Google) or a STORAGE_DRIVER CDN host, neither of which is in next.config images.remotePatterns
       <img
-        src={author.image}
         alt={getDisplayName(author)}
-        style={{ width: px, height: px, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+        src={author.image}
+        style={{
+          width: px,
+          height: px,
+          borderRadius: "50%",
+          objectFit: "cover",
+          flexShrink: 0,
+        }}
       />
     );
   }
   return (
     <div
       style={{
-        width: px, height: px, borderRadius: "50%", flexShrink: 0,
-        background: "var(--primary)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: Math.round(px * 0.44), fontWeight: 700, color: "#fff",
+        width: px,
+        height: px,
+        borderRadius: "50%",
+        flexShrink: 0,
+        background: "var(--color-primary)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: Math.round(px * 0.44),
+        fontWeight: 700,
+        color: "#fff",
       }}
     >
       {initial}
@@ -188,26 +312,33 @@ function UserAvatar({ author, px = 24 }: { author: CommentAuthor | null; px?: nu
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface CellCommentPopoverProps {
-  pageId: string;
-  workspaceId: string;
   anchorRect: DOMRect;
+  entryShortId: string;
   onClose: () => void;
   onCommentAdded?: () => void;
+  pageId: string;
   /** Set when opened from a specific database cell — scopes the thread list to
    *  this property and snapshots the property name/value onto new comments. */
   propertyId?: string | null;
   propertyName?: string | null;
   propertyValueLabel?: string | null;
+  workspaceId: string;
   /** Used to build the "View all in full page" link once there are more
    *  comments than this small popover can comfortably show. */
   workspaceSlug: string;
-  entryShortId: string;
 }
 
 export function CellCommentPopover({
-  pageId, workspaceId, anchorRect, onClose, onCommentAdded,
-  propertyId = null, propertyName = null, propertyValueLabel = null,
-  workspaceSlug, entryShortId,
+  pageId,
+  workspaceId,
+  anchorRect,
+  onClose,
+  onCommentAdded,
+  propertyId = null,
+  propertyName = null,
+  propertyValueLabel = null,
+  workspaceSlug,
+  entryShortId,
 }: CellCommentPopoverProps) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id ?? null;
@@ -222,11 +353,15 @@ export function CellCommentPopover({
   const [threads, setThreads] = useState<CommentThread[]>([]);
   // Reactions only carry reactor user IDs — this resolves them to display
   // names for the "X reacted with 😀" hover tooltip (see format-reaction-tooltip.ts).
-  const [reactionUsers, setReactionUsers] = useState<Record<string, string | null>>({});
+  const [reactionUsers, setReactionUsers] = useState<
+    Record<string, string | null>
+  >({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [text, setText] = useState("");
-  const [attachedFiles, setAttachedFiles] = useState<{ file: File; previewUrl: string | null }[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<
+    { file: File; previewUrl: string | null }[]
+  >([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
@@ -237,7 +372,9 @@ export function CellCommentPopover({
   // captures the text portion into editText, so without also snapshotting
   // these separately and re-including them in submitEdit's makeContent()
   // call, saving an edit would silently drop any attached file/image.
-  const [editAttachments, setEditAttachments] = useState<{ url: string; name: string; mimeType: string }[]>([]);
+  const [editAttachments, setEditAttachments] = useState<
+    { url: string; name: string; mimeType: string }[]
+  >([]);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Reply
@@ -250,7 +387,10 @@ export function CellCommentPopover({
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // Pending delete confirmation
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; isReply: boolean } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    isReply: boolean;
+  } | null>(null);
 
   // Emoji menu portal — reacting TO a comment (adds/removes the sender's own
   // reaction on that comment).
@@ -261,11 +401,16 @@ export function CellCommentPopover({
   // box's text (their own toolbar button, distinct from emojiMenu's
   // react-to-comment picker above). `target` says which box's text/ref to
   // insert into since edit and reply share this one picker instance.
-  const [insertEmojiAnchor, setInsertEmojiAnchor] = useState<{ rect: DOMRect; target: "edit" | "reply" } | null>(null);
+  const [insertEmojiAnchor, setInsertEmojiAnchor] = useState<{
+    rect: DOMRect;
+    target: "edit" | "reply";
+  } | null>(null);
   const insertEmojiRef = useRef<HTMLDivElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [editAttachLoading, setEditAttachLoading] = useState(false);
-  const [replyAttachments, setReplyAttachments] = useState<{ url: string; name: string; mimeType: string }[]>([]);
+  const [replyAttachments, setReplyAttachments] = useState<
+    { url: string; name: string; mimeType: string }[]
+  >([]);
   const replyFileInputRef = useRef<HTMLInputElement>(null);
   const [replyAttachLoading, setReplyAttachLoading] = useState(false);
 
@@ -280,9 +425,24 @@ export function CellCommentPopover({
   // edit, reply) — the AtSign toolbar button only ever inserted a literal
   // "@" with no way to actually pick someone; this adds the matching
   // dropdown, same UX as the page editor's rich-text @mention.
-  const newMention = useMentionAutocomplete({ workspaceId, getText: () => text, setText, inputRef });
-  const editMention = useMentionAutocomplete({ workspaceId, getText: () => editText, setText: setEditText, inputRef: editInputRef });
-  const replyMention = useMentionAutocomplete({ workspaceId, getText: () => replyText, setText: setReplyText, inputRef: replyInputRef });
+  const newMention = useMentionAutocomplete({
+    workspaceId,
+    getText: () => text,
+    setText,
+    inputRef,
+  });
+  const editMention = useMentionAutocomplete({
+    workspaceId,
+    getText: () => editText,
+    setText: setEditText,
+    inputRef: editInputRef,
+  });
+  const replyMention = useMentionAutocomplete({
+    workspaceId,
+    getText: () => replyText,
+    setText: setReplyText,
+    inputRef: replyInputRef,
+  });
 
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
   const router = useRouter();
@@ -308,18 +468,26 @@ export function CellCommentPopover({
     setLoading(false);
   }, [pageId]);
 
-  useEffect(() => { fetchComments(); }, [fetchComments]);
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
 
   // Auto-scroll to the newest comment on load/submit/reply, and again on attachment image load
   // since images have no reserved height and can push the already-scrolled-to bottom further down.
   const scrollListToBottom = useCallback(() => {
     const el = listRef.current;
-    if (!el) return;
-    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    if (!el) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     scrollListToBottom();
   }, [loading, scrollListToBottom]);
 
@@ -329,20 +497,30 @@ export function CellCommentPopover({
   // without needing to re-register (which would create a brief window with no
   // listener, causing missed mousedown/keydown events on the buttons).
   const onCloseRef = useRef(onClose);
-  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // While the delete-confirm dialog or lightbox is open, outside clicks/Escape should dismiss
   // only that overlay, not the popover underneath — its backdrop isn't covered by the alertdialog check below.
   const pendingDeleteRef = useRef(pendingDelete);
-  useEffect(() => { pendingDeleteRef.current = pendingDelete; }, [pendingDelete]);
+  useEffect(() => {
+    pendingDeleteRef.current = pendingDelete;
+  }, [pendingDelete]);
   const lightboxRef = useRef(lightbox);
-  useEffect(() => { lightboxRef.current = lightbox; }, [lightbox]);
+  useEffect(() => {
+    lightboxRef.current = lightbox;
+  }, [lightbox]);
 
   useEffect(() => {
     function h(e: MouseEvent) {
-      if (pendingDeleteRef.current || lightboxRef.current) return;
+      if (pendingDeleteRef.current || lightboxRef.current) {
+        return;
+      }
       const target = e.target as HTMLElement;
-      if (target.closest?.('[role="alertdialog"], [data-comment-exempt]')) return;
+      if (target.closest?.('[role="alertdialog"], [data-comment-exempt]')) {
+        return;
+      }
       if (
         !popoverRef.current?.contains(target) &&
         !moreMenuRef.current?.contains(target) &&
@@ -357,11 +535,18 @@ export function CellCommentPopover({
 
   useEffect(() => {
     function h(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
+      if (e.key !== "Escape") {
+        return;
+      }
       // Checked in the capture phase, before Radix's Escape handling clears pendingDelete —
       // a bubble-phase listener would always see the already-cleared state.
-      if (pendingDeleteRef.current) return;
-      if (lightboxRef.current) { setLightbox(null); return; }
+      if (pendingDeleteRef.current) {
+        return;
+      }
+      if (lightboxRef.current) {
+        setLightbox(null);
+        return;
+      }
       onCloseRef.current();
     }
     document.addEventListener("keydown", h, true);
@@ -378,7 +563,9 @@ export function CellCommentPopover({
         moreMenuRef.current?.contains(target) ||
         emojiMenuRef.current?.contains(target) ||
         target.closest?.('[data-comment-exempt], [role="alertdialog"]')
-      ) return;
+      ) {
+        return;
+      }
       e.preventDefault();
     }
     document.addEventListener("wheel", preventScroll, { passive: false });
@@ -389,32 +576,46 @@ export function CellCommentPopover({
     };
   }, []); // stable — registered once on mount, uses refs for latest DOM
 
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 60); }, []);
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 60);
+  }, []);
 
   // ── Close sub-menus on outside click ──────────────────────────────────────
 
   useEffect(() => {
-    if (!moreMenu) return;
+    if (!moreMenu) {
+      return;
+    }
     function h(e: MouseEvent) {
-      if (!moreMenuRef.current?.contains(e.target as Node)) setMoreMenu(null);
+      if (!moreMenuRef.current?.contains(e.target as Node)) {
+        setMoreMenu(null);
+      }
     }
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [moreMenu]);
 
   useEffect(() => {
-    if (!emojiMenu) return;
+    if (!emojiMenu) {
+      return;
+    }
     function h(e: MouseEvent) {
-      if (!emojiMenuRef.current?.contains(e.target as Node)) setEmojiMenu(null);
+      if (!emojiMenuRef.current?.contains(e.target as Node)) {
+        setEmojiMenu(null);
+      }
     }
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [emojiMenu]);
 
   useEffect(() => {
-    if (!insertEmojiAnchor) return;
+    if (!insertEmojiAnchor) {
+      return;
+    }
     function h(e: MouseEvent) {
-      if (!insertEmojiRef.current?.contains(e.target as Node)) setInsertEmojiAnchor(null);
+      if (!insertEmojiRef.current?.contains(e.target as Node)) {
+        setInsertEmojiAnchor(null);
+      }
     }
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -422,21 +623,34 @@ export function CellCommentPopover({
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  async function uploadFile(file: File): Promise<{ url: string; name: string; mimeType: string } | null> {
+  async function uploadFile(
+    file: File
+  ): Promise<{ url: string; name: string; mimeType: string } | null> {
     try {
       const mimeType = file.type || "application/octet-stream";
       const signRes = await fetch("/api/uploads/sign", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "block_media", mimeType, fileSizeBytes: file.size, workspaceId }),
+        body: JSON.stringify({
+          kind: "block_media",
+          mimeType,
+          fileSizeBytes: file.size,
+          workspaceId,
+        }),
       });
-      if (!signRes.ok) return null;
+      if (!signRes.ok) {
+        return null;
+      }
 
-      const signed = await signRes.json() as {
+      const signed = (await signRes.json()) as {
         fileUploadId: string;
         objectKey: string;
         fileUrl: string;
-        upload: { url: string; method: "PUT" | "POST"; headers: Record<string, string> };
+        upload: {
+          url: string;
+          method: "PUT" | "POST";
+          headers: Record<string, string>;
+        };
       };
 
       if (signed.upload.method === "PUT") {
@@ -445,7 +659,9 @@ export function CellCommentPopover({
           headers: { "Content-Type": mimeType, ...signed.upload.headers },
           body: file,
         });
-        if (!putRes.ok) return null;
+        if (!putRes.ok) {
+          return null;
+        }
       } else {
         const fd = new FormData();
         fd.append("file", file);
@@ -455,7 +671,9 @@ export function CellCommentPopover({
           headers: signed.upload.headers,
           body: fd,
         });
-        if (!localRes.ok) return null;
+        if (!localRes.ok) {
+          return null;
+        }
       }
 
       const confirmRes = await fetch("/api/uploads/confirm", {
@@ -463,19 +681,37 @@ export function CellCommentPopover({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileUploadId: signed.fileUploadId }),
       });
-      if (!confirmRes.ok) return null;
-      const { fileUrl: confirmedUrl } = await confirmRes.json() as { fileUrl: string };
-      return { url: confirmedUrl ?? signed.fileUrl, name: file.name, mimeType: file.type };
-    } catch { return null; }
+      if (!confirmRes.ok) {
+        return null;
+      }
+      const { fileUrl: confirmedUrl } = (await confirmRes.json()) as {
+        fileUrl: string;
+      };
+      return {
+        url: confirmedUrl ?? signed.fileUrl,
+        name: file.name,
+        mimeType: file.type,
+      };
+    } catch {
+      return null;
+    }
   }
 
   async function submitComment() {
     const trimmed = text.trim();
-    if ((!trimmed && attachedFiles.length === 0) || submitting) return;
+    if ((!trimmed && attachedFiles.length === 0) || submitting) {
+      return;
+    }
     setSubmitting(true);
     try {
-      const uploadResults = await Promise.all(attachedFiles.map((af) => uploadFile(af.file)));
-      const uploaded = uploadResults.filter(Boolean) as { url: string; name: string; mimeType: string }[];
+      const uploadResults = await Promise.all(
+        attachedFiles.map((af) => uploadFile(af.file))
+      );
+      const uploaded = uploadResults.filter(Boolean) as {
+        url: string;
+        name: string;
+        mimeType: string;
+      }[];
 
       // If any file failed to upload, abort and keep files in the input
       if (uploadResults.some((r) => r === null)) {
@@ -498,25 +734,37 @@ export function CellCommentPopover({
       if (res.ok) {
         setText("");
         setUploadError(null);
-        attachedFiles.forEach((af) => { if (af.previewUrl) URL.revokeObjectURL(af.previewUrl); });
+        for (const af of attachedFiles) {
+          if (af.previewUrl) {
+            URL.revokeObjectURL(af.previewUrl);
+          }
+        }
         setAttachedFiles([]);
         setLoading(true);
         await fetchComments();
         onCommentAdded?.();
         emitCommentsChanged(pageId);
       }
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function submitReply(parentId: string) {
     const trimmed = replyText.trim();
-    if ((!trimmed && replyAttachments.length === 0) || replySubmitting) return;
+    if ((!trimmed && replyAttachments.length === 0) || replySubmitting) {
+      return;
+    }
     setReplySubmitting(true);
     try {
       const res = await fetch(`/api/pages/${pageId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blockId: null, parentId, content: makeContent(trimmed, replyAttachments) }),
+        body: JSON.stringify({
+          blockId: null,
+          parentId,
+          content: makeContent(trimmed, replyAttachments),
+        }),
       });
       if (res.ok) {
         setReplyText("");
@@ -527,18 +775,25 @@ export function CellCommentPopover({
         onCommentAdded?.();
         emitCommentsChanged(pageId);
       }
-    } finally { setReplySubmitting(false); }
+    } finally {
+      setReplySubmitting(false);
+    }
   }
 
   async function submitEdit(commentId: string) {
     const trimmed = editText.trim();
-    if ((!trimmed && editAttachments.length === 0) || editSubmitting) return;
+    if ((!trimmed && editAttachments.length === 0) || editSubmitting) {
+      return;
+    }
     setEditSubmitting(true);
     try {
       const res = await fetch(`/api/pages/${pageId}/comments/${commentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "edit", content: makeContent(trimmed, editAttachments) }),
+        body: JSON.stringify({
+          action: "edit",
+          content: makeContent(trimmed, editAttachments),
+        }),
       });
       if (res.ok) {
         setEditingId(null);
@@ -546,12 +801,16 @@ export function CellCommentPopover({
         await fetchComments();
         emitCommentsChanged(pageId);
       }
-    } finally { setEditSubmitting(false); }
+    } finally {
+      setEditSubmitting(false);
+    }
   }
 
   async function deleteComment(commentId: string) {
     try {
-      await fetch(`/api/pages/${pageId}/comments/${commentId}`, { method: "DELETE" });
+      await fetch(`/api/pages/${pageId}/comments/${commentId}`, {
+        method: "DELETE",
+      });
       await fetchComments();
       emitCommentsChanged(pageId);
     } catch {}
@@ -565,13 +824,17 @@ export function CellCommentPopover({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "react", emoji }),
       });
-      if (res.ok) await fetchComments();
+      if (res.ok) {
+        await fetchComments();
+      }
     } catch {}
   }
 
   function insertMention() {
     const el = inputRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const pos = el.selectionStart ?? text.length;
     const before = text.slice(0, pos);
     const after = text.slice(pos);
@@ -591,7 +854,9 @@ export function CellCommentPopover({
   // fresh comment instead of being a bare text field.
   function insertEditMention() {
     const el = editInputRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const pos = el.selectionStart ?? editText.length;
     const before = editText.slice(0, pos);
     const after = editText.slice(pos);
@@ -608,7 +873,9 @@ export function CellCommentPopover({
 
   function insertReplyMention() {
     const el = replyInputRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const pos = el.selectionStart ?? replyText.length;
     const before = replyText.slice(0, pos);
     const after = replyText.slice(pos);
@@ -633,24 +900,38 @@ export function CellCommentPopover({
       const pos = el?.selectionStart ?? replyText.length;
       const next = replyText.slice(0, pos) + emoji + replyText.slice(pos);
       setReplyText(next);
-      setTimeout(() => { el?.focus(); const c = pos + emoji.length; el?.setSelectionRange(c, c); }, 0);
+      setTimeout(() => {
+        el?.focus();
+        const c = pos + emoji.length;
+        el?.setSelectionRange(c, c);
+      }, 0);
     } else {
       const el = editInputRef.current;
       const pos = el?.selectionStart ?? editText.length;
       const next = editText.slice(0, pos) + emoji + editText.slice(pos);
       setEditText(next);
-      setTimeout(() => { el?.focus(); const c = pos + emoji.length; el?.setSelectionRange(c, c); }, 0);
+      setTimeout(() => {
+        el?.focus();
+        const c = pos + emoji.length;
+        el?.setSelectionRange(c, c);
+      }, 0);
     }
   }
 
   async function handleEditFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!files.length) return;
+    if (!files.length) {
+      return;
+    }
     setEditAttachLoading(true);
     try {
       const uploaded = await Promise.all(files.map((f) => uploadFile(f)));
-      const ok = uploaded.filter(Boolean) as { url: string; name: string; mimeType: string }[];
+      const ok = uploaded.filter(Boolean) as {
+        url: string;
+        name: string;
+        mimeType: string;
+      }[];
       setEditAttachments((prev) => [...prev, ...ok]);
     } finally {
       setEditAttachLoading(false);
@@ -660,18 +941,29 @@ export function CellCommentPopover({
   async function handleReplyFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!files.length) return;
+    if (!files.length) {
+      return;
+    }
     setReplyAttachLoading(true);
     try {
       const uploaded = await Promise.all(files.map((f) => uploadFile(f)));
-      const ok = uploaded.filter(Boolean) as { url: string; name: string; mimeType: string }[];
+      const ok = uploaded.filter(Boolean) as {
+        url: string;
+        name: string;
+        mimeType: string;
+      }[];
       setReplyAttachments((prev) => [...prev, ...ok]);
     } finally {
       setReplyAttachLoading(false);
     }
   }
 
-  function openMoreMenu(e: React.MouseEvent, commentId: string, isReply: boolean, isOwn: boolean) {
+  function openMoreMenu(
+    e: React.MouseEvent,
+    commentId: string,
+    isReply: boolean,
+    isOwn: boolean
+  ) {
     e.stopPropagation();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setEmojiMenu(null);
@@ -685,7 +977,11 @@ export function CellCommentPopover({
     setEmojiMenu({ commentId, rect });
   }
 
-  function startEdit(commentId: string, currentText: string, currentAttachments: { url: string; name: string; mimeType: string }[]) {
+  function startEdit(
+    commentId: string,
+    currentText: string,
+    currentAttachments: { url: string; name: string; mimeType: string }[]
+  ) {
     setMoreMenu(null);
     setEditingId(commentId);
     setEditText(currentText);
@@ -699,30 +995,39 @@ export function CellCommentPopover({
     return (
       <div className="mt-1 flex items-center gap-0.5">
         <button
-          type="button"
+          className="flex size-5 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors disabled:opacity-50"
           disabled={editAttachLoading}
           onClick={() => editFileInputRef.current?.click()}
           onMouseEnter={(e) => showTooltip("Attach file", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+          type="button"
         >
-          {editAttachLoading ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
+          {editAttachLoading ? (
+            <Loader2 className="animate-spin" size={11} />
+          ) : (
+            <Paperclip size={11} />
+          )}
         </button>
         <button
-          type="button"
+          className="flex size-5 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
           onClick={insertEditMention}
           onMouseEnter={(e) => showTooltip("Mention someone", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
+          type="button"
         >
           <AtSign size={11} />
         </button>
         <button
-          type="button"
-          onClick={(e) => setInsertEmojiAnchor({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), target: "edit" })}
+          className="flex size-5 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
+          onClick={(e) =>
+            setInsertEmojiAnchor({
+              rect: (e.currentTarget as HTMLElement).getBoundingClientRect(),
+              target: "edit",
+            })
+          }
           onMouseEnter={(e) => showTooltip("Insert emoji", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
+          type="button"
         >
           <Smile size={11} />
         </button>
@@ -737,30 +1042,39 @@ export function CellCommentPopover({
     return (
       <div className="mt-1 ml-6 flex items-center gap-0.5">
         <button
-          type="button"
+          className="flex size-5 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors disabled:opacity-50"
           disabled={replyAttachLoading}
           onClick={() => replyFileInputRef.current?.click()}
           onMouseEnter={(e) => showTooltip("Attach file", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+          type="button"
         >
-          {replyAttachLoading ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
+          {replyAttachLoading ? (
+            <Loader2 className="animate-spin" size={11} />
+          ) : (
+            <Paperclip size={11} />
+          )}
         </button>
         <button
-          type="button"
+          className="flex size-5 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
           onClick={insertReplyMention}
           onMouseEnter={(e) => showTooltip("Mention someone", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
+          type="button"
         >
           <AtSign size={11} />
         </button>
         <button
-          type="button"
-          onClick={(e) => setInsertEmojiAnchor({ rect: (e.currentTarget as HTMLElement).getBoundingClientRect(), target: "reply" })}
+          className="flex size-5 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
+          onClick={(e) =>
+            setInsertEmojiAnchor({
+              rect: (e.currentTarget as HTMLElement).getBoundingClientRect(),
+              target: "reply",
+            })
+          }
           onMouseEnter={(e) => showTooltip("Insert emoji", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-5 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
+          type="button"
         >
           <Smile size={11} />
         </button>
@@ -778,57 +1092,79 @@ export function CellCommentPopover({
   // ── Positioning ────────────────────────────────────────────────────────────
 
   const POP_W = 300;
-  const winW = typeof window !== "undefined" ? window.innerWidth : 1280;
-  const winH = typeof window !== "undefined" ? window.innerHeight : 800;
-  // Center the popover horizontally over the anchor; clamp to viewport edges
-  const anchorCenterX = anchorRect.left + anchorRect.width / 2;
-  const left = Math.min(Math.max(8, anchorCenterX - POP_W / 2), winW - POP_W - 8);
-  const spaceBelow = winH - anchorRect.bottom - 8;
-  // Low threshold since the list scrolls internally (maxHeight below) and doesn't need full clearance;
-  // too high a threshold flipped short threads above mid-page anchors unnecessarily.
-  const showBelow = spaceBelow >= 180;
-  // Pin the bottom edge via CSS `bottom` (not a guessed `top`) so the popover hugs the anchor
-  // and grows upward by its actual height instead of leaving a dead gap.
-  const top = showBelow ? anchorRect.bottom + 6 : undefined;
-  const bottom = showBelow ? undefined : winH - anchorRect.top + 6;
-  const maxHeight = showBelow ? winH - anchorRect.bottom - 6 - 8 : anchorRect.top - 8 - 6;
+  // Centered on the anchor; flip() picks above/below from the popover's actual
+  // measured height (recalculated live as comments/replies load) rather than a
+  // fixed clearance threshold, and constrainSize caps maxHeight to whatever's available.
+  const {
+    setFloating,
+    x: left,
+    y: top,
+  } = useAnchorPosition({
+    anchorRect,
+    placement: "bottom",
+    gap: 6,
+    constrainSize: true,
+    liveReposition: true,
+  });
+  const mergedPopoverRef = useMergedRef(popoverRef, setFloating);
 
   // ── Visible threads ────────────────────────────────────────────────────────
 
-  const visible = threads.filter((t) => !t.blockId && !t.deletedAt && t.propertyId === propertyId);
+  const visible = threads.filter(
+    (t) => !t.blockId && !t.deletedAt && t.propertyId === propertyId
+  );
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return createPortal(
     <>
       {/* Main popover */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handlers are stopPropagation. This renders through createPortal, so its React-tree parent is the table cell that opened the thread; unguarded clicks/pointerdowns would also fire that cell's handlers and close the popover mid-interaction. There is no activation to key-handle, every real control inside is a native button/input, and adding role/tabIndex here would create a tab stop that does nothing. */}
       <div
-        ref={popoverRef}
-        style={{ position: "fixed", top, bottom, left, width: POP_W, zIndex: 800, maxHeight, display: "flex", flexDirection: "column" }}
-        className="rounded-md border border-border bg-card overflow-hidden"
+        className="rounded-md border border-base-300 bg-base-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
+        ref={mergedPopoverRef}
+        style={{
+          position: "fixed",
+          top,
+          left,
+          width: POP_W,
+          zIndex: 800,
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
         {/* ── Comment list ── */}
         {loading ? (
           <div className="flex flex-1 min-h-0 items-center justify-center py-6">
-            <Loader2 size={14} className="animate-spin text-muted-foreground" />
+            <Loader2 className="animate-spin text-base-content/70" size={14} />
           </div>
         ) : visible.length > 0 ? (
-          <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto" ref={listRef}>
             {visible.map((t) => {
-              const bodyText = t.content ? extractText(t.content as Record<string, unknown>) : "";
+              const bodyText = t.content
+                ? extractText(t.content as Record<string, unknown>)
+                : "";
               const isOwn = t.author?.id === currentUserId;
               const hasReactions = Object.keys(t.reactions ?? {}).length > 0;
-              const visibleReplies = t.replies?.filter((r) => !r.deletedAt) ?? [];
+              const visibleReplies =
+                t.replies?.filter((r) => !r.deletedAt) ?? [];
 
               return (
-                <div key={t.id} className="border-b border-border last:border-0">
+                <div
+                  className="border-b border-base-300 last:border-0"
+                  key={t.id}
+                >
                   {/* Quoted property reference — frozen snapshot from when the comment was made */}
                   {t.propertyName && (
                     <div className="mx-3 mt-2 flex items-baseline gap-1 border-l-2 border-primary/40 pl-2 text-[11px] leading-tight">
-                      <span className="font-semibold text-muted-foreground">{t.propertyName}:</span>
-                      <span className="truncate text-muted-foreground">{t.propertyValueLabel || "Empty"}</span>
+                      <span className="font-semibold text-base-content/70">
+                        {t.propertyName}:
+                      </span>
+                      <span className="truncate text-base-content/70">
+                        {t.propertyValueLabel || "Empty"}
+                      </span>
                     </div>
                   )}
                   {/* Root comment */}
@@ -838,39 +1174,50 @@ export function CellCommentPopover({
                       <div className="min-w-0 flex-1">
                         {/* Header */}
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-xs font-semibold text-foreground leading-none truncate">
+                          <span className="text-xs font-semibold text-base-content leading-none truncate">
                             {getDisplayName(t.author)}
                           </span>
-                          <span className="shrink-0 text-2xs text-muted-foreground">
+                          <span className="shrink-0 text-2xs text-base-content/70">
                             {timeAgo(t.createdAt)}
-                            {t.editedAt && <span className="ml-0.5">(edited)</span>}
+                            {t.editedAt && (
+                              <span className="ml-0.5">(edited)</span>
+                            )}
                           </span>
                           {/* Action icons — shown on hover */}
                           <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/comment:opacity-100 transition-opacity shrink-0">
                             {/* React */}
                             <button
+                              className="flex size-4.5 items-center justify-center rounded text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors text-sm"
                               onClick={(e) => openEmojiMenu(e, t.id)}
-                              onMouseEnter={(e) => showTooltip("Add reaction", e)}
+                              onMouseEnter={(e) =>
+                                showTooltip("Add reaction", e)
+                              }
                               onMouseLeave={hideTooltip}
-                              className="flex size-4.5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-sm"
+                              type="button"
                             >
                               <Smile size={12} />
                             </button>
                             {/* Reply */}
                             <button
+                              className="flex size-4.5 items-center justify-center rounded text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors"
                               onClick={() => startReply(t.id)}
                               onMouseEnter={(e) => showTooltip("Reply", e)}
                               onMouseLeave={hideTooltip}
-                              className="flex size-4.5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                              type="button"
                             >
                               <Reply size={12} />
                             </button>
                             {/* More */}
                             <button
-                              onClick={(e) => openMoreMenu(e, t.id, false, isOwn)}
-                              onMouseEnter={(e) => showTooltip("More options", e)}
+                              className="flex size-4.5 items-center justify-center rounded text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors"
+                              onClick={(e) =>
+                                openMoreMenu(e, t.id, false, isOwn)
+                              }
+                              onMouseEnter={(e) =>
+                                showTooltip("More options", e)
+                              }
                               onMouseLeave={hideTooltip}
-                              className="flex size-4.5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                              type="button"
                             >
                               <MoreHorizontal size={12} />
                             </button>
@@ -883,13 +1230,26 @@ export function CellCommentPopover({
                             {editAttachments.length > 0 && (
                               <div className="mb-1 flex flex-wrap gap-1.5">
                                 {editAttachments.map((att, ai) => (
-                                  <div key={ai} className="group/editatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
-                                    <Paperclip size={9} className="shrink-0 text-muted-foreground" />
-                                    <span className="min-w-0 truncate text-2xs text-foreground/80">{att.name}</span>
+                                  <div
+                                    className="group/editatt relative flex items-center gap-1 rounded border border-base-300 bg-base-200/60 px-1.5 py-0.5"
+                                    key={att.url}
+                                    style={{ maxWidth: 140 }}
+                                  >
+                                    <Paperclip
+                                      className="shrink-0 text-base-content/70"
+                                      size={9}
+                                    />
+                                    <span className="min-w-0 truncate text-2xs text-base-content/80">
+                                      {att.name}
+                                    </span>
                                     <button
+                                      className="shrink-0 flex size-3 items-center justify-center rounded-full bg-base-content/70 text-base-200 opacity-0 transition-opacity group-hover/editatt:opacity-100"
+                                      onClick={() =>
+                                        setEditAttachments((prev) =>
+                                          prev.filter((_, i) => i !== ai)
+                                        )
+                                      }
                                       type="button"
-                                      onClick={() => setEditAttachments((prev) => prev.filter((_, i) => i !== ai))}
-                                      className="shrink-0 flex size-3 items-center justify-center rounded-full bg-foreground/70 text-background opacity-0 transition-opacity group-hover/editatt:opacity-100"
                                     >
                                       <X size={7} />
                                     </button>
@@ -899,27 +1259,43 @@ export function CellCommentPopover({
                             )}
                             <div className="flex items-center gap-1">
                               <input
+                                className="min-w-0 flex-1 rounded border border-primary/40 bg-base-200 px-2 py-0.5 text-xs text-base-content focus:outline-none"
+                                onChange={(e) => {
+                                  setEditText(e.target.value);
+                                  editMention.onTextChanged(e.target.value);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (editMention.handleKeyDown(e)) {
+                                    return;
+                                  }
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    submitEdit(t.id);
+                                  }
+                                  if (e.key === "Escape") {
+                                    setEditingId(null);
+                                  }
+                                }}
                                 ref={editInputRef}
                                 value={editText}
-                                onChange={(e) => { setEditText(e.target.value); editMention.onTextChanged(e.target.value); }}
-                                onKeyDown={(e) => {
-                                  if (editMention.handleKeyDown(e)) return;
-                                  if (e.key === "Enter") { e.preventDefault(); submitEdit(t.id); }
-                                  if (e.key === "Escape") setEditingId(null);
-                                }}
-                                className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
                               />
                               {editMention.dropdown}
                               <button
-                                onClick={() => submitEdit(t.id)}
+                                className="shrink-0 flex size-5 items-center justify-center rounded bg-primary text-primary-content hover:bg-primary/90 transition-colors disabled:opacity-50"
                                 disabled={editSubmitting}
-                                className="shrink-0 flex size-5 items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                                onClick={() => submitEdit(t.id)}
+                                type="button"
                               >
-                                {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                                {editSubmitting ? (
+                                  <Loader2 className="animate-spin" size={10} />
+                                ) : (
+                                  <Check size={10} />
+                                )}
                               </button>
                               <button
+                                className="shrink-0 flex size-5 items-center justify-center rounded text-base-content/70 hover:bg-base-200 transition-colors"
                                 onClick={() => setEditingId(null)}
-                                className="shrink-0 flex size-5 items-center justify-center rounded text-muted-foreground hover:bg-accent transition-colors"
+                                type="button"
                               >
                                 <X size={10} />
                               </button>
@@ -929,92 +1305,150 @@ export function CellCommentPopover({
                         ) : (
                           <>
                             {bodyText ? (
-                              <p className="text-xs leading-relaxed text-foreground/85 whitespace-pre-wrap">{bodyText}</p>
+                              <p className="text-xs leading-relaxed text-base-content/85 whitespace-pre-wrap">
+                                {bodyText}
+                              </p>
                             ) : null}
-                            {t.content && (() => {
-                              const atts = extractAttachments(t.content as Record<string, unknown>);
-                              const images = atts.filter((a) => a.mimeType.startsWith("image/"));
-                              const files = atts.filter((a) => !a.mimeType.startsWith("image/"));
-                              // A single image keeps the larger, near-full-width preview; two or
-                              // more switch to a compact 2-column grid instead of stacking full-width
-                              // thumbnails one after another, which ate a lot of vertical space in
-                              // this small popover and didn't scale past one image.
-                              const grid = images.length > 1;
-                              return (
-                                <>
-                                  {images.length > 0 && (
-                                    <div
-                                      className={grid ? "mt-1.5 grid grid-cols-2 gap-1" : "mt-1.5"}
-                                      style={{ maxWidth: 200 }}
-                                    >
-                                      {images.map((att, ai) => (
-                                        <div
-                                          key={ai}
-                                          className="group/img relative cursor-pointer overflow-hidden rounded-sm border border-border bg-muted"
-                                          onClick={() => setLightbox(att.url)}
-                                        >
-                                          <img
-                                            src={att.url}
-                                            alt={att.name}
-                                            onLoad={scrollListToBottom}
-                                            className={`w-full object-cover block ${grid ? "h-17.5" : "max-h-35"}`}
-                                          />
-                                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 transition-colors group-hover/img:bg-black/40">
-                                            <span className={`flex items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto ${grid ? "size-5" : "size-7"}`}>
-                                              <ZoomIn size={grid ? 10 : 14} />
-                                            </span>
-                                            {!grid && (
-                                              <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); downloadAttachment(att.url, att.name); }}
-                                                className="flex size-7 items-center justify-center rounded-full bg-card/90 text-foreground opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto"
+                            {t.content &&
+                              (() => {
+                                const atts = extractAttachments(
+                                  t.content as Record<string, unknown>
+                                );
+                                const images = atts.filter((a) =>
+                                  a.mimeType.startsWith("image/")
+                                );
+                                const files = atts.filter(
+                                  (a) => !a.mimeType.startsWith("image/")
+                                );
+                                // A single image keeps the larger, near-full-width preview; two or
+                                // more switch to a compact 2-column grid instead of stacking full-width
+                                // thumbnails one after another, which ate a lot of vertical space in
+                                // this small popover and didn't scale past one image.
+                                const grid = images.length > 1;
+                                return (
+                                  <>
+                                    {images.length > 0 && (
+                                      <div
+                                        className={
+                                          grid
+                                            ? "mt-1.5 grid grid-cols-2 gap-1"
+                                            : "mt-1.5"
+                                        }
+                                        style={{ maxWidth: 200 }}
+                                      >
+                                        {images.map((att) => (
+                                          <div
+                                            className="group/img relative overflow-hidden rounded-sm border border-base-300 bg-base-200"
+                                            key={att.url}
+                                          >
+                                            <button
+                                              className="block w-full cursor-pointer"
+                                              onClick={() =>
+                                                setLightbox(att.url)
+                                              }
+                                              type="button"
+                                            >
+                                              {/* biome-ignore lint/performance/noImgElement: src is an uploaded asset served from the configured STORAGE_DRIVER (local or s3/r2 CDN); that host is not in next.config images.remotePatterns */}
+                                              {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: onLoad is a browser resource-lifecycle event, not a user interaction — it re-pins the thread to the bottom once the thumbnail has laid out. The click affordance lives on the wrapping button, which is keyboard-operable. */}
+                                              <img
+                                                alt={att.name}
+                                                className={`w-full object-cover block ${grid ? "h-17.5" : "max-h-35"}`}
+                                                onLoad={scrollListToBottom}
+                                                src={att.url}
+                                              />
+                                            </button>
+                                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 bg-black/0 transition-colors group-hover/img:bg-black/40">
+                                              <span
+                                                className={`flex items-center justify-center rounded-full bg-base-100/90 text-base-content opacity-0 transition-opacity group-hover/img:opacity-100 ${grid ? "size-5" : "size-7"}`}
                                               >
-                                                <Download size={13} />
-                                              </button>
-                                            )}
+                                                <ZoomIn size={grid ? 10 : 14} />
+                                              </span>
+                                              {!grid && (
+                                                <button
+                                                  className="flex size-7 items-center justify-center rounded-full bg-base-100/90 text-base-content opacity-0 transition-opacity group-hover/img:opacity-100 pointer-events-auto"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    downloadAttachment(
+                                                      att.url,
+                                                      att.name
+                                                    );
+                                                  }}
+                                                  type="button"
+                                                >
+                                                  <Download size={13} />
+                                                </button>
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {files.map((att, ai) => (
-                                    <a
-                                      key={ai}
-                                      href={att.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="mt-1.5 flex items-center gap-1.5 rounded border border-border bg-muted/60 px-2 py-1 text-xs text-foreground hover:bg-accent transition-colors"
-                                      style={{ maxWidth: 200 }}
-                                    >
-                                      <Paperclip size={10} className="shrink-0 text-muted-foreground" />
-                                      <span className="min-w-0 truncate">{att.name}</span>
-                                    </a>
-                                  ))}
-                                </>
-                              );
-                            })()}
+                                        ))}
+                                      </div>
+                                    )}
+                                    {files.map((att) => (
+                                      <a
+                                        className="mt-1.5 flex items-center gap-1.5 rounded border border-base-300 bg-base-200/60 px-2 py-1 text-xs text-base-content hover:bg-base-200 transition-colors"
+                                        href={att.url}
+                                        key={att.url}
+                                        rel="noopener noreferrer"
+                                        style={{ maxWidth: 200 }}
+                                        target="_blank"
+                                      >
+                                        <Paperclip
+                                          className="shrink-0 text-base-content/70"
+                                          size={10}
+                                        />
+                                        <span className="min-w-0 truncate">
+                                          {att.name}
+                                        </span>
+                                      </a>
+                                    ))}
+                                  </>
+                                );
+                              })()}
                           </>
                         )}
 
                         {/* Reactions */}
                         {hasReactions && (
                           <div className="mt-1.5 flex flex-wrap gap-1">
-                            {Object.entries(t.reactions).map(([emoji, userIds]) => {
-                              if (!userIds.length) return null;
-                              const reacted = currentUserId ? userIds.includes(currentUserId) : false;
-                              return (
-                                <button
-                                  key={emoji}
-                                  onClick={() => toggleReaction(t.id, emoji)}
-                                  onMouseEnter={(e) => showTooltip(formatReactionTooltip(emoji, userIds, reactionUsers), e, emoji, formatReactorNames(userIds, reactionUsers))}
-                                  onMouseLeave={hideTooltip}
-                                  className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] border transition-colors ${reacted ? "border-primary/50 bg-primary/10 text-primary" : "border-border bg-muted/40 text-foreground/70 hover:border-primary/40 hover:bg-primary/5"}`}
-                                >
-                                  {emoji}
-                                  <span className="font-medium">{userIds.length}</span>
-                                </button>
-                              );
-                            })}
+                            {Object.entries(t.reactions).map(
+                              ([emoji, userIds]) => {
+                                if (!userIds.length) {
+                                  return null;
+                                }
+                                const reacted = currentUserId
+                                  ? userIds.includes(currentUserId)
+                                  : false;
+                                return (
+                                  <button
+                                    className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] border transition-colors ${reacted ? "border-primary/50 bg-primary/10 text-primary" : "border-base-300 bg-base-200/40 text-base-content/70 hover:border-primary/40 hover:bg-primary/5"}`}
+                                    key={emoji}
+                                    onClick={() => toggleReaction(t.id, emoji)}
+                                    onMouseEnter={(e) =>
+                                      showTooltip(
+                                        formatReactionTooltip(
+                                          emoji,
+                                          userIds,
+                                          reactionUsers
+                                        ),
+                                        e,
+                                        emoji,
+                                        formatReactorNames(
+                                          userIds,
+                                          reactionUsers
+                                        )
+                                      )
+                                    }
+                                    onMouseLeave={hideTooltip}
+                                    type="button"
+                                  >
+                                    {emoji}
+                                    <span className="font-medium">
+                                      {userIds.length}
+                                    </span>
+                                  </button>
+                                );
+                              }
+                            )}
                           </div>
                         )}
                       </div>
@@ -1023,26 +1457,31 @@ export function CellCommentPopover({
 
                   {/* Replies */}
                   {visibleReplies.length > 0 && (
-                    <div className="ml-9 border-l border-border pl-2 pr-3 pb-1">
+                    <div className="ml-9 border-l border-base-300 pl-2 pr-3 pb-1">
                       {visibleReplies.map((rep) => {
-                        const repText = rep.content ? extractText(rep.content as Record<string, unknown>) : "";
+                        const repText = rep.content
+                          ? extractText(rep.content as Record<string, unknown>)
+                          : "";
                         const repIsOwn = rep.author?.id === currentUserId;
                         return (
-                          <div key={rep.id} className="py-1.5 group/reply">
+                          <div className="py-1.5 group/reply" key={rep.id}>
                             <div className="flex items-start gap-1.5">
                               <UserAvatar author={rep.author} px={18} />
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5 mb-0.5">
-                                  <span className="text-[11px] font-semibold text-foreground leading-none truncate">
+                                  <span className="text-[11px] font-semibold text-base-content leading-none truncate">
                                     {getDisplayName(rep.author)}
                                   </span>
-                                  <span className="shrink-0 text-2xs text-muted-foreground">
+                                  <span className="shrink-0 text-2xs text-base-content/70">
                                     {timeAgo(rep.createdAt)}
                                   </span>
                                   <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/reply:opacity-100 transition-opacity shrink-0">
                                     <button
-                                      onClick={(e) => openMoreMenu(e, rep.id, true, repIsOwn)}
-                                      className="flex size-4 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                                      className="flex size-4 items-center justify-center rounded text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors"
+                                      onClick={(e) =>
+                                        openMoreMenu(e, rep.id, true, repIsOwn)
+                                      }
+                                      type="button"
                                     >
                                       <MoreHorizontal size={11} />
                                     </button>
@@ -1053,13 +1492,28 @@ export function CellCommentPopover({
                                     {editAttachments.length > 0 && (
                                       <div className="mb-1 flex flex-wrap gap-1.5">
                                         {editAttachments.map((att, ai) => (
-                                          <div key={ai} className="group/editatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
-                                            <Paperclip size={9} className="shrink-0 text-muted-foreground" />
-                                            <span className="min-w-0 truncate text-2xs text-foreground/80">{att.name}</span>
+                                          <div
+                                            className="group/editatt relative flex items-center gap-1 rounded border border-base-300 bg-base-200/60 px-1.5 py-0.5"
+                                            key={att.url}
+                                            style={{ maxWidth: 140 }}
+                                          >
+                                            <Paperclip
+                                              className="shrink-0 text-base-content/70"
+                                              size={9}
+                                            />
+                                            <span className="min-w-0 truncate text-2xs text-base-content/80">
+                                              {att.name}
+                                            </span>
                                             <button
+                                              className="shrink-0 flex size-3 items-center justify-center rounded-full bg-base-content/70 text-base-200 opacity-0 transition-opacity group-hover/editatt:opacity-100"
+                                              onClick={() =>
+                                                setEditAttachments((prev) =>
+                                                  prev.filter(
+                                                    (_, i) => i !== ai
+                                                  )
+                                                )
+                                              }
                                               type="button"
-                                              onClick={() => setEditAttachments((prev) => prev.filter((_, i) => i !== ai))}
-                                              className="shrink-0 flex size-3 items-center justify-center rounded-full bg-foreground/70 text-background opacity-0 transition-opacity group-hover/editatt:opacity-100"
                                             >
                                               <X size={7} />
                                             </button>
@@ -1069,33 +1523,56 @@ export function CellCommentPopover({
                                     )}
                                     <div className="flex items-center gap-1">
                                       <input
+                                        className="min-w-0 flex-1 rounded border border-primary/40 bg-base-200 px-2 py-0.5 text-xs text-base-content focus:outline-none"
+                                        onChange={(e) => {
+                                          setEditText(e.target.value);
+                                          editMention.onTextChanged(
+                                            e.target.value
+                                          );
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (editMention.handleKeyDown(e)) {
+                                            return;
+                                          }
+                                          if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            submitEdit(rep.id);
+                                          }
+                                          if (e.key === "Escape") {
+                                            setEditingId(null);
+                                          }
+                                        }}
                                         ref={editInputRef}
                                         value={editText}
-                                        onChange={(e) => { setEditText(e.target.value); editMention.onTextChanged(e.target.value); }}
-                                        onKeyDown={(e) => {
-                                          if (editMention.handleKeyDown(e)) return;
-                                          if (e.key === "Enter") { e.preventDefault(); submitEdit(rep.id); }
-                                          if (e.key === "Escape") setEditingId(null);
-                                        }}
-                                        className="min-w-0 flex-1 rounded border border-primary/40 bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
                                       />
                                       {editMention.dropdown}
                                       <button
-                                        type="button"
-                                        onClick={() => submitEdit(rep.id)}
-                                        onMouseEnter={(e) => showTooltip("Save (Enter)", e)}
-                                        onMouseLeave={hideTooltip}
+                                        className="flex size-5 shrink-0 items-center justify-center rounded bg-primary text-primary-content hover:bg-primary/90 transition-colors disabled:opacity-50"
                                         disabled={editSubmitting}
-                                        className="flex size-5 shrink-0 items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                                        onClick={() => submitEdit(rep.id)}
+                                        onMouseEnter={(e) =>
+                                          showTooltip("Save (Enter)", e)
+                                        }
+                                        onMouseLeave={hideTooltip}
+                                        type="button"
                                       >
-                                        {editSubmitting ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                                        {editSubmitting ? (
+                                          <Loader2
+                                            className="animate-spin"
+                                            size={10}
+                                          />
+                                        ) : (
+                                          <Check size={10} />
+                                        )}
                                       </button>
                                       <button
-                                        type="button"
+                                        className="flex size-5 shrink-0 items-center justify-center rounded text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors"
                                         onClick={() => setEditingId(null)}
-                                        onMouseEnter={(e) => showTooltip("Cancel (Esc)", e)}
+                                        onMouseEnter={(e) =>
+                                          showTooltip("Cancel (Esc)", e)
+                                        }
                                         onMouseLeave={hideTooltip}
-                                        className="flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                                        type="button"
                                       >
                                         <X size={10} />
                                       </button>
@@ -1103,7 +1580,9 @@ export function CellCommentPopover({
                                     {renderEditToolbar()}
                                   </div>
                                 ) : (
-                                  <p className="text-[11px] leading-relaxed text-foreground/85">{repText}</p>
+                                  <p className="text-[11px] leading-relaxed text-base-content/85">
+                                    {repText}
+                                  </p>
                                 )}
                               </div>
                             </div>
@@ -1119,13 +1598,26 @@ export function CellCommentPopover({
                       {replyAttachments.length > 0 && (
                         <div className="mb-1 ml-6 flex flex-wrap gap-1.5">
                           {replyAttachments.map((att, ai) => (
-                            <div key={ai} className="group/replyatt relative flex items-center gap-1 rounded border border-border bg-muted/60 px-1.5 py-0.5" style={{ maxWidth: 140 }}>
-                              <Paperclip size={9} className="shrink-0 text-muted-foreground" />
-                              <span className="min-w-0 truncate text-2xs text-foreground/80">{att.name}</span>
+                            <div
+                              className="group/replyatt relative flex items-center gap-1 rounded border border-base-300 bg-base-200/60 px-1.5 py-0.5"
+                              key={att.url}
+                              style={{ maxWidth: 140 }}
+                            >
+                              <Paperclip
+                                className="shrink-0 text-base-content/70"
+                                size={9}
+                              />
+                              <span className="min-w-0 truncate text-2xs text-base-content/80">
+                                {att.name}
+                              </span>
                               <button
+                                className="shrink-0 flex size-3 items-center justify-center rounded-full bg-base-content/70 text-base-200 opacity-0 transition-opacity group-hover/replyatt:opacity-100"
+                                onClick={() =>
+                                  setReplyAttachments((prev) =>
+                                    prev.filter((_, i) => i !== ai)
+                                  )
+                                }
                                 type="button"
-                                onClick={() => setReplyAttachments((prev) => prev.filter((_, i) => i !== ai))}
-                                className="shrink-0 flex size-3 items-center justify-center rounded-full bg-foreground/70 text-background opacity-0 transition-opacity group-hover/replyatt:opacity-100"
                               >
                                 <X size={7} />
                               </button>
@@ -1136,40 +1628,62 @@ export function CellCommentPopover({
                       <div className="flex items-center gap-1.5">
                         <UserAvatar author={sessionAuthor} px={18} />
                         <input
-                          ref={replyInputRef}
-                          value={replyText}
-                          onChange={(e) => { setReplyText(e.target.value); replyMention.onTextChanged(e.target.value); }}
+                          className="min-w-0 flex-1 rounded border border-base-300 bg-base-200/30 px-2 py-1 text-xs text-base-content placeholder:text-base-content/50 focus:border-primary/40 focus:outline-none"
+                          onChange={(e) => {
+                            setReplyText(e.target.value);
+                            replyMention.onTextChanged(e.target.value);
+                          }}
                           onKeyDown={(e) => {
-                            if (replyMention.handleKeyDown(e)) return;
-                            if (e.key === "Enter") { e.preventDefault(); submitReply(t.id); }
-                            if (e.key === "Escape") { setReplyToId(null); }
+                            if (replyMention.handleKeyDown(e)) {
+                              return;
+                            }
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              submitReply(t.id);
+                            }
+                            if (e.key === "Escape") {
+                              setReplyToId(null);
+                            }
                           }}
                           placeholder="Reply…"
-                          className="min-w-0 flex-1 rounded border border-border bg-muted/30 px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
+                          ref={replyInputRef}
+                          value={replyText}
                         />
                         {replyMention.dropdown}
                         <button
-                          type="button"
-                          onClick={() => { setReplyToId(null); setReplyText(""); setReplyAttachments([]); }}
+                          className="flex size-6 shrink-0 items-center justify-center rounded-full text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors"
+                          onClick={() => {
+                            setReplyToId(null);
+                            setReplyText("");
+                            setReplyAttachments([]);
+                          }}
                           onMouseEnter={(e) => showTooltip("Cancel (Esc)", e)}
                           onMouseLeave={hideTooltip}
-                          className="flex size-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                          type="button"
                         >
                           <X size={12} />
                         </button>
                         <button
-                          type="button"
+                          className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors ${
+                            replyText.trim() || replyAttachments.length > 0
+                              ? "bg-primary text-primary-content hover:bg-primary/90 cursor-pointer"
+                              : "bg-base-200 text-base-content/50 cursor-not-allowed"
+                          }`}
+                          disabled={
+                            (!replyText.trim() &&
+                              replyAttachments.length === 0) ||
+                            replySubmitting
+                          }
                           onClick={() => submitReply(t.id)}
                           onMouseEnter={(e) => showTooltip("Send reply", e)}
                           onMouseLeave={hideTooltip}
-                          disabled={(!replyText.trim() && replyAttachments.length === 0) || replySubmitting}
-                          className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-colors ${
-                            replyText.trim() || replyAttachments.length > 0
-                              ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
-                              : "bg-muted text-muted-foreground-subtle cursor-not-allowed"
-                          }`}
+                          type="button"
                         >
-                          {replySubmitting ? <Loader2 size={10} className="animate-spin" /> : <ArrowUp size={11} />}
+                          {replySubmitting ? (
+                            <Loader2 className="animate-spin" size={10} />
+                          ) : (
+                            <ArrowUp size={11} />
+                          )}
                         </button>
                       </div>
                       {renderReplyToolbar()}
@@ -1183,9 +1697,9 @@ export function CellCommentPopover({
                 sidebar view instead of leaving people stuck scrolling here. */}
             {visible.length > 2 && (
               <button
-                type="button"
+                className="flex w-full items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-base-content/70 hover:bg-base-200 hover:text-base-content transition-colors"
                 onClick={openInFullPage}
-                className="flex w-full items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                type="button"
               >
                 <ExternalLink size={12} />
                 View all comments in full page
@@ -1195,12 +1709,14 @@ export function CellCommentPopover({
         ) : null}
 
         {/* ── Divider ── */}
-        {!loading && visible.length > 0 && <div className="shrink-0 h-px bg-border" />}
+        {!loading && visible.length > 0 && (
+          <div className="shrink-0 h-px bg-base-300" />
+        )}
 
         {/* ── Upload error ── */}
         {uploadError && (
-          <div className="shrink-0 mx-2.5 mt-2 flex items-center gap-1.5 rounded border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
-            <X size={10} className="shrink-0" />
+          <div className="shrink-0 mx-2.5 mt-2 flex items-center gap-1.5 rounded border border-error/40 bg-error/10 px-2 py-1.5 text-[11px] text-error">
+            <X className="shrink-0" size={10} />
             {uploadError}
           </div>
         )}
@@ -1208,28 +1724,49 @@ export function CellCommentPopover({
         {/* ── Attached files preview ── */}
         {attachedFiles.length > 0 && (
           <div className="shrink-0 flex flex-wrap gap-2 px-2.5 pt-2 pb-0.5">
+            {/* Not yet uploaded, so there is no server-side id or URL to key on
+                (that only exists after submit). The File's own name/size/mtime
+                is its natural identity and survives removing an earlier item,
+                which a positional key would not. */}
             {attachedFiles.map((af, i) => (
-              <div key={i} className="group/thumb relative">
+              <div
+                className="group/thumb relative"
+                key={`${af.file.name}-${af.file.size}-${af.file.lastModified}`}
+              >
                 {af.previewUrl ? (
                   <>
-                    <div className="relative h-16 w-21 overflow-hidden rounded-sm border border-border bg-muted">
-                      <img src={af.previewUrl} alt={af.file.name} className="h-full w-full object-cover block" />
+                    <div className="relative h-16 w-21 overflow-hidden rounded-sm border border-base-300 bg-base-200">
+                      {/* biome-ignore lint/performance/noImgElement: src can be a blob: object URL from URL.createObjectURL, which next/image cannot optimize */}
+                      <img
+                        alt={af.file.name}
+                        className="h-full w-full object-cover block"
+                        src={af.previewUrl}
+                      />
                     </div>
-                    <p className="mt-0.5 max-w-21 truncate text-2xs text-muted-foreground">{af.file.name}</p>
+                    <p className="mt-0.5 max-w-21 truncate text-2xs text-base-content/70">
+                      {af.file.name}
+                    </p>
                   </>
                 ) : (
-                  <div className="flex h-9 items-center gap-1.5 rounded-sm border border-border bg-muted/60 px-2 max-w-35">
-                    <Paperclip size={10} className="shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 truncate text-[11px] text-foreground/80">{af.file.name}</span>
+                  <div className="flex h-9 items-center gap-1.5 rounded-sm border border-base-300 bg-base-200/60 px-2 max-w-35">
+                    <Paperclip
+                      className="shrink-0 text-base-content/70"
+                      size={10}
+                    />
+                    <span className="min-w-0 truncate text-[11px] text-base-content/80">
+                      {af.file.name}
+                    </span>
                   </div>
                 )}
                 <button
-                  type="button"
+                  className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-base-content text-base-200 opacity-0 transition-opacity group-hover/thumb:opacity-100"
                   onClick={() => {
-                    if (af.previewUrl) URL.revokeObjectURL(af.previewUrl);
+                    if (af.previewUrl) {
+                      URL.revokeObjectURL(af.previewUrl);
+                    }
                     setAttachedFiles((fs) => fs.filter((_, j) => j !== i));
                   }}
-                  className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-foreground text-background opacity-0 transition-opacity group-hover/thumb:opacity-100"
+                  type="button"
                 >
                   <X size={8} />
                 </button>
@@ -1242,79 +1779,97 @@ export function CellCommentPopover({
         <div className="shrink-0 flex items-center gap-2 px-2.5 py-2">
           <UserAvatar author={sessionAuthor} px={26} />
           <input
-            ref={inputRef}
-            value={text}
-            onChange={(e) => { setText(e.target.value); setUploadError(null); newMention.onTextChanged(e.target.value); }}
+            className="min-w-0 flex-1 bg-transparent text-sm text-base-content placeholder:text-base-content/50 focus:outline-none"
+            onChange={(e) => {
+              setText(e.target.value);
+              setUploadError(null);
+              newMention.onTextChanged(e.target.value);
+            }}
             onKeyDown={(e) => {
-              if (newMention.handleKeyDown(e)) return;
-              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }
+              if (newMention.handleKeyDown(e)) {
+                return;
+              }
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submitComment();
+              }
             }}
             placeholder="Add a comment…"
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground-subtle focus:outline-none"
+            ref={inputRef}
+            value={text}
           />
           {newMention.dropdown}
           <div className="flex shrink-0 items-center gap-0.5">
             {/* Hidden file input */}
             <input
-              ref={fileInputRef}
-              type="file"
-              multiple
               className="hidden"
+              multiple
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? []);
-                const next = files.map((f) => ({ file: f, previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : null }));
+                const next = files.map((f) => ({
+                  file: f,
+                  previewUrl: f.type.startsWith("image/")
+                    ? URL.createObjectURL(f)
+                    : null,
+                }));
                 setAttachedFiles((prev) => [...prev, ...next]);
                 setUploadError(null);
                 e.target.value = "";
               }}
+              ref={fileInputRef}
+              type="file"
             />
             {/* Hidden file input for the edit box's attach button (renderEditToolbar) */}
             <input
+              className="hidden"
+              multiple
+              onChange={handleEditFileChange}
               ref={editFileInputRef}
               type="file"
-              multiple
-              className="hidden"
-              onChange={handleEditFileChange}
             />
             {/* Hidden file input for the reply box's attach button (renderReplyToolbar) */}
             <input
+              className="hidden"
+              multiple
+              onChange={handleReplyFileChange}
               ref={replyFileInputRef}
               type="file"
-              multiple
-              className="hidden"
-              onChange={handleReplyFileChange}
             />
             <button
-              type="button"
+              className="flex size-6 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
               onClick={() => fileInputRef.current?.click()}
               onMouseEnter={(e) => showTooltip("Attach file", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
+              type="button"
             >
               <Paperclip size={12} />
             </button>
             <button
-              type="button"
+              className="flex size-6 items-center justify-center rounded text-base-content/50 hover:bg-base-200 hover:text-base-content transition-colors"
               onClick={insertMention}
               onMouseEnter={(e) => showTooltip("Mention someone", e)}
               onMouseLeave={hideTooltip}
-              className="flex size-6 items-center justify-center rounded text-muted-foreground-subtle hover:bg-accent hover:text-foreground transition-colors"
+              type="button"
             >
               <AtSign size={12} />
             </button>
             <button
-              type="button"
+              className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-all ${
+                hasText
+                  ? "bg-primary text-primary-content hover:bg-primary/90 cursor-pointer"
+                  : "bg-base-200 text-base-content/50 cursor-not-allowed"
+              }`}
               disabled={submitting}
               onClick={submitComment}
               onMouseEnter={(e) => showTooltip("Send comment", e)}
               onMouseLeave={hideTooltip}
-              className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-all ${
-                hasText
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
-                  : "bg-muted text-muted-foreground-subtle cursor-not-allowed"
-              }`}
+              type="button"
             >
-              {submitting ? <Loader2 size={11} className="animate-spin" /> : <ArrowUp size={12} />}
+              {submitting ? (
+                <Loader2 className="animate-spin" size={11} />
+              ) : (
+                <ArrowUp size={12} />
+              )}
             </button>
           </div>
         </div>
@@ -1322,91 +1877,87 @@ export function CellCommentPopover({
 
       {/* ── More menu portal ── */}
       {moreMenu && (
-        <div
-          ref={moreMenuRef}
-          style={{
-            position: "fixed",
-            top: moreMenu.rect.bottom + 160 > winH
-              ? Math.max(8, moreMenu.rect.top - 160)
-              : moreMenu.rect.bottom + 4,
-            left: Math.min(Math.max(8, moreMenu.rect.right - 148), winW - 156),
-            zIndex: 900,
-            width: 148,
-          }}
-          className="overflow-hidden rounded-sm border border-border bg-popover py-0.5"
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
+        <MoreMenuPortal menuRef={moreMenuRef} rect={moreMenu.rect}>
           {moreMenu.isOwn && (
             <button
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-base-content hover:bg-base-200 transition-colors"
               onClick={() => {
                 const thread = threads.find((t) => t.id === moreMenu.commentId);
-                const reply = threads.flatMap((t) => t.replies ?? []).find((r) => r.id === moreMenu.commentId);
+                const reply = threads
+                  .flatMap((t) => t.replies ?? [])
+                  .find((r) => r.id === moreMenu.commentId);
                 const content = thread?.content ?? reply?.content;
                 if (content) {
                   const c = content as Record<string, unknown>;
-                  startEdit(moreMenu.commentId, extractText(c), extractAttachments(c));
+                  startEdit(
+                    moreMenu.commentId,
+                    extractText(c),
+                    extractAttachments(c)
+                  );
                 }
               }}
+              type="button"
             >
-              <Pencil size={12} className="shrink-0 text-muted-foreground" />
+              <Pencil className="shrink-0 text-base-content/70" size={12} />
               Edit comment
             </button>
           )}
           <button
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-base-content hover:bg-base-200 transition-colors"
             onClick={() => {
               if (typeof window !== "undefined") {
-                navigator.clipboard?.writeText(window.location.href).catch(() => {});
+                navigator.clipboard
+                  ?.writeText(window.location.href)
+                  .catch(() => {});
               }
               setMoreMenu(null);
             }}
+            type="button"
           >
-            <Link2 size={12} className="shrink-0 text-muted-foreground" />
+            <Link2 className="shrink-0 text-base-content/70" size={12} />
             Copy link
           </button>
           {moreMenu.isOwn && (
             <>
-              <div className="my-0.5 h-px bg-border mx-1" />
+              <div className="my-0.5 h-px bg-base-300 mx-1" />
               <button
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-error hover:bg-error/10 transition-colors"
                 onClick={() => {
-                  setPendingDelete({ id: moreMenu.commentId, isReply: moreMenu.isReply });
+                  setPendingDelete({
+                    id: moreMenu.commentId,
+                    isReply: moreMenu.isReply,
+                  });
                   setMoreMenu(null);
                 }}
+                type="button"
               >
-                <Trash2 size={12} className="shrink-0" />
+                <Trash2 className="shrink-0" size={12} />
                 Delete comment
               </button>
             </>
           )}
-        </div>
+        </MoreMenuPortal>
       )}
 
       {/* ── Full emoji picker portal ── */}
       {emojiMenu && (
         <FullEmojiPicker
-          ref={emojiMenuRef}
-          rect={emojiMenu.rect}
-          winH={winH}
-          winW={winW}
+          onClose={() => setEmojiMenu(null)}
           onSelect={(emoji) => {
             toggleReaction(emojiMenu.commentId, emoji);
           }}
-          onClose={() => setEmojiMenu(null)}
+          rect={emojiMenu.rect}
+          ref={emojiMenuRef}
         />
       )}
 
       {/* ── Insert-emoji picker portal — edit/reply boxes' own emoji toolbar button ── */}
       {insertEmojiAnchor && (
         <FullEmojiPicker
-          ref={insertEmojiRef}
-          rect={insertEmojiAnchor.rect}
-          winH={winH}
-          winW={winW}
-          onSelect={insertEmojiIntoTarget}
           onClose={() => setInsertEmojiAnchor(null)}
+          onSelect={insertEmojiIntoTarget}
+          rect={insertEmojiAnchor.rect}
+          ref={insertEmojiRef}
         />
       )}
 
@@ -1414,30 +1965,50 @@ export function CellCommentPopover({
            surfaces look identical, instead of this popover having its own
            separate (visually inconsistent) Download/Close-button variant. ── */}
       {lightbox && (
-        <ImageLightbox src={lightbox} alt="Attachment preview" onClose={() => setLightbox(null)} />
+        <ImageLightbox
+          alt="Attachment preview"
+          onClose={() => setLightbox(null)}
+          src={lightbox}
+        />
       )}
 
       {/* ── Delete confirmation ── */}
       <ConfirmDialog
-        open={!!pendingDelete}
-        onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
-        title={pendingDelete?.isReply ? "Delete this reply?" : "Delete this comment?"}
+        className="z-10000"
         description={
           pendingDelete?.isReply
             ? "This reply will be permanently deleted."
             : "This comment and all its replies will be permanently deleted."
         }
-        onConfirm={() => { if (pendingDelete) deleteComment(pendingDelete.id); }}
+        onConfirm={() => {
+          if (pendingDelete) {
+            deleteComment(pendingDelete.id);
+          }
+        }}
+        onOpenChange={(o) => {
+          if (!o) {
+            setPendingDelete(null);
+          }
+        }}
+        open={!!pendingDelete}
         overlayClassName="z-10000"
-        className="z-10000"
+        title={
+          pendingDelete?.isReply ? "Delete this reply?" : "Delete this comment?"
+        }
       />
 
-      {tooltip && (
-        tooltip.emoji
-          ? <ReactionTooltip rect={tooltip.rect} emoji={tooltip.emoji} label={tooltip.label} who={tooltip.who} />
-          : <IconTooltip rect={tooltip.rect} label={tooltip.label} />
-      )}
+      {tooltip &&
+        (tooltip.emoji ? (
+          <ReactionTooltip
+            emoji={tooltip.emoji}
+            label={tooltip.label}
+            rect={tooltip.rect}
+            who={tooltip.who}
+          />
+        ) : (
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />
+        ))}
     </>,
-    document.body,
+    document.body
   );
 }

@@ -1,14 +1,14 @@
-import { and, desc, eq } from "drizzle-orm";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { admin } from "better-auth/plugins/admin";
 import { magicLink } from "better-auth/plugins/magic-link";
+import { and, desc, eq } from "drizzle-orm";
 import { ADMIN_ROLE, PRODUCT_NAME } from "@/config/platform";
 import { getUserCount, isRegistrationAllowed } from "@/lib/auth/registration";
 import { isAuthMethodEnabled } from "@/lib/auth/settings";
-import * as schema from "@/lib/db/schema";
 import { db } from "@/lib/db";
+import * as schema from "@/lib/db/schema";
 import { enqueueEmail } from "@/lib/email";
 import { changeEmailTemplate } from "@/lib/email/templates/change-email";
 import { magicLinkTemplate } from "@/lib/email/templates/magic-link";
@@ -25,9 +25,9 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
-      user:         schema.users,
-      session:      schema.sessions,
-      account:      schema.accounts,
+      user: schema.users,
+      session: schema.sessions,
+      account: schema.accounts,
       verification: schema.verifications,
     },
   }),
@@ -151,17 +151,19 @@ export const auth = betterAuth({
         if (!(await isAuthMethodEnabled("emailPassword"))) {
           throw APIError.from("FORBIDDEN", {
             code: "EMAIL_PASSWORD_DISABLED",
-            message: "Email and password sign-in is turned off on this instance.",
+            message:
+              "Email and password sign-in is turned off on this instance.",
           });
         }
       }
-      if (ctx.path === "/sign-in/email") {
-        if (!(await isAuthMethodEnabled("emailPassword"))) {
-          throw APIError.from("FORBIDDEN", {
-            code: "EMAIL_PASSWORD_DISABLED",
-            message: "Email and password sign-in is turned off on this instance.",
-          });
-        }
+      if (
+        ctx.path === "/sign-in/email" &&
+        !(await isAuthMethodEnabled("emailPassword"))
+      ) {
+        throw APIError.from("FORBIDDEN", {
+          code: "EMAIL_PASSWORD_DISABLED",
+          message: "Email and password sign-in is turned off on this instance.",
+        });
       }
       if (ctx.path === "/sign-in/magic-link") {
         if (!(await isAuthMethodEnabled("magicLink"))) {
@@ -174,7 +176,9 @@ export const auth = betterAuth({
         // already have one — reject that up front on an invite-only
         // instance instead of letting it fail later at verify time, so the
         // sender gets an immediate, clear error instead of a dead link.
-        const magicLinkEmail = (ctx.body as { email?: string } | undefined)?.email
+        const magicLinkEmail = (
+          ctx.body as { email?: string } | undefined
+        )?.email
           ?.trim()
           .toLowerCase();
         if (magicLinkEmail && !(await isRegistrationAllowed())) {
@@ -194,14 +198,14 @@ export const auth = betterAuth({
       }
       if (
         ctx.path === "/sign-in/social" &&
-        (ctx.body as { provider?: string } | undefined)?.provider === "google"
+        (ctx.body as { provider?: string } | undefined)?.provider ===
+          "google" &&
+        !(await isAuthMethodEnabled("google"))
       ) {
-        if (!(await isAuthMethodEnabled("google"))) {
-          throw APIError.from("FORBIDDEN", {
-            code: "GOOGLE_DISABLED",
-            message: "Google sign-in is turned off on this instance.",
-          });
-        }
+        throw APIError.from("FORBIDDEN", {
+          code: "GOOGLE_DISABLED",
+          message: "Google sign-in is turned off on this instance.",
+        });
       }
     }),
   },
@@ -241,38 +245,46 @@ export const auth = betterAuth({
         // Catch-all for invite-only enforcement: magic-link/Google auto-create user rows with no
         // `/sign-up/*` path for `hooks.before` to intercept. Returning `false` aborts the insert safely.
         before: async () => {
-          if (await isRegistrationAllowed()) return;
+          if (await isRegistrationAllowed()) {
+            return;
+          }
           return false;
         },
         after: async (user) => {
-          console.log(`[signup] new account created: ${user.email} (${user.id})`);
+          console.log(
+            `[signup] new account created: ${user.email} (${user.id})`
+          );
 
           try {
             await writeAuditLog({
-              actorId:    user.id,
-              action:     "user.signup",
+              actorId: user.id,
+              action: "user.signup",
               targetType: "user",
-              targetId:   user.id,
-              metadata:   { email: user.email, name: user.name ?? null },
+              targetId: user.id,
+              metadata: { email: user.email, name: user.name ?? null },
             });
-          } catch { /* never fail signup due to audit */ }
+          } catch {
+            /* never fail signup due to audit */
+          }
 
           // First account on a fresh install auto-promotes to instance admin (no shell/DB step needed
           // to reach Orbit); `pnpm make:admin` remains available for additional users.
           try {
             const userCount = await getUserCount();
             if (userCount === 1) {
-              console.log(`[signup] first account on this instance — auto-promoting to platform admin: ${user.email}`);
+              console.log(
+                `[signup] first account on this instance — auto-promoting to platform admin: ${user.email}`
+              );
               await db
                 .update(schema.users)
                 .set({ role: ADMIN_ROLE, isPlatformAdmin: true })
                 .where(eq(schema.users.id, user.id));
               await writeAuditLog({
-                actorId:    user.id,
-                action:     "user.auto_promoted_first_admin",
+                actorId: user.id,
+                action: "user.auto_promoted_first_admin",
                 targetType: "user",
-                targetId:   user.id,
-                metadata:   { email: user.email },
+                targetId: user.id,
+                metadata: { email: user.email },
               });
 
               // Seed built-in templates immediately rather than leaving a
@@ -283,7 +295,9 @@ export const auth = betterAuth({
               );
               await autoSeedTemplates();
             }
-          } catch { /* never fail signup due to auto-promotion */ }
+          } catch {
+            /* never fail signup due to auto-promotion */
+          }
         },
       },
     },
@@ -291,8 +305,8 @@ export const auth = betterAuth({
       update: {
         before: async (session) => {
           const raw = session as Record<string, unknown>;
-          if (raw["impersonatedBy"] && raw["impersonatedAt"]) {
-            const impersonatedAt = new Date(raw["impersonatedAt"] as string);
+          if (raw.impersonatedBy && raw.impersonatedAt) {
+            const impersonatedAt = new Date(raw.impersonatedAt as string);
             const twoHoursMs = 2 * 60 * 60 * 1000;
             if (Date.now() - impersonatedAt.getTime() > twoHoursMs) {
               return false;

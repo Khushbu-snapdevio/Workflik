@@ -29,7 +29,11 @@ export default async function PostAuthPage() {
   const pendingInvites = existingActiveMembership
     ? []
     : await db
-        .select({ id: workspaceMembers.id, workspaceId: workspaceMembers.workspaceId, slug: workspaces.slug })
+        .select({
+          id: workspaceMembers.id,
+          workspaceId: workspaceMembers.workspaceId,
+          slug: workspaces.slug,
+        })
         .from(workspaceMembers)
         .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
         .where(
@@ -55,10 +59,10 @@ export default async function PostAuthPage() {
       .where(eq(users.id, session.user.id));
     for (const invite of pendingInvites) {
       await writeAuditLog({
-        actorId:    session.user.id,
-        action:     "member.auto_joined",
+        actorId: session.user.id,
+        action: "member.auto_joined",
         targetType: "workspace",
-        targetId:   invite.workspaceId,
+        targetId: invite.workspaceId,
       });
     }
     redirect(`/app/${pendingInvites[0].slug}`);

@@ -1,9 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { workspaceMembers, workspaces } from "@/lib/db/schema";
-import { apiError, ApiError, getSession } from "@/lib/workspaces/auth";
-import { acceptWorkspaceInviteTx, joinWorkspaceViaLinkTx } from "@/lib/workspaces/invites";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
+import {
+  acceptWorkspaceInviteTx,
+  joinWorkspaceViaLinkTx,
+} from "@/lib/workspaces/invites";
 
 type Ctx = { params: Promise<{ token: string }> };
 
@@ -11,16 +14,16 @@ type Ctx = { params: Promise<{ token: string }> };
 export async function POST(_req: Request, { params }: Ctx) {
   try {
     const { token } = await params;
-    const session   = await getSession();
+    const session = await getSession();
 
     const [member] = await db
       .select({
-        id:           workspaceMembers.id,
-        workspaceId:  workspaceMembers.workspaceId,
-        status:       workspaceMembers.status,
+        id: workspaceMembers.id,
+        workspaceId: workspaceMembers.workspaceId,
+        status: workspaceMembers.status,
         invitedEmail: workspaceMembers.invitedEmail,
-        inviteExpires:workspaceMembers.inviteExpires,
-        invitedBy:    workspaceMembers.invitedBy,
+        inviteExpires: workspaceMembers.inviteExpires,
+        invitedBy: workspaceMembers.invitedBy,
         workspaceSlug: workspaces.slug,
       })
       .from(workspaceMembers)
@@ -28,8 +31,12 @@ export async function POST(_req: Request, { params }: Ctx) {
       .where(eq(workspaceMembers.inviteToken, token))
       .limit(1);
 
-    if (!member) return acceptViaShareLink(token, session);
-    if (member.status !== "invited") return apiError(409, "Invite already used or expired");
+    if (!member) {
+      return acceptViaShareLink(token, session);
+    }
+    if (member.status !== "invited") {
+      return apiError(409, "Invite already used or expired");
+    }
     if (member.inviteExpires && member.inviteExpires < new Date()) {
       await db
         .update(workspaceMembers)
@@ -60,25 +67,30 @@ export async function POST(_req: Request, { params }: Ctx) {
 
     await db.transaction(async (tx) => {
       await acceptWorkspaceInviteTx(tx, {
-        memberId:     member.id,
-        workspaceId:  member.workspaceId,
-        userId:       session.user.id,
-        invitedBy:    member.invitedBy,
+        memberId: member.id,
+        workspaceId: member.workspaceId,
+        userId: session.user.id,
+        invitedBy: member.invitedBy,
         accepterName: session.user.name ?? session.user.email,
       });
     });
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "member.joined",
+      actorId: session.user.id,
+      action: "member.joined",
       targetType: "workspace",
-      targetId:   member.workspaceId,
-      metadata:   { email: session.user.email, invitedEmail: member.invitedEmail },
+      targetId: member.workspaceId,
+      metadata: {
+        email: session.user.email,
+        invitedEmail: member.invitedEmail,
+      },
     });
 
     return Response.json({ workspaceSlug: member.workspaceSlug });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
@@ -91,16 +103,18 @@ async function acceptViaShareLink(
 ) {
   const [ws] = await db
     .select({
-      id:               workspaces.id,
-      slug:             workspaces.slug,
+      id: workspaces.id,
+      slug: workspaces.slug,
       inviteLinkActive: workspaces.inviteLinkActive,
-      inviteLinkRole:   workspaces.inviteLinkRole,
+      inviteLinkRole: workspaces.inviteLinkRole,
     })
     .from(workspaces)
     .where(eq(workspaces.inviteLinkToken, token))
     .limit(1);
 
-  if (!ws || !ws.inviteLinkActive) return apiError(404, "Invite not found");
+  if (!ws?.inviteLinkActive) {
+    return apiError(404, "Invite not found");
+  }
 
   const [alreadyMember] = await db
     .select({ id: workspaceMembers.id })
@@ -114,22 +128,24 @@ async function acceptViaShareLink(
     )
     .limit(1);
 
-  if (alreadyMember) return Response.json({ workspaceSlug: ws.slug });
+  if (alreadyMember) {
+    return Response.json({ workspaceSlug: ws.slug });
+  }
 
   await db.transaction(async (tx) => {
     await joinWorkspaceViaLinkTx(tx, {
       workspaceId: ws.id,
-      userId:      session.user.id,
-      role:        ws.inviteLinkRole,
+      userId: session.user.id,
+      role: ws.inviteLinkRole,
     });
   });
 
   await writeAuditLog({
-    actorId:    session.user.id,
-    action:     "member.joined",
+    actorId: session.user.id,
+    action: "member.joined",
     targetType: "workspace",
-    targetId:   ws.id,
-    metadata:   { email: session.user.email, via: "invite_link" },
+    targetId: ws.id,
+    metadata: { email: session.user.email, via: "invite_link" },
   });
 
   return Response.json({ workspaceSlug: ws.slug });

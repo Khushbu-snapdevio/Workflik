@@ -2,6 +2,24 @@
 
 Replacing shadcn/ui styling with daisyUI 5, on Tailwind v4.
 
+> **Status as of 2026-08-10 — the primitive migration is complete.** Read
+> **[Round 4](#round-4-2026-08-10-structural-primitives-onto-daisys-own-component-classes)**
+> (near the bottom) for the current state; everything above it is history, kept
+> per this doc's practice of appending RESULTS rather than rewriting. In short:
+> shadcn, Radix and `class-variance-authority` are gone with zero imports
+> remaining and no `components.json`; every `components/ui/*` primitive that
+> daisyUI can appropriately style now carries a daisyUI **component class**, not
+> just daisy tokens; the ones that stay custom each have a reason recorded
+> against daisy's compiled CSS. The architecture is **daisyUI → Headless UI →
+> Floating UI → native HTML → Tailwind**, documented in
+> [ui-design.md](ui-design.md) and [../CLAUDE.md](../CLAUDE.md).
+>
+> ⚠️ **The "Decisions (locked 2026-08-03)" table immediately below is
+> superseded.** Its "Visual outcome: parity now, refresh later" line in
+> particular no longer holds — from Round 2 onward the goal changed to
+> consistency, and adopting daisy's own defaults in place of pixel parity is
+> now the expected outcome, not a regression.
+
 > **Companion audit, 2026-08-04:** [daisyui-migration-audit-full-codebase.md](./daisyui-migration-audit-full-codebase.md) covers everything this doc doesn't — the ~170 feature-level files outside `components/ui/` (database views, editor, sidebar/admin shells, settings, orbit admin, pages/workspace/templates, notifications/search/onboarding), evaluated against this doc's locked native → daisy → Headless UI → hand-roll policy. Read that doc for the next round of migration work; this doc stays the source of truth for `components/ui/` primitive conversions.
 
 ## Decisions (locked 2026-08-03)
@@ -721,6 +739,7 @@ Only now touch the 211 consumer files, and only for what the shim can't cover:
 | 3 — Tier 0: delete 13 Radix primitives | 2–3 days | ✅ **done** — on `feat/daisyui-theme` |
 | 3 — Tier 1: `button` | — | ✅ **done** — ported from spike, 54/54 measured |
 | 3 — Tiers 1 (rest)/2/3/4: restyle ~37 more primitives | ~~3–4 weeks~~ | ⚠️ **partially reopened, 2026-08-04** — "decided against" on 2026-08-03 (see below), then Round 2 added daisy classes to 8 static primitives (`card`/`alert`/`badge`/`avatar`/`input`/`textarea`/`skeleton`/`table`), and separately (undocumented until the 2026-08-04 Revision) `dialog`/`alert-dialog`/`sheet`/`popover`/`accordion`/`collapsible`/`select` moved off Radix to native APIs / Headless UI. Remaining candidates tracked in the Revision's backlog. |
+| 3 — Round 3: form controls onto daisy component classes | 2026-08-10 | ✅ **done** — `checkbox`/`radio-group`/`switch` onto `checkbox`/`radio`/`toggle`, plus the `--depth: 0` regression fix (every button had been painting shadows). `dialog`/`alert-dialog`/`popover` evaluated and rejected with stated reasons. See Round 3 below. |
 | 4 — Feature sweep | 1 week | N/A — depended on the renames above, which were dropped |
 | 5 — Decommission | ~~2–3 days~~ | ⚠️ Radix is fully gone (not by way of this phase — see Revision, 2026-08-04) and `shadcn` was removed (see Postscript below). Nothing left to decommission either way. |
 | 6 — QA | — | Standard QA on the two merged phases, not a 1–2 week program |
@@ -870,6 +889,320 @@ drift:**
   connected, zero-gap segment group — a layout/design decision, not a
   styling-token alignment. Left for an explicit call rather than assumed.
 
+### Round 3, 2026-08-10: form-control primitives onto daisy's own component classes
+
+Continues Round 2's consistency goal into the three primitives that had daisy
+*tokens* but no daisy *component class*: `checkbox`, `radio-group`, `switch`.
+Scope was deliberately fixed up front — `dialog`/`alert-dialog`/`sheet` and
+`popover` were explicitly excluded, and the two rejections below are recorded
+as considered, not skipped.
+
+#### The bug this round found first: `--depth` was never 0 under the stock themes
+
+Phase 0 bought its 54/54 button parity partly with `--depth: 0` (see "Reachable
+from the theme block" above) — that value lived in the product theme block.
+When the product theme was dropped for daisy's **stock** `light`/`dark`, the
+setting went with it: both stock themes ship `--depth: 1`, and daisy derives
+real shadows from it. `.btn` alone builds `--btn-shadow`, `--btn-inset` **and**
+a `text-shadow` off that one number, so **every button in the app had been
+painting shadows** — a live Hard Rule 19 violation, invisible in review because
+nothing in `components/ui/` mentions a shadow.
+
+Fixed with a single declaration in the unlayered `:root` block of
+`globals.css`. daisy's `themes.css` is itself unlayered and its `:root`,
+`[data-theme=light]` and `[data-theme=dark]` selectors are all specificity
+(0,1,0) — identical to `:root` — so this resolves on **source order**, which
+was verified in the production bundle rather than assumed: daisy's four
+`--depth:1` declarations land at bytes 11656–17266, ours at 397736.
+
+Deliberately **not** put in the `@plugin "daisyui"` block: that would mean
+registering a product theme, which is out of scope. Verified after the fix by
+scanning all 78 `.btn`/`.checkbox`/`.radio`/`.toggle`/`.card`/`.badge`/
+`.alert`/`.skeleton`/`.input`/`.table` nodes on the harness — **zero elements
+with any non-transparent shadow stop**, `boxShadow` or `textShadow`.
+
+> Watch item: any future re-introduction of a product theme must carry
+> `--depth: 0` explicitly. This is the second time the value has been lost in a
+> theme change.
+
+#### Converted
+
+All three collapse a `<span>` wrapper + a visual child element down to a single
+native `<input>` carrying daisy's class. daisy draws the box/track and the
+checkmark/dot/knob itself, keyed off the input's real `:checked` /
+`:indeterminate` pseudo-classes — which retires the state-driven `cn()` class
+computation the Tier 0 rewrites needed, and with it the open question Tier 0
+left behind about which `:checked`-style Tailwind variants actually compile
+(the components no longer need the answer for a different reason: daisy owns
+the state styling now, not Tailwind variants).
+
+| Primitive | Class | Overrides kept, and why |
+|---|---|---|
+| `checkbox` | `checkbox checkbox-primary` | `[--size:1.125rem]` (daisy's own box is 24px, ours 18px) · `rounded-none` (daisy's `--radius-selector` is 8px, and off the documented 5-step scale) · `not-checked:not-indeterminate:border-base-300` — **load-bearing**: `checkbox-primary` points `--input-color` at primary, which daisy uses for the border in *every* state, so without this every unchecked box in the app turns blue |
+| `radio-group` | `radio` | `[--size:1.125rem]` · `not-checked:border-base-300` (daisy's unchecked ring is `color-mix(currentColor 20%)`, not a token). **No colour modifier on purpose** — with `--input-color` unset daisy resolves ring and dot to `currentColor`, i.e. `base-content`, which is exactly what the hand-rolled version drew. The dot size also falls out for free: 18px − 2×4px padding − 2×1px border = the same 8px as the deleted `size-2` span |
+| `switch` | `toggle toggle-primary` | `[--size:1.125rem]` / `[--size:0.875rem]` for the two sizes · `rounded-full` (daisy computes a rounded-rect from `--radius-selector`, neither a pill nor on the 5-step scale) |
+
+All three also take `focus-visible:outline-none` — daisy ships `outline: 2px
+solid` on `:focus-visible` for each, and the design checklist mandates the ring
+system. The existing `focus-visible:ring-2 ring-primary/30` is kept and was
+confirmed to actually win: Tailwind's `.focus-visible\:ring-2:focus-visible`
+(byte 278428) beats `.checkbox:checked`'s own `box-shadow` (byte ~111059) at
+equal (0,2,0) specificity on source order.
+
+**`data-slot` and `peer` moved onto the `<input>`** — they were on the deleted
+wrappers, and `label.tsx`'s `peer-data-[slot=checkbox|radio-group-item|switch]:`
+selectors depend on exactly those two. Sibling order is unchanged, so the
+pairing survives. Side effect worth having: `label.tsx`'s `peer-disabled:`
+rules were **dead** for all three (a `<span>` can never match `:disabled`) and
+now apply.
+
+**Accepted visual changes** (agreed before implementing, not discovered after):
+
+- **`switch` adopts daisy's appearance rather than reproducing the old one.**
+  Checked is now a `base-100` track with a primary knob — the *inverse* of the
+  previous primary track / light knob — unchecked is a bordered transparent
+  track, and width is daisy's computed 29.5px rather than the previous 33px
+  (height unchanged at 18px). This is the one place in this round where a real
+  consumer surface changes: 11 render sites across 6 files. All 11 pass only
+  `checked`/`onCheckedChange`/`disabled`/`aria-label`, so no API moved.
+- **Disabled opacity** is now daisy's (`.2` for checkbox/radio, `.3` for
+  toggle) rather than the previous uniform `.5`.
+- `checkbox`'s checkmark is daisy's clip-path glyph, visually smaller than the
+  removed `size-3.5` phosphor `CheckIcon`.
+
+`checkbox` and `radio-group` still have **zero consumers outside the harness**
+(unchanged since Tier 0), so their blast radius is nil; `switch` is the only
+one with real reach.
+
+#### Not converted — considered rejections
+
+- **`card` → `card-body`/`card-actions`.** Re-confirmed against daisy's actual
+  CSS this round: `.card-body` is a single `padding: var(--card-p)` flex
+  container, while this component's `CardHeader`/`CardContent`/`CardFooter`
+  each carry their own `--card-spacing` padding. Adopting it is a DOM and API
+  change, not a class swap — same conclusion as Round 2, now verified from the
+  stylesheet rather than the docs. `card` + `card-title` remain the extent of it.
+- **`dialog`/`alert-dialog` → `modal`/`modal-box`.** Out of scope for this
+  round by instruction, and the CSS confirms why it deserves a dedicated spike
+  rather than a drive-by: `.modal::backdrop { display: none }` would silently
+  disable the ~90 lines of tuned `::backdrop` colour, transition and
+  `@starting-style` rules at globals.css — **which `sheet` shares** — replacing
+  them with daisy's own `.modal[open]` opacity/background transition.
+  `.modal-box` additionally ships an unconditional
+  `box-shadow: 0 25px 50px -12px` that is **not** depth-gated, so the
+  `--depth: 0` fix above would not remove it (Hard Rule 19), plus a
+  `--radius-box` corner and a required inner-wrapper restructure with the close
+  button moved inside. Blast radius is every modal plus `confirm-dialog`'s 72
+  call sites.
+- **`popover` → `dropdown`.** No viable target, for a structural reason rather
+  than a stylistic one. `.dropdown-content` inherits nothing outside a
+  `.dropdown` ancestor (every rule that gives it position, z-index and
+  transition is scoped to `.dropdown .dropdown-content`), so adding the class
+  alone is inert. And `.dropdown` itself positions via `position-area` /
+  `position: relative` with an absolutely-positioned child and **no collision
+  detection** — incompatible with this component's top-layer `popover="auto"`
+  element and its JS viewport-clamping. Third time this conclusion has been
+  reached for daisy's dropdown; treat it as settled.
+
+#### Verification
+
+Production build only (`pnpm build` + `pnpm start`) — never the dev server, per
+the Phase 0 Turbopack finding. Driven by headless Chrome over CDP; `pnpm
+typecheck` clean. Note `components/ui/**` is excluded in `biome.json`, so
+`pnpm lint` does not cover these three files — don't read a green lint as
+coverage here.
+
+Confirmed on the untracked `/parity-harness` route, light **and** dark:
+
+- Geometry and colour per control: checkbox 18×18, square, `base-300` unchecked
+  border → primary fill + primary border + checkmark when checked; radio 18×18
+  with `base-content` ring and 8px dot checked, `base-300` unchecked; toggle
+  29.5×18 with the agreed daisy appearance.
+- **Keyboard:** Space toggles checkbox and switch; ArrowDown moves selection
+  *and* focus between radio items (the native shared-`name` behaviour the
+  component banks on, still intact after the unwrap); Tab reaches all three.
+- **Label pairing:** clicking `<Label htmlFor>` still drives the control.
+- **Disabled:** click is a no-op, `cursor: not-allowed`, daisy's opacity.
+- `data-slot` values, `role="switch"` and the `indeterminate` DOM property all
+  present on the new single-element markup.
+
+**One methodology note worth keeping.** The first probe run appeared to show a
+clicked checkbox failing to fill — `checked` true, background transparent,
+checkmark opacity 0. It was a measurement artifact: daisy's `.checkbox`
+transitions `background-color .2s` and its `::before` opacity carries a `.1s`
+delay, so a `getComputedStyle` read taken synchronously after `.click()` samples
+mid-transition. Re-measured one frame later, the state is correct. When probing
+daisy components, sample after the transition or the probe invents regressions.
+
+### Round 4, 2026-08-10: structural primitives onto daisy's own component classes
+
+Continues Round 2/3's consistency goal into the primitives that still had daisy
+*tokens* but no daisy *component class*, plus a full re-audit of the four
+"not converted" items Round 2 left open. Every decision below was checked
+against daisy's **compiled CSS in `node_modules/daisyui/`**, not its docs, and
+then verified in a production build driven by headless Chrome over CDP with
+**trusted** input events (`Input.dispatchKeyEvent` / `dispatchMouseEvent`) —
+synthetic `dispatchEvent` is not enough here, since Headless UI and native
+`<dialog>`/`<details>` all discriminate on `isTrusted`.
+
+#### Converted
+
+| Primitive | Class | What daisy now owns | What we still override, and why |
+|---|---|---|---|
+| `tabs` | `tabs`, `tabs-box` (default variant), `tabs-border` (`line` variant), `tab` | Sizing, padding, inactive/hover colour, and the **active treatment** | `flex-1` (consumers pass `w-full`), the ring focus system, icon sizing. **The key finding:** daisy keys the active tab off `[aria-selected=true]`, which this component already set for accessibility — so the ~1,400-character hand-written class string with its four state-driven blocks (`data-active:*`, `group-data-[variant=line]/*`, and an `::after` underline) was deleted outright, not re-expressed. `.tab` is scoped `.tab:is(.tabs > .tab)`, so triggers must stay **direct children** of the list. |
+| `accordion` | `collapse collapse-arrow`, `collapse-title`, `collapse-content` | Layout, padding, the caret, and the **open/close height animation** | `rounded-none` (daisy defaults to `--radius-box`; stacked rows are divided by a rule, not rounded cards) · `has-[summary:focus-visible]:outline-none` (daisy outlines the collapse; the app uses a ring on the summary). daisy has a dedicated `.collapse:is(details)` branch that animates `::details-content` — so this is a **capability gain**, not just a restyle: the hand-rolled version had no transition at all. The `CaretDownIcon` element was deleted; `collapse-arrow` draws it. |
+| `breadcrumb` | `breadcrumbs` | The separator, its inline rhythm, and overflow (`overflow-x: auto` + `white-space: nowrap`) | Typography only. Round 2 left this open because "whether daisy's targeting is scoped narrowly enough to skip an `<li>` that is itself the separator wasn't verified." **Verified this round: it is not.** daisy renders the separator as `li + *::before`, so an explicit separator `<li>` gets one too — a visible double chevron. Resolved the way daisy intends: `<BreadcrumbSeparator>` was **deleted** and the two consumers updated. `reference-blocks.tsx` also needed its `<span>` wrappers removed so items are direct `<li>` children of the list, or the selector doesn't match at all. |
+| `pagination` | `join`, `join-item` | Corner rounding and shared-border collapse | Nothing. Round 2 deferred this as "a design decision, not a token alignment" — taken now, since a connected segment group is what `Pagination` is for, and the component has **zero real consumers** (server-driven `<Link>` navigation is used instead), so the blast radius is nil. |
+| `slider` | `range range-xs range-primary` | Track, thumb, and the **progress fill** | `w-full` (daisy clamps to `20rem`), ring focus. Deleted the absolutely-positioned track/fill overlay `<div>`s **and** both per-engine thumb rule sets (`::-webkit-slider-thumb`, `::-moz-range-thumb`). daisy paints the fill as a clipped inset `box-shadow` on the thumb — worth knowing before "fixing" it. |
+| `select` (trigger) | `select` | The **caret**, the appearance reset, padding (including the inline-end room the caret occupies), radius | `w-full`, the base-200/base-300 field chrome shared with `input`, and an explicit `h-9` so the trigger matches `input`'s 36px rather than daisy's 40px. The rendered `<ChevronDown>` icon was **deleted** — daisy draws the caret with two `linear-gradient` background layers, so keeping the icon would double it. Headless UI's `Listbox` keeps 100% of the behaviour. |
+| `toggle` | `btn btn-ghost` / `btn-outline`, via `buttonClasses()` | Everything a button's appearance involves | The pressed treatment. Rather than a second hand-written class string, `toggle.tsx` now maps its own variant/size API onto `Button`'s daisy-backed one (toggle's scale is exactly one step taller than Button's at every step, so the existing 2.5/2.25/2.75rem heights are preserved). Deliberately **not** daisy's `btn-active`: it derives its background from `--btn-color`, which `btn-ghost` leaves unset. |
+| `toggle-group` | `join` / `join-item`, at `spacing={0}` only | Outer-corner rounding, shared-border collapse | The `gap` for non-zero spacing. Replaced a 12-selector `first:`/`last:`/`border-l-0`/`border-t-0` chain. `join` has no concept of a gap, so it is applied conditionally. |
+| `alert-dialog` actions | `btn btn-error` (Action), `btn` outline (Cancel), `modal-action` (Footer) | Button appearance and the action-row layout | Nothing. Both buttons were hand-written class strings; they now route through `buttonClasses()`. Added one Button variant, `destructive-solid` → `btn-error`, so the solid affordance an alert dialog needs survives (the existing `destructive` is a deliberate 10% alpha tint — see Round 2's `btn-soft` finding). `modal-action` is safe here **because none of its declarations are scoped to a `.modal` ancestor** — unlike `modal-box`, see below. |
+| `save-status` | `badge badge-sm` | Pill chrome | `rounded-full`, and the two alpha-tinted colour pairs (daisy's `badge-warning`/`badge-neutral` are opaque fills). This indicator is a pill with an icon and a short label — i.e. a badge — and had simply never been identified as one. |
+
+#### Token bug found while auditing
+
+Three files referenced **`var(--base-content)`**, which does not exist — daisy
+defines `--color-base-content`. An invalid `var()` in a `color` declaration is
+invalid at computed-value time, so those elements silently fell back to
+`inherit` (which happened to look right, which is why it survived review):
+`components/ui/icon-tooltip.tsx`, `components/ui/reaction-tooltip.tsx`,
+`components/database/cell-action-overlay.tsx`. A fourth, `sonner.tsx`, passed
+the same broken value into Sonner's `--normal-text`. All four fixed. Worth a
+grep after any future token rename: `var\(--(base|primary|error)[a-z-]*\)`
+without the `--color-` prefix is always a bug.
+
+#### Re-audited and still not converted — with the CSS reason
+
+Round 2 and 3 recorded four of these; all were re-checked against the compiled
+CSS this round rather than carried forward on trust.
+
+- **`separator` → `divider`.** Unchanged conclusion, now measured: `.divider`
+  is `margin: var(--divider-m, 1rem 0)`, `height: 1rem`, with the line drawn by
+  `::before`/`::after` at `.125rem`. This component *is* the line (`h-px`/`w-px`,
+  zero margin). Adopting means neutralising the margin, the height and both
+  pseudo-elements — i.e. neutralising essentially all of it.
+- **`progress` → `.progress`.** Unchanged, and the CSS is unambiguous: the fill
+  is `::-webkit-progress-value` / `::-moz-progress-bar`, which only exist on a
+  real `<progress>` element. On this deliberate `div`+`div` bar the class would
+  style the track and leave the fill unpainted — strictly worse than today.
+- **`collapsible` → `collapse`.** New this round, and the counterpart to
+  `accordion` above. `Collapsible` is a behaviour-only `<details>` wrapper with
+  no visual of its own; `.collapse` would inject `display: grid`, `width: 100%`,
+  a `--radius-box` corner and 1rem padding into every consumer's own layout.
+  The rule that separates the two: **`accordion` is a visual component and gets
+  `collapse`; `collapsible` is a headless wrapper and does not.**
+- **`dialog`/`sheet` → `modal`/`modal-box`.** Confirmed again, with the decisive
+  detail now pinned down: **`.modal-box` is inert on its own.** Its `opacity: 0`
+  and `scale: .95` are reset only by `.modal[open] > .modal-box`, so adding the
+  class without also adopting `.modal` as a full-viewport grid wrapper renders
+  an invisible dialog. Adopting `.modal` in turn means `.modal::backdrop {
+  display: none }` replaces the ~90 tuned `::backdrop` lines in `globals.css` —
+  **which `sheet` shares, and `sheet` cannot use `.modal` at all** (it is
+  edge-anchored, not centred). Plus `.modal-box`'s `box-shadow: 0 25px 50px
+  -12px` is **not** depth-gated, so `--depth: 0` does not remove it (Hard Rule
+  19). The native `<dialog>` engine is also the *correct* answer under the
+  locked native → daisy → Headless UI order. `modal-action` was adopted; the
+  shells were not.
+- **`popover` → `dropdown`.** Unchanged; fourth time this conclusion has been
+  reached. `.dropdown-content` inherits nothing outside a `.dropdown` ancestor,
+  and `.dropdown` has no collision detection. Treat as settled.
+- **Select's floating panel → `menu`.** New this round. daisy's `menu` styles
+  `li > *`, not the `li` itself; Headless UI's `ListboxOption` *is* the
+  focusable/selectable element, so the styling would land on its children
+  instead of on it. The panel keeps hand-written surface classes built from
+  daisy tokens.
+- **`card` → `card-body`/`card-actions`.** Unchanged (see Round 3).
+
+#### Verification
+
+Production build only (`pnpm build` + `pnpm start`), never the dev server, per
+the Phase 0 Turbopack finding. `pnpm typecheck` clean. `pnpm build` clean.
+`pnpm lint` is unchanged at the repo's pre-existing 289 findings; on the two
+non-`components/ui/**` files touched it went 14 → 12 (`components/ui/**` is
+excluded in `biome.json`, so a green lint is **not** coverage for these files —
+same caveat as Round 3).
+
+**Compiled CSS checked, not assumed** — every adopted class was confirmed
+present in `.next/static/chunks/*.css`: `.tabs`, `.tab:is(`, `.tabs-box`,
+`.tabs-border`, `.collapse:not`, `.collapse-title`, `.collapse-content`,
+`.collapse-arrow`, `.breadcrumbs`, `.join`, `.join-item`, `.range`,
+`.range-xs`, `.select`, `.btn-error`, `.modal-action`, `.badge`, `.badge-sm`.
+"Added the class name" is not evidence that it reaches the bundle.
+
+**Behaviour, driven with trusted input events on `/parity-harness`:**
+
+- **Tabs** — ArrowRight/ArrowLeft move focus *and* selection, roving `tabIndex`
+  flips 0/−1, the panel follows, and `tabs-box` paints the active tab
+  `base-100` against the list's `base-200`.
+- **Select** — opens on click, panel is `role="listbox"` with `role="option"`
+  children, anchored 4px below the trigger and never narrower than it,
+  ArrowDown moves the focused option, Escape closes **and restores focus to the
+  trigger**. Headless UI's behaviour is fully intact under daisy's `select`.
+- **AlertDialog** — `:modal` true (real top-layer), focus starts inside, Escape
+  closes; `modal-action` footer computes to `flex` / `flex-end` / `gap: 8px` /
+  `margin-top: 24px`; the action button resolves to daisy's error fill with
+  `error-content` text.
+- **Accordion** — click opens, content height goes 20px → 36px, the
+  `collapse-arrow` `::after` rotates 225°.
+- **Toggle** — Space flips `aria-pressed` and the background, height 40px.
+- **Slider** — ArrowRight steps the native range value 40 → 41.
+- **Breadcrumb** — list children are `<li>` only, and exactly one carries
+  daisy's separator `::before` (`content: ""`, `rotate: 45deg`, 1px border,
+  `margin-inline: 8px 12px`); wrapper is `overflow-x: auto`.
+
+**Both themes.** Re-probed with `.dark` + `data-theme="dark"`: every surface,
+border and text colour flips to the dark theme's values, the `tabs-box` active
+tab stays lighter than its list, and the breadcrumb separator resolves to
+`base-content` at `opacity: .4`. No hardcoded colour survived anywhere in the
+converted set.
+
+**No shadows.** All `.btn` / `.tab` / `.collapse` / `.join-item` / `.range` /
+`.select` / `.badge` nodes on the harness resolve their `box-shadow` and
+`text-shadow` colour stops to fully transparent (`oklch(1 0 0 / 0)`,
+`oklab(0 0 0 / 0)`), i.e. `--depth: 0` still holds through the newly adopted
+classes. Hard Rule 19 intact.
+
+#### Accepted visual changes
+
+Agreed in advance, not discovered afterwards. Consumer reach is small: `tabs`
+has 3 real consumers, `breadcrumb` 1, `select` 3, `save-status` several; and
+`accordion`, `slider`, `pagination`, `toggle` and `toggle-group` have **no
+consumers outside the harness**.
+
+- **Tabs** take daisy's geometry: `tab-height` 40px, `--tab-p` 0.75rem, 14px
+  text (was 12px), and the `line` variant's underline is now `tabs-border`'s
+  3px `::before` instead of a hand-drawn 2px `::after`.
+- **Accordion** takes daisy's 1rem padding and its own caret glyph, and gains an
+  open/close animation it did not previously have.
+- **Breadcrumb** separators become daisy's rotated border box rather than a
+  `<ChevronRight>` icon, and spacing comes from the separator's inline margins
+  rather than a flex `gap`. Long trails now scroll horizontally instead of
+  wrapping.
+- **Slider** becomes daisy's 16px filled range rather than a 2px hairline with
+  a 12px dot.
+- **Select** trigger shows daisy's gradient caret rather than a Lucide chevron.
+- **Pagination** and **ToggleGroup** (at `spacing={0}`) become connected
+  segment groups with rounded outer corners, replacing separated pills / square
+  corners.
+- **AlertDialog** buttons pick up daisy's `btn` geometry, and the footer gains
+  `modal-action`'s 24px top margin (was `pt-2`).
+
+#### One methodology note worth keeping
+
+The first behaviour probe reported that the Select would not open by keyboard,
+and that tab focus refused to move. Both were **measurement artifacts**, and in
+opposite directions. The first: a synthetic `new KeyboardEvent(...)` dispatched
+from `Runtime.evaluate` has `isTrusted: false`, and Headless UI ignores it — the
+component was fine. The second: an `AlertDialog` left open earlier in the same
+probe was correctly trapping focus, so `.focus()` on a tab outside it did
+nothing — which was the focus trap *working*, reported as a tabs failure. Drive
+these components with the CDP `Input` domain, and dismiss modals before probing
+anything behind them, or the probe invents regressions. (Round 3's transition
+sampling artifact is the third instance of this class of error; assume the probe
+is wrong before the component is.)
+
+
 ### Postscript, 2026-08-03: `shadcn` package removed
 
 One piece of Phase 5 ("Decommission") turned out not to depend on the rest of
@@ -920,3 +1253,103 @@ themed, Tier 0's 13 primitives converted, `button` converted, and nothing
 else touched. `git revert` back to before this branch's first commit if
 daisyUI needs to come out entirely; the app is fully functional at every
 commit on this branch, since each one was staged for review before merging.
+
+## 6. Lint debt after migration
+
+The migration branch was linted with Biome (`pnpm lint`, ultracite preset)
+after the DaisyUI work landed. This section records what was fixed, what was
+deliberately left, and why — so the remaining output is not mistaken for
+migration breakage.
+
+### Trajectory
+
+| Stage | Errors | What was fixed |
+| --- | ---: | --- |
+| Start | 291 | — |
+| Phase 0 | 266 | Formatter, `noReactForwardRef` (React 19 ref-as-prop), all 21 `useExhaustiveDependencies` |
+| Phase 1 | 256 | `<label onClick={stopPropagation}>` moved onto the real control, at the 5 sites where it was provably safe |
+| Phase 2 | 196 | 24 interactive-element sites given real semantics (`<button>`, `<Link>`, stretched-action overlays) |
+| Phase 3 | 177 | `noNestedComponentDefinitions`, `noLabelWithoutControl`, `noDescendingSpecificity` → 0; stable ids for invite rows |
+| Phase 4 | 176 | Natural stable key for ToC headings (`h.pos`) |
+
+TypeScript and the production build passed at every stage. No lint rule was
+disabled, `biome.jsonc` was not modified, and no suppression comment exists in
+the tree.
+
+### None of the remaining 176 come from the migration
+
+- `app/globals.css` is clean (the two `noDescendingSpecificity` errors in the
+  ProseMirror list rules were fixed by reordering; the selectors are mutually
+  exclusive so there is no visual effect).
+- `components/ui/**` — all 43 DaisyUI primitives — is **excluded from Biome**
+  by the pre-existing `!components/ui` entry in `biome.jsonc`. It reports zero
+  errors because it is never linted, not because it is verified clean. Worth
+  revisiting separately; it was left alone here because changing lint scope is
+  not migration work.
+
+Every remaining error is in application/feature code and predates or is
+orthogonal to the DaisyUI work.
+
+### Remaining categories
+
+**B — legitimate limitation / rule false positive (~28 sites)**
+
+- `<img onError>` / `<img onLoad>` (6): resource-lifecycle handlers, not user
+  interactions. No semantic HTML alternative exists; removing them breaks the
+  avatar and thumbnail fallbacks.
+- Hover-only tooltip triggers (10): passive badges whose sole interaction is a
+  hover tooltip. There is a real gap (the tooltip is unavailable to keyboard
+  and AT users) but closing it means reworking the tooltip system.
+- Right-click context-menu surfaces (~6): board/gallery/calendar cards. A
+  right-click affordance has no native equivalent; the same actions are already
+  reachable from a visible "…" menu button.
+- Portal bubbling guards (~9): popup containers whose only handler is
+  `onClick={(e) => e.stopPropagation()}`. All use `createPortal`, so the guard
+  is isolating **React-tree** bubbling to the row that opened them — it is
+  load-bearing, not dead code.
+- `contentEditable` title editors (2) and `dangerouslySetInnerHTML` for KaTeX
+  output (2).
+
+**C — static / positional index keys (~40 of the 54)**
+
+Constant calendar grids (`CAL_WEEKS`), literal day-name arrays, gantt month
+bands and day ticks, chart bars, static template previews, ProseMirror node
+lists, and the `react-email` digest template (rendered once to an HTML string,
+where keys are inert). Position is the identity in all of these.
+
+These are *not* suppressed. An earlier attempt showed that a `biome-ignore`
+comment above a JSX attribute suppresses the **entire enclosing JSX node** —
+six comments silenced nineteen diagnostics across three files, including sites
+that were never reviewed. Those suppressions were reverted. Until the rule can
+be scoped to a single attribute, leaving the error visible is safer than a
+suppression that quietly covers unrelated code.
+
+**D — requires a data-model decision (3 sites)**
+
+- `FilterRule` / `SortRule` (`components/database/types.ts`) have no `id`, and
+  `propertyId` can legitimately repeat (two filters on one date property for a
+  range). `filter-bar.tsx` and `sort-bar.tsx` therefore key reorderable rows by
+  index. Giving them stable identity means adding an `id` to the rule shape,
+  which is persisted as JSON on the view record.
+- `reference-blocks.tsx` `draftBlocks` is written straight into TipTap node
+  attributes, so an added `id` would change the stored document JSON.
+
+> Requires a separate data-model decision; not appropriate for DaisyUI
+> migration/lint cleanup.
+
+### Verification status
+
+Lint, `tsc --noEmit`, `next build`, and the formatter were run directly and
+their exit codes recorded. The application itself was **not** exercised in a
+browser — it needs PostgreSQL and an authenticated session. Interaction changes
+in Phase 2 were verified by hit-testing the exact positioning in headless
+Chrome (plain content routes to the row action; nested controls keep their own
+clicks; the action is keyboard-reachable), but rendered appearance of the
+`div` → `<button>` conversions is unconfirmed.
+
+> Remaining lint findings are application-wide quality debt and are not
+> blockers for the DaisyUI migration.
+
+Recommended follow-up: **`chore/cleanup-biome-lint-errors`**, scoped to the
+category B/C/D items above, plus a decision on whether `components/ui/**`
+should stay outside Biome's file scope.

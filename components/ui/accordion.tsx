@@ -1,13 +1,20 @@
 "use client"
 
 import * as React from "react"
-import { CaretDownIcon } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 
 /**
- * Native `<details>`/`<summary>` in place of Radix's Accordion; `type="single"` relies on same-named `<details>` being mutually
- * exclusive natively. Drops Radix's controlled `value`/`onValueChange` for uncontrolled `open`/`defaultOpen` — no consumers need it yet.
+ * Native `<details>`/`<summary>` for behavior; `type="single"` relies on
+ * same-named `<details>` being mutually exclusive natively. Drops Radix's
+ * controlled `value`/`onValueChange` for uncontrolled `open`/`defaultOpen` —
+ * no consumers need it yet.
+ *
+ * Styling is daisyUI's `collapse` / `collapse-title` / `collapse-content`,
+ * which has a dedicated `details` branch (`.collapse:is(details)`) that
+ * animates `::details-content` — so the open/close height transition the
+ * hand-rolled version never had comes for free, and daisy's `collapse-arrow`
+ * draws the caret, replacing the icon element this component used to render.
  */
 const AccordionGroupContext = React.createContext<string | undefined>(undefined)
 
@@ -38,7 +45,15 @@ function AccordionItem({
     <details
       data-slot="accordion-item"
       name={groupName}
-      className={cn("group/accordion-item not-last:border-b", className)}
+      className={cn(
+        // `rounded-none`: daisy's collapse defaults to `--radius-box`, but
+        // stacked accordion rows are divided by a rule, not by rounded cards.
+        // `has-[summary:focus-visible]:outline-none`: daisy draws a native
+        // outline on the collapse when its summary is focused; the app's
+        // focus system is the ring on the summary itself (see below).
+        "collapse collapse-arrow rounded-none not-last:border-b has-[summary:focus-visible]:outline-none",
+        className
+      )}
       {...props}
     />
   )
@@ -53,16 +68,12 @@ function AccordionTrigger({
     <summary
       data-slot="accordion-trigger"
       className={cn(
-        "relative flex flex-1 list-none items-start justify-between gap-6 rounded-none border border-transparent py-4 text-left text-sm font-semibold transition-all outline-none [&::-webkit-details-marker]:hidden hover:underline focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30",
+        "collapse-title text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary/30 hover:underline",
         className
       )}
       {...props}
     >
       {children}
-      <CaretDownIcon
-        data-slot="accordion-trigger-icon"
-        className="pointer-events-none ml-auto size-3.5 shrink-0 text-muted-foreground transition-transform group-open/accordion-item:rotate-180"
-      />
     </summary>
   )
 }
@@ -73,15 +84,15 @@ function AccordionContent({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div data-slot="accordion-content" className="text-sm" {...props}>
-      <div
-        className={cn(
-          "pt-0 pb-4 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
-          className
-        )}
-      >
-        {children}
-      </div>
+    <div
+      data-slot="accordion-content"
+      className={cn(
+        "collapse-content text-sm [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-base-content [&_p:not(:last-child)]:mb-4",
+        className
+      )}
+      {...props}
+    >
+      {children}
     </div>
   )
 }

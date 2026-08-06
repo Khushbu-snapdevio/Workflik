@@ -2,9 +2,21 @@
 
 This document is the **single source of truth** for WorkFlik's visual design — tokens, component specs, layout patterns, and accessibility rules. Every UI component and page must be implemented from this reference. Read it before building any frontend feature.
 
-**Stack:** Tailwind CSS (utility-first) · Lucide React (icons) · Inter (UI font) · JetBrains Mono (code font) · Radix UI primitives (accessible headless components — dialogs, dropdowns, tooltips, checkboxes, switches).
+## Architecture
 
-> **Phase 1 only — Light mode.** Dark mode is a Phase 2 deliverable and is out of scope for MVP. The token layer below is structured to allow a future dark mode swap without touching component code.
+```text
+daisyUI     → primary component styling + all colour tokens
+Headless UI → interactive behaviour (focus, keyboard, ARIA, open state)
+Floating UI → collision-aware positioning for anchored popups
+Native HTML → behaviour the browser already provides
+Tailwind    → layout, responsive behaviour, genuinely custom details
+```
+
+**Stack:** daisyUI 5 · Headless UI · Floating UI (`@floating-ui/react`, wrapped in `lib/ui/use-anchor-position.ts`) · native HTML (`<dialog>`, Popover API, `<details>`, form controls) · Tailwind CSS v4 · Lucide React (icons) · Inter (UI font) · JetBrains Mono (code font).
+
+> **Radix UI and shadcn/ui are permanently out of the stack**, along with `class-variance-authority`. Zero `@radix-ui/*` / `radix-ui` / `shadcn` imports remain; there is no `components.json`. Do not reintroduce any of them for a new component or a bug fix. Pick an implementation in this order: **native HTML → daisyUI → Headless UI → Floating UI → hand-rolled**. See [daisyui-migration-plan.md](daisyui-migration-plan.md).
+
+> **Light and dark mode both ship.** Colours come from daisyUI's stock `light`/`dark` themes, configured once in `app/globals.css` and switched by `next-themes` via `class` + `data-theme` on `<html>`. The only vocabulary is daisy's: `bg-base-100/200/300`, `text-base-content` (with `/70`, `/50` for secondary and tertiary), `border-base-300`, `bg-primary`, `text-error` / `success` / `warning` / `info`. The old shadcn token names (`bg-background`, `text-foreground`, `border-border`, `--muted`, `--card`, `--popover`, `--ring`) are **gone** — reintroducing one is a defect. See the UI & Design System rules in [../CLAUDE.md](../CLAUDE.md), which take precedence over this file wherever the two disagree.
 
 ---
 
@@ -19,65 +31,82 @@ This document is the **single source of truth** for WorkFlik's visual design —
 
 ---
 
-## Color System (Light Mode)
+## Color System
 
-Tailwind's built-in palette. Use the **semantic role names** in components — never hardcode a Tailwind class like `bg-violet-600` directly in component code; map it through a token so a future dark theme only needs one swap.
+Every colour is a daisyUI theme token, resolved per theme from daisy's stock
+`light`/`dark`. **Never write a literal hex or a Tailwind palette class**
+(`bg-violet-600`, `text-slate-500`, …) in component code — those bypass the
+theme entirely and will not flip in dark mode.
+
+Every class below resolves to its light or dark value automatically, so a
+component written against these needs no dark-mode branch of its own.
 
 ### Neutral / Surface
 
-| Role | Tailwind | Hex | Usage |
-|---|---|---|---|
-| `bg-app` | `bg-slate-50` | #F8FAFC | App background — behind sidebar and content |
-| `bg-surface` | `bg-white` | #FFFFFF | Cards, modals, sidebar, page content |
-| `bg-subtle` | `bg-slate-100` | #F1F5F9 | Hover rows, code block bg, empty input bg |
-| `bg-muted` | `bg-slate-200` | #E2E8F0 | Skeleton loaders, section dividers as bands |
-| `border-default` | `border-slate-200` | #E2E8F0 | All borders — inputs, cards, panels |
-| `border-strong` | `border-slate-300` | #CBD5E1 | Drag-over targets, strong separators |
+| Class | Role | Usage |
+|---|---|---|
+| `bg-base-200` | App canvas | Behind sidebar and content; also hover rows and code-block backgrounds |
+| `bg-base-100` | Raised surface | Cards, modals, sidebar, page content, popover panels |
+| `bg-base-300` | Muted fill | Skeleton loaders, divider bands, disabled fills |
+| `border-base-300` | Every border | Inputs, cards, panels, table rules, separators |
+
+daisy gives three neutral surfaces, not five. If a design calls for a fourth
+step, reach for an alpha (`bg-base-300/50`) rather than inventing a token.
 
 ### Text
 
-| Role | Tailwind | Hex | Usage |
-|---|---|---|---|
-| `text-primary` | `text-slate-900` | #0F172A | Body text, headings, form labels |
-| `text-secondary` | `text-slate-600` | #475569 | Secondary labels, metadata, timestamps |
-| `text-tertiary` | `text-slate-400` | #94A3B8 | Placeholders, empty state copy, resting icons |
-| `text-disabled` | `text-slate-300` | #CBD5E1 | Disabled control text |
-| `text-on-accent` | `text-white` | #FFFFFF | Text on brand-colored backgrounds |
-| `text-link` | `text-violet-600` | #7C3AED | Inline hyperlinks |
-
-### Brand / Accent (Violet)
-
-| Role | Tailwind | Usage |
+| Class | Role | Usage |
 |---|---|---|
-| `accent` | `bg-violet-600` / `text-violet-600` | Primary buttons, active nav, focus rings |
-| `accent-hover` | `bg-violet-700` | Hover on primary buttons |
-| `accent-active` | `bg-violet-800` | Active / pressed state |
-| `accent-subtle` | `bg-violet-50` | Selected row bg, active sidebar item bg |
-| `accent-subtle-text` | `text-violet-700` | Text on `accent-subtle` |
-| `accent-border` | `border-violet-400` | Focus ring on inputs |
+| `text-base-content` | Primary | Body text, headings, form labels |
+| `text-base-content/70` | Secondary | Metadata, timestamps, secondary labels |
+| `text-base-content/50` | Tertiary | Placeholders, empty-state copy, resting icons |
+| `text-base-content/30` | Disabled | Disabled control text |
+| `text-primary-content` | On accent | Text on a `bg-primary` surface |
+| `text-primary` | Link / accent text | Inline hyperlinks, active nav labels |
+
+⚠️ Contrast: `/70` and below are for **supporting** text. Do not put an alpha
+on body copy or on anything that must clear WCAG AA on its own.
+
+### Brand / Accent
+
+| Class | Usage |
+|---|---|
+| `bg-primary` / `text-primary` | Primary buttons, active nav, focus rings |
+| `bg-primary/10` | Selected row, active sidebar item, mention chip |
+| `border-primary` | Focused input border |
+| `ring-primary/50` | Focus ring on buttons and interactive surfaces |
+| `ring-primary/30` | Focus ring on form controls (checkbox, radio, switch, slider) |
+
+Hover and active states come from daisy's own `btn-*` classes — don't hand-roll
+`bg-primary-700`-style steps, which don't exist in this theme.
 
 ### Semantic Colors
 
-| Role | Background | Text | Border | Usage |
+| Role | Subtle background | Text | Border | Solid action |
 |---|---|---|---|---|
-| **Success** | `bg-green-50` | `text-green-700` | `border-green-200` | Save toast, invite accepted |
-| **Warning** | `bg-amber-50` | `text-amber-700` | `border-amber-200` | 90 % storage banner, trash expiry |
-| **Destructive** | `bg-red-50` | `text-red-700` | `border-red-200` | Error states, delete confirm copy |
-| **Destructive action** | `bg-red-600` | `text-white` | — | Delete / danger buttons |
-| **Info** | `bg-blue-50` | `text-blue-700` | `border-blue-200` | Hint banners, informational callouts |
+| **Success** | `bg-success/10` | `text-success` | `border-success/30` | `btn-success` |
+| **Warning** | `bg-warning/10` | `text-warning` | `border-warning/30` | `btn-warning` |
+| **Destructive** | `bg-error/10` | `text-error` | `border-error/30` | `btn-error` |
+| **Info** | `bg-info/10` | `text-info` | `border-info/30` | `btn-info` |
+
+`<Button variant="destructive">` is the **alpha-tinted** treatment;
+`variant="destructive-solid"` is daisy's `btn-error` and is what
+`AlertDialogAction` uses, so a delete confirmation reads as the dialog's
+primary affordance.
 
 ### Editor-Specific Colors
 
-| Purpose | Tailwind | Notes |
+Everything here is theme-driven except the two literal cases noted.
+
+| Purpose | Value | Notes |
 |---|---|---|
-| Multi-block selection | `bg-violet-50` | Applied to selected block wrapper |
-| Text highlight — yellow | `bg-yellow-200` | User-applied via toolbar |
-| Text highlight — blue | `bg-blue-200` | User-applied |
-| Text highlight — green | `bg-green-200` | User-applied |
-| Text highlight — pink | `bg-pink-200` | User-applied |
-| @mention text | `bg-violet-100 text-violet-800 rounded px-0.5` | Inline mention chip |
-| Comment anchor | `bg-amber-100` | Text range with attached thread |
-| Search match highlight | `bg-yellow-300` | FTS result in page |
+| Multi-block selection | `bg-primary/10` | Applied to the selected block wrapper |
+| @mention chip | `bg-primary/10 text-primary rounded px-0.5` | Inline |
+| Comment anchor | `--comment-accent` / `--comment-tint` (`globals.css`) | Deliberately violet and **independent of the theme's primary hue**, so an annotated range never reads as a link. Re-declared in `.dark`. |
+| Syntax highlighting | `--syntax-*` (`globals.css`) | Derived from daisy vars via `color-mix()`, so they re-resolve per theme — no hand-authored hex, no dark-mode duplicate list |
+| Text highlight (user-applied) | `#fde047` | A literal, set through TipTap's `Highlight` mark from `inline-toolbar.tsx`. It is **user content**, not chrome — it must survive a theme switch unchanged, so it is correctly not a token. |
+| Scrims / overlays | `bg-black/10`, `bg-black/40` | Dimming layers are neutral black at low alpha in both themes by design |
+
 
 ---
 
@@ -109,10 +138,10 @@ Tailwind's built-in palette. Use the **semantic role names** in components — n
 | H2 | `text-2xl font-semibold` | 24px | 600 |
 | H3 | `text-xl font-semibold` | 20px | 600 |
 | Body paragraph | `text-base leading-7` | 16px | 400 |
-| Blockquote | `text-base italic text-slate-600 border-l-4 border-slate-300 pl-4` | 16px | 400 |
-| Inline code | `font-mono text-sm bg-slate-100 rounded px-1 py-0.5` | 14px | 400 |
-| Code block | `font-mono text-sm` on `bg-slate-900 text-slate-100` | 14px | 400 |
-| Callout | `text-base` inside `bg-slate-100 rounded-lg p-4` | 16px | 400 |
+| Blockquote | `text-base italic text-base-content/70 border-l-4 border-base-300 pl-4` | 16px | 400 |
+| Inline code | `font-mono text-sm bg-base-200 rounded px-1 py-0.5` | 14px | 400 |
+| Code block | `font-mono text-sm` on `bg-base-content text-base-100` | 14px | 400 |
+| Callout | `text-base` inside `bg-base-200 rounded-lg p-4` | 16px | 400 |
 
 ---
 
@@ -172,7 +201,7 @@ Tailwind's default 4 px base scale. Do not introduce non-Tailwind spacing values
 | Sidebar default width | 240px | `w-60` |
 | Sidebar min width | 200px | `min-w-[200px]` |
 | Sidebar max width | 480px | `max-w-[480px]` |
-| Sidebar background | white + right border | `bg-white border-r border-slate-200` |
+| Sidebar background | white + right border | `bg-base-100 border-r border-base-300` |
 | Content max-width (normal) | 900px | `max-w-[900px] mx-auto` |
 | Content max-width (full width page) | 100% | `max-w-full` |
 | Content horizontal padding | 96px | `px-24` |
@@ -182,16 +211,16 @@ Tailwind's default 4 px base scale. Do not introduce non-Tailwind spacing values
 
 | Element | Height | Classes |
 |---|---|---|
-| Section label (FAVORITES, PAGES) | 24px | `py-1 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide` |
-| Quick action button | 32px | `h-8 px-3 flex items-center gap-2.5 text-sm text-slate-700` |
+| Section label (FAVORITES, PAGES) | 24px | `py-1 px-3 text-xs font-semibold text-base-content/50 uppercase tracking-wide` |
+| Quick action button | 32px | `h-8 px-3 flex items-center gap-2.5 text-sm text-base-content` |
 | Page tree node | 32px | `h-8 px-2 flex items-center gap-1.5 text-sm` |
 | Workspace switcher row | 44px | `h-11 px-3 flex items-center gap-2` |
 | Account row | 40px | `h-10 px-3 flex items-center gap-2` |
 
 ### Sidebar States
 
-- **Hover row:** `rounded-md bg-slate-100 transition-colors duration-150`
-- **Active (current page):** `rounded-md bg-violet-50 text-violet-700 font-medium`
+- **Hover row:** `rounded-md bg-base-200 transition-colors duration-150`
+- **Active (current page):** `rounded-md bg-primary/10 text-primary font-medium`
 - **Depth indent:** each nesting level adds `pl-4` (16px)
 - **Hover actions (+ and ⋯):** `opacity-0 group-hover:opacity-100 transition-opacity duration-100`
 
@@ -258,7 +287,7 @@ All transitions respect `prefers-reduced-motion`. Use `motion-safe:` Tailwind pr
 | Toast appear | `animate-in slide-in-from-bottom-4 fade-in duration-300` |
 | Toast dismiss | `animate-out slide-out-to-bottom-4 fade-out duration-200` |
 | Sidebar collapse/expand | `transition-[width] duration-[250ms] ease-in-out` |
-| Skeleton pulse | `animate-pulse` on `bg-slate-200` elements |
+| Skeleton pulse | `animate-pulse` on `bg-base-300` elements |
 | Spinner | `animate-spin` |
 | Modal enter | `animate-in fade-in zoom-in-95 duration-300` on overlay + content |
 | Hover row | `transition-colors duration-150` |
@@ -338,7 +367,7 @@ Establish these names — do not substitute with different icons for the same co
 | Email | `Mail` |
 | Session / Desktop | `Monitor` |
 | Mobile session | `Smartphone` |
-| Breadcrumb separator | `ChevronRight` (`size-3 text-slate-400`) |
+| Breadcrumb separator | `ChevronRight` (`size-3 text-base-content/50`) |
 | Page cover | `ImagePlus` |
 | Page icon | `Smile` |
 | Code block | `Code` |
@@ -352,344 +381,116 @@ Establish these names — do not substitute with different icons for the same co
 
 ## Components
 
-### Button
+> Everything below describes what `components/ui/*` **actually renders today**.
+> It replaced a spec written against raw `slate-*` / `violet-*` / `bg-base-100`
+> Tailwind values, which the code stopped using during the daisyUI migration.
+> If you find one of those old class strings anywhere in this repo, it is a
+> defect, not a style.
 
-All buttons: `rounded-md font-medium transition-colors duration-150 inline-flex items-center justify-center gap-2 select-none`.
-Focus: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2`.
-Disabled: `opacity-50 cursor-not-allowed pointer-events-none`.
-Loading: replace label with `<Spinner />` + `cursor-wait pointer-events-none`; preserve `min-w` to avoid layout shift.
+### Where each responsibility lives
 
-#### Variants
-
-| Variant | Classes | Usage |
-|---|---|---|
-| **Primary** | `bg-violet-600 text-white hover:bg-violet-700 active:bg-violet-800` | Main CTA — "Save changes", "Send invite" |
-| **Secondary** | `bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300` | "Cancel", "Copy link" |
-| **Ghost** | `bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200` | Sidebar items, toolbar icon buttons |
-| **Destructive** | `bg-red-600 text-white hover:bg-red-700 active:bg-red-800` | "Delete workspace", "Permanently delete" |
-| **Outline** | `border border-slate-300 bg-white text-slate-900 hover:bg-slate-50` | Lower-emphasis form actions |
-
-#### Sizes
-
-| Size | Classes | Usage |
-|---|---|---|
-| `sm` | `h-7 px-3 text-xs` | Dense areas — table cells, toolbar, badge-adjacent |
-| `md` *(default)* | `h-9 px-4 text-sm` | Most dialogs, settings forms |
-| `lg` | `h-11 px-6 text-base` | Onboarding CTAs, sign-in button |
-| `icon-sm` | `h-7 w-7 p-0` | Icon-only ghost buttons (toolbar, close ×) |
-| `icon-md` | `h-9 w-9 p-0` | Icon-only standard buttons |
-
----
-
-### Input / Textarea
-
-```
-bg-white border border-slate-200 rounded-md
-text-sm text-slate-900 placeholder:text-slate-400
-px-3 h-9 w-full
-transition-colors duration-150
-focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent
-disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed
+```text
+daisyUI     → primary component styling + all colour tokens
+Headless UI → interactive behaviour: focus, keyboard, ARIA, open state
+Floating UI → collision-aware positioning for anchored popups
+Native HTML → behaviour the browser already gives us (<dialog>, <details>,
+              Popover API, form controls)
+Tailwind    → layout, responsive behaviour, and genuinely custom details only
 ```
 
-**Error state:** swap `border-slate-200` → `border-red-400`; error message below: `text-xs text-red-600 mt-1 min-h-[16px]` (reserve space to prevent layout shift).
+Pick an implementation in this order: **native HTML → daisyUI → Headless UI →
+Floating UI → hand-rolled.** Adding a hand-rolled equivalent of something in
+the four layers above is a review defect.
 
-**Read-only:** `bg-slate-50 text-slate-600 cursor-default` + lock icon to the right.
+Two consequences worth internalising:
 
-**With left icon:** wrap in `relative`, add `pl-9`, icon: `absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400`.
+- **Never hardcode a colour.** The vocabulary is `bg-base-100/200/300`,
+  `text-base-content`, `border-base-300`, `bg-primary`, `text-error`,
+  `text-success`, `text-warning`. A literal hex, or a Tailwind palette class
+  like `bg-primary`, bypasses the theme and breaks dark mode.
+- **Don't re-declare what daisy already sets.** Add the daisy class and only
+  override the specific properties this app deliberately differs on. Tailwind
+  utilities outrank daisy's component layer in this build, so every override
+  wins the cascade — which also means a *missing* override lets a daisy default
+  (usually `--radius-box`) leak through silently. Check the computed style, not
+  just the markup.
 
-**Textarea:** same base, remove `h-9`, add `min-h-[80px] py-2 resize-y`.
+### Inventory
 
-**Multi-email chip input:** `flex flex-wrap gap-1.5 px-2 py-2 min-h-[38px] border border-slate-200 rounded-md focus-within:ring-2 focus-within:ring-violet-500`. Each chip: `Badge` variant with `×` dismiss button.
+| Component | File | daisyUI class | Behaviour layer | What Tailwind still does |
+|---|---|---|---|---|
+| Button | `button.tsx` | `btn` + `btn-primary` / `btn-secondary` / `btn-ghost` / `btn-link` / `btn-error` | native `<button>` | size scale (`--size`, `--btn-p`), focus ring, alpha-tinted `destructive` |
+| Input | `input.tsx` | `input` | native | height, radius, border/bg tokens |
+| Textarea | `textarea.tsx` | `textarea` | native | underline-only treatment |
+| Select | `select.tsx` | `select` (trigger) | **Headless UI `Listbox`** | trigger height/surface; panel surface (see note) |
+| Checkbox | `checkbox.tsx` | `checkbox checkbox-primary` | native `<input type="checkbox">` | `--size`, square corners, unchecked border |
+| Radio | `radio-group.tsx` | `radio` | native (shared `name` → arrow keys) | `--size`, unchecked border |
+| Switch | `switch.tsx` | `toggle toggle-primary` | native `<input role="switch">` | `--size`, pill radius |
+| Slider | `slider.tsx` | `range range-xs range-primary` | native `<input type="range">` | `w-full`, focus ring |
+| Badge | `badge.tsx` | `badge` | — | radius, alpha-tinted variants |
+| Card | `card.tsx` | `card`, `card-title` | — | per-section `--card-spacing` padding model |
+| Alert | `alert.tsx` | `alert` | — | radius, semantic accents |
+| Avatar | `avatar.tsx` | `avatar` | — | `data-size` scale, ring overlay |
+| Skeleton | `skeleton.tsx` | `skeleton` | — | radius |
+| Table | `table.tsx` | `table` | — | square corners, sticky header |
+| Tabs | `tabs.tsx` | `tabs`, `tabs-box`, `tabs-border`, `tab` | hand-rolled value-based context | stretch, focus ring, icon sizing |
+| Accordion | `accordion.tsx` | `collapse collapse-arrow`, `collapse-title`, `collapse-content` | native `<details name>` | square corners, row divider |
+| Breadcrumb | `breadcrumb.tsx` | `breadcrumbs` | — | typography |
+| Pagination | `pagination.tsx` | `join`, `join-item` | — | — |
+| Toggle | `toggle.tsx` | `btn btn-ghost` / `btn-outline` (via `buttonClasses`) | native `<button aria-pressed>` | pressed state |
+| ToggleGroup | `toggle-group.tsx` | `join` / `join-item` (at `spacing={0}`) | native buttons + context | gap for non-zero spacing |
+| Tooltip | `tooltip.tsx` | `tooltip`, `tooltip-{top,right,bottom,left}`, `tooltip-content` | CSS only — no JS, no positioner | — |
+| AlertDialog | `alert-dialog.tsx` | `modal-action` (footer), `btn btn-error` / `btn` outline (actions) | native `<dialog>` + `showModal()` | surface, sizing |
+| SaveStatus | `save-status.tsx` | `badge badge-sm` | — | pill radius, state colours |
+| Label | `label.tsx` | — | native `<label>` | `peer-*` pairing with the three form controls |
 
----
+`checkbox`, `radio-group`, `switch`, `checkbox`'s `indeterminate`, and the
+`toggle` pressed state are all driven by the control's **real DOM state**
+(`:checked`, `:indeterminate`, `aria-pressed`), not by a class computed in
+React. daisy styles off those pseudo-classes directly.
 
-### Select / Dropdown
+### Intentionally not on a daisyUI component class
 
-Use **Radix UI Select** for native keyboard navigation.
+Each of these was evaluated against daisy's actual compiled CSS, not its docs.
 
-**Trigger:** same styles as `Input`.
-
-**Content panel:**
-```
-bg-white border border-slate-200 rounded-lg shadow-md
-py-1 min-w-[160px] max-h-[300px] overflow-y-auto
-z-dropdown
-```
-
-**Option item:**
-```
-px-3 py-1.5 text-sm text-slate-900 cursor-default rounded-sm mx-1
-hover:bg-slate-100 focus:bg-slate-100 outline-none
-data-[highlighted]:bg-slate-100
-data-[state=checked]:font-medium data-[state=checked]:text-violet-700
-```
-
----
-
-### Checkbox
-
-**Radix UI Checkbox.**
-
-```
-Unchecked:     w-4 h-4 rounded border-2 border-slate-300 bg-white
-Checked:       w-4 h-4 rounded border-2 border-violet-600 bg-violet-600  (Check icon size-3 text-white)
-Indeterminate: border-violet-600 bg-violet-600  (Minus icon size-3 text-white)
-Disabled:      opacity-50 cursor-not-allowed
-Focus:         ring-2 ring-violet-500 ring-offset-2
-```
-
-Label: `text-sm text-slate-900 select-none cursor-pointer ml-2`.
-
----
-
-### Radio Group
-
-**Radix UI Radio.**
-
-```
-Outer ring (unselected): w-4 h-4 rounded-full border-2 border-slate-300 bg-white
-Outer ring (selected):   w-4 h-4 rounded-full border-2 border-violet-600 bg-white
-Inner dot (selected):    w-2 h-2 rounded-full bg-violet-600  (centered via flex)
-```
-
----
-
-### Toggle / Switch
-
-**Radix UI Switch.**
-
-```
-Track off:  w-10 h-6 rounded-full bg-slate-200  transition-colors duration-200
-Track on:   w-10 h-6 rounded-full bg-violet-600
-Thumb:      w-5 h-5 rounded-full bg-white shadow-sm
-            data-[state=unchecked]:translate-x-0
-            data-[state=checked]:translate-x-4
-            transition-transform duration-200
-```
-
----
-
-### Badge / Chip
-
-`rounded-full text-xs font-medium px-2 py-0.5 inline-flex items-center gap-1`.
-
-| Variant | Classes |
+| Component | Why it stays custom |
 |---|---|
-| Neutral | `bg-slate-100 text-slate-700` |
-| Accent | `bg-violet-100 text-violet-700` |
-| Success | `bg-green-100 text-green-700` |
-| Warning | `bg-amber-100 text-amber-700` |
-| Destructive | `bg-red-100 text-red-700` |
-| Info | `bg-blue-100 text-blue-700` |
-| Outline | `border border-slate-200 bg-white text-slate-500` |
+| `dialog.tsx`, `sheet.tsx` | The engine is the browser's own `<dialog>` + `showModal()` — focus trap, Escape, and top-layer stacking for free. daisy's `.modal-box` is **inert on its own**: its `opacity: 0` / `scale: .95` are only reset by `.modal[open] > .modal-box`, so adopting it means also adopting `.modal` as a full-viewport grid wrapper, which replaces the tuned `::backdrop` rules in `globals.css` (`.modal::backdrop { display: none }`) that `sheet` shares. `.modal-box` also ships an unconditional `box-shadow` that `--depth: 0` does **not** suppress. `modal-action` *is* adopted (see `alert-dialog.tsx`) because it has no `.modal` scoping. |
+| `popover.tsx` | Native Popover API (`popover="auto"`) gives outside-click, Escape and top-layer for free. daisy's `.dropdown-content` inherits nothing outside a `.dropdown` ancestor and `.dropdown` itself has no collision detection. |
+| `separator.tsx` | This component **is** the rule (`h-px`/`w-px` + `bg-base-300`, zero margin). daisy's `divider` draws its line with `::before`/`::after` pseudo-elements and injects a built-in `margin: 1rem 0` — layering it would add an unrequested 1rem at every call site. |
+| `progress.tsx` | daisy's `.progress` fill is `::-webkit-progress-value` / `::-moz-progress-bar`, which only exist on a real `<progress>` element. This is a deliberate `div`+`div` bar (see the file header for the cross-engine reasoning), so the class would style the track and leave the fill unpainted. |
+| `collapsible.tsx` | A behaviour-only `<details>` wrapper with no visual of its own. daisy's `collapse` would inject a grid layout, 1rem padding and a `--radius-box` corner into every consumer's own layout. `accordion.tsx` — which *is* a visual component — does use `collapse`. |
+| `scroll-area.tsx` | Plain `overflow-auto`; scrollbars are styled globally in `globals.css`. |
+| `calendar.tsx`, `date-picker.tsx` | React Day Picker owns the DOM and the interaction model. Styled with daisy tokens. |
+| `sonner.tsx` | Sonner owns toast rendering, stacking and lifecycle. Themed by feeding it daisy tokens (`--normal-bg: var(--color-base-100)`, …). |
+| `icon-tooltip.tsx`, `reaction-tooltip.tsx` | **Floating UI** via `lib/ui/use-anchor-position.ts` — flip/shift/size collision handling against a caller-supplied `DOMRect`, which daisy's CSS-only tooltip cannot do. Use `tooltip.tsx` when a plain CSS tooltip suffices. |
+| `slot.tsx` | A ~30-line utility that merges props onto a single child (the `asChild` pattern). Not a styling concern and not a dependency — it exists so triggers can forward behaviour onto an arbitrary child element. |
+| `logo.tsx`, `time-ago.tsx` | Not styled components — an asset switcher and a formatter. |
 
-**Role badges:** Admin → Accent, Editor → Neutral, Viewer → Outline.
+### Select panel, specifically
 
-**Dismissible chip:** append `<button class="ml-0.5 hover:text-slate-900"><X size={10}/></button>`.
+`SelectTrigger` is daisy's `select` (daisy draws the caret itself — that is why
+no chevron icon is rendered). The floating panel keeps hand-written surface
+classes built from daisy tokens because daisy has no "floating panel" class
+that composes with Headless UI's anchoring. Headless UI keeps full ownership of
+open state, roving focus, `role="listbox"`/`role="option"`, type-ahead, Escape,
+and focus restoration to the trigger.
 
----
+### Focus
 
-### Avatar
+The app's focus affordance is a **ring**, not a native outline:
+`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50`
+(`/30` on form controls). daisy ships `outline: 2px solid` on `:focus-visible`
+for several components; suppress it and use the ring, so focus looks the same
+everywhere.
 
-`rounded-full object-cover flex items-center justify-center font-semibold text-white overflow-hidden`.
+### Elevation
 
-| Size | Tailwind | Text | Usage |
-|---|---|---|---|
-| `xs` | `w-5 h-5 text-[10px]` | — | Inline in comment text |
-| `sm` | `w-7 h-7 text-xs` | — | Sidebar user row, member list |
-| `md` | `w-9 h-9 text-sm` | — | Comment card, notification row |
-| `lg` | `w-14 h-14 text-xl` | — | Profile settings |
-| `xl` | `w-20 h-20 text-3xl` | — | Onboarding profile step |
-
-**Initials fallback:** background color is one of 8 hues chosen via `userId.charCodeAt(0) % 8`:
-
-```
-0 → bg-violet-600   1 → bg-blue-600    2 → bg-cyan-600   3 → bg-teal-600
-4 → bg-green-600    5 → bg-amber-600   6 → bg-orange-600  7 → bg-rose-600
-```
-
----
-
-### Tooltip
-
-**Radix UI Tooltip.** Open delay: 400 ms. Close delay: 0 ms.
-
-```
-bg-slate-900 text-white text-xs rounded-md px-2.5 py-1.5
-shadow-sm max-w-[220px] z-tooltip
-animate-in fade-in zoom-in-95 duration-100
-```
-
----
-
-### Dialog (Modal)
-
-**Radix UI Dialog.**
-
-```
-Overlay:  fixed inset-0 bg-black/40 z-modal animate-in fade-in duration-200
-Content:  fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-          bg-white rounded-xl shadow-xl w-full max-w-md p-6
-          z-modal animate-in fade-in zoom-in-95 duration-300
-          focus:outline-none
-```
-
-**Inner structure:**
-```
-Title:       text-lg font-semibold text-slate-900 mb-1
-Description: text-sm text-slate-600 mb-6
-Body:        flex flex-col gap-4
-Footer:      flex justify-end gap-3 mt-6
-Close btn:   absolute top-4 right-4 (Ghost icon-sm, X icon)
-```
-
-**Destructive confirm dialog:** body contains impact description + Input where user types the name of the thing being deleted. Footer: Secondary "Cancel" + Destructive "Delete [thing]". Button stays disabled until input matches exactly.
-
----
-
-### Sheet (Side Panel)
-
-```
-Overlay:  fixed inset-0 bg-black/30 z-sheet
-Panel:    fixed top-0 right-0 h-full w-[400px] bg-white
-          border-l border-slate-200 shadow-xl z-sheet
-          animate-in slide-in-from-right duration-[250ms]
-```
-
-**Settings modal** is a larger variant: `w-[860px] h-[90vh]` centered (not slide — uses Dialog positioning) with a two-column layout inside (nav sidebar + content).
-
----
-
-### Toast / Notification
-
-Position: `fixed bottom-4 right-4 flex flex-col gap-2 z-toast`.
-
-```
-Card:  bg-white border border-slate-200 rounded-lg shadow-lg
-       p-4 w-[360px] flex gap-3 relative overflow-hidden
-       animate-in slide-in-from-bottom-4 fade-in duration-300
-
-Icon:  size-5 flex-shrink-0 (green=success, red=error, blue=info, slate=neutral)
-Title: text-sm font-medium text-slate-900
-Body:  text-sm text-slate-600
-Close: absolute top-3 right-3 Ghost icon-sm X
-
-Progress bar (auto-dismiss):
-  absolute bottom-0 left-0 h-0.5 bg-violet-500
-  animate from w-full → w-0 over 5s linear
-```
-
-Multiple toasts stack vertically with `gap-2`. Maximum 3 visible at once — oldest is removed when 4th arrives.
-
----
-
-### Tabs
-
-```
-Tab list:  flex border-b border-slate-200 gap-0
-
-Tab item:  px-4 py-2 text-sm font-medium text-slate-600
-           cursor-pointer select-none
-           transition-colors duration-150
-           hover:text-slate-900
-           
-Active:    text-violet-700
-           border-b-2 border-violet-600 -mb-px  (sits on top of list border)
-```
-
----
-
-### Breadcrumb
-
-```
-nav  flex items-center gap-1 text-sm text-slate-500 flex-wrap
-
-Segment:    hover:text-slate-900 cursor-pointer transition-colors duration-150
-Separator:  <ChevronRight size={12} className="text-slate-400 flex-shrink-0" />
-Current:    text-slate-900 font-medium pointer-events-none
-```
-
-Long paths: truncate middle segments with `…` (keep first and last). Truncated segments expand on hover via tooltip.
-
----
-
-### Progress Bar (Storage)
-
-```
-Track:  h-2 w-full rounded-full bg-slate-100
-Fill:   h-2 rounded-full transition-[width] duration-500
-        < 90%:  bg-violet-600
-        ≥ 90%:  bg-amber-500
-        100%:   bg-red-500
-```
-
----
-
-### Spinner
-
-```
-w-5 h-5 rounded-full border-2 border-slate-200 border-t-violet-600 animate-spin
-```
-
-Inline (inside button): `w-4 h-4` with same classes.
-
----
-
-### Skeleton Loader
-
-Use when content is loading and the layout shape is known.
-
-```
-bg-slate-200 rounded animate-pulse
-```
-
-Common shapes:
-
-| Shape | Classes |
-|---|---|
-| Text line full | `h-4 rounded w-full` |
-| Text line 3/4 | `h-4 rounded w-3/4` |
-| Text line 2/3 | `h-4 rounded w-2/3` |
-| Avatar sm | `w-7 h-7 rounded-full` |
-| Avatar md | `w-9 h-9 rounded-full` |
-| Card | `h-32 rounded-xl w-full` |
-| Sidebar item | `h-8 rounded-md w-full` |
-
-A paragraph skeleton: 3 lines at `w-full`, `w-5/6`, `w-4/6` with `gap-2`.
-
----
-
-### Empty State
-
-```
-flex flex-col items-center justify-center py-16 text-center px-8
-
-Icon:    size-12 text-slate-300 mb-4 (Lucide icon, not decorative)
-Heading: text-base font-medium text-slate-700 mb-1
-Body:    text-sm text-slate-500 mb-6 max-w-[280px]
-CTA:     Primary or Secondary button (optional)
-```
-
----
-
-### Error State (Inline Field)
-
-```
-text-xs text-red-600 mt-1 min-h-[16px]
-```
-
-(Always reserve 16px height even when empty — prevents form jumping when error appears.)
-
-**Page-level error (404 / 500):**
-```
-full-page flex flex-col items-center pt-24 text-center
-
-Code:  text-7xl font-bold text-slate-200 mb-2
-Title: text-xl font-semibold text-slate-900 mb-2
-Body:  text-sm text-slate-600 mb-8
-CTA:   "Go home" Secondary md
-```
+Shadows are off. daisy derives real shadows from `--depth`, which is forced to
+`0` in the unlayered `:root` block of `globals.css` — if a product theme is ever
+reintroduced it must carry `--depth: 0` explicitly. The `shadow-card` /
+`shadow-raised` / `shadow-float` tokens exist for floating surfaces only
+(dropdown panels, hover cards).
 
 ---
 
@@ -697,7 +498,7 @@ CTA:   "Go home" Secondary md
 
 ### Sign-In Page (`/sign-in`)
 
-Full-page, no sidebar. Background `bg-slate-50`.
+Full-page, no sidebar. Background `bg-base-200`.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -721,11 +522,11 @@ Full-page, no sidebar. Background `bg-slate-50`.
 └──────────────────────────────────────────────────────────┘
 ```
 
-Card: `bg-white rounded-xl shadow-md p-8 w-full max-w-sm mx-auto mt-16`.
+Card: `bg-base-100 rounded-xl shadow-md p-8 w-full max-w-sm mx-auto mt-16`.
 
 **After submit** — card transitions to "Check your inbox" state:
 ```
-[Mail icon size-12 text-violet-600 mb-4]
+[Mail icon size-12 text-primary mb-4]
 "Check your email"
 "We sent a magic link to dana@example.com"
 "Link expires in 15 minutes."
@@ -736,22 +537,22 @@ Card: `bg-white rounded-xl shadow-md p-8 w-full max-w-sm mx-auto mt-16`.
 
 ### Onboarding Wizard (`/onboarding`)
 
-4-step, full-page, no sidebar. Background `bg-slate-50`.
+4-step, full-page, no sidebar. Background `bg-base-200`.
 
-**Progress strip:** `fixed top-0 left-0 right-0 h-1 bg-slate-200`. Fill: `bg-violet-600 transition-[width] duration-500`, width = `25% × step`.
+**Progress strip:** `fixed top-0 left-0 right-0 h-1 bg-base-300`. Fill: `bg-primary transition-[width] duration-500`, width = `25% × step`.
 
-**Step card:** `bg-white rounded-xl shadow-md p-10 w-full max-w-lg mx-auto mt-12`.
+**Step card:** `bg-base-100 rounded-xl shadow-md p-10 w-full max-w-lg mx-auto mt-12`.
 
 **Step indicator dots:**
 ```
 flex items-center gap-2 mb-8 justify-center
 
 Dot:     w-2 h-2 rounded-full
-Past:    bg-violet-600
-Current: w-3 h-3 bg-violet-600 (larger)
-Future:  bg-slate-300
+Past:    bg-primary
+Current: w-3 h-3 bg-primary (larger)
+Future:  bg-base-300
 
-Connector between dots: h-px w-8 bg-slate-200 (past: bg-violet-300)
+Connector between dots: h-px w-8 bg-base-300 (past: bg-primary/30)
 ```
 
 **Step layouts:**
@@ -785,7 +586,7 @@ Step 4 — Pick a template
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  [Cover image — w-full h-48 object-cover bg-slate-100]      │
+│  [Cover image — w-full h-48 object-cover bg-base-200]      │
 │      [Add cover / Reposition / Remove — hover buttons]      │
 │                          ────────────────────────────────    │
 │  [Page Icon — 48px emoji or w-12 h-12 rounded-lg]           │
@@ -794,14 +595,14 @@ Step 4 — Pick a template
 │  [Breadcrumb: Workspace › Parent › This Page]                │
 │                                                              │
 │  [Title — contenteditable, text-4xl font-bold, w-full]      │
-│   placeholder: "Untitled"  color: text-slate-300            │
+│   placeholder: "Untitled"  color: text-base-content/30            │
 │                                                              │
 │  [First block — placeholder: "Start writing, or '/' …"]     │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 - Cover hover overlay: `absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors` + action buttons `absolute bottom-3 right-4`
-- Icon click → Emoji picker popover (Radix Popover, `w-[320px]`)
+- Icon click → Emoji picker popover (Headless UI `Popover`, `w-[320px]`)
 - **No icon + no cover:** show "Add icon" and "Add cover" ghost buttons that appear on header hover
 - **Locked page:** `Lock` icon badge inline in breadcrumb row, editor is `contenteditable=false`
 - **Small text mode:** title switches to `text-2xl font-bold`, all body text scales down by one step
@@ -813,15 +614,15 @@ Step 4 — Pick a template
 Appears on text selection. Positioned above selection via `getBoundingClientRect`.
 
 ```
-bg-white border border-slate-200 rounded-lg shadow-md
+bg-base-100 border border-base-300 rounded-lg shadow-md
 flex items-center gap-0.5 px-1 py-1 h-9
 animate-in fade-in zoom-in-95 duration-100
 
 Buttons (Ghost icon-sm, h-7 w-7):
   [B] [I] [U] [S] [Code] │ [A▾] [🖊▾] [🔗] │ [Comment] [Turn into▾]
 
-Active formatting: bg-violet-100 text-violet-700 rounded
-Divider (│): w-px h-5 bg-slate-200 mx-0.5
+Active formatting: bg-primary/10 text-primary rounded
+Divider (│): w-px h-5 bg-base-300 mx-0.5
 ```
 
 ---
@@ -831,25 +632,25 @@ Divider (│): w-px h-5 bg-slate-200 mx-0.5
 Appears inline at cursor after `/`. Positioned below cursor.
 
 ```
-bg-white border border-slate-200 rounded-lg shadow-md
+bg-base-100 border border-base-300 rounded-lg shadow-md
 w-[280px] max-h-[320px] overflow-y-auto z-dropdown
 animate-in fade-in slide-in-from-top-2 duration-150
 
 Search row:
-  px-3 py-2 border-b border-slate-100
-  [Search icon size-4 text-slate-400] [input: "Filter commands…" text-sm outline-none]
+  px-3 py-2 border-b border-base-300
+  [Search icon size-4 text-base-content/50] [input: "Filter commands…" text-sm outline-none]
 
 Category label:
-  px-3 pt-3 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wide
+  px-3 pt-3 pb-1 text-xs font-semibold text-base-content/50 uppercase tracking-wide
 
 Command item:
   mx-1 px-2 py-2 rounded-md flex items-center gap-3 cursor-default
-  data-[highlighted]:bg-slate-100
+  data-[highlighted]:bg-base-200
 
-  Icon box:  w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center
-             size-4 text-slate-600
-  Label:     text-sm font-medium text-slate-900
-  Hint:      text-xs text-slate-400 ml-auto (shortcut like "# ")
+  Icon box:  w-8 h-8 rounded-md bg-base-200 flex items-center justify-center
+             size-4 text-base-content/70
+  Label:     text-sm font-medium text-base-content
+  Hint:      text-xs text-base-content/50 ml-auto (shortcut like "# ")
 ```
 
 ---
@@ -859,7 +660,7 @@ Command item:
 ```
 Appears on block hover, positioned to the left of the block.
 
-[GripVertical size-4 text-slate-400]
+[GripVertical size-4 text-base-content/50]
   absolute -left-6 top-1/2 -translate-y-1/2
   cursor-grab active:cursor-grabbing
   opacity-0 group-hover:opacity-100 transition-opacity duration-100
@@ -877,25 +678,25 @@ On hover also show:
 Table container: w-full overflow-x-auto
 
 Header row:
-  bg-slate-50 border-b border-slate-200 h-9 sticky top-0 z-header
-  [Title col — min-w-[200px] font-medium text-sm text-slate-700 px-3]
-  [Property cols — min-w-[120px] text-xs text-slate-500 px-3]
+  bg-base-200 border-b border-base-300 h-9 sticky top-0 z-header
+  [Title col — min-w-[200px] font-medium text-sm text-base-content px-3]
+  [Property cols — min-w-[120px] text-xs text-base-content/70 px-3]
   [+ Add property — Ghost sm px-3]
 
 Data row:
-  h-9 border-b border-slate-100 group cursor-pointer
-  hover:bg-slate-50 transition-colors duration-100
+  h-9 border-b border-base-300 group cursor-pointer
+  hover:bg-base-200 transition-colors duration-100
 
 Cell:
-  px-3 text-sm text-slate-900 truncate overflow-hidden
-  focus:ring-2 focus:ring-inset focus:ring-violet-400 (on edit)
+  px-3 text-sm text-base-content truncate overflow-hidden
+  focus:ring-2 focus:ring-inset focus:ring-primary/50 (on edit)
 
 Row actions (on hover, first col):
   [Expand icon — Ghost icon-sm] → opens Entry Detail Sheet
 
 Footer:
-  h-9 border-b border-slate-100
-  [+ New Entry — Ghost sm px-3 text-slate-500]
+  h-9 border-b border-base-300
+  [+ New Entry — Ghost sm px-3 text-base-content/70]
 
 Column header click → sort toggle (ArrowUp / ArrowDown icon, accent color)
 ```
@@ -913,22 +714,22 @@ Column:
 Column header:
   h-9 flex items-center gap-2 mb-2
   [Color dot: w-2 h-2 rounded-full]
-  [Group label: text-sm font-medium text-slate-900]
+  [Group label: text-sm font-medium text-base-content]
   [Count: Badge neutral xs ml-auto]
   [⋯ column options: Ghost icon-sm]
 
 Card:
-  bg-white border border-slate-200 rounded-lg p-3 shadow-sm
+  bg-base-100 border border-base-300 rounded-lg p-3 shadow-sm
   cursor-pointer mb-2
   hover:shadow-md transition-shadow duration-150
 
-  Title: text-sm font-medium text-slate-900 mb-2 line-clamp-2
-  Prop rows: text-xs text-slate-500 flex items-center gap-1.5
+  Title: text-sm font-medium text-base-content mb-2 line-clamp-2
+  Prop rows: text-xs text-base-content/70 flex items-center gap-1.5
 
-No-group card: bg-slate-50 border-dashed border-slate-300
+No-group card: bg-base-200 border-dashed border-base-300
 
-[+ Add card]: Ghost sm text-slate-500 mt-1
-[+ Add group]: Ghost sm text-slate-400 ml-4 flex-shrink-0 self-start mt-1
+[+ Add card]: Ghost sm text-base-content/70 mt-1
+[+ Add group]: Ghost sm text-base-content/50 ml-4 flex-shrink-0 self-start mt-1
 ```
 
 ---
@@ -940,26 +741,26 @@ Month header: flex items-center justify-between mb-4
   [ChevronLeft Ghost icon-sm] [Month Year text-base font-semibold] [ChevronRight Ghost icon-sm]
   [Today — Secondary sm ml-4]
 
-Grid: grid grid-cols-7 gap-px bg-slate-200 (gap creates border effect)
+Grid: grid grid-cols-7 gap-px bg-base-300 (gap creates border effect)
 
 Day header:
-  bg-slate-50 text-xs font-medium text-slate-500 text-center py-2
+  bg-base-200 text-xs font-medium text-base-content/70 text-center py-2
 
 Day cell:
-  bg-white min-h-[100px] p-1.5
-  today: bg-violet-50
-  out-of-month: bg-slate-50
+  bg-base-100 min-h-[100px] p-1.5
+  today: bg-primary/10
+  out-of-month: bg-base-200
 
 Day number:
-  text-sm font-medium text-slate-900 mb-1
-  today: w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center
+  text-sm font-medium text-base-content mb-1
+  today: w-7 h-7 rounded-full bg-primary text-primary-content flex items-center justify-center
 
 Event chip:
   rounded text-xs px-1.5 py-0.5 mb-0.5 w-full truncate cursor-pointer
-  bg-violet-100 text-violet-800
-  hover:bg-violet-200 transition-colors
+  bg-primary/10 text-primary
+  hover:bg-primary/20 transition-colors
 
-  More link: text-xs text-slate-500 hover:text-slate-900 mt-0.5 "+N more"
+  More link: text-xs text-base-content/70 hover:text-base-content mt-0.5 "+N more"
 ```
 
 ---
@@ -970,23 +771,23 @@ Event chip:
 Grid: grid grid-cols-3 gap-4 (2 cols in narrow containers)
 
 Card:
-  bg-white border border-slate-200 rounded-xl overflow-hidden
+  bg-base-100 border border-base-300 rounded-xl overflow-hidden
   shadow-sm cursor-pointer
   hover:shadow-md transition-shadow duration-150
 
 Cover area:
   w-full h-36
   Has cover: <img class="w-full h-full object-cover" />
-  No cover / emoji icon: bg-slate-100 flex items-center justify-center text-4xl
+  No cover / emoji icon: bg-base-200 flex items-center justify-center text-4xl
 
 Body: p-4
-  Title:  text-sm font-semibold text-slate-900 mb-2 line-clamp-2
-  Props:  flex flex-col gap-1 text-xs text-slate-500
+  Title:  text-sm font-semibold text-base-content mb-2 line-clamp-2
+  Props:  flex flex-col gap-1 text-xs text-base-content/70
 
 [+ New Entry] card (ghost dashed):
-  border-2 border-dashed border-slate-200 rounded-xl h-[168px]
+  border-2 border-dashed border-base-300 rounded-xl h-[168px]
   flex items-center justify-center
-  text-sm text-slate-400 hover:border-violet-400 hover:text-violet-600
+  text-sm text-base-content/50 hover:border-primary hover:text-primary
 ```
 
 ---
@@ -996,20 +797,20 @@ Body: p-4
 Opens as a Sheet from the right when expanding a database row.
 
 ```
-Panel: w-[640px] bg-white border-l border-slate-200 shadow-xl
+Panel: w-[640px] bg-base-100 border-l border-base-300 shadow-xl
        overflow-y-auto
 
 Header:
-  px-6 py-4 border-b border-slate-200 flex items-center justify-between
+  px-6 py-4 border-b border-base-300 flex items-center justify-between
   [Breadcrumb: Database name → Entry title]
   [Open as full page — Ghost sm]  [✕ Ghost icon-sm]
 
 Properties section:
-  px-6 py-4 border-b border-slate-200
+  px-6 py-4 border-b border-base-300
   Each prop: flex gap-4 items-start py-2
-    Label: w-32 text-sm text-slate-500 flex-shrink-0 flex items-center gap-1.5
+    Label: w-32 text-sm text-base-content/70 flex-shrink-0 flex items-center gap-1.5
            [Property icon size-4]
-    Value: flex-1 text-sm text-slate-900 (inline-editable on click)
+    Value: flex-1 text-sm text-base-content (inline-editable on click)
 
 Page content (blocks):
   px-6 py-4
@@ -1020,10 +821,10 @@ Page content (blocks):
 
 ### Share Panel
 
-Radix Popover anchored to the "Share" button in the page header.
+Headless UI `Popover` anchored to the "Share" button in the page header.
 
 ```
-bg-white border border-slate-200 rounded-xl shadow-xl
+bg-base-100 border border-base-300 rounded-xl shadow-xl
 w-[420px] p-4 z-dropdown
 
 Section: Add people
@@ -1037,18 +838,18 @@ Section: Access level (shown after someone is typed in input)
 Section: People with access
   Each row:
     [Avatar sm]
-    [Name text-sm font-medium] [Email text-xs text-slate-500]
+    [Name text-sm font-medium] [Email text-xs text-base-content/70]
     [Access level — Select xs] ml-auto
     [Remove — Ghost icon-sm X]  (owner: no remove)
 
 Divider + Public link section:
   flex items-center justify-between mb-3
-  [Globe size-4 text-slate-600] "Share to web"  [Switch]
+  [Globe size-4 text-base-content/70] "Share to web"  [Switch]
 
   When enabled:
-    [URL text-xs text-slate-500 truncate flex-1]  [Copy Ghost sm]
+    [URL text-xs text-base-content/70 truncate flex-1]  [Copy Ghost sm]
     Access: Radio — Can View / Can Comment
-    [Disable link — Ghost sm text-red-600]
+    [Disable link — Ghost sm text-error]
 ```
 
 ---
@@ -1061,26 +862,26 @@ Full `fixed` overlay, not a slide-in sheet. Opens from sidebar Settings button.
 Overlay:   fixed inset-0 bg-black/40 z-modal animate-in fade-in duration-200
 
 Container: fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-           w-[860px] h-[90vh] max-h-[700px] bg-white rounded-xl shadow-xl
+           w-[860px] h-[90vh] max-h-[700px] bg-base-100 rounded-xl shadow-xl
            flex overflow-hidden z-modal
            animate-in fade-in zoom-in-95 duration-300
 
 Left nav (220px):
-  border-r border-slate-200 p-4 flex flex-col gap-0.5
+  border-r border-base-300 p-4 flex flex-col gap-0.5
   shrink-0
 
-  Section label:  text-xs font-semibold text-slate-400 uppercase tracking-wide
+  Section label:  text-xs font-semibold text-base-content/50 uppercase tracking-wide
                   px-3 py-1 mb-1 mt-3 (first label: mt-0)
-  Nav item:       h-8 rounded-md px-3 flex items-center text-sm text-slate-700
-                  hover:bg-slate-100
-                  active: bg-violet-50 text-violet-700 font-medium
-  Lock icon (🔒): size-3 text-slate-400 ml-auto (Admin-only items for non-Admins)
+  Nav item:       h-8 rounded-md px-3 flex items-center text-sm text-base-content
+                  hover:bg-base-200
+                  active: bg-primary/10 text-primary font-medium
+  Lock icon (🔒): size-3 text-base-content/50 ml-auto (Admin-only items for non-Admins)
 
 Right content:
   flex-1 overflow-y-auto p-8
 
-  Section heading:    text-lg font-semibold text-slate-900 mb-1
-  Section subheading: text-sm text-slate-500 mb-6
+  Section heading:    text-lg font-semibold text-base-content mb-1
+  Section subheading: text-sm text-base-content/70 mb-6
   Form:               max-w-[480px] flex flex-col gap-5
 
 Close button: absolute top-4 right-4 Ghost icon-sm X
@@ -1094,35 +895,35 @@ Sheet from the right. Width `400px`.
 
 ```
 Header:
-  px-5 py-4 border-b border-slate-200
+  px-5 py-4 border-b border-base-300
   flex items-center justify-between
   [Bell size-5] "Notifications" text-base font-semibold
   [Mark all read — Ghost sm text-sm]
 
 Filter tabs (below header):
-  px-5 border-b border-slate-200
+  px-5 border-b border-base-300
   [All] [Mentions] [Comments] [Updates]
   (same Tab component)
 
 Body: flex-1 overflow-y-auto
 
 Notification row:
-  px-5 py-4 flex gap-3 border-b border-slate-100
-  hover:bg-slate-50 cursor-pointer transition-colors duration-100
+  px-5 py-4 flex gap-3 border-b border-base-300
+  hover:bg-base-200 cursor-pointer transition-colors duration-100
 
-  Unread:  left accent bar — border-l-2 border-violet-500 pl-[18px] (compensate for 2px)
+  Unread:  left accent bar — border-l-2 border-primary pl-[18px] (compensate for 2px)
   Read:    pl-5 opacity-80
 
   [Avatar sm]
   Content flex-1:
-    Summary:   text-sm text-slate-900
-    Location:  text-xs text-slate-500 mt-0.5 "Engineering › Sprint Board"
-    Snippet:   text-sm text-slate-600 italic line-clamp-2 mt-1
-    Time:      text-xs text-slate-400 mt-1
+    Summary:   text-sm text-base-content
+    Location:  text-xs text-base-content/70 mt-0.5 "Engineering › Sprint Board"
+    Snippet:   text-sm text-base-content/70 italic line-clamp-2 mt-1
+    Time:      text-xs text-base-content/50 mt-1
   [✓ — Ghost icon-sm, opacity-0 group-hover:opacity-100] (mark read)
 
 Empty state (no notifications): centered in body
-  Bell icon text-slate-300, "You're all caught up" text-sm text-slate-500
+  Bell icon text-base-content/30, "You're all caught up" text-sm text-base-content/70
 ```
 
 ---
@@ -1134,35 +935,35 @@ Anchored near top of screen (`top-[20vh]`), full-width constrained.
 ```
 Overlay:  fixed inset-0 bg-black/40 z-modal
 Dialog:   fixed top-[20vh] left-1/2 -translate-x-1/2
-          w-full max-w-[600px] bg-white rounded-xl shadow-xl overflow-hidden
+          w-full max-w-[600px] bg-base-100 rounded-xl shadow-xl overflow-hidden
           animate-in fade-in zoom-in-95 duration-200
 
 Search bar:
-  px-4 py-3 flex items-center gap-3 border-b border-slate-200
-  [Search size-5 text-slate-400 flex-shrink-0]
-  [input — text-base outline-none flex-1 placeholder:text-slate-400]
-  [<kbd>Esc</kbd> — text-xs text-slate-400 border border-slate-200 rounded px-1.5 py-0.5]
+  px-4 py-3 flex items-center gap-3 border-b border-base-300
+  [Search size-5 text-base-content/50 flex-shrink-0]
+  [input — text-base outline-none flex-1 placeholder:text-base-content/50]
+  [<kbd>Esc</kbd> — text-xs text-base-content/50 border border-base-300 rounded px-1.5 py-0.5]
 
 Section label (Recent, Results):
-  px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide
+  px-4 py-2 text-xs font-semibold text-base-content/50 uppercase tracking-wide
 
 Result item:
   px-4 py-3 flex items-center gap-3
-  hover:bg-slate-100 cursor-pointer transition-colors duration-100
-  data-[selected]:bg-slate-100
+  hover:bg-base-200 cursor-pointer transition-colors duration-100
+  data-[selected]:bg-base-200
 
-  [Page icon — 20px emoji or FileText size-5 text-slate-500]
+  [Page icon — 20px emoji or FileText size-5 text-base-content/70]
   Content:
-    Title:      text-sm font-medium text-slate-900
-                matched chars: font-bold text-violet-700
-    Breadcrumb: text-xs text-slate-500 mt-0.5
+    Title:      text-sm font-medium text-base-content
+                matched chars: font-bold text-primary
+    Breadcrumb: text-xs text-base-content/70 mt-0.5
 
 Footer:
-  px-4 py-2 border-t border-slate-100
-  flex gap-6 text-xs text-slate-400
+  px-4 py-2 border-t border-base-300
+  flex gap-6 text-xs text-base-content/50
   [↵ open] [↑↓ navigate] [Esc close]
   Each: flex items-center gap-1
-        <kbd> styled: border border-slate-200 rounded px-1 py-0.5 font-mono
+        <kbd> styled: border border-base-300 rounded px-1 py-0.5 font-mono
 ```
 
 ---
@@ -1173,27 +974,27 @@ Separate layout — no workspace sidebar.
 
 ```
 Top bar (h-14):
-  bg-slate-900 text-white px-6
+  bg-base-content text-primary-content px-6
   flex items-center justify-between
 
-  Left:  [Shield size-5] "Orbit" text-sm font-semibold text-slate-400
-                         "Admin" text-sm font-bold text-white
-  Right: [User name text-sm text-slate-300] [Sign out Ghost sm text-slate-400]
+  Left:  [Shield size-5] "Orbit" text-sm font-semibold text-base-content/50
+                         "Admin" text-sm font-bold text-primary-content
+  Right: [User name text-sm text-base-content/30] [Sign out Ghost sm text-base-content/50]
 
 Left sidebar (w-56):
-  bg-slate-800 text-slate-300
-  border-r border-slate-700
+  bg-base-content/90 text-base-content/30
+  border-r border-base-300
 
   Nav item:
     h-9 px-4 flex items-center gap-3 text-sm
-    hover:bg-slate-700 hover:text-white transition-colors
-    active: bg-slate-700 text-white rounded-md mx-2
+    hover:bg-base-content/80 hover:text-primary-content transition-colors
+    active: bg-base-content/80 text-primary-content rounded-md mx-2
 
 Main content:
-  bg-slate-50 flex-1 overflow-y-auto p-8
+  bg-base-200 flex-1 overflow-y-auto p-8
 
-  Page heading: text-2xl font-bold text-slate-900 mb-6
-  Content card: bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden
+  Page heading: text-2xl font-bold text-base-content mb-6
+  Content card: bg-base-100 rounded-xl border border-base-300 shadow-sm overflow-hidden
 ```
 
 ---
@@ -1204,14 +1005,14 @@ Main content:
 - **Show errors inline** — below the relevant field using the `Error State` pattern. Never use toast for validation errors.
 - **Disable submit** until the form is valid (for create forms) and dirty (for edit forms).
 - **Submit state:** button becomes loading (spinner replaces label, `min-w` preserved).
-- **Server error:** single message in `text-sm text-red-600 mt-4` below the form footer — e.g., "This slug is already taken."
+- **Server error:** single message in `text-sm text-error mt-4` below the form footer — e.g., "This slug is already taken."
 
 **Standard field layout:**
 ```jsx
 <div className="flex flex-col gap-1.5">
-  <label className="text-sm font-medium text-slate-900">Field label</label>
+  <label className="text-sm font-medium text-base-content">Field label</label>
   <Input ... />
-  <p className="text-xs text-red-600 min-h-[16px]">{error?.message}</p>
+  <p className="text-xs text-error min-h-4">{error?.message}</p>
 </div>
 ```
 
@@ -1225,24 +1026,24 @@ WorkFlik targets **WCAG 2.1 AA** compliance.
 
 | Foreground / Background | Ratio | WCAG |
 |---|---|---|
-| `text-slate-900` on `bg-white` | 18.1:1 | AAA ✓ |
-| `text-slate-600` on `bg-white` | 5.9:1 | AA ✓ |
-| `text-slate-500` on `bg-white` | 4.6:1 | AA ✓ |
-| `text-white` on `bg-violet-600` | 4.6:1 | AA ✓ |
-| `text-white` on `bg-red-600` | 4.8:1 | AA ✓ |
-| `text-amber-700` on `bg-amber-50` | 4.5:1 | AA ✓ |
-| `text-red-700` on `bg-red-50` | 5.1:1 | AA ✓ |
-| `text-green-700` on `bg-green-50` | 5.3:1 | AA ✓ |
-| `text-slate-400` (decorative/placeholder) | 3.1:1 | decorative only — not used for informative text |
+| `text-base-content` on `bg-base-100` | 18.1:1 | AAA ✓ |
+| `text-base-content/70` on `bg-base-100` | 5.9:1 | AA ✓ |
+| `text-base-content/70` on `bg-base-100` | 4.6:1 | AA ✓ |
+| `text-primary-content` on `bg-primary` | 4.6:1 | AA ✓ |
+| `text-primary-content` on `bg-error` | 4.8:1 | AA ✓ |
+| `text-warning` on `bg-warning/10` | 4.5:1 | AA ✓ |
+| `text-error` on `bg-error/10` | 5.1:1 | AA ✓ |
+| `text-success` on `bg-success/10` | 5.3:1 | AA ✓ |
+| `text-base-content/50` (decorative/placeholder) | 3.1:1 | decorative only — not used for informative text |
 
 ### Focus Ring
 
-Every interactive element: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2`.
+Every interactive element: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2`.
 Use `focus-visible` (not `focus`) so mouse clicks do not show the ring.
 
 ### Focus Management
 
-- Dialogs and Sheets trap focus inside — Radix UI handles this automatically.
+- Dialogs and Sheets trap focus inside — native `<dialog>` + `showModal()` handles this automatically.
 - On close: focus returns to the element that triggered the overlay.
 - After a page navigation: focus moves to the page title `contenteditable`.
 - Toast notifications: announced via `role="status" aria-live="polite"` without stealing focus.
@@ -1305,7 +1106,7 @@ Phase 1 is **desktop-first** (≥ 1024px). Mobile web is Phase 2.
 
 - Sidebar: `fixed left-0 top-0 h-full w-60 z-sidebar shadow-xl` when open; `translate-x-[-100%]` when closed
 - Settings modal: `w-screen h-screen rounded-none` (full-screen takeover)
-- Database Table view: horizontal scroll container; first (Title) column is `sticky left-0 bg-white z-10`
+- Database Table view: horizontal scroll container; first (Title) column is `sticky left-0 bg-base-100 z-10`
 - Search dialog: `w-screen rounded-none top-0` (full-width, anchored to top)
 - Notification center: `w-screen`
 

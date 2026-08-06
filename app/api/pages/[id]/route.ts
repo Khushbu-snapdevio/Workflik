@@ -2,13 +2,13 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
-import { requirePagePermission } from "@/lib/permissions/resolver";
-import { upsertPageSearchIndex } from "@/lib/search/index-page";
 import { triggerPageUpdateNotification } from "@/lib/notifications/triggers";
+import { deletePageCascade } from "@/lib/pages/delete-page";
 import { isMeaningfulTitle } from "@/lib/pages/draft";
 import { promoteDraftPage } from "@/lib/pages/promote-draft";
-import { deletePageCascade } from "@/lib/pages/delete-page";
+import { requirePagePermission } from "@/lib/permissions/resolver";
+import { upsertPageSearchIndex } from "@/lib/search/index-page";
+import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -24,28 +24,34 @@ export async function GET(_req: Request, { params }: Ctx) {
       .where(eq(pages.id, id))
       .limit(1);
 
-    if (!page) return apiError(404, "Page not found");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
 
     await requirePagePermission(session.user.id, id, "can_view");
 
     return Response.json(page);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }
 }
 
-const patchSchema = z.object({
-  title:        z.string().min(1).max(500).optional(),
-  icon:         z.string().nullable().optional(),
-  coverUrl:     z.string().nullable().optional(),
-  coverPosition: z.number().min(0).max(1).optional(),
-  isFullWidth:  z.boolean().optional(),
-  isSmallText:  z.boolean().optional(),
-  fontFamily:   z.enum(["default", "serif", "mono"]).optional(),
-  isPrivate:    z.boolean().optional(),
-}).strict();
+const patchSchema = z
+  .object({
+    title: z.string().min(1).max(500).optional(),
+    icon: z.string().nullable().optional(),
+    coverUrl: z.string().nullable().optional(),
+    coverPosition: z.number().min(0).max(1).optional(),
+    isFullWidth: z.boolean().optional(),
+    isSmallText: z.boolean().optional(),
+    fontFamily: z.enum(["default", "serif", "mono"]).optional(),
+    isPrivate: z.boolean().optional(),
+  })
+  .strict();
 
 // PATCH /api/pages/:id — update page metadata
 export async function PATCH(req: Request, { params }: Ctx) {
@@ -54,13 +60,25 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, isDraft: pages.isDraft, createdBy: pages.createdBy, lastEditedBy: pages.lastEditedBy, title: pages.title })
+      .select({
+        id: pages.id,
+        workspaceId: pages.workspaceId,
+        isDeleted: pages.isDeleted,
+        isDraft: pages.isDraft,
+        createdBy: pages.createdBy,
+        lastEditedBy: pages.lastEditedBy,
+        title: pages.title,
+      })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
 
-    if (!page) return apiError(404, "Page not found");
-    if (page.isDeleted) return apiError(404, "Page is in Trash");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
+    if (page.isDeleted) {
+      return apiError(404, "Page is in Trash");
+    }
 
     await requirePagePermission(session.user.id, id, "can_edit");
 
@@ -78,23 +96,34 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const updated = await db.transaction(async (tx) => {
       const [row] = await tx
         .update(pages)
-        .set({ ...parsed.data, lastEditedBy: session.user.id, updatedAt: new Date() })
+        .set({
+          ...parsed.data,
+          lastEditedBy: session.user.id,
+          updatedAt: new Date(),
+        })
         .where(eq(pages.id, id))
         .returning();
 
       if (willPromote) {
         const { promoted, page: promotedPage } = await promoteDraftPage(tx, id);
-        if (promoted && promotedPage) row.isDraft = promotedPage.isDraft;
+        if (promoted && promotedPage) {
+          row.isDraft = promotedPage.isDraft;
+        }
       }
 
       // Mirrors blocks/batch's notify-once throttle so a title-only edit still notifies (blocks/batch would otherwise see lastEditedBy already stamped and skip it). Drafts never notify.
-      if (!page.isDraft && page.createdBy && session.user.id !== page.createdBy && session.user.id !== page.lastEditedBy) {
+      if (
+        !page.isDraft &&
+        page.createdBy &&
+        session.user.id !== page.createdBy &&
+        session.user.id !== page.lastEditedBy
+      ) {
         await triggerPageUpdateNotification(tx, {
           workspaceId: page.workspaceId,
-          pageId:      id,
-          editorId:    session.user.id,
-          createdBy:   page.createdBy,
-          pageTitle:   row.title ?? page.title ?? "Untitled",
+          pageId: id,
+          editorId: session.user.id,
+          createdBy: page.createdBy,
+          pageTitle: row.title ?? page.title ?? "Untitled",
         });
       }
 
@@ -104,16 +133,18 @@ export async function PATCH(req: Request, { params }: Ctx) {
     // Keep search index current whenever title changes
     if (parsed.data.title !== undefined) {
       upsertPageSearchIndex(db, {
-        id:          updated.id,
+        id: updated.id,
         workspaceId: updated.workspaceId,
-        title:       updated.title,
-        kind:        updated.kind,
+        title: updated.title,
+        kind: updated.kind,
       }).catch(() => {});
     }
 
     return Response.json(updated);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }
@@ -130,7 +161,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const result = await deletePageCascade(id, session.user.id);
     return Response.json({ success: true, ...result });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }

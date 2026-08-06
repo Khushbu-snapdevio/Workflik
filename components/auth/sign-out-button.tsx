@@ -1,7 +1,11 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { signOut } from "@/lib/auth/client";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function SignOutButton({
   children,
@@ -21,16 +25,18 @@ export function SignOutButton({
 
   const button = (
     <button
-      ref={ref}
       className={className}
       onClick={handleSignOut}
+      ref={ref}
       type="button"
     >
       {children}
     </button>
   );
 
-  if (!title) return button;
+  if (!title) {
+    return button;
+  }
 
   return (
     <Tooltip>

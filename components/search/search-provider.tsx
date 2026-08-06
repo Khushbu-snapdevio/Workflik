@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import { SearchDialog } from "./search-dialog";
 
 interface SearchProviderProps {
+  children: React.ReactNode;
+  workspaceId: string;
   workspaceSlug: string;
-  workspaceId:   string;
-  children:      React.ReactNode;
 }
 
-export function SearchProvider({ workspaceSlug, workspaceId, children }: SearchProviderProps) {
+export function SearchProvider({
+  workspaceSlug,
+  workspaceId,
+  children,
+}: SearchProviderProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -17,10 +21,12 @@ export function SearchProvider({ workspaceSlug, workspaceId, children }: SearchP
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         // Only open — when dialog is already open, its own Ctrl+K handler clears the query
-        setOpen((prev) => prev ? prev : true);
+        setOpen((prev) => (prev ? prev : true));
       }
     }
-    function handleEvent() { setOpen(true); }
+    function handleEvent() {
+      setOpen(true);
+    }
     document.addEventListener("keydown", handleKey);
     document.addEventListener("workflik:open-search", handleEvent);
     return () => {
@@ -34,9 +40,12 @@ export function SearchProvider({ workspaceSlug, workspaceId, children }: SearchP
       {children}
       {open && (
         <SearchDialog
-          workspaceSlug={workspaceSlug}
+          onClose={() => {
+            setOpen(false);
+            document.dispatchEvent(new CustomEvent("workflik:search-closed"));
+          }}
           workspaceId={workspaceId}
-          onClose={() => { setOpen(false); document.dispatchEvent(new CustomEvent("workflik:search-closed")); }}
+          workspaceSlug={workspaceSlug}
         />
       )}
     </>

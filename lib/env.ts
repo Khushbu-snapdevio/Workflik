@@ -9,7 +9,10 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   APP_SECRET: z
     .string()
-    .min(32, "APP_SECRET must be at least 32 characters — generate one with: openssl rand -base64 32")
+    .min(
+      32,
+      "APP_SECRET must be at least 32 characters — generate one with: openssl rand -base64 32"
+    )
     .refine(
       (v) => v !== "replace-with-at-least-32-random-characters",
       "APP_SECRET is still set to the .env.example placeholder — generate a real one with: openssl rand -base64 32"
@@ -37,7 +40,10 @@ const envSchema = z.object({
 
   // ── Email ──────────────────────────────────────────────────────────────────
   SMTP_HOST: optionalString,
-  SMTP_PORT: z.preprocess((v) => (v ? Number(v) : undefined), z.number().optional()),
+  SMTP_PORT: z.preprocess(
+    (v) => (v ? Number(v) : undefined),
+    z.number().optional()
+  ),
   SMTP_USER: optionalString,
   SMTP_PASS: optionalString,
   EMAIL_FROM: optionalString,
@@ -52,12 +58,12 @@ const envSchema = z.object({
   // Local driver — absolute or relative path; defaults to <project-root>/uploads
   UPLOAD_DIR: optionalString,
   // S3 / R2 driver — all required when STORAGE_DRIVER is "s3" or "r2"
-  S3_ENDPOINT:          optionalString,   // leave unset for AWS; set for R2 / MinIO
-  S3_BUCKET:            optionalString,
-  S3_REGION:            optionalString,
-  S3_ACCESS_KEY_ID:     optionalString,
+  S3_ENDPOINT: optionalString, // leave unset for AWS; set for R2 / MinIO
+  S3_BUCKET: optionalString,
+  S3_REGION: optionalString,
+  S3_ACCESS_KEY_ID: optionalString,
   S3_SECRET_ACCESS_KEY: optionalString,
-  CDN_URL:              optionalString,   // CDN base URL, e.g. https://cdn.example.com
+  CDN_URL: optionalString, // CDN base URL, e.g. https://cdn.example.com
 });
 
 const parsed = envSchema.safeParse(process.env);

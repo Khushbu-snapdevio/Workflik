@@ -8,9 +8,9 @@ export async function workspaceInviteTemplate({
   workspaceName,
   acceptUrl,
 }: {
-  inviterName:   string;
+  inviterName: string;
   workspaceName: string;
-  acceptUrl:     string;
+  acceptUrl: string;
 }) {
   const html = await renderEmailTemplate(
     createElement(WorkspaceInviteEmail, {

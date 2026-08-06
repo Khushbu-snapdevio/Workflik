@@ -24,10 +24,14 @@ export default async function NewPage({ params, searchParams }: Props) {
     .where(eq(workspaces.slug, slug))
     .limit(1);
 
-  if (!ws) redirect(`/app/${slug}`);
+  if (!ws) {
+    redirect(`/app/${slug}`);
+  }
 
   const member = await getWorkspaceMember(ws.id, session.user.id);
-  if (!member || member.role === "viewer") redirect(`/app/${slug}`);
+  if (!member || member.role === "viewer") {
+    redirect(`/app/${slug}`);
+  }
 
   // Validate parentId belongs to this workspace
   const resolvedParentId = parentId ?? null;
@@ -35,9 +39,17 @@ export default async function NewPage({ params, searchParams }: Props) {
     const [parent] = await db
       .select({ id: pages.id })
       .from(pages)
-      .where(and(eq(pages.id, resolvedParentId), eq(pages.workspaceId, ws.id), eq(pages.isDeleted, false)))
+      .where(
+        and(
+          eq(pages.id, resolvedParentId),
+          eq(pages.workspaceId, ws.id),
+          eq(pages.isDeleted, false)
+        )
+      )
       .limit(1);
-    if (!parent) redirect(`/app/${slug}`);
+    if (!parent) {
+      redirect(`/app/${slug}`);
+    }
   }
 
   const [{ maxOrder }] = await db
@@ -47,7 +59,9 @@ export default async function NewPage({ params, searchParams }: Props) {
       and(
         eq(pages.workspaceId, ws.id),
         eq(pages.isDeleted, false),
-        resolvedParentId ? eq(pages.parentId, resolvedParentId) : isNull(pages.parentId)
+        resolvedParentId
+          ? eq(pages.parentId, resolvedParentId)
+          : isNull(pages.parentId)
       )
     );
 
@@ -60,11 +74,11 @@ export default async function NewPage({ params, searchParams }: Props) {
       .values({
         shortId,
         workspaceId: ws.id,
-        parentId:    resolvedParentId,
-        kind:        "page",
-        title:       "Untitled",
+        parentId: resolvedParentId,
+        kind: "page",
+        title: "Untitled",
         orderIndex,
-        createdBy:   session.user.id,
+        createdBy: session.user.id,
         lastEditedBy: session.user.id,
       })
       .returning();
@@ -72,13 +86,13 @@ export default async function NewPage({ params, searchParams }: Props) {
     await insertPageWithClosure(tx, page.id, resolvedParentId);
 
     await tx.insert(blocks).values({
-      pageId:        page.id,
+      pageId: page.id,
       parentBlockId: null,
-      type:          "paragraph",
-      content:       { text: [], schemaVersion: 1 },
+      type: "paragraph",
+      content: { text: [], schemaVersion: 1 },
       schemaVersion: 1,
-      orderIndex:    0,
-      createdBy:     session.user.id,
+      orderIndex: 0,
+      createdBy: session.user.id,
     });
 
     return page;

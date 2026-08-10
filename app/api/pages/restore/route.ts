@@ -2,7 +2,12 @@ import { inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { pageClosure, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 const bodySchema = z.object({
   ids: z.array(z.string().uuid()).min(1).max(1000),
@@ -21,10 +26,10 @@ export async function POST(req: Request) {
 
     const requested = await db
       .select({
-        id:          pages.id,
+        id: pages.id,
         workspaceId: pages.workspaceId,
-        isDeleted:   pages.isDeleted,
-        parentId:    pages.parentId,
+        isDeleted: pages.isDeleted,
+        parentId: pages.parentId,
       })
       .from(pages)
       .where(inArray(pages.id, parsed.data.ids));
@@ -53,16 +58,29 @@ export async function POST(req: Request) {
     const closure = await db
       .select({ descendantId: pageClosure.descendantId })
       .from(pageClosure)
-      .where(inArray(pageClosure.ancestorId, roots.map((p) => p.id)));
+      .where(
+        inArray(
+          pageClosure.ancestorId,
+          roots.map((p) => p.id)
+        )
+      );
 
     const restoreIds = [
-      ...new Set([...roots.map((p) => p.id), ...closure.map((c) => c.descendantId)]),
+      ...new Set([
+        ...roots.map((p) => p.id),
+        ...closure.map((c) => c.descendantId),
+      ]),
     ];
 
     const restoredCount = await db.transaction(async (tx) => {
       await tx
         .update(pages)
-        .set({ isDeleted: false, deletedAt: null, deletedBy: null, updatedAt: new Date() })
+        .set({
+          isDeleted: false,
+          deletedAt: null,
+          deletedBy: null,
+          updatedAt: new Date(),
+        })
         .where(inArray(pages.id, restoreIds));
 
       // Detach to workspace root only if the parent is still in Trash after this restore; evaluated post-UPDATE against the final state.
@@ -93,7 +111,9 @@ export async function POST(req: Request) {
         // be kept as a parent.
         const found = new Set(parentRows.map((p) => p.id));
         for (const pid of candidateParentIds) {
-          if (!found.has(pid)) stillDeletedParents.add(pid);
+          if (!found.has(pid)) {
+            stillDeletedParents.add(pid);
+          }
         }
       }
 
@@ -116,7 +136,9 @@ export async function POST(req: Request) {
       requested: parsed.data.ids.length,
     });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }

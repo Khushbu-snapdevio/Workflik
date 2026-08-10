@@ -615,7 +615,7 @@ Orbit Admin (`/orbit`) is WorkFlik's internal operations dashboard. **Not access
 
 ## Tech Stack
 
-Next.js 15 (App Router, React 19, TypeScript strict) · Tailwind CSS v4 · shadcn/ui · TipTap (ProseMirror) editor · PostgreSQL + Drizzle ORM v0.45 · Better Auth (magic-link + admin) · pg-boss (background jobs) · Nodemailer (SMTP) · SSE for real-time notifications · pnpm monorepo.
+Next.js 16 (App Router, React 19, TypeScript strict) · **daisyUI 5** (primary component styling + theme tokens) · **Headless UI** (interactive behaviour) · **Floating UI** (collision-aware positioning, via `lib/ui/use-anchor-position.ts`) · native HTML (`<dialog>`, Popover API, `<details>`, form controls) · Tailwind CSS v4 (layout + genuinely custom details only) · TipTap (ProseMirror) editor · PostgreSQL + Drizzle ORM v0.45 · Better Auth (magic-link + admin) · pg-boss (background jobs) · Nodemailer (SMTP) · SSE for real-time notifications · pnpm monorepo.
 
 ---
 
@@ -647,19 +647,38 @@ Two processes share one PostgreSQL database: **Next.js** (web UI + API routes + 
 
 > **These rules apply to every component, page, and PR. No exceptions.**
 
-### 1 — Use CSS variables. Never hardcode values.
+### 0 — Which layer owns what
 
-All colors, radii, and shadows must come from the design token system defined in `app/globals.css`. Using a hardcoded hex, rgb, or px value where a token exists is a bug.
-
-**Colors — always use semantic Tailwind classes or CSS variables:**
 ```
-✅  bg-background      text-foreground      border-border
-✅  bg-card            text-muted-foreground bg-primary
-✅  text-primary       bg-accent            bg-muted
-✅  var(--primary)     var(--foreground)    var(--border)
+daisyUI     → primary component styling + all colour tokens
+Headless UI → interactive behaviour (focus, keyboard, ARIA, open state)
+Floating UI → collision-aware positioning for anchored popups
+Native HTML → behaviour the browser already provides
+Tailwind    → layout, responsive behaviour, genuinely custom details
+```
+
+Pick an implementation in that order: **native HTML → daisyUI → Headless UI → Floating UI → hand-rolled.** Hand-rolling something one of those layers already provides is a review defect.
+
+`@radix-ui/*`, `radix-ui`, `shadcn`, and `class-variance-authority` are **permanently out of the stack** — zero imports remain and there is no `components.json`. Do not reintroduce them.
+
+Reach for a daisyUI component class before writing your own — `btn`, `input`, `select`, `textarea`, `checkbox`, `radio`, `toggle`, `range`, `badge`, `card`, `alert`, `avatar`, `skeleton`, `table`, `tabs`/`tab`, `collapse`, `breadcrumbs`, `join`, `menu`, `tooltip`, `modal-action`. Add the daisy class and override only what this app deliberately differs on; Tailwind utilities outrank daisy's component layer, so each override wins — which also means a *missing* override lets a daisy default (usually `--radius-box`) leak through silently. Check the computed style, not the markup.
+
+Components that stay custom, and why, are listed in [docs/ui-design.md](docs/ui-design.md) → Components → "Intentionally not on a daisyUI component class".
+
+### 1 — Use daisyUI/Tailwind semantic classes. Never hardcode values.
+
+All colors come from daisyUI's built-in `light`/`dark` themes (configured in `app/globals.css`); radii and shadows come from the custom scale also defined there. Using a hardcoded hex, rgb, or px value where a semantic class exists is a bug.
+
+**Colors — always use daisyUI's semantic classes or CSS variables:**
+```
+✅  bg-base-200        text-base-content     border-base-300
+✅  bg-base-100        text-base-content/70  bg-primary
+✅  text-primary       bg-base-200           text-primary-content
+✅  var(--color-primary)  var(--color-base-content)  var(--color-base-300)
 
 ❌  bg-[#F8FBFF]       text-[#0C2340]       border-[#DAEAF5]
 ❌  color: #0284C7     background: white    border: 1px solid #ddd
+❌  bg-background      text-foreground      border-border   (removed shadcn vocabulary — do not reintroduce)
 ```
 
 **Radius — only the five defined steps:**
@@ -691,17 +710,17 @@ WorkFlik uses border + background contrast for depth, not drop shadows. Remove a
 ```
 
 Depth hierarchy without shadows:
-- **Default surface** → `bg-background`
-- **Raised surface (cards, panels)** → `bg-card` + `border border-border`
-- **Overlay surface (dropdowns, popovers)** → `bg-popover` + `border border-border`
-- **Active / selected** → `bg-accent` or `bg-primary/10`
+- **Default surface** → `bg-base-200`
+- **Raised surface (cards, panels)** → `bg-base-100` + `border border-base-300`
+- **Overlay surface (dropdowns, popovers)** → `bg-base-100` + `border border-base-300`
+- **Active / selected** → `bg-base-200`/`bg-base-300` or `bg-primary/10`
 
 ### 3 — Border width: always 1px (`border`)
 
 Never use `border-2`, `border-4`, or `border-[Npx]` for standard UI. The only exception is accent lines (e.g., active tab indicator), which use `border-b-2 border-primary`.
 
 ```
-✅  border border-border          (standard card / input border)
+✅  border border-base-300        (standard card / input border)
 ✅  border-b-2 border-primary     (active tab underline only)
 ❌  border-2  border-4  border-[3px]
 ```
@@ -740,8 +759,8 @@ font-black   (900)   →  hero headlines only (landing page)
 The ProseMirror editor must use CSS variables for all colors. Hard-coded hex values in editor styles are treated as bugs.
 
 ```
-✅  color: var(--foreground)       background: var(--muted)    border-color: var(--border)
-❌  color: #1e1e1e                 background: #F8FAFC         border-color: #ddd
+✅  color: var(--color-base-content)   background: var(--color-base-200)   border-color: var(--color-base-300)
+❌  color: #1e1e1e                     background: #F8FAFC                 border-color: #ddd
 ```
 
 The code-block background (`#1e1e1e`) and syntax token colors are the one approved exception — they are part of the VS Code Dark syntax theme and intentionally fixed. Everything else in `.ProseMirror` must use tokens.
@@ -753,12 +772,12 @@ Before every PR that touches UI, verify:
 - [ ] All colors are semantic tokens — no hex/rgb hardcoded
 - [ ] All radii use the canonical scale classes (`rounded-xs`/`sm`/`md`/`lg`/`xl`, which resolve to `var(--radius-*)` via the `@theme inline` registration) — no `rounded-2xl`, `rounded-3xl`, `rounded-[Npx]`, or needless `rounded-[var(--radius-*)]` brackets
 - [ ] No shadow utilities anywhere in the diff
-- [ ] Border is `border border-border` (1px) — no `border-2+`
+- [ ] Border is `border border-base-300` (1px) — no `border-2+`
 - [ ] Font classes are `font-sans` or `font-mono` — no hardcoded family names
 - [ ] Text sizes follow the defined scale
 - [ ] Spacing uses Tailwind standard scale — no `px-[Npx]` arbitrary values
 - [ ] Interactive states (hover, focus, active, disabled) are defined for every interactive element
-- [ ] Focus ring uses `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`
+- [ ] Focus ring uses `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`
 - [ ] All images use `<Image>` from `next/image` — no raw `<img>` tags
 - [ ] All icons from `lucide-react` — no other icon library, no inline SVG
 - [ ] Icon-only buttons have `aria-label`
@@ -766,12 +785,12 @@ Before every PR that touches UI, verify:
 - [ ] Every destructive action goes through `<AlertDialog>`
 - [ ] Buttons that trigger network requests show a spinner + disabled state while in flight
 - [ ] No `"use client"` added higher than necessary in the tree
-- [ ] All hover states use `bg-accent` or approved variants — no arbitrary colors
+- [ ] All hover states use `bg-base-200` or approved variants — no arbitrary colors
 - [ ] All color-changing hover interactions have `transition-colors duration-150`
 - [ ] No `duration-300+` transitions on any interactive element
-- [ ] Tooltips use shadcn `<Tooltip>` with `delayDuration={400}` — no custom tooltip
+- [ ] Tooltips use the local `<Tooltip>` (`components/ui/tooltip.tsx`) with `delayDuration={400}` — no custom tooltip
 - [ ] Single-line text contexts use `truncate` + `min-w-0` on flex parent
-- [ ] Contextual menus use `<DropdownMenu>` or `<ContextMenu>` — destructive items at bottom with `text-destructive`
+- [ ] Contextual menus use Headless UI `<Menu>` — destructive items at bottom with `text-error`
 - [ ] Timestamps shown in browser local timezone, relative < 7 days, absolute ≥ 7 days
 - [ ] Avatars use the defined size scale and `rounded-full` — no square avatars
 - [ ] Drag handles use `<GripVertical>`, visible on hover only
@@ -802,8 +821,9 @@ Every destructive delete action anywhere in the app **must** show a confirmation
 **Required confirmation dialog anatomy:**
 - Title: clear statement of what will be deleted (e.g. "Delete this page?", "Remove member?")
 - Body: one sentence describing what will be lost and whether it is reversible (e.g. "This page and all its sub-pages will be moved to Trash." or "This cannot be undone.")
-- Buttons: **Cancel** (left, `variant="outline"`) and **Delete** (right, `variant="destructive"`)
-- Dialog must use `<AlertDialog>` from shadcn/ui — never a plain `<Dialog>` for destructive actions
+- Buttons: `<AlertDialogCancel>` (left) and `<AlertDialogAction>` (right). Both already render through the shared daisy `btn` builder — Cancel as `outline`, Action as `destructive-solid` (daisy's `btn-error`), so a delete reads as the dialog's primary affordance. Don't pass your own button classes.
+- The footer is `<AlertDialogFooter>`, which is daisyUI's `modal-action`.
+- Dialog must use the local `<AlertDialog>` (`components/ui/alert-dialog.tsx`) — never a plain `<Dialog>` for destructive actions
 
 ```
 ✅  <AlertDialog> with AlertDialogCancel + AlertDialogAction (destructive)
@@ -816,7 +836,7 @@ Every destructive delete action anywhere in the app **must** show a confirmation
 
 In every modal, dialog, sheet, and drawer:
 
-- **Close button (X)** is always in the **top-right corner** — use the shadcn/ui `DialogClose` or `SheetClose` component placed in the header's right slot.
+- **Close button (X)** is always in the **top-right corner** — use the local `DialogClose` or `SheetClose` component placed in the header's right slot.
 - **Title and primary context** are on the **left** of the header.
 - **Action buttons** (Save, Confirm, Apply) appear at the **bottom-right** of the dialog footer; secondary/cancel buttons are to their left.
 - Never put a close icon on the left. Never put settings icons or action menus on the right of the header (that slot belongs to close only).
@@ -886,7 +906,7 @@ Every `"use client"` directive added high in the component tree forces its entir
 ❌  Blank white area while data loads
 ```
 
-- Use `bg-muted animate-pulse rounded-sm` for skeleton blocks.
+- Use `bg-base-200 animate-pulse rounded-sm` for skeleton blocks.
 - Match the number of items to the expected content (3–5 rows for lists, full-width bar for titles).
 - The sidebar and topbar must never be part of any skeleton — they stay painted at all times.
 
@@ -989,13 +1009,13 @@ WorkFlik must be usable with a keyboard and screen reader. These are the minimum
 **Required for every interactive element:**
 - All buttons, links, and inputs must have a visible label or `aria-label`.
 - Icon-only buttons must have `aria-label` describing the action (e.g. `aria-label="Delete page"`).
-- Focus ring must be visible: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`.
+- Focus ring must be visible: `focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`.
 - Never remove focus styles with `outline-none` alone — always pair with `focus-visible:ring-*`.
 
 **Required for modals and drawers:**
 - Focus must move into the modal when it opens (`autoFocus` on the first interactive element or the dialog itself).
 - Focus must return to the trigger element when the modal closes.
-- Modal must be closeable with the `Escape` key (shadcn/ui `<Dialog>` handles this automatically).
+- Modal must be closeable with the `Escape` key (the native `<dialog>`/`showModal()` element `<Dialog>` is built on handles this automatically).
 
 **Required for forms:**
 - Every `<input>` and `<textarea>` must have an associated `<label>` (via `htmlFor` / `id` or `aria-label`).
@@ -1016,21 +1036,21 @@ Every interactive element must have a consistent hover and active state. Never l
 
 **Hover state — use these, nothing else:**
 ```
-bg-accent            →  default hover for list items, nav items, menu rows
-bg-accent/80         →  hover for already-selected/active items
+bg-base-200          →  default hover for list items, nav items, menu rows
+bg-base-300/80       →  hover for already-selected/active items
 bg-primary/10        →  hover for items on a primary-colored surface
-text-foreground      →  hover text color (from muted-foreground baseline)
+text-base-content    →  hover text color (from text-base-content/70 baseline)
 ```
 
 **Active / pressed state:**
 ```
-bg-accent/70         →  pressed state (mousedown) for list items
+bg-base-300/70       →  pressed state (mousedown) for list items
 bg-primary/20        →  pressed state on primary-tinted surfaces
 ```
 
 **Focus state — always use the ring system:**
 ```
-focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
 ```
 Never use `outline` or `border` to simulate focus. Never suppress focus with just `outline-none`.
 
@@ -1044,7 +1064,7 @@ Never use `outline` or `border` to simulate focus. Never suppress focus with jus
 ```
 
 - Every `hover:` class that changes a color must be paired with `transition-colors duration-150`.
-- Modals and sheets use the shadcn/ui default animation (already tuned) — do not override it.
+- Modals and sheets use the default `<dialog>` open/close animation defined in `app/globals.css` (already tuned) — do not override it.
 - Never animate layout properties (`width`, `height`, `padding`, `margin`) on hover — they cause reflow.
 
 ### 22 — Tooltips: when and how to use them
@@ -1059,8 +1079,8 @@ Tooltips are for **icon-only buttons and truncated text** — not for explaining
 ❌  Tooltip on disabled elements — show the reason inline or not at all
 ```
 
-- Use shadcn/ui `<Tooltip>` with `<TooltipProvider>` — never a custom tooltip.
-- Delay: `delayDuration={400}` — tooltips must not flash instantly on hover.
+- Use the local `<Tooltip>` (`components/ui/tooltip.tsx`) with `<TooltipProvider>` — never a custom tooltip. It is daisyUI's CSS-only `tooltip`: no JS state and no positioner, so the open delay is whatever daisy's CSS defines. `TooltipProvider` still accepts `delayDuration` for API compatibility but **does not read it** — don't add it expecting an effect.
+- When a tooltip needs collision-aware placement against a caller-supplied rect (rather than its own parent), use `<IconTooltip>` / `<ReactionTooltip>`, which position via **Floating UI** (`lib/ui/use-anchor-position.ts`).
 - Max width: `max-w-xs`. Never let a tooltip wrap to more than 2 lines.
 - Never put interactive elements (buttons, links) inside a tooltip.
 
@@ -1087,7 +1107,7 @@ Every entity that can be acted on (page, block, member, template, database row) 
 **Three-dot button (`⋯`):**
 - Appears on hover of the row/item — hidden at rest to keep UI clean.
 - Icon: `<MoreHorizontal size={16} />` from lucide-react. Never use a gear icon for this.
-- Opens a `<DropdownMenu>` from shadcn/ui.
+- Opens a Headless UI `<Menu>`.
 - Position: right side of the row, vertically centered.
 
 **Menu item order — always this sequence:**
@@ -1096,11 +1116,11 @@ Every entity that can be acted on (page, block, member, template, database row) 
 2. Edit actions (Rename, Edit, Duplicate)
 3. Move / organizational actions
 4. ─── divider ───
-5. Destructive actions (Delete, Remove, Archive) — with red text (text-destructive)
+5. Destructive actions (Delete, Remove, Archive) — with red text (text-error)
 ```
 
 **Right-click context menu:**
-- Use `<ContextMenu>` from shadcn/ui for page items in the sidebar and database rows.
+- Use a Headless UI `<Menu>` positioned at the cursor for page items in the sidebar and database rows.
 - Same item order as the three-dot menu — never different content in the two menus for the same entity.
 
 ### 25 — Date and time display
@@ -1161,10 +1181,10 @@ Blocks in the editor and pages in the sidebar support drag-to-reorder. The visua
 The topbar breadcrumb shows the path from the workspace root to the current page. It must always be present on page views and reflect the actual nesting path.
 
 **Rules:**
-- Segments are separated by `<ChevronRight size={14} className="text-muted-foreground" />`.
+- Use the local `<Breadcrumb>` (`components/ui/breadcrumb.tsx`), which is daisyUI's `breadcrumbs`. **daisy draws the separator itself** (a rotated border box on `li + *::before`) — never render a separator element of your own, and keep `<BreadcrumbItem>` as a *direct* child of `<BreadcrumbList>`, or daisy's selector won't match and the separator disappears.
 - Each ancestor segment is a clickable `<Link>` that navigates to that page.
-- The current page (last segment) is non-clickable, `text-foreground font-medium`.
-- All ancestor segments use `text-muted-foreground` and `hover:text-foreground transition-colors duration-150`.
+- The current page (last segment) is non-clickable, `text-base-content font-medium`.
+- All ancestor segments use `text-base-content/70` and `hover:text-base-content transition-colors duration-150`.
 - If the path is too long (> 4 segments), collapse the middle segments into `…` with a dropdown showing the hidden ancestors on click.
 - Workspace name is always the first segment.
 
@@ -1285,10 +1305,10 @@ These are derived from architecture decisions that are hard to change after data
 29. **Every API error must surface a recovery UI.** Never swallow errors silently — always show the user what went wrong and how to recover. (See UI Rule 16.)
 30. **Every mutation button shows a spinner and is disabled while in flight.** Double-submit is never possible. (See UI Rule 18.)
 31. **Page navigation is a hard cut — no transition animation.** Sidebar and topbar never re-render during navigation. Only the innermost content area swaps. (See Navigation section.)
-32. **Hover = `bg-accent`, transition = `duration-150`.** Every interactive element must have a consistent hover state and a `transition-colors duration-150` paired with it. No arbitrary hover colors, no slow transitions. (See UI Rule 21.)
-33. **Tooltips via shadcn `<Tooltip>` only, `delayDuration={400}`.** No custom tooltip implementations. (See UI Rule 22.)
+32. **Hover = `bg-base-200`, transition = `duration-150`.** Every interactive element must have a consistent hover state and a `transition-colors duration-150` paired with it. No arbitrary hover colors, no slow transitions. (See UI Rule 21.)
+33. **Tooltips via the local `<Tooltip>` only, `delayDuration={400}`.** No custom tooltip implementations. (See UI Rule 22.)
 34. **All single-line text contexts must truncate — never wrap.** Use `truncate` + `min-w-0` on the flex parent. (See UI Rule 23.)
-35. **Contextual menus follow the fixed item order** — primary → edit → move → divider → destructive. Destructive items always `text-destructive` at the bottom. (See UI Rule 24.)
+35. **Contextual menus follow the fixed item order** — primary → edit → move → divider → destructive. Destructive items always `text-error` at the bottom. (See UI Rule 24.)
 36. **Timestamps render in browser local timezone** — relative for < 7 days, absolute for ≥ 7 days. Never show raw ISO strings. (See UI Rule 25.)
 37. **Avatars are always `rounded-full`, sized from the defined scale only.** Fallback initials derived deterministically from name. (See UI Rule 26.)
 38. **Drag handles are `<GripVertical>`, hover-only visible.** Drop indicator is a thin `bg-primary h-0.5` line — no zone highlighting. (See UI Rule 27.)

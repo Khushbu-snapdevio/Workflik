@@ -10,17 +10,17 @@ import { triggerTrashWarningNotification } from "@/lib/notifications/triggers";
 export async function handleWarnExpiringTrash(
   _jobs: Job<Record<string, never>>[]
 ) {
-  const now   = new Date();
+  const now = new Date();
   const day27 = new Date(now.getTime() - 27 * 24 * 60 * 60 * 1000);
   const day30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const expiring = await db
     .select({
-      id:          pages.id,
+      id: pages.id,
       workspaceId: pages.workspaceId,
-      deletedBy:   pages.deletedBy,
-      createdBy:   pages.createdBy,
-      title:       pages.title,
+      deletedBy: pages.deletedBy,
+      createdBy: pages.createdBy,
+      title: pages.title,
     })
     .from(pages)
     .where(
@@ -32,7 +32,9 @@ export async function handleWarnExpiringTrash(
       )
     );
 
-  if (expiring.length === 0) return;
+  if (expiring.length === 0) {
+    return;
+  }
 
   for (const page of expiring) {
     await db.transaction(async (tx) => {
@@ -43,17 +45,21 @@ export async function handleWarnExpiringTrash(
         .where(and(eq(pages.id, page.id), eq(pages.trashWarningSent, false)))
         .returning({ id: pages.id });
 
-      if (!updated) return; // Another concurrent run already handled this page
+      if (!updated) {
+        return; // Another concurrent run already handled this page
+      }
 
       await triggerTrashWarningNotification(tx, {
         workspaceId: page.workspaceId,
-        pageId:      page.id,
-        deletedBy:   page.deletedBy ?? "",
-        createdBy:   page.createdBy ?? "",
-        pageTitle:   page.title ?? "Untitled",
+        pageId: page.id,
+        deletedBy: page.deletedBy ?? "",
+        createdBy: page.createdBy ?? "",
+        pageTitle: page.title ?? "Untitled",
       });
     });
   }
 
-  console.log(`[warn-expiring-trash] Processed ${expiring.length} expiring pages.`);
+  console.log(
+    `[warn-expiring-trash] Processed ${expiring.length} expiring pages.`
+  );
 }

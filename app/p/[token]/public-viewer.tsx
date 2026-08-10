@@ -1,26 +1,41 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
-import { TextStyle } from "@tiptap/extension-text-style";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import Link from "@tiptap/extension-link";
 import { Table } from "@tiptap/extension-table";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableRow } from "@tiptap/extension-table-row";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Underline from "@tiptap/extension-underline";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
 import { Callout } from "@/components/editor/extensions/callout";
+import {
+  AudioBlock,
+  FileBlock,
+  ImageBlock,
+  VideoBlock,
+} from "@/components/editor/extensions/media-blocks";
 import { MentionNode } from "@/components/editor/extensions/mention-node";
+import {
+  Columns,
+  InlineDatabase,
+  LinkedPage,
+  MathBlock,
+  TableOfContents,
+  TemplateButton,
+} from "@/components/editor/extensions/reference-blocks";
 import { Toggle, ToggleSummary } from "@/components/editor/extensions/toggle";
-import { ImageBlock, VideoBlock, AudioBlock, FileBlock } from "@/components/editor/extensions/media-blocks";
-import { LinkedPage, InlineDatabase, TemplateButton, TableOfContents, MathBlock, Columns } from "@/components/editor/extensions/reference-blocks";
-import { blocksToTiptapDoc, type DbBlock } from "@/components/editor/serializer";
+import {
+  blocksToTiptapDoc,
+  type DbBlock,
+} from "@/components/editor/serializer";
 
 const lowlight = createLowlight(common);
 
@@ -57,7 +72,11 @@ export function PublicPageViewer({ blocks }: Props) {
       AudioBlock,
       FileBlock,
       LinkedPage,
-      InlineDatabase.configure({ workspaceId: "", workspaceSlug: "", isEditor: false }),
+      InlineDatabase.configure({
+        workspaceId: "",
+        workspaceSlug: "",
+        isEditor: false,
+      }),
       TemplateButton,
       TableOfContents,
       MathBlock,
@@ -68,8 +87,8 @@ export function PublicPageViewer({ blocks }: Props) {
 
   return (
     <EditorContent
-      editor={editor}
       className="prose prose-sm sm:prose-base max-w-none focus:outline-none"
+      editor={editor}
     />
   );
 }

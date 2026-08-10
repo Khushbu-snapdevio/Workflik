@@ -4,7 +4,7 @@
 // Patched at module scope so it runs before hydration, without a <script> tag (React 19 warns).
 if (typeof window !== "undefined") {
   const original = performance.measure.bind(performance);
-  performance.measure = function (...args: Parameters<typeof performance.measure>) {
+  performance.measure = (...args: Parameters<typeof performance.measure>) => {
     try {
       return original(...args);
     } catch {

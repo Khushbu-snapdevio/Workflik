@@ -1,140 +1,114 @@
 "use client";
 
-import { FileText, Plus } from "lucide-react";
-import {
- forwardRef,
- useCallback,
- useEffect,
- useImperativeHandle,
- useLayoutEffect,
- useRef,
- useState,
-} from "react";
 import { exitSuggestion } from "@tiptap/suggestion";
-import type { MentionItem, MentionSuggestionProps } from "@/components/editor/extensions/mention-extension";
-import { MENTION_PLUGIN_KEY, PAGE_LINK_PLUGIN_KEY } from "@/components/editor/extensions/mention-extension";
+import { FileText, Plus } from "lucide-react";
+import type { Ref } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
+import type {
+  MentionItem,
+  MentionSuggestionProps,
+} from "@/components/editor/extensions/mention-extension";
+import {
+  MENTION_PLUGIN_KEY,
+  PAGE_LINK_PLUGIN_KEY,
+} from "@/components/editor/extensions/mention-extension";
 import { PageIcon } from "@/components/pages/page-icon";
+import { useAnchorPosition, useMergedRef } from "@/lib/ui/use-anchor-position";
 
 export interface MentionListHandle {
- onKeyDown: (event: KeyboardEvent) => boolean;
+  onKeyDown: (event: KeyboardEvent) => boolean;
 }
 
 interface Props {
- suggestionProps: MentionSuggestionProps;
+  ref?: Ref<MentionListHandle>;
+  suggestionProps: MentionSuggestionProps;
 }
 
-export const MentionList = forwardRef<MentionListHandle, Props>(
- function MentionList({ suggestionProps }, ref) {
+export function MentionList({ suggestionProps, ref }: Props) {
   const { items, command, clientRect, editor } = suggestionProps;
   const typedItems = items as MentionItem[];
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selectedRef = useRef(selectedIndex);
   selectedRef.current = selectedIndex;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [coords, setCoords] = useState<{
-   top: number;
-   left: number;
-   maxHeight: number;
-  } | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: items is a reset trigger, not a value read here — without it the highlighted row keeps its old index when the suggestion list changes under it.
   useEffect(() => setSelectedIndex(0), [items]);
 
-  // Flip the popup above the caret when it doesn't fit below (e.g. a tall list on a near-empty
-  // query), cap height to scroll instead of overflow, and clamp left to the viewport.
-  const updatePosition = useCallback(() => {
-   const rect = clientRect?.();
-   const el = containerRef.current;
-   if (!rect || !el) return;
-   const MARGIN = 8;
-   const GAP = 4;
-   const menuH = el.offsetHeight;
-   const menuW = el.offsetWidth || 240;
-   const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
-   const spaceAbove = rect.top - MARGIN;
-
-   let top: number;
-   let maxHeight: number;
-   // Prefer below; flip above only when the list doesn't fit below AND there's
-   // more room above.
-   if (menuH + GAP <= spaceBelow || spaceBelow >= spaceAbove) {
-    top = rect.bottom + GAP;
-    maxHeight = spaceBelow;
-   } else {
-    maxHeight = spaceAbove;
-    top = rect.top - Math.min(menuH, maxHeight) - GAP;
-   }
-
-   let left = rect.left;
-   if (left + menuW > window.innerWidth - MARGIN) {
-    left = window.innerWidth - menuW - MARGIN;
-   }
-   if (left < MARGIN) left = MARGIN;
-
-   setCoords({ top, left, maxHeight: Math.max(0, maxHeight) });
-  }, [clientRect]);
-
-  // Reposition after layout (before paint, so there's no visible jump) whenever
-  // the query/items change.
-  useLayoutEffect(() => {
-   updatePosition();
-  }, [updatePosition, suggestionProps]);
+  // Flips above the caret when the list doesn't fit below, caps height to scroll instead of
+  // overflow, and clamps left to the viewport. `liveReposition` catches window resize (the
+  // caret itself doesn't move, but available space does) — a fresh `clientRect()` is read
+  // every render regardless, since `suggestionProps` changes on every keystroke.
+  const rect = clientRect?.();
+  const {
+    setFloating,
+    x: left,
+    y: top,
+  } = useAnchorPosition({
+    anchorRect: rect ?? { top: 0, left: 0, right: 0, bottom: 0 },
+    placement: "bottom-start",
+    gap: 4,
+    constrainSize: true,
+    liveReposition: true,
+  });
+  const mergedRef = useMergedRef(containerRef, setFloating);
 
   // Popup is `position: fixed` so it'd detach from the caret on scroll — close on any scroll
-  // outside the popup itself (capture-phase to catch any ancestor container); resize just repositions.
+  // outside the popup itself (capture-phase to catch any ancestor container).
   useEffect(() => {
-   function onScroll(e: Event) {
-    if (containerRef.current?.contains(e.target as Node)) return;
-    exitSuggestion(editor.view, MENTION_PLUGIN_KEY);
-    exitSuggestion(editor.view, PAGE_LINK_PLUGIN_KEY);
-   }
-   function onResize() {
-    updatePosition();
-   }
-   window.addEventListener("scroll", onScroll, true);
-   window.addEventListener("resize", onResize);
-   return () => {
-    window.removeEventListener("scroll", onScroll, true);
-    window.removeEventListener("resize", onResize);
-   };
-  }, [editor, updatePosition]);
+    function onScroll(e: Event) {
+      if (containerRef.current?.contains(e.target as Node)) {
+        return;
+      }
+      exitSuggestion(editor.view, MENTION_PLUGIN_KEY);
+      exitSuggestion(editor.view, PAGE_LINK_PLUGIN_KEY);
+    }
+    window.addEventListener("scroll", onScroll, true);
+    return () => window.removeEventListener("scroll", onScroll, true);
+  }, [editor]);
 
   // Suggestion plugin only re-evaluates "active" on transactions inside the editor, so an outside
   // click never closes this fixed-position popup on its own — dispatch its exit transaction directly.
   useEffect(() => {
-   function handleMouseDown(e: MouseEvent) {
-    if (containerRef.current?.contains(e.target as Node)) return;
-    exitSuggestion(editor.view, MENTION_PLUGIN_KEY);
-    exitSuggestion(editor.view, PAGE_LINK_PLUGIN_KEY);
-   }
-   document.addEventListener("mousedown", handleMouseDown);
-   return () => document.removeEventListener("mousedown", handleMouseDown);
+    function handleMouseDown(e: MouseEvent) {
+      if (containerRef.current?.contains(e.target as Node)) {
+        return;
+      }
+      exitSuggestion(editor.view, MENTION_PLUGIN_KEY);
+      exitSuggestion(editor.view, PAGE_LINK_PLUGIN_KEY);
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [editor]);
 
   useImperativeHandle(ref, () => ({
-   onKeyDown(event: KeyboardEvent): boolean {
-    if (event.key === "ArrowUp") {
-     setSelectedIndex((i) => Math.max(0, i - 1));
-     return true;
-    }
-    if (event.key === "ArrowDown") {
-     setSelectedIndex((i) => Math.min(typedItems.length - 1, i + 1));
-     return true;
-    }
-    if (event.key === "Enter") {
-     const item = typedItems[selectedRef.current];
-     if (item) selectItem(item);
-     return true;
-    }
-    return false;
-   },
+    onKeyDown(event: KeyboardEvent): boolean {
+      if (event.key === "ArrowUp") {
+        setSelectedIndex((i) => Math.max(0, i - 1));
+        return true;
+      }
+      if (event.key === "ArrowDown") {
+        setSelectedIndex((i) => Math.min(typedItems.length - 1, i + 1));
+        return true;
+      }
+      if (event.key === "Enter") {
+        const item = typedItems[selectedRef.current];
+        if (item) {
+          selectItem(item);
+        }
+        return true;
+      }
+      return false;
+    },
   }));
 
   function selectItem(item: MentionItem) {
-   command(item);
+    command(item);
   }
 
-  const pos = clientRect?.();
-  if (!typedItems.length || !pos) return null;
+  if (!typedItems.length || !rect) {
+    return null;
+  }
 
   const people = typedItems.filter((i) => i.mentionType === "user");
   const pageItems = typedItems.filter((i) => i.mentionType === "page");
@@ -142,162 +116,170 @@ export const MentionList = forwardRef<MentionListHandle, Props>(
   const createItems = typedItems.filter((i) => i.mentionType === "create_page");
 
   return (
-   <div
-    ref={containerRef}
-    style={{
-     position: "fixed",
-     top: coords ? coords.top : pos.bottom + 4,
-     left: coords ? coords.left : pos.left,
-     maxHeight: coords ? coords.maxHeight : undefined,
-     overflowY: "auto",
-     overflowX: "hidden",
-     zIndex: 400,
-    }}
-    className="w-60 rounded-md border border-border bg-popover py-1"
-   >
-    {people.length > 0 && (
-     <Section label="People">
-      {people.map((item) => {
-       const idx = typedItems.indexOf(item);
-       return (
-        <MentionRow
-         key={item.id}
-         item={item}
-         isSelected={selectedIndex === idx}
-         onClick={() => selectItem(item)}
-        />
-       );
+    <div
+      className="w-60 rounded-md border border-base-300 bg-base-100 py-1"
+      ref={mergedRef}
+      style={{
+        position: "fixed",
+        top,
+        left,
+        overflowY: "auto",
+        overflowX: "hidden",
+        zIndex: 400,
+      }}
+    >
+      {people.length > 0 && (
+        <Section label="People">
+          {people.map((item) => {
+            const idx = typedItems.indexOf(item);
+            return (
+              <MentionRow
+                isSelected={selectedIndex === idx}
+                item={item}
+                key={item.id}
+                onClick={() => selectItem(item)}
+              />
+            );
+          })}
+        </Section>
+      )}
+      {pageItems.length > 0 && (
+        <Section label="Pages">
+          {pageItems.map((item) => {
+            const idx = typedItems.indexOf(item);
+            return (
+              <MentionRow
+                isSelected={selectedIndex === idx}
+                item={item}
+                key={item.id}
+                onClick={() => selectItem(item)}
+              />
+            );
+          })}
+        </Section>
+      )}
+      {dates.length > 0 && (
+        <Section label="Dates">
+          {dates.map((item) => {
+            const idx = typedItems.indexOf(item);
+            return (
+              <MentionRow
+                isSelected={selectedIndex === idx}
+                item={item}
+                key={item.id}
+                onClick={() => selectItem(item)}
+              />
+            );
+          })}
+        </Section>
+      )}
+      {createItems.map((item) => {
+        const idx = typedItems.indexOf(item);
+        return (
+          <MentionRow
+            isSelected={selectedIndex === idx}
+            item={item}
+            key="create_page"
+            onClick={() => selectItem(item)}
+          />
+        );
       })}
-     </Section>
-    )}
-    {pageItems.length > 0 && (
-     <Section label="Pages">
-      {pageItems.map((item) => {
-       const idx = typedItems.indexOf(item);
-       return (
-        <MentionRow
-         key={item.id}
-         item={item}
-         isSelected={selectedIndex === idx}
-         onClick={() => selectItem(item)}
-        />
-       );
-      })}
-     </Section>
-    )}
-    {dates.length > 0 && (
-     <Section label="Dates">
-      {dates.map((item) => {
-       const idx = typedItems.indexOf(item);
-       return (
-        <MentionRow
-         key={item.id}
-         item={item}
-         isSelected={selectedIndex === idx}
-         onClick={() => selectItem(item)}
-        />
-       );
-      })}
-     </Section>
-    )}
-    {createItems.map((item) => {
-     const idx = typedItems.indexOf(item);
-     return (
-      <MentionRow
-       key="create_page"
-       item={item}
-       isSelected={selectedIndex === idx}
-       onClick={() => selectItem(item)}
-      />
-     );
-    })}
-   </div>
+    </div>
   );
- }
-);
+}
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
- return (
-  <div>
-   <div className="px-3 py-1 text-xs font-semibold tracking-wide text-muted-foreground">
-    {label}
-   </div>
-   {children}
-  </div>
- );
+function Section({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="px-3 py-1 text-xs font-semibold tracking-wide text-base-content/70">
+        {label}
+      </div>
+      {children}
+    </div>
+  );
 }
 
 function MentionRow({
- item,
- isSelected,
- onClick,
+  item,
+  isSelected,
+  onClick,
 }: {
- item: MentionItem;
- isSelected: boolean;
- onClick: () => void;
+  item: MentionItem;
+  isSelected: boolean;
+  onClick: () => void;
 }) {
- return (
-  <button
-   type="button"
-   className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left transition-colors ${
-    isSelected ? "bg-accent" : "hover:bg-accent"
-   }`}
-   onClick={onClick}
-  >
-   {item.mentionType === "user" && (
-    <>
-     <UserAvatar
-      name={item.label}
-      image={"image" in item ? item.image ?? undefined : undefined}
-     />
-     <span className="text-foreground">{item.label}</span>
-    </>
-   )}
-   {item.mentionType === "page" && (
-    <>
-     {/* Via PageIcon, not the raw string — a page icon isn't always an emoji.
+  return (
+    <button
+      className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left transition-colors ${
+        isSelected ? "bg-base-200" : "hover:bg-base-200"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      {item.mentionType === "user" && (
+        <>
+          <UserAvatar
+            image={"image" in item ? (item.image ?? undefined) : undefined}
+            name={item.label}
+          />
+          <span className="text-base-content">{item.label}</span>
+        </>
+      )}
+      {item.mentionType === "page" && (
+        <>
+          {/* Via PageIcon, not the raw string — a page icon isn't always an emoji.
          Lucide-icon and uploaded-image icons are stored as JSON
          (`{"type":"icon","name":"TrendingUp"}`), which rendered as literal
          JSON text here before. */}
-     <span className="flex w-5 shrink-0 items-center justify-center">
-      {"icon" in item && item.icon
-       ? <PageIcon icon={item.icon} size={16} />
-       : <FileText className="text-muted-foreground" size={14} />}
-     </span>
-     <span className="text-foreground truncate">{item.label}</span>
-    </>
-   )}
-   {item.mentionType === "date" && (
-    <>
-     <span className="w-5 text-center text-muted-foreground">📅</span>
-     <span className="text-foreground">{item.label}</span>
-    </>
-   )}
-   {item.mentionType === "create_page" && (
-    <>
-     <Plus className="w-5 shrink-0 text-muted-foreground" size={14} />
-     <span className="truncate text-foreground">
-      Create page <span className="font-medium">&ldquo;{item.query}&rdquo;</span>
-     </span>
-    </>
-   )}
-  </button>
- );
+          <span className="flex w-5 shrink-0 items-center justify-center">
+            {"icon" in item && item.icon ? (
+              <PageIcon icon={item.icon} size={16} />
+            ) : (
+              <FileText className="text-base-content/70" size={14} />
+            )}
+          </span>
+          <span className="text-base-content truncate">{item.label}</span>
+        </>
+      )}
+      {item.mentionType === "date" && (
+        <>
+          <span className="w-5 text-center text-base-content/70">📅</span>
+          <span className="text-base-content">{item.label}</span>
+        </>
+      )}
+      {item.mentionType === "create_page" && (
+        <>
+          <Plus className="w-5 shrink-0 text-base-content/70" size={14} />
+          <span className="truncate text-base-content">
+            Create page{" "}
+            <span className="font-medium">&ldquo;{item.query}&rdquo;</span>
+          </span>
+        </>
+      )}
+    </button>
+  );
 }
 
 function UserAvatar({ name, image }: { name: string; image?: string }) {
- if (image) {
+  if (image) {
+    return (
+      // biome-ignore lint/performance/noImgElement: avatar src is an OAuth provider URL (Google) or a STORAGE_DRIVER CDN host, neither of which is in next.config images.remotePatterns
+      <img
+        alt={name}
+        className="h-5 w-5 rounded-full object-cover shrink-0"
+        src={image}
+      />
+    );
+  }
   return (
-   <img
-    src={image}
-    alt={name}
-    className="h-5 w-5 rounded-full object-cover shrink-0"
-   />
+    <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-content shrink-0 select-none">
+      {name[0]?.toUpperCase()}
+    </div>
   );
- }
- return (
-  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground shrink-0 select-none">
-   {name[0]?.toUpperCase()}
-  </div>
- );
 }

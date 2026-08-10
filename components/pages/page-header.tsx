@@ -1,24 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Smile } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
 
 interface PageHeaderProps {
-  pageId:        string;
-  shortId:       string;
-  initialTitle:  string;
-  initialIcon:   string | null;
-  isLocked:      boolean;
-  isDeleted:     boolean;
-  isEditor:      boolean;
+  fontFamily: "default" | "serif" | "mono";
+  initialIcon: string | null;
+  initialTitle: string;
+  isDeleted: boolean;
+  isEditor: boolean;
+  isFullWidth: boolean;
+  isLocked: boolean;
+  isSmallText: boolean;
+  pageId: string;
+  shortId: string;
+  workspaceId: string;
   workspaceSlug: string;
-  workspaceId:   string;
-  fontFamily:    "default" | "serif" | "mono";
-  isSmallText:   boolean;
-  isFullWidth:   boolean;
 }
 
 export function PageHeader({
@@ -49,77 +49,102 @@ export function PageHeader({
       titleRef.current.textContent = initialTitle || "";
       didMount.current = true;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Listing initialTitle is inert — the didMount guard already limits the body
+    // to the first run, so a later title change re-enters and no-ops.
+  }, [initialTitle]);
 
-  const saveTitle = useCallback(async (raw: string) => {
-    const title = raw.trim() || "Untitled";
-    setSaving(true);
-    try {
+  const saveTitle = useCallback(
+    async (raw: string) => {
+      const title = raw.trim() || "Untitled";
+      setSaving(true);
+      try {
+        await fetch(`/api/pages/${pageId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
+        document.title = `${title} | WORKFLIK`;
+        window.dispatchEvent(
+          new CustomEvent("workflik:page-title-changed", {
+            detail: { pageId, title },
+          })
+        );
+        window.dispatchEvent(new CustomEvent("pages:refresh"));
+        router.refresh();
+      } finally {
+        setSaving(false);
+      }
+    },
+    [pageId, router]
+  );
+
+  const saveIcon = useCallback(
+    async (newIcon: string | null) => {
+      setIcon(newIcon);
+      setShowPicker(false);
       await fetch(`/api/pages/${pageId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ icon: newIcon }),
       });
-      document.title = `${title} | WORKFLIK`;
-      window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, title } }));
+      window.dispatchEvent(
+        new CustomEvent("workflik:page-title-changed", {
+          detail: { pageId, icon: newIcon },
+        })
+      );
       window.dispatchEvent(new CustomEvent("pages:refresh"));
       router.refresh();
-    } finally {
-      setSaving(false);
-    }
-  }, [pageId, router]);
-
-  const saveIcon = useCallback(async (newIcon: string | null) => {
-    setIcon(newIcon);
-    setShowPicker(false);
-    await fetch(`/api/pages/${pageId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ icon: newIcon }),
-    });
-    window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, icon: newIcon } }));
-    window.dispatchEvent(new CustomEvent("pages:refresh"));
-    router.refresh();
-  }, [pageId, router]);
+    },
+    [pageId, router]
+  );
 
   function onInput(e: React.FormEvent<HTMLDivElement>) {
     const text = e.currentTarget.textContent ?? "";
-    window.dispatchEvent(new CustomEvent("workflik:page-title-changed", { detail: { pageId, title: text } }));
-    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    window.dispatchEvent(
+      new CustomEvent("workflik:page-title-changed", {
+        detail: { pageId, title: text },
+      })
+    );
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+    }
     saveTimeout.current = setTimeout(() => saveTitle(text), 800);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
-    if (e.key === "Enter") { e.preventDefault(); titleRef.current?.blur(); }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      titleRef.current?.blur();
+    }
   }
 
   function onBlur(e: React.FocusEvent<HTMLDivElement>) {
-    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+    }
     saveTitle(e.currentTarget.textContent ?? "");
   }
 
   return (
     <div className="relative">
-
       {/* ── Add icon button (only when no icon set) ── */}
       {editable && !icon && (
         <div className="relative mb-2">
           <button
+            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm text-base-content/70 opacity-0 transition-all group-hover/page:opacity-100 hover:bg-base-200 hover:text-base-content"
+            onClick={() => setShowPicker((p) => !p)}
             ref={iconBtnRef}
             type="button"
-            onClick={() => setShowPicker((p) => !p)}
-            className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm text-muted-foreground opacity-0 transition-all group-hover/page:opacity-100 hover:bg-accent hover:text-foreground"
           >
             <Smile size={13} />
             Add icon
           </button>
           {showPicker && (
             <IconPicker
-              onSelect={(v) => saveIcon(v)}
+              onClose={() => setShowPicker(false)}
               onIconPreview={(v) => saveIcon(v)}
               onRemove={() => saveIcon(null)}
-              onClose={() => setShowPicker(false)}
+              onSelect={(v) => saveIcon(v)}
               pageId={pageId}
               triggerRef={iconBtnRef}
             />
@@ -132,20 +157,20 @@ export function PageHeader({
         {icon && (
           <div className="relative mt-1 shrink-0">
             <button
-              ref={iconBtnRef}
-              type="button"
+              aria-label="Change icon"
+              className="flex size-14 items-center justify-center rounded-md transition-all hover:bg-base-200/50 disabled:cursor-default"
               disabled={!editable}
               onClick={() => editable && setShowPicker((p) => !p)}
-              aria-label="Change icon"
-              className="flex size-14 items-center justify-center rounded-md transition-all hover:bg-muted/50 disabled:cursor-default"
+              ref={iconBtnRef}
+              type="button"
             >
               <PageIcon icon={icon} size={52} />
             </button>
             {showPicker && (
               <IconPicker
-                onSelect={(v) => saveIcon(v)}
-                onRemove={() => saveIcon(null)}
                 onClose={() => setShowPicker(false)}
+                onRemove={() => saveIcon(null)}
+                onSelect={(v) => saveIcon(v)}
                 pageId={pageId}
                 triggerRef={iconBtnRef}
               />
@@ -154,25 +179,26 @@ export function PageHeader({
         )}
 
         <div className="min-w-0 flex-1">
+          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/noStaticElementInteractions: false positive — contentEditable already makes this element focusable, keyboard-operable and exposed as a textbox to assistive tech; the browser provides the semantics a role would. The handlers here (onInput/onBlur/onKeyDown) are text-editing events, not click activations. Biome's a11y rules do not model contentEditable. */}
           <div
-            ref={titleRef}
-            contentEditable={editable}
-            suppressContentEditableWarning
-            onInput={onInput}
-            onKeyDown={onKeyDown}
-            onBlur={onBlur}
-            data-placeholder="Untitled"
             className={[
-              "w-full wrap-break-word text-[2.4rem] font-black leading-[1.15] tracking-tight text-foreground outline-none",
-              "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground",
+              "w-full wrap-break-word text-[2.4rem] font-black leading-[1.15] tracking-tight text-base-content outline-none",
+              "empty:before:content-[attr(data-placeholder)] empty:before:text-base-content/70",
               editable ? "cursor-text" : "cursor-default select-text",
             ].join(" ")}
+            contentEditable={editable}
+            data-placeholder="Untitled"
+            onBlur={onBlur}
+            onInput={onInput}
+            onKeyDown={onKeyDown}
+            ref={titleRef}
+            suppressContentEditableWarning
           />
         </div>
       </div>
 
       {saving && (
-        <span className="absolute -top-6 right-0 text-xs text-muted-foreground animate-pulse">
+        <span className="absolute -top-6 right-0 text-xs text-base-content/70 animate-pulse">
           Saving…
         </span>
       )}

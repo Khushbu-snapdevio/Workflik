@@ -1,9 +1,9 @@
 import { PgBoss } from "pg-boss";
 import { env } from "@/lib/env";
-import { normalizePgConnectionString } from "@/lib/pg-connection";
-import { sleep } from "@/lib/utils";
 import { ensureJobQueues } from "@/lib/jobs/queue-options";
 import { registerHandlers } from "@/lib/jobs/register";
+import { normalizePgConnectionString } from "@/lib/pg-connection";
+import { sleep } from "@/lib/utils";
 
 const boss = new PgBoss({
   connectionString: normalizePgConnectionString(env.DATABASE_URL),

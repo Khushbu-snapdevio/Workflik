@@ -18,18 +18,24 @@ export async function GET(req: Request) {
 
     const rows = await db
       .select({
-        id:        userRecentlyVisited.id,
-        pageId:    userRecentlyVisited.pageId,
+        id: userRecentlyVisited.id,
+        pageId: userRecentlyVisited.pageId,
         visitedAt: userRecentlyVisited.visitedAt,
         page: {
           shortId: pages.shortId,
-          title:   pages.title,
-          icon:    pages.icon,
-          kind:    pages.kind,
+          title: pages.title,
+          icon: pages.icon,
+          kind: pages.kind,
         },
       })
       .from(userRecentlyVisited)
-      .innerJoin(pages, and(eq(pages.id, userRecentlyVisited.pageId), eq(pages.isDeleted, false)))
+      .innerJoin(
+        pages,
+        and(
+          eq(pages.id, userRecentlyVisited.pageId),
+          eq(pages.isDeleted, false)
+        )
+      )
       .where(
         and(
           eq(userRecentlyVisited.userId, session.user.id),

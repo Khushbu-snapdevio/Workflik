@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function EmailRetryButton({ id }: { id: string }) {
   const router = useRouter();
-  const [busy, setBusy]   = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   async function retry() {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch(`/api/orbit/email/${id}/retry`, { method: "POST" });
+      const res = await fetch(`/api/orbit/email/${id}/retry`, {
+        method: "POST",
+      });
       if (res.ok) {
         router.refresh();
       } else {
@@ -30,15 +32,15 @@ export function EmailRetryButton({ id }: { id: string }) {
   return (
     <div className="flex flex-col items-start gap-1">
       <button
-        type="button"
-        onClick={retry}
+        className="inline-flex items-center gap-1 rounded-xs border border-base-300 px-2 py-1 text-xs font-medium text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content disabled:opacity-50"
         disabled={busy}
-        className="inline-flex items-center gap-1 rounded-xs border border-border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+        onClick={retry}
+        type="button"
       >
-        <RotateCcw size={11} className={busy ? "animate-spin" : ""} />
+        <RotateCcw className={busy ? "animate-spin" : ""} size={11} />
         {busy ? "Retrying…" : "Retry"}
       </button>
-      {error && <p className="text-2xs text-destructive">{error}</p>}
+      {error && <p className="text-2xs text-error">{error}</p>}
     </div>
   );
 }

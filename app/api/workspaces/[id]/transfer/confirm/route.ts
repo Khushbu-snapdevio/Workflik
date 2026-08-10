@@ -2,8 +2,8 @@ import { and, eq, gt } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { verifications, workspaceMembers, workspaces } from "@/lib/db/schema";
-import { apiError, ApiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import { ApiError, apiError } from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -11,9 +11,11 @@ type Ctx = { params: Promise<{ id: string }> };
 // Validates token and atomically completes ownership transfer
 export async function GET(req: Request, { params }: Ctx) {
   try {
-    const { id }   = await params;
-    const token    = new URL(req.url).searchParams.get("token");
-    if (!token) return apiError(400, "Missing token");
+    const { id } = await params;
+    const token = new URL(req.url).searchParams.get("token");
+    if (!token) {
+      return apiError(400, "Missing token");
+    }
 
     const identifier = `workspace-transfer:${id}:`;
 
@@ -33,10 +35,14 @@ export async function GET(req: Request, { params }: Ctx) {
       v.identifier.startsWith(identifier)
     );
 
-    if (!verification) return apiError(410, "Transfer link has expired or is invalid");
+    if (!verification) {
+      return apiError(410, "Transfer link has expired or is invalid");
+    }
 
     const targetUserId = verification.identifier.split(":")[2];
-    if (!targetUserId) return apiError(400, "Malformed transfer token");
+    if (!targetUserId) {
+      return apiError(400, "Malformed transfer token");
+    }
 
     // Capture the outgoing owner before handing off
     const [workspace] = await db
@@ -76,17 +82,19 @@ export async function GET(req: Request, { params }: Ctx) {
 
     if (previousOwnerId) {
       await writeAuditLog({
-        actorId:    previousOwnerId,
-        action:     "workspace.ownership_transferred",
+        actorId: previousOwnerId,
+        action: "workspace.ownership_transferred",
         targetType: "workspace",
-        targetId:   id,
-        metadata:   { fromUserId: previousOwnerId, toUserId: targetUserId },
+        targetId: id,
+        metadata: { fromUserId: previousOwnerId, toUserId: targetUserId },
       });
     }
 
-    redirect(`/platform/post-auth`);
+    redirect("/platform/post-auth");
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }

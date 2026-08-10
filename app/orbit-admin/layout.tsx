@@ -23,20 +23,34 @@ export default async function AdminLayout({
     >
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar — visible on desktop; mobile uses AdminShell's header */}
-        <div className="hidden h-11 shrink-0 items-center border-b border-border bg-card px-4 md:flex md:px-8">
+        <div className="hidden h-11 shrink-0 items-center border-b border-base-300 bg-base-100 px-4 md:flex md:px-8">
           <div className="mx-auto flex w-full max-w-320 items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="size-3 text-primary">
-                <path d="M6 1L2 2.5v3.5C2 8.8 3.8 11 6 12c2.2-1 4-3.2 4-6V2.5L6 1z"/>
+            <div className="flex items-center gap-1.5 text-xs text-base-content/70">
+              <svg
+                className="size-3 text-primary"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                viewBox="0 0 12 12"
+              >
+                <path d="M6 1L2 2.5v3.5C2 8.8 3.8 11 6 12c2.2-1 4-3.2 4-6V2.5L6 1z" />
               </svg>
-              <span className="font-semibold text-foreground">Orbit Admin</span>
+              <span className="font-semibold text-base-content">
+                Orbit Admin
+              </span>
             </div>
-            <span className="rounded-xs bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">Live</span>
+            <span className="rounded-xs bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
+              Live
+            </span>
           </div>
         </div>
 
-        <main id="orbit-admin-scroll" className="flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-320 px-4 py-6 sm:px-6 md:px-8 md:py-8">{children}</div>
+        <main className="flex-1 overflow-y-auto" id="orbit-admin-scroll">
+          <div className="mx-auto w-full max-w-320 px-4 py-6 sm:px-6 md:px-8 md:py-8">
+            {children}
+          </div>
         </main>
       </div>
     </AdminShell>

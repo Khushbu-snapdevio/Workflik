@@ -1,21 +1,26 @@
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { extractMentionedUserIds } from "@/lib/comments/mentions";
 import { db } from "@/lib/db";
 import { comments, notifications, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
-import { extractMentionedUserIds } from "@/lib/comments/mentions";
 import { triggerMentionNotifications } from "@/lib/notifications/triggers";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 async function loadCommentWithPage(commentId: string) {
   const rows = await db
     .select({
-      id:        comments.id,
-      pageId:    comments.pageId,
-      parentId:  comments.parentId,
-      authorId:  comments.authorId,
-      content:   comments.content,
+      id: comments.id,
+      pageId: comments.pageId,
+      parentId: comments.parentId,
+      authorId: comments.authorId,
+      content: comments.content,
       deletedAt: comments.deletedAt,
       workspaceId: pages.workspaceId,
     })
@@ -27,9 +32,11 @@ async function loadCommentWithPage(commentId: string) {
   return rows[0] ?? null;
 }
 
-const patchSchema = z.object({
-  content: z.record(z.string(), z.unknown()),
-}).strict();
+const patchSchema = z
+  .object({
+    content: z.record(z.string(), z.unknown()),
+  })
+  .strict();
 
 // PATCH /api/comments/:id — edit a comment (author only)
 export async function PATCH(req: Request, { params }: Ctx) {
@@ -38,7 +45,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const comment = await loadCommentWithPage(id);
-    if (!comment) return apiError(404, "Comment not found");
+    if (!comment) {
+      return apiError(404, "Comment not found");
+    }
 
     if (comment.authorId !== session.user.id) {
       return apiError(403, "Only the author can edit this comment");
@@ -46,7 +55,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
     const body = await req.json();
     const parsed = patchSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    if (!parsed.success) {
+      return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    }
 
     const { content } = parsed.data;
 
@@ -59,30 +70,36 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
       // Mention diff: find newly mentioned users vs already notified
       const newMentions = extractMentionedUserIds(content);
-      const oldMentions = extractMentionedUserIds(comment.content as Record<string, unknown>);
+      const oldMentions = extractMentionedUserIds(
+        comment.content as Record<string, unknown>
+      );
       const alreadyNotifiedRows = await tx
         .select({ sourceId: notifications.sourceId })
         .from(notifications)
         .where(
           and(
             eq(notifications.type, "mention"),
-            inArray(notifications.sourceId as any, [id]),  // source_id = commentId
+            inArray(notifications.sourceId, [id]) // source_id = commentId
           )
         );
 
       const alreadyNotified = new Set([
         ...oldMentions,
-        ...alreadyNotifiedRows.map((r) => r.sourceId).filter(Boolean) as string[],
+        ...(alreadyNotifiedRows
+          .map((r) => r.sourceId)
+          .filter(Boolean) as string[]),
       ]);
 
-      const freshMentions = newMentions.filter((uid) => !alreadyNotified.has(uid));
+      const freshMentions = newMentions.filter(
+        (uid) => !alreadyNotified.has(uid)
+      );
 
       if (freshMentions.length > 0) {
         await triggerMentionNotifications(tx, {
-          commentId:   id,
-          pageId:      comment.pageId,
+          commentId: id,
+          pageId: comment.pageId,
           workspaceId: comment.workspaceId,
-          authorId:    session.user.id,
+          authorId: session.user.id,
           content,
           skipUserIds: [...alreadyNotified],
         });
@@ -93,7 +110,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
     return Response.json(updated);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error("[PATCH /api/comments/:id]", err);
     return apiError(500, "Internal server error");
   }
@@ -106,13 +125,21 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const comment = await loadCommentWithPage(id);
-    if (!comment) return apiError(404, "Comment not found");
+    if (!comment) {
+      return apiError(404, "Comment not found");
+    }
 
     // Check: author OR workspace admin
     const isAuthor = comment.authorId === session.user.id;
     if (!isAuthor) {
-      const member = await requireWorkspaceMember(comment.workspaceId, session.user.id, "admin");
-      if (!member) return apiError(403, "Forbidden");
+      const member = await requireWorkspaceMember(
+        comment.workspaceId,
+        session.user.id,
+        "admin"
+      );
+      if (!member) {
+        return apiError(403, "Forbidden");
+      }
     }
 
     await db.transaction(async (tx) => {
@@ -144,7 +171,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
     return Response.json({ success: true });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error("[DELETE /api/comments/:id]", err);
     return apiError(500, "Internal server error");
   }

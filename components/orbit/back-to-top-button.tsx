@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const SHOW_AFTER_PX = 400;
 
@@ -13,7 +13,9 @@ export function BackToTopButton() {
 
   useEffect(() => {
     const el = document.getElementById("orbit-admin-scroll");
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     function onScroll() {
       setVisible(el!.scrollTop > SHOW_AFTER_PX);
     }
@@ -22,14 +24,20 @@ export function BackToTopButton() {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
   return (
     <button
-      type="button"
-      onClick={() => document.getElementById("orbit-admin-scroll")?.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Back to top"
-      className="fixed bottom-6 right-6 z-40 flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors duration-150 hover:bg-accent"
+      className="fixed bottom-6 right-6 z-40 flex items-center gap-1.5 rounded-md border border-base-300 bg-base-100 px-3 py-2 text-xs font-semibold text-base-content transition-colors duration-150 hover:bg-base-200"
+      onClick={() =>
+        document
+          .getElementById("orbit-admin-scroll")
+          ?.scrollTo({ top: 0, behavior: "smooth" })
+      }
+      type="button"
     >
       <ArrowUp size={13} />
       Top

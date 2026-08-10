@@ -81,7 +81,8 @@ export async function GET(req: Request) {
     const og = (prop: string) =>
       $(`meta[property="${prop}"]`).attr("content") ??
       $(`meta[name="${prop}"]`).attr("content");
-    let title: string | null = og("og:title") ?? $("title").first().text() ?? null;
+    let title: string | null =
+      og("og:title") ?? $("title").first().text() ?? null;
     let description: string | null =
       og("og:description") ??
       $('meta[name="description"]').attr("content") ??
@@ -107,7 +108,9 @@ export async function GET(req: Request) {
       siteName: siteName?.trim() || parsed.hostname,
     } satisfies LinkPreview);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Could not load a preview for this link");
   }
 }

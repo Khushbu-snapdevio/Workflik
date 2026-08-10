@@ -10,10 +10,12 @@ import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 export function PageSearchButton() {
   return (
     <IconTooltipButton
+      className="flex size-7 items-center justify-center rounded-sm text-base-content/70 transition-colors duration-150 hover:bg-base-200 hover:text-base-content"
       icon={<Search size={15} />}
       label="Search"
-      onClick={() => document.dispatchEvent(new CustomEvent("workflik:open-search"))}
-      className="flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+      onClick={() =>
+        document.dispatchEvent(new CustomEvent("workflik:open-search"))
+      }
     />
   );
 }

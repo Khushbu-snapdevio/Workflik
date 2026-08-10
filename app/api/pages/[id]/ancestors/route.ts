@@ -29,7 +29,11 @@ export async function GET(_req: Request, { params }: Ctx) {
     await requireWorkspaceMember(page.workspaceId, session.user.id);
 
     const [workspace] = await db
-      .select({ slug: workspaces.slug, name: workspaces.name, icon: workspaces.icon })
+      .select({
+        slug: workspaces.slug,
+        name: workspaces.name,
+        icon: workspaces.icon,
+      })
       .from(workspaces)
       .where(eq(workspaces.id, page.workspaceId))
       .limit(1);

@@ -2,22 +2,30 @@
  * Walks TipTap JSON and extracts all user IDs from @mention nodes.
  * Used by comment API routes to determine who needs a mention notification.
  */
-export function extractMentionedUserIds(content: Record<string, unknown>): string[] {
+export function extractMentionedUserIds(
+  content: Record<string, unknown>
+): string[] {
   const ids: string[] = [];
 
   function walk(node: unknown): void {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     const n = node as Record<string, unknown>;
 
     if (n.type === "mention") {
-      const attrs = n.attrs as { mentionType?: string; id?: string } | undefined;
+      const attrs = n.attrs as
+        | { mentionType?: string; id?: string }
+        | undefined;
       if (attrs?.mentionType === "user" && typeof attrs.id === "string") {
         ids.push(attrs.id);
       }
     }
 
     if (Array.isArray(n.content)) {
-      for (const child of n.content) walk(child);
+      for (const child of n.content) {
+        walk(child);
+      }
     }
   }
 
@@ -32,7 +40,9 @@ export function extractPlainText(content: Record<string, unknown>): string {
   const parts: string[] = [];
 
   function walk(node: unknown): void {
-    if (!node || typeof node !== "object") return;
+    if (!node || typeof node !== "object") {
+      return;
+    }
     const n = node as Record<string, unknown>;
 
     if (n.type === "text" && typeof n.text === "string") {
@@ -40,7 +50,9 @@ export function extractPlainText(content: Record<string, unknown>): string {
     }
 
     if (Array.isArray(n.content)) {
-      for (const child of n.content) walk(child);
+      for (const child of n.content) {
+        walk(child);
+      }
     }
   }
 

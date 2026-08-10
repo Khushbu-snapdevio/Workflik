@@ -19,12 +19,12 @@ export async function GET(req: Request) {
     // isDeleted filter is belt-and-suspenders since trashing already removes the favorite row.
     const rows = await db
       .select({
-        id:         userFavorites.id,
-        pageId:     userFavorites.pageId,
+        id: userFavorites.id,
+        pageId: userFavorites.pageId,
         orderIndex: userFavorites.orderIndex,
-        title:      pages.title,
-        icon:       pages.icon,
-        shortId:    pages.shortId,
+        title: pages.title,
+        icon: pages.icon,
+        shortId: pages.shortId,
       })
       .from(userFavorites)
       .leftJoin(pages, eq(userFavorites.pageId, pages.id))

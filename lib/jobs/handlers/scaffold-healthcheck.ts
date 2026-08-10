@@ -1,5 +1,5 @@
-import type { Job } from "pg-boss";
 import { and, eq, isNull } from "drizzle-orm";
+import type { Job } from "pg-boss";
 import { db } from "@/lib/db";
 import { templateCategories, templates } from "@/lib/db/schema";
 
@@ -24,11 +24,20 @@ export async function autoSeedTemplates() {
       .where(and(eq(templates.isBuiltIn, true), isNull(templates.workspaceId)));
     const existingNames = new Set(existing.map((t) => t.name));
 
-    const { BUILT_IN_TEMPLATES, DEFAULT_TEMPLATE_CATEGORIES } = await import("@/lib/orbit/templates/built-in");
-    const missing = BUILT_IN_TEMPLATES.filter((t) => !existingNames.has(t.name));
-    if (missing.length === 0) return;
+    const { BUILT_IN_TEMPLATES, DEFAULT_TEMPLATE_CATEGORIES } = await import(
+      "@/lib/orbit/templates/built-in"
+    );
+    const missing = BUILT_IN_TEMPLATES.filter(
+      (t) => !existingNames.has(t.name)
+    );
+    if (missing.length === 0) {
+      return;
+    }
 
-    await db.insert(templateCategories).values(DEFAULT_TEMPLATE_CATEGORIES).onConflictDoNothing();
+    await db
+      .insert(templateCategories)
+      .values(DEFAULT_TEMPLATE_CATEGORIES)
+      .onConflictDoNothing();
 
     const categories = await db
       .select({ id: templateCategories.id, key: templateCategories.key })
@@ -37,19 +46,25 @@ export async function autoSeedTemplates() {
 
     const rows = missing.flatMap((t) => {
       const categoryId = categoryIdByKey.get(t.category);
-      if (!categoryId) return [];
-      return [{
-        name:         t.name,
-        description:  t.description,
-        categoryId,
-        isBuiltIn:    true,
-        status:       "published" as const,
-        workspaceId:  null,
-        createdBy:    null,
-        pageSnapshot: t.pageSnapshot,
-      }];
+      if (!categoryId) {
+        return [];
+      }
+      return [
+        {
+          name: t.name,
+          description: t.description,
+          categoryId,
+          isBuiltIn: true,
+          status: "published" as const,
+          workspaceId: null,
+          createdBy: null,
+          pageSnapshot: t.pageSnapshot,
+        },
+      ];
     });
-    if (rows.length === 0) return;
+    if (rows.length === 0) {
+      return;
+    }
 
     await db.insert(templates).values(rows);
     console.log(`[scaffold] auto-seeded ${rows.length} built-in templates`);

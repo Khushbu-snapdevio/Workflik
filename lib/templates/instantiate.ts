@@ -1,10 +1,14 @@
 import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
-import { blocks, databaseProperties, databaseViews, pages, propertyValues } from "@/lib/db/schema";
+import type { Tx } from "@/lib/db";
+import {
+  blocks,
+  databaseProperties,
+  databaseViews,
+  pages,
+  propertyValues,
+} from "@/lib/db/schema";
 import { insertPageWithClosure } from "@/lib/pages/closure";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyTx = any;
 
 export type SnapshotBlock = {
   id: string;
@@ -17,12 +21,27 @@ export type SnapshotBlock = {
 };
 
 export type SchemaPropOption = { name: string; color: string };
-export type SchemaProp       = { name: string; type: string; options?: SchemaPropOption[]; expression?: string; voteMode?: boolean };
-export type SchemaView       = { name: string; type: string; isDefault?: boolean; groupBy?: string; ganttStart?: string; ganttEnd?: string; filterKey?: string; filterValue?: string };
+export type SchemaProp = {
+  name: string;
+  type: string;
+  options?: SchemaPropOption[];
+  expression?: string;
+  voteMode?: boolean;
+};
+export type SchemaView = {
+  name: string;
+  type: string;
+  isDefault?: boolean;
+  groupBy?: string;
+  ganttStart?: string;
+  ganttEnd?: string;
+  filterKey?: string;
+  filterValue?: string;
+};
 
 export type DatabaseSchema = {
-  properties:   SchemaProp[];
-  views:        SchemaView[];
+  properties: SchemaProp[];
+  views: SchemaView[];
   sample_rows?: Record<string, string | number>[];
 };
 
@@ -42,7 +61,7 @@ export type PageSnapshot = {
 // a template picked at signup gets the exact same pre-built content as one
 // picked from the gallery later.
 export async function createPageFromSnapshot(
-  tx: AnyTx,
+  tx: Tx,
   params: {
     snapshot: PageSnapshot;
     fallbackTitle: string;
@@ -52,41 +71,47 @@ export async function createPageFromSnapshot(
     userId: string;
   }
 ): Promise<typeof pages.$inferSelect> {
-  const { snapshot, fallbackTitle, workspaceId, parentId, orderIndex, userId } = params;
+  const { snapshot, fallbackTitle, workspaceId, parentId, orderIndex, userId } =
+    params;
 
   const [page] = await tx
     .insert(pages)
     .values({
-      shortId:      createId().slice(0, 10),
+      shortId: createId().slice(0, 10),
       workspaceId,
       parentId,
-      kind:         "page",
-      title:        snapshot.title || fallbackTitle,
-      icon:         snapshot.icon ?? null,
-      coverUrl:     snapshot.cover_url ?? null,
-      isFullWidth:  snapshot.is_full_width ?? false,
+      kind: "page",
+      title: snapshot.title || fallbackTitle,
+      icon: snapshot.icon ?? null,
+      coverUrl: snapshot.cover_url ?? null,
+      isFullWidth: snapshot.is_full_width ?? false,
       orderIndex,
-      createdBy:    userId,
+      createdBy: userId,
       lastEditedBy: userId,
     })
     .returning();
 
   await insertPageWithClosure(tx, page.id, parentId);
 
-  async function insertBlocks(snapshotBlocks: SnapshotBlock[], parentBlockId: string | null) {
+  async function insertBlocks(
+    snapshotBlocks: SnapshotBlock[],
+    parentBlockId: string | null
+  ) {
     for (const sb of snapshotBlocks) {
       const newBlockId = crypto.randomUUID();
       await tx.insert(blocks).values({
-        id:            newBlockId,
-        pageId:        page.id,
+        id: newBlockId,
+        pageId: page.id,
         parentBlockId,
-        type:          sb.type as "paragraph",
-        content:       sb.content ?? {},
+        type: sb.type as "paragraph",
+        content: sb.content ?? {},
         schemaVersion: sb.schema_version ?? 1,
-        orderIndex:    sb.order_index,
-        createdBy:     userId,
+        orderIndex: sb.order_index,
+        createdBy: userId,
       });
-      if (sb.children?.length) await insertBlocks(sb.children, newBlockId);
+      if (sb.children?.length) {
+        await insertBlocks(sb.children, newBlockId);
+      }
     }
   }
 
@@ -94,13 +119,13 @@ export async function createPageFromSnapshot(
     await insertBlocks(snapshot.blocks, null);
   } else {
     await tx.insert(blocks).values({
-      pageId:        page.id,
+      pageId: page.id,
       parentBlockId: null,
-      type:          "paragraph",
-      content:       { text: [] },
+      type: "paragraph",
+      content: { text: [] },
       schemaVersion: 1,
-      orderIndex:    0,
-      createdBy:     userId,
+      orderIndex: 0,
+      createdBy: userId,
     });
   }
 
@@ -110,25 +135,25 @@ export async function createPageFromSnapshot(
       const [subPage] = await tx
         .insert(pages)
         .values({
-          shortId:      createId().slice(0, 10),
+          shortId: createId().slice(0, 10),
           workspaceId,
-          parentId:     page.id,
-          kind:         "page",
-          title:        sub.title || "Untitled",
-          orderIndex:   i,
-          createdBy:    userId,
+          parentId: page.id,
+          kind: "page",
+          title: sub.title || "Untitled",
+          orderIndex: i,
+          createdBy: userId,
           lastEditedBy: userId,
         })
         .returning();
       await insertPageWithClosure(tx, subPage.id, page.id);
       await tx.insert(blocks).values({
-        pageId:        subPage.id,
+        pageId: subPage.id,
         parentBlockId: null,
-        type:          "paragraph",
-        content:       { text: [] },
+        type: "paragraph",
+        content: { text: [] },
         schemaVersion: 1,
-        orderIndex:    0,
-        createdBy:     userId,
+        orderIndex: 0,
+        createdBy: userId,
       });
     }
   }
@@ -138,8 +163,19 @@ export async function createPageFromSnapshot(
 
 // Property types supported by WorkFlik's database engine
 const SUPPORTED_PROP_TYPES = new Set([
-  "text", "number", "select", "multi_select", "date",
-  "checkbox", "url", "email", "phone", "person", "created_by", "files", "formula",
+  "text",
+  "number",
+  "select",
+  "multi_select",
+  "date",
+  "checkbox",
+  "url",
+  "email",
+  "phone",
+  "person",
+  "created_by",
+  "files",
+  "formula",
 ]);
 
 // Forks a database-template snapshot (properties + views + sample rows) into
@@ -147,7 +183,7 @@ const SUPPORTED_PROP_TYPES = new Set([
 // action and onboarding, so a database template picked at signup gets the
 // exact same schema and sample data as one picked from the gallery later.
 export async function createDatabaseFromSnapshot(
-  tx: AnyTx,
+  tx: Tx,
   params: {
     snapshot: PageSnapshot & { database_schema: DatabaseSchema };
     fallbackTitle: string;
@@ -157,22 +193,23 @@ export async function createDatabaseFromSnapshot(
     userId: string;
   }
 ): Promise<typeof pages.$inferSelect> {
-  const { snapshot, fallbackTitle, workspaceId, parentId, orderIndex, userId } = params;
+  const { snapshot, fallbackTitle, workspaceId, parentId, orderIndex, userId } =
+    params;
   const schema = snapshot.database_schema;
 
   const [dbPage] = await tx
     .insert(pages)
     .values({
-      shortId:      createId().slice(0, 10),
+      shortId: createId().slice(0, 10),
       workspaceId,
       parentId,
-      kind:         "database",
-      title:        snapshot.title || fallbackTitle,
-      icon:         snapshot.icon ?? null,
-      coverUrl:     snapshot.cover_url ?? null,
-      isFullWidth:  snapshot.is_full_width ?? false,
+      kind: "database",
+      title: snapshot.title || fallbackTitle,
+      icon: snapshot.icon ?? null,
+      coverUrl: snapshot.cover_url ?? null,
+      isFullWidth: snapshot.is_full_width ?? false,
       orderIndex,
-      createdBy:    userId,
+      createdBy: userId,
       lastEditedBy: userId,
     })
     .returning();
@@ -182,16 +219,21 @@ export async function createDatabaseFromSnapshot(
   // Prepare properties — skip "title" (stored on page) and unsupported types
   let titlePropName: string | undefined;
   const preparedProps: {
-    name:      string;
-    type:      string;
-    config:    Record<string, unknown>;
-    orderIdx:  number;
+    name: string;
+    type: string;
+    config: Record<string, unknown>;
+    orderIdx: number;
     optionMap: Map<string, string>; // option name → UUID
   }[] = [];
 
   for (const p of schema.properties) {
-    if (p.type === "title") { titlePropName = p.name; continue; }
-    if (!SUPPORTED_PROP_TYPES.has(p.type)) continue;
+    if (p.type === "title") {
+      titlePropName = p.name;
+      continue;
+    }
+    if (!SUPPORTED_PROP_TYPES.has(p.type)) {
+      continue;
+    }
 
     const optionMap = new Map<string, string>();
     let config: Record<string, unknown> = {};
@@ -211,8 +253,8 @@ export async function createDatabaseFromSnapshot(
     }
 
     preparedProps.push({
-      name:     p.name,
-      type:     p.type,
+      name: p.name,
+      type: p.type,
       config,
       orderIdx: preparedProps.length,
       optionMap,
@@ -220,37 +262,52 @@ export async function createDatabaseFromSnapshot(
   }
 
   // Insert properties → build name → { id, type, optionMap } lookup
-  const propLookup = new Map<string, { id: string; type: string; optionMap: Map<string, string> }>();
+  const propLookup = new Map<
+    string,
+    { id: string; type: string; optionMap: Map<string, string> }
+  >();
   for (const prep of preparedProps) {
-    const [prop] = await tx.insert(databaseProperties).values({
-      databaseId: dbPage.id,
-      name:       prep.name,
-      type:       prep.type as "text",
-      config:     prep.config,
-      orderIndex: prep.orderIdx,
-    }).returning();
-    propLookup.set(prep.name, { id: prop.id, type: prep.type, optionMap: prep.optionMap });
+    const [prop] = await tx
+      .insert(databaseProperties)
+      .values({
+        databaseId: dbPage.id,
+        name: prep.name,
+        type: prep.type as "text",
+        config: prep.config,
+        orderIndex: prep.orderIdx,
+      })
+      .returning();
+    propLookup.set(prep.name, {
+      id: prop.id,
+      type: prep.type,
+      optionMap: prep.optionMap,
+    });
   }
 
   // Create views
   let defaultViewId: string | null = null;
 
   for (let vi = 0; vi < schema.views.length; vi++) {
-    const v     = schema.views[vi];
-    const vtype = (["table", "board", "calendar", "gallery", "gantt"].includes(v.type)
-      ? v.type : "table") as "table" | "board" | "calendar" | "gallery" | "gantt";
+    const v = schema.views[vi];
+    const vtype = (
+      ["table", "board", "calendar", "gallery", "gantt"].includes(v.type)
+        ? v.type
+        : "table"
+    ) as "table" | "board" | "calendar" | "gallery" | "gantt";
 
-    let groupByPropertyId:    string | null = null;
-    let calendarPropertyId:   string | null = null;
+    let groupByPropertyId: string | null = null;
+    let calendarPropertyId: string | null = null;
     let ganttStartPropertyId: string | null = null;
-    let ganttEndPropertyId:   string | null = null;
+    let ganttEndPropertyId: string | null = null;
 
     if (vtype === "board" && v.groupBy) {
       groupByPropertyId = propLookup.get(v.groupBy)?.id ?? null;
     }
     if (vtype === "calendar") {
       const dateProp = schema.properties.find((p) => p.type === "date");
-      if (dateProp) calendarPropertyId = propLookup.get(dateProp.name)?.id ?? null;
+      if (dateProp) {
+        calendarPropertyId = propLookup.get(dateProp.name)?.id ?? null;
+      }
     }
     if (vtype === "gantt") {
       // Explicit template hints take priority; otherwise fall back to the
@@ -258,101 +315,158 @@ export async function createDatabaseFromSnapshot(
       // "first date property found" heuristic.
       const dateProps = schema.properties.filter((p) => p.type === "date");
       const startName = v.ganttStart ?? dateProps[0]?.name;
-      const endName   = v.ganttEnd   ?? dateProps.find((p) => p.name !== startName)?.name;
-      if (startName) ganttStartPropertyId = propLookup.get(startName)?.id ?? null;
-      if (endName)   ganttEndPropertyId   = propLookup.get(endName)?.id ?? null;
+      const endName =
+        v.ganttEnd ?? dateProps.find((p) => p.name !== startName)?.name;
+      if (startName) {
+        ganttStartPropertyId = propLookup.get(startName)?.id ?? null;
+      }
+      if (endName) {
+        ganttEndPropertyId = propLookup.get(endName)?.id ?? null;
+      }
     }
 
     // "My X" views (filterKey/filterValue in the seed) resolve here: person/created_by get the "@me" sentinel
     // (same one entries/route.ts uses) so the filter re-evaluates per-viewer; select fields resolve name → generated id.
-    let filters: { propertyId: string; operator: string; value: unknown }[] = [];
+    let filters: { propertyId: string; operator: string; value: unknown }[] =
+      [];
     if (v.filterKey && v.filterValue !== undefined) {
       const targetProp = propLookup.get(v.filterKey);
       if (targetProp?.type === "person" || targetProp?.type === "created_by") {
         if (v.filterValue === "me") {
-          filters = [{ propertyId: targetProp.id, operator: "is", value: "@me" }];
+          filters = [
+            { propertyId: targetProp.id, operator: "is", value: "@me" },
+          ];
         }
-      } else if (targetProp?.type === "select" || targetProp?.type === "multi_select") {
+      } else if (
+        targetProp?.type === "select" ||
+        targetProp?.type === "multi_select"
+      ) {
         const optionId = targetProp.optionMap.get(v.filterValue);
-        if (optionId) filters = [{ propertyId: targetProp.id, operator: "is", value: optionId }];
+        if (optionId) {
+          filters = [
+            { propertyId: targetProp.id, operator: "is", value: optionId },
+          ];
+        }
       }
     }
 
-    const [view] = await tx.insert(databaseViews).values({
-      databaseId:         dbPage.id,
-      name:               v.name,
-      type:               vtype,
-      orderIndex:         vi,
-      groupByPropertyId,
-      calendarPropertyId,
-      ganttStartPropertyId,
-      ganttEndPropertyId,
-      filters,
-    }).returning();
+    const [view] = await tx
+      .insert(databaseViews)
+      .values({
+        databaseId: dbPage.id,
+        name: v.name,
+        type: vtype,
+        orderIndex: vi,
+        groupByPropertyId,
+        calendarPropertyId,
+        ganttStartPropertyId,
+        ganttEndPropertyId,
+        filters,
+      })
+      .returning();
 
-    if (v.isDefault || vi === 0) defaultViewId = defaultViewId ?? view.id;
+    if (v.isDefault || vi === 0) {
+      defaultViewId = defaultViewId ?? view.id;
+    }
   }
 
   if (defaultViewId) {
-    await tx.update(pages).set({ defaultViewId }).where(eq(pages.id, dbPage.id));
+    await tx
+      .update(pages)
+      .set({ defaultViewId })
+      .where(eq(pages.id, dbPage.id));
   }
 
   // Create sample entries
-  const titleKey   = titlePropName ?? schema.properties[0]?.name ?? "";
+  const titleKey = titlePropName ?? schema.properties[0]?.name ?? "";
   const sampleRows = schema.sample_rows ?? [];
 
   for (let ri = 0; ri < sampleRows.length; ri++) {
-    const row        = sampleRows[ri];
+    const row = sampleRows[ri];
     const entryTitle = String(row[titleKey] ?? `Entry ${ri + 1}`);
 
     const [entry] = await tx
       .insert(pages)
       .values({
-        shortId:      createId().slice(0, 10),
+        shortId: createId().slice(0, 10),
         workspaceId,
-        parentId:     dbPage.id,
-        databaseId:   dbPage.id,
-        kind:         "entry",
-        title:        entryTitle,
-        orderIndex:   ri,
-        createdBy:    userId,
+        parentId: dbPage.id,
+        databaseId: dbPage.id,
+        kind: "entry",
+        title: entryTitle,
+        orderIndex: ri,
+        createdBy: userId,
         lastEditedBy: userId,
       })
       .returning();
 
     await insertPageWithClosure(tx, entry.id, dbPage.id);
 
-    const valuesToInsert: { entryId: string; propertyId: string; value: unknown }[] = [];
+    const valuesToInsert: {
+      entryId: string;
+      propertyId: string;
+      value: unknown;
+    }[] = [];
 
-    for (const [propName, { id: propId, type: propType, optionMap }] of propLookup) {
+    for (const [
+      propName,
+      { id: propId, type: propType, optionMap },
+    ] of propLookup) {
       const rawVal = row[propName];
-      if (rawVal === undefined || rawVal === null || rawVal === "") continue;
+      if (rawVal === undefined || rawVal === null || rawVal === "") {
+        continue;
+      }
 
       let value: unknown = null;
 
       switch (propType) {
         case "select": {
           const optId = optionMap.get(String(rawVal));
-          if (optId) value = { optionId: optId };
+          if (optId) {
+            value = { optionId: optId };
+          }
           break;
         }
         case "multi_select": {
-          const names  = String(rawVal).split(",").map((s) => s.trim()).filter(Boolean);
-          const optIds = names.map((n) => optionMap.get(n)).filter(Boolean) as string[];
-          if (optIds.length) value = { optionIds: optIds };
+          const names = String(rawVal)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const optIds = names
+            .map((n) => optionMap.get(n))
+            .filter(Boolean) as string[];
+          if (optIds.length) {
+            value = { optionIds: optIds };
+          }
           break;
         }
-        case "text":     value = { text:    String(rawVal) };                  break;
-        case "number":   value = { number:  Number(rawVal) };                  break;
-        case "date":     value = { date:    String(rawVal) };                  break;
-        case "checkbox": value = { checked: rawVal === 1 || rawVal === "true" }; break;
-        case "email":    value = { email:   String(rawVal) };                  break;
-        case "url":      value = { url:     String(rawVal) };                  break;
-        case "phone":    value = { phone:   String(rawVal) };                  break;
+        case "text":
+          value = { text: String(rawVal) };
+          break;
+        case "number":
+          value = { number: Number(rawVal) };
+          break;
+        case "date":
+          value = { date: String(rawVal) };
+          break;
+        case "checkbox":
+          value = { checked: rawVal === 1 || rawVal === "true" };
+          break;
+        case "email":
+          value = { email: String(rawVal) };
+          break;
+        case "url":
+          value = { url: String(rawVal) };
+          break;
+        case "phone":
+          value = { phone: String(rawVal) };
+          break;
         // "person" skipped — no real user IDs in template data
       }
 
-      if (value !== null) valuesToInsert.push({ entryId: entry.id, propertyId: propId, value });
+      if (value !== null) {
+        valuesToInsert.push({ entryId: entry.id, propertyId: propId, value });
+      }
     }
 
     if (valuesToInsert.length > 0) {
@@ -367,21 +481,26 @@ export async function createDatabaseFromSnapshot(
 // pages — mirror that instead of leaving a brand-new workspace with nothing
 // to open.
 export async function createBlankPage(
-  tx: AnyTx,
-  params: { workspaceId: string; parentId: string | null; orderIndex: number; userId: string }
+  tx: Tx,
+  params: {
+    workspaceId: string;
+    parentId: string | null;
+    orderIndex: number;
+    userId: string;
+  }
 ): Promise<typeof pages.$inferSelect> {
   const { workspaceId, parentId, orderIndex, userId } = params;
 
   const [page] = await tx
     .insert(pages)
     .values({
-      shortId:      createId().slice(0, 10),
+      shortId: createId().slice(0, 10),
       workspaceId,
       parentId,
-      kind:         "page",
-      title:        "Untitled",
+      kind: "page",
+      title: "Untitled",
       orderIndex,
-      createdBy:    userId,
+      createdBy: userId,
       lastEditedBy: userId,
     })
     .returning();
@@ -389,13 +508,13 @@ export async function createBlankPage(
   await insertPageWithClosure(tx, page.id, parentId);
 
   await tx.insert(blocks).values({
-    pageId:        page.id,
+    pageId: page.id,
     parentBlockId: null,
-    type:          "paragraph",
-    content:       { text: [] },
+    type: "paragraph",
+    content: { text: [] },
     schemaVersion: 1,
-    orderIndex:    0,
-    createdBy:     userId,
+    orderIndex: 0,
+    createdBy: userId,
   });
 
   return page;

@@ -8,10 +8,10 @@ export function WorkspaceInviteEmail({
   acceptUrl,
   productName = PRODUCT_NAME,
 }: {
-  inviterName:   string;
+  inviterName: string;
   workspaceName: string;
-  acceptUrl:     string;
-  productName?:  string;
+  acceptUrl: string;
+  productName?: string;
 }) {
   return (
     <EmailLayout
@@ -23,8 +23,9 @@ export function WorkspaceInviteEmail({
       </Text>
       <Text style={emailStyles.paragraph}>
         <strong style={{ color: "#0C2340" }}>{inviterName}</strong> has invited
-        you to join the <strong style={{ color: "#0C2340" }}>{workspaceName}</strong>{" "}
-        workspace on {productName}.
+        you to join the{" "}
+        <strong style={{ color: "#0C2340" }}>{workspaceName}</strong> workspace
+        on {productName}.
       </Text>
       <Section style={{ margin: "24px 0" }}>
         <Button href={acceptUrl} style={emailStyles.button}>
@@ -32,8 +33,8 @@ export function WorkspaceInviteEmail({
         </Button>
       </Section>
       <Text style={emailStyles.muted}>
-        This invitation expires in 7 days. If you did not expect this invitation,
-        you can safely ignore this email.
+        This invitation expires in 7 days. If you did not expect this
+        invitation, you can safely ignore this email.
       </Text>
       <Text style={emailStyles.fallbackLink}>
         If the button does not work, paste this link into your browser:{" "}

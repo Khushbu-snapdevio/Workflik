@@ -1,6 +1,6 @@
 import { PluginKey } from "@tiptap/pm/state";
-import { Extension } from "@tiptap/react";
 import type { Editor } from "@tiptap/react";
+import { Extension } from "@tiptap/react";
 import type { SuggestionProps } from "@tiptap/suggestion";
 import Suggestion from "@tiptap/suggestion";
 import {
@@ -38,56 +38,55 @@ const NATIVE_NODE_NAME: Record<string, string> = {
   table: "table",
 };
 
-const CUSTOM_NODES: Partial<Record<string, { type: string } & Record<string, unknown>>> = {
+const CUSTOM_NODES: Partial<
+  Record<string, { type: string } & Record<string, unknown>>
+> = {
   divider: { type: "horizontalRule" },
-    callout: {
-      type: "callout",
-      attrs: { icon: "💡", color: "" },
-      content: [{ type: "paragraph" }],
+  callout: {
+    type: "callout",
+    attrs: { icon: "💡", color: "" },
+    content: [{ type: "paragraph" }],
+  },
+  toggle: {
+    type: "toggle",
+    attrs: { open: true },
+    content: [{ type: "toggleSummary", content: [] }, { type: "paragraph" }],
+  },
+  image: {
+    type: "imageBlock",
+    attrs: { src: "", caption: "", width: 720 },
+  },
+  video: { type: "videoBlock", attrs: { src: "", caption: "" } },
+  audio: { type: "audioBlock", attrs: { src: "", caption: "" } },
+  file: { type: "fileBlock", attrs: { src: "", caption: "" } },
+  pdf: { type: "pdfBlock", attrs: { src: "", caption: "" } },
+  toc: { type: "tableOfContents" },
+  equation: { type: "mathBlock", attrs: { expression: "" } },
+  columns: {
+    type: "columns",
+    attrs: { columnCount: 2 },
+    content: [{ type: "paragraph" }, { type: "paragraph" }],
+  },
+  breadcrumb: { type: "breadcrumbBlock" },
+  synced_block: {
+    type: "syncedBlock",
+    attrs: { sourceBlockId: "" },
+    content: [{ type: "paragraph" }],
+  },
+  linked_page: { type: "linkedPage", attrs: { pageId: "" } },
+  sub_page: { type: "subPageBlock", attrs: { pageId: "" } },
+  database: {
+    type: "inlineDatabase",
+    attrs: { databaseId: "", defaultViewId: "" },
+  },
+  template_button: {
+    type: "templateButton",
+    attrs: {
+      label: "New Entry",
+      insertLocation: "below_button",
+      templateBlocks: [{ type: "paragraph", text: "" }],
     },
-    toggle: {
-      type: "toggle",
-      attrs: { open: true },
-      content: [
-        { type: "toggleSummary", content: [] },
-        { type: "paragraph" },
-      ],
-    },
-    image: {
-      type: "imageBlock",
-      attrs: { src: "", caption: "", width: 720 },
-    },
-    video: { type: "videoBlock", attrs: { src: "", caption: "" } },
-    audio: { type: "audioBlock", attrs: { src: "", caption: "" } },
-    file: { type: "fileBlock", attrs: { src: "", caption: "" } },
-    pdf: { type: "pdfBlock", attrs: { src: "", caption: "" } },
-    toc: { type: "tableOfContents" },
-    equation: { type: "mathBlock", attrs: { expression: "" } },
-    columns: {
-      type: "columns",
-      attrs: { columnCount: 2 },
-      content: [{ type: "paragraph" }, { type: "paragraph" }],
-    },
-    breadcrumb: { type: "breadcrumbBlock" },
-    synced_block: {
-      type: "syncedBlock",
-      attrs: { sourceBlockId: "" },
-      content: [{ type: "paragraph" }],
-    },
-    linked_page: { type: "linkedPage", attrs: { pageId: "" } },
-    sub_page: { type: "subPageBlock", attrs: { pageId: "" } },
-    database: {
-      type: "inlineDatabase",
-      attrs: { databaseId: "", defaultViewId: "" },
-    },
-    template_button: {
-      type: "templateButton",
-      attrs: {
-        label: "New Entry",
-        insertLocation: "below_button",
-        templateBlocks: [{ type: "paragraph", text: "" }],
-      },
-    },
+  },
   embed: { type: "embedBlock", attrs: { url: "" } },
   bookmark: { type: "bookmarkBlock", attrs: { url: "" } },
 };
@@ -96,7 +95,9 @@ const CUSTOM_NODES: Partial<Record<string, { type: string } & Record<string, unk
 // of blocks (e.g. the Orbit template editor) would otherwise list "/" items that silently no-op.
 export function isBlockAvailable(editor: Editor, type: string): boolean {
   const nodeName = NATIVE_NODE_NAME[type] ?? CUSTOM_NODES[type]?.type;
-  if (!nodeName) return true;
+  if (!nodeName) {
+    return true;
+  }
   return !!editor.schema.nodes[nodeName];
 }
 
@@ -107,7 +108,8 @@ export function insertBlockType(
   type: string,
   range?: { from: number; to: number }
 ): void {
-  const chain = () => (range ? editor.chain().deleteRange(range) : editor.chain().focus());
+  const chain = () =>
+    range ? editor.chain().deleteRange(range) : editor.chain().focus();
 
   const native: Partial<Record<string, () => boolean>> = {
     paragraph: () => chain().setParagraph().run(),
@@ -119,7 +121,8 @@ export function insertBlockType(
     todo: () => chain().toggleTaskList().run(),
     quote: () => chain().setBlockquote().run(),
     code: () => chain().setCodeBlock().run(),
-    table: () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+    table: () =>
+      chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
   };
 
   if (native[type]) {
@@ -128,7 +131,9 @@ export function insertBlockType(
   }
 
   const content = CUSTOM_NODES[type];
-  if (!content) return;
+  if (!content) {
+    return;
+  }
 
   // Button path: there's no "/query" to consume, and the caret may sit inside
   // real prose — replacing the whole node there would silently destroy it, so
@@ -145,13 +150,14 @@ export function insertBlockType(
   // node with the new block in one step so no intermediate state (empty
   // paragraph or orphaned "/") is ever saved to the DB.
   const insertChain = editor.chain().focus();
-  if (range) insertChain.deleteRange(range);
+  if (range) {
+    insertChain.deleteRange(range);
+  }
   insertChain
     .command(({ tr, state }) => {
       const { $from } = state.selection;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const node = state.schema.nodeFromJSON(content as any);
+        const node = state.schema.nodeFromJSON(content);
         tr.replaceRangeWith(
           $from.before($from.depth),
           $from.after($from.depth),

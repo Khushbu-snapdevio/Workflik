@@ -2,7 +2,12 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { comments, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string; commentId: string }> };
 
@@ -32,7 +37,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
       .from(pages)
       .where(eq(pages.id, pageId))
       .limit(1);
-    if (!page) return apiError(404, "Page not found");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
     await requireWorkspaceMember(page.workspaceId, session.user.id);
 
     const [comment] = await db
@@ -40,15 +47,23 @@ export async function PATCH(req: Request, { params }: Ctx) {
       .from(comments)
       .where(and(eq(comments.id, commentId), eq(comments.pageId, pageId)))
       .limit(1);
-    if (!comment) return apiError(404, "Comment not found");
-    if (comment.deletedAt) return apiError(410, "Comment deleted");
+    if (!comment) {
+      return apiError(404, "Comment not found");
+    }
+    if (comment.deletedAt) {
+      return apiError(410, "Comment deleted");
+    }
 
     const body = await req.json();
     const parsed = patchSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    if (!parsed.success) {
+      return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    }
 
     if (parsed.data.action === "edit") {
-      if (comment.authorId !== session.user.id) return apiError(403, "Not your comment");
+      if (comment.authorId !== session.user.id) {
+        return apiError(403, "Not your comment");
+      }
       const [updated] = await db
         .update(comments)
         .set({ content: parsed.data.content, editedAt: new Date() })
@@ -69,7 +84,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
       const cleaned: Record<string, string[]> = {};
       for (const [e, ids] of Object.entries(reactions)) {
         const filtered = ids.filter((id) => id !== userId);
-        if (filtered.length > 0) cleaned[e] = filtered;
+        if (filtered.length > 0) {
+          cleaned[e] = filtered;
+        }
       }
 
       // If not already reacted with this emoji, add the new reaction
@@ -96,7 +113,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
     return apiError(400, "Unknown action");
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error("[PATCH /api/pages/:id/comments/:commentId]", err);
     return apiError(500, "Internal server error");
   }
@@ -113,7 +132,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       .from(pages)
       .where(eq(pages.id, pageId))
       .limit(1);
-    if (!page) return apiError(404, "Page not found");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
     await requireWorkspaceMember(page.workspaceId, session.user.id);
 
     const [comment] = await db
@@ -121,8 +142,12 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       .from(comments)
       .where(and(eq(comments.id, commentId), eq(comments.pageId, pageId)))
       .limit(1);
-    if (!comment) return apiError(404, "Comment not found");
-    if (comment.authorId !== session.user.id) return apiError(403, "Not your comment");
+    if (!comment) {
+      return apiError(404, "Comment not found");
+    }
+    if (comment.authorId !== session.user.id) {
+      return apiError(403, "Not your comment");
+    }
 
     await db
       .update(comments)
@@ -131,7 +156,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error("[DELETE /api/pages/:id/comments/:commentId]", err);
     return apiError(500, "Internal server error");
   }

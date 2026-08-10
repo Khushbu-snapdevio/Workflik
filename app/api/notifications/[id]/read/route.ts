@@ -16,13 +16,15 @@ export async function PATCH(_req: Request, { params }: Ctx) {
       .where(
         and(
           eq(notifications.id, id),
-          eq(notifications.recipientId, session.user.id),
+          eq(notifications.recipientId, session.user.id)
         )
       );
 
     return Response.json({ ok: true });
   } catch (e) {
-    if (e instanceof Response) return e;
+    if (e instanceof Response) {
+      return e;
+    }
     console.error("[PATCH /api/notifications/:id/read]", e);
     return apiError(500, "Internal error");
   }

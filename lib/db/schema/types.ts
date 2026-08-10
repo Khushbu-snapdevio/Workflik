@@ -152,7 +152,11 @@ export const emailOutboxType = pgEnum("email_outbox_type", [
   "digest_email",
 ]);
 
-export const templateStatus = pgEnum("template_status", ["draft", "published", "archived"]);
+export const templateStatus = pgEnum("template_status", [
+  "draft",
+  "published",
+  "archived",
+]);
 
 export const searchSourceType = pgEnum("search_source_type", [
   "page",

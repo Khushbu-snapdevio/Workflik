@@ -1,13 +1,18 @@
 import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 // Poll every 4s (cheaper than notifications' 10s since this is a single indexed
 // MAX() aggregate); heartbeat every 25s since the client auto-reconnects on idle teardown.
-const POLL_INTERVAL_MS = 4_000;
-const HEARTBEAT_MS     = 25_000;
-const MAX_DURATION_MS  = 55_000;
+const POLL_INTERVAL_MS = 4000;
+const HEARTBEAT_MS = 25_000;
+const MAX_DURATION_MS = 55_000;
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +50,11 @@ export async function GET(req: Request, { params }: Ctx) {
       async start(controller) {
         const send = (event: string, data: unknown) => {
           try {
-            controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+            controller.enqueue(
+              encoder.encode(
+                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+              )
+            );
           } catch {
             // client disconnected
           }
@@ -59,15 +68,23 @@ export async function GET(req: Request, { params }: Ctx) {
         const heartbeat = () => {
           try {
             controller.enqueue(encoder.encode(": heartbeat\n\n"));
-          } catch { /* client gone */ }
-          if (Date.now() < deadline) heartbeatTimer = setTimeout(heartbeat, HEARTBEAT_MS);
+          } catch {
+            /* client gone */
+          }
+          if (Date.now() < deadline) {
+            heartbeatTimer = setTimeout(heartbeat, HEARTBEAT_MS);
+          }
         };
         heartbeatTimer = setTimeout(heartbeat, HEARTBEAT_MS);
 
         const poll = async () => {
           if (req.signal.aborted || Date.now() >= deadline) {
             clearTimeout(heartbeatTimer);
-            try { controller.close(); } catch { /* already closed */ }
+            try {
+              controller.close();
+            } catch {
+              /* already closed */
+            }
             return;
           }
 
@@ -88,21 +105,27 @@ export async function GET(req: Request, { params }: Ctx) {
 
         req.signal.addEventListener("abort", () => {
           clearTimeout(heartbeatTimer);
-          try { controller.close(); } catch { /* ok */ }
+          try {
+            controller.close();
+          } catch {
+            /* ok */
+          }
         });
       },
     });
 
     return new Response(stream, {
       headers: {
-        "Content-Type":  "text/event-stream",
+        "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache, no-store",
-        "Connection":    "keep-alive",
+        Connection: "keep-alive",
         "X-Accel-Buffering": "no",
       },
     });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error("[GET /api/workspaces/:id/pages/stream]", err);
     return apiError(500, "Internal error");
   }

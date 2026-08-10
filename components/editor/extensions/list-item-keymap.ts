@@ -6,7 +6,11 @@ import type { Editor } from "@tiptap/react";
 // This schema treats every list block as a one-item container (see serializer.ts); stock
 // splitListItem/sinkListItem would insert/nest a second item that the serializer never reads back, silently
 // dropping it on reload. Override Enter to create a new sibling container instead, and no-op Tab.
-function splitIntoNewBlock(editor: Editor, itemTypeName: string, validContainerTypes: string[]): boolean {
+function splitIntoNewBlock(
+  editor: Editor,
+  itemTypeName: string,
+  validContainerTypes: string[]
+): boolean {
   return editor.commands.command(({ tr, dispatch, state }) => {
     if (!tr.selection.empty) {
       tr.deleteSelection();
@@ -25,7 +29,10 @@ function splitIntoNewBlock(editor: Editor, itemTypeName: string, validContainerT
     }
     const containerDepth = itemDepth - 1;
     const containerNode = $from.node(containerDepth);
-    if (!validContainerTypes.includes(containerNode.type.name) || containerNode.childCount !== 1) {
+    if (
+      !validContainerTypes.includes(containerNode.type.name) ||
+      containerNode.childCount !== 1
+    ) {
       // Not a plain one-item container (e.g. legacy/corrupted content with a
       // pre-existing multi-item list) — fall back to stock behavior rather
       // than risk mangling content we don't understand.
@@ -44,10 +51,16 @@ function splitIntoNewBlock(editor: Editor, itemTypeName: string, validContainerT
       tr.replaceWith(containerStart, containerEnd, paragraph);
       tr.setSelection(TextSelection.create(tr.doc, containerStart + 1));
     } else {
-      const newItem = itemNode.type.create(null, state.schema.nodes.paragraph.create());
+      const newItem = itemNode.type.create(
+        null,
+        state.schema.nodes.paragraph.create()
+      );
       // Reset blockId — reusing the source container's id would give two top-level nodes the same
       // id and collapse them into one DB row on save.
-      const newContainer = containerNode.type.create({ ...containerNode.attrs, blockId: null }, newItem);
+      const newContainer = containerNode.type.create(
+        { ...containerNode.attrs, blockId: null },
+        newItem
+      );
       tr.insert(containerEnd, newContainer);
       tr.setSelection(TextSelection.create(tr.doc, containerEnd + 3));
     }
@@ -62,7 +75,11 @@ function splitIntoNewBlock(editor: Editor, itemTypeName: string, validContainerT
 export const ListItemBlock = ListItem.extend({
   addKeyboardShortcuts() {
     return {
-      Enter: () => splitIntoNewBlock(this.editor, "listItem", ["bulletList", "orderedList"]),
+      Enter: () =>
+        splitIntoNewBlock(this.editor, "listItem", [
+          "bulletList",
+          "orderedList",
+        ]),
       Tab: () => true,
     };
   },

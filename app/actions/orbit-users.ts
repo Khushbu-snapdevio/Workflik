@@ -3,17 +3,21 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { ADMIN_ROLE, USER_ROLE } from "@/config/platform";
-import { users } from "@/lib/db/schema";
 import { requireAdmin } from "@/lib/authz";
 import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
 
 export async function setUserRoleAction(formData: FormData): Promise<void> {
   const admin = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");
   const role = String(formData.get("role") ?? USER_ROLE);
 
-  if (![ADMIN_ROLE, USER_ROLE].includes(role)) return;
-  if (userId === admin.user.id && role !== ADMIN_ROLE) return;
+  if (![ADMIN_ROLE, USER_ROLE].includes(role)) {
+    return;
+  }
+  if (userId === admin.user.id && role !== ADMIN_ROLE) {
+    return;
+  }
 
   await db
     .update(users)
@@ -28,7 +32,9 @@ export async function toggleUserBanAction(formData: FormData): Promise<void> {
   const userId = String(formData.get("userId") ?? "");
   const banned = String(formData.get("banned") ?? "false") === "true";
 
-  if (userId === admin.user.id && banned) return;
+  if (userId === admin.user.id && banned) {
+    return;
+  }
 
   await db
     .update(users)

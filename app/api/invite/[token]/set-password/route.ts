@@ -6,14 +6,14 @@ import { passwordSchema } from "@/lib/auth/password";
 import { isAuthMethodEnabled } from "@/lib/auth/settings";
 import { db } from "@/lib/db";
 import { accounts, users, workspaceMembers, workspaces } from "@/lib/db/schema";
-import { apiError, ApiError } from "@/lib/workspaces/auth";
-import { acceptWorkspaceInviteTx } from "@/lib/workspaces/invites";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import { ApiError, apiError } from "@/lib/workspaces/auth";
+import { acceptWorkspaceInviteTx } from "@/lib/workspaces/invites";
 
 type Ctx = { params: Promise<{ token: string }> };
 
 const bodySchema = z.object({
-  name:     z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(80),
   password: passwordSchema,
 });
 
@@ -33,12 +33,12 @@ export async function POST(req: Request, { params }: Ctx) {
 
     const [member] = await db
       .select({
-        id:            workspaceMembers.id,
-        workspaceId:   workspaceMembers.workspaceId,
-        userId:        workspaceMembers.userId,
-        status:        workspaceMembers.status,
+        id: workspaceMembers.id,
+        workspaceId: workspaceMembers.workspaceId,
+        userId: workspaceMembers.userId,
+        status: workspaceMembers.status,
         inviteExpires: workspaceMembers.inviteExpires,
-        invitedBy:     workspaceMembers.invitedBy,
+        invitedBy: workspaceMembers.invitedBy,
         workspaceSlug: workspaces.slug,
       })
       .from(workspaceMembers)
@@ -46,16 +46,31 @@ export async function POST(req: Request, { params }: Ctx) {
       .where(eq(workspaceMembers.inviteToken, token))
       .limit(1);
 
-    if (!member) return apiError(404, "Invite not found");
-    if (member.status !== "invited") return apiError(409, "Invite already used or expired");
+    if (!member) {
+      return apiError(404, "Invite not found");
+    }
+    if (member.status !== "invited") {
+      return apiError(409, "Invite already used or expired");
+    }
     if (member.inviteExpires && member.inviteExpires < new Date()) {
-      await db.update(workspaceMembers).set({ status: "expired" }).where(eq(workspaceMembers.id, member.id));
+      await db
+        .update(workspaceMembers)
+        .set({ status: "expired" })
+        .where(eq(workspaceMembers.id, member.id));
       return apiError(410, "Invite has expired");
     }
-    if (!member.userId) return apiError(500, "Invite is missing its account — ask for a new invite");
+    if (!member.userId) {
+      return apiError(
+        500,
+        "Invite is missing its account — ask for a new invite"
+      );
+    }
 
     if (!(await isAuthMethodEnabled("emailPassword"))) {
-      return apiError(400, "Password sign-in is disabled on this instance. Ask your admin for another way to sign in.");
+      return apiError(
+        400,
+        "Password sign-in is disabled on this instance. Ask your admin for another way to sign in."
+      );
     }
 
     const [user] = await db
@@ -63,7 +78,9 @@ export async function POST(req: Request, { params }: Ctx) {
       .from(users)
       .where(eq(users.id, member.userId))
       .limit(1);
-    if (!user) return apiError(404, "Account not found");
+    if (!user) {
+      return apiError(404, "Account not found");
+    }
 
     const [existingCredential] = await db
       .select({ id: accounts.id })
@@ -71,37 +88,43 @@ export async function POST(req: Request, { params }: Ctx) {
       .where(eq(accounts.userId, user.id))
       .limit(1);
     if (existingCredential) {
-      return apiError(409, "This account already has a sign-in method — please log in instead.");
+      return apiError(
+        409,
+        "This account already has a sign-in method — please log in instead."
+      );
     }
 
     const hashed = await hashPassword(password);
 
     await db.transaction(async (tx) => {
       await tx.insert(accounts).values({
-        userId:     user.id,
+        userId: user.id,
         providerId: "credential",
-        accountId:  user.id,
-        password:   hashed,
+        accountId: user.id,
+        password: hashed,
       });
       // Clicking the emailed invite link already proves inbox ownership —
       // no separate email-verification step needed.
-      await tx.update(users).set({ name, emailVerified: true }).where(eq(users.id, user.id));
+      await tx
+        .update(users)
+        .set({ name, emailVerified: true })
+        .where(eq(users.id, user.id));
 
       await acceptWorkspaceInviteTx(tx, {
-        memberId:     member.id,
-        workspaceId:  member.workspaceId,
-        userId:       user.id,
-        invitedBy:    member.invitedBy,
+        memberId: member.id,
+        workspaceId: member.workspaceId,
+        userId: user.id,
+        invitedBy: member.invitedBy,
         accepterName: name,
       });
     });
 
     await writeAuditLog({
-      actorId:    user.id,
-      action:     "member.joined",
+      actorId: user.id,
+      action: "member.joined",
       targetType: "workspace",
-      targetId:   member.workspaceId,
-      metadata:   { email: user.email, newAccount: true },
+      targetId: member.workspaceId,
+      metadata: { email: user.email, newAccount: true },
     });
 
     // Sign them in immediately — same request, no separate login step.
@@ -111,13 +134,20 @@ export async function POST(req: Request, { params }: Ctx) {
     });
 
     const res = Response.json({ workspaceSlug: member.workspaceSlug });
-    const setCookies = typeof signInResponse.headers.getSetCookie === "function"
-      ? signInResponse.headers.getSetCookie()
-      : [signInResponse.headers.get("set-cookie")].filter((v): v is string => Boolean(v));
-    for (const cookie of setCookies) res.headers.append("set-cookie", cookie);
+    const setCookies =
+      typeof signInResponse.headers.getSetCookie === "function"
+        ? signInResponse.headers.getSetCookie()
+        : [signInResponse.headers.get("set-cookie")].filter((v): v is string =>
+            Boolean(v)
+          );
+    for (const cookie of setCookies) {
+      res.headers.append("set-cookie", cookie);
+    }
     return res;
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error("[invite/set-password]", err);
     // The password + workspace join above already succeeded even if
     // auto-sign-in failed here — send them to log in manually rather than

@@ -2,17 +2,25 @@ import { and, count, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, pages, templateCategories, templates } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 const saveSchema = z.object({
-  name:        z.string().min(1).max(200),
+  name: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
-  categoryId:  z.string().uuid(),
-  pageId:      z.string().uuid(),
+  categoryId: z.string().uuid(),
+  pageId: z.string().uuid(),
 });
 
 // GET /api/workspaces/:id/templates — list workspace custom templates
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: workspaceId } = await params;
     const session = await getSession();
@@ -31,13 +39,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     return Response.json(list);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
 
 // POST /api/workspaces/:id/templates — save a page as a custom template
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: workspaceId } = await params;
     const session = await getSession();
@@ -45,7 +58,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const body = await req.json();
     const parsed = saveSchema.safeParse(body);
-    if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    if (!parsed.success) {
+      return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+    }
     const { name, description, categoryId, pageId } = parsed.data;
 
     const [cat] = await db
@@ -53,15 +68,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       .from(templateCategories)
       .where(eq(templateCategories.id, categoryId))
       .limit(1);
-    if (!cat) return apiError(400, "Unknown category");
+    if (!cat) {
+      return apiError(400, "Unknown category");
+    }
 
     // Verify the page belongs to this workspace
     const [page] = await db
       .select()
       .from(pages)
-      .where(and(eq(pages.id, pageId), eq(pages.workspaceId, workspaceId), eq(pages.isDeleted, false)))
+      .where(
+        and(
+          eq(pages.id, pageId),
+          eq(pages.workspaceId, workspaceId),
+          eq(pages.isDeleted, false)
+        )
+      )
       .limit(1);
-    if (!page) return apiError(404, "Page not found");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
 
     // Fetch all blocks for this page, ordered
     const pageBlocks = await db
@@ -85,13 +110,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return pageBlocks
         .filter((b) => b.parentBlockId === parentId)
         .map((b) => ({
-          id:              b.id,
-          type:            b.type,
-          content:         b.content,
-          schema_version:  b.schemaVersion,
-          order_index:     b.orderIndex,
+          id: b.id,
+          type: b.type,
+          content: b.content,
+          schema_version: b.schemaVersion,
+          order_index: b.orderIndex,
           parent_block_id: b.parentBlockId,
-          children:        buildTree(b.id),
+          children: buildTree(b.id),
         }));
     }
 
@@ -111,13 +136,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       .orderBy(pages.orderIndex);
 
     const snapshot = {
-      title:           page.title,
-      icon:            page.icon,
-      cover_url:       page.coverUrl,
-      is_full_width:   page.isFullWidth,
-      font_family:     "default",
-      blocks:          blockTree,
-      subpages:        childPages.map((p) => ({ title: p.title ?? "Untitled" })),
+      title: page.title,
+      icon: page.icon,
+      cover_url: page.coverUrl,
+      is_full_width: page.isFullWidth,
+      font_family: "default",
+      blocks: blockTree,
+      subpages: childPages.map((p) => ({ title: p.title ?? "Untitled" })),
       database_schema: null,
     };
 
@@ -134,7 +159,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         );
 
       if (Number(cnt) >= 5) {
-        throw new ApiError(400, "Template limit reached. A workspace can have at most 5 custom templates.");
+        throw new ApiError(
+          400,
+          "Template limit reached. A workspace can have at most 5 custom templates."
+        );
       }
 
       return tx
@@ -154,7 +182,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return Response.json(template, { status: 201 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

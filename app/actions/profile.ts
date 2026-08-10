@@ -3,9 +3,9 @@
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { accounts, sessions as sessionTable, users } from "@/lib/db/schema";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
+import { accounts, sessions as sessionTable, users } from "@/lib/db/schema";
 
 export interface ActionState {
   error?: string;

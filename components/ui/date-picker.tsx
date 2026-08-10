@@ -37,23 +37,23 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", autoF
         <button
           type="button"
           className={cn(
-            "flex h-9 w-full items-center gap-2 rounded-xs border border-input bg-card px-3 text-sm text-foreground transition-colors duration-150 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:border-ring",
-            !value && "text-muted-foreground-subtle",
+            "flex h-9 w-full items-center gap-2 rounded-xs border border-base-300 bg-base-100 px-3 text-sm text-base-content transition-colors duration-150 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary",
+            !value && "text-base-content/50",
             className
           )}
         >
-          <CalendarIcon size={14} className="shrink-0 text-muted-foreground" />
+          <CalendarIcon size={14} className="shrink-0 text-base-content/70" />
           <span className="truncate">{value ? formatDate(value) : placeholder}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto gap-0 p-0" align="start">
         <Calendar mode="single" selected={selected} onSelect={select} defaultMonth={selected ?? new Date()} autoFocus />
-        <div className="flex items-center justify-between border-t border-border px-3 py-2">
+        <div className="flex items-center justify-between border-t border-base-300 px-3 py-2">
           <button
             type="button"
             disabled={!value}
             onClick={() => { onChange(null); setOpenState(false); }}
-            className="text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            className="text-xs font-medium text-base-content/70 transition-colors duration-150 hover:text-base-content disabled:cursor-not-allowed disabled:opacity-40"
           >
             Clear
           </button>

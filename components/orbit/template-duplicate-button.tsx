@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Copy } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { IconTooltipButton } from "@/components/ui/icon-tooltip-button";
 
 interface Props {
@@ -14,10 +14,14 @@ export function TemplateDuplicateButton({ templateId }: Props) {
   const [duplicating, setDuplicating] = useState(false);
 
   async function handleDuplicate() {
-    if (duplicating) return;
+    if (duplicating) {
+      return;
+    }
     setDuplicating(true);
     try {
-      const res = await fetch(`/api/orbit/templates/${templateId}/duplicate`, { method: "POST" });
+      const res = await fetch(`/api/orbit/templates/${templateId}/duplicate`, {
+        method: "POST",
+      });
       if (res.ok) {
         const copy = (await res.json()) as { id: string };
         router.push(`/orbit-admin/orbit/templates/${copy.id}/edit`);

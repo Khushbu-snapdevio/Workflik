@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 
 interface Props {
   children: ReactNode;
@@ -9,21 +9,30 @@ interface Props {
   style?: CSSProperties;
 }
 
-export function ScrollReveal({ children, className = "", delay = 0, style }: Props) {
+export function ScrollReveal({
+  children,
+  className = "",
+  delay = 0,
+  style,
+}: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) return;
+        if (!entry.isIntersecting) {
+          return;
+        }
         el.style.transitionDelay = delay ? `${delay}ms` : "";
         el.classList.add("sr-visible");
         observer.unobserve(el);
       },
-      { threshold: 0.08, rootMargin: "0px 0px -48px 0px" },
+      { threshold: 0.08, rootMargin: "0px 0px -48px 0px" }
     );
 
     observer.observe(el);
@@ -31,7 +40,7 @@ export function ScrollReveal({ children, className = "", delay = 0, style }: Pro
   }, [delay]);
 
   return (
-    <div ref={ref} className={`sr ${className}`} style={style}>
+    <div className={`sr ${className}`} ref={ref} style={style}>
       {children}
     </div>
   );

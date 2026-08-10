@@ -2,16 +2,16 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { userPreferences, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { triggerRoleChangedNotification } from "@/lib/notifications/triggers";
+import { writeAuditLog } from "@/lib/orbit/audit";
 import {
-  apiError,
   ApiError,
+  apiError,
   countActiveAdmins,
   getSession,
   getWorkspace,
   requireWorkspaceMember,
 } from "@/lib/workspaces/auth";
-import { writeAuditLog } from "@/lib/orbit/audit";
-import { triggerRoleChangedNotification } from "@/lib/notifications/triggers";
 
 type Ctx = { params: Promise<{ id: string; userId: string }> };
 
@@ -44,7 +44,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
       )
       .limit(1);
 
-    if (!target) return apiError(404, "Member not found");
+    if (!target) {
+      return apiError(404, "Member not found");
+    }
 
     const workspace = await getWorkspace(id);
     // The owner's own membership row is untouchable here — swapping who
@@ -52,15 +54,22 @@ export async function PATCH(req: Request, { params }: Ctx) {
     // regular role edit, and protecting it guarantees the workspace always
     // has at least one admin without needing a separate count check for it.
     if (workspace.createdBy === userId) {
-      return apiError(403, "The workspace owner's role can only be changed via Transfer Ownership");
+      return apiError(
+        403,
+        "The workspace owner's role can only be changed via Transfer Ownership"
+      );
     }
 
-    const isOwner = workspace.createdBy === null || workspace.createdBy === session.user.id;
+    const isOwner =
+      workspace.createdBy === null || workspace.createdBy === session.user.id;
     const settingAdmin = parsed.data.role === "admin";
     const wasAdmin = target.role === "admin";
 
     if ((settingAdmin || wasAdmin) && !isOwner) {
-      return apiError(403, "Only the workspace owner can grant or revoke the Admin role");
+      return apiError(
+        403,
+        "Only the workspace owner can grant or revoke the Admin role"
+      );
     }
 
     if (wasAdmin && !settingAdmin) {
@@ -89,27 +98,33 @@ export async function PATCH(req: Request, { params }: Ctx) {
         .returning();
 
       await triggerRoleChangedNotification(tx, {
-        workspaceId:  id,
-        changerId:    session.user.id,
-        memberId:     userId,
+        workspaceId: id,
+        changerId: session.user.id,
+        memberId: userId,
         previousRole: target.role,
-        newRole:      parsed.data.role,
+        newRole: parsed.data.role,
       });
 
       return row;
     });
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "member.role_changed",
+      actorId: session.user.id,
+      action: "member.role_changed",
       targetType: "workspace",
-      targetId:   id,
-      metadata:   { targetUserId: userId, previousRole: target.role, newRole: parsed.data.role },
+      targetId: id,
+      metadata: {
+        targetUserId: userId,
+        previousRole: target.role,
+        newRole: parsed.data.role,
+      },
     });
 
     return Response.json(updated);
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
@@ -134,17 +149,26 @@ export async function DELETE(_req: Request, { params }: Ctx) {
       )
       .limit(1);
 
-    if (!target) return apiError(404, "Member not found");
+    if (!target) {
+      return apiError(404, "Member not found");
+    }
 
     const workspace = await getWorkspace(id);
     if (workspace.createdBy === userId) {
-      return apiError(403, "Cannot remove the workspace owner — transfer ownership first");
+      return apiError(
+        403,
+        "Cannot remove the workspace owner — transfer ownership first"
+      );
     }
 
     if (target.role === "admin") {
-      const isOwner = workspace.createdBy === null || workspace.createdBy === session.user.id;
+      const isOwner =
+        workspace.createdBy === null || workspace.createdBy === session.user.id;
       if (!isOwner) {
-        return apiError(403, "Only the workspace owner can remove another admin");
+        return apiError(
+          403,
+          "Only the workspace owner can remove another admin"
+        );
       }
       const adminCount = await countActiveAdmins(id);
       if (adminCount <= 1) {
@@ -183,16 +207,18 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     });
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "member.removed",
+      actorId: session.user.id,
+      action: "member.removed",
       targetType: "workspace",
-      targetId:   id,
-      metadata:   { targetUserId: userId, previousRole: target.role },
+      targetId: id,
+      metadata: { targetUserId: userId, previousRole: target.role },
     });
 
     return new Response(null, { status: 204 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

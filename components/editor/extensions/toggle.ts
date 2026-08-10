@@ -1,5 +1,5 @@
-import { Node, mergeAttributes } from "@tiptap/react";
 import { Plugin } from "@tiptap/pm/state";
+import { mergeAttributes, Node } from "@tiptap/react";
 
 // The `open` flag is stored in node attrs so TipTap re-renders <details> with
 // or without the HTML `open` attribute. CSS then handles show/hide, which works
@@ -42,13 +42,17 @@ export const Toggle = Node.create({
                 target.tagName === "SUMMARY"
                   ? target
                   : (target.closest?.("summary") as HTMLElement | null);
-              if (!summary) return false;
+              if (!summary) {
+                return false;
+              }
 
               event.preventDefault();
 
               // Resolve a ProseMirror position inside the clicked <summary>
               const clickPos = view.posAtDOM(summary, 0);
-              if (clickPos < 0) return false;
+              if (clickPos < 0) {
+                return false;
+              }
               const $pos = view.state.doc.resolve(clickPos);
 
               // Walk up ancestor depths to find the toggle node
@@ -59,7 +63,7 @@ export const Toggle = Node.create({
                     view.state.tr.setNodeMarkup($pos.before(d), undefined, {
                       ...node.attrs,
                       open: !node.attrs.open,
-                    }),
+                    })
                   );
                   return true;
                 }

@@ -7,9 +7,13 @@ export function SmoothScroll() {
     function handleClick(e: MouseEvent) {
       const anchor = (e.target as HTMLElement).closest("a");
       const href = anchor?.getAttribute("href");
-      if (!href?.startsWith("#")) return;
+      if (!href?.startsWith("#")) {
+        return;
+      }
       const el = document.querySelector(href);
-      if (!el) return;
+      if (!el) {
+        return;
+      }
       e.preventDefault();
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }

@@ -35,14 +35,14 @@ export type BlockType =
 export interface BlockDefinition {
   category: "text" | "task" | "media" | "structure" | "code" | "reference";
   description: string;
+  // Kept in the registry (icon/label lookups for existing blocks still need
+  // it) but excluded from the "/" menu — see getBlocksByCategory/searchBlocks.
+  hidden?: boolean;
   icon: string; // emoji used in slash menu
   label: string;
   mdShortcut?: string; // markdown shortcut hint
   slashCmd: string; // what user types after /
   type: BlockType;
-  // Kept in the registry (icon/label lookups for existing blocks still need
-  // it) but excluded from the "/" menu — see getBlocksByCategory/searchBlocks.
-  hidden?: boolean;
 }
 
 export const BLOCK_REGISTRY: Record<BlockType, BlockDefinition> = {

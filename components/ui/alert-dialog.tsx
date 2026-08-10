@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { buttonClasses } from "@/components/ui/button";
 import { Slot } from "@/components/ui/slot";
 
 // Native <dialog>-based, same engine as dialog.tsx (see the comment there).
@@ -111,7 +112,7 @@ function AlertDialogContent({
       ref={dialogRef}
       data-slot="alert-dialog-content"
       className={cn(
-        "fixed left-1/2 top-1/2 z-590 m-0 w-full max-w-105 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-6",
+        "fixed left-1/2 top-1/2 z-590 m-0 w-full max-w-105 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-base-300 bg-base-100 p-6",
         className,
       )}
       {...props}
@@ -127,8 +128,11 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<"div">)
 
 function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
+    // daisy `modal-action` (end-aligned, gapped action row). It composes
+    // standalone — unlike `modal-box`, none of its declarations are scoped to
+    // a `.modal` ancestor — so it works on this native-`<dialog>` engine.
     <div
-      className={cn("flex items-center justify-end gap-2 pt-2", className)}
+      className={cn("modal-action items-center", className)}
       {...props}
     />
   );
@@ -137,7 +141,7 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">)
 function AlertDialogTitle({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <h2
-      className={cn("text-base font-semibold text-foreground", className)}
+      className={cn("text-base font-semibold text-base-content", className)}
       {...props}
     />
   );
@@ -145,7 +149,7 @@ function AlertDialogTitle({ className, ...props }: React.ComponentProps<"h2">) {
 
 function AlertDialogDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
-    <p className={cn("text-sm text-muted-foreground", className)} {...props} />
+    <p className={cn("text-sm text-base-content/70", className)} {...props} />
   );
 }
 
@@ -163,10 +167,9 @@ function AlertDialogAction({
         onClick?.(event);
         if (!event.defaultPrevented) setOpen(false);
       }}
-      className={cn(
-        "inline-flex h-9 items-center justify-center rounded-sm bg-destructive px-4 text-sm font-semibold text-destructive-foreground transition-colors duration-150 hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
-        className,
-      )}
+      // daisy `btn btn-error` via the shared Button class builder, in place of
+      // the hand-rolled button class string this used to carry.
+      className={buttonClasses({ variant: "destructive-solid", className })}
       {...props}
     />
   );
@@ -186,10 +189,7 @@ function AlertDialogCancel({
         onClick?.(event);
         if (!event.defaultPrevented) setOpen(false);
       }}
-      className={cn(
-        "inline-flex h-9 items-center justify-center rounded-sm border border-border bg-transparent px-4 text-sm font-medium text-foreground transition-colors duration-150 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        className,
-      )}
+      className={buttonClasses({ variant: "outline", className })}
       {...props}
     />
   );

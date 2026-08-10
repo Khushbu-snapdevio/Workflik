@@ -1,11 +1,18 @@
 "use client";
 
+import { Loader2, Pencil, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Plus, Pencil, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import {
@@ -46,7 +53,7 @@ function IconPicker({
               "flex aspect-square items-center justify-center rounded-sm border transition-colors",
               selected
                 ? "border-primary bg-primary/10 text-primary"
-                : "border-transparent text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground",
+                : "border-transparent text-base-content/70 hover:border-base-300 hover:bg-base-200 hover:text-base-content",
             ].join(" ")}
             key={name}
             onClick={() => onChange(name)}
@@ -68,8 +75,13 @@ function IconPicker({
 // /api/orbit/templates/categories[/:id] routes that used to only be
 // reachable by opening the new/edit template form
 // (components/orbit/template-form.tsx).
-export function CategoriesManager({ initialCategories }: { initialCategories: TemplateCategory[] }) {
-  const [categories, setCategories] = useState<TemplateCategory[]>(initialCategories);
+export function CategoriesManager({
+  initialCategories,
+}: {
+  initialCategories: TemplateCategory[];
+}) {
+  const [categories, setCategories] =
+    useState<TemplateCategory[]>(initialCategories);
   const [addOpen, setAddOpen] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newIcon, setNewIcon] = useState(DEFAULT_CATEGORY_ICON);
@@ -92,7 +104,9 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
 
   async function handleCreate() {
     const label = newLabel.trim();
-    if (!label || creating) return;
+    if (!label || creating) {
+      return;
+    }
     setCreating(true);
     setAddError(null);
     try {
@@ -102,11 +116,11 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
         body: JSON.stringify({ label, icon: newIcon }),
       });
       if (res.ok) {
-        const created = await res.json() as TemplateCategory;
+        const created = (await res.json()) as TemplateCategory;
         setCategories((prev) => [...prev, created]);
         setAddOpen(false);
       } else {
-        const d = await res.json().catch(() => ({})) as { error?: string };
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
         setAddError(d.error ?? "Failed to create category");
       }
     } finally {
@@ -127,7 +141,12 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
     // Nothing changed — skip the request entirely. Checks the icon too, not
     // just the label, or picking a new icon without retyping the name would
     // be silently dropped.
-    if (!label || (label === cat.label && icon === (cat.icon ?? DEFAULT_CATEGORY_ICON))) return;
+    if (
+      !label ||
+      (label === cat.label && icon === (cat.icon ?? DEFAULT_CATEGORY_ICON))
+    ) {
+      return;
+    }
     setError(null);
     try {
       const res = await fetch(`/api/orbit/templates/categories/${cat.id}`, {
@@ -136,10 +155,16 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
         body: JSON.stringify({ label, icon }),
       });
       if (res.ok) {
-        const updated = await res.json() as TemplateCategory;
-        setCategories((prev) => prev.map((c) => (c.id === cat.id ? { ...c, label: updated.label, icon: updated.icon } : c)));
+        const updated = (await res.json()) as TemplateCategory;
+        setCategories((prev) =>
+          prev.map((c) =>
+            c.id === cat.id
+              ? { ...c, label: updated.label, icon: updated.icon }
+              : c
+          )
+        );
       } else {
-        const d = await res.json().catch(() => ({})) as { error?: string };
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
         setError(d.error ?? "Failed to rename category");
       }
     } catch {
@@ -148,13 +173,18 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
   }
 
   async function handleDelete() {
-    if (!toDelete) return;
+    if (!toDelete) {
+      return;
+    }
     setDeleting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/orbit/templates/categories/${toDelete.id}`, { method: "DELETE" });
+      const res = await fetch(
+        `/api/orbit/templates/categories/${toDelete.id}`,
+        { method: "DELETE" }
+      );
       if (!res.ok) {
-        const d = await res.json().catch(() => ({})) as { error?: string };
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
         setError(d.error ?? "Failed to delete category");
         return;
       }
@@ -166,15 +196,19 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="border-b border-border bg-muted/20 px-5 py-3.5">
-        <h2 className="text-sm font-semibold text-foreground">Categories</h2>
-        <p className="text-xs text-muted-foreground">Used to group built-in templates in the user-facing gallery</p>
+    <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100">
+      <div className="border-b border-base-300 bg-base-200/20 px-5 py-3.5">
+        <h2 className="text-sm font-semibold text-base-content">Categories</h2>
+        <p className="text-xs text-base-content/70">
+          Used to group built-in templates in the user-facing gallery
+        </p>
       </div>
 
       <div className="p-3">
         {categories.length === 0 ? (
-          <p className="px-2 py-4 text-center text-xs text-muted-foreground">No categories yet</p>
+          <p className="px-2 py-4 text-center text-xs text-base-content/70">
+            No categories yet
+          </p>
         ) : (
           <div className="flex flex-col gap-1">
             {categories.map((cat) => {
@@ -182,36 +216,45 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
               const CatIcon = resolveCategoryIcon(cat.icon);
               return (
                 <div
+                  className="group flex flex-wrap items-center gap-1 rounded-sm px-2 py-2 text-sm font-medium text-base-content hover:bg-base-200"
                   key={cat.id}
-                  className="group flex flex-wrap items-center gap-1 rounded-sm px-2 py-2 text-sm font-medium text-foreground hover:bg-accent"
                 >
                   {editingId === cat.id ? (
                     <>
                       <input
                         autoFocus
-                        value={editLabel}
-                        onChange={(e) => setEditLabel(e.target.value)}
+                        className="min-w-0 flex-1 rounded-xs border border-primary/40 bg-base-200 px-2 py-1 text-sm text-base-content outline-none"
                         onBlur={() => commitEdit(cat)}
+                        onChange={(e) => setEditLabel(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") { e.preventDefault(); commitEdit(cat); }
-                          if (e.key === "Escape") { e.preventDefault(); setEditingId(null); }
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            commitEdit(cat);
+                          }
+                          if (e.key === "Escape") {
+                            e.preventDefault();
+                            setEditingId(null);
+                          }
                         }}
-                        className="min-w-0 flex-1 rounded-xs border border-primary/40 bg-background px-2 py-1 text-sm text-foreground outline-none"
+                        value={editLabel}
                       />
-                      <div className="mt-1.5 w-full rounded-sm border border-border bg-background p-1.5">
+                      <div className="mt-1.5 w-full rounded-sm border border-base-300 bg-base-200 p-1.5">
                         <IconPicker onChange={setEditIcon} value={editIcon} />
                       </div>
                     </>
                   ) : (
                     <button
-                      type="button"
-                      onClick={() => startEdit(cat)}
                       className="flex min-w-0 flex-1 items-center gap-2 truncate text-left"
+                      onClick={() => startEdit(cat)}
+                      type="button"
                     >
-                      <CatIcon className="shrink-0 text-muted-foreground" size={15} />
+                      <CatIcon
+                        className="shrink-0 text-base-content/70"
+                        size={15}
+                      />
                       <span className="truncate">{cat.label}</span>
                       {inUse && (
-                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-2xs font-semibold tabular-nums text-muted-foreground">
+                        <span className="shrink-0 rounded-full bg-base-200 px-1.5 py-0.5 text-2xs font-semibold tabular-nums text-base-content/70">
                           {cat.templateCount}
                         </span>
                       )}
@@ -219,27 +262,41 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
                   )}
                   {editingId !== cat.id && (
                     <button
-                      type="button"
-                      onClick={() => startEdit(cat)}
                       aria-label={`Rename ${cat.label}`}
-                      className="shrink-0 rounded-xs p-1.5 text-muted-foreground-subtle opacity-0 transition-colors hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                      className="shrink-0 rounded-xs p-1.5 text-base-content/50 opacity-0 transition-colors hover:bg-base-200 hover:text-base-content group-hover:opacity-100"
+                      onClick={() => startEdit(cat)}
+                      type="button"
                     >
                       <Pencil size={13} />
                     </button>
                   )}
                   <button
-                    type="button"
                     aria-disabled={inUse}
-                    aria-label={inUse ? `${cat.label} is used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} and can't be deleted` : `Delete category ${cat.label}`}
-                    onClick={() => { if (!inUse) setToDelete(cat); }}
-                    onMouseEnter={(e) => inUse && showTooltip(`Used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} — remove them first`, e)}
-                    onMouseLeave={hideTooltip}
+                    aria-label={
+                      inUse
+                        ? `${cat.label} is used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} and can't be deleted`
+                        : `Delete category ${cat.label}`
+                    }
                     className={[
                       "shrink-0 rounded-xs p-1.5 opacity-0 transition-colors group-hover:opacity-100",
                       inUse
-                        ? "cursor-not-allowed text-muted-foreground-subtle"
-                        : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
+                        ? "cursor-not-allowed text-base-content/50"
+                        : "text-base-content/70 hover:bg-error/10 hover:text-error",
                     ].join(" ")}
+                    onClick={() => {
+                      if (!inUse) {
+                        setToDelete(cat);
+                      }
+                    }}
+                    onMouseEnter={(e) =>
+                      inUse &&
+                      showTooltip(
+                        `Used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} — remove them first`,
+                        e
+                      )
+                    }
+                    onMouseLeave={hideTooltip}
+                    type="button"
                   >
                     <X size={13} />
                   </button>
@@ -249,13 +306,13 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
           </div>
         )}
 
-        {error && <p className="mt-2 px-2 text-xs text-destructive">{error}</p>}
+        {error && <p className="mt-2 px-2 text-xs text-error">{error}</p>}
 
-        <div className="mt-2 border-t border-border pt-3">
+        <div className="mt-2 border-t border-base-300 pt-3">
           <button
-            type="button"
+            className="flex w-full items-center gap-1.5 rounded-sm px-2 py-2 text-left text-sm font-medium text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
             onClick={openAdd}
-            className="flex w-full items-center gap-1.5 rounded-sm px-2 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            type="button"
           >
             <Plus size={14} />
             New category
@@ -263,47 +320,57 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
         </div>
       </div>
 
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
+          document.body
+        )}
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-90 sm:max-w-90 gap-4 rounded-xl bg-background">
+      <Dialog onOpenChange={setAddOpen} open={addOpen}>
+        <DialogContent className="max-w-90 sm:max-w-90 gap-4 rounded-xl bg-base-200">
           <DialogHeader>
             <DialogTitle>New category</DialogTitle>
           </DialogHeader>
           <div>
             <input
-              type="text"
               autoFocus
-              value={newLabel}
+              className="w-full rounded-sm border border-base-300 bg-base-200 px-3 py-2 text-sm text-base-content outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               onChange={(e) => setNewLabel(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreate();
+                if (e.key === "Enter") {
+                  handleCreate();
+                }
               }}
               placeholder="e.g. Meeting Notes"
-              className="w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              type="text"
+              value={newLabel}
             />
 
-            <p className="mt-4 text-xs font-semibold text-muted-foreground">Icon</p>
-            <div className="mt-1.5 rounded-sm border border-border p-2">
+            <p className="mt-4 text-xs font-semibold text-base-content/70">
+              Icon
+            </p>
+            <div className="mt-1.5 rounded-sm border border-base-300 p-2">
               <IconPicker onChange={setNewIcon} value={newIcon} />
             </div>
 
-            {addError && <p className="mt-1.5 text-xs text-destructive">{addError}</p>}
+            {addError && (
+              <p className="mt-1.5 text-xs text-error">{addError}</p>
+            )}
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline" size="sm">Cancel</Button>
+              <Button size="sm" type="button" variant="outline">
+                Cancel
+              </Button>
             </DialogClose>
             <Button
-              type="button"
-              size="sm"
-              onClick={handleCreate}
               disabled={creating || !newLabel.trim()}
+              onClick={handleCreate}
+              size="sm"
+              type="button"
             >
-              {creating && <Loader2 size={13} className="animate-spin" />}
+              {creating && <Loader2 className="animate-spin" size={13} />}
               {creating ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
@@ -311,13 +378,18 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Te
       </Dialog>
 
       <ConfirmDialog
-        open={!!toDelete}
-        onOpenChange={(v) => !v && setToDelete(null)}
-        title="Delete this category?"
-        description={<>&ldquo;{toDelete?.label}&rdquo; will be permanently deleted. Categories still used by a template can&rsquo;t be deleted.</>}
-        loading={deleting}
         confirmLoadingLabel="Deleting…"
+        description={
+          <>
+            &ldquo;{toDelete?.label}&rdquo; will be permanently deleted.
+            Categories still used by a template can&rsquo;t be deleted.
+          </>
+        }
+        loading={deleting}
         onConfirm={handleDelete}
+        onOpenChange={(v) => !v && setToDelete(null)}
+        open={!!toDelete}
+        title="Delete this category?"
       />
     </div>
   );

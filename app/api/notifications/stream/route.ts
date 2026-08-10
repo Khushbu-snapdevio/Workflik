@@ -7,9 +7,9 @@ import { apiError, getSession } from "@/lib/workspaces/auth";
 // Long-poll interval: poll every 3s, keeping connection alive with heartbeats every 25s.
 // NOTE: this requires a persistent-connection host (Railway/VM). On Vercel, connections will
 // be terminated by the serverless function timeout — the client auto-reconnects via EventSource.
-const POLL_INTERVAL_MS  = 3_000;
-const HEARTBEAT_MS      = 25_000;
-const MAX_DURATION_MS   = 55_000; // stay under 60s to be safe on most hosts
+const POLL_INTERVAL_MS = 3000;
+const HEARTBEAT_MS = 25_000;
+const MAX_DURATION_MS = 55_000; // stay under 60s to be safe on most hosts
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,9 @@ export async function GET(req: Request) {
     const session = await getSession();
     const { searchParams } = new URL(req.url);
     const workspaceId = searchParams.get("workspaceId");
-    if (!workspaceId) return apiError(400, "workspaceId required");
+    if (!workspaceId) {
+      return apiError(400, "workspaceId required");
+    }
 
     let lastSeen = new Date();
     const encoder = new TextEncoder();
@@ -27,7 +29,11 @@ export async function GET(req: Request) {
       async start(controller) {
         const send = (event: string, data: unknown) => {
           try {
-            controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+            controller.enqueue(
+              encoder.encode(
+                `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+              )
+            );
           } catch {
             // client disconnected
           }
@@ -42,44 +48,55 @@ export async function GET(req: Request) {
         const heartbeat = () => {
           try {
             controller.enqueue(encoder.encode(": heartbeat\n\n"));
-          } catch { /* client gone */ }
-          if (Date.now() < deadline) heartbeatTimer = setTimeout(heartbeat, HEARTBEAT_MS);
+          } catch {
+            /* client gone */
+          }
+          if (Date.now() < deadline) {
+            heartbeatTimer = setTimeout(heartbeat, HEARTBEAT_MS);
+          }
         };
         heartbeatTimer = setTimeout(heartbeat, HEARTBEAT_MS);
 
         const poll = async () => {
           if (req.signal.aborted || Date.now() >= deadline) {
             clearTimeout(heartbeatTimer);
-            try { controller.close(); } catch { /* already closed */ }
+            try {
+              controller.close();
+            } catch {
+              /* already closed */
+            }
             return;
           }
 
           try {
             const newRows = await db
               .select({
-                id:             notifications.id,
-                type:           notifications.type,
-                isRead:         notifications.isRead,
-                createdAt:      notifications.createdAt,
+                id: notifications.id,
+                type: notifications.type,
+                isRead: notifications.isRead,
+                createdAt: notifications.createdAt,
                 contentSnippet: notifications.contentSnippet,
-                pageId:         notifications.pageId,
-                sourceId:       notifications.sourceId,
-                senderId:       notifications.senderId,
-                senderName:     users.name,
-                senderImage:    users.image,
-                pageTitle:      pages.title,
-                pageIcon:       pages.icon,
-                pageShortId:    pages.shortId,
-                inviteToken:    workspaceMembers.inviteToken,
+                pageId: notifications.pageId,
+                sourceId: notifications.sourceId,
+                senderId: notifications.senderId,
+                senderName: users.name,
+                senderImage: users.image,
+                pageTitle: pages.title,
+                pageIcon: pages.icon,
+                pageShortId: pages.shortId,
+                inviteToken: workspaceMembers.inviteToken,
               })
               .from(notifications)
               .leftJoin(users, eq(users.id, notifications.senderId))
               .leftJoin(pages, eq(pages.id, notifications.pageId))
-              .leftJoin(workspaceMembers, eq(workspaceMembers.id, notifications.sourceId))
+              .leftJoin(
+                workspaceMembers,
+                eq(workspaceMembers.id, notifications.sourceId)
+              )
               .where(
                 and(
                   notificationScope(session.user.id, workspaceId),
-                  gt(notifications.createdAt, lastSeen),
+                  gt(notifications.createdAt, lastSeen)
                 )
               )
               .orderBy(desc(notifications.createdAt))
@@ -100,21 +117,27 @@ export async function GET(req: Request) {
 
         req.signal.addEventListener("abort", () => {
           clearTimeout(heartbeatTimer);
-          try { controller.close(); } catch { /* ok */ }
+          try {
+            controller.close();
+          } catch {
+            /* ok */
+          }
         });
       },
     });
 
     return new Response(stream, {
       headers: {
-        "Content-Type":  "text/event-stream",
+        "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache, no-store",
-        "Connection":    "keep-alive",
+        Connection: "keep-alive",
         "X-Accel-Buffering": "no",
       },
     });
   } catch (e) {
-    if (e instanceof Response) return e;
+    if (e instanceof Response) {
+      return e;
+    }
     console.error("[GET /api/notifications/stream]", e);
     return apiError(500, "Internal error");
   }

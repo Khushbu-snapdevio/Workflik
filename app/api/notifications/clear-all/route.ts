@@ -8,7 +8,9 @@ export async function POST(req: Request) {
     const session = await getSession();
     const { workspaceId } = await req.json();
 
-    if (!workspaceId) return apiError(400, "workspaceId required");
+    if (!workspaceId) {
+      return apiError(400, "workspaceId required");
+    }
 
     await db
       .delete(notifications)
@@ -16,7 +18,9 @@ export async function POST(req: Request) {
 
     return Response.json({ ok: true });
   } catch (e) {
-    if (e instanceof Response) return e;
+    if (e instanceof Response) {
+      return e;
+    }
     console.error("[POST /api/notifications/clear-all]", e);
     return apiError(500, "Internal error");
   }

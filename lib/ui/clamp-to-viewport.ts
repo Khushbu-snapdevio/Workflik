@@ -4,13 +4,13 @@
  */
 
 export interface AnchorRect {
-  top:    number;
-  left:   number;
-  right:  number;
   bottom: number;
+  left: number;
+  right: number;
+  top: number;
 }
 
-const DEFAULT_GAP    = 6;
+const DEFAULT_GAP = 6;
 const DEFAULT_MARGIN = 8;
 
 /**
@@ -19,12 +19,17 @@ const DEFAULT_MARGIN = 8;
 export function getClampedTop(
   anchor: AnchorRect,
   popupHeight: number,
-  { gap = DEFAULT_GAP, margin = DEFAULT_MARGIN }: { gap?: number; margin?: number } = {},
+  {
+    gap = DEFAULT_GAP,
+    margin = DEFAULT_MARGIN,
+  }: { gap?: number; margin?: number } = {}
 ): number {
-  const vh = typeof window !== "undefined" ? window.innerHeight : 0;
+  const vh = typeof window === "undefined" ? 0 : window.innerHeight;
 
   const below = anchor.bottom + gap;
-  if (below + popupHeight <= vh - margin) return below;
+  if (below + popupHeight <= vh - margin) {
+    return below;
+  }
 
   const spaceAbove = anchor.top;
   const spaceBelow = vh - anchor.bottom;
@@ -40,13 +45,20 @@ export function getClampedTop(
 export function getClampedLeft(
   anchor: AnchorRect,
   popupWidth: number,
-  { align = "start", margin = DEFAULT_MARGIN }: { align?: "start" | "end"; margin?: number } = {},
+  {
+    align = "start",
+    margin = DEFAULT_MARGIN,
+  }: { align?: "start" | "end"; margin?: number } = {}
 ): number {
-  const vw = typeof window !== "undefined" ? window.innerWidth : 0;
+  const vw = typeof window === "undefined" ? 0 : window.innerWidth;
 
   let left = align === "end" ? anchor.right - popupWidth : anchor.left;
-  if (left + popupWidth > vw - margin) left = vw - margin - popupWidth;
-  if (left < margin) left = margin;
+  if (left + popupWidth > vw - margin) {
+    left = vw - margin - popupWidth;
+  }
+  if (left < margin) {
+    left = margin;
+  }
   return left;
 }
 
@@ -54,10 +66,10 @@ export function getClampedLeft(
 export function getClampedPosition(
   anchor: AnchorRect,
   size: { width: number; height: number },
-  opts: { gap?: number; margin?: number; align?: "start" | "end" } = {},
+  opts: { gap?: number; margin?: number; align?: "start" | "end" } = {}
 ): { top: number; left: number } {
   return {
-    top:  getClampedTop(anchor, size.height, opts),
+    top: getClampedTop(anchor, size.height, opts),
     left: getClampedLeft(anchor, size.width, opts),
   };
 }

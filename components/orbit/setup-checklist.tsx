@@ -76,17 +76,17 @@ export function SetupChecklist({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-3.5">
+    <div className="overflow-hidden rounded-lg border border-base-300 bg-base-100">
+      <div className="flex items-center justify-between gap-4 border-b border-base-300 px-5 py-3.5">
         <div className="flex items-center gap-2.5">
           <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
             <ShieldAlert className="text-primary" size={14} />
           </span>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">
+            <h2 className="text-sm font-semibold text-base-content">
               Setup checklist
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-base-content/70">
               {remaining === 0
                 ? "Everything looks good."
                 : `${remaining} thing${remaining === 1 ? "" : "s"} worth checking before inviting your team.`}
@@ -95,7 +95,7 @@ export function SetupChecklist({
         </div>
         <button
           aria-label="Dismiss setup checklist"
-          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground"
+          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-base-content/70 transition-colors duration-150 hover:bg-base-200 hover:text-base-content"
           onClick={dismiss}
           type="button"
         >
@@ -103,7 +103,7 @@ export function SetupChecklist({
         </button>
       </div>
 
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-base-300">
         {items.map((item) => (
           <div className="flex items-center gap-3.5 px-5 py-3" key={item.key}>
             <span
@@ -120,10 +120,10 @@ export function SetupChecklist({
               )}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-foreground">
+              <p className="text-xs font-semibold text-base-content">
                 {item.label}
               </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-xs text-base-content/70">
                 {item.done ? item.doneNote : item.todoNote}
               </p>
             </div>
@@ -131,22 +131,22 @@ export function SetupChecklist({
         ))}
 
         <Link
-          className="group flex items-center gap-3.5 px-5 py-3 transition-colors duration-150 hover:bg-accent"
+          className="group flex items-center gap-3.5 px-5 py-3 transition-colors duration-150 hover:bg-base-200"
           href="/orbit-admin/orbit/settings"
         >
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-base-200 text-base-content/70">
             <Palette size={12} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-foreground">
+            <p className="text-xs font-semibold text-base-content">
               Sign-in methods
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-base-content/70">
               Review which methods are enabled for this instance.
             </p>
           </div>
           <ChevronRight
-            className="shrink-0 text-muted-foreground-subtle opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            className="shrink-0 text-base-content/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
             size={14}
           />
         </Link>

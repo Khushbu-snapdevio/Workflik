@@ -4,21 +4,21 @@ import { fromZonedTime } from "date-fns-tz";
 // Kept structurally compatible with components/database/types.ts's DateValue
 // without importing it — lib/ code stays independent of components/.
 export interface DateReminderInput {
-  date:         string | null;
-  time?:        string | null;
+  date: string | null;
   includeTime?: boolean;
-  timezone?:    string | null;
-  reminder?:    string | null;
+  reminder?: string | null;
+  time?: string | null;
+  timezone?: string | null;
 }
 
 const MINUTES_BEFORE: Record<string, number> = {
   at_time: 0,
-  "5m":    5,
-  "10m":   10,
-  "15m":   15,
-  "30m":   30,
-  "1h":    60,
-  "2h":    120,
+  "5m": 5,
+  "10m": 10,
+  "15m": 15,
+  "30m": 30,
+  "1h": 60,
+  "2h": 120,
 };
 
 // Day-based reminders (and "at time of event" on a date with no time set)
@@ -27,8 +27,11 @@ const MINUTES_BEFORE: Record<string, number> = {
 const DAY_REMINDER_HOUR = 9;
 
 export function computeRemindAt(value: DateReminderInput): Date | null {
-  if (!value.reminder || !value.date) return null;
-  const timezone = value.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (!value.reminder || !value.date) {
+    return null;
+  }
+  const timezone =
+    value.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   if (value.reminder === "1d" || value.reminder === "2d") {
     const daysBefore = value.reminder === "1d" ? 1 : 2;
@@ -41,7 +44,9 @@ export function computeRemindAt(value: DateReminderInput): Date | null {
   }
 
   const minutesBefore = MINUTES_BEFORE[value.reminder];
-  if (minutesBefore == null) return null;
+  if (minutesBefore == null) {
+    return null;
+  }
 
   if (!value.includeTime || !value.time) {
     // No time on the due date — "at time of event" and the minute/hour
@@ -51,6 +56,9 @@ export function computeRemindAt(value: DateReminderInput): Date | null {
     return addMinutes(anchor, -minutesBefore);
   }
 
-  const eventInstant = fromZonedTime(`${value.date}T${value.time}:00`, timezone);
+  const eventInstant = fromZonedTime(
+    `${value.date}T${value.time}:00`,
+    timezone
+  );
   return addMinutes(eventInstant, -minutesBefore);
 }

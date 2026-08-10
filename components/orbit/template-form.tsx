@@ -1,19 +1,22 @@
 "use client";
 
+import { ImageIcon, Plus, Search, Smile, Trash2, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
-import { Trash2, Smile, Plus, X, ImageIcon, Search } from "lucide-react";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { TemplateEditor } from "./template-editor";
+import type { DbBlock } from "@/components/editor/serializer";
 import { IconPicker } from "@/components/pages/icon-picker";
 import { PageIcon } from "@/components/pages/page-icon";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import {
+  type SaveState,
+  SaveStatusIndicator,
+} from "@/components/ui/save-status";
 import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
-import type { DbBlock } from "@/components/editor/serializer";
 import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
 import { useUpload } from "@/lib/storage/use-upload";
-import { SaveStatusIndicator, type SaveState } from "@/components/ui/save-status";
+import { TemplateEditor } from "./template-editor";
 
 // Portaled to <body> with viewport coordinates so it isn't clipped by this
 // form's narrow sidebar (same pattern as workspace-general-section.tsx).
@@ -57,10 +60,17 @@ function blockPlainText(content: unknown): string {
 // content but not key order (e.g. a todo's {text,checked} comes back as
 // {checked,text}), which plain JSON.stringify would report as a difference.
 function stableStringify(v: unknown): string {
-  if (v === null || typeof v !== "object") return JSON.stringify(v) ?? "null";
-  if (Array.isArray(v)) return `[${v.map(stableStringify).join(",")}]`;
+  if (v === null || typeof v !== "object") {
+    return JSON.stringify(v) ?? "null";
+  }
+  if (Array.isArray(v)) {
+    return `[${v.map(stableStringify).join(",")}]`;
+  }
   const o = v as Record<string, unknown>;
-  return `{${Object.keys(o).sort().map((k) => `${JSON.stringify(k)}:${stableStringify(o[k])}`).join(",")}}`;
+  return `{${Object.keys(o)
+    .sort()
+    .map((k) => `${JSON.stringify(k)}:${stableStringify(o[k])}`)
+    .join(",")}}`;
 }
 
 // Identity of the content, excluding block ids (auto-assigned on mount) and
@@ -69,18 +79,23 @@ function stableStringify(v: unknown): string {
 function blocksSignature(bs: DbBlock[]): string {
   return stableStringify(
     bs
-      .filter((b) => b.type !== "paragraph" || blockPlainText(b.content).trim().length > 0)
+      .filter(
+        (b) =>
+          b.type !== "paragraph" || blockPlainText(b.content).trim().length > 0
+      )
       .map((b) => [b.type, b.content, b.parentBlockId])
   );
 }
 
 function snapshotToDbBlocks(snapshot: TemplateRow["pageSnapshot"]): DbBlock[] {
-  if (!snapshot.blocks || snapshot.blocks.length === 0) return [];
+  if (!snapshot.blocks || snapshot.blocks.length === 0) {
+    return [];
+  }
   return snapshot.blocks.map((b, i) => ({
-    id:            b.id ?? `snap-${i}`,
-    type:          b.type,
-    content:       (b.content ?? null) as DbBlock["content"],
-    orderIndex:    b.order_index ?? i,
+    id: b.id ?? `snap-${i}`,
+    type: b.type,
+    content: (b.content ?? null) as DbBlock["content"],
+    orderIndex: b.order_index ?? i,
     parentBlockId: b.parent_block_id ?? null,
   }));
 }
@@ -90,56 +105,72 @@ interface Props {
 }
 
 export function TemplateForm({ template }: Props) {
-  const router  = useRouter();
-  const isEdit  = !!template;
+  const router = useRouter();
+  const isEdit = !!template;
   const isPublished = template?.status === "published";
 
-  const [name, setName]           = useState(template?.name ?? "");
-  const [description, setDesc]    = useState(template?.description ?? "");
+  const [name, setName] = useState(template?.name ?? "");
+  const [description, setDesc] = useState(template?.description ?? "");
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
   const [categoryId, setCategoryId] = useState(template?.categoryId ?? "");
   const [categorySearch, setCategorySearch] = useState("");
   const [newCategoryOpen, setNewCategoryOpen] = useState(false);
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<TemplateCategory | null>(null);
+  const [categoryToDelete, setCategoryToDelete] =
+    useState<TemplateCategory | null>(null);
   const [deletingCategory, setDeletingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
-  const [icon, setIcon]           = useState(
+  const [icon, setIcon] = useState(
     (template?.pageSnapshot as { icon?: string } | undefined)?.icon ?? ""
   );
-  const [blocks, setBlocks]       = useState<DbBlock[]>(
+  const [blocks, setBlocks] = useState<DbBlock[]>(
     template ? snapshotToDbBlocks(template.pageSnapshot) : []
   );
-  const [coverUrl, setCoverUrl]   = useState<string | null>(template?.pageSnapshot.cover_url ?? null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(
+    template?.pageSnapshot.cover_url ?? null
+  );
   const [removeCoverConfirm, setRemoveCoverConfirm] = useState(false);
   const coverInput = useRef<HTMLInputElement>(null);
-  const { upload: uploadCover, uploading: coverUploading } = useUpload({ kind: "template_cover" });
-  const [saving, setSaving]             = useState<null | "draft" | "publish" | "update" | "unpublish">(null);
-  const [error, setError]               = useState<string | null>(null);
+  const { upload: uploadCover, uploading: coverUploading } = useUpload({
+    kind: "template_cover",
+  });
+  const [saving, setSaving] = useState<
+    null | "draft" | "publish" | "update" | "unpublish"
+  >(null);
+  const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [emojiOpen, setEmojiOpen]       = useState(false);
-  const [iconPickerPos, setIconPickerPos] = useState<{ top: number; left: number } | null>(null);
-  const [mounted, setMounted]           = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [iconPickerPos, setIconPickerPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const [mounted, setMounted] = useState(false);
   // Explicit-save editor, so "dirty" is tracked by hand rather than derived
   // from an autosave cycle. Cleared on a successful save; the "saved" flash
   // is transient since a successful save navigates back to the list.
-  const [dirty, setDirty]               = useState(false);
-  const initialBlocksSig = useRef(blocksSignature(
-    template ? snapshotToDbBlocks(template.pageSnapshot) : []
-  ));
+  const [dirty, setDirty] = useState(false);
+  const initialBlocksSig = useRef(
+    blocksSignature(template ? snapshotToDbBlocks(template.pageSnapshot) : [])
+  );
   const iconTriggerRef = useRef<HTMLDivElement>(null);
   const iconPickerRef = useRef<HTMLDivElement>(null);
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
   const saveState: SaveState = saving ? "saving" : dirty ? "unsaved" : "idle";
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Warn before losing unsaved template edits to a tab close / reload.
   useEffect(() => {
-    if (!dirty) return;
-    function onBeforeUnload(e: BeforeUnloadEvent) { e.preventDefault(); }
+    if (!dirty) {
+      return;
+    }
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
@@ -156,7 +187,9 @@ export function TemplateForm({ template }: Props) {
 
   async function handleCreateCategory() {
     const label = newCategoryLabel.trim();
-    if (!label) return;
+    if (!label) {
+      return;
+    }
     setCreatingCategory(true);
     try {
       const res = await fetch("/api/orbit/templates/categories", {
@@ -177,21 +210,28 @@ export function TemplateForm({ template }: Props) {
   }
 
   async function handleDeleteCategory() {
-    if (!categoryToDelete) return;
+    if (!categoryToDelete) {
+      return;
+    }
     setDeletingCategory(true);
     setCategoryError(null);
     try {
-      const res = await fetch(`/api/orbit/templates/categories/${categoryToDelete.id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/orbit/templates/categories/${categoryToDelete.id}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string };
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         setCategoryError(data.error ?? "Failed to delete category");
         return;
       }
       setCategories((prev) => {
         const next = prev.filter((c) => c.id !== categoryToDelete.id);
-        setCategoryId((current) => (current === categoryToDelete.id ? next[0]?.id ?? "" : current));
+        setCategoryId((current) =>
+          current === categoryToDelete.id ? (next[0]?.id ?? "") : current
+        );
         return next;
       });
       setCategoryToDelete(null);
@@ -204,60 +244,84 @@ export function TemplateForm({ template }: Props) {
   // snapshotted once on open — lock page scroll while it's open instead of
   // repositioning, matching the pattern used by the app's other click-opened
   // popovers anchored via a one-time getBoundingClientRect() snapshot.
-  useScrollLockWhileOpen(emojiOpen, (target) => !!iconPickerRef.current?.contains(target));
+  useScrollLockWhileOpen(
+    emojiOpen,
+    (target) => !!iconPickerRef.current?.contains(target)
+  );
 
   function toggleEmojiOpen() {
     if (!emojiOpen && iconTriggerRef.current) {
       const rect = iconTriggerRef.current.getBoundingClientRect();
-      const left = Math.max(8, Math.min(rect.left, window.innerWidth - ICON_PICKER_WIDTH - 8));
-      const top = Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - ICON_PICKER_HEIGHT));
+      const left = Math.max(
+        8,
+        Math.min(rect.left, window.innerWidth - ICON_PICKER_WIDTH - 8)
+      );
+      const top = Math.max(
+        8,
+        Math.min(rect.bottom + 6, window.innerHeight - ICON_PICKER_HEIGHT)
+      );
       setIconPickerPos({ top, left });
     }
     setEmojiOpen((v) => !v);
   }
 
   const publishIssues: string[] = [];
-  if (!name.trim()) publishIssues.push("a name");
-  if (!categoryId) publishIssues.push("a category");
-  if (!blocks.some((b) => b.type !== "paragraph" || blockPlainText(b.content).trim().length > 0)) {
+  if (!name.trim()) {
+    publishIssues.push("a name");
+  }
+  if (!categoryId) {
+    publishIssues.push("a category");
+  }
+  if (
+    !blocks.some(
+      (b) =>
+        b.type !== "paragraph" || blockPlainText(b.content).trim().length > 0
+    )
+  ) {
     publishIssues.push("some content");
   }
 
   // Persists the template (POST on create, PATCH on edit) and returns the
   // template id, or null on failure (error state is already set).
   async function saveTemplate(): Promise<string | null> {
-    if (!name.trim()) { setError("Name is required"); return null; }
+    if (!name.trim()) {
+      setError("Name is required");
+      return null;
+    }
     setError(null);
 
     const pageSnapshot = {
-      title:           name.trim(),
-      icon:            icon.trim() || null,
-      cover_url:       coverUrl,
-      is_full_width:   false,
-      font_family:     "default",
-      blocks:          blocks.map((b, i) => ({
-        id:              b.id?.startsWith("tmp-") || b.id?.startsWith("snap-")
-                           ? crypto.randomUUID()
-                           : (b.id ?? crypto.randomUUID()),
-        type:            b.type,
-        content:         b.content ?? null,
-        schema_version:  1,
-        order_index:     i,
+      title: name.trim(),
+      icon: icon.trim() || null,
+      cover_url: coverUrl,
+      is_full_width: false,
+      font_family: "default",
+      blocks: blocks.map((b, i) => ({
+        id:
+          b.id?.startsWith("tmp-") || b.id?.startsWith("snap-")
+            ? crypto.randomUUID()
+            : (b.id ?? crypto.randomUUID()),
+        type: b.type,
+        content: b.content ?? null,
+        schema_version: 1,
+        order_index: i,
         parent_block_id: b.parentBlockId ?? null,
-        children:        [],
+        children: [],
       })),
-      subpages:        [],
+      subpages: [],
       database_schema: null,
     };
 
-    const url    = isEdit ? `/api/orbit/templates/${template!.id}` : "/api/orbit/templates";
+    const url = isEdit
+      ? `/api/orbit/templates/${template!.id}`
+      : "/api/orbit/templates";
     const method = isEdit ? "PATCH" : "POST";
 
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name:        name.trim(),
+        name: name.trim(),
         description: description.trim() || undefined,
         categoryId,
         pageSnapshot,
@@ -265,7 +329,7 @@ export function TemplateForm({ template }: Props) {
     });
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({})) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
       setError(data.error ?? "Failed to save template");
       return null;
     }
@@ -285,21 +349,29 @@ export function TemplateForm({ template }: Props) {
     setSaving("draft");
     try {
       const id = await saveTemplate();
-      if (id) goBackToList();
+      if (id) {
+        goBackToList();
+      }
     } finally {
       setSaving(null);
     }
   }
 
   async function handlePublish() {
-    if (publishIssues.length > 0) return;
+    if (publishIssues.length > 0) {
+      return;
+    }
     setSaving("publish");
     try {
       const id = await saveTemplate();
-      if (!id) return;
-      const res = await fetch(`/api/orbit/templates/${id}/publish`, { method: "PATCH" });
+      if (!id) {
+        return;
+      }
+      const res = await fetch(`/api/orbit/templates/${id}/publish`, {
+        method: "PATCH",
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string };
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         setError(data.error ?? "Failed to publish template");
         return;
       }
@@ -313,7 +385,9 @@ export function TemplateForm({ template }: Props) {
     setSaving("update");
     try {
       const id = await saveTemplate();
-      if (id) goBackToList();
+      if (id) {
+        goBackToList();
+      }
     } finally {
       setSaving(null);
     }
@@ -323,10 +397,14 @@ export function TemplateForm({ template }: Props) {
     setSaving("unpublish");
     try {
       const id = await saveTemplate();
-      if (!id) return;
-      const res = await fetch(`/api/orbit/templates/${id}/unpublish`, { method: "PATCH" });
+      if (!id) {
+        return;
+      }
+      const res = await fetch(`/api/orbit/templates/${id}/unpublish`, {
+        method: "PATCH",
+      });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string };
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         setError(data.error ?? "Failed to unpublish template");
         return;
       }
@@ -338,10 +416,15 @@ export function TemplateForm({ template }: Props) {
 
   async function onCoverFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     e.target.value = "";
     const result = await uploadCover(file);
-    if (result) { setCoverUrl(result.fileUrl); setDirty(true); }
+    if (result) {
+      setCoverUrl(result.fileUrl);
+      setDirty(true);
+    }
   }
 
   async function doDelete() {
@@ -352,363 +435,496 @@ export function TemplateForm({ template }: Props) {
 
   return (
     <>
-    <div className="flex min-h-150 overflow-hidden rounded-lg border border-border bg-card">
-
-      {/* Left sidebar — w-65 matching settings sidebar */}
-      <aside className="flex w-65 shrink-0 flex-col border-r border-border bg-sidebar">
-        <div className="border-b border-border px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template settings</p>
-        </div>
-
-        <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-5">
-
-          {/* Icon picker */}
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Icon</label>
-            <div className="relative">
-              <div
-                ref={iconTriggerRef}
-                role="button"
-                tabIndex={0}
-                onClick={toggleEmojiOpen}
-                onKeyDown={(e) => e.key === "Enter" && toggleEmojiOpen()}
-                className="flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-sm border border-border bg-background px-3 transition-colors hover:border-primary/40 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                {icon ? (
-                  <PageIcon icon={icon} size={20} />
-                ) : (
-                  <Smile size={16} className="shrink-0 text-muted-foreground-subtle" />
-                )}
-                <span className="flex-1 text-left text-xs text-muted-foreground">
-                  {icon ? "Click to change" : "Pick an emoji icon"}
-                </span>
-                {icon && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setIcon(""); setDirty(true); }}
-                    className="shrink-0 text-2xs text-muted-foreground-subtle hover:text-muted-foreground"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-              {mounted && emojiOpen && iconPickerPos && createPortal(
-                <div ref={iconPickerRef} style={{ position: "fixed", top: iconPickerPos.top, left: iconPickerPos.left, zIndex: 9999 }}>
-                  <div className="relative">
-                    <IconPicker
-                      onSelect={(v) => { setIcon(v); setEmojiOpen(false); setDirty(true); }}
-                      onIconPreview={(v) => { setIcon(v); setDirty(true); }}
-                      onRemove={icon ? () => { setIcon(""); setEmojiOpen(false); setDirty(true); } : undefined}
-                      onClose={() => setEmojiOpen(false)}
-                      triggerRef={iconTriggerRef}
-                    />
-                  </div>
-                </div>,
-                document.body
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
-              Name <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => { setName(e.target.value); setDirty(true); }}
-              placeholder="e.g. Meeting Notes"
-              className="w-full rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => { setDesc(e.target.value); setDirty(true); }}
-              placeholder="What is this template for?"
-              rows={3}
-              className="w-full resize-none rounded-sm border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-muted-foreground">Category</label>
-            {categories.length > 5 && (
-              <div className="relative mb-1.5">
-                <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground-subtle" />
-                <input
-                  type="text"
-                  value={categorySearch}
-                  onChange={(e) => setCategorySearch(e.target.value)}
-                  placeholder="Search categories"
-                  className="w-full rounded-sm border border-border bg-background py-1.5 pl-7 pr-2.5 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            )}
-            <div className="flex flex-col gap-1">
-              {categories
-                .filter((cat) => cat.label.toLowerCase().includes(categorySearch.trim().toLowerCase()))
-                .map((cat) => {
-                const inUse = cat.templateCount > 0;
-                return (
-                  <div
-                    key={cat.id}
-                    className={[
-                      "group flex w-full items-center rounded-sm pr-1 text-left text-xs font-medium transition-colors",
-                      categoryId === cat.id
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                    ].join(" ")}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => { setCategoryId(cat.id); setDirty(true); }}
-                      className="flex flex-1 items-center gap-1.5 truncate px-3 py-2 text-left"
-                    >
-                      <span className="truncate">{cat.label}</span>
-                      {inUse && (
-                        <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-2xs font-semibold tabular-nums text-muted-foreground">
-                          {cat.templateCount}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      aria-disabled={inUse}
-                      aria-label={inUse ? `${cat.label} is used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} and can't be deleted` : `Delete category ${cat.label}`}
-                      onClick={(e) => { e.stopPropagation(); if (!inUse) setCategoryToDelete(cat); }}
-                      onMouseEnter={(e) => inUse && showTooltip(`Used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} — remove them first`, e)}
-                      onMouseLeave={hideTooltip}
-                      className={[
-                        "shrink-0 rounded-xs p-1.5 opacity-0 transition-colors group-hover:opacity-100",
-                        inUse
-                          ? "cursor-not-allowed text-muted-foreground-subtle"
-                          : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
-                      ].join(" ")}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {categoryError && (
-              <p className="mt-1.5 text-xs text-destructive">{categoryError}</p>
-            )}
-
-            {newCategoryOpen ? (
-              <div className="mt-1.5 flex items-center gap-1.5">
-                <input
-                  type="text"
-                  autoFocus
-                  value={newCategoryLabel}
-                  onChange={(e) => setNewCategoryLabel(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleCreateCategory();
-                    if (e.key === "Escape") { setNewCategoryOpen(false); setNewCategoryLabel(""); }
-                  }}
-                  placeholder="New category name"
-                  className="w-full rounded-sm border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateCategory}
-                  disabled={creatingCategory || !newCategoryLabel.trim()}
-                  className="shrink-0 rounded-sm bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-                >
-                  Add
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setNewCategoryOpen(true)}
-                className="mt-1.5 flex w-full items-center gap-1.5 rounded-sm px-3 py-2 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                <Plus size={12} />
-                New category
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Sidebar footer — actions */}
-        <div className="border-t border-border p-4 space-y-2">
-          {saveState !== "idle" && (
-            <div className="flex justify-center pb-1">
-              <SaveStatusIndicator state={saveState} />
-            </div>
-          )}
-          {error && (
-            <div className="rounded-sm bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              {error}
-            </div>
-          )}
-          {isPublished ? (
-            <>
-              <button
-                type="button"
-                onClick={handleUpdate}
-                disabled={saving !== null}
-                className="w-full rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                {saving === "update" ? "Updating…" : "Update"}
-              </button>
-              <button
-                type="button"
-                onClick={handleUnpublish}
-                disabled={saving !== null}
-                className="w-full rounded-sm border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-              >
-                {saving === "unpublish" ? "Unpublishing…" : "Unpublish"}
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={saving !== null || publishIssues.length > 0}
-                className="w-full rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                {saving === "publish" ? "Publishing…" : "Publish"}
-              </button>
-              {publishIssues.length > 0 && (
-                <p className="text-[11px] leading-snug text-muted-foreground">
-                  To publish, add {publishIssues.join(", ")}.
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                disabled={saving !== null}
-                className="w-full rounded-sm border border-border px-4 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-              >
-                {saving === "draft" ? "Saving…" : isEdit ? "Save draft" : "Save as draft"}
-              </button>
-            </>
-          )}
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="w-full rounded-sm border border-border px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            Cancel
-          </button>
-          {isEdit && (
-            <button
-              type="button"
-              onClick={() => setConfirmDelete(true)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-sm px-4 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/5"
-            >
-              <Trash2 size={12} />
-              Delete template
-            </button>
-          )}
-        </div>
-      </aside>
-
-      {/* Right — content editor */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template content</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Press <kbd className="rounded border border-border bg-muted px-1 text-2xs">/</kbd> for blocks
+      <div className="flex min-h-150 overflow-hidden rounded-lg border border-base-300 bg-base-100">
+        {/* Left sidebar — w-65 matching settings sidebar */}
+        <aside className="flex w-65 shrink-0 flex-col border-r border-base-300 bg-base-200">
+          <div className="border-b border-base-300 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-base-content/70">
+              Template settings
             </p>
           </div>
-          {!coverUrl && (
-            <button
-              type="button"
-              onClick={() => coverInput.current?.click()}
-              disabled={coverUploading}
-              className="flex shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground disabled:opacity-40"
-            >
-              <ImageIcon size={13} />
-              {coverUploading ? "Uploading…" : "Add cover"}
-            </button>
-          )}
-        </div>
-        <div className="flex-1 overflow-y-auto px-3 py-5">
-          {coverUrl && (
-            <div className="group/cover relative mb-4 h-35 w-full overflow-hidden rounded-md bg-muted">
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${coverUrl})` }}
-              />
-              <div className="absolute bottom-2 right-3 flex items-center gap-1.5 opacity-0 transition-opacity duration-200 group-hover/cover:opacity-100">
-                <button
-                  type="button"
-                  onClick={() => coverInput.current?.click()}
-                  disabled={coverUploading}
-                  className="rounded-sm border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card disabled:opacity-50"
+
+          <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-4 py-5">
+            {/* Icon picker */}
+            <div>
+              {/* Not a <label>: the icon field is a button + clear button, not
+                 a form control, so there is nothing to associate it with. */}
+              <p className="mb-1.5 block text-xs font-semibold text-base-content/70">
+                Icon
+              </p>
+              <div className="relative">
+                {/* The field box stays a plain div (it may not be a <button>:
+                   the ✕ below is its own control). The picker trigger is a real
+                   button filling it, and focus styling moves to focus-within so
+                   the ring still renders on the whole field. */}
+                <div
+                  className="flex h-10 w-full items-center gap-2.5 rounded-sm border border-base-300 bg-base-200 px-3 transition-colors hover:border-primary/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"
+                  ref={iconTriggerRef}
                 >
-                  {coverUploading ? "Uploading…" : "Change cover"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRemoveCoverConfirm(true)}
-                  className="rounded-sm border border-border bg-card/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-card"
-                >
-                  Remove
-                </button>
+                  <button
+                    className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 focus:outline-none"
+                    onClick={toggleEmojiOpen}
+                    type="button"
+                  >
+                    {icon ? (
+                      <PageIcon icon={icon} size={20} />
+                    ) : (
+                      <Smile
+                        className="shrink-0 text-base-content/50"
+                        size={16}
+                      />
+                    )}
+                    <span className="flex-1 text-left text-xs text-base-content/70">
+                      {icon ? "Click to change" : "Pick an emoji icon"}
+                    </span>
+                  </button>
+                  {icon && (
+                    <button
+                      aria-label="Remove icon"
+                      className="shrink-0 text-2xs text-base-content/50 hover:text-base-content/70"
+                      onClick={() => {
+                        setIcon("");
+                        setDirty(true);
+                      }}
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {mounted &&
+                  emojiOpen &&
+                  iconPickerPos &&
+                  createPortal(
+                    <div
+                      ref={iconPickerRef}
+                      style={{
+                        position: "fixed",
+                        top: iconPickerPos.top,
+                        left: iconPickerPos.left,
+                        zIndex: 9999,
+                      }}
+                    >
+                      <div className="relative">
+                        <IconPicker
+                          onClose={() => setEmojiOpen(false)}
+                          onIconPreview={(v) => {
+                            setIcon(v);
+                            setDirty(true);
+                          }}
+                          onRemove={
+                            icon
+                              ? () => {
+                                  setIcon("");
+                                  setEmojiOpen(false);
+                                  setDirty(true);
+                                }
+                              : undefined
+                          }
+                          onSelect={(v) => {
+                            setIcon(v);
+                            setEmojiOpen(false);
+                            setDirty(true);
+                          }}
+                          triggerRef={iconTriggerRef}
+                        />
+                      </div>
+                    </div>,
+                    document.body
+                  )}
               </div>
             </div>
-          )}
-          <TemplateEditor
-            initialBlocks={blocks}
-            onBaseline={(b) => { initialBlocksSig.current = blocksSignature(b); }}
-            onChange={(b) => {
-              setBlocks(b);
-              if (blocksSignature(b) !== initialBlocksSig.current) setDirty(true);
-            }}
-          />
+
+            <div>
+              <label
+                className="mb-1.5 block text-xs font-semibold text-base-content/70"
+                htmlFor="template-form-name"
+              >
+                Name <span className="text-error">*</span>
+              </label>
+              <input
+                className="w-full rounded-sm border border-base-300 bg-base-200 px-3 py-2 text-sm text-base-content outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                id="template-form-name"
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setDirty(true);
+                }}
+                placeholder="e.g. Meeting Notes"
+                type="text"
+                value={name}
+              />
+            </div>
+
+            <div>
+              <label
+                className="mb-1.5 block text-xs font-semibold text-base-content/70"
+                htmlFor="template-form-description"
+              >
+                Description
+              </label>
+              <textarea
+                className="w-full resize-none rounded-sm border border-base-300 bg-base-200 px-3 py-2 text-sm text-base-content outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                id="template-form-description"
+                onChange={(e) => {
+                  setDesc(e.target.value);
+                  setDirty(true);
+                }}
+                placeholder="What is this template for?"
+                rows={3}
+                value={description}
+              />
+            </div>
+
+            <div>
+              {/* Not a <label>: this heads the category search + chip buttons
+                 as a group rather than labelling a single control. */}
+              <p className="mb-2 block text-xs font-semibold text-base-content/70">
+                Category
+              </p>
+              {categories.length > 5 && (
+                <div className="relative mb-1.5">
+                  <Search
+                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/50"
+                    size={12}
+                  />
+                  <input
+                    className="w-full rounded-sm border border-base-300 bg-base-200 py-1.5 pl-7 pr-2.5 text-xs text-base-content outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    placeholder="Search categories"
+                    type="text"
+                    value={categorySearch}
+                  />
+                </div>
+              )}
+              <div className="flex flex-col gap-1">
+                {categories
+                  .filter((cat) =>
+                    cat.label
+                      .toLowerCase()
+                      .includes(categorySearch.trim().toLowerCase())
+                  )
+                  .map((cat) => {
+                    const inUse = cat.templateCount > 0;
+                    return (
+                      <div
+                        className={[
+                          "group flex w-full items-center rounded-sm pr-1 text-left text-xs font-medium transition-colors",
+                          categoryId === cat.id
+                            ? "bg-primary/10 text-primary"
+                            : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
+                        ].join(" ")}
+                        key={cat.id}
+                      >
+                        <button
+                          className="flex flex-1 items-center gap-1.5 truncate px-3 py-2 text-left"
+                          onClick={() => {
+                            setCategoryId(cat.id);
+                            setDirty(true);
+                          }}
+                          type="button"
+                        >
+                          <span className="truncate">{cat.label}</span>
+                          {inUse && (
+                            <span className="shrink-0 rounded-full bg-base-200 px-1.5 py-0.5 text-2xs font-semibold tabular-nums text-base-content/70">
+                              {cat.templateCount}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          aria-disabled={inUse}
+                          aria-label={
+                            inUse
+                              ? `${cat.label} is used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} and can't be deleted`
+                              : `Delete category ${cat.label}`
+                          }
+                          className={[
+                            "shrink-0 rounded-xs p-1.5 opacity-0 transition-colors group-hover:opacity-100",
+                            inUse
+                              ? "cursor-not-allowed text-base-content/50"
+                              : "text-base-content/70 hover:bg-error/10 hover:text-error",
+                          ].join(" ")}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!inUse) {
+                              setCategoryToDelete(cat);
+                            }
+                          }}
+                          onMouseEnter={(e) =>
+                            inUse &&
+                            showTooltip(
+                              `Used by ${cat.templateCount} template${cat.templateCount === 1 ? "" : "s"} — remove them first`,
+                              e
+                            )
+                          }
+                          onMouseLeave={hideTooltip}
+                          type="button"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {categoryError && (
+                <p className="mt-1.5 text-xs text-error">{categoryError}</p>
+              )}
+
+              {newCategoryOpen ? (
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <input
+                    autoFocus
+                    className="w-full rounded-sm border border-base-300 bg-base-200 px-2.5 py-1.5 text-xs text-base-content outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    onChange={(e) => setNewCategoryLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleCreateCategory();
+                      }
+                      if (e.key === "Escape") {
+                        setNewCategoryOpen(false);
+                        setNewCategoryLabel("");
+                      }
+                    }}
+                    placeholder="New category name"
+                    type="text"
+                    value={newCategoryLabel}
+                  />
+                  <button
+                    className="shrink-0 rounded-sm bg-primary px-2.5 py-1.5 text-xs font-semibold text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-50"
+                    disabled={creatingCategory || !newCategoryLabel.trim()}
+                    onClick={handleCreateCategory}
+                    type="button"
+                  >
+                    Add
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className="mt-1.5 flex w-full items-center gap-1.5 rounded-sm px-3 py-2 text-left text-xs font-medium text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
+                  onClick={() => setNewCategoryOpen(true)}
+                  type="button"
+                >
+                  <Plus size={12} />
+                  New category
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar footer — actions */}
+          <div className="border-t border-base-300 p-4 space-y-2">
+            {saveState !== "idle" && (
+              <div className="flex justify-center pb-1">
+                <SaveStatusIndicator state={saveState} />
+              </div>
+            )}
+            {error && (
+              <div className="rounded-sm bg-error/5 px-3 py-2 text-xs text-error">
+                {error}
+              </div>
+            )}
+            {isPublished ? (
+              <>
+                <button
+                  className="w-full rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  disabled={saving !== null}
+                  onClick={handleUpdate}
+                  type="button"
+                >
+                  {saving === "update" ? "Updating…" : "Update"}
+                </button>
+                <button
+                  className="w-full rounded-sm border border-base-300 px-4 py-2 text-xs font-semibold text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content disabled:opacity-50"
+                  disabled={saving !== null}
+                  onClick={handleUnpublish}
+                  type="button"
+                >
+                  {saving === "unpublish" ? "Unpublishing…" : "Unpublish"}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="w-full rounded-sm bg-primary px-4 py-2 text-xs font-semibold text-primary-content transition-colors hover:bg-primary/90 disabled:opacity-50"
+                  disabled={saving !== null || publishIssues.length > 0}
+                  onClick={handlePublish}
+                  type="button"
+                >
+                  {saving === "publish" ? "Publishing…" : "Publish"}
+                </button>
+                {publishIssues.length > 0 && (
+                  <p className="text-[11px] leading-snug text-base-content/70">
+                    To publish, add {publishIssues.join(", ")}.
+                  </p>
+                )}
+                <button
+                  className="w-full rounded-sm border border-base-300 px-4 py-2 text-xs font-semibold text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content disabled:opacity-50"
+                  disabled={saving !== null}
+                  onClick={handleSaveDraft}
+                  type="button"
+                >
+                  {saving === "draft"
+                    ? "Saving…"
+                    : isEdit
+                      ? "Save draft"
+                      : "Save as draft"}
+                </button>
+              </>
+            )}
+            <button
+              className="w-full rounded-sm border border-base-300 px-4 py-2 text-xs font-medium text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
+              onClick={() => router.back()}
+              type="button"
+            >
+              Cancel
+            </button>
+            {isEdit && (
+              <button
+                className="flex w-full items-center justify-center gap-1.5 rounded-sm px-4 py-2 text-xs font-medium text-error transition-colors hover:bg-error/5"
+                onClick={() => setConfirmDelete(true)}
+                type="button"
+              >
+                <Trash2 size={12} />
+                Delete template
+              </button>
+            )}
+          </div>
+        </aside>
+
+        {/* Right — content editor */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex items-start justify-between gap-3 border-b border-base-300 px-6 py-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-base-content/70">
+                Template content
+              </p>
+              <p className="mt-0.5 text-xs text-base-content/70">
+                Press{" "}
+                <kbd className="rounded border border-base-300 bg-base-200 px-1 text-2xs">
+                  /
+                </kbd>{" "}
+                for blocks
+              </p>
+            </div>
+            {!coverUrl && (
+              <button
+                className="flex shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-xs text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content/70 disabled:opacity-40"
+                disabled={coverUploading}
+                onClick={() => coverInput.current?.click()}
+                type="button"
+              >
+                <ImageIcon size={13} />
+                {coverUploading ? "Uploading…" : "Add cover"}
+              </button>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 py-5">
+            {coverUrl && (
+              <div className="group/cover relative mb-4 h-35 w-full overflow-hidden rounded-md bg-base-200">
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${coverUrl})` }}
+                />
+                <div className="absolute bottom-2 right-3 flex items-center gap-1.5 opacity-0 transition-opacity duration-200 group-hover/cover:opacity-100">
+                  <button
+                    className="rounded-sm border border-base-300 bg-base-100/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-base-100 disabled:opacity-50"
+                    disabled={coverUploading}
+                    onClick={() => coverInput.current?.click()}
+                    type="button"
+                  >
+                    {coverUploading ? "Uploading…" : "Change cover"}
+                  </button>
+                  <button
+                    className="rounded-sm border border-base-300 bg-base-100/80 px-3 py-1.5 text-xs font-medium backdrop-blur-sm transition-colors hover:bg-base-100"
+                    onClick={() => setRemoveCoverConfirm(true)}
+                    type="button"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            )}
+            <TemplateEditor
+              initialBlocks={blocks}
+              onBaseline={(b) => {
+                initialBlocksSig.current = blocksSignature(b);
+              }}
+              onChange={(b) => {
+                setBlocks(b);
+                if (blocksSignature(b) !== initialBlocksSig.current) {
+                  setDirty(true);
+                }
+              }}
+            />
+          </div>
         </div>
+
+        <input
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={onCoverFile}
+          ref={coverInput}
+          type="file"
+        />
       </div>
 
-      <input
-        ref={coverInput}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        className="hidden"
-        onChange={onCoverFile}
+      <ConfirmDialog
+        confirmLabel="Remove"
+        description="This removes the cover from this template. You can add a new one anytime."
+        onConfirm={() => {
+          setCoverUrl(null);
+          setDirty(true);
+        }}
+        onOpenChange={setRemoveCoverConfirm}
+        open={removeCoverConfirm}
+        title="Remove cover image?"
       />
-    </div>
 
-    <ConfirmDialog
-      open={removeCoverConfirm}
-      onOpenChange={setRemoveCoverConfirm}
-      title="Remove cover image?"
-      description="This removes the cover from this template. You can add a new one anytime."
-      confirmLabel="Remove"
-      onConfirm={() => { setCoverUrl(null); setDirty(true); }}
-    />
+      <ConfirmDialog
+        description={
+          <>
+            &ldquo;{template?.name}&rdquo; will be permanently deleted and
+            cannot be recovered.
+            {isPublished && (
+              <>
+                {" "}
+                It is currently published — users will immediately lose access
+                to it in the template gallery.
+              </>
+            )}
+          </>
+        }
+        onConfirm={doDelete}
+        onOpenChange={setConfirmDelete}
+        open={confirmDelete}
+        title="Delete this template?"
+      />
 
-    <ConfirmDialog
-      open={confirmDelete}
-      onOpenChange={setConfirmDelete}
-      title="Delete this template?"
-      description={<>&ldquo;{template?.name}&rdquo; will be permanently deleted and cannot be recovered.{isPublished && <> It is currently published — users will immediately lose access to it in the template gallery.</>}</>}
-      onConfirm={doDelete}
-    />
+      <ConfirmDialog
+        confirmLoadingLabel="Deleting…"
+        description={
+          <>
+            &ldquo;{categoryToDelete?.label}&rdquo; will be permanently deleted.
+            Categories still used by a template can&rsquo;t be deleted.
+          </>
+        }
+        loading={deletingCategory}
+        onConfirm={handleDeleteCategory}
+        onOpenChange={(open) => !open && setCategoryToDelete(null)}
+        open={!!categoryToDelete}
+        title="Delete this category?"
+      />
 
-    <ConfirmDialog
-      open={!!categoryToDelete}
-      onOpenChange={(open) => !open && setCategoryToDelete(null)}
-      title="Delete this category?"
-      description={<>&ldquo;{categoryToDelete?.label}&rdquo; will be permanently deleted. Categories still used by a template can&rsquo;t be deleted.</>}
-      loading={deletingCategory}
-      confirmLoadingLabel="Deleting…"
-      onConfirm={handleDeleteCategory}
-    />
-
-    {mounted && tooltip && createPortal(
-      <IconTooltip rect={tooltip.rect} label={tooltip.label} placement="below" />,
-      document.body
-    )}
+      {mounted &&
+        tooltip &&
+        createPortal(
+          <IconTooltip
+            label={tooltip.label}
+            placement="below"
+            rect={tooltip.rect}
+          />,
+          document.body
+        )}
     </>
   );
 }

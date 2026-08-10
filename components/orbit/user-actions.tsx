@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
+import { useState, useTransition } from "react";
 import {
   setUserRoleAction,
   toggleUserBanAction,
@@ -23,7 +23,7 @@ export function UserRoleForm({
     <form action={setUserRoleAction}>
       <input name="userId" type="hidden" value={userId} />
       <input name="role" type="hidden" value={nextRole} />
-      <Button type="submit" variant="secondary" size="sm">
+      <Button size="sm" type="submit" variant="secondary">
         Make {nextRole}
       </Button>
     </form>
@@ -52,29 +52,35 @@ export function UserBanForm({
   return (
     <>
       <Button
-        type="button"
-        variant={banned ? "secondary" : "destructive"}
-        size="sm"
         disabled={pending}
         onClick={() => setConfirmOpen(true)}
+        size="sm"
+        type="button"
+        variant={banned ? "secondary" : "destructive"}
       >
-        {pending && <Loader2 size={13} className="animate-spin" />}
-        {pending ? (banned ? "Unbanning…" : "Banning…") : banned ? "Unban" : "Ban"}
+        {pending && <Loader2 className="animate-spin" size={13} />}
+        {pending
+          ? banned
+            ? "Unbanning…"
+            : "Banning…"
+          : banned
+            ? "Unban"
+            : "Ban"}
       </Button>
 
       <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={banned ? "Unban this user?" : "Ban this user?"}
+        confirmLabel={banned ? "Unban" : "Ban"}
+        confirmLoadingLabel={banned ? "Unbanning…" : "Banning…"}
         description={
           banned
             ? "This user will regain the ability to sign in."
             : "This immediately revokes all active sessions and blocks the user from signing in."
         }
-        confirmLabel={banned ? "Unban" : "Ban"}
-        confirmLoadingLabel={banned ? "Unbanning…" : "Banning…"}
         loading={pending}
         onConfirm={handleConfirm}
+        onOpenChange={setConfirmOpen}
+        open={confirmOpen}
+        title={banned ? "Unban this user?" : "Ban this user?"}
       />
     </>
   );

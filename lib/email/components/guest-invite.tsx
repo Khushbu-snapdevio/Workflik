@@ -3,9 +3,9 @@ import { PRODUCT_NAME } from "@/config/platform";
 import { EmailLayout, emailStyles } from "@/lib/email/components/layout";
 
 const ACCESS_LABELS: Record<string, string> = {
-  can_view:    "view",
+  can_view: "view",
   can_comment: "comment on",
-  can_edit:    "edit",
+  can_edit: "edit",
   full_access: "fully access",
 };
 
@@ -16,10 +16,10 @@ export function GuestInviteEmail({
   acceptUrl,
   productName = PRODUCT_NAME,
 }: {
-  inviterName:  string;
-  pageTitle:    string;
-  accessLevel:  string;
-  acceptUrl:    string;
+  inviterName: string;
+  pageTitle: string;
+  accessLevel: string;
+  acceptUrl: string;
   productName?: string;
 }) {
   const accessLabel = ACCESS_LABELS[accessLevel] ?? "access";
@@ -35,7 +35,8 @@ export function GuestInviteEmail({
       <Text style={emailStyles.paragraph}>
         <strong style={{ color: "#0C2340" }}>{inviterName}</strong> has invited
         you to {accessLabel}{" "}
-        <strong style={{ color: "#0C2340" }}>{pageTitle}</strong> on {productName}.
+        <strong style={{ color: "#0C2340" }}>{pageTitle}</strong> on{" "}
+        {productName}.
       </Text>
       <Section style={{ margin: "24px 0" }}>
         <Button href={acceptUrl} style={emailStyles.button}>
@@ -43,7 +44,8 @@ export function GuestInviteEmail({
         </Button>
       </Section>
       <Text style={emailStyles.muted}>
-        This invitation expires in 7 days. If you did not expect this, you can safely ignore this email.
+        This invitation expires in 7 days. If you did not expect this, you can
+        safely ignore this email.
       </Text>
       <Text style={emailStyles.fallbackLink}>
         If the button does not work, paste this link into your browser:{" "}

@@ -1,29 +1,42 @@
 import { asc, count, eq, max } from "drizzle-orm";
-import { z } from "zod";
 import { headers } from "next/headers";
+import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templateCategories, templates, users } from "@/lib/db/schema";
-import { apiError } from "@/lib/workspaces/auth";
 import { writeAuditLog } from "@/lib/orbit/audit";
-import { CATEGORY_ICON_NAMES, DEFAULT_CATEGORY_ICON } from "@/lib/orbit/category-icons";
+import {
+  CATEGORY_ICON_NAMES,
+  DEFAULT_CATEGORY_ICON,
+} from "@/lib/orbit/category-icons";
+import { apiError } from "@/lib/workspaces/auth";
 
 async function requirePlatformAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
-  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, session.user.id)).limit(1);
-  if (!user || user.role !== "admin") return null;
+  if (!session) {
+    return null;
+  }
+  const [user] = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+  if (user?.role !== "admin") {
+    return null;
+  }
   return session;
 }
 
 function slugifyKey(label: string): string {
-  return label
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "_")
-    .replace(/_+/g, "_")
-    .slice(0, 48) || "category";
+  return (
+    label
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 48) || "category"
+  );
 }
 
 async function uniqueKey(label: string): Promise<string> {
@@ -36,7 +49,9 @@ async function uniqueKey(label: string): Promise<string> {
       .from(templateCategories)
       .where(eq(templateCategories.key, key))
       .limit(1);
-    if (!existing) return key;
+    if (!existing) {
+      return key;
+    }
     suffix++;
   }
 }
@@ -54,16 +69,18 @@ const createSchema = z.object({
 // front instead of only failing after the fact).
 export async function GET() {
   const session = await requirePlatformAdmin();
-  if (!session) return apiError(403, "Forbidden");
+  if (!session) {
+    return apiError(403, "Forbidden");
+  }
 
   const list = await db
     .select({
-      id:           templateCategories.id,
-      key:          templateCategories.key,
-      label:        templateCategories.label,
-      icon:         templateCategories.icon,
-      orderIndex:   templateCategories.orderIndex,
-      createdAt:    templateCategories.createdAt,
+      id: templateCategories.id,
+      key: templateCategories.key,
+      label: templateCategories.label,
+      icon: templateCategories.icon,
+      orderIndex: templateCategories.orderIndex,
+      createdAt: templateCategories.createdAt,
       templateCount: count(templates.id),
     })
     .from(templateCategories)
@@ -71,17 +88,23 @@ export async function GET() {
     .groupBy(templateCategories.id)
     .orderBy(asc(templateCategories.orderIndex));
 
-  return Response.json(list.map((c) => ({ ...c, templateCount: Number(c.templateCount) })));
+  return Response.json(
+    list.map((c) => ({ ...c, templateCount: Number(c.templateCount) }))
+  );
 }
 
 // POST /api/orbit/templates/categories — create a new template category
 export async function POST(req: Request) {
   const session = await requirePlatformAdmin();
-  if (!session) return apiError(403, "Forbidden");
+  if (!session) {
+    return apiError(403, "Forbidden");
+  }
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+  if (!parsed.success) {
+    return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
+  }
 
   const key = await uniqueKey(parsed.data.label);
 
@@ -101,11 +124,15 @@ export async function POST(req: Request) {
     .returning();
 
   await writeAuditLog({
-    actorId:    session.user.id,
-    action:     "template_category.created",
+    actorId: session.user.id,
+    action: "template_category.created",
     targetType: "template",
-    targetId:   category!.id,
-    metadata:   { key: category!.key, label: category!.label, icon: category!.icon },
+    targetId: category!.id,
+    metadata: {
+      key: category!.key,
+      label: category!.label,
+      icon: category!.icon,
+    },
   });
 
   return Response.json(category, { status: 201 });

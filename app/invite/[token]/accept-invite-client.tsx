@@ -1,6 +1,5 @@
 "use client";
 
-import { Logo } from "@/components/ui/logo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,47 +11,61 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Logo } from "@/components/ui/logo";
 
 type Props = {
-  token:         string;
+  token: string;
   workspaceName: string;
   workspaceIcon: string | null;
-  role:          string;
+  role: string;
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin:  "Admin",
+  admin: "Admin",
   editor: "Member",
   viewer: "Viewer",
 };
 
-export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }: Props) {
+export function AcceptInviteClient({
+  token,
+  workspaceName,
+  workspaceIcon,
+  role,
+}: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function accept() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/invite/${token}/accept`, { method: "POST" });
+      const res = await fetch(`/api/invite/${token}/accept`, {
+        method: "POST",
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError((data as { error?: string }).error ?? "Failed to accept invite");
+        setError(
+          (data as { error?: string }).error ?? "Failed to accept invite"
+        );
         return;
       }
-      const data = await res.json() as { workspaceSlug?: string };
-      router.replace(data.workspaceSlug ? `/app/${data.workspaceSlug}` : "/platform/post-auth");
+      const data = (await res.json()) as { workspaceSlug?: string };
+      router.replace(
+        data.workspaceSlug
+          ? `/app/${data.workspaceSlug}`
+          : "/platform/post-auth"
+      );
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-page px-4">
+    <main className="grid min-h-screen place-items-center bg-base-200 px-4">
       <div className="w-full max-w-md">
-        <Link href="/" className="mb-10 flex flex-col items-center gap-3">
-          <Logo width={180} height={45} className="h-10 w-auto" />
+        <Link className="mb-10 flex flex-col items-center gap-3" href="/">
+          <Logo className="h-10 w-auto" height={45} width={180} />
         </Link>
         <Card>
           <CardHeader className="text-center">
@@ -67,7 +80,7 @@ export function AcceptInviteClient({ token, workspaceName, workspaceIcon, role }
           </CardHeader>
           <CardContent className="space-y-3">
             {error && (
-              <p className="rounded bg-destructive/10 p-3 text-destructive text-sm">
+              <p className="rounded bg-error/10 p-3 text-error text-sm">
                 {error}
               </p>
             )}

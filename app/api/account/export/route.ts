@@ -1,9 +1,9 @@
 import { desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { accounts, sessions as sessionTable, users } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { accounts, sessions as sessionTable, users } from "@/lib/db/schema";
 
 export async function GET() {
   const requestHeaders = await headers();

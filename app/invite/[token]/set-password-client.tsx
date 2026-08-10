@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { passwordError } from "@/lib/auth/password";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,27 +12,34 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { passwordError } from "@/lib/auth/password";
 
 type Props = {
-  token:         string;
+  token: string;
   workspaceName: string;
   workspaceIcon: string | null;
-  role:          string;
-  invitedEmail:  string | null;
+  role: string;
+  invitedEmail: string | null;
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  admin:  "Admin",
+  admin: "Admin",
   editor: "Member",
   viewer: "Viewer",
 };
 
-export function SetPasswordAcceptClient({ token, workspaceName, workspaceIcon, role, invitedEmail }: Props) {
+export function SetPasswordAcceptClient({
+  token,
+  workspaceName,
+  workspaceIcon,
+  role,
+  invitedEmail,
+}: Props) {
   const router = useRouter();
-  const [name, setName]         = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,11 +54,15 @@ export function SetPasswordAcceptClient({ token, workspaceName, workspaceIcon, r
     setError(null);
     try {
       const res = await fetch(`/api/invite/${token}/set-password`, {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ name, password }),
+        body: JSON.stringify({ name, password }),
       });
-      const data = await res.json().catch(() => ({})) as { error?: string; workspaceSlug?: string | null; needsLogin?: boolean };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        workspaceSlug?: string | null;
+        needsLogin?: boolean;
+      };
       if (!res.ok) {
         setError(data.error ?? "Failed to accept invite");
         return;
@@ -68,7 +78,7 @@ export function SetPasswordAcceptClient({ token, workspaceName, workspaceIcon, r
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-page px-4">
+    <main className="grid min-h-screen place-items-center bg-base-200 px-4">
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
@@ -77,41 +87,48 @@ export function SetPasswordAcceptClient({ token, workspaceName, workspaceIcon, r
             )}
             <CardTitle>Join {workspaceName}</CardTitle>
             <CardDescription>
-              You&apos;ve been invited{invitedEmail ? <> as <strong>{invitedEmail}</strong></> : null} to join as{" "}
-              <strong>{ROLE_LABELS[role] ?? role}</strong>. Set a password to finish creating your account.
+              You&apos;ve been invited
+              {invitedEmail ? (
+                <>
+                  {" "}
+                  as <strong>{invitedEmail}</strong>
+                </>
+              ) : null}{" "}
+              to join as <strong>{ROLE_LABELS[role] ?? role}</strong>. Set a
+              password to finish creating your account.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-3" onSubmit={submit}>
               {error && (
-                <p className="rounded bg-destructive/10 p-3 text-sm text-destructive">
+                <p className="rounded bg-error/10 p-3 text-sm text-error">
                   {error}
                 </p>
               )}
               <div className="space-y-1.5">
                 <Label htmlFor="name">Your name</Label>
                 <Input
-                  id="name"
                   autoComplete="name"
-                  value={name}
+                  id="name"
+                  maxLength={80}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Jane Doe"
-                  maxLength={80}
                   required
+                  value={name}
                 />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">New password</Label>
                 <Input
-                  id="password"
-                  type="password"
                   autoComplete="new-password"
-                  value={password}
+                  id="password"
+                  maxLength={128}
+                  minLength={8}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 8 characters"
-                  minLength={8}
-                  maxLength={128}
                   required
+                  type="password"
+                  value={password}
                 />
               </div>
               <Button className="w-full" disabled={loading} type="submit">

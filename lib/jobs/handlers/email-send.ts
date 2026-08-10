@@ -1,10 +1,10 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { Job } from "pg-boss";
-import { emailOutbox } from "@/lib/db/schema";
 import { db } from "@/lib/db";
-import { sendEmailViaSmtp } from "@/lib/smtp/client";
+import { emailOutbox } from "@/lib/db/schema";
 import { enqueueJob } from "@/lib/jobs/enqueue";
 import { type EmailSendPayload, JOB_NAMES } from "@/lib/jobs/job-names";
+import { sendEmailViaSmtp } from "@/lib/smtp/client";
 import { sleep } from "@/lib/utils";
 
 const MAX_ATTEMPTS = 3;
@@ -36,25 +36,29 @@ async function processEmailSendJob(job: Job<EmailSendPayload>) {
     .update(emailOutbox)
     .set({
       attemptCount: sql`${emailOutbox.attemptCount} + 1`,
-      status:       "sending",
-      updatedAt:    new Date(),
+      status: "sending",
+      updatedAt: new Date(),
     })
     .where(and(eq(emailOutbox.id, outboxId), eq(emailOutbox.status, "queued")))
     .returning();
 
-  if (!claimed) return;
+  if (!claimed) {
+    return;
+  }
 
   const attempt = claimed.attemptCount;
   const remainingAttempts = MAX_ATTEMPTS - attempt;
 
-  console.log(`[email-send] attempt ${attempt}/${MAX_ATTEMPTS} — sending "${claimed.subject}" to ${claimed.recipientEmail}`);
+  console.log(
+    `[email-send] attempt ${attempt}/${MAX_ATTEMPTS} — sending "${claimed.subject}" to ${claimed.recipientEmail}`
+  );
 
   try {
     await waitForSendSlot();
     await sendEmailViaSmtp({
-      html:    claimed.htmlBody,
+      html: claimed.htmlBody,
       subject: claimed.subject,
-      to:      claimed.recipientEmail,
+      to: claimed.recipientEmail,
     });
 
     await db
@@ -64,11 +68,19 @@ async function processEmailSendJob(job: Job<EmailSendPayload>) {
 
     console.log(`[email-send] sent to ${claimed.recipientEmail}`);
   } catch (error) {
-    const reason = error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500);
+    const reason =
+      error instanceof Error
+        ? error.message.slice(0, 500)
+        : String(error).slice(0, 500);
 
     if (remainingAttempts > 0) {
-      const delay = RETRY_BACKOFF_SECONDS[Math.min(attempt - 1, RETRY_BACKOFF_SECONDS.length - 1)];
-      console.error(`[email-send] FAILED to send to ${claimed.recipientEmail} (attempt ${attempt}/${MAX_ATTEMPTS}), retrying in ${delay}s — ${reason}`);
+      const delay =
+        RETRY_BACKOFF_SECONDS[
+          Math.min(attempt - 1, RETRY_BACKOFF_SECONDS.length - 1)
+        ];
+      console.error(
+        `[email-send] FAILED to send to ${claimed.recipientEmail} (attempt ${attempt}/${MAX_ATTEMPTS}), retrying in ${delay}s — ${reason}`
+      );
 
       await db
         .update(emailOutbox)
@@ -83,7 +95,9 @@ async function processEmailSendJob(job: Job<EmailSendPayload>) {
       return;
     }
 
-    console.error(`[email-send] FAILED to send to ${claimed.recipientEmail} — giving up after ${MAX_ATTEMPTS} attempts — ${reason}`);
+    console.error(
+      `[email-send] FAILED to send to ${claimed.recipientEmail} — giving up after ${MAX_ATTEMPTS} attempts — ${reason}`
+    );
 
     await db
       .update(emailOutbox)

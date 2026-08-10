@@ -162,7 +162,7 @@ function DialogContent({
         if (event.target === dialogRef.current) setOpen(false)
       }}
       className={cn(
-        "fixed top-1/2 left-1/2 z-50 m-0 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md bg-popover p-6 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-md",
+        "fixed top-1/2 left-1/2 z-50 m-0 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md bg-base-100 p-6 text-sm text-base-content ring-1 ring-base-content/10 outline-none sm:max-w-md",
         className
       )}
       {...props}
@@ -258,7 +258,7 @@ function DialogDescription({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="dialog-description"
       className={cn(
-        "mt-0.5 text-sm leading-relaxed text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        "mt-0.5 text-sm leading-relaxed text-base-content/70 *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-base-content",
         className
       )}
       {...props}

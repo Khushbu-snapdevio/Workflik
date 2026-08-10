@@ -4,8 +4,14 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-// Native `<input type="range">` in place of Radix's Slider.
-// Only single-thumb is supported (native range has one thumb); no consumer needs multi-thumb yet.
+// Native `<input type="range">` for behavior, daisyUI `range` for appearance —
+// daisy draws the track, the thumb and the progress fill itself (the fill is a
+// clipped inset `box-shadow` on the thumb), which replaces the absolutely
+// positioned track/fill overlay and the per-engine `::-webkit-slider-thumb` /
+// `::-moz-range-thumb` rules this component used to carry.
+//
+// Only single-thumb is supported (native range has one thumb); no consumer
+// needs multi-thumb yet.
 function Slider({
   className,
   defaultValue,
@@ -24,41 +30,29 @@ function Slider({
 }) {
   const [uncontrolled, setUncontrolled] = React.useState(defaultValue?.[0] ?? min)
   const current = value?.[0] ?? uncontrolled
-  const percent = ((current - min) / (max - min)) * 100
 
   return (
-    <div
+    <input
       data-slot="slider"
+      type="range"
+      min={min}
+      max={max}
+      disabled={disabled}
+      value={current}
+      onChange={(event) => {
+        const next = Number(event.target.value)
+        setUncontrolled(next)
+        onValueChange?.([next])
+      }}
       className={cn(
-        "relative flex h-3 w-full touch-none items-center select-none",
-        disabled && "opacity-50"
+        // `w-full` overrides daisy's own `clamp(3rem, 20rem, 100%)` so the
+        // slider still fills its container, as every consumer expects.
+        "range range-xs range-primary w-full disabled:cursor-not-allowed disabled:opacity-50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+        className
       )}
-    >
-      <div className="pointer-events-none absolute top-1/2 h-0.5 w-full -translate-y-1/2 overflow-hidden bg-input/50">
-        <div className="h-full bg-primary" style={{ width: `${percent}%` }} />
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        disabled={disabled}
-        value={current}
-        onChange={(event) => {
-          const next = Number(event.target.value)
-          setUncontrolled(next)
-          onValueChange?.([next])
-        }}
-        className={cn(
-          "relative w-full cursor-pointer appearance-none bg-transparent outline-none disabled:cursor-not-allowed",
-          "[&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-none [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:transition-colors",
-          "[&::-moz-range-thumb]:size-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:bg-primary [&::-moz-range-thumb]:transition-colors",
-          "focus-visible:[&::-webkit-slider-thumb]:ring-2 focus-visible:[&::-webkit-slider-thumb]:ring-ring/30",
-          "focus-visible:[&::-moz-range-thumb]:ring-2 focus-visible:[&::-moz-range-thumb]:ring-ring/30",
-          className
-        )}
-        {...props}
-      />
-    </div>
+      {...props}
+    />
   )
 }
 

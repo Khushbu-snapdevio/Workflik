@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
 import { Popover, PopoverPanel } from "@headlessui/react";
-import { ArrowLeft, Check, AlertCircle } from "lucide-react";
-import { tryParseFormula, evaluateFormulaValue, formatFormulaValue, type FormulaValue } from "@/lib/formula";
+import { AlertCircle, ArrowLeft, Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RectAnchorTrigger } from "@/components/database/rect-popover-anchor";
 import type { DbProperty } from "@/components/database/types";
+import {
+  evaluateFormulaValue,
+  type FormulaValue,
+  formatFormulaValue,
+  tryParseFormula,
+} from "@/lib/formula";
 
 interface FormulaConfigPickerProps {
-  rect: DOMRect;
   databaseId: string;
-  properties: DbProperty[];
   onBack: () => void;
   onClose: () => void;
   onPick: (expression: string) => void;
+  properties: DbProperty[];
+  rect: DOMRect;
 }
 
 // Mirrors app/api/databases/[id]/entries/route.ts's rawToFormulaValue for this client-side
@@ -21,7 +26,10 @@ interface FormulaConfigPickerProps {
 function rawToFormulaValue(prop: DbProperty, raw: unknown): FormulaValue {
   const v = raw as Record<string, unknown> | null;
   switch (prop.type) {
-    case "text": case "url": case "email": case "phone":
+    case "text":
+    case "url":
+    case "email":
+    case "phone":
       return (v?.[prop.type] as string | undefined) ?? null;
     case "number":
       return (v?.number as number | null | undefined) ?? null;
@@ -34,22 +42,42 @@ function rawToFormulaValue(prop: DbProperty, raw: unknown): FormulaValue {
     case "select":
     case "status": {
       const optId = v?.optionId as string | undefined;
-      if (!optId) return null;
-      const options = (prop.config?.options ?? []) as { id: string; name: string }[];
+      if (!optId) {
+        return null;
+      }
+      const options = (prop.config?.options ?? []) as {
+        id: string;
+        name: string;
+      }[];
       return options.find((o) => o.id === optId)?.name ?? null;
     }
     case "multi_select": {
       const ids = (v?.optionIds as string[] | undefined) ?? [];
-      const options = (prop.config?.options ?? []) as { id: string; name: string }[];
-      return ids.map((id) => options.find((o) => o.id === id)?.name).filter(Boolean).join(", ") || null;
+      const options = (prop.config?.options ?? []) as {
+        id: string;
+        name: string;
+      }[];
+      return (
+        ids
+          .map((id) => options.find((o) => o.id === id)?.name)
+          .filter(Boolean)
+          .join(", ") || null
+      );
     }
     case "person": {
-      const members = (v?._members as { name?: string; email?: string }[] | undefined) ?? [];
-      return members.map((m) => m.name || m.email).filter(Boolean).join(", ") || null;
+      const members =
+        (v?._members as { name?: string; email?: string }[] | undefined) ?? [];
+      return (
+        members
+          .map((m) => m.name || m.email)
+          .filter(Boolean)
+          .join(", ") || null
+      );
     }
     case "relation":
       return ((v?.entryIds as string[] | undefined) ?? []).length;
-    case "rollup": case "formula":
+    case "rollup":
+    case "formula":
       return (v?.display as string | null | undefined) ?? null;
     default:
       return null;
@@ -69,23 +97,45 @@ function rawToCount(prop: DbProperty, raw: unknown): number {
     case "relation":
       return ((v?.entryIds as unknown[] | undefined) ?? []).length;
     default:
-      throw new Error(`count() doesn't work on "${prop.name}" — only Person, Multi-select, and Relation properties have a count.`);
+      throw new Error(
+        `count() doesn't work on "${prop.name}" — only Person, Multi-select, and Relation properties have a count.`
+      );
   }
 }
 
-export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onClose, onPick }: FormulaConfigPickerProps) {
+export function FormulaConfigPicker({
+  rect,
+  databaseId,
+  properties,
+  onBack,
+  onClose,
+  onPick,
+}: FormulaConfigPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [expression, setExpression] = useState("");
-  const [sampleEntry, setSampleEntry] = useState<{ id: string; values: Map<string, unknown> } | null>(null);
+  const [sampleEntry, setSampleEntry] = useState<{
+    id: string;
+    values: Map<string, unknown>;
+  } | null>(null);
 
   useEffect(() => {
     function h(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      if (target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')) return;
-      if (ref.current && !ref.current.contains(target)) onClose();
+      if (
+        target.closest?.('[role="alertdialog"], [data-edit-property-exempt]')
+      ) {
+        return;
+      }
+      if (ref.current && !ref.current.contains(target)) {
+        onClose();
+      }
     }
-    function keyHandler(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    function keyHandler(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    }
     document.addEventListener("mousedown", h);
     document.addEventListener("keydown", keyHandler);
     return () => {
@@ -97,48 +147,88 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
   useEffect(() => {
     fetch(`/api/databases/${databaseId}/entries`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { entries: { id: string }[]; propertyValues: { entryId: string; propertyId: string; value: unknown }[] } | null) => {
-        if (!data?.entries?.length) return;
-        const first = data.entries[0];
-        const values = new Map<string, unknown>();
-        for (const v of data.propertyValues) if (v.entryId === first.id) values.set(v.propertyId, v.value);
-        setSampleEntry({ id: first.id, values });
-      })
+      .then(
+        (
+          data: {
+            entries: { id: string }[];
+            propertyValues: {
+              entryId: string;
+              propertyId: string;
+              value: unknown;
+            }[];
+          } | null
+        ) => {
+          if (!data?.entries?.length) {
+            return;
+          }
+          const first = data.entries[0];
+          const values = new Map<string, unknown>();
+          for (const v of data.propertyValues) {
+            if (v.entryId === first.id) {
+              values.set(v.propertyId, v.value);
+            }
+          }
+          setSampleEntry({ id: first.id, values });
+        }
+      )
       .catch(() => {});
   }, [databaseId]);
 
-  const { ast, error: parseError } = useMemo(() => tryParseFormula(expression), [expression]);
+  const { ast, error: parseError } = useMemo(
+    () => tryParseFormula(expression),
+    [expression]
+  );
 
   const preview = useMemo(() => {
-    if (!expression.trim()) return { display: "", error: null as string | null };
-    if (parseError) return { display: "", error: parseError };
-    if (!ast) return { display: "", error: null };
-    if (!sampleEntry) return { display: "", error: null };
+    if (!expression.trim()) {
+      return { display: "", error: null as string | null };
+    }
+    if (parseError) {
+      return { display: "", error: parseError };
+    }
+    if (!ast) {
+      return { display: "", error: null };
+    }
+    if (!sampleEntry) {
+      return { display: "", error: null };
+    }
     const { value, error } = evaluateFormulaValue(expression, {
       resolveProp: (name) => {
         const prop = properties.find((p) => p.name === name);
-        if (!prop) throw new Error(`Unknown property "${name}"`);
+        if (!prop) {
+          throw new Error(`Unknown property "${name}"`);
+        }
         return rawToFormulaValue(prop, sampleEntry.values.get(prop.id) ?? null);
       },
       resolveCount: (name) => {
         const prop = properties.find((p) => p.name === name);
-        if (!prop) throw new Error(`Unknown property "${name}"`);
+        if (!prop) {
+          throw new Error(`Unknown property "${name}"`);
+        }
         return rawToCount(prop, sampleEntry.values.get(prop.id) ?? null);
       },
     });
-    if (error) return { display: "", error };
+    if (error) {
+      return { display: "", error };
+    }
     return { display: formatFormulaValue(value), error: null };
   }, [expression, ast, parseError, sampleEntry, properties]);
 
   function insertPropRef(name: string) {
     const ta = textareaRef.current;
     const snippet = `prop("${name}")`;
-    if (!ta) { setExpression((e) => e + snippet); return; }
+    if (!ta) {
+      setExpression((e) => e + snippet);
+      return;
+    }
     const start = ta.selectionStart ?? expression.length;
     const end = ta.selectionEnd ?? expression.length;
     const next = expression.slice(0, start) + snippet + expression.slice(end);
     setExpression(next);
-    requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(start + snippet.length, start + snippet.length); });
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + snippet.length, start + snippet.length);
+    });
   }
 
   const width = 320;
@@ -147,69 +237,81 @@ export function FormulaConfigPicker({ rect, databaseId, properties, onBack, onCl
     <Popover>
       <RectAnchorTrigger rect={rect} />
       <PopoverPanel
+        anchor={{ to: "bottom end", gap: 4 }}
+        className="z-500 flex flex-col overflow-hidden rounded-md border border-base-300 bg-base-200"
+        data-edit-property-exempt
         ref={ref}
         static
-        data-edit-property-exempt
-        anchor={{ to: "bottom end", gap: 4 }}
         style={{ width }}
-        className="z-500 flex flex-col overflow-hidden rounded-md border border-border bg-background"
       >
-        <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-2">
+        <div className="flex items-center gap-1.5 border-b border-base-300 px-2.5 py-2">
           <button
-            type="button"
-            onClick={onBack}
             aria-label="Back"
-            className="flex size-5 shrink-0 items-center justify-center rounded-xs text-muted-foreground transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex size-5 shrink-0 items-center justify-center rounded-xs text-base-content/70 transition-colors duration-150 hover:bg-base-200 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            onClick={onBack}
+            type="button"
           >
             <ArrowLeft size={13} />
           </button>
-          <p className="text-xs font-semibold text-foreground/80">Edit formula</p>
+          <p className="text-xs font-semibold text-base-content/80">
+            Edit formula
+          </p>
         </div>
 
         <div className="flex flex-col gap-2 p-2.5">
           <textarea
-            ref={textareaRef}
             autoFocus
-            value={expression}
+            className="w-full resize-none rounded-sm border border-base-300 bg-base-200/20 px-2.5 py-2 font-mono text-xs text-base-content placeholder:text-base-content/50 focus:border-primary/40 focus:outline-none"
             onChange={(e) => setExpression(e.target.value)}
             placeholder='e.g. if(prop("Status") == "Done", "✅", "")'
+            ref={textareaRef}
             rows={4}
-            className="w-full resize-none rounded-sm border border-border bg-muted/20 px-2.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
+            value={expression}
           />
 
           <div>
-            <p className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Insert property</p>
+            <p className="mb-1 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
+              Insert property
+            </p>
             <div className="flex flex-wrap gap-1">
-              {properties.filter((p) => !p.isSystem).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => insertPropRef(p.name)}
-                  className="rounded-xs border border-border bg-muted/30 px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-                >
-                  {p.name}
-                </button>
-              ))}
+              {properties
+                .filter((p) => !p.isSystem)
+                .map((p) => (
+                  <button
+                    className="rounded-xs border border-base-300 bg-base-200/30 px-1.5 py-0.5 text-xs text-base-content/70 hover:bg-base-200 hover:text-base-content"
+                    key={p.id}
+                    onClick={() => insertPropRef(p.name)}
+                    type="button"
+                  >
+                    {p.name}
+                  </button>
+                ))}
             </div>
           </div>
 
-          <div className="rounded-sm border border-border bg-muted/20 px-2.5 py-2">
-            <p className="mb-1 text-2xs font-semibold uppercase tracking-wider text-muted-foreground-subtle">Preview</p>
+          <div className="rounded-sm border border-base-300 bg-base-200/20 px-2.5 py-2">
+            <p className="mb-1 text-2xs font-semibold uppercase tracking-wider text-base-content/50">
+              Preview
+            </p>
             {preview.error ? (
-              <p className="flex items-start gap-1.5 text-xs text-destructive">
-                <AlertCircle size={12} className="mt-0.5 shrink-0" />
+              <p className="flex items-start gap-1.5 text-xs text-error">
+                <AlertCircle className="mt-0.5 shrink-0" size={12} />
                 {preview.error}
               </p>
             ) : (
-              <p className="truncate text-sm text-foreground">{preview.display || <span className="text-muted-foreground-subtle">—</span>}</p>
+              <p className="truncate text-sm text-base-content">
+                {preview.display || (
+                  <span className="text-base-content/50">—</span>
+                )}
+              </p>
             )}
           </div>
 
           <button
-            type="button"
+            className="flex items-center justify-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-content hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
             disabled={!expression.trim() || !!parseError}
             onClick={() => onPick(expression.trim())}
-            className="flex items-center justify-center gap-1.5 rounded-sm bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+            type="button"
           >
             <Check size={12} />
             Save formula

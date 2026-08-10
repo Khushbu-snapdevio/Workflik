@@ -2,14 +2,21 @@ import * as React from "react"
 import { Slot } from "@/components/ui/slot"
 
 import { cn } from "@/lib/utils"
-import { ChevronRight, MoreHorizontal } from "lucide-react"
+import { MoreHorizontal } from "lucide-react"
+
+// daisyUI's `breadcrumbs`. daisy draws the separator itself, as a rotated
+// border box on `li + *::before`, so there is deliberately no
+// `<BreadcrumbSeparator>` component here — rendering one would double it up.
+// daisy also owns the horizontal rhythm (the separator's own inline margins)
+// and overflow behaviour (`overflow-x: auto` + `white-space: nowrap` on the
+// list), replacing the flex `gap`/`flex-wrap` this component used to set.
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   return (
     <nav
       aria-label="breadcrumb"
       data-slot="breadcrumb"
-      className={cn(className)}
+      className={cn("breadcrumbs", className)}
       {...props}
     />
   )
@@ -20,7 +27,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
     <ol
       data-slot="breadcrumb-list"
       className={cn(
-        "flex flex-wrap items-center gap-1.5 text-xs tracking-wide wrap-break-word text-muted-foreground uppercase sm:gap-2.5",
+        "text-xs tracking-wide text-base-content/70 uppercase",
         className
       )}
       {...props}
@@ -29,13 +36,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
 }
 
 function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
-  return (
-    <li
-      data-slot="breadcrumb-item"
-      className={cn("inline-flex items-center gap-1.5", className)}
-      {...props}
-    />
-  )
+  return <li data-slot="breadcrumb-item" className={cn(className)} {...props} />
 }
 
 function BreadcrumbLink({
@@ -50,7 +51,7 @@ function BreadcrumbLink({
   return (
     <Comp
       data-slot="breadcrumb-link"
-      className={cn("transition-colors hover:text-foreground", className)}
+      className={cn("transition-colors hover:text-base-content", className)}
       {...props}
     />
   )
@@ -63,29 +64,9 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("font-normal text-foreground", className)}
+      className={cn("font-normal text-base-content", className)}
       {...props}
     />
-  )
-}
-
-function BreadcrumbSeparator({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<"li">) {
-  return (
-    <li
-      data-slot="breadcrumb-separator"
-      role="presentation"
-      aria-hidden="true"
-      className={cn("[&>svg]:size-3.5", className)}
-      {...props}
-    >
-      {children ?? (
-        <ChevronRight />
-      )}
-    </li>
   )
 }
 
@@ -98,10 +79,7 @@ function BreadcrumbEllipsis({
       data-slot="breadcrumb-ellipsis"
       role="presentation"
       aria-hidden="true"
-      className={cn(
-        "flex size-5 items-center justify-center [&>svg]:size-4",
-        className
-      )}
+      className={cn("[&>svg]:size-4", className)}
       {...props}
     >
       <MoreHorizontal />
@@ -116,6 +94,5 @@ export {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbPage,
-  BreadcrumbSeparator,
   BreadcrumbEllipsis,
 }

@@ -26,7 +26,11 @@ function PaginationContent({
   return (
     <ul
       data-slot="pagination-content"
-      className={cn("flex items-center gap-1", className)}
+      // daisyUI `join`: a connected segment group. The corner-radius custom
+      // properties daisy sets on `:scope > :first-child`/`:last-child` land on
+      // each `<li>` and inherit down to the `join-item` button inside it —
+      // daisy's own nested-element pattern.
+      className={cn("join", className)}
       {...props}
     />
   )
@@ -52,7 +56,7 @@ function PaginationLink({
       asChild
       variant={isActive ? "outline" : "ghost"}
       size={size}
-      className={cn(className)}
+      className={cn("join-item", className)}
     >
       <a
         aria-current={isActive ? "page" : undefined}
@@ -109,7 +113,7 @@ function PaginationEllipsis({
       aria-hidden
       data-slot="pagination-ellipsis"
       className={cn(
-        "flex size-9 items-center justify-center [&_svg:not([class*='size-'])]:size-4",
+        "join-item flex size-9 items-center justify-center [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}

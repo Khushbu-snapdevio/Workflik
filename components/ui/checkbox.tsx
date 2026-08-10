@@ -1,15 +1,25 @@
 "use client"
 
 import * as React from "react"
-import { CheckIcon } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 
 type CheckedState = boolean | "indeterminate"
 
 /**
- * Native `<input type="checkbox">`; visual state driven from React props, not CSS pseudo-classes.
- * `indeterminate` has no HTML attribute — only settable as a DOM property, hence the ref effect.
+ * Native `<input type="checkbox">` carrying daisy's own `checkbox` class.
+ *
+ * daisy draws the box AND the checkmark (a clip-path `::before`) and keys both
+ * off the input's real `:checked` / `:indeterminate` pseudo-classes, so the
+ * wrapper `<span>`, the `CheckIcon` child and the React-state-driven visual
+ * classes this component used to need are all gone. `indeterminate` still has
+ * no HTML attribute — settable only as a DOM property, hence the ref effect.
+ *
+ * `data-slot` and `peer` sit on the input itself now (they were on the removed
+ * wrapper): label.tsx's `peer-data-[slot=checkbox]:` selectors depend on
+ * exactly those two, and sibling order is unchanged. Side effect: its
+ * `peer-disabled:` rules were dead before — a `<span>` can never match
+ * `:disabled` — and now actually apply.
  */
 function Checkbox({
   className,
@@ -24,10 +34,8 @@ function Checkbox({
   onCheckedChange?: (checked: boolean) => void
 }) {
   const ref = React.useRef<HTMLInputElement>(null)
-  // Uncontrolled usage (defaultChecked only, like Checked/case above) still
-  // needs to drive the visual classes — they can't read the checked prop,
-  // since there isn't one, and reading the native input's own DOM property
-  // wouldn't re-render on change. Mirrors switch.tsx's uncontrolledChecked.
+  // Uncontrolled usage (defaultChecked only) still needs tracking so a click
+  // clears an initial `indeterminate` — the DOM property doesn't reset itself.
   const [uncontrolledChecked, setUncontrolledChecked] = React.useState<CheckedState>(
     defaultChecked ?? false
   )
@@ -40,44 +48,35 @@ function Checkbox({
   }, [isIndeterminate])
 
   return (
-    <span
+    <input
+      ref={ref}
+      type="checkbox"
       data-slot="checkbox"
+      disabled={disabled}
+      checked={isChecked || isIndeterminate}
+      onChange={(event) => {
+        setUncontrolledChecked(event.target.checked)
+        onCheckedChange?.(event.target.checked)
+      }}
       className={cn(
-        "peer relative inline-flex size-4.5 shrink-0 cursor-pointer items-center justify-center",
-        disabled && "cursor-not-allowed opacity-50"
+        "peer checkbox checkbox-primary",
+        // daisy's own box is 24px (--size-selector * 6) and its
+        // --radius-selector is 8px — neither matches this app: the box is
+        // 18px and square, and 8px is off the documented 5-step radius scale.
+        "[--size:1.125rem] rounded-none",
+        // `checkbox-primary` points --input-color at primary, which daisy uses
+        // for the border in EVERY state — that would tint unchecked boxes blue.
+        // Scoped back to base-300 while unchecked only, leaving daisy to own
+        // the checked/indeterminate fill and border.
+        "not-checked:not-indeterminate:border-base-300",
+        // daisy ships `outline: 2px solid` on :focus-visible; the design
+        // checklist mandates the ring system instead.
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
+        "aria-invalid:border-error aria-invalid:ring-2 aria-invalid:ring-error/20 dark:aria-invalid:border-error/50 dark:aria-invalid:ring-error/40",
+        className
       )}
-    >
-      <input
-        ref={ref}
-        type="checkbox"
-        disabled={disabled}
-        checked={isChecked || isIndeterminate}
-        onChange={(event) => {
-          setUncontrolledChecked(event.target.checked)
-          onCheckedChange?.(event.target.checked)
-        }}
-        className={cn(
-          "absolute inset-0 size-full cursor-[inherit] appearance-none rounded-none border bg-transparent outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring/30",
-          isChecked || isIndeterminate
-            ? "border-primary bg-primary"
-            : "border-input",
-          props["aria-invalid"] &&
-            (isChecked || isIndeterminate
-              ? "border-primary"
-              : "border-destructive ring-2 ring-destructive/20 dark:border-destructive/50 dark:ring-destructive/40"),
-          "focus-visible:border-ring",
-          className
-        )}
-        {...props}
-      />
-      <CheckIcon
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none relative size-3.5 text-primary-foreground transition-none",
-          isChecked || isIndeterminate ? "opacity-100" : "opacity-0"
-        )}
-      />
-    </span>
+      {...props}
+    />
   )
 }
 

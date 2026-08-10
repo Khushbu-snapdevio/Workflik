@@ -14,13 +14,16 @@ export default async function WorkspaceSetupPage({ params }: Props) {
 
   const [ws] = await db
     .select({
-      id:   workspaces.id,
+      id: workspaces.id,
       name: workspaces.name,
       slug: workspaces.slug,
       kind: workspaces.kind,
     })
     .from(workspaces)
-    .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, workspaces.id))
+    .innerJoin(
+      workspaceMembers,
+      eq(workspaceMembers.workspaceId, workspaces.id)
+    )
     .where(
       and(
         eq(workspaces.slug, slug),
@@ -30,15 +33,17 @@ export default async function WorkspaceSetupPage({ params }: Props) {
     )
     .limit(1);
 
-  if (!ws) notFound();
+  if (!ws) {
+    notFound();
+  }
 
   return (
     <WorkspaceSetup
+      smtpConfigured={isSmtpConfigured()}
       workspaceId={ws.id}
+      workspaceKind={ws.kind}
       workspaceName={ws.name}
       workspaceSlug={ws.slug}
-      workspaceKind={ws.kind}
-      smtpConfigured={isSmtpConfigured()}
     />
   );
 }

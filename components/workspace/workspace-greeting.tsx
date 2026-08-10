@@ -11,16 +11,22 @@ export function WorkspaceGreeting({ firstName }: { firstName: string }) {
       setName(newName?.trim().split(" ")[0] ?? "");
     }
     window.addEventListener("workflik:user-name-changed", handleNameChanged);
-    return () => window.removeEventListener("workflik:user-name-changed", handleNameChanged);
+    return () =>
+      window.removeEventListener(
+        "workflik:user-name-changed",
+        handleNameChanged
+      );
   }, []);
 
   const h = new Date().getHours();
-  const label = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+  const label =
+    h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
   return (
     <span suppressHydrationWarning>
       {name ? (
-        <>{label}, {name} 👋</>
-
+        <>
+          {label}, {name} 👋
+        </>
       ) : (
         <>{label} 👋</>
       )}

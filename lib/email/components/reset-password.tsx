@@ -25,13 +25,16 @@ export function ResetPasswordEmail({
       productName={productName}
     >
       <Text style={emailStyles.heading}>
-        {isWelcome ? `You've been invited to ${workspaceName}` : "Reset your password"}
+        {isWelcome
+          ? `You've been invited to ${workspaceName}`
+          : "Reset your password"}
       </Text>
       <Text style={emailStyles.paragraph}>
         {isWelcome ? (
           <>
-            Set a password for <strong style={{ color: "#0C2340" }}>{email}</strong>{" "}
-            to get started on {productName}.
+            Set a password for{" "}
+            <strong style={{ color: "#0C2340" }}>{email}</strong> to get started
+            on {productName}.
           </>
         ) : (
           <>

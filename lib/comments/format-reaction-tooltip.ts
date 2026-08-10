@@ -9,20 +9,26 @@
 // sentence stays a plain muted caption.
 export function formatReactorNames(
   userIds: string[],
-  nameById: Record<string, string | null | undefined>,
+  nameById: Record<string, string | null | undefined>
 ): string {
   const names = userIds.map((id) => nameById[id] || "Former Member");
 
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  if (names.length === 3) return `${names[0]}, ${names[1]}, and ${names[2]}`;
+  if (names.length === 1) {
+    return names[0];
+  }
+  if (names.length === 2) {
+    return `${names[0]} and ${names[1]}`;
+  }
+  if (names.length === 3) {
+    return `${names[0]}, ${names[1]}, and ${names[2]}`;
+  }
   return `${names[0]}, ${names[1]}, and ${names.length - 2} others`;
 }
 
 export function formatReactionTooltip(
   emoji: string,
   userIds: string[],
-  nameById: Record<string, string | null | undefined>,
+  nameById: Record<string, string | null | undefined>
 ): string {
   return `${formatReactorNames(userIds, nameById)} reacted with ${emoji}`;
 }

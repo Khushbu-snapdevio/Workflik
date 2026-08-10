@@ -5,8 +5,8 @@ import { users, verifications, workspaceMembers } from "@/lib/db/schema";
 import { enqueueEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import {
-  apiError,
   ApiError,
+  apiError,
   getSession,
   getWorkspace,
   requireWorkspaceMember,
@@ -39,7 +39,10 @@ export async function POST(req: Request, { params }: Ctx) {
     // email goes to whoever initiates this, so allowing any admin to start
     // a transfer would let them redirect ownership to themselves or a third
     // party without the actual owner's consent.
-    if (workspace.createdBy !== null && workspace.createdBy !== session.user.id) {
+    if (
+      workspace.createdBy !== null &&
+      workspace.createdBy !== session.user.id
+    ) {
       return apiError(403, "Only the workspace owner can transfer ownership");
     }
 
@@ -60,7 +63,12 @@ export async function POST(req: Request, { params }: Ctx) {
       )
       .limit(1);
 
-    if (!targetMember) return apiError(404, "Target user is not an active member of this workspace");
+    if (!targetMember) {
+      return apiError(
+        404,
+        "Target user is not an active member of this workspace"
+      );
+    }
 
     const [targetUser] = await db
       .select({ name: users.name, email: users.email })
@@ -68,30 +76,38 @@ export async function POST(req: Request, { params }: Ctx) {
       .where(eq(users.id, targetUserId))
       .limit(1);
 
-    if (!targetUser) return apiError(404, "Target user not found");
-    const token     = crypto.randomUUID();
+    if (!targetUser) {
+      return apiError(404, "Target user not found");
+    }
+    const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // `identifier` has no unique constraint (shared table, better-auth allows multiple
     // rows per identifier), so delete-then-insert instead of upsert.
     const identifier = `workspace-transfer:${id}:${targetUserId}`;
     await db.transaction(async (tx) => {
-      await tx.delete(verifications).where(eq(verifications.identifier, identifier));
-      await tx.insert(verifications).values({ identifier, value: token, expiresAt });
+      await tx
+        .delete(verifications)
+        .where(eq(verifications.identifier, identifier));
+      await tx
+        .insert(verifications)
+        .values({ identifier, value: token, expiresAt });
     });
 
     const confirmUrl = `${env.NEXT_PUBLIC_APP_URL}/api/workspaces/${id}/transfer/confirm?token=${token}`;
 
     await enqueueEmail({
-      to:      session.user.email,
+      to: session.user.email,
       subject: `Confirm transfer of ${workspace.name}`,
-      html:    `<p>You requested to transfer ownership of <strong>${workspace.name}</strong> to ${targetUser.name ?? targetUser.email}.</p><p><a href="${confirmUrl}">Confirm transfer</a></p><p>This link expires in 24 hours.</p>`,
-      text:    `You requested to transfer ownership of ${workspace.name} to ${targetUser.name ?? targetUser.email}.\n\nConfirm transfer:\n${confirmUrl}\n\nThis link expires in 24 hours.`,
+      html: `<p>You requested to transfer ownership of <strong>${workspace.name}</strong> to ${targetUser.name ?? targetUser.email}.</p><p><a href="${confirmUrl}">Confirm transfer</a></p><p>This link expires in 24 hours.</p>`,
+      text: `You requested to transfer ownership of ${workspace.name} to ${targetUser.name ?? targetUser.email}.\n\nConfirm transfer:\n${confirmUrl}\n\nThis link expires in 24 hours.`,
     });
 
     return Response.json({ message: "Confirmation email sent" });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

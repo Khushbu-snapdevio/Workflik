@@ -3,9 +3,13 @@
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
-import { uniqueSlug } from "@/lib/workspaces/auth";
+import {
+  workspaceMembers,
+  workspaceStorageUsage,
+  workspaces,
+} from "@/lib/db/schema";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import { uniqueSlug } from "@/lib/workspaces/auth";
 
 export async function createWorkspaceAction(formData: FormData) {
   const session = await requireSession();
@@ -30,21 +34,25 @@ export async function createWorkspaceAction(formData: FormData) {
 
     await tx.insert(workspaceMembers).values({
       workspaceId: ws.id,
-      userId:      session.user.id,
-      role:        "admin",
-      status:      "active",
-      joinedAt:    new Date(),
+      userId: session.user.id,
+      role: "admin",
+      status: "active",
+      joinedAt: new Date(),
     });
 
     return ws;
   });
 
   await writeAuditLog({
-    actorId:    session.user.id,
-    action:     "workspace.created",
+    actorId: session.user.id,
+    action: "workspace.created",
     targetType: "workspace",
-    targetId:   workspace.id,
-    metadata:   { name: workspace.name, slug: workspace.slug, kind: workspace.kind },
+    targetId: workspace.id,
+    metadata: {
+      name: workspace.name,
+      slug: workspace.slug,
+      kind: workspace.kind,
+    },
   });
 
   redirect(`/app/workspaces/setup/${workspace.slug}`);

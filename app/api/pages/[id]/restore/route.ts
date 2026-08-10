@@ -1,7 +1,12 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pageClosure, pages } from "@/lib/db/schema";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -12,13 +17,22 @@ export async function POST(_req: Request, { params }: Ctx) {
     const session = await getSession();
 
     const [page] = await db
-      .select({ id: pages.id, workspaceId: pages.workspaceId, isDeleted: pages.isDeleted, parentId: pages.parentId })
+      .select({
+        id: pages.id,
+        workspaceId: pages.workspaceId,
+        isDeleted: pages.isDeleted,
+        parentId: pages.parentId,
+      })
       .from(pages)
       .where(eq(pages.id, id))
       .limit(1);
 
-    if (!page) return apiError(404, "Page not found");
-    if (!page.isDeleted) return apiError(409, "Page is not in Trash");
+    if (!page) {
+      return apiError(404, "Page not found");
+    }
+    if (!page.isDeleted) {
+      return apiError(409, "Page is not in Trash");
+    }
 
     await requireWorkspaceMember(page.workspaceId, session.user.id, "editor");
 
@@ -47,7 +61,12 @@ export async function POST(_req: Request, { params }: Ctx) {
 
     await db
       .update(pages)
-      .set({ isDeleted: false, deletedAt: null, deletedBy: null, updatedAt: new Date() })
+      .set({
+        isDeleted: false,
+        deletedAt: null,
+        deletedBy: null,
+        updatedAt: new Date(),
+      })
       .where(inArray(pages.id, descendantIds));
 
     // If parent changed, update parentId for the root page only
@@ -60,7 +79,9 @@ export async function POST(_req: Request, { params }: Ctx) {
 
     return Response.json({ success: true, parentId: restoredParentId });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }

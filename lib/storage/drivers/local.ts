@@ -1,7 +1,7 @@
-import path from "path";
 import fs from "fs/promises";
-import type { StorageDriver, UploadSlot } from "./types";
+import path from "path";
 import { env } from "@/lib/env";
+import type { StorageDriver, UploadSlot } from "./types";
 
 function uploadDir(): string {
   return env.UPLOAD_DIR ?? path.join(process.cwd(), "uploads");
@@ -15,8 +15,8 @@ export function createLocalDriver(): StorageDriver {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
 
       return {
-        url:     `${env.NEXT_PUBLIC_APP_URL}/api/uploads/local`,
-        method:  "POST",
+        url: `${env.NEXT_PUBLIC_APP_URL}/api/uploads/local`,
+        method: "POST",
         headers: {},
       };
     },

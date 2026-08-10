@@ -1,14 +1,19 @@
 "use client"
 
 import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-// Hand-rolled, value-based (not Headless UI's index-based TabGroup, which
-// doesn't match the string `value` contract every consumer here already
-// uses). Small enough to own directly: context for the active value, plus
-// manual role/aria-* wiring and roving arrow-key navigation.
+// Behavior is hand-rolled, value-based (not Headless UI's index-based
+// TabGroup, which doesn't match the string `value` contract every consumer
+// here already uses): context for the active value, plus manual role/aria-*
+// wiring and roving arrow-key navigation.
+//
+// Styling is daisyUI's `tabs`/`tab` (+ `tabs-box`/`tabs-border`). daisy keys
+// the active tab off `[aria-selected=true]`, which this component already
+// sets for accessibility — so no state-driven class computation is needed and
+// `.tab` must stay a *direct child* of `.tabs` (daisy scopes it as
+// `.tab:is(.tabs > .tab)`).
 
 type TabsContextValue = {
   value: string | undefined
@@ -64,27 +69,21 @@ function Tabs({
   )
 }
 
-const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-center p-1 text-muted-foreground group-data-horizontal/tabs:h-10 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col",
-  {
-    variants: {
-      variant: {
-        default: "bg-muted",
-        line: "gap-1 bg-transparent",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-)
+// `tabs-box` = daisy's filled pill group; `tabs-border` = daisy's underline
+// group. Both draw their own active-tab treatment off `[aria-selected=true]`.
+const tabsListVariantClasses = {
+  default: "tabs-box",
+  line: "tabs-border",
+} as const
+
+type TabsListVariant = keyof typeof tabsListVariantClasses
 
 function TabsList({
   className,
   variant = "default",
   children,
   ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof tabsListVariants>) {
+}: React.ComponentProps<"div"> & { variant?: TabsListVariant }) {
   const listRef = React.useRef<HTMLDivElement>(null)
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -115,7 +114,11 @@ function TabsList({
       data-slot="tabs-list"
       data-variant={variant}
       onKeyDown={handleKeyDown}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn(
+        "tabs group/tabs-list w-fit items-center justify-center group-data-vertical/tabs:flex-col",
+        tabsListVariantClasses[variant],
+        className
+      )}
       {...props}
     >
       {children}
@@ -149,10 +152,12 @@ function TabsTrigger({
         if (!event.defaultPrevented) setValue(value)
       }}
       className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-2 border border-transparent px-4 py-1.5 text-xs font-medium tracking-wide whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start group-data-vertical/tabs:px-4 group-data-vertical/tabs:py-2 hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 dark:text-muted-foreground dark:hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
-        "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
-        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:-bottom-1.25 group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
+        // daisy's `tab` owns sizing, padding, the inactive/hover colours and
+        // the active treatment (via `[aria-selected=true]`, set above). What
+        // stays here is layout (stretch to fill a `w-full` list), the app's
+        // ring-based focus system in place of daisy's own outline, and icon
+        // sizing.
+        "tab flex-1 gap-2 font-medium group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className
       )}
       {...props}
@@ -181,4 +186,4 @@ function TabsContent({
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants }
+export { Tabs, TabsList, TabsTrigger, TabsContent }

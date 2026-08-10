@@ -1,18 +1,29 @@
 import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { Sidebar } from "@/components/sidebar/sidebar";
 import { WorkspaceShell } from "@/components/layout/workspace-shell";
-import { SearchProvider } from "@/components/search/search-provider";
-import { Toaster } from "@/components/ui/sonner";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { HintProvider } from "@/components/onboarding/hint-provider";
 import { TooltipTour } from "@/components/onboarding/tooltip-tour";
+import { SearchProvider } from "@/components/search/search-provider";
+import { Sidebar } from "@/components/sidebar/sidebar";
+import { Toaster } from "@/components/ui/sonner";
+import { ADMIN_ROLE } from "@/config/platform";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { pages, userFavorites, userHintStates, userPreferences, userRecentlyVisited, users, workspaces } from "@/lib/db/schema";
-import { getWorkspaceMember, hasWorkspaceGuestAccess } from "@/lib/workspaces/auth";
-import { ADMIN_ROLE } from "@/config/platform";
+import {
+  pages,
+  userFavorites,
+  userHintStates,
+  userPreferences,
+  userRecentlyVisited,
+  users,
+  workspaces,
+} from "@/lib/db/schema";
+import {
+  getWorkspaceMember,
+  hasWorkspaceGuestAccess,
+} from "@/lib/workspaces/auth";
 
 type Props = {
   children: ReactNode;
@@ -44,8 +55,10 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
     return (
       <>
-        <main className="h-screen overflow-y-auto overflow-x-hidden">{children}</main>
-        <Toaster position="bottom-right" closeButton={false} />
+        <main className="h-screen overflow-y-auto overflow-x-hidden">
+          {children}
+        </main>
+        <Toaster closeButton={false} position="bottom-right" />
       </>
     );
   }
@@ -60,7 +73,12 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     [prefs],
   ] = await Promise.all([
     db
-      .select({ role: users.role, tourCompleted: users.tourCompleted, image: users.image, name: users.name })
+      .select({
+        role: users.role,
+        tourCompleted: users.tourCompleted,
+        image: users.image,
+        name: users.name,
+      })
       .from(users)
       .where(eq(users.id, session.user.id))
       .limit(1),
@@ -70,15 +88,15 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       .where(eq(userHintStates.userId, session.user.id)),
     db
       .select({
-        id:         pages.id,
-        shortId:    pages.shortId,
-        parentId:   pages.parentId,
-        title:      pages.title,
-        icon:       pages.icon,
+        id: pages.id,
+        shortId: pages.shortId,
+        parentId: pages.parentId,
+        title: pages.title,
+        icon: pages.icon,
         orderIndex: pages.orderIndex,
-        kind:       pages.kind,
-        isPrivate:  pages.isPrivate,
-        isDraft:    pages.isDraft,
+        kind: pages.kind,
+        isPrivate: pages.isPrivate,
+        isDraft: pages.isDraft,
       })
       .from(pages)
       .where(
@@ -95,15 +113,15 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     // ones the user created still need to surface in the sidebar's Private section.
     db
       .select({
-        id:         pages.id,
-        shortId:    pages.shortId,
-        parentId:   pages.parentId,
-        title:      pages.title,
-        icon:       pages.icon,
+        id: pages.id,
+        shortId: pages.shortId,
+        parentId: pages.parentId,
+        title: pages.title,
+        icon: pages.icon,
         orderIndex: pages.orderIndex,
-        kind:       pages.kind,
-        isPrivate:  pages.isPrivate,
-        isDraft:    pages.isDraft,
+        kind: pages.kind,
+        isPrivate: pages.isPrivate,
+        isDraft: pages.isDraft,
       })
       .from(pages)
       .where(
@@ -119,12 +137,12 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     db
       // Mirrors the GET in app/api/user/favorites/route.ts (LEFT JOIN + isNull, see there).
       .select({
-        id:         userFavorites.id,
-        pageId:     userFavorites.pageId,
+        id: userFavorites.id,
+        pageId: userFavorites.pageId,
         orderIndex: userFavorites.orderIndex,
-        title:      pages.title,
-        icon:       pages.icon,
-        shortId:    pages.shortId,
+        title: pages.title,
+        icon: pages.icon,
+        shortId: pages.shortId,
       })
       .from(userFavorites)
       .leftJoin(pages, eq(userFavorites.pageId, pages.id))
@@ -138,8 +156,8 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       .orderBy(asc(userFavorites.orderIndex)),
     db
       .select({
-        id:        userRecentlyVisited.id,
-        pageId:    userRecentlyVisited.pageId,
+        id: userRecentlyVisited.id,
+        pageId: userRecentlyVisited.pageId,
         visitedAt: userRecentlyVisited.visitedAt,
       })
       .from(userRecentlyVisited)
@@ -153,7 +171,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       .limit(10),
     db
       .select({
-        sidebarWidth:     userPreferences.sidebarWidth,
+        sidebarWidth: userPreferences.sidebarWidth,
         sidebarCollapsed: userPreferences.sidebarCollapsed,
       })
       .from(userPreferences)
@@ -179,33 +197,39 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     .catch(() => {});
 
   return (
-    <SearchProvider workspaceSlug={ws.slug} workspaceId={ws.id}>
-      <NotificationProvider workspaceId={ws.id} workspaceSlug={ws.slug} currentUserId={session.user.id}>
+    <SearchProvider workspaceId={ws.id} workspaceSlug={ws.slug}>
+      <NotificationProvider
+        currentUserId={session.user.id}
+        workspaceId={ws.id}
+        workspaceSlug={ws.slug}
+      >
         <HintProvider dismissed={dismissedHints}>
           <WorkspaceShell
             sidebar={
               <Sidebar
-                isAdmin={freshUser?.role === ADMIN_ROLE}
-                userEmail={session.user.email}
-                initialUserName={freshUser?.name ?? null}
-                initialUserImage={freshUser?.image ?? null}
-                workspaceId={ws.id}
-                workspaceSlug={ws.slug}
+                initialFavorites={initialFavorites}
                 initialPages={initialPages}
                 initialPrivateEntries={initialPrivateEntries}
-                initialFavorites={initialFavorites}
                 initialRecentlyVisited={recentlyVisitedSerialized}
-                initialSidebarWidth={prefs?.sidebarWidth || 300}
                 initialSidebarCollapsed={prefs?.sidebarCollapsed ?? false}
+                initialSidebarWidth={prefs?.sidebarWidth || 300}
+                initialUserImage={freshUser?.image ?? null}
+                initialUserName={freshUser?.name ?? null}
+                isAdmin={freshUser?.role === ADMIN_ROLE}
+                userEmail={session.user.email}
+                workspaceId={ws.id}
+                workspaceSlug={ws.slug}
               />
             }
           >
-            <main className="flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
+            <main className="flex-1 overflow-y-auto overflow-x-hidden">
+              {children}
+            </main>
           </WorkspaceShell>
           <TooltipTour tourCompleted={freshUser?.tourCompleted ?? true} />
         </HintProvider>
       </NotificationProvider>
-      <Toaster position="bottom-right" closeButton={false} />
+      <Toaster closeButton={false} position="bottom-right" />
     </SearchProvider>
   );
 }

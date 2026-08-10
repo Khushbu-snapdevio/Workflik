@@ -137,7 +137,7 @@ function PopoverContent({
       data-slot="popover-content"
       style={{ position: "fixed", margin: 0, top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
       className={cn(
-        "flex w-72 flex-col gap-4 rounded-md border border-border bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-hidden",
+        "flex w-72 flex-col gap-4 rounded-md border border-base-300 bg-base-100 p-4 text-sm text-base-content ring-1 ring-base-content/10 outline-hidden",
         className
       )}
       {...props}

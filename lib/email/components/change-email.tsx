@@ -18,10 +18,9 @@ export function ChangeEmailEmail({
     >
       <Text style={emailStyles.heading}>Confirm your new email address</Text>
       <Text style={emailStyles.paragraph}>
-        We received a request to change the email on your {productName}{" "}
-        account to <strong style={{ color: "#0C2340" }}>{newEmail}</strong>.
-        Click below to confirm — your current email stays active until you
-        do.
+        We received a request to change the email on your {productName} account
+        to <strong style={{ color: "#0C2340" }}>{newEmail}</strong>. Click below
+        to confirm — your current email stays active until you do.
       </Text>
       <Section style={{ margin: "24px 0" }}>
         <Button href={verifyUrl} style={emailStyles.button}>

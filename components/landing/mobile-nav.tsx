@@ -1,46 +1,49 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
-        type="button"
-        aria-label="Toggle menu"
-        aria-expanded={open}
         aria-controls="mobile-nav-menu"
+        aria-expanded={open}
+        aria-label="Toggle menu"
+        className="flex size-9 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content sm:hidden"
         onClick={() => setOpen((v) => !v)}
-        className="flex size-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:hidden"
+        type="button"
       >
         {open ? <X size={16} /> : <Menu size={16} />}
       </button>
 
       {open && (
-        <div id="mobile-nav-menu" className="absolute left-0 right-0 top-full z-40 border-b border-border bg-page/95 px-6 py-4 backdrop-blur-md sm:hidden">
+        <div
+          className="absolute left-0 right-0 top-full z-40 border-b border-base-300 bg-base-200/95 px-6 py-4 backdrop-blur-md sm:hidden"
+          id="mobile-nav-menu"
+        >
           <nav className="flex flex-col gap-1">
             {[
-              { label: "Features",     href: "#features"    },
-              { label: "How it works", href: "#how-it-works"},
-              { label: "For teams",    href: "#for-teams"   },
+              { label: "Features", href: "#features" },
+              { label: "How it works", href: "#how-it-works" },
+              { label: "For teams", href: "#for-teams" },
             ].map(({ label, href }) => (
               <a
-                key={href}
+                className="rounded-sm px-3 py-2.5 text-sm font-medium text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
                 href={href}
+                key={href}
                 onClick={() => setOpen(false)}
-                className="rounded-sm px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 {label}
               </a>
             ))}
-            <div className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
+            <div className="mt-2 flex flex-col gap-2 border-t border-base-300 pt-3">
               <Link
+                className="flex w-full items-center justify-center rounded-sm bg-primary py-2.5 text-sm font-semibold text-primary-content"
                 href="/auth/login"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center rounded-sm bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
               >
                 Sign in
               </Link>

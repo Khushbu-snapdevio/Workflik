@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type { AnchorRect } from "@/lib/ui/clamp-to-viewport";
+import { useAnchorPosition } from "@/lib/ui/use-anchor-position";
 import { resolveDisplayName } from "@/lib/users/display-name";
 
 interface MentionUser {
@@ -27,8 +29,19 @@ export function useMentionAutocomplete({
   const [matchStart, setMatchStart] = useState(0);
   const [items, setItems] = useState<MentionUser[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [rect, setRect] = useState<{ top: number; left: number } | null>(null);
+  const [rect, setRect] = useState<AnchorRect | null>(null);
   const requestIdRef = useRef(0);
+  // Not clamped/flipped in the original — an input near the bottom or right edge of the
+  // viewport could push this dropdown off-screen. `useAnchorPosition` fixes that for free.
+  const {
+    setFloating,
+    x: dropdownLeft,
+    y: dropdownTop,
+  } = useAnchorPosition({
+    anchorRect: rect ?? { top: 0, left: 0, right: 0, bottom: 0 },
+    placement: "bottom-start",
+    gap: 4,
+  });
 
   // Pass the input's new value (e.target.value), not getText() — that closure is still stale since
   // setText() hasn't committed yet. Only looks up to the caret so a finished "@mention" earlier doesn't re-trigger.
@@ -44,8 +57,7 @@ export function useMentionAutocomplete({
       setQuery(null);
       return;
     }
-    const r = el.getBoundingClientRect();
-    setRect({ top: r.bottom + 4, left: r.left });
+    setRect(el.getBoundingClientRect());
     setMatchStart(pos - match[1]!.length - 1);
     setQuery(match[1]!);
   }
@@ -146,12 +158,13 @@ export function useMentionAutocomplete({
     typeof document !== "undefined"
       ? createPortal(
           <div
-            className="w-56 overflow-hidden rounded-md border border-border bg-popover p-1 shadow-lg"
+            className="w-56 overflow-hidden rounded-md border border-base-300 bg-base-100 p-1 shadow-lg"
             data-comment-exempt
+            ref={setFloating}
             style={{
               position: "fixed",
-              top: rect.top,
-              left: rect.left,
+              top: dropdownTop,
+              left: dropdownLeft,
               zIndex: 500,
             }}
           >
@@ -159,8 +172,8 @@ export function useMentionAutocomplete({
               <button
                 className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors ${
                   i === activeIndex
-                    ? "bg-accent text-foreground"
-                    : "text-foreground/90 hover:bg-accent"
+                    ? "bg-base-200 text-base-content"
+                    : "text-base-content/90 hover:bg-base-200"
                 }`}
                 key={item.id}
                 onMouseDown={(e) => {
@@ -170,13 +183,14 @@ export function useMentionAutocomplete({
                 type="button"
               >
                 {item.image ? (
+                  // biome-ignore lint/performance/noImgElement: avatar src is an OAuth provider URL (Google) or a STORAGE_DRIVER CDN host, neither of which is in next.config images.remotePatterns
                   <img
                     alt=""
                     className="size-5 shrink-0 rounded-full object-cover"
                     src={item.image}
                   />
                 ) : (
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-2xs font-semibold text-muted-foreground">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-base-200 text-2xs font-semibold text-base-content/70">
                     {item.label.charAt(0).toUpperCase()}
                   </span>
                 )}

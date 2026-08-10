@@ -1,13 +1,15 @@
+import { and, isNull, or, sql } from "drizzle-orm";
 import type { Job } from "pg-boss";
-import { and, gt, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { workspaceStorageUsage } from "@/lib/db/schema";
 
-const QUOTA_BYTES     = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
+const QUOTA_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB in bytes
 const THRESHOLD_BYTES = Math.floor(QUOTA_BYTES * 0.9); // 90%
 
 // Runs daily — marks workspaces that crossed the storage threshold
-export async function handleNotifyStorageThreshold(_jobs: Job<Record<string, never>>[]) {
+export async function handleNotifyStorageThreshold(
+  _jobs: Job<Record<string, never>>[]
+) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const overThreshold = await db
@@ -18,8 +20,8 @@ export async function handleNotifyStorageThreshold(_jobs: Job<Record<string, nev
         sql`${workspaceStorageUsage.bytesUsed} >= ${THRESHOLD_BYTES}`,
         or(
           isNull(workspaceStorageUsage.thresholdNotifiedAt),
-          sql`${workspaceStorageUsage.thresholdNotifiedAt} < ${sevenDaysAgo.toISOString()}::timestamptz`,
-        ),
+          sql`${workspaceStorageUsage.thresholdNotifiedAt} < ${sevenDaysAgo.toISOString()}::timestamptz`
+        )
       )
     );
 

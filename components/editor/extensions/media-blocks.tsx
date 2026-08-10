@@ -8,10 +8,10 @@ import {
   ReactNodeViewRenderer,
 } from "@tiptap/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ImageLightbox } from "@/components/editor/comment-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ImageLightbox } from "@/components/editor/comment-card";
 import { useUpload } from "@/lib/storage/use-upload";
 
 // ── Shared URL / file picker ──────────────────────────────────────────────────
@@ -43,15 +43,14 @@ function MediaPicker({
   };
 
   return (
-    <div className="my-2 space-y-3 rounded-md border border-border bg-muted/30 p-4">
-      <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground">
+    <div className="my-2 space-y-3 rounded-md border border-base-300 bg-base-200/30 p-4">
+      <p className="flex items-center gap-2 text-xs font-semibold tracking-wide text-base-content/70">
         <span className="text-xl leading-none">{icon}</span>
         {label}
       </p>
 
       <div className="flex gap-2">
         <Input
-          // biome-ignore lint/a11y/noAutofocus: intentional — picker just opened
           autoFocus
           className="flex-1"
           onChange={(e) => setUrl(e.target.value)}
@@ -79,27 +78,27 @@ function MediaPicker({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">or</span>
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1 bg-base-300" />
+        <span className="text-xs text-base-content/70">or</span>
+        <div className="h-px flex-1 bg-base-300" />
       </div>
 
       <div className="flex gap-2">
         <Button
-          variant="outline"
           className="flex-1 border-dashed"
           onClick={() => fileRef.current?.click()}
           onMouseDown={(e) => e.preventDefault()}
           type="button"
+          variant="outline"
         >
           Choose file from device
         </Button>
         {onCancel && (
           <Button
-            variant="ghost"
             onClick={onCancel}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
+            variant="ghost"
           >
             Cancel
           </Button>
@@ -141,7 +140,7 @@ function MediaActions({
         </button>
       )}
       <button
-        className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-destructive/80"
+        className="rounded-sm bg-black/70 px-2 py-1 text-xs text-white hover:bg-error/80"
         onClick={onDelete}
         onMouseDown={(e) => e.preventDefault()}
         type="button"
@@ -220,15 +219,22 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-md border border-border bg-muted/20">
-          <img
-            alt={captionDraft || "Image"}
-            className="block w-full cursor-zoom-in"
+        <div className="relative overflow-hidden rounded-md border border-base-300 bg-base-200/20">
+          <button
+            className="block w-full"
             onClick={() => setPreviewOpen(true)}
-            onError={() => setPicking(true)}
-            src={src}
-            style={{ maxHeight: 520, objectFit: "contain" }}
-          />
+            type="button"
+          >
+            {/* biome-ignore lint/performance/noImgElement: src is an uploaded asset served from the configured STORAGE_DRIVER (local or s3/r2 CDN); that host is not in next.config images.remotePatterns */}
+            {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: onError is a browser resource-lifecycle event, not a user interaction — it falls back to the URL picker when the image cannot load. The click affordance lives on the wrapping button, which is keyboard-operable. */}
+            <img
+              alt={captionDraft || "Image"}
+              className="block w-full cursor-zoom-in"
+              onError={() => setPicking(true)}
+              src={src}
+              style={{ maxHeight: 520, objectFit: "contain" }}
+            />
+          </button>
           <MediaActions
             onAddCaption={showCaption ? undefined : addCaption}
             onChangeDirect={() => changeRef.current?.click()}
@@ -243,15 +249,15 @@ function ImageBlockView({ node, updateAttributes }: NodeViewProps) {
           />
           {previewOpen && (
             <ImageLightbox
-              src={src}
               alt={captionDraft || "Image"}
               onClose={() => setPreviewOpen(false)}
+              src={src}
             />
           )}
         </div>
         {showCaption && (
           <input
-            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
+            className="mt-1.5 w-full bg-transparent text-center text-xs text-base-content/70 outline-none placeholder:text-base-content/50"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });
@@ -322,7 +328,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-md border border-border bg-black">
+        <div className="relative overflow-hidden rounded-md border border-base-300 bg-black">
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <video
             className="block w-full"
@@ -346,7 +352,7 @@ function VideoBlockView({ node, updateAttributes }: NodeViewProps) {
         </div>
         {showCaption && (
           <input
-            className="mt-1.5 w-full bg-transparent text-center text-xs text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
+            className="mt-1.5 w-full bg-transparent text-center text-xs text-base-content/70 outline-none placeholder:text-base-content/50"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });
@@ -417,7 +423,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-2">
-        <div className="relative flex items-center gap-3 rounded-sm border border-border bg-muted/30 px-4 py-3">
+        <div className="relative flex items-center gap-3 rounded-sm border border-base-300 bg-base-200/30 px-4 py-3">
           <span className="text-2xl">🎵</span>
           {/* biome-ignore lint/a11y/useMediaCaption: caption is below */}
           <audio
@@ -429,7 +435,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
           <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             {!showCaption && (
               <button
-                className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+                className="rounded px-2 py-1 text-xs text-base-content/70 hover:bg-base-200"
                 onClick={addCaption}
                 onMouseDown={(e) => e.preventDefault()}
                 type="button"
@@ -438,7 +444,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
               </button>
             )}
             <button
-              className="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/5"
+              className="rounded px-2 py-1 text-xs text-error hover:bg-error/5"
               onClick={handleDelete}
               onMouseDown={(e) => e.preventDefault()}
               type="button"
@@ -446,7 +452,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
               Delete
             </button>
             <button
-              className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+              className="rounded px-2 py-1 text-xs text-base-content/70 hover:bg-base-200"
               onClick={() => changeRef.current?.click()}
               onMouseDown={(e) => e.preventDefault()}
               type="button"
@@ -464,7 +470,7 @@ function AudioBlockView({ node, updateAttributes }: NodeViewProps) {
         </div>
         {showCaption && (
           <input
-            className="mt-1.5 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
+            className="mt-1.5 w-full bg-transparent text-center text-sm text-base-content/70 outline-none placeholder:text-base-content/50"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });
@@ -531,26 +537,26 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
 
   return (
     <NodeViewWrapper contentEditable={false}>
-      <div className="group my-2 flex items-center justify-between rounded-sm border border-border bg-muted/30 px-4 py-3">
+      <div className="group my-2 flex items-center justify-between rounded-sm border border-base-300 bg-base-200/30 px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-2xl">📎</span>
           <div className="min-w-0">
             <a
-              className="block truncate text-sm font-medium text-foreground underline underline-offset-2 hover:text-primary"
+              className="block truncate text-sm font-medium text-base-content underline underline-offset-2 hover:text-primary"
               download
               href={src}
               onClick={(e) => e.stopPropagation()}
             >
               {captionDraft}
             </a>
-            <p className="max-w-xs truncate text-xs text-muted-foreground">
+            <p className="max-w-xs truncate text-xs text-base-content/70">
               {src}
             </p>
           </div>
         </div>
         <div className="ml-4 flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button
-            className="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/5"
+            className="rounded px-2 py-1 text-xs text-error hover:bg-error/5"
             onClick={handleDelete}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -558,7 +564,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
             Delete
           </button>
           <button
-            className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-accent"
+            className="rounded px-2 py-1 text-xs text-base-content/70 hover:bg-base-200"
             onClick={() => changeRef.current?.click()}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -575,7 +581,7 @@ function FileBlockView({ node, updateAttributes }: NodeViewProps) {
         </div>
       </div>
       <input
-        className="mt-1 w-full bg-transparent text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
+        className="mt-1 w-full bg-transparent text-center text-sm text-base-content/70 outline-none placeholder:text-base-content/50"
         onChange={(e) => {
           setCaptionDraft(e.target.value);
           updateAttributes({ caption: e.target.value });
@@ -680,7 +686,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
       return (
         <NodeViewWrapper contentEditable={false}>
           <button
-            className="my-1 flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
+            className="my-1 flex w-full items-center gap-2.5 rounded-md border border-base-300 bg-base-200/20 px-3.5 py-2.5 text-sm text-base-content/70 transition-colors hover:border-primary/40 hover:bg-base-200 hover:text-base-content"
             onClick={() => setExpanded(true)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -693,9 +699,12 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
     }
     return (
       <NodeViewWrapper contentEditable={false}>
-        <div className="relative my-1 flex flex-col items-center gap-2" ref={popupRef}>
+        <div
+          className="relative my-1 flex flex-col items-center gap-2"
+          ref={popupRef}
+        >
           <button
-            className="flex w-full items-center gap-2.5 rounded-md border border-border bg-muted/20 px-3.5 py-2.5 text-sm text-muted-foreground"
+            className="flex w-full items-center gap-2.5 rounded-md border border-base-300 bg-base-200/20 px-3.5 py-2.5 text-sm text-base-content/70"
             onClick={() => setExpanded(false)}
             onMouseDown={(e) => e.preventDefault()}
             type="button"
@@ -703,7 +712,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
             <span className="text-lg leading-none">📕</span>
             Embed a PDF
           </button>
-          <div className="w-full max-w-sm rounded-md border border-border bg-popover p-4">
+          <div className="w-full max-w-sm rounded-md border border-base-300 bg-base-100 p-4">
             <Tabs defaultValue="upload">
               <TabsList className="w-full" variant="line">
                 <TabsTrigger value="upload">Upload</TabsTrigger>
@@ -722,7 +731,6 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
               </TabsContent>
               <TabsContent className="mt-3 space-y-2" value="link">
                 <Input
-                  // biome-ignore lint/a11y/noAutofocus: intentional — tab just opened
                   autoFocus
                   onChange={(e) => setLinkUrl(e.target.value)}
                   onKeyDown={(e) => {
@@ -743,12 +751,12 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
                 >
                   Embed PDF
                 </Button>
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-xs text-base-content/70">
                   Embed a PDF file
                 </p>
               </TabsContent>
             </Tabs>
-            {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+            {error && <p className="mt-2 text-xs text-error">{error}</p>}
           </div>
           <input
             accept="application/pdf"
@@ -765,7 +773,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
   return (
     <NodeViewWrapper contentEditable={false}>
       <figure className="group my-3">
-        <div className="relative overflow-hidden rounded-md border border-border bg-muted/20">
+        <div className="relative overflow-hidden rounded-md border border-base-300 bg-base-200/20">
           <iframe
             className="block w-full"
             src={src}
@@ -786,7 +794,7 @@ function PdfBlockView({ node, updateAttributes, extension }: NodeViewProps) {
         </div>
         <div className="mt-1.5 flex items-center justify-center gap-2">
           <input
-            className="max-w-xs bg-transparent text-center text-xs text-muted-foreground outline-none placeholder:text-muted-foreground-subtle"
+            className="max-w-xs bg-transparent text-center text-xs text-base-content/70 outline-none placeholder:text-base-content/50"
             onChange={(e) => {
               setCaptionDraft(e.target.value);
               updateAttributes({ caption: e.target.value });

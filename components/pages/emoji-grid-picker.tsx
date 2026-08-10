@@ -1,20 +1,25 @@
 "use client";
 
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
+import { Clock, Search, Shuffle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
-import { Search, Shuffle, Clock } from "lucide-react";
-import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
-import { emojiMatches } from "@/lib/emoji-search";
-import { flagIconCode } from "@/lib/emoji-flags";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { flagIconCode } from "@/lib/emoji-flags";
+import { emojiMatches } from "@/lib/emoji-search";
 
 // ── Emoji categories (Notion-standard 8 categories) ──────────────────────────
 // Extracted out of IconPicker so the same searchable, categorized emoji grid
 // (search + recent + skin tone + category shortcut bar) can be reused
 // anywhere an emoji needs picking — page icons and comment reactions alike.
 
-type EmojiCategory = { id: string; label: string; icon: string; emojis: string[] };
+type EmojiCategory = {
+  id: string;
+  label: string;
+  icon: string;
+  emojis: string[];
+};
 
 const EMOJI_CATEGORIES: EmojiCategory[] = [
   {
@@ -22,18 +27,185 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Smileys & People",
     icon: "😀",
     emojis: [
-      "😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","😉","😊","😇","🥰","😍",
-      "🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫",
-      "🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","🤥","😌","😔","😪","🤤",
-      "😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","🤯","🤠","🥸","😎",
-      "🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😦","😧","😨","😰",
-      "😥","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬",
-      "😈","👿","💀","☠️","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹",
-      "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉",
-      "👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝",
-      "🙏","💅","🤳","💪","🦵","🦶","👂","🦻","👃","🦷","🦴","👀","👁️","👅","💋",
-      "💌","💘","💝","💖","💗","💓","💞","💕","❣️","❤️","🧡","💛","💚","💙","💜",
-      "🖤","🤍","🤎","💔","❤️‍🔥","❤️‍🩹","💯","💢","💥","💫","💦","💨","🕳️","💬",
+      "😀",
+      "😃",
+      "😄",
+      "😁",
+      "😆",
+      "😅",
+      "🤣",
+      "😂",
+      "🙂",
+      "🙃",
+      "😉",
+      "😊",
+      "😇",
+      "🥰",
+      "😍",
+      "🤩",
+      "😘",
+      "😗",
+      "😚",
+      "😙",
+      "🥲",
+      "😋",
+      "😛",
+      "😜",
+      "🤪",
+      "😝",
+      "🤑",
+      "🤗",
+      "🤭",
+      "🤫",
+      "🤔",
+      "🤐",
+      "🤨",
+      "😐",
+      "😑",
+      "😶",
+      "😏",
+      "😒",
+      "🙄",
+      "😬",
+      "🤥",
+      "😌",
+      "😔",
+      "😪",
+      "🤤",
+      "😴",
+      "😷",
+      "🤒",
+      "🤕",
+      "🤢",
+      "🤮",
+      "🤧",
+      "🥵",
+      "🥶",
+      "🥴",
+      "😵",
+      "🤯",
+      "🤠",
+      "🥸",
+      "😎",
+      "🤓",
+      "🧐",
+      "😕",
+      "😟",
+      "🙁",
+      "☹️",
+      "😮",
+      "😯",
+      "😲",
+      "😳",
+      "🥺",
+      "😦",
+      "😧",
+      "😨",
+      "😰",
+      "😥",
+      "😢",
+      "😭",
+      "😱",
+      "😖",
+      "😣",
+      "😞",
+      "😓",
+      "😩",
+      "😫",
+      "🥱",
+      "😤",
+      "😡",
+      "😠",
+      "🤬",
+      "😈",
+      "👿",
+      "💀",
+      "☠️",
+      "💩",
+      "🤡",
+      "👹",
+      "👺",
+      "👻",
+      "👽",
+      "👾",
+      "🤖",
+      "😺",
+      "😸",
+      "😹",
+      "👋",
+      "🤚",
+      "🖐️",
+      "✋",
+      "🖖",
+      "👌",
+      "🤌",
+      "🤏",
+      "✌️",
+      "🤞",
+      "🤟",
+      "🤘",
+      "🤙",
+      "👈",
+      "👉",
+      "👆",
+      "🖕",
+      "👇",
+      "☝️",
+      "👍",
+      "👎",
+      "✊",
+      "👊",
+      "🤛",
+      "🤜",
+      "👏",
+      "🙌",
+      "👐",
+      "🤲",
+      "🤝",
+      "🙏",
+      "💅",
+      "🤳",
+      "💪",
+      "🦵",
+      "🦶",
+      "👂",
+      "🦻",
+      "👃",
+      "🦷",
+      "🦴",
+      "👀",
+      "👁️",
+      "👅",
+      "💋",
+      "💌",
+      "💘",
+      "💝",
+      "💖",
+      "💗",
+      "💓",
+      "💞",
+      "💕",
+      "❣️",
+      "❤️",
+      "🧡",
+      "💛",
+      "💚",
+      "💙",
+      "💜",
+      "🖤",
+      "🤍",
+      "🤎",
+      "💔",
+      "❤️‍🔥",
+      "❤️‍🩹",
+      "💯",
+      "💢",
+      "💥",
+      "💫",
+      "💦",
+      "💨",
+      "🕳️",
+      "💬",
     ],
   },
   {
@@ -41,15 +213,141 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Animals & Nature",
     icon: "🐶",
     emojis: [
-      "🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐻‍❄️","🐨","🐯","🦁","🐮","🐷","🐸",
-      "🐵","🙈","🙉","🙊","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴",
-      "🦄","🐝","🐛","🦋","🐌","🐞","🐜","🦟","🦗","🕷️","🦂","🐢","🐍","🦎","🦖",
-      "🦕","🐙","🦑","🦐","🦞","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅",
-      "🐆","🦓","🦍","🦧","🦣","🐘","🦛","🦏","🐪","🐫","🦒","🦘","🦬","🐃","🐂",
-      "🌵","🎄","🌲","🌳","🌴","🪵","🌱","🌿","☘️","🍀","🎍","🪴","🎋","🍃","🍂",
-      "🍁","🍄","🌾","💐","🌷","🌹","🥀","🌺","🌸","🌼","🌻","🌞","🌝","🌛","🌜",
-      "🌚","🌕","🌖","🌗","🌘","🌑","🌒","🌓","🌔","🌙","🌟","⭐","🌠","🌌","☀️",
-      "🌤️","⛅","🌥️","☁️","🌦️","🌧️","⛈️","🌩️","🌨️","❄️","☃️","⛄","🌬️","💨","🌪️",
+      "🐶",
+      "🐱",
+      "🐭",
+      "🐹",
+      "🐰",
+      "🦊",
+      "🐻",
+      "🐼",
+      "🐻‍❄️",
+      "🐨",
+      "🐯",
+      "🦁",
+      "🐮",
+      "🐷",
+      "🐸",
+      "🐵",
+      "🙈",
+      "🙉",
+      "🙊",
+      "🐔",
+      "🐧",
+      "🐦",
+      "🐤",
+      "🦆",
+      "🦅",
+      "🦉",
+      "🦇",
+      "🐺",
+      "🐗",
+      "🐴",
+      "🦄",
+      "🐝",
+      "🐛",
+      "🦋",
+      "🐌",
+      "🐞",
+      "🐜",
+      "🦟",
+      "🦗",
+      "🕷️",
+      "🦂",
+      "🐢",
+      "🐍",
+      "🦎",
+      "🦖",
+      "🦕",
+      "🐙",
+      "🦑",
+      "🦐",
+      "🦞",
+      "🦀",
+      "🐡",
+      "🐠",
+      "🐟",
+      "🐬",
+      "🐳",
+      "🐋",
+      "🦈",
+      "🐊",
+      "🐅",
+      "🐆",
+      "🦓",
+      "🦍",
+      "🦧",
+      "🦣",
+      "🐘",
+      "🦛",
+      "🦏",
+      "🐪",
+      "🐫",
+      "🦒",
+      "🦘",
+      "🦬",
+      "🐃",
+      "🐂",
+      "🌵",
+      "🎄",
+      "🌲",
+      "🌳",
+      "🌴",
+      "🪵",
+      "🌱",
+      "🌿",
+      "☘️",
+      "🍀",
+      "🎍",
+      "🪴",
+      "🎋",
+      "🍃",
+      "🍂",
+      "🍁",
+      "🍄",
+      "🌾",
+      "💐",
+      "🌷",
+      "🌹",
+      "🥀",
+      "🌺",
+      "🌸",
+      "🌼",
+      "🌻",
+      "🌞",
+      "🌝",
+      "🌛",
+      "🌜",
+      "🌚",
+      "🌕",
+      "🌖",
+      "🌗",
+      "🌘",
+      "🌑",
+      "🌒",
+      "🌓",
+      "🌔",
+      "🌙",
+      "🌟",
+      "⭐",
+      "🌠",
+      "🌌",
+      "☀️",
+      "🌤️",
+      "⛅",
+      "🌥️",
+      "☁️",
+      "🌦️",
+      "🌧️",
+      "⛈️",
+      "🌩️",
+      "🌨️",
+      "❄️",
+      "☃️",
+      "⛄",
+      "🌬️",
+      "💨",
+      "🌪️",
     ],
   },
   {
@@ -57,14 +355,126 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Food & Drink",
     icon: "🍕",
     emojis: [
-      "🍎","🍐","🍊","🍋","🍌","🍉","🍇","🍓","🫐","🍈","🍒","🍑","🥭","🍍","🥥",
-      "🥝","🍅","🫒","🍆","🥑","🥦","🥬","🥒","🌶️","🫑","🧄","🧅","🥔","🍠","🥐",
-      "🥯","🍞","🥖","🫓","🧀","🥚","🍳","🧈","🥞","🧇","🥓","🥩","🍗","🍖","🦴",
-      "🌭","🍔","🍟","🍕","🫔","🌮","🌯","🥙","🧆","🥚","🍿","🧂","🥫","🍱","🍘",
-      "🍙","🍚","🍛","🍜","🍝","🍠","🍢","🍣","🍤","🍥","🥮","🍡","🥟","🥠","🥡",
-      "🦀","🦞","🦐","🦑","🦪","🍦","🍧","🍨","🍩","🍪","🎂","🍰","🧁","🥧","🍫",
-      "🍬","🍭","🍮","🍯","🍼","🥛","☕","🫖","🍵","🧃","🥤","🧋","🍶","🍺","🍻",
-      "🥂","🍷","🥃","🍸","🍹","🧉","🍾","🧊","🥄","🍴","🍽️","🥢","🫙","🧂","🫕",
+      "🍎",
+      "🍐",
+      "🍊",
+      "🍋",
+      "🍌",
+      "🍉",
+      "🍇",
+      "🍓",
+      "🫐",
+      "🍈",
+      "🍒",
+      "🍑",
+      "🥭",
+      "🍍",
+      "🥥",
+      "🥝",
+      "🍅",
+      "🫒",
+      "🍆",
+      "🥑",
+      "🥦",
+      "🥬",
+      "🥒",
+      "🌶️",
+      "🫑",
+      "🧄",
+      "🧅",
+      "🥔",
+      "🍠",
+      "🥐",
+      "🥯",
+      "🍞",
+      "🥖",
+      "🫓",
+      "🧀",
+      "🥚",
+      "🍳",
+      "🧈",
+      "🥞",
+      "🧇",
+      "🥓",
+      "🥩",
+      "🍗",
+      "🍖",
+      "🦴",
+      "🌭",
+      "🍔",
+      "🍟",
+      "🍕",
+      "🫔",
+      "🌮",
+      "🌯",
+      "🥙",
+      "🧆",
+      "🥚",
+      "🍿",
+      "🧂",
+      "🥫",
+      "🍱",
+      "🍘",
+      "🍙",
+      "🍚",
+      "🍛",
+      "🍜",
+      "🍝",
+      "🍠",
+      "🍢",
+      "🍣",
+      "🍤",
+      "🍥",
+      "🥮",
+      "🍡",
+      "🥟",
+      "🥠",
+      "🥡",
+      "🦀",
+      "🦞",
+      "🦐",
+      "🦑",
+      "🦪",
+      "🍦",
+      "🍧",
+      "🍨",
+      "🍩",
+      "🍪",
+      "🎂",
+      "🍰",
+      "🧁",
+      "🥧",
+      "🍫",
+      "🍬",
+      "🍭",
+      "🍮",
+      "🍯",
+      "🍼",
+      "🥛",
+      "☕",
+      "🫖",
+      "🍵",
+      "🧃",
+      "🥤",
+      "🧋",
+      "🍶",
+      "🍺",
+      "🍻",
+      "🥂",
+      "🍷",
+      "🥃",
+      "🍸",
+      "🍹",
+      "🧉",
+      "🍾",
+      "🧊",
+      "🥄",
+      "🍴",
+      "🍽️",
+      "🥢",
+      "🫙",
+      "🧂",
+      "🫕",
     ],
   },
   {
@@ -72,12 +482,96 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Activity",
     icon: "⚽",
     emojis: [
-      "⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🪀","🏓","🏸","🏒","🥍",
-      "🏑","🪃","🥅","⛳","🪁","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🪃","🎱","🎮",
-      "🕹️","🎲","🧩","🧸","🪅","🎭","🎨","🖼️","🎪","🤹","🎠","🎡","🎢","🎟️","🎫",
-      "🏆","🥇","🥈","🥉","🏅","🎖️","🏵️","🎗️","🎀","🎁","🎊","🎉","🎋","🎍","🎎",
-      "🎏","🎐","🧧","🎆","🎇","🧨","🎴","🀄","🃏","🎰","🎳","🎻","🎸","🎹","🥁",
-      "🎷","🎺","🪗","🎙️","🎚️","🎛️","📻","🎤","🎧","📢","📣","🔔","🔕","🎵","🎶",
+      "⚽",
+      "🏀",
+      "🏈",
+      "⚾",
+      "🥎",
+      "🎾",
+      "🏐",
+      "🏉",
+      "🥏",
+      "🎱",
+      "🪀",
+      "🏓",
+      "🏸",
+      "🏒",
+      "🥍",
+      "🏑",
+      "🪃",
+      "🥅",
+      "⛳",
+      "🪁",
+      "🎣",
+      "🤿",
+      "🎽",
+      "🎿",
+      "🛷",
+      "🥌",
+      "🎯",
+      "🪃",
+      "🎱",
+      "🎮",
+      "🕹️",
+      "🎲",
+      "🧩",
+      "🧸",
+      "🪅",
+      "🎭",
+      "🎨",
+      "🖼️",
+      "🎪",
+      "🤹",
+      "🎠",
+      "🎡",
+      "🎢",
+      "🎟️",
+      "🎫",
+      "🏆",
+      "🥇",
+      "🥈",
+      "🥉",
+      "🏅",
+      "🎖️",
+      "🏵️",
+      "🎗️",
+      "🎀",
+      "🎁",
+      "🎊",
+      "🎉",
+      "🎋",
+      "🎍",
+      "🎎",
+      "🎏",
+      "🎐",
+      "🧧",
+      "🎆",
+      "🎇",
+      "🧨",
+      "🎴",
+      "🀄",
+      "🃏",
+      "🎰",
+      "🎳",
+      "🎻",
+      "🎸",
+      "🎹",
+      "🥁",
+      "🎷",
+      "🎺",
+      "🪗",
+      "🎙️",
+      "🎚️",
+      "🎛️",
+      "📻",
+      "🎤",
+      "🎧",
+      "📢",
+      "📣",
+      "🔔",
+      "🔕",
+      "🎵",
+      "🎶",
     ],
   },
   {
@@ -85,14 +579,126 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Travel & Places",
     icon: "✈️",
     emojis: [
-      "🚗","🚕","🚙","🚌","🚎","🏎️","🚓","🚑","🚒","🚐","🛻","🚚","🚛","🚜","🏍️",
-      "🛵","🚲","🛴","🛺","🚨","🚔","🚍","🚘","🚖","🚡","🚠","🚟","🚃","🚋","🚞",
-      "🚝","🚄","🚅","🚈","🚂","🚆","🚇","🚊","🚉","✈️","🛫","🛬","🛩️","💺","🛰️",
-      "🚀","🛸","🚁","🛶","⛵","🚤","🛥️","🛳️","⛴️","🚢","🗺️","🧭","🏔️","⛰️","🌋",
-      "🗻","🏕️","🏖️","🏜️","🏝️","🏞️","🏟️","🏛️","🏗️","🧱","🏘️","🏚️","🏠","🏡","🏢",
-      "🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽",
-      "⛪","🕌","🛕","🕍","⛩️","🕋","⛲","⛺","🌁","🌃","🏙️","🌄","🌅","🌆","🌇",
-      "🌉","🌌","🌠","🎇","🎆","🎑","🗾","🏔️","🌐","🗺️","🧳","☂️","⛱️","🎡","🎢",
+      "🚗",
+      "🚕",
+      "🚙",
+      "🚌",
+      "🚎",
+      "🏎️",
+      "🚓",
+      "🚑",
+      "🚒",
+      "🚐",
+      "🛻",
+      "🚚",
+      "🚛",
+      "🚜",
+      "🏍️",
+      "🛵",
+      "🚲",
+      "🛴",
+      "🛺",
+      "🚨",
+      "🚔",
+      "🚍",
+      "🚘",
+      "🚖",
+      "🚡",
+      "🚠",
+      "🚟",
+      "🚃",
+      "🚋",
+      "🚞",
+      "🚝",
+      "🚄",
+      "🚅",
+      "🚈",
+      "🚂",
+      "🚆",
+      "🚇",
+      "🚊",
+      "🚉",
+      "✈️",
+      "🛫",
+      "🛬",
+      "🛩️",
+      "💺",
+      "🛰️",
+      "🚀",
+      "🛸",
+      "🚁",
+      "🛶",
+      "⛵",
+      "🚤",
+      "🛥️",
+      "🛳️",
+      "⛴️",
+      "🚢",
+      "🗺️",
+      "🧭",
+      "🏔️",
+      "⛰️",
+      "🌋",
+      "🗻",
+      "🏕️",
+      "🏖️",
+      "🏜️",
+      "🏝️",
+      "🏞️",
+      "🏟️",
+      "🏛️",
+      "🏗️",
+      "🧱",
+      "🏘️",
+      "🏚️",
+      "🏠",
+      "🏡",
+      "🏢",
+      "🏣",
+      "🏤",
+      "🏥",
+      "🏦",
+      "🏨",
+      "🏩",
+      "🏪",
+      "🏫",
+      "🏬",
+      "🏭",
+      "🏯",
+      "🏰",
+      "💒",
+      "🗼",
+      "🗽",
+      "⛪",
+      "🕌",
+      "🛕",
+      "🕍",
+      "⛩️",
+      "🕋",
+      "⛲",
+      "⛺",
+      "🌁",
+      "🌃",
+      "🏙️",
+      "🌄",
+      "🌅",
+      "🌆",
+      "🌇",
+      "🌉",
+      "🌌",
+      "🌠",
+      "🎇",
+      "🎆",
+      "🎑",
+      "🗾",
+      "🏔️",
+      "🌐",
+      "🗺️",
+      "🧳",
+      "☂️",
+      "⛱️",
+      "🎡",
+      "🎢",
     ],
   },
   {
@@ -100,15 +706,141 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Objects",
     icon: "💡",
     emojis: [
-      "💡","🔦","🕯️","🪔","💰","💴","💵","💶","💷","💸","💳","🪙","💹","📈","📉",
-      "📊","📋","📌","📍","📎","🖇️","📏","📐","✂️","🗃️","🗄️","🗑️","🔒","🔓","🔏",
-      "🔐","🔑","🗝️","🔨","🪓","⛏️","⚒️","🛠️","🗡️","⚔️","🛡️","🪚","🔧","🪛","🔩",
-      "⚙️","🗜️","🔗","⛓️","🪝","🧲","🪜","⚖️","🦯","🔭","🔬","🩺","💊","🩹","🩻",
-      "🧬","🦠","🧪","🧫","🧲","🪄","🔮","🧿","🪬","🧸","🪆","🪅","🎭","🎨","🖼️",
-      "📷","📸","📹","🎥","📽️","🎞️","📞","☎️","📟","📠","📺","📻","🧭","⏱️","⏰",
-      "🕰️","📡","🔋","🔌","💻","🖥️","🖨️","⌨️","🖱️","💾","💿","📀","📱","📲","☎️",
-      "📔","📒","📓","📕","📗","📘","📙","📚","📖","🔖","🏷️","📝","✏️","✒️","🖊️",
-      "🖋️","🖌️","📮","📯","📦","📫","📪","📬","📭","📮","🗳️","🗂️","📁","📂","🗃️",
+      "💡",
+      "🔦",
+      "🕯️",
+      "🪔",
+      "💰",
+      "💴",
+      "💵",
+      "💶",
+      "💷",
+      "💸",
+      "💳",
+      "🪙",
+      "💹",
+      "📈",
+      "📉",
+      "📊",
+      "📋",
+      "📌",
+      "📍",
+      "📎",
+      "🖇️",
+      "📏",
+      "📐",
+      "✂️",
+      "🗃️",
+      "🗄️",
+      "🗑️",
+      "🔒",
+      "🔓",
+      "🔏",
+      "🔐",
+      "🔑",
+      "🗝️",
+      "🔨",
+      "🪓",
+      "⛏️",
+      "⚒️",
+      "🛠️",
+      "🗡️",
+      "⚔️",
+      "🛡️",
+      "🪚",
+      "🔧",
+      "🪛",
+      "🔩",
+      "⚙️",
+      "🗜️",
+      "🔗",
+      "⛓️",
+      "🪝",
+      "🧲",
+      "🪜",
+      "⚖️",
+      "🦯",
+      "🔭",
+      "🔬",
+      "🩺",
+      "💊",
+      "🩹",
+      "🩻",
+      "🧬",
+      "🦠",
+      "🧪",
+      "🧫",
+      "🧲",
+      "🪄",
+      "🔮",
+      "🧿",
+      "🪬",
+      "🧸",
+      "🪆",
+      "🪅",
+      "🎭",
+      "🎨",
+      "🖼️",
+      "📷",
+      "📸",
+      "📹",
+      "🎥",
+      "📽️",
+      "🎞️",
+      "📞",
+      "☎️",
+      "📟",
+      "📠",
+      "📺",
+      "📻",
+      "🧭",
+      "⏱️",
+      "⏰",
+      "🕰️",
+      "📡",
+      "🔋",
+      "🔌",
+      "💻",
+      "🖥️",
+      "🖨️",
+      "⌨️",
+      "🖱️",
+      "💾",
+      "💿",
+      "📀",
+      "📱",
+      "📲",
+      "☎️",
+      "📔",
+      "📒",
+      "📓",
+      "📕",
+      "📗",
+      "📘",
+      "📙",
+      "📚",
+      "📖",
+      "🔖",
+      "🏷️",
+      "📝",
+      "✏️",
+      "✒️",
+      "🖊️",
+      "🖋️",
+      "🖌️",
+      "📮",
+      "📯",
+      "📦",
+      "📫",
+      "📪",
+      "📬",
+      "📭",
+      "📮",
+      "🗳️",
+      "🗂️",
+      "📁",
+      "📂",
+      "🗃️",
     ],
   },
   {
@@ -116,17 +848,171 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Symbols",
     icon: "❤️",
     emojis: [
-      "❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","❤️‍🔥","❤️‍🩹","💔","❣️","💕","💞",
-      "💓","💗","💖","💝","💘","💟","☮️","✝️","☪️","🕉️","☸️","🔯","🪯","✡️","☦️",
-      "🛐","⛎","♈","♉","♊","♋","♌","♍","♎","♏","♐","♑","♒","♓","🆔",
-      "⚛️","🈴","🈳","🈺","🈵","🈹","🈲","🅰️","🅱️","🆎","🆑","🅾️","🆘","❌","⭕",
-      "🛑","⛔","📛","🚫","💯","💢","♨️","🚷","🚯","🚳","🚱","🔞","📵","🔕","🔇",
-      "🔈","🔉","🔊","📯","🔔","🔕","🎵","🎶","⚠️","🚸","🔱","⚜️","🔰","♻️","✅",
-      "🈶","🈚","🈸","🈺","🈷️","✴️","🆚","💮","🉐","㊙️","㊗️","🈴","🈵","🈹","🈲",
-      "⁉️","🔟","💹","❇️","✳️","❎","🌐","💠","Ⓜ️","🌀","💤","🏧","🚾","♿","🅿️",
-      "🛗","🈳","🚰","🚹","🚺","🚻","🚼","🚽","🚿","🛁","🛒","🔃","🔄","🔙","🔚",
-      "🔛","🔜","🔝","⏫","⬆️","↗️","➡️","↘️","⬇️","↙️","⬅️","↖️","↕️","↔️","↩️",
-      "1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","0️⃣","#️⃣","*️⃣","▶️","⏸️","⏹️",
+      "❤️",
+      "🧡",
+      "💛",
+      "💚",
+      "💙",
+      "💜",
+      "🖤",
+      "🤍",
+      "🤎",
+      "❤️‍🔥",
+      "❤️‍🩹",
+      "💔",
+      "❣️",
+      "💕",
+      "💞",
+      "💓",
+      "💗",
+      "💖",
+      "💝",
+      "💘",
+      "💟",
+      "☮️",
+      "✝️",
+      "☪️",
+      "🕉️",
+      "☸️",
+      "🔯",
+      "🪯",
+      "✡️",
+      "☦️",
+      "🛐",
+      "⛎",
+      "♈",
+      "♉",
+      "♊",
+      "♋",
+      "♌",
+      "♍",
+      "♎",
+      "♏",
+      "♐",
+      "♑",
+      "♒",
+      "♓",
+      "🆔",
+      "⚛️",
+      "🈴",
+      "🈳",
+      "🈺",
+      "🈵",
+      "🈹",
+      "🈲",
+      "🅰️",
+      "🅱️",
+      "🆎",
+      "🆑",
+      "🅾️",
+      "🆘",
+      "❌",
+      "⭕",
+      "🛑",
+      "⛔",
+      "📛",
+      "🚫",
+      "💯",
+      "💢",
+      "♨️",
+      "🚷",
+      "🚯",
+      "🚳",
+      "🚱",
+      "🔞",
+      "📵",
+      "🔕",
+      "🔇",
+      "🔈",
+      "🔉",
+      "🔊",
+      "📯",
+      "🔔",
+      "🔕",
+      "🎵",
+      "🎶",
+      "⚠️",
+      "🚸",
+      "🔱",
+      "⚜️",
+      "🔰",
+      "♻️",
+      "✅",
+      "🈶",
+      "🈚",
+      "🈸",
+      "🈺",
+      "🈷️",
+      "✴️",
+      "🆚",
+      "💮",
+      "🉐",
+      "㊙️",
+      "㊗️",
+      "🈴",
+      "🈵",
+      "🈹",
+      "🈲",
+      "⁉️",
+      "🔟",
+      "💹",
+      "❇️",
+      "✳️",
+      "❎",
+      "🌐",
+      "💠",
+      "Ⓜ️",
+      "🌀",
+      "💤",
+      "🏧",
+      "🚾",
+      "♿",
+      "🅿️",
+      "🛗",
+      "🈳",
+      "🚰",
+      "🚹",
+      "🚺",
+      "🚻",
+      "🚼",
+      "🚽",
+      "🚿",
+      "🛁",
+      "🛒",
+      "🔃",
+      "🔄",
+      "🔙",
+      "🔚",
+      "🔛",
+      "🔜",
+      "🔝",
+      "⏫",
+      "⬆️",
+      "↗️",
+      "➡️",
+      "↘️",
+      "⬇️",
+      "↙️",
+      "⬅️",
+      "↖️",
+      "↕️",
+      "↔️",
+      "↩️",
+      "1️⃣",
+      "2️⃣",
+      "3️⃣",
+      "4️⃣",
+      "5️⃣",
+      "6️⃣",
+      "7️⃣",
+      "8️⃣",
+      "9️⃣",
+      "0️⃣",
+      "#️⃣",
+      "*️⃣",
+      "▶️",
+      "⏸️",
+      "⏹️",
     ],
   },
   {
@@ -134,20 +1020,209 @@ const EMOJI_CATEGORIES: EmojiCategory[] = [
     label: "Flags",
     icon: "🏳️",
     emojis: [
-      "🏳️","🏴","🏁","🚩","🏳️‍🌈","🏳️‍⚧️","🏴‍☠️","🇺🇳",
-      "🇦🇫","🇦🇱","🇩🇿","🇦🇩","🇦🇴","🇦🇬","🇦🇷","🇦🇲","🇦🇺","🇦🇹","🇦🇿","🇧🇸","🇧🇭","🇧🇩","🇧🇧",
-      "🇧🇾","🇧🇪","🇧🇿","🇧🇯","🇧🇹","🇧🇴","🇧🇦","🇧🇼","🇧🇷","🇧🇳","🇧🇬","🇧🇫","🇧🇮","🇨🇻","🇰🇭",
-      "🇨🇲","🇨🇦","🇨🇫","🇹🇩","🇨🇱","🇨🇳","🇨🇴","🇰🇲","🇨🇬","🇨🇩","🇨🇷","🇨🇮","🇭🇷","🇨🇺","🇨🇾",
-      "🇨🇿","🇩🇰","🇩🇯","🇩🇲","🇩🇴","🇪🇨","🇪🇬","🇸🇻","🇬🇶","🇪🇷","🇪🇪","🇸🇿","🇪🇹","🇫🇯","🇫🇮",
-      "🇫🇷","🇬🇦","🇬🇲","🇬🇪","🇩🇪","🇬🇭","🇬🇷","🇬🇩","🇬🇹","🇬🇳","🇬🇼","🇬🇾","🇭🇹","🇭🇳","🇭🇺",
-      "🇮🇸","🇮🇳","🇮🇩","🇮🇷","🇮🇶","🇮🇪","🇮🇱","🇮🇹","🇯🇲","🇯🇵","🇯🇴","🇰🇿","🇰🇪","🇰🇮","🇽🇰",
-      "🇰🇼","🇰🇬","🇱🇦","🇱🇻","🇱🇧","🇱🇸","🇱🇷","🇱🇾","🇱🇮","🇱🇹","🇱🇺","🇲🇬","🇲🇼","🇲🇾","🇲🇻",
-      "🇲🇱","🇲🇹","🇲🇭","🇲🇷","🇲🇺","🇲🇽","🇫🇲","🇲🇩","🇲🇨","🇲🇳","🇲🇪","🇲🇦","🇲🇿","🇲🇲","🇳🇦",
-      "🇳🇷","🇳🇵","🇳🇱","🇳🇿","🇳🇮","🇳🇪","🇳🇬","🇳🇴","🇴🇲","🇵🇰","🇵🇼","🇵🇸","🇵🇦","🇵🇬","🇵🇾",
-      "🇵🇪","🇵🇭","🇵🇱","🇵🇹","🇶🇦","🇷🇴","🇷🇺","🇷🇼","🇰🇳","🇱🇨","🇻🇨","🇼🇸","🇸🇲","🇸🇹","🇸🇦",
-      "🇸🇳","🇷🇸","🇸🇨","🇸🇱","🇸🇬","🇸🇰","🇸🇮","🇸🇧","🇸🇴","🇿🇦","🇸🇸","🇪🇸","🇱🇰","🇸🇩","🇸🇷",
-      "🇸🇪","🇨🇭","🇸🇾","🇹🇼","🇹🇯","🇹🇿","🇹🇭","🇹🇱","🇹🇬","🇹🇴","🇹🇹","🇹🇳","🇹🇷","🇹🇲","🇺🇬",
-      "🇺🇦","🇦🇪","🇬🇧","🇺🇸","🇺🇾","🇺🇿","🇻🇺","🇻🇪","🇻🇳","🇾🇪","🇿🇲","🇿🇼","🏴󠁧󠁢󠁥󠁮󠁧󠁿","🏴󠁧󠁢󠁳󠁣󠁴󠁿","🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+      "🏳️",
+      "🏴",
+      "🏁",
+      "🚩",
+      "🏳️‍🌈",
+      "🏳️‍⚧️",
+      "🏴‍☠️",
+      "🇺🇳",
+      "🇦🇫",
+      "🇦🇱",
+      "🇩🇿",
+      "🇦🇩",
+      "🇦🇴",
+      "🇦🇬",
+      "🇦🇷",
+      "🇦🇲",
+      "🇦🇺",
+      "🇦🇹",
+      "🇦🇿",
+      "🇧🇸",
+      "🇧🇭",
+      "🇧🇩",
+      "🇧🇧",
+      "🇧🇾",
+      "🇧🇪",
+      "🇧🇿",
+      "🇧🇯",
+      "🇧🇹",
+      "🇧🇴",
+      "🇧🇦",
+      "🇧🇼",
+      "🇧🇷",
+      "🇧🇳",
+      "🇧🇬",
+      "🇧🇫",
+      "🇧🇮",
+      "🇨🇻",
+      "🇰🇭",
+      "🇨🇲",
+      "🇨🇦",
+      "🇨🇫",
+      "🇹🇩",
+      "🇨🇱",
+      "🇨🇳",
+      "🇨🇴",
+      "🇰🇲",
+      "🇨🇬",
+      "🇨🇩",
+      "🇨🇷",
+      "🇨🇮",
+      "🇭🇷",
+      "🇨🇺",
+      "🇨🇾",
+      "🇨🇿",
+      "🇩🇰",
+      "🇩🇯",
+      "🇩🇲",
+      "🇩🇴",
+      "🇪🇨",
+      "🇪🇬",
+      "🇸🇻",
+      "🇬🇶",
+      "🇪🇷",
+      "🇪🇪",
+      "🇸🇿",
+      "🇪🇹",
+      "🇫🇯",
+      "🇫🇮",
+      "🇫🇷",
+      "🇬🇦",
+      "🇬🇲",
+      "🇬🇪",
+      "🇩🇪",
+      "🇬🇭",
+      "🇬🇷",
+      "🇬🇩",
+      "🇬🇹",
+      "🇬🇳",
+      "🇬🇼",
+      "🇬🇾",
+      "🇭🇹",
+      "🇭🇳",
+      "🇭🇺",
+      "🇮🇸",
+      "🇮🇳",
+      "🇮🇩",
+      "🇮🇷",
+      "🇮🇶",
+      "🇮🇪",
+      "🇮🇱",
+      "🇮🇹",
+      "🇯🇲",
+      "🇯🇵",
+      "🇯🇴",
+      "🇰🇿",
+      "🇰🇪",
+      "🇰🇮",
+      "🇽🇰",
+      "🇰🇼",
+      "🇰🇬",
+      "🇱🇦",
+      "🇱🇻",
+      "🇱🇧",
+      "🇱🇸",
+      "🇱🇷",
+      "🇱🇾",
+      "🇱🇮",
+      "🇱🇹",
+      "🇱🇺",
+      "🇲🇬",
+      "🇲🇼",
+      "🇲🇾",
+      "🇲🇻",
+      "🇲🇱",
+      "🇲🇹",
+      "🇲🇭",
+      "🇲🇷",
+      "🇲🇺",
+      "🇲🇽",
+      "🇫🇲",
+      "🇲🇩",
+      "🇲🇨",
+      "🇲🇳",
+      "🇲🇪",
+      "🇲🇦",
+      "🇲🇿",
+      "🇲🇲",
+      "🇳🇦",
+      "🇳🇷",
+      "🇳🇵",
+      "🇳🇱",
+      "🇳🇿",
+      "🇳🇮",
+      "🇳🇪",
+      "🇳🇬",
+      "🇳🇴",
+      "🇴🇲",
+      "🇵🇰",
+      "🇵🇼",
+      "🇵🇸",
+      "🇵🇦",
+      "🇵🇬",
+      "🇵🇾",
+      "🇵🇪",
+      "🇵🇭",
+      "🇵🇱",
+      "🇵🇹",
+      "🇶🇦",
+      "🇷🇴",
+      "🇷🇺",
+      "🇷🇼",
+      "🇰🇳",
+      "🇱🇨",
+      "🇻🇨",
+      "🇼🇸",
+      "🇸🇲",
+      "🇸🇹",
+      "🇸🇦",
+      "🇸🇳",
+      "🇷🇸",
+      "🇸🇨",
+      "🇸🇱",
+      "🇸🇬",
+      "🇸🇰",
+      "🇸🇮",
+      "🇸🇧",
+      "🇸🇴",
+      "🇿🇦",
+      "🇸🇸",
+      "🇪🇸",
+      "🇱🇰",
+      "🇸🇩",
+      "🇸🇷",
+      "🇸🇪",
+      "🇨🇭",
+      "🇸🇾",
+      "🇹🇼",
+      "🇹🇯",
+      "🇹🇿",
+      "🇹🇭",
+      "🇹🇱",
+      "🇹🇬",
+      "🇹🇴",
+      "🇹🇹",
+      "🇹🇳",
+      "🇹🇷",
+      "🇹🇲",
+      "🇺🇬",
+      "🇺🇦",
+      "🇦🇪",
+      "🇬🇧",
+      "🇺🇸",
+      "🇺🇾",
+      "🇺🇿",
+      "🇻🇺",
+      "🇻🇪",
+      "🇻🇳",
+      "🇾🇪",
+      "🇿🇲",
+      "🇿🇼",
+      "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+      "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+      "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
     ],
   },
 ];
@@ -160,7 +1235,7 @@ const SKIN_TONE_KEY = "wf_skin_tone";
 const MAX_RECENT = 20;
 
 const SKIN_TONES = [
-  { tone: "",           hand: "✋"  },
+  { tone: "", hand: "✋" },
   { tone: "\u{1F3FB}", hand: "✋🏻" },
   { tone: "\u{1F3FC}", hand: "✋🏼" },
   { tone: "\u{1F3FD}", hand: "✋🏽" },
@@ -170,10 +1245,82 @@ const SKIN_TONES = [
 
 // Emojis in People category that accept skin-tone modifiers
 const SKIN_TONE_CAPABLE = new Set([
-  "👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉",
-  "👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🙏",
-  "💅","🤳","💪","🦵","🦶","👂","🦻","👃","🫵","🫴","🫳","🫲","🫱","🫶","🫰",
+  "👋",
+  "🤚",
+  "🖐️",
+  "✋",
+  "🖖",
+  "👌",
+  "🤌",
+  "🤏",
+  "✌️",
+  "🤞",
+  "🤟",
+  "🤘",
+  "🤙",
+  "👈",
+  "👉",
+  "👆",
+  "🖕",
+  "👇",
+  "☝️",
+  "👍",
+  "👎",
+  "✊",
+  "👊",
+  "🤛",
+  "🤜",
+  "👏",
+  "🙌",
+  "👐",
+  "🤲",
+  "🙏",
+  "💅",
+  "🤳",
+  "💪",
+  "🦵",
+  "🦶",
+  "👂",
+  "🦻",
+  "👃",
+  "🫵",
+  "🫴",
+  "🫳",
+  "🫲",
+  "🫱",
+  "🫶",
+  "🫰",
 ]);
+
+// Module level rather than defined inside the picker: as a nested definition it
+// was a brand-new component type on every render, remounting every button in
+// the grid. Behaviour is unchanged — the click still calls the picker's own
+// handler, now passed in as a prop.
+function EmojiBtn({
+  emoji,
+  onSelect,
+}: {
+  emoji: string;
+  onSelect: (emoji: string) => void;
+}) {
+  const flagCode = flagIconCode(emoji);
+  return (
+    <button
+      aria-label={emoji}
+      className="flex size-7.5 select-none items-center justify-center rounded-xs text-[19px] leading-none transition-colors hover:bg-base-200"
+      draggable={false}
+      onClick={() => onSelect(emoji)}
+      onDragStart={(e) => e.preventDefault()}
+      type="button"
+    >
+      {flagCode ? (
+        <span className={`fi fi-${flagCode} fis rounded-[2px]`} />
+      ) : (
+        emoji
+      )}
+    </button>
+  );
+}
 
 function stripTone(emoji: string): string {
   // Remove Fitzpatrick skin-tone modifier (U+1F3FB – U+1F3FF) so we always store the base emoji
@@ -182,7 +1329,9 @@ function stripTone(emoji: string): string {
 
 function applyTone(emoji: string, tone: string): string {
   const base = stripTone(emoji);
-  if (!tone || !SKIN_TONE_CAPABLE.has(base)) return base;
+  if (!tone || !SKIN_TONE_CAPABLE.has(base)) {
+    return base;
+  }
   // Strip variation selector (U+FE0F) so the skin tone modifier combines correctly.
   // e.g. 🖐️(U+1F590+FE0F) + 🏽 must be stored as U+1F590+1F3FD, not U+1F590+FE0F+1F3FD,
   // otherwise browsers render them as two separate glyphs.
@@ -190,26 +1339,45 @@ function applyTone(emoji: string, tone: string): string {
 }
 
 function getSavedTone(): string {
-  try { return localStorage.getItem(SKIN_TONE_KEY) ?? ""; } catch { return ""; }
+  try {
+    return localStorage.getItem(SKIN_TONE_KEY) ?? "";
+  } catch {
+    return "";
+  }
 }
 function saveTone(tone: string) {
-  try { localStorage.setItem(SKIN_TONE_KEY, tone); } catch { /* noop */ }
+  try {
+    localStorage.setItem(SKIN_TONE_KEY, tone);
+  } catch {
+    /* noop */
+  }
 }
 
 function getRecent(): string[] {
   try {
-    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
+    const raw = JSON.parse(
+      localStorage.getItem(RECENT_KEY) ?? "[]"
+    ) as string[];
     // Migrate: strip any stored tone modifiers so recent list only contains base emojis
     return [...new Set(raw.map(stripTone).filter(Boolean))];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 function addRecent(emoji: string) {
   try {
     const base = stripTone(emoji);
-    if (!base) return;
-    const list = [base, ...getRecent().filter((e) => e !== base)].slice(0, MAX_RECENT);
+    if (!base) {
+      return;
+    }
+    const list = [base, ...getRecent().filter((e) => e !== base)].slice(
+      0,
+      MAX_RECENT
+    );
     localStorage.setItem(RECENT_KEY, JSON.stringify(list));
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
 }
 
 export function randomEmoji(): string {
@@ -218,10 +1386,10 @@ export function randomEmoji(): string {
 }
 
 export interface EmojiGridPickerProps {
-  /** Called with the final (tone-applied) emoji when a grid cell is clicked. */
-  onSelect: (emoji: string) => void;
   /** Called after a normal grid-cell selection — the caller owns closing the popover. */
   onClose: () => void;
+  /** Called with the final (tone-applied) emoji when a grid cell is clicked. */
+  onSelect: (emoji: string) => void;
   /** When provided, shows a "Shuffle" button that calls this with a random
    *  emoji instead of onSelect — lets the caller preview without closing
    *  (e.g. IconPicker keeps the picker open so you can re-roll). */
@@ -230,7 +1398,11 @@ export interface EmojiGridPickerProps {
 
 // Deliberately has no outer border/width/positioning — callers own their own
 // popover chrome, so this stays a plain content block that fits either container.
-export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPickerProps) {
+export function EmojiGridPicker({
+  onSelect,
+  onClose,
+  onShuffle,
+}: EmojiGridPickerProps) {
   const [emojiSearch, setEmojiSearch] = useState("");
   const [skinTone, setSkinTone] = useState<string>(() => getSavedTone());
   const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
@@ -238,15 +1410,16 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
   const catRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { tooltip, showTooltip, hideTooltip } = useHoverTooltip();
 
-  const currentHand = SKIN_TONES.find(s => s.tone === skinTone)?.hand ?? "✋";
+  const currentHand = SKIN_TONES.find((s) => s.tone === skinTone)?.hand ?? "✋";
 
   useEffect(() => {
     setRecentEmojis(getRecent());
   }, []);
 
   const emojiSearchResults = emojiSearch.trim()
-    ? EMOJI_CATEGORIES.flatMap((c) => c.emojis)
-        .filter((e) => emojiMatches(e, emojiSearch))
+    ? EMOJI_CATEGORIES.flatMap((c) => c.emojis).filter((e) =>
+        emojiMatches(e, emojiSearch)
+      )
     : null;
 
   function scrollToCategory(id: string) {
@@ -270,44 +1443,33 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
     saveTone(tone);
   }
 
-  const EmojiBtn = ({ emoji }: { emoji: string }) => {
-    const flagCode = flagIconCode(emoji);
-    return (
-      <button
-        onClick={() => handleEmojiSelect(emoji)}
-        onDragStart={(e) => e.preventDefault()}
-        draggable={false}
-        aria-label={emoji}
-        className="flex size-7.5 select-none items-center justify-center rounded-xs text-[19px] leading-none transition-colors hover:bg-accent"
-      >
-        {flagCode ? <span className={`fi fi-${flagCode} fis rounded-[2px]`} /> : emoji}
-      </button>
-    );
-  };
-
   return (
     <div className="flex flex-col">
       {/* Search row */}
       <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-2.5">
         <div className="relative flex-1">
-          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground-subtle" />
+          <Search
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-base-content/50"
+            size={12}
+          />
           <input
-            value={emojiSearch}
+            autoFocus
+            className="w-full rounded-sm border border-base-300 bg-base-200 py-1.5 pl-7 pr-2.5 text-sm text-base-content outline-none placeholder:text-base-content/50 focus:border-primary/50"
             onChange={(e) => setEmojiSearch(e.target.value)}
             placeholder="Filter..."
-            autoFocus
-            className="w-full rounded-sm border border-border bg-background py-1.5 pl-7 pr-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground-subtle focus:border-primary/50"
+            value={emojiSearch}
           />
         </div>
         {onShuffle && (
           <button
+            className="flex size-8 shrink-0 items-center justify-center rounded-sm border border-base-300 bg-base-200 text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
             onClick={() => {
               const picked = randomEmoji();
               onShuffle(applyTone(stripTone(picked), skinTone));
             }}
             onMouseEnter={(e) => showTooltip("Random", e)}
             onMouseLeave={hideTooltip}
-            className="flex size-8 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            type="button"
           >
             <Shuffle size={13} />
           </button>
@@ -326,31 +1488,37 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
             listeners, which only check DOM containment against their own refs. */}
         <Popover>
           <PopoverButton
-            onDragStart={(e) => e.preventDefault()}
+            className="flex size-8 shrink-0 select-none items-center justify-center rounded-sm border border-base-300 bg-base-200 text-[18px] leading-none outline-none transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary data-open:border-primary/50 data-open:bg-base-200"
             draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             onMouseEnter={(e) => showTooltip("Select skin tone", e)}
             onMouseLeave={hideTooltip}
-            className="flex size-8 shrink-0 select-none items-center justify-center rounded-sm border border-border bg-background text-[18px] leading-none outline-none transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-open:border-primary/50 data-open:bg-accent"
           >
             {currentHand}
           </PopoverButton>
           <PopoverPanel
             anchor={{ to: "bottom end", gap: 6 }}
-            transition
+            className="z-9999 flex items-center gap-0.5 rounded-md border border-base-300 bg-base-100 p-1.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
             onMouseDown={(e) => e.stopPropagation()}
-            className="z-9999 flex items-center gap-0.5 rounded-md border border-border bg-popover p-1.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+            transition
           >
             {({ close }) => (
               <>
                 {SKIN_TONES.map((s) => (
                   <button
-                    key={s.tone}
-                    onClick={() => { handleSkinTone(s.tone); close(); }}
-                    onDragStart={(e) => e.preventDefault()}
+                    className={`flex size-8 select-none items-center justify-center rounded-sm text-[18px] leading-none outline-none transition-colors hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${skinTone === s.tone ? "bg-base-200 ring-1 ring-primary/40" : ""}`}
                     draggable={false}
-                    onMouseEnter={(e) => showTooltip(s.tone ? "Skin tone" : "Default", e)}
+                    key={s.tone}
+                    onClick={() => {
+                      handleSkinTone(s.tone);
+                      close();
+                    }}
+                    onDragStart={(e) => e.preventDefault()}
+                    onMouseEnter={(e) =>
+                      showTooltip(s.tone ? "Skin tone" : "Default", e)
+                    }
                     onMouseLeave={hideTooltip}
-                    className={`flex size-8 select-none items-center justify-center rounded-sm text-[18px] leading-none outline-none transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${skinTone === s.tone ? "bg-accent ring-1 ring-primary/40" : ""}`}
+                    type="button"
                   >
                     {s.hand}
                   </button>
@@ -362,36 +1530,66 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
       </div>
 
       {/* Emoji scroll area */}
-      <div ref={emojiScrollRef} className="h-58 overflow-y-auto px-2.5">
+      <div className="h-58 overflow-y-auto px-2.5" ref={emojiScrollRef}>
         {emojiSearchResults ? (
           emojiSearchResults.length === 0 ? (
-            <p className="py-8 text-center text-xs text-muted-foreground">No emojis found</p>
+            <p className="py-8 text-center text-xs text-base-content/70">
+              No emojis found
+            </p>
           ) : (
             <div className="grid grid-cols-10 gap-0 pb-2 pt-1">
-              {emojiSearchResults.map((emoji, i) => <EmojiBtn key={`s-${emoji}-${i}`} emoji={emoji} />)}
+              {emojiSearchResults.map((emoji, i) => (
+                <EmojiBtn
+                  emoji={emoji}
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the glyph already carries the identity here; the index is only a tiebreak because the emojilib dataset can surface the same glyph twice in one result set. EmojiBtn is stateless, so a positional remount is inert.
+                  key={`s-${emoji}-${i}`}
+                  onSelect={handleEmojiSelect}
+                />
+              ))}
             </div>
           )
         ) : (
           <>
             {recentEmojis.length > 0 && (
-              <div ref={(el) => { catRefs.current["recent"] = el; }}>
-                <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground-subtle">
+              <div
+                ref={(el) => {
+                  catRefs.current.recent = el;
+                }}
+              >
+                <p className="sticky top-0 z-10 bg-base-100 pb-0.5 pt-1 text-[11px] font-medium text-base-content/50">
                   Recently used
                 </p>
                 <div className="grid grid-cols-10 gap-0 pb-1">
                   {recentEmojis.map((emoji, i) => (
-                    <EmojiBtn key={`r-${emoji}-${i}`} emoji={emoji} />
+                    <EmojiBtn
+                      emoji={emoji}
+                      // biome-ignore lint/suspicious/noArrayIndexKey: the glyph already carries the identity here; the index is only a tiebreak because the emojilib dataset can surface the same glyph twice in one list. EmojiBtn is stateless, so a positional remount is inert.
+                      key={`r-${emoji}-${i}`}
+                      onSelect={handleEmojiSelect}
+                    />
                   ))}
                 </div>
               </div>
             )}
             {EMOJI_CATEGORIES.map((cat) => (
-              <div key={cat.id} ref={(el) => { catRefs.current[cat.id] = el; }}>
-                <p className="sticky top-0 z-10 bg-popover pb-0.5 pt-1 text-[11px] font-medium text-muted-foreground-subtle">
+              <div
+                key={cat.id}
+                ref={(el) => {
+                  catRefs.current[cat.id] = el;
+                }}
+              >
+                <p className="sticky top-0 z-10 bg-base-100 pb-0.5 pt-1 text-[11px] font-medium text-base-content/50">
                   {cat.label}
                 </p>
                 <div className="grid grid-cols-10 gap-0 pb-1">
-                  {cat.emojis.map((emoji, i) => <EmojiBtn key={`${cat.id}-${emoji}-${i}`} emoji={emoji} />)}
+                  {cat.emojis.map((emoji, i) => (
+                    <EmojiBtn
+                      emoji={emoji}
+                      // biome-ignore lint/suspicious/noArrayIndexKey: category + glyph already carry the identity; the index is only a tiebreak because the emojilib dataset can list the same glyph twice within a category. EmojiBtn is stateless, so a positional remount is inert.
+                      key={`${cat.id}-${emoji}-${i}`}
+                      onSelect={handleEmojiSelect}
+                    />
+                  ))}
                 </div>
               </div>
             ))}
@@ -400,33 +1598,37 @@ export function EmojiGridPicker({ onSelect, onClose, onShuffle }: EmojiGridPicke
       </div>
 
       {/* Category shortcut bar */}
-      <div className="flex items-center justify-around border-t border-border px-1 py-1 scrollbar-none">
+      <div className="flex items-center justify-around border-t border-base-300 px-1 py-1 scrollbar-none">
         <button
+          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
           onClick={() => scrollToCategory("recent")}
           onMouseEnter={(e) => showTooltip("Recently used", e)}
           onMouseLeave={hideTooltip}
-          className="flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          type="button"
         >
           <Clock size={13} />
         </button>
         {EMOJI_CATEGORIES.map((cat) => (
           <button
+            className="flex size-7 shrink-0 select-none items-center justify-center rounded-sm text-[15px] leading-none transition-colors hover:bg-base-200"
+            draggable={false}
             key={cat.id}
             onClick={() => scrollToCategory(cat.id)}
             onDragStart={(e) => e.preventDefault()}
-            draggable={false}
             onMouseEnter={(e) => showTooltip(cat.label, e)}
             onMouseLeave={hideTooltip}
-            className="flex size-7 shrink-0 select-none items-center justify-center rounded-sm text-[15px] leading-none transition-colors hover:bg-accent"
+            type="button"
           >
             {cat.icon}
           </button>
         ))}
       </div>
-      {tooltip && typeof document !== "undefined" && createPortal(
-        <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
-        document.body,
-      )}
+      {tooltip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
+          document.body
+        )}
     </div>
   );
 }

@@ -38,26 +38,24 @@ import {
   Trash2 as Trash,
   X,
 } from "lucide-react";
-import { forwardRef, useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
+import { isGroupableType } from "@/components/database/grouping";
 import {
   PROPERTY_REGISTRY,
   PROPERTY_TYPE_ICON,
 } from "@/components/database/property-registry";
-import { PageIcon } from "@/components/pages/page-icon";
-import { isGroupableType } from "@/components/database/grouping";
 import { RectAnchorTrigger } from "@/components/database/rect-popover-anchor";
 import { RelationDatabasePicker } from "@/components/database/relation-database-picker";
 import { RollupConfigPicker } from "@/components/database/rollup-config-picker";
-import { FormulaConfigPicker } from "@/components/database/formula-config-picker";
+import { PageIcon } from "@/components/pages/page-icon";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
-import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
 import { IconTooltip } from "@/components/ui/icon-tooltip";
-import {
-  getClampedLeft,
-  getClampedTop,
-} from "@/lib/ui/clamp-to-viewport";
+import { useHoverTooltip } from "@/hooks/use-hover-tooltip";
+import { useScrollLockWhileOpen } from "@/hooks/use-scroll-lock-while-open";
+import { useAnchorPosition, useMergedRef } from "@/lib/ui/use-anchor-position";
 import type { DbProperty, DbView, FilterRule, SortRule } from "./types";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -83,11 +81,15 @@ const VIEW_LABELS: Record<string, string> = {
 interface ToolbarProps {
   activeView: DbView | null;
   activeViewId: string | null;
+  databaseId: string;
   inline?: boolean;
   isEditor: boolean;
-  workspaceId: string;
-  databaseId: string;
-  onAddProperty: (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => Promise<unknown>;
+  onAddProperty: (
+    name: string,
+    type: string,
+    config?: Record<string, unknown>,
+    twoWay?: boolean
+  ) => Promise<unknown>;
   onAddView: (name: string, type: string) => void;
   onBulkDelete: () => Promise<void>;
   onClearSelection: () => void;
@@ -107,6 +109,7 @@ interface ToolbarProps {
   showSortBar: boolean;
   totalEntries: number;
   views: DbView[];
+  workspaceId: string;
 }
 
 // ── DatabaseToolbar ───────────────────────────────────────────────────────────
@@ -209,8 +212,11 @@ export function DatabaseToolbar({
   // switching to (or loading with) a view further along the list left its
   // name clipped by the container edge with no scrollbar to reveal it.
   useEffect(() => {
-    activeTabRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [activeViewId]);
+    activeTabRef.current?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, []);
 
   // Closes the filter/sort bars whenever one of this toolbar's own dropdowns opens, so
   // a dropdown and an expanded filter/sort bar never show at the same time.
@@ -268,25 +274,27 @@ export function DatabaseToolbar({
   if (selectedCount > 0) {
     return (
       <>
-        <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-primary/5 px-4">
+        <div className="flex h-11 shrink-0 items-center gap-3 border-b border-base-300 bg-primary/5 px-4">
           <button
-            className="flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-6 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content"
             onClick={onClearSelection}
+            type="button"
           >
             <X size={14} />
           </button>
-          <span className="text-sm font-semibold text-foreground">
+          <span className="text-sm font-semibold text-base-content">
             {selectedCount} {selectedCount === 1 ? "row" : "rows"} selected
           </span>
-          <div className="h-4 w-px bg-border" />
-          <span className="text-xs text-muted-foreground">
+          <div className="h-4 w-px bg-base-300" />
+          <span className="text-xs text-base-content/70">
             {totalEntries} total
           </span>
           <div className="flex-1" />
           <button
-            className="flex items-center gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-destructive transition-colors duration-150 hover:bg-destructive/10 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-sm border border-error/30 bg-error/5 px-3 py-1.5 text-xs font-semibold text-error transition-colors duration-150 hover:bg-error/10 disabled:opacity-50"
             disabled={deletingBulk}
             onClick={() => setShowBulkConfirm(true)}
+            type="button"
           >
             <Trash size={13} />
             {deletingBulk ? "Deleting…" : `Delete ${selectedCount}`}
@@ -311,7 +319,7 @@ export function DatabaseToolbar({
 
   return (
     <>
-      <div className="flex h-11.5 shrink-0 items-center border-b border-border bg-background">
+      <div className="flex h-11.5 shrink-0 items-center border-b border-base-300 bg-base-200">
         {/* ── View tabs ── */}
         {/* This strip owns its own horizontal scroll (min-w-0 lets it shrink
             below content width) so a growing number of views never pushes
@@ -326,7 +334,7 @@ export function DatabaseToolbar({
                   <div className="flex items-center px-1">
                     <input
                       autoFocus
-                      className="h-7 rounded-sm border border-primary/40 bg-background px-2 text-sm focus:outline-none"
+                      className="h-7 rounded-sm border border-primary/40 bg-base-200 px-2 text-sm focus:outline-none"
                       onBlur={() => commitRename(view)}
                       onChange={(e) => setEditingName(e.target.value)}
                       onClick={(e) => e.stopPropagation()}
@@ -344,18 +352,21 @@ export function DatabaseToolbar({
                   </div>
                 ) : (
                   <button
-                    ref={isActive ? activeTabRef : undefined}
                     className={[
                       "relative flex h-full shrink-0 items-center gap-1.5 px-3.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
                       isActive
                         ? "text-primary after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:bg-primary"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                        : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
                     ].join(" ")}
                     onClick={() => onSwitchView(view.id)}
-                    onDoubleClick={() =>
-                      isEditor &&
-                      (setEditingId(view.id), setEditingName(view.name))
-                    }
+                    onDoubleClick={() => {
+                      if (isEditor) {
+                        setEditingId(view.id);
+                        setEditingName(view.name);
+                      }
+                    }}
+                    ref={isActive ? activeTabRef : undefined}
+                    type="button"
                   >
                     <ViewIcon size={13} />
                     {view.name}
@@ -364,10 +375,8 @@ export function DatabaseToolbar({
 
                 {isEditor && !editingId && (
                   <ViewMenu
-                    view={view}
                     canDelete={views.length > 1}
                     hideTooltip={hideTooltip}
-                    showTooltip={showTooltip}
                     onDuplicate={() => onDuplicateView(view.id)}
                     onOpen={closeFilterSortBars}
                     onOpenLayout={(rect) => {
@@ -379,6 +388,8 @@ export function DatabaseToolbar({
                       setEditingName(view.name);
                     }}
                     onRequestDelete={() => setDeleteViewTarget(view)}
+                    showTooltip={showTooltip}
+                    view={view}
                   />
                 )}
               </div>
@@ -396,7 +407,7 @@ export function DatabaseToolbar({
               <MenuButton
                 className={[
                   "flex h-6.5 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm border border-dashed px-2.5 text-xs font-medium transition-colors duration-150",
-                  "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
+                  "border-base-300 text-base-content/70 hover:border-primary/50 hover:bg-primary/5 hover:text-primary",
                   "data-open:border-primary data-open:bg-primary/10 data-open:text-primary",
                 ].join(" ")}
                 onClick={closeFilterSortBars}
@@ -404,15 +415,21 @@ export function DatabaseToolbar({
                 <Plus className="text-primary/60" size={11} />
                 Add a view
               </MenuButton>
+              {/* modal={false} is load-bearing, not cosmetic: Headless UI's default
+                  modal mode marks everything outside the panel inert/aria-hidden.
+                  Inside an inline database that includes ProseMirror's editor DOM,
+                  whose mutation observer then recreates the node view and destroys
+                  the React tree holding this menu — it closed on the same click. */}
               <MenuItems
                 anchor={{ to: "bottom start", gap: 4 }}
-                className="z-600 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-border bg-card transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-600 w-80 overflow-hidden rounded-lg border border-base-300 bg-base-100 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                modal={false}
                 transition
               >
                 {/* Header */}
-                <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                <div className="flex items-center gap-2 border-b border-base-300 px-4 py-3">
                   <Plus className="text-primary" size={13} />
-                  <p className="text-sm font-semibold text-foreground">
+                  <p className="text-sm font-semibold text-base-content">
                     Add a new view
                   </p>
                 </div>
@@ -427,21 +444,27 @@ export function DatabaseToolbar({
                     return (
                       <MenuItem
                         as="button"
-                        className="group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-colors duration-150 data-disabled:cursor-not-allowed data-disabled:opacity-40 data-focus:bg-accent"
+                        className="group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-colors duration-150 data-disabled:cursor-not-allowed data-disabled:opacity-40 data-focus:bg-base-200"
                         disabled={alreadyExists}
                         key={type}
                         onClick={() => onAddView(VIEW_LABELS[type], type)}
-                        onMouseEnter={(e) => alreadyExists && showTooltip(`A ${VIEW_LABELS[type]} view already exists`, e)}
+                        onMouseEnter={(e) =>
+                          alreadyExists &&
+                          showTooltip(
+                            `A ${VIEW_LABELS[type]} view already exists`,
+                            e
+                          )
+                        }
                         onMouseLeave={hideTooltip}
                         type="button"
                       >
-                        <div className="flex size-12 items-center justify-center rounded-md border border-border bg-muted/50 transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary/10">
+                        <div className="flex size-12 items-center justify-center rounded-md border border-base-300 bg-base-200/50 transition-colors duration-150 group-hover:border-primary/40 group-hover:bg-primary/10">
                           <VIcon
-                            className="text-foreground/70 transition-colors duration-150 group-hover:text-primary"
+                            className="text-base-content/70 transition-colors duration-150 group-hover:text-primary"
                             size={24}
                           />
                         </div>
-                        <span className="text-xs font-medium leading-tight text-muted-foreground transition-colors duration-150 group-hover:text-primary">
+                        <span className="text-xs font-medium leading-tight text-base-content/70 transition-colors duration-150 group-hover:text-primary">
                           {VIEW_LABELS[type]}
                         </span>
                       </MenuItem>
@@ -450,8 +473,8 @@ export function DatabaseToolbar({
                 </div>
 
                 {/* Footer hint */}
-                <div className="border-t border-border px-4 py-2.5">
-                  <p className="text-xs text-muted-foreground">
+                <div className="border-t border-base-300 px-4 py-2.5">
+                  <p className="text-xs text-base-content/70">
                     Click a view type to create it
                   </p>
                 </div>
@@ -465,15 +488,15 @@ export function DatabaseToolbar({
             scrolls internally instead, so Filter/Sort/Properties/New never
             get clipped off the edge of a narrow (e.g. inline) container. */}
         <div className="flex shrink-0 items-center pr-4 sm:pr-8 lg:pr-16">
-        <div className="mx-2 h-4 w-px shrink-0 bg-border" />
+          <div className="mx-2 h-4 w-px shrink-0 bg-base-300" />
 
-        {/* ── Group by (board / table / gallery) ── */}
-        {(activeView?.type === "board" ||
-          activeView?.type === "table" ||
-          activeView?.type === "gallery") && (
+          {/* ── Group by (board / table / gallery) ── */}
+          {(activeView?.type === "board" ||
+            activeView?.type === "table" ||
+            activeView?.type === "gallery") && (
             <div className="flex shrink-0 items-center gap-1.5">
               {!inline && (
-                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                <span className="shrink-0 whitespace-nowrap text-xs text-base-content/70">
                   Group
                 </span>
               )}
@@ -484,7 +507,7 @@ export function DatabaseToolbar({
                       (p) => p.id === activeView.groupByPropertyId
                     )?.name ?? "Group")
                   ) : (
-                    <span className="text-muted-foreground">None</span>
+                    <span className="text-base-content/70">None</span>
                   )
                 }
                 creating={creatingQuickProp}
@@ -501,12 +524,15 @@ export function DatabaseToolbar({
                 panelLabel="Group by"
                 quickCreateLabel="New property"
                 renderOptionIcon={(p) => {
-                  const TypeIcon = PROPERTY_TYPE_ICON[p.type as keyof typeof PROPERTY_TYPE_ICON] ?? CircleDashed;
+                  const TypeIcon =
+                    PROPERTY_TYPE_ICON[
+                      p.type as keyof typeof PROPERTY_TYPE_ICON
+                    ] ?? CircleDashed;
                   const propConfig = (p.config ?? {}) as { icon?: string };
                   return propConfig.icon ? (
                     <PageIcon icon={propConfig.icon} size={11} />
                   ) : (
-                    <TypeIcon className="text-muted-foreground" size={11} />
+                    <TypeIcon className="text-base-content/70" size={11} />
                   );
                 }}
                 value={activeView.groupByPropertyId ?? null}
@@ -514,330 +540,364 @@ export function DatabaseToolbar({
             </div>
           )}
 
-        {/* ── Calendar date property ── */}
-        {activeView?.type === "calendar" && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            {!inline && (
-              <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                Date
-              </span>
-            )}
-            <PropertyPickerListbox
-              buttonContent={
-                activeView.calendarPropertyId ? (
-                  (dateProps.find((p) => p.id === activeView.calendarPropertyId)
-                    ?.name ?? "Date")
-                ) : (
-                  <span className="text-muted-foreground">None</span>
-                )
-              }
-              creating={creatingQuickProp}
-              onChange={(id) =>
-                onUpdateView(activeView.id, { calendarPropertyId: id })
-              }
-              onOpen={closeFilterSortBars}
-              onQuickCreate={() =>
-                handleQuickCreateProp("date", "Date", (propId) =>
-                  onUpdateView(activeView.id, { calendarPropertyId: propId })
-                )
-              }
-              options={dateProps}
-              panelLabel="Date property"
-              quickCreateLabel="New property"
-              renderOptionIcon={() => (
-                <CalendarBlank className="text-muted-foreground" size={11} />
-              )}
-              value={activeView.calendarPropertyId ?? null}
-            />
-          </div>
-        )}
-
-        {/* ── Gantt start/end date properties ── */}
-        {activeView?.type === "gantt" && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            {(["start", "end"] as const).map((field) => {
-              const propId = field === "start" ? activeView.ganttStartPropertyId : activeView.ganttEndPropertyId;
-              return (
-                <div key={field} className="flex shrink-0 items-center gap-1.5">
-                  {!inline && (
-                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground capitalize">
-                      {field}
-                    </span>
-                  )}
-                  <PropertyPickerListbox
-                    buttonContent={
-                      propId ? (dateProps.find((p) => p.id === propId)?.name ?? field) : (
-                        <span className="text-muted-foreground">None</span>
-                      )
-                    }
-                    creating={creatingQuickProp}
-                    onChange={(id) =>
-                      onUpdateView(
-                        activeView.id,
-                        field === "start" ? { ganttStartPropertyId: id } : { ganttEndPropertyId: id }
-                      )
-                    }
-                    onOpen={closeFilterSortBars}
-                    onQuickCreate={() =>
-                      handleQuickCreateProp(
-                        "date",
-                        field === "start" ? "Start date" : "End date",
-                        (newPropId) =>
-                          onUpdateView(
-                            activeView.id,
-                            field === "start" ? { ganttStartPropertyId: newPropId } : { ganttEndPropertyId: newPropId }
-                          )
-                      )
-                    }
-                    options={dateProps}
-                    panelLabel={field === "start" ? "Start Date Property" : "End Date Property"}
-                    quickCreateLabel="New property"
-                    renderOptionIcon={() => (
-                      <CalendarBlank className="text-muted-foreground" size={11} />
-                    )}
-                    value={propId ?? null}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ── Gallery card size ── */}
-        {activeView?.type === "gallery" && (
-          <div className="flex shrink-0 items-center gap-1">
-            {!inline && (
-              <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                Size
-              </span>
-            )}
-            {(["small", "medium", "large"] as const).map((size) => {
-              const isActive =
-                (activeView.galleryCardSize ?? "medium") === size;
-              return (
-                <button
-                  className={[
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-xs font-bold tracking-wide transition-colors duration-150",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  ].join(" ")}
-                  key={size}
-                  onClick={() =>
-                    onUpdateView(activeView.id, { galleryCardSize: size })
-                  }
-                  onMouseEnter={(e) =>
-                    showTooltip(
-                      `${size.charAt(0).toUpperCase() + size.slice(1)} cards`,
-                      e
-                    )
-                  }
-                  onMouseLeave={hideTooltip}
-                >
-                  {size[0].toUpperCase()}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ── Search ── */}
-        <div
-          className={`relative flex shrink-0 items-center transition-[width] duration-200 ${showSearch ? "w-48" : "w-7"}`}
-        >
-          {showSearch ? (
-            <>
-              <MagnifyingGlass
-                className="absolute left-2.5 shrink-0 text-muted-foreground"
-                size={13}
-              />
-              <input
-                autoFocus
-                className="h-8 w-full rounded-sm border border-border bg-muted/30 pl-7 pr-7 text-sm placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:bg-background focus:outline-none"
-                onBlur={() => {
-                  if (!searchQuery) {
-                    setShowSearch(false);
-                  }
-                }}
-                onChange={(e) => onSearchChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    onSearchChange("");
-                    setShowSearch(false);
-                  }
-                }}
-                placeholder="Search…"
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-              />
-              {searchQuery && (
-                <button
-                  className="absolute right-2 text-muted-foreground hover:text-muted-foreground"
-                  onClick={() => {
-                    onSearchChange("");
-                    searchInputRef.current?.focus();
-                  }}
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </>
-          ) : (
-            <button
-              className="flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-muted-foreground"
-              onClick={() => setShowSearch(true)}
-              onMouseEnter={(e) => showTooltip("Search (⌘K)", e)}
-              onMouseLeave={hideTooltip}
-            >
-              <MagnifyingGlass size={13} />
-            </button>
-          )}
-        </div>
-
-        {/* ── Filter / Sort / Properties ── */}
-        <button
-          className={[
-            "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
-            showFilterBar || filterCount > 0
-              ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-accent hover:text-foreground",
-          ].join(" ")}
-          onClick={() => {
-            setPropsRect(null);
-            onToggleFilterBar();
-          }}
-        >
-          <Funnel size={13} />
-          {!inline && "Filter"}
-          {filterCount > 0 && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-foreground">
-              {filterCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          className={[
-            "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
-            showSortBar || sortCount > 0
-              ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:bg-accent hover:text-foreground",
-          ].join(" ")}
-          onClick={() => {
-            setPropsRect(null);
-            onToggleSortBar();
-          }}
-        >
-          <SortAscending size={13} />
-          {!inline && "Sort"}
-          {sortCount > 0 && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-foreground">
-              {sortCount}
-            </span>
-          )}
-        </button>
-
-        {(() => {
-          const hiddenCount = (
-            (activeView?.hiddenPropertyIds ?? []) as string[]
-          ).length;
-          return (
-            <button
-              className={[
-                "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
-                propsRect || hiddenCount > 0
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              ].join(" ")}
-              onClick={(e) => {
-                if (propsRect) {
-                  setPropsRect(null);
-                  return;
-                }
-                closeFilterSortBars();
-                setPropsRect(
-                  (e.currentTarget as HTMLElement).getBoundingClientRect()
-                );
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              onMouseEnter={(e) => showTooltip("Manage properties", e)}
-              onMouseLeave={hideTooltip}
-            >
-              <SlidersHorizontal size={13} />
-              {!inline && "Properties"}
-              {hiddenCount > 0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-foreground">
-                  {hiddenCount}
+          {/* ── Calendar date property ── */}
+          {activeView?.type === "calendar" && (
+            <div className="flex shrink-0 items-center gap-1.5">
+              {!inline && (
+                <span className="shrink-0 whitespace-nowrap text-xs text-base-content/70">
+                  Date
                 </span>
               )}
-            </button>
-          );
-        })()}
+              <PropertyPickerListbox
+                buttonContent={
+                  activeView.calendarPropertyId ? (
+                    (dateProps.find(
+                      (p) => p.id === activeView.calendarPropertyId
+                    )?.name ?? "Date")
+                  ) : (
+                    <span className="text-base-content/70">None</span>
+                  )
+                }
+                creating={creatingQuickProp}
+                onChange={(id) =>
+                  onUpdateView(activeView.id, { calendarPropertyId: id })
+                }
+                onOpen={closeFilterSortBars}
+                onQuickCreate={() =>
+                  handleQuickCreateProp("date", "Date", (propId) =>
+                    onUpdateView(activeView.id, { calendarPropertyId: propId })
+                  )
+                }
+                options={dateProps}
+                panelLabel="Date property"
+                quickCreateLabel="New property"
+                renderOptionIcon={() => (
+                  <CalendarBlank className="text-base-content/70" size={11} />
+                )}
+                value={activeView.calendarPropertyId ?? null}
+              />
+            </div>
+          )}
 
-        {/* ── Entry open mode segmented control ──
+          {/* ── Gantt start/end date properties ── */}
+          {activeView?.type === "gantt" && (
+            <div className="flex shrink-0 items-center gap-1.5">
+              {(["start", "end"] as const).map((field) => {
+                const propId =
+                  field === "start"
+                    ? activeView.ganttStartPropertyId
+                    : activeView.ganttEndPropertyId;
+                return (
+                  <div
+                    className="flex shrink-0 items-center gap-1.5"
+                    key={field}
+                  >
+                    {!inline && (
+                      <span className="shrink-0 whitespace-nowrap text-xs text-base-content/70 capitalize">
+                        {field}
+                      </span>
+                    )}
+                    <PropertyPickerListbox
+                      buttonContent={
+                        propId ? (
+                          (dateProps.find((p) => p.id === propId)?.name ??
+                          field)
+                        ) : (
+                          <span className="text-base-content/70">None</span>
+                        )
+                      }
+                      creating={creatingQuickProp}
+                      onChange={(id) =>
+                        onUpdateView(
+                          activeView.id,
+                          field === "start"
+                            ? { ganttStartPropertyId: id }
+                            : { ganttEndPropertyId: id }
+                        )
+                      }
+                      onOpen={closeFilterSortBars}
+                      onQuickCreate={() =>
+                        handleQuickCreateProp(
+                          "date",
+                          field === "start" ? "Start date" : "End date",
+                          (newPropId) =>
+                            onUpdateView(
+                              activeView.id,
+                              field === "start"
+                                ? { ganttStartPropertyId: newPropId }
+                                : { ganttEndPropertyId: newPropId }
+                            )
+                        )
+                      }
+                      options={dateProps}
+                      panelLabel={
+                        field === "start"
+                          ? "Start Date Property"
+                          : "End Date Property"
+                      }
+                      quickCreateLabel="New property"
+                      renderOptionIcon={() => (
+                        <CalendarBlank
+                          className="text-base-content/70"
+                          size={11}
+                        />
+                      )}
+                      value={propId ?? null}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Gallery card size ── */}
+          {activeView?.type === "gallery" && (
+            <div className="flex shrink-0 items-center gap-1">
+              {!inline && (
+                <span className="shrink-0 whitespace-nowrap text-xs text-base-content/70">
+                  Size
+                </span>
+              )}
+              {(["small", "medium", "large"] as const).map((size) => {
+                const isActive =
+                  (activeView.galleryCardSize ?? "medium") === size;
+                return (
+                  <button
+                    className={[
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-xs font-bold tracking-wide transition-colors duration-150",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
+                    ].join(" ")}
+                    key={size}
+                    onClick={() =>
+                      onUpdateView(activeView.id, { galleryCardSize: size })
+                    }
+                    onMouseEnter={(e) =>
+                      showTooltip(
+                        `${size.charAt(0).toUpperCase() + size.slice(1)} cards`,
+                        e
+                      )
+                    }
+                    onMouseLeave={hideTooltip}
+                    type="button"
+                  >
+                    {size[0].toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Search ── */}
+          <div
+            className={`relative flex shrink-0 items-center transition-[width] duration-200 ${showSearch ? "w-48" : "w-7"}`}
+          >
+            {showSearch ? (
+              <>
+                <MagnifyingGlass
+                  className="absolute left-2.5 shrink-0 text-base-content/70"
+                  size={13}
+                />
+                <input
+                  autoFocus
+                  className="h-8 w-full rounded-sm border border-base-300 bg-base-200/30 pl-7 pr-7 text-sm placeholder:text-base-content/50 focus:border-primary/40 focus:bg-base-200 focus:outline-none"
+                  onBlur={() => {
+                    if (!searchQuery) {
+                      setShowSearch(false);
+                    }
+                  }}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      onSearchChange("");
+                      setShowSearch(false);
+                    }
+                  }}
+                  placeholder="Search…"
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                />
+                {searchQuery && (
+                  <button
+                    className="absolute right-2 text-base-content/70 hover:text-base-content/70"
+                    onClick={() => {
+                      onSearchChange("");
+                      searchInputRef.current?.focus();
+                    }}
+                    type="button"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </>
+            ) : (
+              <button
+                className="flex h-8 w-8 items-center justify-center rounded-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content/70"
+                onClick={() => setShowSearch(true)}
+                onMouseEnter={(e) => showTooltip("Search (⌘K)", e)}
+                onMouseLeave={hideTooltip}
+                type="button"
+              >
+                <MagnifyingGlass size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* ── Filter / Sort / Properties ── */}
+          <button
+            className={[
+              "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
+              showFilterBar || filterCount > 0
+                ? "bg-primary/10 text-primary"
+                : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
+            ].join(" ")}
+            onClick={() => {
+              setPropsRect(null);
+              onToggleFilterBar();
+            }}
+            type="button"
+          >
+            <Funnel size={13} />
+            {!inline && "Filter"}
+            {filterCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-content">
+                {filterCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            className={[
+              "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
+              showSortBar || sortCount > 0
+                ? "bg-primary/10 text-primary"
+                : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
+            ].join(" ")}
+            onClick={() => {
+              setPropsRect(null);
+              onToggleSortBar();
+            }}
+            type="button"
+          >
+            <SortAscending size={13} />
+            {!inline && "Sort"}
+            {sortCount > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-content">
+                {sortCount}
+              </span>
+            )}
+          </button>
+
+          {(() => {
+            const hiddenCount = (
+              (activeView?.hiddenPropertyIds ?? []) as string[]
+            ).length;
+            return (
+              <button
+                className={[
+                  "flex h-8 shrink-0 items-center gap-1.5 rounded-sm px-2.5 text-sm font-medium whitespace-nowrap transition-colors duration-150",
+                  propsRect || hiddenCount > 0
+                    ? "bg-primary/10 text-primary"
+                    : "text-base-content/70 hover:bg-base-200 hover:text-base-content",
+                ].join(" ")}
+                onClick={(e) => {
+                  if (propsRect) {
+                    setPropsRect(null);
+                    return;
+                  }
+                  closeFilterSortBars();
+                  setPropsRect(
+                    (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  );
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseEnter={(e) => showTooltip("Manage properties", e)}
+                onMouseLeave={hideTooltip}
+                type="button"
+              >
+                <SlidersHorizontal size={13} />
+                {!inline && "Properties"}
+                {hiddenCount > 0 && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-xs bg-primary px-1 text-xs font-bold text-primary-content">
+                    {hiddenCount}
+                  </span>
+                )}
+              </button>
+            );
+          })()}
+
+          {/* ── Entry open mode segmented control ──
             Inline (embedded) databases always open entries in the side panel
             (see database-page.tsx's openEntry default) and hide labels on
             these buttons anyway, so the toggle offered no visible feedback
             and read as broken — only the full standalone database page
             exposes this preference. */}
-        {activeView && !inline && (
-          <div className="flex shrink-0 items-center rounded-sm border border-border bg-muted/30 p-0.5">
+          {activeView && !inline && (
+            <div className="flex shrink-0 items-center rounded-sm border border-base-300 bg-base-200/30 p-0.5">
+              <button
+                className={[
+                  "flex h-6.5 items-center gap-1.5 rounded-sm px-2 text-xs font-medium transition-colors duration-150",
+                  (activeView.entryOpenMode ?? "side_panel") === "side_panel"
+                    ? "bg-base-200 text-primary"
+                    : "text-base-content/70 hover:text-base-content",
+                ].join(" ")}
+                onClick={() =>
+                  onUpdateView(activeView.id, { entryOpenMode: "side_panel" })
+                }
+                onMouseEnter={(e) =>
+                  showTooltip("Open entries in side panel", e)
+                }
+                onMouseLeave={hideTooltip}
+                type="button"
+              >
+                <SidebarSimple size={12} />
+                <span className="hidden xl:inline">Panel</span>
+              </button>
+              <button
+                className={[
+                  "flex h-6.5 items-center gap-1.5 rounded-sm px-2 text-xs font-medium transition-colors duration-150",
+                  activeView.entryOpenMode === "full_page"
+                    ? "bg-base-200 text-base-content"
+                    : "text-base-content/70 hover:text-base-content",
+                ].join(" ")}
+                onClick={() =>
+                  onUpdateView(activeView.id, { entryOpenMode: "full_page" })
+                }
+                onMouseEnter={(e) =>
+                  showTooltip("Open entries as full page", e)
+                }
+                onMouseLeave={hideTooltip}
+                type="button"
+              >
+                <ArrowsOut size={12} />
+                <span className="hidden xl:inline">Full page</span>
+              </button>
+            </div>
+          )}
+
+          <div className="flex-1" />
+
+          {/* ── Entry count ── */}
+          {!inline && totalEntries > 0 && (
+            <span className="mr-2 text-xs text-base-content/70 select-none">
+              {totalEntries} {totalEntries === 1 ? "entry" : "entries"}
+            </span>
+          )}
+
+          {/* ── New entry ── */}
+          {isEditor && (
             <button
-              className={[
-                "flex h-6.5 items-center gap-1.5 rounded-sm px-2 text-xs font-medium transition-colors duration-150",
-                (activeView.entryOpenMode ?? "side_panel") === "side_panel"
-                  ? "bg-background text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              ].join(" ")}
-              onClick={() =>
-                onUpdateView(activeView.id, { entryOpenMode: "side_panel" })
-              }
-              onMouseEnter={(e) => showTooltip("Open entries in side panel", e)}
-              onMouseLeave={hideTooltip}
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold whitespace-nowrap text-primary-content transition-colors duration-150 hover:bg-primary/90"
+              data-new-entry-button
+              onClick={onCreateEntry}
+              type="button"
             >
-              <SidebarSimple size={12} />
-              <span className="hidden xl:inline">Panel</span>
+              <Plus size={14} />
+              {!inline && "New"}
             </button>
-            <button
-              className={[
-                "flex h-6.5 items-center gap-1.5 rounded-sm px-2 text-xs font-medium transition-colors duration-150",
-                activeView.entryOpenMode === "full_page"
-                  ? "bg-background text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              ].join(" ")}
-              onClick={() =>
-                onUpdateView(activeView.id, { entryOpenMode: "full_page" })
-              }
-              onMouseEnter={(e) => showTooltip("Open entries as full page", e)}
-              onMouseLeave={hideTooltip}
-            >
-              <ArrowsOut size={12} />
-              <span className="hidden xl:inline">Full page</span>
-            </button>
-          </div>
-        )}
-
-        <div className="flex-1" />
-
-        {/* ── Entry count ── */}
-        {!inline && totalEntries > 0 && (
-          <span className="mr-2 text-xs text-muted-foreground select-none">
-            {totalEntries} {totalEntries === 1 ? "entry" : "entries"}
-          </span>
-        )}
-
-        {/* ── New entry ── */}
-        {isEditor && (
-          <button
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold whitespace-nowrap text-primary-foreground transition-colors duration-150 hover:bg-primary/90"
-            data-new-entry-button
-            onClick={onCreateEntry}
-          >
-            <Plus size={14} />
-            {!inline && "New"}
-          </button>
-        )}
+          )}
         </div>
       </div>
 
@@ -851,14 +911,15 @@ export function DatabaseToolbar({
           <RectAnchorTrigger rect={layoutRect} />
           <PopoverPanel
             anchor={{ to: "bottom end", gap: 4 }}
-            className="z-600 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-border bg-card"
+            className="z-600 w-80 overflow-hidden rounded-lg border border-base-300 bg-base-100"
             data-edit-property-exempt
+            modal={false}
             ref={layoutDropRef}
             static
           >
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+            <div className="flex items-center gap-2 border-b border-base-300 px-4 py-3">
               <Kanban className="text-primary" size={13} />
-              <p className="truncate text-sm font-semibold text-foreground">
+              <p className="truncate text-sm font-semibold text-base-content">
                 Layout — {layoutView.name}
               </p>
             </div>
@@ -869,7 +930,7 @@ export function DatabaseToolbar({
                 const isActive = layoutView.type === type;
                 return (
                   <button
-                    className="group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-colors duration-150 hover:bg-accent"
+                    className="group flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center transition-colors duration-150 hover:bg-base-200"
                     key={type}
                     onClick={() => {
                       if (type !== layoutView.type) {
@@ -885,14 +946,14 @@ export function DatabaseToolbar({
                         "flex size-12 items-center justify-center rounded-md border transition-colors duration-150",
                         isActive
                           ? "border-primary/40 bg-primary/10"
-                          : "border-border bg-muted/50 group-hover:border-primary/40 group-hover:bg-primary/10",
+                          : "border-base-300 bg-base-200/50 group-hover:border-primary/40 group-hover:bg-primary/10",
                       ].join(" ")}
                     >
                       <VIcon
                         className={
                           isActive
                             ? "text-primary"
-                            : "text-foreground/70 transition-colors duration-150 group-hover:text-primary"
+                            : "text-base-content/70 transition-colors duration-150 group-hover:text-primary"
                         }
                         size={24}
                       />
@@ -900,7 +961,9 @@ export function DatabaseToolbar({
                     <span
                       className={[
                         "flex items-center gap-1 text-xs font-medium leading-tight transition-colors duration-150",
-                        isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary",
+                        isActive
+                          ? "text-primary"
+                          : "text-base-content/70 group-hover:text-primary",
                       ].join(" ")}
                     >
                       {isActive && <Check size={10} />}
@@ -912,9 +975,11 @@ export function DatabaseToolbar({
             </div>
 
             {layoutView.type === "board" && !layoutView.groupByPropertyId && (
-              <div className="border-t border-border px-4 py-2.5">
-                <p className="text-xs text-muted-foreground">
-                  Next, use the <strong>Group by</strong> button in the toolbar to pick a Select, Status, Checkbox, or Person property to organize cards into columns.
+              <div className="border-t border-base-300 px-4 py-2.5">
+                <p className="text-xs text-base-content/70">
+                  Next, use the <strong>Group by</strong> button in the toolbar
+                  to pick a Select, Status, Checkbox, or Person property to
+                  organize cards into columns.
                 </p>
               </div>
             )}
@@ -926,11 +991,10 @@ export function DatabaseToolbar({
       {propsRect &&
         createPortal(
           <PropertiesPanel
+            databaseId={databaseId}
             hiddenPropertyIds={
               (activeView?.hiddenPropertyIds ?? []) as string[]
             }
-            workspaceId={workspaceId}
-            databaseId={databaseId}
             onAddProperty={isEditor ? onAddProperty : undefined}
             onClose={() => setPropsRect(null)}
             onToggle={(propId, hidden) => {
@@ -952,6 +1016,7 @@ export function DatabaseToolbar({
             properties={properties.filter((p) => !p.isSystem)}
             rect={propsRect}
             ref={propsDropRef}
+            workspaceId={workspaceId}
           />,
           document.body
         )}
@@ -979,7 +1044,7 @@ export function DatabaseToolbar({
       {tooltip &&
         typeof document !== "undefined" &&
         createPortal(
-          <IconTooltip rect={tooltip.rect} label={tooltip.label} />,
+          <IconTooltip label={tooltip.label} rect={tooltip.rect} />,
           document.body
         )}
     </>
@@ -991,7 +1056,6 @@ export function DatabaseToolbar({
 // rect-anchored popover instead of swapping content in place, since MenuItem always closes on activation.
 
 function ViewMenu({
-  view,
   canDelete,
   hideTooltip,
   showTooltip,
@@ -1018,8 +1082,8 @@ function ViewMenu({
       <MenuButton
         className={[
           "flex h-full w-6 items-center justify-center rounded-xs text-transparent transition-colors duration-150",
-          "hover:bg-accent hover:text-foreground group-hover:text-muted-foreground",
-          "data-open:bg-accent data-open:text-foreground",
+          "hover:bg-base-200 hover:text-base-content group-hover:text-base-content/70",
+          "data-open:bg-base-200 data-open:text-base-content",
         ].join(" ")}
         onClick={onOpen}
         onMouseEnter={(e) => showTooltip("View options", e)}
@@ -1030,20 +1094,21 @@ function ViewMenu({
       </MenuButton>
       <MenuItems
         anchor={{ to: "bottom end", gap: 4 }}
-        className="z-600 w-48 overflow-hidden rounded-md border border-border bg-popover p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        className="z-600 w-48 overflow-hidden rounded-md border border-base-300 bg-base-100 p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        modal={false}
         transition
       >
         <MenuItem
           as="button"
-          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors duration-100 data-focus:bg-accent"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-base-content transition-colors duration-100 data-focus:bg-base-200"
           onClick={onRename}
           type="button"
         >
-          <Pencil className="shrink-0 text-muted-foreground" size={13} /> Rename
+          <Pencil className="shrink-0 text-base-content/70" size={13} /> Rename
         </MenuItem>
         <MenuItem
           as="button"
-          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors duration-100 data-focus:bg-accent"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-base-content transition-colors duration-100 data-focus:bg-base-200"
           onClick={() => {
             if (buttonRef.current) {
               onOpenLayout(buttonRef.current.getBoundingClientRect());
@@ -1051,22 +1116,23 @@ function ViewMenu({
           }}
           type="button"
         >
-          <Kanban className="shrink-0 text-muted-foreground" size={13} /> Layout
+          <Kanban className="shrink-0 text-base-content/70" size={13} /> Layout
         </MenuItem>
         <MenuItem
           as="button"
-          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors duration-100 data-focus:bg-accent"
+          className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-base-content transition-colors duration-100 data-focus:bg-base-200"
           onClick={onDuplicate}
           type="button"
         >
-          <Copy className="shrink-0 text-muted-foreground" size={13} /> Duplicate view
+          <Copy className="shrink-0 text-base-content/70" size={13} /> Duplicate
+          view
         </MenuItem>
         {canDelete && (
           <>
-            <div className="my-1 h-px bg-border" />
+            <div className="my-1 h-px bg-base-300" />
             <MenuItem
               as="button"
-              className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-destructive transition-colors duration-100 data-focus:bg-destructive/10"
+              className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-left text-sm text-error transition-colors duration-100 data-focus:bg-error/10"
               onClick={onRequestDelete}
               type="button"
             >
@@ -1119,31 +1185,32 @@ function PropertyPickerListbox({
           "flex h-7 shrink-0 items-center gap-1.5 rounded-sm border px-2.5 text-xs font-medium whitespace-nowrap transition-colors duration-150",
           value
             ? "border-primary/30 bg-primary/8 text-primary"
-            : "border-border bg-background text-foreground/70 hover:border-border hover:bg-accent",
+            : "border-base-300 bg-base-200 text-base-content/70 hover:border-base-300 hover:bg-base-200",
           "data-open:border-primary/30 data-open:bg-primary/8 data-open:text-primary",
         ].join(" ")}
         onClick={onOpen}
       >
         {buttonContent}
-        <ChevronDown className="shrink-0 text-muted-foreground" size={10} />
+        <ChevronDown className="shrink-0 text-base-content/70" size={10} />
       </ListboxButton>
       <ListboxOptions
         anchor={{ to: "bottom start", gap: 4 }}
-        className="z-600 w-48 overflow-hidden rounded-md border border-border bg-background transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        className="z-600 w-48 overflow-hidden rounded-md border border-base-300 bg-base-200 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        modal={false}
         transition
       >
-        <p className="px-3 pb-1 pt-2.5 text-xs font-semibold tracking-wide text-muted-foreground">
+        <p className="px-3 pb-1 pt-2.5 text-xs font-semibold tracking-wide text-base-content/70">
           {panelLabel}
         </p>
         <div className="p-1.5 pt-0.5">
           <ListboxOption
             className={[
-              "flex w-full cursor-default items-center gap-2.5 rounded-sm px-3 py-2 text-sm transition-colors data-focus:bg-accent",
-              value ? "text-muted-foreground" : "font-semibold text-primary",
+              "flex w-full cursor-default items-center gap-2.5 rounded-sm px-3 py-2 text-sm transition-colors data-focus:bg-base-200",
+              value ? "text-base-content/70" : "font-semibold text-primary",
             ].join(" ")}
             value={null}
           >
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60 text-xs text-muted-foreground">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-base-200/60 text-xs text-base-content/70">
               —
             </span>
             None
@@ -1153,13 +1220,13 @@ function PropertyPickerListbox({
             return (
               <ListboxOption
                 className={[
-                  "flex w-full cursor-default items-center gap-2.5 rounded-sm px-3 py-2 text-sm transition-colors data-focus:bg-accent",
-                  isActive ? "font-semibold text-primary" : "text-foreground",
+                  "flex w-full cursor-default items-center gap-2.5 rounded-sm px-3 py-2 text-sm transition-colors data-focus:bg-base-200",
+                  isActive ? "font-semibold text-primary" : "text-base-content",
                 ].join(" ")}
                 key={p.id}
                 value={p.id}
               >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-base-200/60">
                   {renderOptionIcon(p)}
                 </span>
                 <span className="flex-1 truncate text-left">{p.name}</span>
@@ -1169,17 +1236,17 @@ function PropertyPickerListbox({
               </ListboxOption>
             );
           })}
-          <div className="my-1 h-px bg-border" />
+          <div className="my-1 h-px bg-base-300" />
           <button
-            className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center gap-2.5 rounded-sm px-3 py-2 text-sm text-base-content/70 transition-colors hover:bg-base-200 hover:text-base-content disabled:cursor-not-allowed disabled:opacity-50"
             disabled={creating}
             onClick={() => {
               onQuickCreate().then(() => setResetKey((k) => k + 1));
             }}
             type="button"
           >
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60">
-              <Plus className="text-muted-foreground" size={11} />
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-base-200/60">
+              <Plus className="text-base-content/70" size={11} />
             </span>
             {quickCreateLabel}
           </button>
@@ -1192,245 +1259,272 @@ function PropertyPickerListbox({
 // ── PropertiesPanel ───────────────────────────────────────────────────────────
 
 interface PropertiesPanelProps {
-  hiddenPropertyIds: string[];
-  workspaceId: string;
   databaseId: string;
-  onAddProperty?: (name: string, type: string, config?: Record<string, unknown>, twoWay?: boolean) => Promise<unknown>;
+  hiddenPropertyIds: string[];
+  onAddProperty?: (
+    name: string,
+    type: string,
+    config?: Record<string, unknown>,
+    twoWay?: boolean
+  ) => Promise<unknown>;
   onClose: () => void;
   onToggle: (propId: string, hide: boolean) => void;
   onUpdateHidden: (ids: string[]) => void;
   properties: import("./types").DbProperty[];
   rect: DOMRect;
+  workspaceId: string;
 }
 
 const PROP_TYPES_LIST = Object.values(PROPERTY_REGISTRY);
 
-const PropertiesPanel = forwardRef<HTMLDivElement, PropertiesPanelProps>(
-  function PropertiesPanel(
-    {
-      rect,
-      properties,
-      hiddenPropertyIds,
-      workspaceId,
-      databaseId,
-      onToggle,
-      onUpdateHidden,
-      onAddProperty,
-    },
-    ref
+const PropertiesPanel = function PropertiesPanel({
+  rect,
+  properties,
+  hiddenPropertyIds,
+  workspaceId,
+  databaseId,
+  onToggle,
+  onUpdateHidden,
+  onAddProperty,
+  ref,
+}: PropertiesPanelProps & { ref?: RefObject<HTMLDivElement | null> }) {
+  const hiddenSet = new Set(hiddenPropertyIds);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [pickingRelation, setPickingRelation] = useState(false);
+  const [pickingRollup, setPickingRollup] = useState(false);
+  const [pickingFormula, setPickingFormula] = useState(false);
+
+  // Position: align right edge of panel to button right edge, open below
+  const panelW = 260;
+  const {
+    setFloating,
+    x: left,
+    y: top,
+  } = useAnchorPosition({
+    anchorRect: rect,
+    placement: "bottom-end",
+  });
+  const mergedRef = useMergedRef(ref, setFloating);
+
+  const allVisible = hiddenPropertyIds.length === 0;
+
+  async function handleAdd(
+    type: string,
+    config?: Record<string, unknown>,
+    twoWay?: boolean
   ) {
-    const hiddenSet = new Set(hiddenPropertyIds);
-    const [adding, setAdding] = useState(false);
-    const [newName, setNewName] = useState("");
-    const [saving, setSaving] = useState(false);
-    const [pickingRelation, setPickingRelation] = useState(false);
-    const [pickingRollup, setPickingRollup] = useState(false);
-    const [pickingFormula, setPickingFormula] = useState(false);
-
-    // Position: align right edge of panel to button right edge, open below
-    const panelW = 260;
-    const left = getClampedLeft(rect, panelW, { align: "end" });
-    const top = getClampedTop(rect, 320);
-
-    const allVisible = hiddenPropertyIds.length === 0;
-
-    async function handleAdd(type: string, config?: Record<string, unknown>, twoWay?: boolean) {
-      if (!onAddProperty || saving) {
-        return;
-      }
-      setSaving(true);
-      await onAddProperty(
-        newName.trim() ||
-          (PROPERTY_REGISTRY[type as keyof typeof PROPERTY_REGISTRY]?.label ??
-            type),
-        type,
-        config,
-        twoWay
-      );
-      setNewName("");
-      setAdding(false);
-      setSaving(false);
-      setPickingRelation(false);
-      setPickingRollup(false);
-      setPickingFormula(false);
+    if (!onAddProperty || saving) {
+      return;
     }
+    setSaving(true);
+    await onAddProperty(
+      newName.trim() ||
+        (PROPERTY_REGISTRY[type as keyof typeof PROPERTY_REGISTRY]?.label ??
+          type),
+      type,
+      config,
+      twoWay
+    );
+    setNewName("");
+    setAdding(false);
+    setSaving(false);
+    setPickingRelation(false);
+    setPickingRollup(false);
+    setPickingFormula(false);
+  }
 
-    if (pickingRelation) {
-      return (
-        <RelationDatabasePicker
-          rect={rect}
-          workspaceId={workspaceId}
-          onBack={() => setPickingRelation(false)}
-          onClose={() => setPickingRelation(false)}
-          onPick={(relatedDatabaseId, twoWay) => handleAdd("relation", { relatedDatabaseId }, twoWay)}
-        />
-      );
-    }
-
-    if (pickingRollup) {
-      return (
-        <RollupConfigPicker
-          rect={rect}
-          properties={properties}
-          onBack={() => setPickingRollup(false)}
-          onClose={() => setPickingRollup(false)}
-          onPick={(config) => handleAdd("rollup", config)}
-        />
-      );
-    }
-
-    if (pickingFormula) {
-      return (
-        <FormulaConfigPicker
-          rect={rect}
-          databaseId={databaseId}
-          properties={properties}
-          onBack={() => setPickingFormula(false)}
-          onClose={() => setPickingFormula(false)}
-          onPick={(expression) => handleAdd("formula", { expression })}
-        />
-      );
-    }
-
+  if (pickingRelation) {
     return (
-      <div
-        className="overflow-hidden rounded-md border border-border bg-background"
-        ref={ref}
-        style={{ position: "fixed", top, left, zIndex: 300, width: panelW }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-          <p className="text-xs font-semibold text-foreground/80">Properties</p>
-          {properties.length > 0 && (
+      <RelationDatabasePicker
+        onBack={() => setPickingRelation(false)}
+        onClose={() => setPickingRelation(false)}
+        onPick={(relatedDatabaseId, twoWay) =>
+          handleAdd("relation", { relatedDatabaseId }, twoWay)
+        }
+        rect={rect}
+        workspaceId={workspaceId}
+      />
+    );
+  }
+
+  if (pickingRollup) {
+    return (
+      <RollupConfigPicker
+        onBack={() => setPickingRollup(false)}
+        onClose={() => setPickingRollup(false)}
+        onPick={(config) => handleAdd("rollup", config)}
+        properties={properties}
+        rect={rect}
+      />
+    );
+  }
+
+  if (pickingFormula) {
+    return (
+      <FormulaConfigPicker
+        databaseId={databaseId}
+        onBack={() => setPickingFormula(false)}
+        onClose={() => setPickingFormula(false)}
+        onPick={(expression) => handleAdd("formula", { expression })}
+        properties={properties}
+        rect={rect}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="overflow-hidden rounded-md border border-base-300 bg-base-200"
+      ref={mergedRef}
+      style={{ position: "fixed", top, left, zIndex: 300, width: panelW }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-base-300 px-3 py-2.5">
+        <p className="text-xs font-semibold text-base-content/80">Properties</p>
+        {properties.length > 0 && (
+          <button
+            className="text-xs font-medium text-primary/70 hover:text-primary"
+            onClick={() => {
+              if (allVisible) {
+                onUpdateHidden(properties.map((p) => p.id));
+              } else {
+                onUpdateHidden([]);
+              }
+            }}
+            type="button"
+          >
+            {allVisible ? "Hide all" : "Show all"}
+          </button>
+        )}
+      </div>
+
+      {/* Property list */}
+      <div className="max-h-60 overflow-y-auto p-1.5">
+        {properties.length === 0 && !adding && (
+          <p className="px-3 py-3 text-xs text-base-content/70">
+            No properties yet
+          </p>
+        )}
+        {properties.map((prop) => {
+          const Icon =
+            PROPERTY_TYPE_ICON[prop.type as keyof typeof PROPERTY_TYPE_ICON] ??
+            TextT;
+          const propConfig = (prop.config ?? {}) as { icon?: string };
+          const visible = !hiddenSet.has(prop.id);
+          return (
             <button
-              className="text-xs font-medium text-primary/70 hover:text-primary"
-              onClick={() => {
-                if (allVisible) {
-                  onUpdateHidden(properties.map((p) => p.id));
-                } else {
-                  onUpdateHidden([]);
-                }
-              }}
+              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors hover:bg-base-200"
+              key={prop.id}
+              onClick={() => onToggle(prop.id, visible)}
+              type="button"
             >
-              {allVisible ? "Hide all" : "Show all"}
+              <span
+                className={`flex size-6 shrink-0 items-center justify-center rounded-xs border transition-colors ${
+                  visible
+                    ? "border-base-300 bg-base-200/30 text-base-content/70"
+                    : "border-base-300 bg-base-200/10 text-base-content/70"
+                }`}
+              >
+                {visible ? <Eye size={12} /> : <EyeSlash size={12} />}
+              </span>
+              <span className="flex min-w-0 flex-1 items-center gap-2">
+                {propConfig.icon ? (
+                  <PageIcon icon={propConfig.icon} size={12} />
+                ) : (
+                  <Icon size={12} />
+                )}
+                <span
+                  className={`truncate text-sm font-medium ${visible ? "text-base-content" : "text-base-content/70"}`}
+                >
+                  {prop.name}
+                </span>
+              </span>
+              <span
+                className={`size-1.5 shrink-0 rounded-full transition-colors ${visible ? "bg-success" : "bg-base-300"}`}
+              />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Add property — editor only */}
+      {onAddProperty && (
+        <div className="border-t border-base-300">
+          {adding ? (
+            <div className="p-2">
+              <input
+                autoFocus
+                className="mb-2 w-full rounded-sm border border-base-300 bg-base-200/30 px-2.5 py-1.5 text-sm placeholder:text-base-content/50 focus:border-primary/40 focus:outline-none"
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setAdding(false);
+                    setNewName("");
+                  }
+                  e.stopPropagation();
+                }}
+                placeholder="Property name…"
+                value={newName}
+              />
+              <div className="grid grid-cols-2 gap-1">
+                {PROP_TYPES_LIST.map((def) => {
+                  const Icon =
+                    PROPERTY_TYPE_ICON[
+                      def.type as keyof typeof PROPERTY_TYPE_ICON
+                    ] ?? TextT;
+                  return (
+                    <button
+                      className="flex items-center gap-2 rounded-sm px-2.5 py-2 text-xs font-medium text-base-content transition-colors hover:bg-base-200 disabled:opacity-50"
+                      disabled={saving}
+                      key={def.type}
+                      onClick={() => {
+                        if (def.type === "relation") {
+                          setPickingRelation(true);
+                        } else if (def.type === "rollup") {
+                          setPickingRollup(true);
+                        } else if (def.type === "formula") {
+                          setPickingFormula(true);
+                        } else {
+                          handleAdd(def.type);
+                        }
+                      }}
+                      type="button"
+                    >
+                      <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-base-200/60 text-base-content/70">
+                        <Icon size={11} />
+                      </span>
+                      {def.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                className="mt-1.5 w-full rounded-sm py-1.5 text-xs text-base-content/70 hover:bg-base-200 hover:text-base-content/70"
+                onClick={() => {
+                  setAdding(false);
+                  setNewName("");
+                }}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-medium text-base-content/70 transition-colors hover:bg-base-200/60 hover:text-base-content"
+              onClick={() => setAdding(true)}
+              type="button"
+            >
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-xs border border-dashed border-base-300">
+                <Plus size={11} />
+              </span>
+              Add property
             </button>
           )}
         </div>
-
-        {/* Property list */}
-        <div className="max-h-60 overflow-y-auto p-1.5">
-          {properties.length === 0 && !adding && (
-            <p className="px-3 py-3 text-xs text-muted-foreground">
-              No properties yet
-            </p>
-          )}
-          {properties.map((prop) => {
-            const Icon =
-              PROPERTY_TYPE_ICON[
-                prop.type as keyof typeof PROPERTY_TYPE_ICON
-              ] ?? TextT;
-            const propConfig = (prop.config ?? {}) as { icon?: string };
-            const visible = !hiddenSet.has(prop.id);
-            return (
-              <button
-                className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-2 text-left transition-colors hover:bg-accent"
-                key={prop.id}
-                onClick={() => onToggle(prop.id, visible)}
-              >
-                <span
-                  className={`flex size-6 shrink-0 items-center justify-center rounded-xs border transition-colors ${
-                    visible
-                      ? "border-border bg-muted/30 text-muted-foreground"
-                      : "border-border bg-muted/10 text-muted-foreground"
-                  }`}
-                >
-                  {visible ? <Eye size={12} /> : <EyeSlash size={12} />}
-                </span>
-                <span className="flex min-w-0 flex-1 items-center gap-2">
-                  {propConfig.icon ? <PageIcon icon={propConfig.icon} size={12} /> : <Icon size={12} />}
-                  <span
-                    className={`truncate text-sm font-medium ${visible ? "text-foreground" : "text-muted-foreground"}`}
-                  >
-                    {prop.name}
-                  </span>
-                </span>
-                <span
-                  className={`size-1.5 shrink-0 rounded-full transition-colors ${visible ? "bg-success" : "bg-border"}`}
-                />
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Add property — editor only */}
-        {onAddProperty && (
-          <div className="border-t border-border">
-            {adding ? (
-              <div className="p-2">
-                <input
-                  autoFocus
-                  className="mb-2 w-full rounded-sm border border-border bg-muted/30 px-2.5 py-1.5 text-sm placeholder:text-muted-foreground-subtle focus:border-primary/40 focus:outline-none"
-                  onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setAdding(false);
-                      setNewName("");
-                    }
-                    e.stopPropagation();
-                  }}
-                  placeholder="Property name…"
-                  value={newName}
-                />
-                <div className="grid grid-cols-2 gap-1">
-                  {PROP_TYPES_LIST.map((def) => {
-                    const Icon =
-                      PROPERTY_TYPE_ICON[
-                        def.type as keyof typeof PROPERTY_TYPE_ICON
-                      ] ?? TextT;
-                    return (
-                      <button
-                        className="flex items-center gap-2 rounded-sm px-2.5 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
-                        disabled={saving}
-                        key={def.type}
-                        onClick={() => {
-                          if (def.type === "relation") setPickingRelation(true);
-                          else if (def.type === "rollup") setPickingRollup(true);
-                          else if (def.type === "formula") setPickingFormula(true);
-                          else handleAdd(def.type);
-                        }}
-                      >
-                        <span className="flex size-5 shrink-0 items-center justify-center rounded-xs bg-muted/60 text-muted-foreground">
-                          <Icon size={11} />
-                        </span>
-                        {def.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  className="mt-1.5 w-full rounded-sm py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-muted-foreground"
-                  onClick={() => {
-                    setAdding(false);
-                    setNewName("");
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
-                onClick={() => setAdding(true)}
-              >
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-xs border border-dashed border-border">
-                  <Plus size={11} />
-                </span>
-                Add property
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-);
+      )}
+    </div>
+  );
+};

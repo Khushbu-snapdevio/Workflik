@@ -19,11 +19,16 @@ export function SaveStatusIndicator({ state, className = "" }: Props) {
   if (state === "idle") return null;
 
   return (
+    // daisyUI `badge` — this indicator is a pill with an icon and a short
+    // label, which is exactly what `badge` is. `rounded-full` keeps the pill
+    // shape (the app's `badge` sits on `--radius-xs`), and the two colour
+    // pairs stay as alpha-tinted tokens rather than daisy's `badge-warning`
+    // /`badge-neutral`, which are opaque fills.
     <div
-      className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium transition-opacity duration-300 select-none ${
+      className={`badge badge-sm h-auto gap-1.5 rounded-full py-0.5 font-medium transition-opacity duration-300 select-none ${
         state === "offline"
           ? "border-warning/30 bg-warning/10 text-warning"
-          : "border-border bg-muted/60 text-muted-foreground"
+          : "border-base-300 bg-base-200/60 text-base-content/70"
       } ${className}`}
     >
       {state === "saving" && (

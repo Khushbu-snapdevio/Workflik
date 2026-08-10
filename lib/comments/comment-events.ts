@@ -11,10 +11,15 @@ export function emitCommentsChanged(pageId: string) {
   );
 }
 
-export function onCommentsChanged(pageId: string, callback: () => void): () => void {
+export function onCommentsChanged(
+  pageId: string,
+  callback: () => void
+): () => void {
   function handler(e: Event) {
     const detail = (e as CustomEvent<{ pageId: string }>).detail;
-    if (detail?.pageId === pageId) callback();
+    if (detail?.pageId === pageId) {
+      callback();
+    }
   }
   window.addEventListener(COMMENTS_CHANGED_EVENT, handler);
   return () => window.removeEventListener(COMMENTS_CHANGED_EVENT, handler);

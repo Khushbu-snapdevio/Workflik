@@ -1,15 +1,17 @@
-import { Extension } from "@tiptap/react";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { Extension } from "@tiptap/react";
 
 export interface HighlightComment {
-  id: string;
-  blockId: string | null;
-  anchorStart: number;
   anchorEnd: number;
+  anchorStart: number;
+  blockId: string | null;
+  id: string;
 }
 
-export const COMMENT_HIGHLIGHT_KEY = new PluginKey<HighlightComment[]>("commentHighlight");
+export const COMMENT_HIGHLIGHT_KEY = new PluginKey<HighlightComment[]>(
+  "commentHighlight"
+);
 
 export function setCommentHighlights(
   view: import("@tiptap/pm/view").EditorView,
@@ -28,16 +30,24 @@ export const CommentHighlight = Extension.create({
         state: {
           init: () => [] as HighlightComment[],
           apply(tr, val) {
-            const meta = tr.getMeta(COMMENT_HIGHLIGHT_KEY) as HighlightComment[] | undefined;
+            const meta = tr.getMeta(COMMENT_HIGHLIGHT_KEY) as
+              | HighlightComment[]
+              | undefined;
             return meta ?? val;
           },
         },
         props: {
           decorations(state) {
-            const comments = COMMENT_HIGHLIGHT_KEY.getState(state) as HighlightComment[];
-            if (!comments?.length) return DecorationSet.empty;
+            const comments = COMMENT_HIGHLIGHT_KEY.getState(
+              state
+            ) as HighlightComment[];
+            if (!comments?.length) {
+              return DecorationSet.empty;
+            }
             const decs = comments.flatMap((c) => {
-              if (c.anchorStart == null || c.anchorEnd == null) return [];
+              if (c.anchorStart == null || c.anchorEnd == null) {
+                return [];
+              }
               try {
                 return [
                   Decoration.inline(c.anchorStart, c.anchorEnd, {

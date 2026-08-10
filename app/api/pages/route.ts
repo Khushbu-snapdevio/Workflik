@@ -3,20 +3,25 @@ import { and, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { blocks, pages } from "@/lib/db/schema";
-import { insertPageWithClosure } from "@/lib/pages/closure";
-import { ApiError, apiError, getSession, requireWorkspaceMember } from "@/lib/workspaces/auth";
-import { upsertPageSearchIndex } from "@/lib/search/index-page";
 import { triggerPageCreatedNotification } from "@/lib/notifications/triggers";
+import { insertPageWithClosure } from "@/lib/pages/closure";
 import { isMeaningfulTitle } from "@/lib/pages/draft";
+import { upsertPageSearchIndex } from "@/lib/search/index-page";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  requireWorkspaceMember,
+} from "@/lib/workspaces/auth";
 
 const createPageSchema = z.object({
   workspaceId: z.string().uuid(),
-  parentId:    z.string().uuid().nullable().default(null),
-  title:       z.string().max(500).default("Untitled"),
-  kind:        z.enum(["page", "database", "entry"]).default("page"),
-  databaseId:  z.string().uuid().nullable().optional(),
-  icon:        z.string().nullable().optional(),
-  isPrivate:   z.boolean().optional().default(false),
+  parentId: z.string().uuid().nullable().default(null),
+  title: z.string().max(500).default("Untitled"),
+  kind: z.enum(["page", "database", "entry"]).default("page"),
+  databaseId: z.string().uuid().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  isPrivate: z.boolean().optional().default(false),
 });
 
 // POST /api/pages
@@ -29,7 +34,8 @@ export async function POST(req: Request) {
       return apiError(400, parsed.error.issues[0]?.message ?? "Invalid input");
     }
 
-    const { workspaceId, parentId, title, kind, databaseId, icon, isPrivate } = parsed.data;
+    const { workspaceId, parentId, title, kind, databaseId, icon, isPrivate } =
+      parsed.data;
 
     await requireWorkspaceMember(workspaceId, session.user.id, "editor");
 
@@ -40,7 +46,9 @@ export async function POST(req: Request) {
         .from(pages)
         .where(and(eq(pages.id, parentId), eq(pages.workspaceId, workspaceId)))
         .limit(1);
-      if (!parent) return apiError(404, "Parent page not found");
+      if (!parent) {
+        return apiError(404, "Parent page not found");
+      }
     }
 
     // Get next orderIndex among siblings
@@ -85,31 +93,31 @@ export async function POST(req: Request) {
       // Every new page starts with one empty paragraph block
       if (kind === "page" || kind === "entry") {
         await tx.insert(blocks).values({
-          pageId:        page.id,
+          pageId: page.id,
           parentBlockId: null,
-          type:          "paragraph",
-          content:       { text: [], schemaVersion: 1 },
+          type: "paragraph",
+          content: { text: [], schemaVersion: 1 },
           schemaVersion: 1,
-          orderIndex:    0,
-          createdBy:     session.user.id,
+          orderIndex: 0,
+          createdBy: session.user.id,
         });
       }
 
       await upsertPageSearchIndex(tx, {
-        id:          page.id,
+        id: page.id,
         workspaceId: page.workspaceId,
-        title:       page.title,
-        kind:        page.kind,
+        title: page.title,
+        kind: page.kind,
       });
 
       await triggerPageCreatedNotification(tx, {
         workspaceId: page.workspaceId,
-        pageId:      page.id,
-        creatorId:   session.user.id,
-        pageTitle:   page.title || "Untitled",
-        isPrivate:   page.isPrivate,
-        kind:        page.kind,
-        isDraft:     page.isDraft,
+        pageId: page.id,
+        creatorId: session.user.id,
+        pageTitle: page.title || "Untitled",
+        isPrivate: page.isPrivate,
+        kind: page.kind,
+        isDraft: page.isDraft,
       });
 
       return page;
@@ -117,7 +125,9 @@ export async function POST(req: Request) {
 
     return Response.json(newPage, { status: 201 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     console.error(err);
     return apiError(500, "Internal server error");
   }

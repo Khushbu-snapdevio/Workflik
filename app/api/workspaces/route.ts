@@ -1,9 +1,18 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { workspaceMembers, workspaces, workspaceStorageUsage } from "@/lib/db/schema";
-import { getSession, uniqueSlug, apiError, ApiError } from "@/lib/workspaces/auth";
+import {
+  workspaceMembers,
+  workspaceStorageUsage,
+  workspaces,
+} from "@/lib/db/schema";
 import { writeAuditLog } from "@/lib/orbit/audit";
+import {
+  ApiError,
+  apiError,
+  getSession,
+  uniqueSlug,
+} from "@/lib/workspaces/auth";
 
 // GET /api/workspaces — list all workspaces the current user is an active member of
 export async function GET() {
@@ -13,8 +22,8 @@ export async function GET() {
     const memberships = await db
       .select({
         workspace: workspaces,
-        role:      workspaceMembers.role,
-        joinedAt:  workspaceMembers.joinedAt,
+        role: workspaceMembers.role,
+        joinedAt: workspaceMembers.joinedAt,
       })
       .from(workspaceMembers)
       .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
@@ -26,10 +35,16 @@ export async function GET() {
       );
 
     return Response.json(
-      memberships.map((m) => ({ ...m.workspace, role: m.role, joinedAt: m.joinedAt }))
+      memberships.map((m) => ({
+        ...m.workspace,
+        role: m.role,
+        joinedAt: m.joinedAt,
+      }))
     );
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }
@@ -58,7 +73,7 @@ export async function POST(req: Request) {
         .values({
           name,
           slug,
-          icon:      icon ?? null,
+          icon: icon ?? null,
           createdBy: session.user.id,
         })
         .returning();
@@ -68,27 +83,29 @@ export async function POST(req: Request) {
 
       // Creator is automatically Admin
       await tx.insert(workspaceMembers).values({
-        workspaceId:  ws.id,
-        userId:       session.user.id,
-        role:         "admin",
-        status:       "active",
-        joinedAt:     new Date(),
+        workspaceId: ws.id,
+        userId: session.user.id,
+        role: "admin",
+        status: "active",
+        joinedAt: new Date(),
       });
 
       return ws;
     });
 
     await writeAuditLog({
-      actorId:    session.user.id,
-      action:     "workspace.created",
+      actorId: session.user.id,
+      action: "workspace.created",
       targetType: "workspace",
-      targetId:   workspace.id,
-      metadata:   { name: workspace.name, slug: workspace.slug },
+      targetId: workspace.id,
+      metadata: { name: workspace.name, slug: workspace.slug },
     });
 
     return Response.json(workspace, { status: 201 });
   } catch (err) {
-    if (err instanceof ApiError) return apiError(err.status, err.message);
+    if (err instanceof ApiError) {
+      return apiError(err.status, err.message);
+    }
     return apiError(500, "Internal server error");
   }
 }

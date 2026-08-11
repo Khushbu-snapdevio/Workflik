@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export type UploadKind =
   | "page_cover"
@@ -27,11 +27,17 @@ interface UploadResult {
 export function useUpload(opts: UseUploadOptions) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // React state updates from inside `upload` aren't visible to a caller that
+  // reads `error` right after `await upload(file)` resolves (same tick, no
+  // re-render yet) — this ref gives callers a synchronous way to get the
+  // message that caused the null return.
+  const lastErrorRef = useRef<string | null>(null);
 
   const upload = useCallback(
     async (file: File): Promise<UploadResult | null> => {
       setUploading(true);
       setError(null);
+      lastErrorRef.current = null;
 
       try {
         // 1. Sign — get an upload slot from the server
@@ -117,6 +123,7 @@ export function useUpload(opts: UseUploadOptions) {
         };
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Upload failed";
+        lastErrorRef.current = msg;
         setError(msg);
         return null;
       } finally {
@@ -126,5 +133,7 @@ export function useUpload(opts: UseUploadOptions) {
     [opts.kind, opts.workspaceId, opts.pageId, opts.blockId]
   );
 
-  return { upload, uploading, error };
+  const getLastError = useCallback(() => lastErrorRef.current, []);
+
+  return { upload, uploading, error, getLastError };
 }

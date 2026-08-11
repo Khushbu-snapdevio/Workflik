@@ -3,6 +3,7 @@ import { Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { PatchPerformanceMeasure } from "@/components/patch-performance-measure";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from "@/config/platform";
 import { cn } from "@/lib/utils";
 import "@fontsource-variable/inter";
@@ -48,6 +49,7 @@ export default function RootLayout({
         <ThemeProvider>
           <PatchPerformanceMeasure />
           {children}
+          <Toaster closeButton={false} position="bottom-right" />
         </ThemeProvider>
       </body>
     </html>

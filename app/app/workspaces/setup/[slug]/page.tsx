@@ -39,7 +39,7 @@ export default async function WorkspaceSetupPage({ params }: Props) {
 
   return (
     <WorkspaceSetup
-      smtpConfigured={isSmtpConfigured()}
+      smtpConfigured={await isSmtpConfigured()}
       workspaceId={ws.id}
       workspaceKind={ws.kind}
       workspaceName={ws.name}

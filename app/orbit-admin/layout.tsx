@@ -24,7 +24,7 @@ export default async function AdminLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar — visible on desktop; mobile uses AdminShell's header */}
         <div className="hidden h-11 shrink-0 items-center border-b border-base-300 bg-base-100 px-4 md:flex md:px-8">
-          <div className="mx-auto flex w-full max-w-320 items-center justify-between">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-base-content/70">
               <svg
                 className="size-3 text-primary"
@@ -48,7 +48,7 @@ export default async function AdminLayout({
         </div>
 
         <main className="flex-1 overflow-y-auto" id="orbit-admin-scroll">
-          <div className="mx-auto w-full max-w-320 px-4 py-6 sm:px-6 md:px-8 md:py-8">
+          <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 md:px-8 md:py-8">
             {children}
           </div>
         </main>

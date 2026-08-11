@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     }
 
     // Verify the object actually exists in storage
-    const storage = getStorage();
+    const storage = await getStorage();
     const exists = await storage.exists(upload.objectKey);
     if (!exists) {
       return apiError(

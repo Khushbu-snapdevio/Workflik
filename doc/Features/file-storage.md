@@ -4,15 +4,17 @@
 
 File Storage handles all binary uploads in WorkFlik — page cover images, page icons, and media blocks (Image, Video, Audio, File).
 
-**Storage driver:** Controlled by the `STORAGE_DRIVER` env var:
+**Storage driver:** Controlled by the `STORAGE_DRIVER` env var (or Orbit Admin → Integrations, which overrides it without touching `.env`):
 
 | `STORAGE_DRIVER` | Where files go | How served | When to use |
 |-----------------|---------------|------------|------------|
-| `local` (default) | `./uploads/` on disk | `/api/uploads/files/*` API route | Local development — no credentials needed |
-| `s3` | AWS S3 bucket via presigned PUT URL | CDN (`CDN_URL`) | Production with AWS S3 |
-| `r2` | Cloudflare R2 via presigned PUT URL (S3-compatible) | CDN (`CDN_URL`) | Production with Cloudflare R2 |
+| `local` (default) | `./uploads/` on disk | `/api/uploads/files/*` API route, proxied from disk | Local development — no credentials needed |
+| `s3` | AWS S3 bucket via presigned PUT URL | `/api/uploads/files/*` API route, proxied from the bucket | Production with AWS S3 |
+| `r2` | Cloudflare R2 via presigned PUT URL (S3-compatible) | `/api/uploads/files/*` API route, proxied from the bucket | Production with Cloudflare R2 |
 
-The storage abstraction lives in `lib/storage/` — drivers are in `lib/storage/drivers/`. Switching drivers requires only changing `STORAGE_DRIVER` in `.env`; all API routes and job handlers work with either driver.
+Every driver is *served* the same way — `/api/uploads/files/[...path]` calls the active driver's `download()` and streams the bytes back itself, so no public bucket or CDN URL is ever needed. *Uploads* are the one place drivers still diverge: `local` posts through the app, `s3`/`r2` upload directly from the browser to the bucket via a presigned PUT URL (bucket needs a CORS policy allowing that, see `SELF-HOSTING.md` §5).
+
+The storage abstraction lives in `lib/storage/` — drivers are in `lib/storage/drivers/`. Switching drivers requires only changing `STORAGE_DRIVER`; all API routes and job handlers work with any driver.
 
 ---
 
@@ -48,7 +50,7 @@ Client                     API Server              S3-compatible storage
 | POST | `/api/uploads/sign` | Validate file type + size + quota, create unconfirmed `file_uploads` row, return upload slot (`{ fileUploadId, objectKey, fileUrl, upload: { url, method, headers } }`). `method` is `"PUT"` for S3/R2 (presigned URL) or `"POST"` for the local driver. | Authenticated member |
 | POST | `/api/uploads/confirm` | Verify object exists in storage, mark `confirmed_at`, increment `workspace_storage_usage.bytes_used`. Idempotent. | Authenticated member (must be uploader) |
 | POST | `/api/uploads/local` | **Local driver only.** Accepts `multipart/form-data` with `file` + `objectKey` fields. Saves file to `UPLOAD_DIR`. Returns 404 when `STORAGE_DRIVER != "local"`. | Authenticated member |
-| GET | `/api/uploads/files/[...path]` | **Local driver only.** Serves files from `UPLOAD_DIR`. Returns 404 in production (`STORAGE_DRIVER != "local"`). | Public (files served with immutable cache headers) |
+| GET | `/api/uploads/files/[...path]` | **Every driver.** Calls the active driver's `download()` and streams the bytes back — disk read for `local`, `GetObject` for `s3`/`r2`. The only place any uploaded file is ever served from. | Public (files served with immutable cache headers) |
 
 > **File deletion** is always async via pg-boss job handlers — no delete endpoint for end-user actions. Cleanup jobs call `lib/storage/index.ts#getStorage().delete()` directly.
 
@@ -162,7 +164,7 @@ users/{userId}/{uuid}.{ext}              # user_avatar (no workspace)
 Example: `wsp_abc123/pg_xyz789/img_k3j9x2a.webp` · `users/usr_def456/avatar_k3j9x2a.webp`
 
 - Never publicly guessable — UUIDs are random
-- CDN public URL: `https://cdn.workflik.app/{objectKey}` (served via the CDN in front of the bucket)
+- Public URL: `{NEXT_PUBLIC_APP_URL}/api/uploads/files/{objectKey}` — always app-relative, regardless of driver (see the proxy route above)
 
 ---
 
@@ -176,7 +178,7 @@ FileUpload
 ├── page_id             (foreign key → Page, nullable — for page cover/icon)
 ├── block_id            (foreign key → Block, nullable — for media blocks)
 ├── object_key          (string — storage object key, unique)
-├── file_url            (string — CDN URL)
+├── file_url            (string — app-relative /api/uploads/files/{objectKey} URL, any driver)
 ├── mime_type           (string)
 ├── file_size_bytes     (bigint)
 ├── uploaded_by         (user_id, foreign key)
@@ -203,14 +205,14 @@ WorkspaceStorageUsage
 
 ## Business Rules
 
-1. Files are uploaded directly to the storage bucket via pre-signed URL — they never transit the Next.js app server.
+1. Uploads go directly to the storage bucket via pre-signed URL (s3/r2) or through the app (local) — they never transit the Next.js app server for s3/r2. Reads always transit the app server, via `/api/uploads/files/[...path]`, regardless of driver.
 2. Pre-signed PUT URLs expire after **15 minutes** — the client must complete the upload within this window.
 3. An upload is not recorded until `/api/uploads/confirm` is called with the object key.
 4. Storage quota is checked before issuing a pre-signed URL — a quota breach blocks the upload before any bytes are sent.
 5. File deletion from storage is always async via pg-boss — the UI reflects deletion immediately but storage cleanup happens in the background.
 6. Deleting a file block does not decrement `bytes_used` immediately — usage is decremented when the orphaned-media cleanup job actually removes the file (after it leaves the 7-day Version History window), so undo and version restore keep working.
 7. Workspace storage usage is shown to all members.
-8. CDN URLs are stable — a file's public URL does not change after upload.
+8. A file's public URL is stable — it does not change after upload.
 9. Abandoned uploads (not confirmed within 30 minutes) are cleaned up by the stale-upload job.
 
 ---

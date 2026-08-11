@@ -45,7 +45,7 @@ export default async function ProfileSettingsPage({ params }: Props) {
   return (
     <ProfileSection
       hasPassword={!!credential}
-      smtpConfigured={isSmtpConfigured()}
+      smtpConfigured={await isSmtpConfigured()}
       user={user!}
     />
   );

@@ -14,7 +14,17 @@ import { changeEmailTemplate } from "@/lib/email/templates/change-email";
 import { magicLinkTemplate } from "@/lib/email/templates/magic-link";
 import { resetPasswordTemplate } from "@/lib/email/templates/reset-password";
 import { env } from "@/lib/env";
+import { getGoogleOAuthSettings } from "@/lib/integration-settings";
 import { writeAuditLog } from "@/lib/orbit/audit";
+
+// Read once at module evaluation (process boot) — betterAuth() bakes
+// socialProviders into its singleton synchronously, so a credentials change
+// saved via Orbit Admin → Integrations only takes effect after a restart.
+// Falls back to env-only (or blank) on error rather than throwing: this
+// module is evaluated during `next build` too, which deliberately runs
+// against an unreachable placeholder DATABASE_URL (see Dockerfile) — build
+// must not require a real database connection.
+const googleOAuth = await getGoogleOAuthSettings().catch(() => null);
 
 export const auth = betterAuth({
   advanced: {
@@ -35,8 +45,8 @@ export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_APP_URL,
   socialProviders: {
     google: {
-      clientId: env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: env.GOOGLE_CLIENT_SECRET ?? "",
+      clientId: googleOAuth?.clientId ?? "",
+      clientSecret: googleOAuth?.clientSecret ?? "",
     },
   },
   // requireLocalEmailVerified must be false: accounts here never get local-verified (no email-verification

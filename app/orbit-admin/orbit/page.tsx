@@ -339,7 +339,7 @@ export default async function OrbitOverviewPage() {
   }
   const isHealthy = healthIssues.length === 0;
 
-  const setupStatus = getInstanceSetupStatus();
+  const setupStatus = await getInstanceSetupStatus();
 
   return (
     <div className="space-y-6">

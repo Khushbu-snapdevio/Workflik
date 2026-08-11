@@ -111,7 +111,7 @@ export async function POST(req: Request) {
           : `${workspaceId ?? "shared"}/${pageId ?? fileId}/${fileId}.${ext}`;
 
     // ── Insert unconfirmed file_uploads row ────────────────────────────────
-    const storage = getStorage();
+    const storage = await getStorage();
     const fileUrl = storage.getPublicUrl(objectKey);
 
     const [fileUpload] = await db

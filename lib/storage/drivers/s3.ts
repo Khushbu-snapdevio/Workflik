@@ -1,30 +1,36 @@
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "@/lib/env";
+import type { ResolvedStorageSettings } from "@/lib/integration-settings";
 import type { StorageDriver, UploadSlot } from "./types";
 
-function buildClient(): S3Client {
+function buildClient(settings: ResolvedStorageSettings): S3Client {
   return new S3Client({
-    region: env.S3_REGION ?? "auto",
-    endpoint: env.S3_ENDPOINT,
+    region: settings.region ?? "auto",
+    endpoint: settings.endpoint,
     credentials: {
-      accessKeyId: env.S3_ACCESS_KEY_ID!,
-      secretAccessKey: env.S3_SECRET_ACCESS_KEY!,
+      accessKeyId: settings.accessKeyId!,
+      secretAccessKey: settings.secretAccessKey!,
     },
     // Required for path-style access (Cloudflare R2, MinIO, etc.)
-    forcePathStyle: !!env.S3_ENDPOINT,
+    forcePathStyle: !!settings.endpoint,
   });
 }
 
-export function createS3Driver(): StorageDriver {
-  const client = buildClient();
-  const bucket = env.S3_BUCKET!;
-  const cdnUrl = env.CDN_URL!.replace(/\/$/, "");
+export function createS3Driver(settings: ResolvedStorageSettings): StorageDriver {
+  if (!(settings.bucket && settings.accessKeyId && settings.secretAccessKey)) {
+    throw new Error(
+      `STORAGE_DRIVER=${settings.driver} requires a bucket, access key, and secret key to all be set (via env vars or Orbit Admin → Integrations).`
+    );
+  }
+  const client = buildClient(settings);
+  const bucket = settings.bucket;
 
   return {
     async createUploadSlot({
@@ -65,8 +71,19 @@ export function createS3Driver(): StorageDriver {
       );
     },
 
+    async download(objectKey): Promise<Buffer> {
+      const response = await client.send(
+        new GetObjectCommand({ Bucket: bucket, Key: objectKey })
+      );
+      const bytes = await response.Body?.transformToByteArray();
+      if (!bytes) {
+        throw new Error(`Object not found: ${objectKey}`);
+      }
+      return Buffer.from(bytes);
+    },
+
     getPublicUrl(objectKey): string {
-      return `${cdnUrl}/${objectKey}`;
+      return `${env.NEXT_PUBLIC_APP_URL}/api/uploads/files/${objectKey}`;
     },
   };
 }

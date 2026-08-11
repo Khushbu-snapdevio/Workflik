@@ -183,15 +183,28 @@ docker compose -f docker-compose.yml -f docker-compose.external-db.yml up -d --b
 
 ## 5. File storage — every option, including free/self-hosted ones
 
+Can also be configured without touching `.env` at all, from **Orbit Admin → Integrations** (§8) — a DB-saved value there overrides the matching env var per field.
+
 | Option | Setup | Best for |
 |---|---|---|
 | **Local disk** (default) | Nothing to configure — `STORAGE_DRIVER=local`. Files land in `./uploads` (or `UPLOAD_DIR`) | Single-server deployments, trying WorkFlik out |
-| **MinIO** (self-hosted, free, S3-compatible) | `docker compose --profile extras up -d`, then set: `STORAGE_DRIVER=s3`, `S3_ENDPOINT=http://minio:9000` (or `http://localhost:9000` outside Docker), `S3_BUCKET=workflik`, `S3_REGION=auto`, `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` = your `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`. Create the bucket once via the console at `http://localhost:9001` or `docker compose exec minio mc mb local/workflik` | Wanting S3-style direct uploads and a CDN-fronted URL scheme without paying anyone |
+| **MinIO** (self-hosted, free, S3-compatible) | `docker compose --profile extras up -d`, then set: `STORAGE_DRIVER=s3`, `S3_ENDPOINT=http://minio:9000` (or `http://localhost:9000` outside Docker), `S3_BUCKET=workflik`, `S3_REGION=auto`, `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` = your `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`. Create the bucket once via the console at `http://localhost:9001` or `docker compose exec minio mc mb local/workflik` | Wanting S3-style storage without paying anyone |
 | **Cloudflare R2** | `STORAGE_DRIVER=r2`, `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `S3_REGION=auto`, plus your R2 access keys | Free tier is generous; no egress fees |
 | **Backblaze B2** (S3-compatible API) | `STORAGE_DRIVER=s3`, `S3_ENDPOINT=https://s3.<region>.backblazeb2.com`, plus your B2 application key | Cheapest paid option if you outgrow local disk |
 | **AWS S3** | `STORAGE_DRIVER=s3`, leave `S3_ENDPOINT` blank, set `S3_BUCKET`/`S3_REGION`/keys | If you're already on AWS |
 
-Uploads always go directly from the browser to whichever bucket you configure via pre-signed URLs — the app server never proxies file bytes, regardless of which option you pick.
+**Reads are always proxied, writes are always direct.** Every stored file is served through `/api/uploads/files/*` — the app fetches the bytes from whichever driver is active (disk or bucket) and streams them back itself, so there's no public bucket, CDN, or custom domain to set up for any option above. Uploads are the one exception: the browser still `PUT`s the file straight to the bucket via a pre-signed URL (the app server never sees those bytes), which means **s3/r2 buckets need a CORS policy** allowing `PUT` from your app's origin, e.g.:
+```json
+[
+  {
+    "AllowedOrigins": ["https://your-domain.example"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["*"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+Set this in your provider's console (Cloudflare: bucket → Settings → CORS Policy; MinIO/AWS S3: equivalent bucket CORS config) — add both your local dev origin and your real production origin as you go. The bucket itself does **not** need public access enabled; the app only ever needs write (`PutObject`/`DeleteObject`) and read (`GetObject`) permissions on it, both via your access key.
 
 **Important:** if you're on local disk and using Docker, make sure the `uploads` volume (already wired in `docker-compose.yml`) is what's actually persisting your files — don't rely on the container's own filesystem, or uploads vanish on the next `docker compose up --build`.
 
@@ -308,7 +321,6 @@ Then visit `/orbit`. Run this again with any other email to add more admins late
 | `STORAGE_DRIVER` | No | `local` | `local`, `s3`, or `r2` — see §5 |
 | `UPLOAD_DIR` | No | `<project-root>/uploads` | Only for `STORAGE_DRIVER=local` |
 | `S3_ENDPOINT` / `S3_BUCKET` / `S3_REGION` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Only if `s3`/`r2` | — | See §5 for MinIO/R2/B2/AWS values |
-| `CDN_URL` | No | — | Public CDN base URL in front of your bucket, if you have one |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | No | — | See §6 for every alternative |
 | `EMAIL_WEBHOOK_SECRET` | No | — | Set to receive delivery-event webhooks from your SMTP provider. Self-generated, not tied to any external account. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | No | — | See §7 |

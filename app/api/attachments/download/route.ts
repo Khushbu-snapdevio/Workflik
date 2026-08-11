@@ -3,13 +3,13 @@ import { ApiError, apiError, getSession } from "@/lib/workspaces/auth";
 
 // GET /api/attachments/download?url=&name=
 // Proxies the attachment server-side so download/CORS work regardless of the storage host's cross-origin policy.
+// Every file URL is same-origin now (served via /api/uploads/files, see
+// lib/storage/drivers/*.ts) — this stays as an explicit allowlist rather
+// than trusting any `url` query param outright.
 function isAllowedHost(url: string): boolean {
   try {
     const target = new URL(url);
-    const allowedBases = [env.NEXT_PUBLIC_APP_URL, env.CDN_URL].filter(
-      Boolean
-    ) as string[];
-    return allowedBases.some((base) => new URL(base).host === target.host);
+    return new URL(env.NEXT_PUBLIC_APP_URL).host === target.host;
   } catch {
     return false;
   }

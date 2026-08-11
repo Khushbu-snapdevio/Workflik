@@ -218,6 +218,20 @@
       "when": 1785496092439,
       "tag": "0030_faithful_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1786424540308,
+      "tag": "0031_chunky_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1786433026144,
+      "tag": "0032_curvy_tombstone",
+      "breakpoints": true
     }
   ]
 }

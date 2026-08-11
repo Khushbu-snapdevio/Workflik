@@ -7,7 +7,6 @@ import { HintProvider } from "@/components/onboarding/hint-provider";
 import { TooltipTour } from "@/components/onboarding/tooltip-tour";
 import { SearchProvider } from "@/components/search/search-provider";
 import { Sidebar } from "@/components/sidebar/sidebar";
-import { Toaster } from "@/components/ui/sonner";
 import { ADMIN_ROLE } from "@/config/platform";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
@@ -54,12 +53,9 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     }
 
     return (
-      <>
-        <main className="h-screen overflow-y-auto overflow-x-hidden">
-          {children}
-        </main>
-        <Toaster closeButton={false} position="bottom-right" />
-      </>
+      <main className="h-screen overflow-y-auto overflow-x-hidden">
+        {children}
+      </main>
     );
   }
 
@@ -229,7 +225,6 @@ export default async function WorkspaceLayout({ children, params }: Props) {
           <TooltipTour tourCompleted={freshUser?.tourCompleted ?? true} />
         </HintProvider>
       </NotificationProvider>
-      <Toaster closeButton={false} position="bottom-right" />
     </SearchProvider>
   );
 }

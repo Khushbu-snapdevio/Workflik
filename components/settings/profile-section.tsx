@@ -323,7 +323,7 @@ export function ProfileSection({
   const jobRef = useRef(jobTitle);
   jobRef.current = jobTitle;
   const fileRef = useRef<HTMLInputElement>(null);
-  const { upload, uploading: avatarUploading } = useUpload({
+  const { upload, uploading: avatarUploading, getLastError } = useUpload({
     kind: "user_avatar",
   });
   const { updateUser } = useSettingsUser();
@@ -557,7 +557,10 @@ export function ProfileSection({
         })
       );
     } else {
-      setAvatarError("Upload failed. Please try again.");
+      const detail = getLastError();
+      setAvatarError(
+        detail ? `Upload failed: ${detail}` : "Upload failed. Please try again."
+      );
     }
   }
 

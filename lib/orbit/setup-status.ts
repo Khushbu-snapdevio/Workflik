@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { getStorageSettings } from "@/lib/integration-settings";
 import { isSmtpConfigured } from "@/lib/smtp/client";
 
 // Loose match on purpose — every placeholder value across .env.example,
@@ -8,20 +9,21 @@ import { isSmtpConfigured } from "@/lib/smtp/client";
 const PLACEHOLDER_PATTERN =
   /change-?me|replace-?with|placeholder|your-secret|^example/i;
 
-export function getInstanceSetupStatus() {
+export async function getInstanceSetupStatus() {
+  const storage = await getStorageSettings();
   const storageConfigured =
-    env.STORAGE_DRIVER === "local" ||
+    storage.driver === "local" ||
     Boolean(
-      env.S3_BUCKET &&
-        env.S3_REGION &&
-        env.S3_ACCESS_KEY_ID &&
-        env.S3_SECRET_ACCESS_KEY
+      storage.bucket &&
+        storage.region &&
+        storage.accessKeyId &&
+        storage.secretAccessKey
     );
 
   return {
-    smtpConfigured: isSmtpConfigured(),
+    smtpConfigured: await isSmtpConfigured(),
     storageConfigured,
-    storageDriver: env.STORAGE_DRIVER,
+    storageDriver: storage.driver,
     appSecretIsPlaceholder: PLACEHOLDER_PATTERN.test(env.APP_SECRET),
   };
 }

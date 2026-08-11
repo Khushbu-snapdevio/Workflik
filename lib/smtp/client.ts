@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { env } from "@/lib/env";
+import { getSmtpSettings } from "@/lib/integration-settings";
 
 export interface SmtpSendInput {
   html: string;
@@ -14,14 +14,15 @@ export interface SmtpSendResult {
   status: string;
 }
 
-export function isSmtpConfigured() {
-  return !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS && env.EMAIL_FROM);
+export async function isSmtpConfigured() {
+  return (await getSmtpSettings()) !== null;
 }
 
 export async function sendEmailViaSmtp(
   input: SmtpSendInput
 ): Promise<SmtpSendResult> {
-  if (!isSmtpConfigured()) {
+  const smtp = await getSmtpSettings();
+  if (!smtp) {
     // Extract the URL from the plain-text body (first http/https link found)
     const linkMatch = input.text?.match(/https?:\/\/\S+/);
     console.log("[email:dev] SMTP not configured — email NOT sent");
@@ -39,16 +40,16 @@ export async function sendEmailViaSmtp(
   }
 
   const transporter = nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT ?? 587,
+    host: smtp.host,
+    port: smtp.port,
     auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS,
+      user: smtp.user,
+      pass: smtp.pass,
     },
   });
 
   const info = await transporter.sendMail({
-    from: env.EMAIL_FROM,
+    from: smtp.from,
     to: Array.isArray(input.to) ? input.to.join(", ") : input.to,
     subject: input.subject,
     html: input.html,

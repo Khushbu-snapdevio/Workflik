@@ -6,10 +6,14 @@ import {
   completeOnboardingAction,
   type InviteEntry,
 } from "@/app/actions/onboarding";
+import { GoogleOAuthSettingsForm } from "@/components/orbit/integration-settings/google-oauth-settings-form";
+import { SmtpSettingsForm } from "@/components/orbit/integration-settings/smtp-settings-form";
+import { StorageSettingsForm } from "@/components/orbit/integration-settings/storage-settings-form";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Logo } from "@/components/ui/logo";
 import { RoleSelect } from "@/components/ui/role-select";
 import { PRODUCT_NAME } from "@/config/platform";
+import type { IntegrationSettingsSummary } from "@/lib/integration-settings";
 
 const INVITE_ROLE_OPTIONS = [
   { value: "admin", label: "Admin" },
@@ -115,12 +119,13 @@ const TEMPLATES = [
 /* ─── Step indices ──────────────────────────────────────────────── */
 
 const PROFILE_STEP = 0;
-const Q_FIRST_STEP = 1;
-const Q_LAST_STEP = 3;
-const WORKSPACE_STEP = 4;
-const INVITE_STEP = 5;
-const TEMPLATE_TEAM = 6;
-const TEMPLATE_SOLO = 5;
+const DOCKER_STEP = 1; // only reachable when isAdmin — the very first user
+const Q_FIRST_STEP = 2;
+const Q_LAST_STEP = 4;
+const WORKSPACE_STEP = 5;
+const INVITE_STEP = 6;
+const TEMPLATE_TEAM = 7;
+const TEMPLATE_SOLO = 6;
 
 const EMPTY_INVITE: InviteEntry = { email: "", role: "editor" };
 
@@ -142,10 +147,17 @@ function isInviteEmailInvalid(email: string) {
 
 interface Props {
   initialName: string;
+  integrationSettings: IntegrationSettingsSummary | null;
+  isAdmin: boolean;
   smtpConfigured: boolean;
 }
 
-export function OnboardingUI({ initialName, smtpConfigured }: Props) {
+export function OnboardingUI({
+  initialName,
+  integrationSettings,
+  isAdmin,
+  smtpConfigured,
+}: Props) {
   const [step, setStep] = useState(PROFILE_STEP);
   const [displayName, setDisplayName] = useState(initialName);
   const [jobTitle, setJobTitle] = useState("");
@@ -172,14 +184,17 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
 
   const isTeam = selections[2] !== "solo" && selections[2] !== "";
 
-  const totalSteps = isTeam ? 7 : 6;
+  const totalSteps = (isTeam ? 7 : 6) + (isAdmin ? 1 : 0);
   // Only reflects the team/solo choice once the user has actually moved past
   // that question (clicked Continue) — using the live selection instead would
   // make the progress bar/dot count change the instant an option is clicked,
-  // before the choice is confirmed.
-  const progressTotal = step > Q_LAST_STEP ? totalSteps : 6;
+  // before the choice is confirmed. The admin-only Docker step is known from
+  // the start (not a user choice), so it's always folded into this baseline.
+  const preQuizTotal = 6 + (isAdmin ? 1 : 0);
+  const progressTotal = step > Q_LAST_STEP ? totalSteps : preQuizTotal;
 
   const isProfileStep = step === PROFILE_STEP;
+  const isDockerStep = isAdmin && step === DOCKER_STEP;
   const isQuestionStep = step >= Q_FIRST_STEP && step <= Q_LAST_STEP;
   const isNameStep = step === WORKSPACE_STEP;
   const isInviteStep = isTeam && step === INVITE_STEP;
@@ -191,7 +206,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
   function selectOption(value: string) {
     setSelections((prev) => {
       const next = [...prev];
-      next[step - 1] = value;
+      next[step - Q_FIRST_STEP] = value;
       return next;
     });
   }
@@ -229,6 +244,10 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
 
   function handleContinue() {
     if (isProfileStep) {
+      setStep(isAdmin ? DOCKER_STEP : Q_FIRST_STEP);
+      return;
+    }
+    if (isDockerStep) {
       setStep(Q_FIRST_STEP);
       return;
     }
@@ -261,9 +280,16 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
     if (step === PROFILE_STEP) {
       return;
     }
-    // Every step's predecessor is simply step - 1 — the team/solo branch
-    // reuses index 5 for either INVITE_STEP or TEMPLATE_SOLO, but only one of
-    // those is ever reachable for a given isTeam value, so there's no clash.
+    // DOCKER_STEP is only ever reachable for admins, so a non-admin stepping
+    // back from Q_FIRST_STEP must skip over it straight to PROFILE_STEP.
+    if (step === Q_FIRST_STEP && !isAdmin) {
+      setStep(PROFILE_STEP);
+      return;
+    }
+    // Every other step's predecessor is simply step - 1 — the team/solo
+    // branch reuses index 6 for either INVITE_STEP or TEMPLATE_SOLO, but only
+    // one of those is ever reachable for a given isTeam value, so there's no
+    // clash.
     setStep(step - 1);
   }
 
@@ -271,6 +297,10 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
     if (isProfileStep) {
       setDisplayName("");
       setJobTitle("");
+      setStep(isAdmin ? DOCKER_STEP : Q_FIRST_STEP);
+      return;
+    }
+    if (isDockerStep) {
       setStep(Q_FIRST_STEP);
       return;
     }
@@ -322,7 +352,7 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
       return displayName.trim().length > 0;
     }
     if (isQuestionStep) {
-      return !!selections[step - 1];
+      return !!selections[step - Q_FIRST_STEP];
     }
     if (isNameStep) {
       return workspaceName.trim().length > 0;
@@ -414,19 +444,49 @@ export function OnboardingUI({ initialName, smtpConfigured }: Props) {
           </>
         )}
 
+        {/* ── Docker project step (admin only) ──────────────── */}
+        {isDockerStep && integrationSettings && (
+          <>
+            <h1 className="mb-1.5 text-center text-[1.6rem] font-black tracking-tight text-base-content">
+              Your {PRODUCT_NAME} project is running
+            </h1>
+            <p className="mb-6 text-center text-sm text-base-content/70">
+              Email, file storage, and Google sign-in are all optional — this
+              instance works without them. Set any of it up now, or skip and
+              come back to it later from Orbit Admin → Integrations.
+            </p>
+
+            <div className="mb-6 w-full space-y-3">
+              <SmtpSettingsForm
+                collapsible
+                initial={integrationSettings.smtp}
+              />
+              <GoogleOAuthSettingsForm
+                collapsible
+                initial={integrationSettings.google}
+              />
+              <StorageSettingsForm
+                collapsible
+                initial={integrationSettings.storage}
+              />
+            </div>
+          </>
+        )}
+
         {/* ── Question steps ────────────────────────────────── */}
         {isQuestionStep && (
           <>
             <h1 className="mb-1.5 text-center text-[1.6rem] font-black tracking-tight text-base-content">
-              {QUESTION_STEPS[step - 1].question}
+              {QUESTION_STEPS[step - Q_FIRST_STEP].question}
             </h1>
             <p className="mb-8 text-center text-sm text-base-content/70">
-              {QUESTION_STEPS[step - 1].subtitle}
+              {QUESTION_STEPS[step - Q_FIRST_STEP].subtitle}
             </p>
 
             <div className="mb-6 w-full overflow-hidden rounded-lg border border-base-300 bg-base-100">
-              {QUESTION_STEPS[step - 1].options.map((opt, idx) => {
-                const isSelected = selections[step - 1] === opt.value;
+              {QUESTION_STEPS[step - Q_FIRST_STEP].options.map((opt, idx) => {
+                const isSelected =
+                  selections[step - Q_FIRST_STEP] === opt.value;
                 return (
                   <button
                     className={`relative flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-150 ${

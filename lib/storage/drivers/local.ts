@@ -38,6 +38,10 @@ export function createLocalDriver(): StorageDriver {
       }
     },
 
+    async download(objectKey): Promise<Buffer> {
+      return fs.readFile(path.join(uploadDir(), objectKey));
+    },
+
     getPublicUrl(objectKey): string {
       return `${env.NEXT_PUBLIC_APP_URL}/api/uploads/files/${objectKey}`;
     },

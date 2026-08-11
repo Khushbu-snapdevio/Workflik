@@ -9,7 +9,7 @@ import { getStorage } from "@/lib/storage";
 export async function handleCleanupStaleUploads(
   _jobs: Job<Record<string, never>>[]
 ) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const cutoff = new Date(Date.now() - 30 * 60 * 1000);
 
   const stale = await db

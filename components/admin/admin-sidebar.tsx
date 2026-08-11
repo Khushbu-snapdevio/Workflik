@@ -1,7 +1,7 @@
 "use client";
 
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { ChevronDown, LogOut, Settings } from "lucide-react";
+import { ChevronDown, LogOut, Plug, Settings } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -192,6 +192,11 @@ const SECONDARY = [
     href: "/orbit-admin/orbit/settings",
     label: "Settings",
     icon: <Settings className="size-3.75" strokeWidth={1.5} />,
+  },
+  {
+    href: "/orbit-admin/orbit/integrations",
+    label: "Integrations",
+    icon: <Plug className="size-3.75" strokeWidth={1.5} />,
   },
 ];
 

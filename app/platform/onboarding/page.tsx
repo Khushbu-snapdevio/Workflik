@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { getIntegrationSettingsSummary } from "@/lib/integration-settings";
 import { isSmtpConfigured } from "@/lib/smtp/client";
 import { OnboardingUI } from "./_onboarding-ui";
 
@@ -15,6 +16,7 @@ export default async function OnboardingPage() {
     .select({
       onboardingCompleted: users.onboardingCompleted,
       name: users.name,
+      role: users.role,
     })
     .from(users)
     .where(eq(users.id, session.user.id))
@@ -25,10 +27,16 @@ export default async function OnboardingPage() {
     redirect("/platform/post-auth");
   }
 
+  const isAdmin = user?.role === "admin";
+
   return (
     <OnboardingUI
       initialName={user?.name ?? ""}
-      smtpConfigured={isSmtpConfigured()}
+      integrationSettings={
+        isAdmin ? await getIntegrationSettingsSummary() : null
+      }
+      isAdmin={isAdmin}
+      smtpConfigured={await isSmtpConfigured()}
     />
   );
 }

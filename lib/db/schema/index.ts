@@ -2,6 +2,7 @@ export * from "./auth";
 export * from "./collaboration";
 export * from "./databases";
 export * from "./files";
+export * from "./integration-settings";
 export * from "./pages";
 export * from "./platform";
 export * from "./search";

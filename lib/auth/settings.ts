@@ -1,17 +1,21 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { authSettings } from "@/lib/db/schema";
-import { env } from "@/lib/env";
+import { getGoogleOAuthSettings } from "@/lib/integration-settings";
 
 export type AuthMethod = "emailPassword" | "magicLink" | "google";
 
 const SINGLETON_ID = 1;
 
 // Google is only ever offerable if OAuth credentials are actually
-// configured — the admin toggle in Orbit layers on top of this, it can't
-// turn Google on without real credentials present.
-export function isGoogleConfigured() {
-  return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+// configured (env var or Orbit Admin → Integrations) — the admin toggle in
+// Orbit layers on top of this, it can't turn Google on without real
+// credentials present. Note: lib/auth/index.ts reads credentials once at
+// process boot, so a credentials change saved here still needs a restart to
+// actually take effect for sign-in itself — this check just reflects
+// what's currently saved.
+export async function isGoogleConfigured() {
+  return (await getGoogleOAuthSettings()) !== null;
 }
 
 // Singleton row, lazily created on first read so a fresh install doesn't
@@ -54,7 +58,7 @@ export async function isAuthMethodEnabled(method: AuthMethod) {
     case "magicLink":
       return settings.magicLinkEnabled;
     case "google":
-      return settings.googleEnabled && isGoogleConfigured();
+      return settings.googleEnabled && (await isGoogleConfigured());
     default:
       return false;
   }
@@ -87,9 +91,9 @@ export async function updateAuthSettings(input: UpdateAuthSettingsInput) {
       "At least one sign-in method must stay enabled."
     );
   }
-  if (next.googleEnabled && !isGoogleConfigured()) {
+  if (next.googleEnabled && !(await isGoogleConfigured())) {
     throw new AuthSettingsError(
-      "Google sign-in can't be enabled until GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set."
+      "Google sign-in can't be enabled until a Google client ID and secret are set (via GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET or Orbit Admin → Integrations)."
     );
   }
 

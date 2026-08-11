@@ -11,7 +11,7 @@ import { getStorage } from "@/lib/storage";
 export async function handleCleanupOrphanedMedia(
   _jobs: Job<Record<string, never>>[]
 ) {
-  const storage = getStorage();
+  const storage = await getStorage();
   const _sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   // All confirmed block_media uploads

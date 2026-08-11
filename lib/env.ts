@@ -52,18 +52,20 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: optionalString,
 
   // ── File storage ───────────────────────────────────────────────────────────
-  // STORAGE_DRIVER: "local" (default) saves to UPLOAD_DIR and serves via API.
-  //                 "s3" or "r2" uses presigned PUT URLs with the AWS SDK.
+  // STORAGE_DRIVER: "local" (default) saves to UPLOAD_DIR. "s3"/"r2" upload via
+  // presigned PUT URLs. Every driver is *served* through /api/uploads/files,
+  // which proxies bytes server-side — no public bucket/CDN URL is needed.
   STORAGE_DRIVER: z.enum(["local", "s3", "r2"]).default("local"),
   // Local driver — absolute or relative path; defaults to <project-root>/uploads
   UPLOAD_DIR: optionalString,
-  // S3 / R2 driver — all required when STORAGE_DRIVER is "s3" or "r2"
+  // S3 / R2 driver — all required when STORAGE_DRIVER is "s3" or "r2". The
+  // bucket needs a CORS policy allowing PUT from NEXT_PUBLIC_APP_URL, since
+  // uploads still go directly from the browser to the bucket.
   S3_ENDPOINT: optionalString, // leave unset for AWS; set for R2 / MinIO
   S3_BUCKET: optionalString,
   S3_REGION: optionalString,
   S3_ACCESS_KEY_ID: optionalString,
   S3_SECRET_ACCESS_KEY: optionalString,
-  CDN_URL: optionalString, // CDN base URL, e.g. https://cdn.example.com
 });
 
 const parsed = envSchema.safeParse(process.env);

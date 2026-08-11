@@ -18,7 +18,7 @@ export async function GET() {
     emailPasswordEnabled: settings.emailPasswordEnabled,
     magicLinkEnabled: settings.magicLinkEnabled,
     googleEnabled: settings.googleEnabled,
-    googleConfigured: isGoogleConfigured(),
+    googleConfigured: await isGoogleConfigured(),
     updatedAt: settings.updatedAt,
   });
 }
@@ -58,7 +58,7 @@ export async function PATCH(req: NextRequest) {
       emailPasswordEnabled: updated.emailPasswordEnabled,
       magicLinkEnabled: updated.magicLinkEnabled,
       googleEnabled: updated.googleEnabled,
-      googleConfigured: isGoogleConfigured(),
+      googleConfigured: await isGoogleConfigured(),
       updatedAt: updated.updatedAt,
     });
   } catch (error) {

@@ -53,7 +53,7 @@ export function TemplateDeleteButton({ templateId, templateName }: Props) {
       />
 
       {error && (
-        <p className="absolute left-1/2 top-full z-10 mt-1 w-max max-w-55 -translate-x-1/2 rounded-sm border border-error/30 bg-base-100 px-2 py-1 text-[11px] text-error">
+        <p className="absolute left-1/2 top-full z-10 mt-1 w-max max-w-55 -translate-x-1/2 rounded-sm border border-error/30 bg-neutral px-2 py-1 text-[11px] text-error">
           {error}
         </p>
       )}

@@ -375,7 +375,7 @@ export function AdminSidebar({
             matching comment in components/sidebar/sidebar.tsx's user menu. */}
         <Menu>
           <MenuItems
-            className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 origin-bottom overflow-hidden rounded-xl border border-base-300 bg-base-100 transition-all duration-150 ease-out data-leave:scale-95 data-leave:opacity-0"
+            className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 origin-bottom overflow-hidden rounded-xl border border-base-300 bg-neutral transition-all duration-150 ease-out data-closed:scale-95 data-closed:opacity-0 data-leave:scale-95 data-leave:opacity-0"
             transition
           >
             {/* User info */}

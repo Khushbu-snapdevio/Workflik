@@ -110,7 +110,7 @@ export function UserHoverCard({
 
   return createPortal(
     <div
-      className="rounded-md border border-base-300 bg-base-100 px-2.5 py-2 shadow-lg"
+      className="rounded-md border border-base-300 bg-neutral px-2.5 py-2 shadow-lg"
       ref={setFloating}
       style={{
         position: "fixed",

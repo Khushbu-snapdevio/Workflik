@@ -78,7 +78,7 @@ export function ShareButton({
 
           <PopoverPanel
             anchor={{ to: "bottom end", gap: 8 }}
-            className="z-600 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+            className="z-600 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
             transition
           >
             <SharePanel

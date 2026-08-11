@@ -215,7 +215,7 @@ function ColorPicker({
           </PopoverButton>
           <PopoverPanel
             anchor={{ to: "bottom start", gap: 4 }}
-            className="z-600 flex gap-1 rounded-sm border border-base-300 bg-base-100 p-1.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+            className="z-600 flex gap-1 rounded-sm border border-base-300 bg-neutral p-1.5 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
             transition
           >
             {COLORS.map((c) => (

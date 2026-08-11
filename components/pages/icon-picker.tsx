@@ -230,7 +230,7 @@ export function IconPicker({
               open={open}
               skipNextRef={skipNextCloseRef}
             />
-            <PopoverPanel className="absolute left-0 top-full z-500 mt-2 w-88 overflow-hidden rounded-lg border border-base-300 bg-base-100">
+            <PopoverPanel className="absolute left-0 top-full z-500 mt-2 w-88 overflow-hidden rounded-lg border border-base-300 bg-neutral">
               <TabGroup>
                 {/* ── Tab bar — Notion underline style ── */}
                 <div className="flex items-center border-b border-base-300 px-2">

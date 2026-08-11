@@ -291,7 +291,7 @@ export function FavoritesSection({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-base-100"
+            className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-neutral"
             ref={popupRef}
             style={{ top: popupPos.top, left: popupPos.left }}
           >

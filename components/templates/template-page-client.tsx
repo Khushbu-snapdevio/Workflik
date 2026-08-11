@@ -615,7 +615,7 @@ function FilterPanel({
   }
 
   return (
-    <div className="absolute right-0 top-full z-400 mt-1 w-[calc(100vw-24px)] max-w-95 rounded-md border border-base-300 bg-base-100">
+    <div className="absolute right-0 top-full z-400 mt-1 w-[calc(100vw-24px)] max-w-95 rounded-md border border-base-300 bg-neutral">
       <div className="flex items-center justify-between border-b border-base-300 px-4 py-3">
         <span className="text-sm font-semibold">Filter</span>
         <button
@@ -863,7 +863,7 @@ function SortPanel({
   }
 
   return (
-    <div className="absolute right-0 top-full z-400 mt-1 w-75 rounded-md border border-base-300 bg-base-100">
+    <div className="absolute right-0 top-full z-400 mt-1 w-75 rounded-md border border-base-300 bg-neutral">
       <div className="flex items-center justify-between border-b border-base-300 px-4 py-3">
         <span className="text-sm font-semibold">Sort</span>
         <button
@@ -974,7 +974,7 @@ function PropertiesPanel({
 }) {
   const visible = properties.filter((p) => !SYSTEM_TYPES.has(p.type));
   return (
-    <div className="absolute right-0 top-full z-400 mt-1 w-60 rounded-md border border-base-300 bg-base-100">
+    <div className="absolute right-0 top-full z-400 mt-1 w-60 rounded-md border border-base-300 bg-neutral">
       <div className="flex items-center justify-between border-b border-base-300 px-4 py-3">
         <span className="text-sm font-semibold">Properties</span>
         <button
@@ -2931,7 +2931,7 @@ export function TemplatePageClient({
                       <PlusIcon size={14} />
                     </button>
                     {showAddView && (
-                      <div className="absolute left-0 top-full z-400 mt-1.5 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-base-300 bg-base-100">
+                      <div className="absolute left-0 top-full z-400 mt-1.5 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-base-300 bg-neutral">
                         <div className="flex items-center gap-2 border-b border-base-300 px-4 py-3">
                           <PlusIcon className="text-primary" size={13} />
                           <span className="text-sm font-semibold text-base-content">

@@ -296,7 +296,7 @@ export function PageTree({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-base-100"
+            className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-neutral"
             ref={popupRef}
             style={{ top: popupPos.top, left: popupPos.left }}
           >
@@ -649,7 +649,7 @@ function PageTreeNode({
         {/* Context menu — fixed so it escapes the sidebar's overflow clip */}
         {menuOpen && (
           <div
-            className="fixed z-200 min-w-42 overflow-hidden rounded-md border border-base-300 bg-base-100"
+            className="fixed z-200 min-w-42 overflow-hidden rounded-md border border-base-300 bg-neutral"
             ref={menuRef}
             style={{ left: menuPos.x, top: menuPos.y }}
           >

@@ -180,7 +180,7 @@ function GeneralAccessControl({
 
       <ListboxOptions
         anchor={{ to: "bottom start", gap: 4 }}
-        className="z-600 w-(--button-width) overflow-hidden rounded-md border border-base-300 bg-base-100 p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        className="z-600 w-(--button-width) overflow-hidden rounded-md border border-base-300 bg-neutral p-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
         transition
       >
         {GENERAL_ACCESS_OPTIONS.map((o) => {
@@ -423,7 +423,7 @@ export function SharePanel({
   return (
     <>
       <div
-        className="w-115 max-w-[calc(100vw-32px)] rounded-md border border-base-300 bg-base-100 overflow-hidden flex flex-col"
+        className="w-115 max-w-[calc(100vw-32px)] rounded-md border border-base-300 bg-neutral overflow-hidden flex flex-col"
         ref={panelRef}
         style={{ maxHeight: "calc(100vh - 80px)" }}
       >

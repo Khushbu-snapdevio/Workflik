@@ -422,7 +422,7 @@ export function DatabaseToolbar({
                   the React tree holding this menu — it closed on the same click. */}
               <MenuItems
                 anchor={{ to: "bottom start", gap: 4 }}
-                className="z-600 w-80 overflow-hidden rounded-lg border border-base-300 bg-base-100 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-600 w-80 overflow-hidden rounded-lg border border-base-300 bg-neutral transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
                 modal={false}
                 transition
               >
@@ -911,7 +911,7 @@ export function DatabaseToolbar({
           <RectAnchorTrigger rect={layoutRect} />
           <PopoverPanel
             anchor={{ to: "bottom end", gap: 4 }}
-            className="z-600 w-80 overflow-hidden rounded-lg border border-base-300 bg-base-100"
+            className="z-600 w-80 overflow-hidden rounded-lg border border-base-300 bg-neutral"
             data-edit-property-exempt
             modal={false}
             ref={layoutDropRef}
@@ -1094,7 +1094,7 @@ function ViewMenu({
       </MenuButton>
       <MenuItems
         anchor={{ to: "bottom end", gap: 4 }}
-        className="z-600 w-48 overflow-hidden rounded-md border border-base-300 bg-base-100 p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        className="z-600 w-48 overflow-hidden rounded-md border border-base-300 bg-neutral p-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
         modal={false}
         transition
       >
@@ -1195,7 +1195,7 @@ function PropertyPickerListbox({
       </ListboxButton>
       <ListboxOptions
         anchor={{ to: "bottom start", gap: 4 }}
-        className="z-600 w-48 overflow-hidden rounded-md border border-base-300 bg-base-200 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        className="z-600 w-48 overflow-hidden rounded-md border border-base-300 bg-base-200 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
         modal={false}
         transition
       >

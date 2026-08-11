@@ -28,7 +28,9 @@ export async function POST() {
       return NextResponse.json({ ok: true });
     }
 
-    if (!(settings.bucket && settings.accessKeyId && settings.secretAccessKey)) {
+    if (
+      !(settings.bucket && settings.accessKeyId && settings.secretAccessKey)
+    ) {
       return NextResponse.json({
         ok: false,
         error: "Bucket, access key, and secret key are all required to test.",

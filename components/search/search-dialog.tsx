@@ -189,7 +189,7 @@ function FilterChip<T extends string>({
        above the results list below the filter bar. */}
       <ListboxOptions
         anchor={{ to: "bottom start", gap: 4 }}
-        className="z-820 max-h-64 min-w-40 overflow-y-auto rounded-md border border-base-300 bg-base-100 p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        className="z-820 max-h-64 min-w-40 overflow-y-auto rounded-md border border-base-300 bg-neutral p-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
         transition
       >
         {options.map((opt) => (

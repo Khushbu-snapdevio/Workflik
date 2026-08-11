@@ -490,7 +490,7 @@ export function TableControls({ editor }: { editor: Editor }) {
               </MenuButton>
               <MenuItems
                 anchor={{ to: "right start", gap: 4 }}
-                className="z-300 overflow-hidden rounded-md border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-300 overflow-hidden rounded-md border border-base-300 bg-neutral py-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
                 style={{ width: MENU_WIDTH }}
                 transition
               >
@@ -525,7 +525,7 @@ export function TableControls({ editor }: { editor: Editor }) {
               </MenuButton>
               <MenuItems
                 anchor={{ to: "bottom start", gap: 4 }}
-                className="z-300 overflow-hidden rounded-md border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-300 overflow-hidden rounded-md border border-base-300 bg-neutral py-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
                 style={{ width: MENU_WIDTH }}
                 transition
               >

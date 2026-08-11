@@ -20,7 +20,7 @@ export function ReactionTooltip({ rect, emoji, label, who }: { rect: DOMRect; em
         // same accent color the reaction badge itself uses (bg-primary/10
         // when it's your own reaction), so the hover card reads as part of
         // the same color language instead of a plain generic tooltip.
-        background: "color-mix(in srgb, var(--color-primary) 8%, var(--color-base-100))",
+        background: "color-mix(in srgb, var(--color-primary) 8%, var(--color-neutral))",
         color: "var(--color-base-content)",
         border: "1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-base-300))",
         borderRadius: "var(--radius-md)",

@@ -158,7 +158,7 @@ export function useMentionAutocomplete({
     typeof document !== "undefined"
       ? createPortal(
           <div
-            className="w-56 overflow-hidden rounded-md border border-base-300 bg-base-100 p-1 shadow-lg"
+            className="w-56 overflow-hidden rounded-md border border-base-300 bg-neutral p-1 shadow-lg"
             data-comment-exempt
             ref={setFloating}
             style={{

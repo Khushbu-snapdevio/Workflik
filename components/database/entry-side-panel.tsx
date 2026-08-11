@@ -106,7 +106,7 @@ export function EntrySidePanel({
     return entryValues.get(propId) ?? null;
   }
 
-  function handleCellClick(prop: DbProperty, e: React.MouseEvent) {
+  function handleCellClick(prop: DbProperty, e: React.SyntheticEvent) {
     if (!isEditor) {
       return;
     }
@@ -317,6 +317,7 @@ export function EntrySidePanel({
                         <div className="h-full w-px bg-base-300 self-stretch" />
 
                         {/* Value */}
+                        {/* biome-ignore lint/a11y/useSemanticElements: renders an <input> for inline editing, and interactive content can't nest inside a <button> */}
                         <div
                           className={[
                             "flex min-h-9 flex-1 items-center px-3.5 py-2.5 text-sm transition-colors duration-150",
@@ -333,6 +334,18 @@ export function EntrySidePanel({
                             }
                             handleCellClick(prop, e);
                           }}
+                          onKeyDown={(e) => {
+                            if (
+                              hasFiles ||
+                              (e.key !== "Enter" && e.key !== " ")
+                            ) {
+                              return;
+                            }
+                            e.preventDefault();
+                            handleCellClick(prop, e);
+                          }}
+                          role="button"
+                          tabIndex={isEditor && !hasFiles ? 0 : undefined}
                         >
                           {isInlineEditing ? (
                             <input

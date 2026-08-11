@@ -122,7 +122,7 @@ export function MultiOptionPicker({
         <ListboxButtonTrigger count={value.length} />
         <ListboxOptions
           anchor={{ to: "bottom start", gap: 4 }}
-          className="z-600 w-44 overflow-y-auto rounded-md border border-base-300 bg-base-200 p-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+          className="z-600 w-44 overflow-y-auto rounded-md border border-base-300 bg-base-200 p-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
           modal={false}
           transition
         >

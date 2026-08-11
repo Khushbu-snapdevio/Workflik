@@ -145,12 +145,12 @@ export function NotificationPanel({ workspaceId, workspaceSlug }: Props) {
         open={panelOpen}
       >
         <SheetContent
-          className="gap-0 border-base-300 bg-base-100 p-0 data-[side=right]:w-full data-[side=right]:sm:w-105 data-[side=right]:sm:max-w-none"
+          className="gap-0 border-base-300 bg-neutral p-0 data-[side=right]:w-full data-[side=right]:sm:w-105 data-[side=right]:sm:max-w-none"
           showCloseButton={false}
           side="right"
         >
           {/* ── Header ── */}
-          <div className="shrink-0 border-b border-base-300 bg-base-100">
+          <div className="shrink-0 border-b border-base-300 bg-neutral">
             {/* Top accent bar */}
             <div className="h-0.75 bg-linear-to-r from-primary via-primary/60 to-transparent" />
 

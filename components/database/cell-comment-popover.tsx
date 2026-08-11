@@ -117,7 +117,7 @@ const FullEmojiPicker = function FullEmojiPicker({
   return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handlers are stopPropagation. This renders through createPortal, so its React-tree parent is the cell that opened the picker; unguarded clicks/pointerdowns would also fire that cell's handlers and dismiss the popover. There is no activation to key-handle, every real control inside is a native button, and adding role/tabIndex here would create a tab stop that does nothing.
     <div
-      className="rounded-lg border border-base-300 bg-base-100 overflow-hidden"
+      className="rounded-lg border border-base-300 bg-neutral overflow-hidden"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       ref={mergedRef}
@@ -150,7 +150,7 @@ function MoreMenuPortal({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handlers are stopPropagation, keeping clicks inside the "⋯" menu from reaching the comment row it is anchored to. There is no activation to key-handle, every real control inside is a native button, and adding role/tabIndex here would create a tab stop that does nothing.
     <div
-      className="overflow-hidden rounded-sm border border-base-300 bg-base-100 py-0.5"
+      className="overflow-hidden rounded-sm border border-base-300 bg-neutral py-0.5"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       ref={mergedRef}
@@ -1121,7 +1121,7 @@ export function CellCommentPopover({
       {/* Main popover */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handlers are stopPropagation. This renders through createPortal, so its React-tree parent is the table cell that opened the thread; unguarded clicks/pointerdowns would also fire that cell's handlers and close the popover mid-interaction. There is no activation to key-handle, every real control inside is a native button/input, and adding role/tabIndex here would create a tab stop that does nothing. */}
       <div
-        className="rounded-md border border-base-300 bg-base-100 overflow-hidden"
+        className="rounded-md border border-base-300 bg-neutral overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
         ref={mergedPopoverRef}

@@ -326,7 +326,7 @@ export function TooltipTour({ tourCompleted }: Props) {
       <div
         aria-labelledby={titleId}
         aria-modal="false"
-        className="rounded-lg border border-base-300 bg-base-100 p-5"
+        className="rounded-lg border border-base-300 bg-neutral p-5"
         role="dialog"
         style={{
           position: "fixed",

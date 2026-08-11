@@ -919,7 +919,7 @@ export function TemplateCalendarView({
                 return (
                   // biome-ignore lint/a11y/noNoninteractiveElementInteractions lint/a11y/noStaticElementInteractions: hover-lifetime container, not a control — the enter/leave handlers only keep this "+N more" popup open while the pointer is inside it, cancelling the close timer started by the day cell. Nothing is activated here; every entry inside is its own focusable element.
                   <div
-                    className="overflow-hidden rounded-md border border-base-300 bg-base-100"
+                    className="overflow-hidden rounded-md border border-base-300 bg-neutral"
                     onMouseEnter={cancelClose}
                     onMouseLeave={scheduleClose}
                     ref={morePopupRef}

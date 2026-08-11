@@ -648,7 +648,7 @@ function EditPropertySidePanelBody({
                       />
                     </span>
                   </ListboxButton>
-                  <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-base-300 bg-base-100 p-1">
+                  <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-base-300 bg-neutral p-1">
                     {(["checkbox", "select"] as const).map((mode) => (
                       <ListboxOption
                         className={({ focus }) =>

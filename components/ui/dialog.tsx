@@ -50,7 +50,12 @@ function Dialog({
     [openProp, onOpenChange]
   )
 
-  React.useEffect(() => {
+  // useLayoutEffect, not useEffect: showModal() must run before the browser
+  // paints the frame where `open` flips true, or that frame briefly renders
+  // with the dialog's un-promoted (pre-top-layer, pre-@starting-style)
+  // styles — visible as a flash at the document's default 0,0 origin before
+  // it snaps to its actual centered position.
+  React.useLayoutEffect(() => {
     const el = dialogRef.current
     if (!el) return
     if (open && !el.open) el.showModal()
@@ -162,7 +167,7 @@ function DialogContent({
         if (event.target === dialogRef.current) setOpen(false)
       }}
       className={cn(
-        "fixed top-1/2 left-1/2 z-50 m-0 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md bg-base-100 p-6 text-sm text-base-content ring-1 ring-base-content/10 outline-none sm:max-w-md",
+        "fixed top-1/2 left-1/2 z-50 m-0 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-md bg-neutral p-6 text-sm text-base-content ring-1 ring-base-content/10 outline-none sm:max-w-md",
         className
       )}
       {...props}

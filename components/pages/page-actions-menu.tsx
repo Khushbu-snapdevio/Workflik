@@ -229,7 +229,7 @@ export function PageActionsMenu({
 
         <MenuItems
           anchor={{ to: "bottom end", gap: 4 }}
-          className="z-600 w-52 overflow-hidden rounded-md border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+          className="z-600 w-52 overflow-hidden rounded-md border border-base-300 bg-neutral py-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
           transition
         >
           {!isDeleted && (

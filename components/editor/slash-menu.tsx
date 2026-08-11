@@ -122,7 +122,7 @@ export function SlashMenu({ suggestionProps, ref }: Props) {
 
   return (
     <div
-      className="fixed z-300 w-72 overflow-hidden rounded-md border border-base-300 bg-base-100"
+      className="fixed z-300 w-72 overflow-hidden rounded-md border border-base-300 bg-neutral"
       ref={containerRef}
       style={{ left: menuLeft, top: menuTop }}
     >

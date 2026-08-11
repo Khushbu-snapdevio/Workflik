@@ -991,7 +991,7 @@ export function BoardView({
                 </PopoverButton>
                 <PopoverPanel
                   anchor={{ to: "bottom start", gap: 4 }}
-                  className="z-600 w-65 rounded-lg border border-base-300 bg-base-200 p-3.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                  className="z-600 w-65 rounded-lg border border-base-300 bg-base-200 p-3.5 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
                   modal={false}
                   transition
                 >

@@ -299,7 +299,7 @@ export function EntryContextMenu({
         createPortal(
           // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handler is stopPropagation. This renders through createPortal, so its React-tree parent is the entry row that opened the menu; an unguarded click inside would also fire that row's handlers. There is no activation to key-handle, every real control inside is a native button, and adding role/tabIndex here would create a tab stop that does nothing.
           <div
-            className="overflow-hidden rounded-md border border-base-300 bg-base-100"
+            className="overflow-hidden rounded-md border border-base-300 bg-neutral"
             data-edit-property-exempt
             onClick={(e) => e.stopPropagation()}
             ref={menuRef}
@@ -776,7 +776,7 @@ function PropertyFlyout({
   return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handler is stopPropagation. This renders through createPortal, so its React-tree parent is the entry row that opened the property list; an unguarded click inside would also fire that row's handlers. There is no activation to key-handle, every real control inside is a native button, and adding role/tabIndex here would create a tab stop that does nothing.
     <div
-      className="max-h-80 overflow-y-auto rounded-md border border-base-300 bg-base-100 p-1"
+      className="max-h-80 overflow-y-auto rounded-md border border-base-300 bg-neutral p-1"
       data-edit-property-exempt
       onClick={(e) => e.stopPropagation()}
       style={{ position: "fixed", top, left, zIndex: 9999, width: FW }}
@@ -916,7 +916,7 @@ function InlineValueEditor({
   return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/noNoninteractiveElementInteractions lint/a11y/useKeyWithClickEvents: event-isolation guard, not a control — the only handler is stopPropagation. This renders through createPortal, so its React-tree parent is the entry row that opened the inline value editor; an unguarded click inside would also fire that row's handlers. There is no activation to key-handle, the input inside owns its own keyboard handling, and adding role/tabIndex here would create a tab stop that does nothing.
     <div
-      className="rounded-md border border-base-300 bg-base-100 p-2"
+      className="rounded-md border border-base-300 bg-neutral p-2"
       data-edit-property-exempt
       onClick={(e) => e.stopPropagation()}
       ref={ref}

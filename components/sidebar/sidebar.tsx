@@ -407,7 +407,7 @@ export function Sidebar({
               </MenuButton>
               <MenuItems
                 anchor={{ to: "bottom end", gap: 4 }}
-                className="z-600 w-60 overflow-hidden rounded-lg border border-base-300 bg-base-100 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-600 w-60 overflow-hidden rounded-lg border border-base-300 bg-neutral transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
                 transition
               >
                 <div className="px-3 pb-1 pt-2">
@@ -740,7 +740,7 @@ export function Sidebar({
          which has no built-in way to match a variable-width sidebar. */}
           <Menu>
             <MenuItems
-              className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 origin-bottom overflow-hidden rounded-xl border border-base-300 bg-base-100 transition-all duration-150 ease-out data-leave:scale-95 data-leave:opacity-0"
+              className="absolute bottom-[calc(100%+8px)] left-2 right-2 z-50 origin-bottom overflow-hidden rounded-xl border border-base-300 bg-base-100 transition-all duration-150 ease-out data-closed:scale-95 data-closed:opacity-0 data-leave:scale-95 data-leave:opacity-0"
               transition
             >
               <div className="px-3.5 pb-3 pt-3.5">
@@ -1021,7 +1021,7 @@ function CollapsedFavoritesItem({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-base-100"
+            className="fixed z-560 w-72 overflow-hidden rounded-xl border border-primary/20 bg-neutral"
             ref={popupRef}
             style={{ top: pos.top, left: pos.left }}
           >

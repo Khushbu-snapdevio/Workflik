@@ -1498,7 +1498,7 @@ export function EmojiGridPicker({
           </PopoverButton>
           <PopoverPanel
             anchor={{ to: "bottom end", gap: 6 }}
-            className="z-9999 flex items-center gap-0.5 rounded-md border border-base-300 bg-base-100 p-1.5 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+            className="z-9999 flex items-center gap-0.5 rounded-md border border-base-300 bg-neutral p-1.5 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
             onMouseDown={(e) => e.stopPropagation()}
             transition
           >

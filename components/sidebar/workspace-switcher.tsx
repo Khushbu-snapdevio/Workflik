@@ -115,7 +115,7 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
 
         <MenuItems
           anchor={{ to: "bottom start", gap: 4 }}
-          className="z-600 w-72 overflow-hidden rounded-lg border border-base-300 bg-base-100 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+          className="z-600 w-72 overflow-hidden rounded-lg border border-base-300 bg-neutral transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
           transition
         >
           {/* Workspace list */}

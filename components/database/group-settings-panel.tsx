@@ -417,7 +417,7 @@ export function GroupSettingsPanel({
                         />
                       </span>
                     </ListboxButton>
-                    <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-base-300 bg-base-100 p-1">
+                    <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-base-300 bg-neutral p-1">
                       {[
                         { key: "group" as const, label: "Group" },
                         { key: "option" as const, label: "Option" },
@@ -465,7 +465,7 @@ export function GroupSettingsPanel({
                       />
                     </span>
                   </ListboxButton>
-                  <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-base-300 bg-base-100 p-1">
+                  <ListboxOptions className="mt-1 flex flex-col gap-0.5 rounded-sm border border-base-300 bg-neutral p-1">
                     {(["manual", "asc", "desc"] as const).map((dir) => (
                       <ListboxOption
                         className={({ focus }) =>

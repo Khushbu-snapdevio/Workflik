@@ -59,12 +59,23 @@
 
 /* ─── Native <dialog>-based Dialog/AlertDialog/Sheet primitives ──────────────
    Radix removed in favor of the browser's own modal semantics (showModal()
-   gives focus-trap + Escape + top-layer stacking for free). Two things the
+   gives focus-trap + Escape + top-layer stacking for free). Four things the
    UA stylesheet doesn't give us: (1) it centers a modal dialog via
    `inset: 0; margin: auto`, which fights our own position classes — reset in
    `@layer base` so it's always beaten by the (higher-priority) utility
    classes that set explicit top/right/bottom/left; (2) open/close animation,
-   done with @starting-style so it's pure CSS, no animation-end listeners. */
+   done with @starting-style so it's pure CSS, no animation-end listeners;
+   (3) the UA stylesheet also makes `dialog` a scroll container (`overflow:
+   auto`), which shows a spurious horizontal scrollbar from sub-pixel
+   rounding in flex footers even though content never actually overflows
+   sideways — killed here since these dialogs only ever need to scroll
+   vertically (see max-height above); (4) `AlertDialogPortal`/`DialogPortal`
+   don't actually portal to <body> (native <dialog> already escapes ancestor
+   stacking/clipping via the top layer for painting), so a dialog mounted
+   inside e.g. a table cell with `whitespace-nowrap` still *inherits* that
+   `white-space` down the DOM tree — top-layer promotion only changes paint
+   order, not CSS inheritance — silently breaking text wrapping. Reset here
+   so dialog content always wraps regardless of where it's mounted. */
 @layer base {
   dialog[data-slot="dialog-content"],
   dialog[data-slot="sheet-content"],
@@ -72,6 +83,8 @@
     inset: auto;
     max-height: 100vh;
     margin: 0;
+    overflow-x: hidden;
+    white-space: normal;
   }
 }
 
@@ -178,6 +191,74 @@ dialog:not([open])::backdrop {
   themes:
     light --default,
     dark;
+}
+
+/* ─── dark theme: base surface hierarchy override ────────────────────────
+   daisy's stock `dark` theme packs base-100/200/300 into a ~4-point OKLCH
+   lightness band (21%–25%), vs. the stock `light` theme's 95%–100% band.
+   That's fine in light mode — near white, a few points of lightness read as
+   a clearly visible step — but the same few points crush together near-
+   black, so cards, inputs, dropdowns, popovers and modals all read as one
+   indistinguishable surface, and `border-base-300` (used almost everywhere
+   as the default border, see the `* { border-base-300 }` rule below)
+   becomes nearly invisible.
+   Widened here to a GitHub/Linear-style three-step scale, same hue family
+   (~254, the app's existing cool blue-gray) as the stock theme:
+     base-200 (canvas)  — darkest: page bg, sidebar, app shell
+     base-100 (surface) — mid: cards, dropdowns, dialogs, inputs, table rows
+     base-300 (border)  — lightest: borders, dividers, hover/selected fill
+   base-300 is deliberately the *lightest* of the three, not the darkest
+   (light theme's own order) — a border needs to contrast against whatever's
+   on both sides of it, and near-black darkening-further is far harder to
+   perceive than a lighter step, which is also why the existing call sites
+   already lean on it that way (e.g. sidebar.tsx's icon buttons sit directly
+   on base-200 and use `hover:bg-base-300` for their hover fill — under the
+   stock values that hover was *darker* than the sidebar itself, i.e.
+   invisible).
+   This MUST go through `@plugin "daisyui/theme"` (which merges these tokens
+   into daisy's own generated `[data-theme="dark"]` base-layer rule) rather
+   than a plain `.dark { --color-base-300: ... }` override — Tailwind v4's
+   build silently drops raw `--color-*` custom-property declarations that
+   don't go through its own theme-registration path; only every other token
+   here (not `--color-*`) survives that route. Every token this block omits
+   still falls through to the stock `dark` theme (see theme/index.js's
+   `{...builtinTheme, ...customThemeTokens}` merge) — only base-100/200/300
+   are touched. `light` (the default theme, untouched above) is not
+   affected.
+
+   `--color-neutral` is repurposed the same way, as this app's dedicated
+   *elevated floating surface* token (dropdowns, popovers, dialogs, menus,
+   tooltips). daisy ships `neutral`/`neutral-content` for its own opaque-fill
+   components (`.btn-neutral`, `.badge-neutral`, …), none of which this app
+   uses (grep `bg-neutral|border-neutral|badge-neutral|btn-neutral` before
+   reusing it for anything else — confirmed empty at the time this was
+   written) — so the slot is free, and reusing a real daisy token here
+   instead of inventing a new CSS variable keeps every colour in the app
+   flowing through daisy's own theme system.
+   Why a 4th surface level is needed at all: base-100 is both "the card/
+   input/main-content surface" *and*, previously, "the dropdown/popover/
+   dialog fill" — fine in light mode (a white popover over a white page
+   still reads via its shadow), but in dark mode a popover opened from a
+   base-100 toolbar (e.g. the Share button, Global Search) was the exact
+   same colour as the surface it floats over, so only a 1px border
+   separated them. `neutral` is kept reliably lighter than *both* base-100
+   and base-200 so it pops regardless of what's behind it — see `light`
+   below for why this doesn't touch light mode at all. */
+@plugin "daisyui/theme" {
+  name: "dark";
+  --color-base-200: oklch(16% 0.014 254);
+  --color-base-100: oklch(21% 0.014 254);
+  --color-base-300: oklch(32% 0.016 254);
+  --color-neutral: oklch(27% 0.015 254);
+}
+
+/* `light`'s own dropdowns/popovers/dialogs already read correctly against
+   base-100 (see comment above) — `neutral` here is set to plain base-100 so
+   `bg-neutral`, used by every floating-surface component, renders pixel-
+   identical to how it looked before this token existed. */
+@plugin "daisyui/theme" {
+  name: "light";
+  --color-neutral: var(--color-base-100);
 }
 
 /* Tailwind v4 resolves `dark:` against prefers-color-scheme by default, which

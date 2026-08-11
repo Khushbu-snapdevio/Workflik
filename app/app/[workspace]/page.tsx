@@ -336,8 +336,8 @@ export default async function WorkspacePage({ params }: Props) {
                 </div>
               </div>
               <div className="flex items-center gap-3 px-4 py-4 sm:px-6">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-secondary">
-                  <Users className="text-secondary-content" size={16} />
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-info/10">
+                  <Users className="text-info" size={16} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-lg font-bold leading-none text-base-content">
@@ -395,13 +395,8 @@ export default async function WorkspacePage({ params }: Props) {
                     {
                       label: "Library",
                       href: `/app/${slug}/library`,
-                      iconBg: "bg-secondary",
-                      icon: (
-                        <BookOpen
-                          className="text-secondary-content"
-                          size={18}
-                        />
-                      ),
+                      iconBg: "bg-info/10",
+                      icon: <BookOpen className="text-info" size={18} />,
                     },
                     {
                       label: "Templates",

@@ -378,7 +378,7 @@ function SelectCell({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-300 mt-0.5 min-w-45 rounded-md border border-base-300 bg-base-100 p-1">
+        <div className="absolute left-0 top-full z-300 mt-0.5 min-w-45 rounded-md border border-base-300 bg-neutral p-1">
           {current && (
             <button
               className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs text-base-content/70 hover:bg-base-200 transition-colors"
@@ -506,7 +506,7 @@ function MultiSelectCell({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-300 mt-0.5 min-w-45 rounded-md border border-base-300 bg-base-100 p-1">
+        <div className="absolute left-0 top-full z-300 mt-0.5 min-w-45 rounded-md border border-base-300 bg-neutral p-1">
           {selectedOpts.length > 0 && (
             <button
               className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-xs text-base-content/70 hover:bg-base-200 transition-colors"
@@ -1848,7 +1848,7 @@ function SortableRow({
             </div>
 
             {menuOpen && (
-              <div className="absolute left-0 top-full z-500 mt-0.5 w-47.5 rounded-md border border-base-300 bg-base-100 p-1">
+              <div className="absolute left-0 top-full z-500 mt-0.5 w-47.5 rounded-md border border-base-300 bg-neutral p-1">
                 <Link
                   className="flex w-full items-center gap-2 rounded-sm px-3 py-1.5 text-sm text-base-content hover:bg-base-200 transition-colors"
                   href={`/app/${workspaceSlug}/${entry.shortId}`}

@@ -170,7 +170,11 @@ interface RowMenuState {
 // ── SortableTableRow ─────────────────────────────────────────────────────────
 
 interface SortableTableRowProps {
-  activateCell: (entryId: string, propId: string, e: React.MouseEvent) => void;
+  activateCell: (
+    entryId: string,
+    propId: string,
+    e: React.SyntheticEvent
+  ) => void;
   activeCell: ActiveCell | null;
   activeView: SharedViewProps["activeView"];
   addBtnW: number;
@@ -588,6 +592,7 @@ function SortableTableRow({
           const isActive =
             activeCell?.entryId === entry.id && activeCell.propId === prop.id;
           return (
+            // biome-ignore lint/a11y/useSemanticElements: renders an <input> for inline editing, and interactive content can't nest inside a <button>
             <div
               className={[
                 // pr-8 (not px-3 on the right) reserves a gutter matching the hover
@@ -604,6 +609,14 @@ function SortableTableRow({
                 setHoveredCell(null);
                 activateCell(entry.id, prop.id, e);
               }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") {
+                  return;
+                }
+                e.preventDefault();
+                setHoveredCell(null);
+                activateCell(entry.id, prop.id, e);
+              }}
               onMouseEnter={(e) => {
                 clearLeaveTimer();
                 // Suppressed for ANY open popup, not just this cell — a popup can visually
@@ -617,11 +630,13 @@ function SortableTableRow({
                 }
               }}
               onMouseLeave={scheduleLeave}
+              role="button"
               style={{
                 width: colW(prop.id),
                 minWidth: colW(prop.id),
                 minHeight: ROW_H,
               }}
+              tabIndex={isEditor ? 0 : undefined}
             >
               {isActive && TEXT_TYPES.has(prop.type) ? (
                 <input
@@ -878,7 +893,11 @@ export function TableView({
     );
   }
 
-  function activateCell(entryId: string, propId: string, e: React.MouseEvent) {
+  function activateCell(
+    entryId: string,
+    propId: string,
+    e: React.SyntheticEvent
+  ) {
     if (!isEditor) {
       return;
     }

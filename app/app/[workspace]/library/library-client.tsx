@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageActionsMenu } from "@/components/pages/page-actions-menu";
 import { PageIcon as SharedPageIcon } from "@/components/pages/page-icon";
 import { PagePrivacyProvider } from "@/components/pages/page-privacy-context";
@@ -176,6 +176,45 @@ export function LibraryClient({
   const [confirmDeleteSelected, setConfirmDeleteSelected] = useState(false);
   const [deletingSelected, setDeletingSelected] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
+
+  // Child ids keyed by parentId, built once per `rows` change so toggleRow
+  // (below) can cascade a parent's selection onto its subpages without
+  // re-walking the flat array on every keystroke/click.
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const p of rows) {
+      if (!p.parentId) {
+        continue;
+      }
+      const siblings = map.get(p.parentId);
+      if (siblings) {
+        siblings.push(p.id);
+      } else {
+        map.set(p.parentId, [p.id]);
+      }
+    }
+    return map;
+  }, [rows]);
+
+  // All descendant ids of `id` (children, grandchildren, ...), regardless of
+  // whether they're currently expanded — `rows` holds every page returned
+  // for this tab/page, expansion only controls what's rendered.
+  function getDescendantIds(id: string): string[] {
+    const result: string[] = [];
+    const stack = [...(childrenByParent.get(id) ?? [])];
+    while (stack.length > 0) {
+      const nextId = stack.pop();
+      if (!nextId) {
+        continue;
+      }
+      result.push(nextId);
+      const kids = childrenByParent.get(nextId);
+      if (kids) {
+        stack.push(...kids);
+      }
+    }
+    return result;
+  }
 
   const requestIdRef = useRef(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -420,12 +459,19 @@ export function LibraryClient({
   }
 
   function toggleRow(id: string) {
+    const descendantIds = getDescendantIds(id);
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
+        for (const descendantId of descendantIds) {
+          next.delete(descendantId);
+        }
       } else {
         next.add(id);
+        for (const descendantId of descendantIds) {
+          next.add(descendantId);
+        }
       }
       return next;
     });

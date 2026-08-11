@@ -23,7 +23,9 @@ function buildClient(settings: ResolvedStorageSettings): S3Client {
   });
 }
 
-export function createS3Driver(settings: ResolvedStorageSettings): StorageDriver {
+export function createS3Driver(
+  settings: ResolvedStorageSettings
+): StorageDriver {
   if (!(settings.bucket && settings.accessKeyId && settings.secretAccessKey)) {
     throw new Error(
       `STORAGE_DRIVER=${settings.driver} requires a bucket, access key, and secret key to all be set (via env vars or Orbit Admin → Integrations).`

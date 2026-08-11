@@ -75,7 +75,7 @@ function BlockTypeSelect({
         </ListboxButton>
         <ListboxOptions
           anchor={{ to: "bottom start", gap: 4 }}
-          className="z-200 min-w-30 overflow-hidden rounded-md border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+          className="z-200 min-w-30 overflow-hidden rounded-md border border-base-300 bg-neutral py-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
           modal={false}
           transition
         >
@@ -321,7 +321,7 @@ function LinkedPageView({
             />
           </div>
           {results.length > 0 && (
-            <div className="absolute left-0 top-[calc(100%+4px)] z-200 max-h-64 w-full min-w-65 overflow-y-auto rounded-md border border-base-300 bg-base-100 py-1">
+            <div className="absolute left-0 top-[calc(100%+4px)] z-200 max-h-64 w-full min-w-65 overflow-y-auto rounded-md border border-base-300 bg-neutral py-1">
               <p className="px-3 py-1 text-2xs font-semibold uppercase tracking-wide text-base-content/70">
                 {isRecent ? "Recent" : "Pages"}
               </p>
@@ -361,7 +361,7 @@ function LinkedPageView({
             </div>
           )}
           {query.trim() && results.length === 0 && (
-            <div className="absolute left-0 top-[calc(100%+4px)] z-200 w-full rounded-md border border-base-300 bg-base-100 px-3 py-2 text-sm text-base-content/70">
+            <div className="absolute left-0 top-[calc(100%+4px)] z-200 w-full rounded-md border border-base-300 bg-neutral px-3 py-2 text-sm text-base-content/70">
               No matching pages
             </div>
           )}
@@ -1045,7 +1045,7 @@ function SubPageBlockView({
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="w-56 rounded-md border border-base-300 bg-base-100 p-3 shadow-lg pointer-events-none"
+            className="w-56 rounded-md border border-base-300 bg-neutral p-3 shadow-lg pointer-events-none"
             style={{
               position: "fixed",
               top: previewRect.bottom + 6,

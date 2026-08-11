@@ -384,8 +384,8 @@ export function BlockHandle({
       const ghost = document.createElement("div");
       ghost.style.cssText =
         "position:absolute;top:-9999px;left:-9999px;" +
-        "background:#fff;border:1px solid #e2e8f0;border-radius:6px;" +
-        "padding:4px 10px;font-size:13px;color:#374151;" +
+        "background:var(--color-base-100);border:1px solid var(--color-base-300);border-radius:6px;" +
+        "padding:4px 10px;font-size:13px;color:var(--color-base-content);" +
         "max-width:260px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;";
       ghost.textContent = node.textContent.trim().slice(0, 80) || "Block";
       document.body.appendChild(ghost);
@@ -487,7 +487,7 @@ export function BlockHandle({
               </MenuButton>
               <MenuItems
                 anchor={{ to: "right start", gap: 4 }}
-                className="z-9999 w-44 overflow-hidden rounded-sm border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+                className="z-9999 w-44 overflow-hidden rounded-sm border border-base-300 bg-neutral py-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
                 transition
               >
                 {onComment && (

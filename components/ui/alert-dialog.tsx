@@ -47,7 +47,12 @@ function AlertDialog({
     [openProp, onOpenChange],
   );
 
-  React.useEffect(() => {
+  // useLayoutEffect, not useEffect: showModal() must run before the browser
+  // paints the frame where `open` flips true, or that frame briefly renders
+  // with the dialog's un-promoted (pre-top-layer, pre-@starting-style)
+  // styles — visible as a flash at the document's default 0,0 origin before
+  // it snaps to its actual centered position.
+  React.useLayoutEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
     if (open && !el.open) el.showModal();
@@ -112,7 +117,7 @@ function AlertDialogContent({
       ref={dialogRef}
       data-slot="alert-dialog-content"
       className={cn(
-        "fixed left-1/2 top-1/2 z-590 m-0 w-full max-w-105 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-base-300 bg-base-100 p-6",
+        "fixed left-1/2 top-1/2 z-590 m-0 w-full max-w-105 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-base-300 bg-neutral p-6",
         className,
       )}
       {...props}

@@ -47,7 +47,12 @@ function Sheet({
     [openProp, onOpenChange]
   )
 
-  React.useEffect(() => {
+  // useLayoutEffect, not useEffect: showModal() must run before the browser
+  // paints the frame where `open` flips true, or that frame briefly renders
+  // with the dialog's un-promoted (pre-top-layer, pre-@starting-style)
+  // styles — visible as a flash at the document's default 0,0 origin before
+  // it snaps to its actual centered/offscreen position.
+  React.useLayoutEffect(() => {
     const el = dialogRef.current
     if (!el) return
     if (open && !el.open) el.showModal()
@@ -168,7 +173,7 @@ function SheetContent({
         if (event.target === dialogRef.current) setOpen(false)
       }}
       className={cn(
-        "fixed z-50 m-0 flex max-h-none max-w-none flex-col bg-base-100 bg-clip-padding text-sm text-base-content data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:top-auto data-[side=bottom]:h-auto data-[side=bottom]:w-full data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:bottom-auto data-[side=top]:h-auto data-[side=top]:w-full data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
+        "fixed z-50 m-0 flex max-h-none max-w-none flex-col bg-neutral bg-clip-padding text-sm text-base-content data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:top-auto data-[side=bottom]:h-auto data-[side=bottom]:w-full data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:bottom-auto data-[side=top]:h-auto data-[side=top]:w-full data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
         className
       )}
       {...props}

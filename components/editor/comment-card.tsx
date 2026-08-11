@@ -639,7 +639,7 @@ export function EmojiPicker({
           </PopoverButton>
           <PopoverPanel
             anchor={{ to: "bottom end", gap: 6 }}
-            className="z-9999 w-88 overflow-hidden rounded-lg border border-base-300 bg-base-100 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+            className="z-9999 w-88 overflow-hidden rounded-lg border border-base-300 bg-neutral transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
             data-comment-exempt
             transition
           >
@@ -685,7 +685,7 @@ export function SimpleDropdown({
       </MenuButton>
       <MenuItems
         anchor={{ to: "bottom end", gap: 4 }}
-        className="z-9999 w-47 rounded-sm border border-base-300 bg-base-100 py-1 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+        className="z-9999 w-47 rounded-sm border border-base-300 bg-neutral py-1 transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
         data-comment-exempt
         transition
       >

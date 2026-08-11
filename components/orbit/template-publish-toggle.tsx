@@ -67,7 +67,7 @@ export function TemplatePublishToggle({
           {busy ? "…" : isPublished ? "Unpublish" : "Publish"}
         </button>
         {error && (
-          <p className="absolute right-0 top-full z-10 mt-1 flex items-center gap-1 whitespace-nowrap rounded-sm border border-base-300 bg-base-100 px-2 py-1 text-xs text-error">
+          <p className="absolute right-0 top-full z-10 mt-1 flex items-center gap-1 whitespace-nowrap rounded-sm border border-base-300 bg-neutral px-2 py-1 text-xs text-error">
             <AlertCircle className="shrink-0" size={12} />
             {error}
           </p>

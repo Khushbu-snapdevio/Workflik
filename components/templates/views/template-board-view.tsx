@@ -359,6 +359,7 @@ function CardShell({
 
   return (
     <>
+      {/* biome-ignore lint/a11y/useSemanticElements: renders a title <input> while editing, and interactive content can't nest inside a <button> */}
       <div
         className={[
           "group relative rounded-sm border bg-base-200 p-3 transition-all",
@@ -372,7 +373,16 @@ function CardShell({
           e.stopPropagation();
           setMenuPos({ x: e.clientX, y: e.clientY });
         }}
+        onKeyDown={(e) => {
+          if (dragging || editing || (e.key !== "Enter" && e.key !== " ")) {
+            return;
+          }
+          e.preventDefault();
+          onClickEntry(entry.id);
+        }}
         ref={cardRef}
+        role="button"
+        tabIndex={0}
       >
         <div className="flex items-start gap-1.5">
           {/* h-5 matches the title's own line height (text-sm leading-snug) so the

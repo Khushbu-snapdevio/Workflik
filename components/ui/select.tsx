@@ -8,7 +8,7 @@ import {
   ListboxOption,
   ListboxSelectedOption,
 } from "@headlessui/react"
-import { Check } from "lucide-react"
+import { Check, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // The one primitive that genuinely needed a real behavior library, since a keyboard-navigable
@@ -17,11 +17,14 @@ import { cn } from "@/lib/utils"
 //
 // Split of responsibility: Headless UI's `Listbox` owns behavior (keyboard
 // navigation, focus, ARIA, open state, anchoring); daisyUI's `select` class
-// styles the trigger, including drawing the caret itself — which is why no
-// chevron icon is rendered here. The floating panel keeps hand-written
-// surface classes built from daisy's own theme tokens: daisy's
-// `dropdown-content` is inert outside a `.dropdown` ancestor and would fight
-// Headless UI's anchoring, so there is no daisy class for this surface.
+// styles the trigger — border, radius, height scale. Its own CSS-drawn caret
+// (two 4px linear-gradient triangles) is disabled via `bg-none!` because it
+// renders as a clipped/broken glyph at this size in some browsers; a real
+// ChevronDown icon in SelectTrigger replaces it instead. The floating panel
+// keeps hand-written surface classes built from daisy's own theme tokens:
+// daisy's `dropdown-content` is inert outside a `.dropdown` ancestor and
+// would fight Headless UI's anchoring, so there is no daisy class for this
+// surface.
 
 const SelectOptionsContext = React.createContext<React.ReactNode>(null)
 
@@ -90,13 +93,15 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        // daisy's `select` owns the caret, the padding (including the
-        // inline-end room the caret sits in), the radius and the appearance
-        // reset. Overridden here: `w-full` (daisy clamps to 20rem), the
-        // base-200 surface and base-300 border shared with the app's other
-        // field chrome, and an explicit height so the trigger matches
-        // `input`'s 36px rather than daisy's 40px.
-        "select w-full border border-base-300 bg-base-200 text-sm text-base-content transition-colors",
+        // daisy's `select` owns the padding (including the inline-end room
+        // the caret sits in), the radius and the appearance reset. `bg-none!`
+        // turns off its own CSS-drawn caret (see the file-level comment
+        // above) in favor of the real ChevronDown rendered below. Overridden
+        // here: `w-full` (daisy clamps to 20rem), the base-200 surface and
+        // base-300 border shared with the app's other field chrome, and an
+        // explicit height so the trigger matches `input`'s 36px rather than
+        // daisy's 40px.
+        "select w-full border border-base-300 bg-base-200 bg-none! text-sm text-base-content transition-colors",
         "hover:bg-base-200/40 hover:border-base-300",
         "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/60",
         "disabled:cursor-not-allowed disabled:opacity-50",
@@ -107,6 +112,9 @@ function SelectTrigger({
       {...props}
     >
       {children}
+      <ChevronDown
+        className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 shrink-0 -translate-y-1/2 text-base-content/50"
+      />
     </ListboxButton>
   )
 }
@@ -130,9 +138,9 @@ function SelectContent({
       className={cn(
         // z-600: sits above this app's other stacking tiers (sidebar, modals) regardless of trigger context.
         // min-w-(--button-width): Headless UI's measured trigger width, floors the panel from rendering narrower.
-        "z-600 min-w-(--button-width) overflow-y-auto rounded-md border border-base-300 bg-base-100 p-1 text-base-content",
+        "z-600 min-w-(--button-width) overflow-y-auto rounded-md border border-base-300 bg-neutral p-1 text-base-content",
         "shadow-float",
-        "transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95",
+        "transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95",
         className
       )}
     >

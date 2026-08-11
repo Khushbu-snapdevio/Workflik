@@ -117,7 +117,7 @@ export function MentionList({ suggestionProps, ref }: Props) {
 
   return (
     <div
-      className="w-60 rounded-md border border-base-300 bg-base-100 py-1"
+      className="w-60 rounded-md border border-base-300 bg-neutral py-1"
       ref={mergedRef}
       style={{
         position: "fixed",

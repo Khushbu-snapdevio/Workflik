@@ -64,7 +64,7 @@ export function WorkspaceShareButton({
   }
 
   return (
-    <Popover>
+    <Popover className="relative">
       {({ close }) => (
         <>
           <PopoverButton className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-base-300 bg-base-100 px-3.5 text-sm font-medium text-base-content/70 transition-all hover:border-primary/30 hover:bg-primary/5 hover:text-primary active:scale-[0.97]">
@@ -73,8 +73,7 @@ export function WorkspaceShareButton({
           </PopoverButton>
 
           <PopoverPanel
-            anchor={{ to: "bottom end", gap: 8 }}
-            className="z-600 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-base-300 bg-base-100 transition duration-100 ease-out data-leave:opacity-0 data-leave:scale-95"
+            className="absolute right-0 top-full z-600 mt-2 w-[calc(100vw-24px)] max-w-80 overflow-hidden rounded-lg border border-base-300 bg-neutral shadow-lg transition duration-100 ease-out data-closed:opacity-0 data-closed:scale-95 data-leave:opacity-0 data-leave:scale-95"
             transition
           >
             {/* Header */}

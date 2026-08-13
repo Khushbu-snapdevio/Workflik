@@ -37,7 +37,7 @@ directory is not migrated automatically — Postgres cannot re-encode a database
 place. To repair an existing dev instance:
 
 1. Stop all `postgres.exe` and the `pnpm db:local` / `pnpm dev` node processes
-   (release the data-dir file locks; free port 54329).
+   (release the data-dir file locks; free port 5432).
 2. Delete the data directory: `rm -rf .krova-postgres` (this discards local data —
    dump/restore first if you need to keep it; `pg_dump` converts WIN1252 → UTF8
    cleanly since all stored data is representable in UTF8).

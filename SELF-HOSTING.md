@@ -98,7 +98,7 @@ pnpm install
 cp .env.example .env
 # Set APP_SECRET (openssl rand -base64 32) in .env; leave the rest at defaults.
 
-pnpm db:local        # boots an embedded Postgres on localhost:54329 — no separate install needed
+pnpm db:local        # boots an embedded Postgres on localhost:5432 — no separate install needed
 pnpm db:migrate      # apply the schema
 
 pnpm dev             # terminal 1 — http://localhost:3000
@@ -118,7 +118,7 @@ WorkFlik needs one PostgreSQL 16+ database — everything else it uses (search, 
 | Option | Setup | Best for |
 |---|---|---|
 | **Docker Compose's bundled Postgres** (default, recommended) | Nothing to configure — `docker compose up` starts a `postgres:16-alpine` container for you automatically, data persisted in the `postgres_data` volume | The simplest path — one command, nothing to install separately |
-| **Embedded Postgres via `pnpm db:local`** | Boots a real Postgres binary on `localhost:54329`, data stored in `./.krova-postgres` — no system-wide install needed | Manual/Node development (§3), or trying the app without touching your system's own Postgres install at all |
+| **Embedded Postgres via `pnpm db:local`** | Boots a real Postgres binary on `localhost:5432`, data stored in `./.krova-postgres` — no system-wide install needed | Manual/Node development (§3), or trying the app without touching your system's own Postgres install at all |
 | **Your own local/self-hosted Postgres** | Install Postgres 16+ yourself (bare metal, your own container, or a VM you manage), then point `DATABASE_URL` at it | You already run Postgres for other things and want one instance to administer |
 | **Managed cloud Postgres** (Neon, Supabase, Railway, Render, DigitalOcean, AWS RDS, etc.) | Create a database with any provider, copy its connection string into `DATABASE_URL` | You want to self-host the *app* (own the code, own the data, no SaaS vendor in the product itself) while letting a managed provider handle Postgres backups/HA/scaling — still fully self-hosted in every way that matters; only the database's hosting is outsourced, by your choice |
 

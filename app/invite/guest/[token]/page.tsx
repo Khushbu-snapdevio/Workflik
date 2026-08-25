@@ -89,7 +89,7 @@ export default function GuestInvitePage() {
         {/* Logo */}
         <div className="mb-6 flex justify-center">
           <span className="text-2xl font-black tracking-tight text-base-content">
-            WORKFLIK
+            PAGEVO
           </span>
         </div>
 

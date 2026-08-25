@@ -2,7 +2,7 @@
 
 ## Overview
 
-Templates are reusable page structures that help users get started quickly without building from scratch. WorkFlik offers a built-in template gallery curated by the WorkFlik team, and users can save any page as a custom template scoped to their workspace.
+Templates are reusable page structures that help users get started quickly without building from scratch. Pagevo offers a built-in template gallery curated by the Pagevo team, and users can save any page as a custom template scoped to their workspace.
 
 ---
 
@@ -19,7 +19,7 @@ Templates are reusable page structures that help users get started quickly witho
 
 | Type | Created by | Available to |
 |------|-----------|-------------|
-| Built-in | WorkFlik team | All users across all workspaces |
+| Built-in | Pagevo team | All users across all workspaces |
 | Custom | Workspace members | All members in that workspace |
 
 ---
@@ -464,7 +464,7 @@ All 16 built-in templates are **database pages**. Each spec below lists the exac
 
 | Event name | Event date | Status | Format | Category | Venue |
 |-----------|-----------|--------|--------|----------|-------|
-| Make with WorkFlik | Sep 16, 2025 | Registration open | In person | Community meetup | Venue 3 |
+| Make with Pagevo | Sep 16, 2025 | Registration open | In person | Community meetup | Venue 3 |
 | Fireside chat | Mar 13, 2025 | Planning | In person | Internal event | Venue 2 |
 | VIP dinner | Feb 12, 2025 | Done | Virtual | Community meetup | Venue 1 |
 
@@ -618,11 +618,11 @@ All 16 built-in templates are **database pages**. Each spec below lists the exac
 
 ## How Built-in Templates Are Created and Managed
 
-Built-in templates are authored and maintained by the **WorkFlik team** through **Orbit Admin** at `/orbit/templates`. No direct database access or seed scripts are used — all template management goes through the admin UI so templates can be updated, previewed, and published without a deployment.
+Built-in templates are authored and maintained by the **Pagevo team** through **Orbit Admin** at `/orbit/templates`. No direct database access or seed scripts are used — all template management goes through the admin UI so templates can be updated, previewed, and published without a deployment.
 
 ### Orbit Admin — Template Management (`/orbit/templates`)
 
-This interface is only available to platform admins (WorkFlik team). End users and workspace Admins have no access to it.
+This interface is only available to platform admins (Pagevo team). End users and workspace Admins have no access to it.
 
 **Template list view:**
 ```
@@ -647,7 +647,7 @@ This interface is only available to platform admins (WorkFlik team). End users a
 | Publish / Unpublish | Toggle `status` between `draft` and `published` — only published templates appear in the user-facing gallery |
 | Delete | Permanently remove the template — does not affect pages already created from it |
 
-### Template Authoring Flow (WorkFlik team)
+### Template Authoring Flow (Pagevo team)
 
 1. Go to `/orbit/templates` → click **New Template**
 2. Fill in: Name, Description, Category
@@ -658,7 +658,7 @@ This interface is only available to platform admins (WorkFlik team). End users a
 
 ### Launch Templates
 
-The following 16 built-in templates are authored by the WorkFlik team via Orbit Admin before the product launches. They are in `published` state at launch:
+The following 16 built-in templates are authored by the Pagevo team via Orbit Admin before the product launches. They are in `published` state at launch:
 
 **Productivity (4):** Meeting Notes, Tasks Tracker, Goals Tracker, Brainstorm Session
 **Project Management (4):** Projects, Issue Tracking, Feature Requests, Creative Projects
@@ -848,7 +848,7 @@ Template
 | Template Preview | Modal tab | All members |
 | Save as Template | Modal (from page options `···`) | Editor+ |
 
-### Orbit Admin (WorkFlik team only)
+### Orbit Admin (Pagevo team only)
 
 | Screen | Route | Access |
 |--------|-------|--------|
@@ -864,7 +864,7 @@ Template
 2. A page created from a template is fully independent — editing the template does not retroactively change existing pages.
 3. Deleting a custom template does not affect pages already created from it.
 4. Only the template creator or a workspace Admin can edit or delete a custom template.
-5. Built-in templates are authored and managed exclusively by the WorkFlik team via Orbit Admin (`/orbit/templates`). Workspace members and workspace Admins have no ability to create, edit, or delete built-in templates.
+5. Built-in templates are authored and managed exclusively by the Pagevo team via Orbit Admin (`/orbit/templates`). Workspace members and workspace Admins have no ability to create, edit, or delete built-in templates.
 6. Built-in templates have a `draft` / `published` status. Only published templates appear in the user-facing gallery. Draft templates are visible only in Orbit Admin.
 7. Each workspace allows up to **5 custom templates**. **Enforcement:** the `POST /api/workspaces/:workspaceId/templates` handler executes `SELECT COUNT(*) FROM templates WHERE workspace_id = :workspaceId AND is_built_in = false FOR UPDATE` before inserting; if count ≥ 5 it returns `400 { error: "Template limit reached. A workspace can have at most 5 custom templates." }`. The count check and the insert run in a single transaction (the `FOR UPDATE` prevents a race condition where two concurrent requests both read count = 4 and both succeed).
 8. Template Button block content is part of the page's block structure — it is not a separate template stored in the template library.

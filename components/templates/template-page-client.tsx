@@ -1133,12 +1133,9 @@ export function TemplatePageClient({
         ];
       });
     }
-    window.addEventListener("workflik:entry-value-changed", onValueChanged);
+    window.addEventListener("pagevo:entry-value-changed", onValueChanged);
     return () =>
-      window.removeEventListener(
-        "workflik:entry-value-changed",
-        onValueChanged
-      );
+      window.removeEventListener("pagevo:entry-value-changed", onValueChanged);
   }, []);
 
   const [breadcrumbs, setBreadcrumbs] = useState(initBreadcrumbs);
@@ -1159,9 +1156,9 @@ export function TemplatePageClient({
         )
       );
     }
-    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    window.addEventListener("pagevo:page-title-changed", onTitleChanged);
     return () =>
-      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+      window.removeEventListener("pagevo:page-title-changed", onTitleChanged);
   }, []);
 
   const router = useRouter();
@@ -1906,7 +1903,7 @@ export function TemplatePageClient({
         body: JSON.stringify({ title: t }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:page-title-changed", {
+        new CustomEvent("pagevo:page-title-changed", {
           detail: { pageId: entryId, title: t },
         })
       );
@@ -1931,7 +1928,7 @@ export function TemplatePageClient({
         body: JSON.stringify({ title: t }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:page-title-changed", {
+        new CustomEvent("pagevo:page-title-changed", {
           detail: { pageId: entryId, title: t },
         })
       );
@@ -1955,7 +1952,7 @@ export function TemplatePageClient({
         body: JSON.stringify({ icon }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:page-title-changed", {
+        new CustomEvent("pagevo:page-title-changed", {
           detail: { pageId: entryId, icon },
         })
       );
@@ -2064,7 +2061,7 @@ export function TemplatePageClient({
         body: JSON.stringify({ value }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:entry-value-changed", {
+        new CustomEvent("pagevo:entry-value-changed", {
           detail: { entryId, propertyId: propId, value },
         })
       );
@@ -2400,7 +2397,7 @@ export function TemplatePageClient({
       body: JSON.stringify({ title: t }),
     });
     window.dispatchEvent(
-      new CustomEvent("workflik:page-title-changed", {
+      new CustomEvent("pagevo:page-title-changed", {
         detail: { pageId: page.id, title: t },
       })
     );
@@ -2419,7 +2416,7 @@ export function TemplatePageClient({
       body: JSON.stringify({ icon: icon || null }),
     });
     window.dispatchEvent(
-      new CustomEvent("workflik:page-title-changed", {
+      new CustomEvent("pagevo:page-title-changed", {
         detail: { pageId: page.id, icon: icon || null },
       })
     );
@@ -2738,7 +2735,7 @@ export function TemplatePageClient({
                     onChange={(e) => {
                       setPageTitle(e.target.value);
                       window.dispatchEvent(
-                        new CustomEvent("workflik:page-title-changed", {
+                        new CustomEvent("pagevo:page-title-changed", {
                           detail: { pageId: page.id, title: e.target.value },
                         })
                       );

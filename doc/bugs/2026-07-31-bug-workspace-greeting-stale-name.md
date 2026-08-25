@@ -8,8 +8,8 @@ After changing the display name in Profile settings (e.g. "Smit" → "ABc"), the
 
 ## Root cause
 
-`components/settings/profile-section.tsx` saves the name via `PATCH /api/user/profile`, then — for same-tab, no-reload feedback — dispatches a `workflik:user-name-changed` `CustomEvent` on `window` with the new name in `detail.name`.
+`components/settings/profile-section.tsx` saves the name via `PATCH /api/user/profile`, then — for same-tab, no-reload feedback — dispatches a `pagevo:user-name-changed` `CustomEvent` on `window` with the new name in `detail.name`.
 
-`components/sidebar/sidebar.tsx` already listens for this event (`window.addEventListener("workflik:user-name-changed", ...)`) and updates its local `userName` state, so the sidebar badge reflects the change instantly.
+`components/sidebar/sidebar.tsx` already listens for this event (`window.addEventListener("pagevo:user-name-changed", ...)`) and updates its local `userName` state, so the sidebar badge reflects the change instantly.
 
-`components/workspace/workspace-greeting.tsx`, however, was never wired into this pattern. It rendered `firstName` as a plain prop passed once from the server-rendered `session.user.name` on `/app/[workspace]/page.tsx`, with no listener for `workflik:user-name-changed`. So it stayed frozen at whatever name was current at the last full navigation/reload, even though the rest of the UI (sidebar) had already moved on.
+`components/workspace/workspace-greeting.tsx`, however, was never wired into this pattern. It rendered `firstName` as a plain prop passed once from the server-rendered `session.user.name` on `/app/[workspace]/page.tsx`, with no listener for `pagevo:user-name-changed`. So it stayed frozen at whatever name was current at the last full navigation/reload, even though the rest of the UI (sidebar) had already moved on.

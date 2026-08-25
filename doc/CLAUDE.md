@@ -1,4 +1,4 @@
-# CLAUDE.md — WorkFlik
+# CLAUDE.md — Pagevo
 
 Guidance for Claude Code and all contributors working in this repository. This is the **authoritative short-form index**; detailed references live under [doc/](doc/) and [docs/](docs/).
 
@@ -6,7 +6,7 @@ Guidance for Claude Code and all contributors working in this repository. This i
 
 ## Project Overview
 
-WorkFlik is an opinionated team workspace — "Notion's core, pre-assembled" — for small teams (3–15 people). Everything is a **block**; pages nest unlimitedly; databases are pages where each entry is itself a page.
+Pagevo is an opinionated team workspace — "Notion's core, pre-assembled" — for small teams (3–15 people). Everything is a **block**; pages nest unlimitedly; databases are pages where each entry is itself a page.
 
 **Status: active development.** The codebase is live and being iterated on. Keep these docs in sync with every meaningful change (Rule 1).
 
@@ -14,7 +14,7 @@ WorkFlik is an opinionated team workspace — "Notion's core, pre-assembled" —
 
 ## User Actions & Flows
 
-What users actually do in WorkFlik — with full context, sequence, and how each feature connects. Use this to understand intent when building or reviewing any feature. Nothing should be missing from this section.
+What users actually do in Pagevo — with full context, sequence, and how each feature connects. Use this to understand intent when building or reviewing any feature. Nothing should be missing from this section.
 
 ---
 
@@ -36,7 +36,7 @@ What users actually do in WorkFlik — with full context, sequence, and how each
 
 ### Authentication
 
-WorkFlik supports three sign-in methods: **email + password**, **magic link (passwordless)**, and **Google OAuth**. Each can be individually toggled on/off per instance from Orbit Admin.
+Pagevo supports three sign-in methods: **email + password**, **magic link (passwordless)**, and **Google OAuth**. Each can be individually toggled on/off per instance from Orbit Admin.
 
 #### Registration (Invite-Only After Setup)
 
@@ -64,7 +64,7 @@ Set `ALLOW_PUBLIC_REGISTRATION=true` (env var, default `false`) to keep self-ser
 
 1. User clicks "Sign in with Google" on `/sign-in`
 2. Google OAuth flow completes → user authenticated
-3. Same outcome as Magic Link: on an invite-only instance, a Google account with no existing WorkFlik user is rejected with an invite-only message instead of creating one; when registration is open, new users go to `/onboarding` and existing users go to their workspace
+3. Same outcome as Magic Link: on an invite-only instance, a Google account with no existing Pagevo user is rejected with an invite-only message instead of creating one; when registration is open, new users go to `/onboarding` and existing users go to their workspace
 
 #### Sessions
 
@@ -144,7 +144,7 @@ Picks from built-in templates (Meeting Notes, Project Tracker, Daily Journal, Te
 
 ### Pages
 
-Pages are the core unit. Everything in WorkFlik is a page or lives inside one.
+Pages are the core unit. Everything in Pagevo is a page or lives inside one.
 
 **Creating a page:**
 - Click `+` in the sidebar → new untitled page at the workspace root
@@ -406,7 +406,7 @@ Global search covers all pages, database entries, block content, and comments th
 
 ### Templates
 
-WorkFlik ships with **16 built-in templates** authored by the WorkFlik team. Workspace members can also create their own custom templates.
+Pagevo ships with **16 built-in templates** authored by the Pagevo team. Workspace members can also create their own custom templates.
 
 **Using a template when creating a page:**
 1. "+ New page" in sidebar → "Browse templates" button appears on the blank page
@@ -452,7 +452,7 @@ Files are stored in S3-compatible object storage. The app server never proxies f
 
 ### Permissions & Sharing
 
-WorkFlik has a two-layer access system: workspace role (Editor or Viewer) sets the default, and per-page permissions can override it for individual members or guests.
+Pagevo has a two-layer access system: workspace role (Editor or Viewer) sets the default, and per-page permissions can override it for individual members or guests.
 
 **Share panel** (Share button in page topbar):
 
@@ -558,7 +558,7 @@ The sidebar is the persistent navigation hub — always visible, never re-render
 
 ### Orbit Admin (Platform Team Only)
 
-Orbit Admin (`/orbit`) is WorkFlik's internal operations dashboard. **Not accessible to any end user, including workspace Admins.** Access requires `is_platform_admin = true`. The only account that gets this automatically is the very first account created on the instance (see Registration above) — every other user needs it set directly in the database (or via `pnpm make:admin`); there's no in-app UI to self-assign it. Every action taken in Orbit is logged to an append-only audit trail.
+Orbit Admin (`/orbit`) is Pagevo's internal operations dashboard. **Not accessible to any end user, including workspace Admins.** Access requires `is_platform_admin = true`. The only account that gets this automatically is the very first account created on the instance (see Registration above) — every other user needs it set directly in the database (or via `pnpm make:admin`); there's no in-app UI to self-assign it. Every action taken in Orbit is logged to an append-only audit trail.
 
 **Dashboard (`/orbit`):**
 - Platform-wide metrics: total users, active workspaces (any login in last 30 days), new signups (7d / 30d), current active sessions
@@ -700,7 +700,7 @@ rounded-xl   →  14px  (hero cards, full-width banners)
 
 ### 2 — No shadows anywhere in the app
 
-WorkFlik uses border + background contrast for depth, not drop shadows. Remove all shadow utilities from every component.
+Pagevo uses border + background contrast for depth, not drop shadows. Remove all shadow utilities from every component.
 
 ```
 ❌  shadow-card  shadow-raised  shadow-float
@@ -800,7 +800,7 @@ Before every PR that touches UI, verify:
 
 AI-generated UIs share predictable tells: over-rounded corners on everything, gradient backgrounds layered on gradients, excessive padding, arbitrary spacing that breaks the grid, no visual hierarchy, and components that hover between "too much decoration" and "no personality." Avoid all of these.
 
-**What WorkFlik UI should feel like:**
+**What Pagevo UI should feel like:**
 - Clean, calm, spacious — like Linear or Notion
 - Consistent rhythm — same spacing unit repeated, not eyeballed per-component
 - Strong typographic hierarchy — sizes and weights do the work, not color noise
@@ -852,7 +852,7 @@ In every modal, dialog, sheet, and drawer:
 
 ### 10 — Logical UI: every element must make sense to a first-time user
 
-The UI must be self-explanatory. A user who has never seen WorkFlik before should be able to figure out what any button, label, or section does without reading docs, hovering for tooltips, or asking for help.
+The UI must be self-explanatory. A user who has never seen Pagevo before should be able to figure out what any button, label, or section does without reading docs, hovering for tooltips, or asking for help.
 
 **Placement must match expectation:**
 - Primary actions (Create, Save, Apply) go where users look first — top-right of a panel, or bottom-right of a form.
@@ -1004,7 +1004,7 @@ Every button that triggers a network request must show a loading state while the
 
 ### 19 — Accessibility basics (a11y)
 
-WorkFlik must be usable with a keyboard and screen reader. These are the minimum requirements — not optional.
+Pagevo must be usable with a keyboard and screen reader. These are the minimum requirements — not optional.
 
 **Required for every interactive element:**
 - All buttons, links, and inputs must have a visible label or `aria-label`.
@@ -1023,7 +1023,7 @@ WorkFlik must be usable with a keyboard and screen reader. These are the minimum
 
 ### 20 — Responsive scope
 
-WorkFlik is a **desktop-first** application. The primary supported viewport is 1280px and above.
+Pagevo is a **desktop-first** application. The primary supported viewport is 1280px and above.
 
 - Layouts must not break at 1024px (laptop screens). Test at this width before every PR.
 - Below 768px (mobile): the app does not need to be fully functional, but it must not show broken layouts or overlapping text. Show a "best viewed on desktop" notice if needed.
@@ -1189,8 +1189,8 @@ The topbar breadcrumb shows the path from the workspace root to the current page
 - Workspace name is always the first segment.
 
 ```
-✅  WorkFlik  >  Projects  >  Q3 2025  >  Current Page
-✅  WorkFlik  >  …  >  Sub-sub  >  Current Page   (collapsed middle)
+✅  Pagevo  >  Projects  >  Q3 2025  >  Current Page
+✅  Pagevo  >  …  >  Sub-sub  >  Current Page   (collapsed middle)
 ❌  Current Page   (no path context)
 ❌  Full path wrapping to two lines
 ```
@@ -1201,7 +1201,7 @@ The topbar breadcrumb shows the path from the workspace root to the current page
 
 ### Instant navigation — no visible loading on page changes
 
-WorkFlik pages must feel instant. A user clicking a sidebar link must see the new page content immediately — no spinner, no blank white flash, no layout shift.
+Pagevo pages must feel instant. A user clicking a sidebar link must see the new page content immediately — no spinner, no blank white flash, no layout shift.
 
 **Core rules:**
 - **Use React Server Components** for all initial data fetching. Data must arrive with the HTML, not after a `useEffect`.

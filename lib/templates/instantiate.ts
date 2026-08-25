@@ -161,7 +161,7 @@ export async function createPageFromSnapshot(
   return page;
 }
 
-// Property types supported by WorkFlik's database engine
+// Property types supported by Pagevo's database engine
 const SUPPORTED_PROP_TYPES = new Set([
   "text",
   "number",

@@ -31,7 +31,7 @@ encoding flag**, so on Windows it inherited the OS locale and created the cluste
 and therefore the `krova` database — with **`server_encoding = WIN1252`**
 (`datcollate/datctype = English_India.1252`).
 
-WorkFlik stores emoji throughout (template icons, page icons, block content). A
+Pagevo stores emoji throughout (template icons, page icons, block content). A
 WIN1252 database physically cannot represent those code points, so every insert that
 carries an emoji is rejected. The failure surfaces only as an unhandled seed error;
 the gallery just stays empty.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-File Storage handles all binary uploads in WorkFlik — page cover images, page icons, and media blocks (Image, Video, Audio, File).
+File Storage handles all binary uploads in Pagevo — page cover images, page icons, and media blocks (Image, Video, Audio, File).
 
 **Storage driver:** Controlled by the `STORAGE_DRIVER` env var (or Orbit Admin → Integrations, which overrides it without touching `.env`):
 

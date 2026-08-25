@@ -1,6 +1,6 @@
-# Self-Hosting WorkFlik
+# Self-Hosting Pagevo
 
-The complete guide for running your own instance of WorkFlik — from `git clone` to a working team workspace. Two setup paths are covered: **Docker Compose** (recommended — one command, everything included) and **manual/Node** (for development or if you'd rather not use containers).
+The complete guide for running your own instance of Pagevo — from `git clone` to a working team workspace. Two setup paths are covered: **Docker Compose** (recommended — one command, everything included) and **manual/Node** (for development or if you'd rather not use containers).
 
 Every external credential this app can use — database, file storage, email, OAuth — has a **free, self-hosted, zero-account alternative** documented below. Sign-in itself can be configured the same way: pick email + password and you don't need any outside service at all, not even for authentication. You genuinely do not need to sign up for anything to get a fully working instance.
 
@@ -23,8 +23,8 @@ You do **not** need, for either path: a database account, an S3 account, an SMTP
 ## 2. Docker Compose (recommended)
 
 ```bash
-git clone <your-fork-url> workflik
-cd workflik
+git clone <your-fork-url> pagevo
+cd pagevo
 cp .env.example .env
 ```
 
@@ -56,7 +56,7 @@ Copy the link from there to sign in the first time.
 ```bash
 docker compose --profile extras up -d
 ```
-This starts **Mailpit** (a fake SMTP server with a web inbox at `http://localhost:8025`) and **MinIO** (self-hosted S3-compatible storage, console at `http://localhost:9001`) alongside everything else — see §5 and §6 for how to point WorkFlik at them.
+This starts **Mailpit** (a fake SMTP server with a web inbox at `http://localhost:8025`) and **MinIO** (self-hosted S3-compatible storage, console at `http://localhost:9001`) alongside everything else — see §5 and §6 for how to point Pagevo at them.
 
 **Become an instance admin** (see §8 for what this unlocks):
 ```bash
@@ -91,8 +91,8 @@ File uploads (when using the default local-disk driver) persist in the `uploads`
 ## 3. Manual / Node setup (no Docker)
 
 ```bash
-git clone <your-fork-url> workflik
-cd workflik
+git clone <your-fork-url> pagevo
+cd pagevo
 corepack enable
 pnpm install
 cp .env.example .env
@@ -113,7 +113,7 @@ Already run your own Postgres 16 instance? Point `DATABASE_URL` at it instead of
 
 ## 4. Database — every option
 
-WorkFlik needs one PostgreSQL 16+ database — everything else it uses (search, the background job queue) lives inside that same database, so this is the only truly required piece of infrastructure. Pick whichever matches how much you want to manage yourself:
+Pagevo needs one PostgreSQL 16+ database — everything else it uses (search, the background job queue) lives inside that same database, so this is the only truly required piece of infrastructure. Pick whichever matches how much you want to manage yourself:
 
 | Option | Setup | Best for |
 |---|---|---|
@@ -122,7 +122,7 @@ WorkFlik needs one PostgreSQL 16+ database — everything else it uses (search, 
 | **Your own local/self-hosted Postgres** | Install Postgres 16+ yourself (bare metal, your own container, or a VM you manage), then point `DATABASE_URL` at it | You already run Postgres for other things and want one instance to administer |
 | **Managed cloud Postgres** (Neon, Supabase, Railway, Render, DigitalOcean, AWS RDS, etc.) | Create a database with any provider, copy its connection string into `DATABASE_URL` | You want to self-host the *app* (own the code, own the data, no SaaS vendor in the product itself) while letting a managed provider handle Postgres backups/HA/scaling — still fully self-hosted in every way that matters; only the database's hosting is outsourced, by your choice |
 
-Whichever you pick, `DATABASE_URL` (`postgresql://user:password@host:port/database`) is the only thing WorkFlik needs to know. **If you're using Docker Compose's bundled Postgres, don't hand-edit `DATABASE_URL` in `.env`** — Compose builds it for you automatically from `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` (§11) and overrides whatever you put there. For every other option below, set `DATABASE_URL` directly.
+Whichever you pick, `DATABASE_URL` (`postgresql://user:password@host:port/database`) is the only thing Pagevo needs to know. **If you're using Docker Compose's bundled Postgres, don't hand-edit `DATABASE_URL` in `.env`** — Compose builds it for you automatically from `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` (§11) and overrides whatever you put there. For every other option below, set `DATABASE_URL` directly.
 
 ### 4.1 Using a managed/third-party provider instead of running your own Postgres
 
@@ -153,7 +153,7 @@ Every provider ends the same way: you get a connection string like `postgresql:/
 
 ### 4.2 Third-party database gotchas
 
-**Keep `sslmode=require` in the connection string.** WorkFlik's database client (`lib/db/index.ts`) doesn't set an SSL option itself — it relies entirely on what's in `DATABASE_URL`. All six providers above require SSL and their copy-paste connection strings already include the right parameter; don't strip it off if you hand-edit the string.
+**Keep `sslmode=require` in the connection string.** Pagevo's database client (`lib/db/index.ts`) doesn't set an SSL option itself — it relies entirely on what's in `DATABASE_URL`. All six providers above require SSL and their copy-paste connection strings already include the right parameter; don't strip it off if you hand-edit the string.
 
 **Connection poolers — you're already compatible.** Serverless/managed providers (especially Neon and Supabase) want you to connect through their pooler (PgBouncer or equivalent) rather than directly, since transaction-mode poolers don't support prepared statements across requests — which normally trips up ORMs. Good news, already verified in this codebase: `lib/db/index.ts` constructs the client with `prepare: false`, which is exactly the setting required to work correctly behind a transaction-mode pooler. Nothing to change — just use the pooled connection string the provider gives you.
 
@@ -187,8 +187,8 @@ Can also be configured without touching `.env` at all, from **Orbit Admin → In
 
 | Option | Setup | Best for |
 |---|---|---|
-| **Local disk** (default) | Nothing to configure — `STORAGE_DRIVER=local`. Files land in `./uploads` (or `UPLOAD_DIR`) | Single-server deployments, trying WorkFlik out |
-| **MinIO** (self-hosted, free, S3-compatible) | `docker compose --profile extras up -d`, then set: `STORAGE_DRIVER=s3`, `S3_ENDPOINT=http://minio:9000` (or `http://localhost:9000` outside Docker), `S3_BUCKET=workflik`, `S3_REGION=auto`, `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` = your `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`. Create the bucket once via the console at `http://localhost:9001` or `docker compose exec minio mc mb local/workflik` | Wanting S3-style storage without paying anyone |
+| **Local disk** (default) | Nothing to configure — `STORAGE_DRIVER=local`. Files land in `./uploads` (or `UPLOAD_DIR`) | Single-server deployments, trying Pagevo out |
+| **MinIO** (self-hosted, free, S3-compatible) | `docker compose --profile extras up -d`, then set: `STORAGE_DRIVER=s3`, `S3_ENDPOINT=http://minio:9000` (or `http://localhost:9000` outside Docker), `S3_BUCKET=pagevo`, `S3_REGION=auto`, `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` = your `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD`. Create the bucket once via the console at `http://localhost:9001` or `docker compose exec minio mc mb local/pagevo` | Wanting S3-style storage without paying anyone |
 | **Cloudflare R2** | `STORAGE_DRIVER=r2`, `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `S3_REGION=auto`, plus your R2 access keys | Free tier is generous; no egress fees |
 | **Backblaze B2** (S3-compatible API) | `STORAGE_DRIVER=s3`, `S3_ENDPOINT=https://s3.<region>.backblazeb2.com`, plus your B2 application key | Cheapest paid option if you outgrow local disk |
 | **AWS S3** | `STORAGE_DRIVER=s3`, leave `S3_ENDPOINT` blank, set `S3_BUCKET`/`S3_REGION`/keys | If you're already on AWS |
@@ -214,7 +214,7 @@ Set this in your provider's console (Cloudflare: bucket → Settings → CORS Po
 
 | Option | Setup | Best for |
 |---|---|---|
-| **None (console log)** | Leave `SMTP_HOST` blank — the default. Magic-link and notification emails are logged to the **worker's** console instead of sent | Solo testing, evaluating WorkFlik before inviting anyone |
+| **None (console log)** | Leave `SMTP_HOST` blank — the default. Magic-link and notification emails are logged to the **worker's** console instead of sent | Solo testing, evaluating Pagevo before inviting anyone |
 | **Mailpit** (self-hosted, free, fake SMTP) | `docker compose --profile extras up -d`, then set `SMTP_HOST=mailpit`, `SMTP_PORT=1025` (no user/pass needed). View sent mail at `http://localhost:8025` | Local development, or a private trial where you want real-looking emails without sending them anywhere |
 | **Gmail SMTP** | `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER=you@gmail.com`, `SMTP_PASS=<App Password>` (not your regular password — generate one in your Google Account security settings) | Small teams, a handful of invites a day |
 | **Free-tier transactional providers** (Brevo, Resend, Mailjet, SendGrid) | Sign up, use their SMTP credentials — all have a free tier (hundreds of emails/month) | Real teams who want deliverability without paying immediately |
@@ -227,7 +227,7 @@ For teams inviting real teammates, configure real SMTP — teammates won't have 
 
 ## 7. Sign-in methods — email + password (primary), magic link and Google (two optional methods)
 
-WorkFlik supports (or is designed to support — see the status note below) three sign-in methods, structured around one **primary** method and two **optional** ones — not three equal, undifferentiated choices:
+Pagevo supports (or is designed to support — see the status note below) three sign-in methods, structured around one **primary** method and two **optional** ones — not three equal, undifferentiated choices:
 
 | Method | Role | External service required? | Alternative if you'd rather not |
 |---|---|---|---|
@@ -296,7 +296,7 @@ Then visit `/orbit`. Run this again with any other email to add more admins late
 
 ---
 
-## 10. Using WorkFlik day-to-day after install
+## 10. Using Pagevo day-to-day after install
 
 1. **First-run onboarding** walks you through profile → create/join a workspace → optionally invite teammates → pick a starting template. Triggered automatically the first time you sign in with no workspace.
 2. **Inviting your team**: Workspace Settings → Members → invite by email (needs SMTP, §6) or generate a shareable invite link (works even without email configured — just send the link yourself).
@@ -324,8 +324,8 @@ Then visit `/orbit`. Run this again with any other email to add more admins late
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `EMAIL_FROM` | No | — | See §6 for every alternative |
 | `EMAIL_WEBHOOK_SECRET` | No | — | Set to receive delivery-event webhooks from your SMTP provider. Self-generated, not tied to any external account. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | No | — | See §7 |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` / `APP_PORT` | No (Docker only) | `workflik` / `workflik` / `workflik` / `5432` / `3000` | Only read by `docker-compose.yml` — see §4 |
-| `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` | No (Docker `--profile extras` only) | `workflik` / `workflik123` | Only read by the optional `minio` service |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` / `APP_PORT` | No (Docker only) | `pagevo` / `pagevo` / `pagevo` / `5432` / `3000` | Only read by `docker-compose.yml` — see §4 |
+| `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` | No (Docker `--profile extras` only) | `pagevo` / `pagevo123` | Only read by the optional `minio` service |
 
 ---
 
@@ -333,7 +333,7 @@ Then visit `/orbit`. Run this again with any other email to add more admins late
 
 **Before this instance is reachable from the internet, do these three things:**
 
-1. **Set a real `POSTGRES_PASSWORD`** in `.env` — the default (`workflik`) is fine for local-only use, but it's a well-known value; leaving it means anyone who can reach this host can connect straight to your database if the port is open.
+1. **Set a real `POSTGRES_PASSWORD`** in `.env` — the default (`pagevo`) is fine for local-only use, but it's a well-known value; leaving it means anyone who can reach this host can connect straight to your database if the port is open.
 2. **Remove or firewall the Postgres port mapping** — either delete the `postgres` service's `ports:` entry in `docker-compose.yml`, or make sure port 5432 isn't reachable from outside your network. Nothing else in the stack needs to reach Postgres from outside the compose network.
 3. **Generate a real `APP_SECRET`** — `openssl rand -base64 32`. The app now refuses to start with anything shorter than 32 characters or the `.env.example` placeholder value, so this is enforced, not just advisory.
 
@@ -401,7 +401,7 @@ There is no other external state to worry about — no SaaS vendor holds a copy 
 
 ## 16. Making this instance yours
 
-WorkFlik's product name, logo, and copy are centralized in `config/platform.ts` — change `PRODUCT_NAME`, `PRODUCT_DESCRIPTION`, and `LOGO_PATH` there and it propagates through page titles, email subjects, and the sidebar.
+Pagevo's product name, logo, and copy are centralized in `config/platform.ts` — change `PRODUCT_NAME`, `PRODUCT_DESCRIPTION`, and `LOGO_PATH` there and it propagates through page titles, email subjects, and the sidebar.
 
 ---
 
@@ -417,7 +417,7 @@ All implemented — full detail (schema, enforcement, exact files) in `SAAS-TO-S
 6. ✅ **Email + password sign-in, with a per-method On/Off switch for password, magic link, and Google** — a database-backed setting (not just an env var, not just a hidden button) so an admin can react instantly, enforced inside Better Auth's request pipeline itself so a "disabled" method is actually blocked, not just hidden. Full detail in `SAAS-TO-SELF-HOSTED.md` §6.
 7. ✅ **A friendly "run your migrations" error page** instead of a raw crash if the app starts before `docker compose run --rm migrate` (`app/error.tsx`, `SAAS-TO-SELF-HOSTED.md` §5.8).
 8. ✅ **The "check your inbox" sign-in screen now says so when no email was actually sent** instead of always claiming a link was emailed (`SAAS-TO-SELF-HOSTED.md` §5.9).
-9. ✅ **The empty template gallery now offers a real fix, not just text** — no longer names "the WorkFlik team"; shows a working "Seed default templates" button for admins instead (`SAAS-TO-SELF-HOSTED.md` §5.10).
+9. ✅ **The empty template gallery now offers a real fix, not just text** — no longer names "the Pagevo team"; shows a working "Seed default templates" button for admins instead (`SAAS-TO-SELF-HOSTED.md` §5.10).
 10. ✅ **A proactive first-run Setup Checklist for the instance admin**, not just a passive banner — a dismissible card on the Orbit Admin overview page checking off SMTP, storage, and `APP_SECRET`, each linking straight to where it's fixed (`SAAS-TO-SELF-HOSTED.md` §5.11).
 11. ✅ **A visible instance version indicator** in the Orbit Admin sidebar footer, removing the "what am I even running" confusion that comes with self-updating via `git pull` instead of an auto-updating SaaS (`SAAS-TO-SELF-HOSTED.md` §5.12).
 

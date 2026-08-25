@@ -140,7 +140,7 @@ export const BUILT_IN_TEMPLATES: {
       block(
         "paragraph",
         text(
-          "Welcome to Workflik! Here's how to get the most out of your workspace."
+          "Welcome to Pagevo! Here's how to get the most out of your workspace."
         ),
         0
       ),
@@ -1042,7 +1042,7 @@ export const BUILT_IN_TEMPLATES: {
         ],
         sample_rows: [
           {
-            "Event name": "Make with WorkFlik",
+            "Event name": "Make with Pagevo",
             "Event date": "2025-09-16",
             Status: "Registration open",
             Format: "In person",

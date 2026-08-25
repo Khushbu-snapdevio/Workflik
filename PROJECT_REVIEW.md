@@ -1,4 +1,4 @@
-# Workflix (Workflik) — Production Readiness Review
+# Workflix (Pagevo) — Production Readiness Review
 
 **Scope:** `main` branch, commit `d4c77a0` ("Merge pull request #42 from Khushbu-snapdevio/fix/app-issues")
 **Method:** Static analysis of the full repository via a read-only `git worktree` checkout of `main`. No files were modified as part of this review. No `npm audit` / dynamic testing was executed — all findings are from source inspection.

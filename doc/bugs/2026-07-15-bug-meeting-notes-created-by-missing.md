@@ -4,7 +4,7 @@
 
 ## Symptom
 
-Notion's own "Meeting Notes" template has a "Created by" column showing who created each row. WorkFlik's version of the same template is missing that column entirely — comparing the two side by side (WorkFlik vs. a real Notion workspace), every other property lines up (Date, Category, Attendees) except "Created by".
+Notion's own "Meeting Notes" template has a "Created by" column showing who created each row. Pagevo's version of the same template is missing that column entirely — comparing the two side by side (Pagevo vs. a real Notion workspace), every other property lines up (Date, Category, Attendees) except "Created by".
 
 ## Root cause
 

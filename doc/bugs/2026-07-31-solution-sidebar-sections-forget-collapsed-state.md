@@ -6,7 +6,7 @@
 
 **`hooks/use-persisted-toggle.ts`** (new) — `usePersistedToggle(key, defaultValue)`, a drop-in replacement for `useState<boolean>` that also reads/writes a localStorage entry under `key`. Supports both `set(true)` and `set((prev) => !prev)`, matching how the three call sites already used `setExpanded`.
 
-**`components/sidebar/favorites-section.tsx`**, **`recently-visited-section.tsx`**, **`private-section.tsx`** — each section's `const [expanded, setExpanded] = useState(true)` is now `usePersistedToggle("workflik:sidebar-<section>-expanded", true)`, with a distinct key per section.
+**`components/sidebar/favorites-section.tsx`**, **`recently-visited-section.tsx`**, **`private-section.tsx`** — each section's `const [expanded, setExpanded] = useState(true)` is now `usePersistedToggle("pagevo:sidebar-<section>-expanded", true)`, with a distinct key per section.
 
 ## Why this fixes the root cause
 

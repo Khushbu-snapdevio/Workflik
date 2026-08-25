@@ -713,13 +713,13 @@ export function PageCommentButton({
     setOpen(false);
     if (thread.blockId) {
       window.dispatchEvent(
-        new CustomEvent("workflik:jump-to-base-200-comment", {
+        new CustomEvent("pagevo:jump-to-base-200-comment", {
           detail: { pageId, blockId: thread.blockId },
         })
       );
     } else if (thread.propertyId) {
       window.dispatchEvent(
-        new CustomEvent("workflik:jump-to-base-200-comment", {
+        new CustomEvent("pagevo:jump-to-base-200-comment", {
           detail: { pageId, propertyId: thread.propertyId },
         })
       );
@@ -729,7 +729,7 @@ export function PageCommentButton({
       // to reveal itself first rather than scrolling to an element that may
       // not exist in the DOM.
       window.dispatchEvent(
-        new CustomEvent("workflik:show-page-comments", { detail: { pageId } })
+        new CustomEvent("pagevo:show-page-comments", { detail: { pageId } })
       );
     }
   }

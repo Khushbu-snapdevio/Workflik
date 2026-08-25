@@ -28,10 +28,10 @@ export function SearchProvider({
       setOpen(true);
     }
     document.addEventListener("keydown", handleKey);
-    document.addEventListener("workflik:open-search", handleEvent);
+    document.addEventListener("pagevo:open-search", handleEvent);
     return () => {
       document.removeEventListener("keydown", handleKey);
-      document.removeEventListener("workflik:open-search", handleEvent);
+      document.removeEventListener("pagevo:open-search", handleEvent);
     };
   }, []);
 
@@ -42,7 +42,7 @@ export function SearchProvider({
         <SearchDialog
           onClose={() => {
             setOpen(false);
-            document.dispatchEvent(new CustomEvent("workflik:search-closed"));
+            document.dispatchEvent(new CustomEvent("pagevo:search-closed"));
           }}
           workspaceId={workspaceId}
           workspaceSlug={workspaceSlug}

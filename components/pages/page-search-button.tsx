@@ -14,7 +14,7 @@ export function PageSearchButton() {
       icon={<Search size={15} />}
       label="Search"
       onClick={() =>
-        document.dispatchEvent(new CustomEvent("workflik:open-search"))
+        document.dispatchEvent(new CustomEvent("pagevo:open-search"))
       }
     />
   );

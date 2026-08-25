@@ -565,7 +565,7 @@ function GalleryView({
               <section>
                 <div className="mb-3 flex items-center gap-2.5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-primary/60">
-                    Workflik templates
+                    Pagevo templates
                   </p>
                   <span className="rounded-xs bg-primary/10 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-primary">
                     {filteredBuiltIn.length}
@@ -725,7 +725,7 @@ function TemplateCard({
               )}
             </button>
             <button
-              className="flex flex-1 items-center justify-center rounded-sm border border-primary/30 bg-base-100 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex flex-1 items-center justify-center rounded-sm border border-primary/40 bg-primary/5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={disabled}
               onClick={(e) => {
                 e.stopPropagation();

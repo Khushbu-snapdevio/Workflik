@@ -229,7 +229,7 @@ Same mismatch on padding (daisy 8/12/16/20/24 vs ours 10/12/16/24/28), font-size
 **Verified in the production bundle, not just asserted:**
 - All 5 `--size` and 5 `--btn-p` overrides generate.
 - Cascade order is correct — our override lands at byte 263509, daisy's `.btn` at 63035, so our values win.
-- Both `workflik-light` and `workflik-dark` emit.
+- Both `pagevo-light` and `pagevo-dark` emit.
 
 ### Architecture change discovered while testing — supersedes Phase 1 as written
 
@@ -272,10 +272,10 @@ Keep `:root` / `.dark` as the source of truth for colour; give daisy only struct
 1. Register **one** uniquely-named theme carrying structural vars only:
 
    ```css
-   @plugin "daisyui" { themes: workflik --default; }
+   @plugin "daisyui" { themes: pagevo --default; }
 
    @plugin "daisyui/theme" {
-     name: "workflik";          /* NOT "light"/"dark" — collides with built-ins */
+     name: "pagevo";          /* NOT "light"/"dark" — collides with built-ins */
      default: true;
      color-scheme: light;
      --depth: 0;                /* kills box-shadow, inset highlight, text-shadow */

@@ -10,7 +10,7 @@ This mirrors the fix already shipped and verified working in Kanbanica's `Docker
 
 ## Why this fixes the root cause
 
-`tsx` is a `dependencies` entry (not `devDependencies`) in `package.json`, so it's already present in `node_modules/.bin` after the `deps` stage's `pnpm install --frozen-lockfile --prod`, and that `node_modules` is copied wholesale into the `runner` stage. Running it directly skips corepack entirely at runtime — there's no package-manager-version check, no cache directory, and nothing for the non-root `workflik` user to fail to write to. The container now starts the worker process the same way `pnpm worker:start` would have (`tsx scripts/worker.ts`), just without the corepack indirection that only worked for the root user.
+`tsx` is a `dependencies` entry (not `devDependencies`) in `package.json`, so it's already present in `node_modules/.bin` after the `deps` stage's `pnpm install --frozen-lockfile --prod`, and that `node_modules` is copied wholesale into the `runner` stage. Running it directly skips corepack entirely at runtime — there's no package-manager-version check, no cache directory, and nothing for the non-root `pagevo` user to fail to write to. The container now starts the worker process the same way `pnpm worker:start` would have (`tsx scripts/worker.ts`), just without the corepack indirection that only worked for the root user.
 
 The `deps` stage (build-time) and the `migrator` target in the main `Dockerfile` (runtime, but runs as root) both still use `corepack enable` + `pnpm` — that's fine, since both have a writable `$HOME` for whichever user runs them.
 
@@ -18,11 +18,11 @@ The `deps` stage (build-time) and the `migrator` target in the main `Dockerfile`
 
 While comparing against Kanbanica, its `docker-compose.yml` documents a second production incident: some deploy tools (observed with Dokploy) don't keep the Compose project name stable across redeploys, so unnamed top-level volumes (`<project>_<volume>`) can silently be recreated empty on redeploy — orphaning the old volume (Postgres data or uploads) without any error.
 
-WorkFlik hadn't been deployed yet, so this hadn't caused data loss here, but it's the same class of proactive fix: pin the named volumes in `docker-compose.yml` to fixed literal names before the first real deploy, rather than after data is lost.
+Pagevo hadn't been deployed yet, so this hadn't caused data loss here, but it's the same class of proactive fix: pin the named volumes in `docker-compose.yml` to fixed literal names before the first real deploy, rather than after data is lost.
 
-- `postgres_data` → `name: workflik_postgres_data`
-- `uploads` → `name: workflik_uploads`
-- `minio_data` → `name: workflik_minio_data`
+- `postgres_data` → `name: pagevo_postgres_data`
+- `uploads` → `name: pagevo_uploads`
+- `minio_data` → `name: pagevo_minio_data`
 
 ## Also fixed: `.dockerignore` hygiene
 

@@ -514,7 +514,7 @@ function PageTreeNode({
     // Trashing a page removes its favorite row server-side (see DELETE
     // /api/pages/[id]) — tell the sidebar to drop it from Favorites too,
     // instead of leaving a stale entry until the next unrelated refetch.
-    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+    window.dispatchEvent(new CustomEvent("pagevo:favorites-changed"));
 
     // Navigate away only if currently viewing the deleted page — otherwise
     // router.refresh() below is enough to sync other routes (e.g. Home's

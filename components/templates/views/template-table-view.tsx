@@ -1395,7 +1395,7 @@ function InlineTitleInput({
       onChange={(e) => {
         setVal(e.target.value);
         window.dispatchEvent(
-          new CustomEvent("workflik:page-title-changed", {
+          new CustomEvent("pagevo:page-title-changed", {
             detail: { pageId: entryId, title: e.target.value },
           })
         );

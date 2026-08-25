@@ -205,9 +205,9 @@ function LinkedPageView({
           }
       );
     }
-    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    window.addEventListener("pagevo:page-title-changed", onTitleChanged);
     return () =>
-      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+      window.removeEventListener("pagevo:page-title-changed", onTitleChanged);
   }, [pageId]);
 
   // Live search-as-you-type while not yet linked — falls back to recently
@@ -993,9 +993,9 @@ function SubPageBlockView({
           }
       );
     }
-    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    window.addEventListener("pagevo:page-title-changed", onTitleChanged);
     return () =>
-      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+      window.removeEventListener("pagevo:page-title-changed", onTitleChanged);
   }, [pageId]);
 
   // Once the freshly-created page resolves, navigate straight into it —
@@ -1713,9 +1713,9 @@ function BreadcrumbBlockView({ extension }: NodeViewProps) {
             )
       );
     }
-    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    window.addEventListener("pagevo:page-title-changed", onTitleChanged);
     return () =>
-      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+      window.removeEventListener("pagevo:page-title-changed", onTitleChanged);
   }, []);
 
   return (

@@ -47,10 +47,10 @@ export function AdminShell({ sidebar, children }: Props) {
           </button>
           <div className="flex items-center gap-2">
             <Image
-              alt="Workflik"
+              alt="Pagevo"
               className="size-7 rounded-sm"
               height={28}
-              src="/icon-32.png"
+              src="/favicon-32x32.png"
               unoptimized
               width={28}
             />

@@ -269,7 +269,7 @@ export function TemplateGalleryModal({
                     {filteredBuiltIn.length > 0 && (
                       <section>
                         <p className="mb-3 text-xs font-semibold tracking-wide text-base-content/70">
-                          WorkFlik Templates
+                          Pagevo Templates
                         </p>
                         <div className="grid grid-cols-3 gap-3">
                           {filteredBuiltIn.map((tpl) => (

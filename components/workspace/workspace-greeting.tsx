@@ -10,12 +10,9 @@ export function WorkspaceGreeting({ firstName }: { firstName: string }) {
       const newName = (e as CustomEvent<{ name: string | null }>).detail.name;
       setName(newName?.trim().split(" ")[0] ?? "");
     }
-    window.addEventListener("workflik:user-name-changed", handleNameChanged);
+    window.addEventListener("pagevo:user-name-changed", handleNameChanged);
     return () =>
-      window.removeEventListener(
-        "workflik:user-name-changed",
-        handleNameChanged
-      );
+      window.removeEventListener("pagevo:user-name-changed", handleNameChanged);
   }, []);
 
   const h = new Date().getHours();

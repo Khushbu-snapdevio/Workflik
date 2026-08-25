@@ -1,4 +1,4 @@
-# WorkFlik — Database Schema (Drizzle ORM)
+# Pagevo — Database Schema (Drizzle ORM)
 
 Every table required across the whole project, as Drizzle models. Built from [README.md](README.md) and all the [Features/](Features/) specs.
 
@@ -952,7 +952,7 @@ ALTER TABLE pages
 
 ```sql
 -- Function called by all three triggers below.
-CREATE OR REPLACE FUNCTION workflik_search_upsert() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION pagevo_search_upsert() RETURNS trigger AS $$
 BEGIN
   -- Upsert the search_index row for the affected source.
   -- The trigger must be customised per table (see per-trigger COMMENT below).
@@ -982,11 +982,11 @@ $$ LANGUAGE plpgsql;
 -- for the page and produce a weighted tsvector: title A + block text C.
 CREATE OR REPLACE TRIGGER blocks_search_update
 AFTER INSERT OR UPDATE OF content ON blocks
-FOR EACH ROW EXECUTE FUNCTION workflik_search_upsert();
+FOR EACH ROW EXECUTE FUNCTION pagevo_search_upsert();
 
 -- Trigger on property_values: re-index the entry (entry title = B, property text values = C).
 -- A separate trigger function aggregates all text-type property values for the entry.
-CREATE OR REPLACE FUNCTION workflik_entry_search_upsert() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION pagevo_entry_search_upsert() RETURNS trigger AS $$
 DECLARE
   v_entry   pages%ROWTYPE;
   v_prop_text text;
@@ -1029,11 +1029,11 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER property_values_search_update
 AFTER INSERT OR UPDATE OF value ON property_values
-FOR EACH ROW EXECUTE FUNCTION workflik_entry_search_upsert();
+FOR EACH ROW EXECUTE FUNCTION pagevo_entry_search_upsert();
 
 -- Trigger on comments: re-index the comment (source_type = 'comment', weight D).
--- Uses a dedicated function so source_type is set correctly (workflik_search_upsert hardcodes 'page').
-CREATE OR REPLACE FUNCTION workflik_comment_search_upsert() RETURNS trigger AS $$
+-- Uses a dedicated function so source_type is set correctly (pagevo_search_upsert hardcodes 'page').
+CREATE OR REPLACE FUNCTION pagevo_comment_search_upsert() RETURNS trigger AS $$
 BEGIN
   INSERT INTO search_index (id, workspace_id, source_type, source_id, title, search_vector, page_id, updated_at)
   SELECT
@@ -1057,10 +1057,10 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER comments_search_update
 AFTER INSERT OR UPDATE OF content ON comments
-FOR EACH ROW EXECUTE FUNCTION workflik_comment_search_upsert();
+FOR EACH ROW EXECUTE FUNCTION pagevo_comment_search_upsert();
 ```
 
-> **Note:** `workflik_search_upsert()` re-indexes pages and blocks (source_type `page`). `workflik_entry_search_upsert()` handles property value changes (source_type `entry`). `workflik_comment_search_upsert()` handles comments (source_type `comment`, weight D) — a separate function is required because source_type differs. Before building search, expand `workflik_search_upsert()` to aggregate **all** block text for the triggering page (not just the triggering row) and produce a properly weighted `tsvector`: title (A), block content (C). All triggers fire per-row so bulk operations (import, mass edit) must batch writes to avoid firing them thousands of times in one transaction (see CLAUDE.md Rule 6).
+> **Note:** `pagevo_search_upsert()` re-indexes pages and blocks (source_type `page`). `pagevo_entry_search_upsert()` handles property value changes (source_type `entry`). `pagevo_comment_search_upsert()` handles comments (source_type `comment`, weight D) — a separate function is required because source_type differs. Before building search, expand `pagevo_search_upsert()` to aggregate **all** block text for the triggering page (not just the triggering row) and produce a properly weighted `tsvector`: title (A), block content (C). All triggers fire per-row so bulk operations (import, mass edit) must batch writes to avoid firing them thousands of times in one transaction (see CLAUDE.md Rule 6).
 
 **3. Closure table maintenance — reference SQL patterns (enforce in app transactions)**
 

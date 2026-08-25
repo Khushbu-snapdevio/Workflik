@@ -44,7 +44,7 @@ export function HomeFavoritesSection({
         return removed ? [...prev, removed] : prev;
       });
     });
-    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+    window.dispatchEvent(new CustomEvent("pagevo:favorites-changed"));
   }
 
   if (pages.length === 0) {

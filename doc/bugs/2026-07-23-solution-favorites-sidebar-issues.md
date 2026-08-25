@@ -11,7 +11,7 @@ useEffect(() => { setFavorited(initial); }, [pageId, initial]);
 
 Because the button instance is reused across navigations, it now re-derives its state
 from the incoming prop each time `pageId`/`initial` changes. The deps are stable within a
-single page view, and an in-page optimistic toggle (and the `workflik:favorites-changed`
+single page view, and an in-page optimistic toggle (and the `pagevo:favorites-changed`
 event) leave `initial` untouched — so this never clobbers an optimistic toggle and only
 corrects on genuine navigation.
 

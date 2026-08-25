@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document covers WorkFlik's technical architecture, development phases, and key engineering decisions. It is the primary reference for developers building the platform.
+This document covers Pagevo's technical architecture, development phases, and key engineering decisions. It is the primary reference for developers building the platform.
 
 ---
 
@@ -32,7 +32,7 @@ This document covers WorkFlik's technical architecture, development phases, and 
 ## Repository Structure
 
 ```
-workflik/
+pagevo/
 ├── app/                        # Next.js App Router pages
 │   ├── (auth)/                 # Sign in / sign up (magic link), magic-link verify
 │   ├── (app)/[workspace]/      # Main workspace UI
@@ -163,7 +163,7 @@ workflik/
 
 ### Why PostgreSQL for full-text search?
 
-WorkFlik uses PostgreSQL's native `tsvector` / `tsquery` for search rather than a dedicated search service like Elasticsearch or Typesense. This reduces operational complexity for the MVP — one database to manage instead of two services. The tradeoff is lower relevance tuning flexibility. If search quality becomes a limitation at scale, migrating to a dedicated search service is a clean upgrade path.
+Pagevo uses PostgreSQL's native `tsvector` / `tsquery` for search rather than a dedicated search service like Elasticsearch or Typesense. This reduces operational complexity for the MVP — one database to manage instead of two services. The tradeoff is lower relevance tuning flexibility. If search quality becomes a limitation at scale, migrating to a dedicated search service is a clean upgrade path.
 
 ---
 
@@ -264,13 +264,13 @@ Admin:
 | `S3_ACCESS_KEY_ID` | Storage access key ID |
 | `S3_SECRET_ACCESS_KEY` | Storage secret access key |
 | `CDN_URL` | CDN base URL for serving uploaded files |
-| `EMAIL_FROM` | Sender address (e.g. `noreply@workflik.app`) |
+| `EMAIL_FROM` | Sender address (e.g. `noreply@pagevo.app`) |
 | `SMTP_HOST` | SMTP server hostname (e.g. `smtp.sendgrid.net`) |
 | `SMTP_PORT` | SMTP port (`587` for STARTTLS, `465` for TLS) |
 | `SMTP_USER` | SMTP authentication username |
 | `SMTP_PASSWORD` | SMTP authentication password |
 | `SMTP_SECURE` | `true` for TLS (port 465), `false` for STARTTLS (port 587) |
-| `NEXT_PUBLIC_APP_URL` | Public base URL (e.g. `https://workflik.app`) |
+| `NEXT_PUBLIC_APP_URL` | Public base URL (e.g. `https://pagevo.app`) |
 | `MAXMIND_LICENSE_KEY` | *Optional* — GeoIP lookup for the session list; omit to disable location display |
 
 ---

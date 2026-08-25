@@ -261,16 +261,16 @@ export function AdminSidebar({
           href="/platform/post-auth"
         >
           <Image
-            alt="Workflik"
+            alt="Pagevo"
             className="size-7 shrink-0 rounded-sm"
             height={28}
-            src="/icon-32.png"
+            src="/favicon-32x32.png"
             unoptimized
             width={28}
           />
           <div className="min-w-0">
             <p className="text-sm font-bold leading-tight tracking-tight text-base-content">
-              Workflik
+              Pagevo
             </p>
             <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
               Orbit Admin

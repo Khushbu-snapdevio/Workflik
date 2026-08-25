@@ -2,7 +2,7 @@
 
 ## Overview
 
-A page is the fundamental unit of content in WorkFlik. Everything — notes, documents, wikis, databases — lives inside a page. Pages can be nested infinitely, creating a flexible hierarchy that mirrors how teams actually think and organize information.
+A page is the fundamental unit of content in Pagevo. Everything — notes, documents, wikis, databases — lives inside a page. Pages can be nested infinitely, creating a flexible hierarchy that mirrors how teams actually think and organize information.
 
 **Real-world analogy:** A page = a document in your filing cabinet, but one that can contain other documents inside it.
 
@@ -195,7 +195,7 @@ Available from `···` → `"Export"`
 ### 14. Page URL
 
 ```
-https://workflik.app/[workspace-slug]/[page-id]
+https://pagevo.app/[workspace-slug]/[page-id]
 ```
 
 - Workspace slug is the URL-friendly workspace name (e.g. `acme-inc`)

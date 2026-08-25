@@ -46,7 +46,7 @@ export function RecentlyVisitedSection({
   workspaceSlug,
 }: Props) {
   const [expanded, setExpanded] = usePersistedToggle(
-    "workflik:sidebar-recently-visited-expanded",
+    "pagevo:sidebar-recently-visited-expanded",
     true
   );
   // See favorites-section.tsx for why this key-on-hydrate trick is needed — Disclosure

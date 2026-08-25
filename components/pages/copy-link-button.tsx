@@ -30,7 +30,7 @@ export function CopyLinkButton({ pageId }: Props) {
           label: "Give access",
           onClick: () =>
             window.dispatchEvent(
-              new CustomEvent("workflik:open-share", { detail: { pageId } })
+              new CustomEvent("pagevo:open-share", { detail: { pageId } })
             ),
         },
       });

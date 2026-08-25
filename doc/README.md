@@ -1,8 +1,8 @@
-# WorkFlik
+# Pagevo
 
 Structured workspace for small teams — Notion's core, pre-assembled.
 
-An opinionated, pre-structured workspace for **small teams (3–15 people) who tried Notion, found it overwhelming to set up, and just want to get working.** Instead of a blank canvas with infinite options, WorkFlik ships with the structure those teams actually need — a fast block editor, a shared wiki, databases that feel like documents, and good search — ready to use on day one.
+An opinionated, pre-structured workspace for **small teams (3–15 people) who tried Notion, found it overwhelming to set up, and just want to get working.** Instead of a blank canvas with infinite options, Pagevo ships with the structure those teams actually need — a fast block editor, a shared wiki, databases that feel like documents, and good search — ready to use on day one.
 
 **Status: pre-development — this repository is a design and architecture specification. No application code exists yet.**
 
@@ -10,9 +10,9 @@ An opinionated, pre-structured workspace for **small teams (3–15 people) who t
 
 ---
 
-## What is WorkFlik?
+## What is Pagevo?
 
-WorkFlik is a team workspace built around one bet: **fewer decisions, faster time-to-value.** It is not "Notion but faster" — it is **Notion's core, pre-assembled** into a smaller, opinionated surface that trades configurability for getting a team productive in minutes, not hours.
+Pagevo is a team workspace built around one bet: **fewer decisions, faster time-to-value.** It is not "Notion but faster" — it is **Notion's core, pre-assembled** into a smaller, opinionated surface that trades configurability for getting a team productive in minutes, not hours.
 
 **Who it's for:**
 - A 3–15 person startup that needs a structured team wiki + lightweight project tracking
@@ -165,7 +165,7 @@ Public links (no login), guest access (external users invited to specific pages 
 
 ### Admin Panel (Orbit)
 
-**Orbit Admin** — internal operations tool for the WorkFlik platform team (not accessible to end users): user management (ban/impersonate/revoke sessions), workspace management, built-in template management (`/orbit/templates`), platform analytics, and an append-only audit trail. See [Features/admin-panel.md](Features/admin-panel.md).
+**Orbit Admin** — internal operations tool for the Pagevo platform team (not accessible to end users): user management (ban/impersonate/revoke sessions), workspace management, built-in template management (`/orbit/templates`), platform analytics, and an append-only audit trail. See [Features/admin-panel.md](Features/admin-panel.md).
 
 ### File Storage
 
@@ -199,7 +199,7 @@ See [Features/settings.md](Features/settings.md).
 
 ### Two-Process Model
 
-WorkFlik runs as **two processes sharing a single PostgreSQL database**:
+Pagevo runs as **two processes sharing a single PostgreSQL database**:
 
 ```text
 ┌─────────────────────┐     ┌─────────────────────┐

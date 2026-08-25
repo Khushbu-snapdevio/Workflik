@@ -34,7 +34,7 @@ const Slot = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
       }
     }
 
-    const childRef = (child as unknown as { ref?: React.Ref<HTMLElement> }).ref
+    const childRef = (childProps as { ref?: React.Ref<HTMLElement> }).ref
 
     return React.cloneElement(child, {
       ...merged,

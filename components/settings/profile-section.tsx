@@ -510,7 +510,7 @@ export function ProfileSection({
         if (field === "name" && typeof value === "string") {
           updateUser({ name: value });
           window.dispatchEvent(
-            new CustomEvent("workflik:user-name-changed", {
+            new CustomEvent("pagevo:user-name-changed", {
               detail: { name: value },
             })
           );
@@ -556,7 +556,7 @@ export function ProfileSection({
       setCurrentImage(result.fileUrl);
       updateUser({ image: result.fileUrl });
       window.dispatchEvent(
-        new CustomEvent("workflik:user-image-changed", {
+        new CustomEvent("pagevo:user-image-changed", {
           detail: { image: result.fileUrl },
         })
       );
@@ -578,7 +578,7 @@ export function ProfileSection({
       setCurrentImage(null);
       updateUser({ image: null });
       window.dispatchEvent(
-        new CustomEvent("workflik:user-image-changed", {
+        new CustomEvent("pagevo:user-image-changed", {
           detail: { image: null },
         })
       );

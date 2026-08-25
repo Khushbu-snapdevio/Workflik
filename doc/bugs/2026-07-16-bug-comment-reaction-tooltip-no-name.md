@@ -4,7 +4,7 @@
 
 ## Symptom
 
-When a comment (page/block comment or a database cell comment) has an emoji reaction on it, the reaction badge only shows the emoji and a count (e.g. "😊 1"). Hovering over it gives no indication of who reacted — at most a generic "Add reaction"/"Remove reaction" hint, and for replies in the page-comments panel, no tooltip at all. Notion shows a tooltip like "Khushbu Pambhar reacted with 😀" on hover; Workflik showed nothing equivalent.
+When a comment (page/block comment or a database cell comment) has an emoji reaction on it, the reaction badge only shows the emoji and a count (e.g. "😊 1"). Hovering over it gives no indication of who reacted — at most a generic "Add reaction"/"Remove reaction" hint, and for replies in the page-comments panel, no tooltip at all. Notion shows a tooltip like "Khushbu Pambhar reacted with 😀" on hover; Pagevo showed nothing equivalent.
 
 ## Reproduce
 

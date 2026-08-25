@@ -1,6 +1,6 @@
 # Floating UI Migration Plan
 
-Consolidating WorkFlik's hand-rolled flip/clamp positioning code onto `@floating-ui/react`.
+Consolidating Pagevo's hand-rolled flip/clamp positioning code onto `@floating-ui/react`.
 
 **Status — Phases 0–4 done, run 2026-08-06.** `@floating-ui/react` is installed; `lib/ui/use-anchor-position.ts` is the shared hook. Converted: `icon-tooltip.tsx`, `reaction-tooltip.tsx` (Phase 1); `toolbar.tsx`'s `PropertiesPanel`, `cell-action-overlay.tsx`, `card-context-menu.tsx`, `group-header-menu.tsx`, `user-hover-card.tsx` (Phase 2); `option-submenu.tsx`, `group-settings-panel.tsx`, `edit-property-panel.tsx`, `cell-editor.tsx`, `calendar-view.tsx`'s "+N more" popup, `cell-comment-popover.tsx` (all 3 blocks), `mention-list.tsx` (Phase 3); `use-mention-autocomplete.tsx` (Phase 4, the latent-bug fix — it had zero clamp/flip before). `tsc --noEmit` and `pnpm build` both clean after every phase. **Not done: browser/visual verification** — per explicit instruction, this pass was mechanical-swap-then-typecheck/build only, no click-through. Treat positioning as unverified until someone actually opens these surfaces near a viewport edge.
 

@@ -72,7 +72,7 @@ export function PrivateSection({
   onEntriesChange,
 }: Props) {
   const [expanded, setExpanded] = usePersistedToggle(
-    "workflik:sidebar-private-expanded",
+    "pagevo:sidebar-private-expanded",
     true
   );
   // See favorites-section.tsx for why this key-on-hydrate trick is needed — Disclosure
@@ -354,7 +354,7 @@ function PrivateRow({
     // Trashing a page removes its favorite row server-side (see DELETE
     // /api/pages/[id]) — tell the sidebar to drop it from Favorites too,
     // instead of leaving a stale entry until the next unrelated refetch.
-    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+    window.dispatchEvent(new CustomEvent("pagevo:favorites-changed"));
 
     const onDeletedPage =
       typeof window !== "undefined" &&

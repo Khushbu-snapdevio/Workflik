@@ -27,7 +27,7 @@ interface PageBreadcrumbsProps {
 }
 
 // Server-fetched titles/icons are frozen at request time; listening for the
-// shared "workflik:page-title-changed" event keeps crumbs live without a reload.
+// shared "pagevo:page-title-changed" event keeps crumbs live without a reload.
 export function PageBreadcrumbs({
   workspaceSlug,
   workspaceName,
@@ -74,9 +74,9 @@ export function PageBreadcrumbs({
         )
       );
     }
-    window.addEventListener("workflik:page-title-changed", onTitleChanged);
+    window.addEventListener("pagevo:page-title-changed", onTitleChanged);
     return () =>
-      window.removeEventListener("workflik:page-title-changed", onTitleChanged);
+      window.removeEventListener("pagevo:page-title-changed", onTitleChanged);
   }, [currentPageId]);
 
   return (

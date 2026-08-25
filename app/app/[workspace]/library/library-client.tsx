@@ -44,7 +44,7 @@ type DisplayRow = PageRow & { depth: number; hasChildren: boolean };
 // The server always renders the first page at DEFAULT_PAGE_SIZE (page.tsx has
 // no pageSize search param to read), so a chosen size lives only in
 // localStorage — restored client-side once the component mounts.
-const PAGE_SIZE_STORAGE_KEY = "workflik:library-page-size";
+const PAGE_SIZE_STORAGE_KEY = "pagevo:library-page-size";
 
 // Nests sub-pages under their parent instead of listing flat; a page whose parent isn't
 // in `rows` is treated as a root so the tree never silently drops rows. Expansion is
@@ -393,7 +393,7 @@ export function LibraryClient({
     // made the sidebar's refetch race the POST/DELETE and read the
     // pre-change state, so its Favorites list lagged one action behind.
     const notify = () =>
-      window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+      window.dispatchEvent(new CustomEvent("pagevo:favorites-changed"));
     const req = wasFav
       ? fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" })
       : fetch("/api/user/favorites", {

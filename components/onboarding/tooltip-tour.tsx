@@ -230,9 +230,7 @@ export function TooltipTour({ tourCompleted }: Props) {
   // were part of the guided spotlight on Search/Notifications.
   useEffect(() => {
     document.dispatchEvent(
-      new CustomEvent(
-        active ? "workflik:tour-active" : "workflik:tour-inactive"
-      )
+      new CustomEvent(active ? "pagevo:tour-active" : "pagevo:tour-inactive")
     );
   }, [active]);
 

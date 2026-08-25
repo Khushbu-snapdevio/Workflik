@@ -7,14 +7,14 @@
 The workspace invite email delivered a link of the form:
 
 ```
-https://workflik.techcrucks.com//invite/2629585f-5f0c-40a8-8437-6d3216085085
+https://pagevo.techcrucks.com//invite/2629585f-5f0c-40a8-8437-6d3216085085
 ```
 
 Note the `//` between the host and `invite`. Opening it produced the browser's "This page couldn't load" error rather than the invite accept screen.
 
 ## Reproduce
 
-Set `NEXT_PUBLIC_APP_URL` to a value with a trailing slash (e.g. `https://workflik.techcrucks.com/`), then invite a member from Settings → Workspace → Members. The received email's accept link contains `//invite/`.
+Set `NEXT_PUBLIC_APP_URL` to a value with a trailing slash (e.g. `https://pagevo.techcrucks.com/`), then invite a member from Settings → Workspace → Members. The received email's accept link contains `//invite/`.
 
 Not reproducible locally, because `.env` / `.env.example` both set `NEXT_PUBLIC_APP_URL=http://localhost:3000` with no trailing slash — this only surfaces on a deployment whose env var was written with one.
 

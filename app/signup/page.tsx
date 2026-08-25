@@ -30,7 +30,7 @@ export default async function SignupPage() {
             Registration is disabled
           </h1>
           <p className="mb-7 text-sm text-base-content/70">
-            This WorkFlik instance uses invite-only registration. Ask your
+            This Pagevo instance uses invite-only registration. Ask your
             administrator to send you an invitation.
           </p>
 

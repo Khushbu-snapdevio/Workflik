@@ -37,9 +37,9 @@ export function FavoriteButton({
         setFavorited(detail.isFavorited);
       }
     }
-    window.addEventListener("workflik:favorites-changed", handler);
+    window.addEventListener("pagevo:favorites-changed", handler);
     return () =>
-      window.removeEventListener("workflik:favorites-changed", handler);
+      window.removeEventListener("pagevo:favorites-changed", handler);
   }, [pageId]);
 
   async function toggle() {
@@ -61,7 +61,7 @@ export function FavoriteButton({
         await fetch(`/api/user/favorites/${pageId}`, { method: "DELETE" });
       }
       window.dispatchEvent(
-        new CustomEvent("workflik:favorites-changed", {
+        new CustomEvent("pagevo:favorites-changed", {
           detail: { pageId, isFavorited: next },
         })
       );

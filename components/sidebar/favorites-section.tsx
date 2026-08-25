@@ -75,7 +75,7 @@ export function FavoritesSection({
   const [mounted, setMounted] = useState(false);
   const [localFavs, setLocalFavs] = useState<FavoriteItem[]>(favorites);
   const [expanded, setExpanded] = usePersistedToggle(
-    "workflik:sidebar-favorites-expanded",
+    "pagevo:sidebar-favorites-expanded",
     true
   );
   // usePersistedToggle's real localStorage value lands post-hydration (an effect, to avoid SSR mismatch), but Disclosure only

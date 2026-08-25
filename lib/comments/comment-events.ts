@@ -3,7 +3,7 @@
 // Lets independent comment mutators (editor, cards, cell popovers) notify the
 // header badge and gutter without prop-drilling.
 
-const COMMENTS_CHANGED_EVENT = "workflik:comments-changed";
+const COMMENTS_CHANGED_EVENT = "pagevo:comments-changed";
 
 export function emitCommentsChanged(pageId: string) {
   window.dispatchEvent(

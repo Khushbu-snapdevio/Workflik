@@ -53,8 +53,7 @@ export async function GET(req: Request) {
 
     const res = await fetch(parsed.toString(), {
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; WorkflikBot/1.0; +link-preview)",
+        "User-Agent": "Mozilla/5.0 (compatible; PagevoBot/1.0; +link-preview)",
       },
       redirect: "follow",
       signal: AbortSignal.timeout(8000),

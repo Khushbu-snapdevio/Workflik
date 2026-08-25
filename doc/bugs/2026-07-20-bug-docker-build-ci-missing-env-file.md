@@ -6,7 +6,7 @@
 
 The `docker-build` GitHub Actions workflow fails on every push/PR to `main` at its final step, "Validate docker-compose.yml":
 ```
-env file /home/runner/work/Workflik/Workflik/.env not found: stat /home/runner/work/Workflik/Workflik/.env: no such file or directory
+env file /home/runner/work/Pagevo/Pagevo/.env not found: stat /home/runner/work/Pagevo/Pagevo/.env: no such file or directory
 Error: Process completed with exit code 1.
 ```
 All three image-build steps before it (migrator, runner, worker targets) succeed — only `docker compose config --quiet` fails.

@@ -9,14 +9,14 @@ interface LogoProps {
 // Renders both logo variants and lets `dark:` utilities pick the right one —
 // avoids a useTheme() flash-of-wrong-logo on first paint, matching the
 // class-based dark mode strategy in theme-provider.tsx. The light logo's text
-// isn't legible against a dark background, hence workflik_darktheme.png.
+// isn't legible against a dark background, hence logo-dark.png.
 export function Logo({ width, height, className }: LogoProps) {
   return (
     <>
       <Image
-        src="/workflik-logo.png"
+        src="/logo-light.png"
         unoptimized
-        alt="Workflik"
+        alt="Pagevo"
         loading="eager"
         priority
         width={width}
@@ -24,9 +24,9 @@ export function Logo({ width, height, className }: LogoProps) {
         className={[className, "dark:hidden"].filter(Boolean).join(" ")}
       />
       <Image
-        src="/workflik_darktheme.png"
+        src="/logo-dark.png"
         unoptimized
-        alt="Workflik"
+        alt="Pagevo"
         loading="eager"
         priority
         width={width}

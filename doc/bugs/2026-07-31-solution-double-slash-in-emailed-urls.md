@@ -26,8 +26,8 @@ Ran the transform against the reported production value and edge cases:
 
 | Input | Output | Resulting invite link |
 |---|---|---|
-| `https://workflik.techcrucks.com/` | `https://workflik.techcrucks.com` | `…com/invite/TOKEN` |
-| `https://workflik.techcrucks.com` | unchanged | `…com/invite/TOKEN` |
+| `https://pagevo.techcrucks.com/` | `https://pagevo.techcrucks.com` | `…com/invite/TOKEN` |
+| `https://pagevo.techcrucks.com` | unchanged | `…com/invite/TOKEN` |
 | `http://localhost:3000` | unchanged | `…3000/invite/TOKEN` |
 | `https://example.com///` | `https://example.com` | `…com/invite/TOKEN` |
 | `https://example.com/sub/path/` | `https://example.com/sub/path` | `…/sub/path/invite/TOKEN` |

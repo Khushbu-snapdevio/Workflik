@@ -210,13 +210,10 @@ export function EntryPropertiesPanel({
       );
       btn?.click();
     }
-    window.addEventListener(
-      "workflik:jump-to-base-200-comment",
-      onJumpToComment
-    );
+    window.addEventListener("pagevo:jump-to-base-200-comment", onJumpToComment);
     return () =>
       window.removeEventListener(
-        "workflik:jump-to-base-200-comment",
+        "pagevo:jump-to-base-200-comment",
         onJumpToComment
       );
   }, [entryId]);
@@ -267,7 +264,7 @@ export function EntryPropertiesPanel({
         body: JSON.stringify({ value }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:entry-value-changed", {
+        new CustomEvent("pagevo:entry-value-changed", {
           detail: { entryId, propertyId: propId, value },
         })
       );
@@ -296,12 +293,9 @@ export function EntryPropertiesPanel({
       }
       setValues((prev) => new Map(prev).set(detail.propertyId, detail.value));
     }
-    window.addEventListener("workflik:entry-value-changed", onValueChanged);
+    window.addEventListener("pagevo:entry-value-changed", onValueChanged);
     return () =>
-      window.removeEventListener(
-        "workflik:entry-value-changed",
-        onValueChanged
-      );
+      window.removeEventListener("pagevo:entry-value-changed", onValueChanged);
   }, [entryId]);
 
   const commitInline = useCallback(

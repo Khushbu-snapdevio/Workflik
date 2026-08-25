@@ -20,8 +20,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # package manager into ~/.cache on first `pnpm` call, which fails for the
 # non-root user on a fresh host (EACCES). Everything needed is already baked
 # into node_modules at build time, so we run the bundled `tsx` binary directly.
-RUN groupadd --system --gid 1001 workflik \
-  && useradd --system --uid 1001 --gid workflik workflik
+RUN groupadd --system --gid 1001 pagevo \
+  && useradd --system --uid 1001 --gid pagevo pagevo
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
@@ -32,9 +32,9 @@ COPY scripts ./scripts
 # Local-disk uploads (STORAGE_DRIVER=local) live here so cleanup/reconciliation
 # jobs (cleanup-orphaned-media, sync-storage-usage) can reach the same files
 # the app writes — mount the same volume as the app container in compose.
-RUN mkdir -p /app/uploads && chown -R workflik:workflik /app/uploads
+RUN mkdir -p /app/uploads && chown -R pagevo:pagevo /app/uploads
 
-USER workflik
+USER pagevo
 
 # No HTTP server to poll (unlike the app container) — the worker touches
 # /tmp/worker-heartbeat on an interval (scripts/worker.ts); unhealthy if

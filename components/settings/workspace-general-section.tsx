@@ -279,7 +279,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
         setSaved("name");
         setTimeout(() => setSaved(null), 2500);
         window.dispatchEvent(
-          new CustomEvent("workflik:workspace-name-changed", {
+          new CustomEvent("pagevo:workspace-name-changed", {
             detail: { workspaceId: workspace.id, name: trimmed },
           })
         );
@@ -412,7 +412,7 @@ export function WorkspaceGeneralSection({ workspace }: Props) {
       () => setIcon(prev),
       () => {
         window.dispatchEvent(
-          new CustomEvent("workflik:workspace-icon-changed", {
+          new CustomEvent("pagevo:workspace-icon-changed", {
             detail: { workspaceId: workspace.id, icon: v || null },
           })
         );

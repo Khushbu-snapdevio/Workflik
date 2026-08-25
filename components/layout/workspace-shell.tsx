@@ -54,10 +54,10 @@ export function WorkspaceShell({ sidebar, children }: Props) {
             <Menu size={17} />
           </button>
           <Image
-            alt="Workflik"
+            alt="Pagevo"
             className="size-7 rounded-sm"
             height={28}
-            src="/icon-32.png"
+            src="/favicon-32x32.png"
             unoptimized
             width={28}
           />

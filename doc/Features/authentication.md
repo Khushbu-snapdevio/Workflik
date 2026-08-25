@@ -2,9 +2,9 @@
 
 ## Overview
 
-Authentication handles user identity — who you are, how you prove it, and how your session is maintained. WorkFlik uses **Better Auth** with the **Magic Link Plugin** and the **Admin Plugin**, integrated directly into Next.js App Router.
+Authentication handles user identity — who you are, how you prove it, and how your session is maintained. Pagevo uses **Better Auth** with the **Magic Link Plugin** and the **Admin Plugin**, integrated directly into Next.js App Router.
 
-WorkFlik supports three sign-in methods — **email + password**, **magic link (passwordless)**, and **Google OAuth** — each independently toggleable per instance from Orbit Admin. Registration, however, is **invite-only after the first account**: see [Registration](#registration-invite-only) below.
+Pagevo supports three sign-in methods — **email + password**, **magic link (passwordless)**, and **Google OAuth** — each independently toggleable per instance from Orbit Admin. Registration, however, is **invite-only after the first account**: see [Registration](#registration-invite-only) below.
 
 **Powered by:** [Better Auth](https://better-auth.com)
 
@@ -118,7 +118,7 @@ Private page deletion is queued as a pg-boss job (`delete-user-private-pages`) t
 
 ## 4. Better Auth — Admin Plugin Features
 
-Used by the WorkFlik platform team via **Orbit Admin** — not exposed to customers.
+Used by the Pagevo platform team via **Orbit Admin** — not exposed to customers.
 
 | Feature | Description |
 |---------|-------------|

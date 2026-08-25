@@ -5,7 +5,7 @@
 ## What changed
 
 **`app/p/[token]/page.tsx`**:
-- Both "Sign in to Workflik" links now point to `` `/auth/login?next=${encodeURIComponent(`/p/${token}`)}` `` instead of a bare `/auth/login` — the visitor's original destination is now explicit.
+- Both "Sign in to Pagevo" links now point to `` `/auth/login?next=${encodeURIComponent(`/p/${token}`)}` `` instead of a bare `/auth/login` — the visitor's original destination is now explicit.
 - `NotPublicScreen` takes a `token` prop (both call sites updated) so its own sign-in CTA can carry the same `next` value.
 
 **`app/auth/_components/auth-form.tsx`**:

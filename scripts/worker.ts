@@ -14,7 +14,7 @@ async function main() {
   await import("@/lib/env");
   const { startWorker, stopWorker } = await import("@/lib/jobs/boss");
 
-  console.log("Starting WorkFlik background worker...");
+  console.log("Starting Pagevo background worker...");
   await startWorker();
 
   // Touched on an interval so Docker's HEALTHCHECK (Dockerfile.worker) can

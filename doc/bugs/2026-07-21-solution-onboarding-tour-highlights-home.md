@@ -5,7 +5,7 @@
 ## What changed
 
 **`components/onboarding/tooltip-tour.tsx`**:
-- Added an effect that dispatches `document.dispatchEvent(new CustomEvent("workflik:tour-active"))` / `"workflik:tour-inactive"` whenever the tour's `active` state changes — mirroring the existing `"workflik:open-search"` / `"workflik:search-closed"` event-bus pattern this codebase already uses for cross-sibling UI state (`TooltipTour` and `Sidebar` are siblings under the workspace layout, not nested, so a prop can't be threaded between them).
+- Added an effect that dispatches `document.dispatchEvent(new CustomEvent("pagevo:tour-active"))` / `"pagevo:tour-inactive"` whenever the tour's `active` state changes — mirroring the existing `"pagevo:open-search"` / `"pagevo:search-closed"` event-bus pattern this codebase already uses for cross-sibling UI state (`TooltipTour` and `Sidebar` are siblings under the workspace layout, not nested, so a prop can't be threaded between them).
 
 **`components/sidebar/sidebar.tsx`**:
 - Added a `tourActive` boolean state, kept in sync via `document.addEventListener` on the two new events, next to the existing `searchOpen` listener.

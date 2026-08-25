@@ -187,26 +187,26 @@ export function Sidebar({
     function h(e: Event) {
       setUserImage((e as CustomEvent<{ image: string | null }>).detail.image);
     }
-    window.addEventListener("workflik:user-image-changed", h);
-    return () => window.removeEventListener("workflik:user-image-changed", h);
+    window.addEventListener("pagevo:user-image-changed", h);
+    return () => window.removeEventListener("pagevo:user-image-changed", h);
   }, []);
 
   useEffect(() => {
     function h(e: Event) {
       setUserName((e as CustomEvent<{ name: string | null }>).detail.name);
     }
-    window.addEventListener("workflik:user-name-changed", h);
-    return () => window.removeEventListener("workflik:user-name-changed", h);
+    window.addEventListener("pagevo:user-name-changed", h);
+    return () => window.removeEventListener("pagevo:user-name-changed", h);
   }, []);
 
   useEffect(() => {
     const open = () => setSearchOpen(true);
     const close = () => setSearchOpen(false);
-    document.addEventListener("workflik:open-search", open);
-    document.addEventListener("workflik:search-closed", close);
+    document.addEventListener("pagevo:open-search", open);
+    document.addEventListener("pagevo:search-closed", close);
     return () => {
-      document.removeEventListener("workflik:open-search", open);
-      document.removeEventListener("workflik:search-closed", close);
+      document.removeEventListener("pagevo:open-search", open);
+      document.removeEventListener("pagevo:search-closed", close);
     };
   }, []);
 
@@ -217,11 +217,11 @@ export function Sidebar({
   useEffect(() => {
     const onActive = () => setTourActive(true);
     const onInactive = () => setTourActive(false);
-    document.addEventListener("workflik:tour-active", onActive);
-    document.addEventListener("workflik:tour-inactive", onInactive);
+    document.addEventListener("pagevo:tour-active", onActive);
+    document.addEventListener("pagevo:tour-inactive", onInactive);
     return () => {
-      document.removeEventListener("workflik:tour-active", onActive);
-      document.removeEventListener("workflik:tour-inactive", onInactive);
+      document.removeEventListener("pagevo:tour-active", onActive);
+      document.removeEventListener("pagevo:tour-inactive", onInactive);
     };
   }, []);
 
@@ -236,10 +236,10 @@ export function Sidebar({
       }
       fetchFavorites();
     }
-    window.addEventListener("workflik:favorites-changed", onFavoritesChanged);
+    window.addEventListener("pagevo:favorites-changed", onFavoritesChanged);
     return () =>
       window.removeEventListener(
-        "workflik:favorites-changed",
+        "pagevo:favorites-changed",
         onFavoritesChanged
       );
   }, [fetchFavorites]);
@@ -288,7 +288,7 @@ export function Sidebar({
   function handleToggleFavorite(pageId: string, isFav: boolean) {
     skipNextFavoritesEventRef.current = true;
     window.dispatchEvent(
-      new CustomEvent("workflik:favorites-changed", {
+      new CustomEvent("pagevo:favorites-changed", {
         detail: { pageId, isFavorited: !isFav },
       })
     );
@@ -916,7 +916,7 @@ function CollapsedSearchItem({ children }: { children: React.ReactNode }) {
           <button
             className="flex h-9 w-full items-center justify-center rounded-sm text-base-content/70 transition-colors duration-150 hover:bg-base-300 hover:text-base-content"
             onClick={() =>
-              document.dispatchEvent(new CustomEvent("workflik:open-search"))
+              document.dispatchEvent(new CustomEvent("pagevo:open-search"))
             }
             type="button"
           >
@@ -1092,11 +1092,11 @@ function SearchNavButton({ icon }: { icon: React.ReactNode }) {
     function onClose() {
       setSearchOpen(false);
     }
-    document.addEventListener("workflik:open-search", onOpen);
-    document.addEventListener("workflik:search-closed", onClose);
+    document.addEventListener("pagevo:open-search", onOpen);
+    document.addEventListener("pagevo:search-closed", onClose);
     return () => {
-      document.removeEventListener("workflik:open-search", onOpen);
-      document.removeEventListener("workflik:search-closed", onClose);
+      document.removeEventListener("pagevo:open-search", onOpen);
+      document.removeEventListener("pagevo:search-closed", onClose);
     };
   }, []);
 
@@ -1108,7 +1108,7 @@ function SearchNavButton({ icon }: { icon: React.ReactNode }) {
           : "text-base-content/80 hover:bg-base-300 hover:text-primary"
       }`}
       onClick={() =>
-        document.dispatchEvent(new CustomEvent("workflik:open-search"))
+        document.dispatchEvent(new CustomEvent("pagevo:open-search"))
       }
       type="button"
     >

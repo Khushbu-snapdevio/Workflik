@@ -2,7 +2,7 @@
 
 ## Overview
 
-Workspace is the top-level container in WorkFlik. Every user belongs to at least one workspace. All pages, databases, members, and settings live inside a workspace.
+Workspace is the top-level container in Pagevo. Every user belongs to at least one workspace. All pages, databases, members, and settings live inside a workspace.
 
 **Real-world analogy:** A Workspace = your company, team, or personal space. e.g. `Acme Inc`, `Personal Notes`, `Design Team`
 

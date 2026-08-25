@@ -44,8 +44,8 @@ export function ShareButton({
         btn.click();
       }
     }
-    window.addEventListener("workflik:open-share", handler);
-    return () => window.removeEventListener("workflik:open-share", handler);
+    window.addEventListener("pagevo:open-share", handler);
+    return () => window.removeEventListener("pagevo:open-share", handler);
   }, [pageId]);
 
   const handlePrivateToggle = useCallback(

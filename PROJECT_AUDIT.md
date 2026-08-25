@@ -1,4 +1,4 @@
-# Workflik — Project Audit
+# Pagevo — Project Audit
 
 This document describes the current state of the codebase on the `main` branch, as reverse-engineered directly from the source. It is a factual description only — it does not evaluate, rate, or recommend changes to what exists.
 
@@ -8,11 +8,11 @@ This document describes the current state of the codebase on the `main` branch, 
 
 ### Project purpose
 
-Workflik ("WORKFLIK" in product copy) is a self-hosted, opinionated team workspace application, described in its own documentation as **"Notion's core, pre-assembled."** Everything in the product is modeled as a **page**; pages nest without limit; a database is a special kind of page where every row ("entry") is itself a full page with its own blocks and properties.
+Pagevo ("PAGEVO" in product copy) is a self-hosted, opinionated team workspace application, described in its own documentation as **"Notion's core, pre-assembled."** Everything in the product is modeled as a **page**; pages nest without limit; a database is a special kind of page where every row ("entry") is itself a full page with its own blocks and properties.
 
 ### What problem it solves
 
-Per `doc/README.md`, the product targets teams who find general-purpose workspace tools (like Notion) powerful but overwhelming to configure. Instead of a blank, fully configurable canvas, Workflik ships with a fixed, opinionated feature set — a block editor, a page hierarchy, databases, comments, notifications, search, templates, and permissions — intended to be usable immediately without a setup phase.
+Per `doc/README.md`, the product targets teams who find general-purpose workspace tools (like Notion) powerful but overwhelming to configure. Instead of a blank, fully configurable canvas, Pagevo ships with a fixed, opinionated feature set — a block editor, a page hierarchy, databases, comments, notifications, search, templates, and permissions — intended to be usable immediately without a setup phase.
 
 ### Target users
 
@@ -387,7 +387,7 @@ Every resolved level is capped by the user's workspace role ceiling (a Viewer ca
 - **APIs used:** `GET /api/templates`, `GET /api/templates/categories`, `POST /api/templates/[id]/use`, `GET/POST /api/workspaces/[id]/templates`.
 
 #### `/app/[workspace]/search` — Search (modal trigger)
-- **Purpose:** Not a real page — its entire body just dispatches a `workflik:open-search` custom event and renders nothing, so navigating here opens the global search modal (mounted once in the workspace layout) instead of showing dedicated page content.
+- **Purpose:** Not a real page — its entire body just dispatches a `pagevo:open-search` custom event and renders nothing, so navigating here opens the global search modal (mounted once in the workspace layout) instead of showing dedicated page content.
 - **Who can access it:** Same as any workspace route (session + membership, enforced by the ancestor layouts).
 - **Features:** None directly — delegates to the Search dialog.
 - **APIs used:** `GET /api/search` (triggered from within the search modal, not this route itself).
@@ -1087,7 +1087,7 @@ The findings below describe mechanisms and patterns actually present in the code
 ## 13. Overall Summary
 
 ### What has been built
-Workflik is a complete, running full-stack application: a Next.js 16 App Router monolith paired with a separate pg-boss worker process, both against a single PostgreSQL database. It implements an opinionated Notion-like workspace product — nested pages, a block-based editor, databases with four view types, comments, in-app + email notifications, full-text search, templates, file uploads, and a two-layer permission model — plus a fully separate platform-operator "Orbit Admin" area for managing users, workspaces, templates, and instance-wide auth settings across the whole install.
+Pagevo is a complete, running full-stack application: a Next.js 16 App Router monolith paired with a separate pg-boss worker process, both against a single PostgreSQL database. It implements an opinionated Notion-like workspace product — nested pages, a block-based editor, databases with four view types, comments, in-app + email notifications, full-text search, templates, file uploads, and a two-layer permission model — plus a fully separate platform-operator "Orbit Admin" area for managing users, workspaces, templates, and instance-wide auth settings across the whole install.
 
 ### Major capabilities
 - Multi-method authentication (password / magic link / Google) with instance-wide method toggles.

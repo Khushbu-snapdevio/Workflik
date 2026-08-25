@@ -1,6 +1,6 @@
 # UI Design System
 
-This document is the **single source of truth** for WorkFlik's visual design — tokens, component specs, layout patterns, and accessibility rules. Every UI component and page must be implemented from this reference. Read it before building any frontend feature.
+This document is the **single source of truth** for Pagevo's visual design — tokens, component specs, layout patterns, and accessibility rules. Every UI component and page must be implemented from this reference. Read it before building any frontend feature.
 
 ## Architecture
 
@@ -503,10 +503,10 @@ Full-page, no sidebar. Background `bg-base-200`.
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                                                          │
-│                  [WorkFlik wordmark]                     │
+│                  [Pagevo wordmark]                     │
 │                                                          │
 │   ┌──────────────────────────────────────────────────┐  │
-│   │  Sign in to WorkFlik                             │  │
+│   │  Sign in to Pagevo                             │  │
 │   │  Enter your email to receive a magic link.       │  │
 │   │                                                  │  │
 │   │  Email address                                   │  │
@@ -515,7 +515,7 @@ Full-page, no sidebar. Background `bg-base-200`.
 │   │  [         Continue with email         ]  lg     │  │
 │   │                                                  │  │
 │   │  ─────────── or ───────────                      │  │
-│   │  New to WorkFlik? Sign up is the same            │  │
+│   │  New to Pagevo? Sign up is the same            │  │
 │   │  flow — just enter your email.                   │  │
 │   └──────────────────────────────────────────────────┘  │
 │                                                          │
@@ -566,7 +566,7 @@ Step 1 — Profile
 
 Step 2 — Workspace
   [Emoji picker button — 48px emoji display]  + Workspace name input  side by side
-  Slug preview: "workflik.app/[slug]" (auto-generated, editable)
+  Slug preview: "pagevo.app/[slug]" (auto-generated, editable)
   [Continue →] Primary lg
 
 Step 3 — Invite teammates
@@ -1020,7 +1020,7 @@ Main content:
 
 ## Accessibility
 
-WorkFlik targets **WCAG 2.1 AA** compliance.
+Pagevo targets **WCAG 2.1 AA** compliance.
 
 ### Contrast Ratios (Light Mode)
 

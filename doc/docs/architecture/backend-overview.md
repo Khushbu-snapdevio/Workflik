@@ -1,6 +1,6 @@
 # Backend Architecture & Reusable Pieces
 
-How WorkFlik is put together at the process, route, and module level — and the
+How Pagevo is put together at the process, route, and module level — and the
 reusable **pieces** the whole product is assembled from. Read this before working
 in `app/`, `lib/`, or `components/`.
 
@@ -8,7 +8,7 @@ in `app/`, `lib/`, or `components/`.
 
 ## Two-process model
 
-WorkFlik runs as **two processes against one PostgreSQL database**:
+Pagevo runs as **two processes against one PostgreSQL database**:
 
 | Process | Entry point | Does | Never does |
 | --- | --- | --- | --- |

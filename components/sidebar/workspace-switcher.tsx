@@ -63,15 +63,15 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
         prev.map((w) => (w.id === workspaceId ? { ...w, name } : w))
       );
     }
-    window.addEventListener("workflik:workspace-icon-changed", onIconChanged);
-    window.addEventListener("workflik:workspace-name-changed", onNameChanged);
+    window.addEventListener("pagevo:workspace-icon-changed", onIconChanged);
+    window.addEventListener("pagevo:workspace-name-changed", onNameChanged);
     return () => {
       window.removeEventListener(
-        "workflik:workspace-icon-changed",
+        "pagevo:workspace-icon-changed",
         onIconChanged
       );
       window.removeEventListener(
-        "workflik:workspace-name-changed",
+        "pagevo:workspace-name-changed",
         onNameChanged
       );
     };

@@ -17,7 +17,7 @@ has no `key`, so navigating between `[pageId]` routes reuses the same component 
 Inside [components/pages/favorite-button.tsx](../../components/pages/favorite-button.tsx)
 the flag was seeded with `useState(initial)`, which only reads the prop at mount — so on
 later navigations the `isFavorited` prop updated but the state didn't. The only other
-updater was the `workflik:favorites-changed` listener, which fires on toggle, not on
+updater was the `pagevo:favorites-changed` listener, which fires on toggle, not on
 navigation.
 
 ## 2. Favorited database entries show "Untitled" and don't open
@@ -47,7 +47,7 @@ appears after the next action.
 
 **Root cause:** `toggleFavorite` in
 [app/app/[workspace]/library/library-client.tsx](../../app/app/%5Bworkspace%5D/library/library-client.tsx)
-dispatched `workflik:favorites-changed` synchronously, before the fire-and-forget
+dispatched `pagevo:favorites-changed` synchronously, before the fire-and-forget
 POST/DELETE finished. The sidebar reacts by refetching `GET /api/user/favorites`, which
 then **raced the write** and read the pre-change state. (The page-header button and the
 entry-context-menu already dispatch after `await`, so only the Library was affected.)

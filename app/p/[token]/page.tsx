@@ -74,13 +74,13 @@ export default async function PublicPage({ params }: Props) {
           className="text-sm font-black tracking-tight text-base-content hover:opacity-70 transition-opacity"
           href="/"
         >
-          WORKFLIK
+          PAGEVO
         </a>
         <a
           className="rounded-sm bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-content hover:bg-primary/90 transition-colors"
           href={`/auth/login?next=${encodeURIComponent(`/p/${token}`)}`}
         >
-          Sign in to Workflik
+          Sign in to Pagevo
         </a>
       </header>
 
@@ -126,7 +126,7 @@ export default async function PublicPage({ params }: Props) {
               className="font-semibold text-base-content/70 hover:text-base-content transition-colors"
               href="/"
             >
-              Workflik
+              Pagevo
             </a>
           </p>
         </div>
@@ -150,7 +150,7 @@ function NotPublicScreen({ token }: { token: string }) {
         className="mt-6 rounded-sm bg-primary px-4 py-2.5 text-sm font-semibold text-primary-content hover:bg-primary/90 transition-colors"
         href={`/auth/login?next=${encodeURIComponent(`/p/${token}`)}`}
       >
-        Sign in to Workflik
+        Sign in to Pagevo
       </a>
     </div>
   );

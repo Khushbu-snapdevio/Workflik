@@ -1,14 +1,14 @@
-# WorkFlik
+# Pagevo
 
 A Notion-style all-in-one workspace — notes, documents, databases, and project management in one place — that you run yourself.
 
-WorkFlik is self-hosted, open-source software: block-based editor, four database views (Table/Board/Calendar/Gallery), comments and mentions, permissions and sharing, real-time notifications, templates, and an instance admin panel (Orbit). Full feature list in [doc/README.md](doc/README.md).
+Pagevo is self-hosted, open-source software: block-based editor, four database views (Table/Board/Calendar/Gallery), comments and mentions, permissions and sharing, real-time notifications, templates, and an instance admin panel (Orbit). Full feature list in [doc/README.md](doc/README.md).
 
 ## Get your own instance running
 
 ```bash
-git clone <your-fork-url> workflik
-cd workflik
+git clone <your-fork-url> pagevo
+cd pagevo
 cp .env.example .env      # set APP_SECRET and NEXT_PUBLIC_APP_URL
 docker compose up -d --build
 docker compose run --rm migrate
@@ -48,10 +48,10 @@ pnpm typecheck
 
 ## Security
 
-WorkFlik handles authentication, passwords, and workspace data. If you find a security vulnerability, please **don't** open a public issue — report it privately via [GitHub's private vulnerability reporting](../../security/advisories/new) for this repo, or by emailing the maintainer directly. Include a description, reproduction steps, and the version/commit affected.
+Pagevo handles authentication, passwords, and workspace data. If you find a security vulnerability, please **don't** open a public issue — report it privately via [GitHub's private vulnerability reporting](../../security/advisories/new) for this repo, or by emailing the maintainer directly. Include a description, reproduction steps, and the version/commit affected.
 
 Since you're running your own instance, you're also responsible for the security of your own deployment — keep `APP_SECRET` and your database/SMTP/S3 credentials out of source control and up to date.
 
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE). You're free to run, modify, and self-host WorkFlik; if you distribute a modified version as a network service, you must make your changes' source available too.
+AGPL-3.0 — see [LICENSE](LICENSE). You're free to run, modify, and self-host Pagevo; if you distribute a modified version as a network service, you must make your changes' source available too.

@@ -403,7 +403,7 @@ function CardShell({
               onChange={(e) => {
                 setEditTitle(e.target.value);
                 window.dispatchEvent(
-                  new CustomEvent("workflik:page-title-changed", {
+                  new CustomEvent("pagevo:page-title-changed", {
                     detail: { pageId: entry.id, title: e.target.value },
                   })
                 );

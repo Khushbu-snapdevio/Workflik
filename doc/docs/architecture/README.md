@@ -1,4 +1,4 @@
-# WorkFlik Architecture Docs
+# Pagevo Architecture Docs
 
 Per-subsystem engineering detail. Each file is the reference for one layer of the
 system. **Read the relevant file before working in that subsystem, and keep it

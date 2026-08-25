@@ -5,7 +5,7 @@ export function SearchTrigger() {
     <button
       className="flex h-8 w-44 items-center justify-between rounded-sm border border-base-300 bg-base-200/40 px-3 text-base-content/70 transition-colors hover:border-primary/40 hover:bg-base-200"
       onClick={() =>
-        document.dispatchEvent(new CustomEvent("workflik:open-search"))
+        document.dispatchEvent(new CustomEvent("pagevo:open-search"))
       }
       type="button"
     >

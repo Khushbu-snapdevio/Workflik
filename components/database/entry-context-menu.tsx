@@ -210,7 +210,7 @@ export function EntryContextMenu({
         await fetch(`/api/user/favorites/${entryId}`, { method: "DELETE" });
       }
       window.dispatchEvent(
-        new CustomEvent("workflik:favorites-changed", {
+        new CustomEvent("pagevo:favorites-changed", {
           detail: { pageId: entryId, isFavorited: next },
         })
       );

@@ -1,6 +1,6 @@
-# WorkFlik Docs
+# Pagevo Docs
 
-Deeper engineering reference for WorkFlik, split out from the product specs so
+Deeper engineering reference for Pagevo, split out from the product specs so
 each layer can be read on its own. The product surface is described in the
 [top-level README](../README.md) and the per-feature specs in
 [Features/](../Features/); this folder covers **how the system is built**.
@@ -10,7 +10,7 @@ each layer can be read on its own. The product surface is described in the
 | Doc | Covers |
 | --- | --- |
 | [architecture/README.md](architecture/README.md) | Index of the per-subsystem architecture docs |
-| [architecture/backend-overview.md](architecture/backend-overview.md) | Two-process model (web + worker), worker scaling & idempotency, `app/` route groups, the `lib/` service layer, and the reusable UI/registry **pieces** WorkFlik is assembled from |
+| [architecture/backend-overview.md](architecture/backend-overview.md) | Two-process model (web + worker), worker scaling & idempotency, `app/` route groups, the `lib/` service layer, and the reusable UI/registry **pieces** Pagevo is assembled from |
 | [architecture/background-jobs.md](architecture/background-jobs.md) | Full catalog of pg-boss **jobs & queues** — notifications, email, search, trash, exports, storage, sessions — with schedules, retry policy, and idempotency notes |
 | [security.md](security.md) | Consolidated **security model** — auth, permission resolution / BOLA, sharing & guest access, file-upload safety, Orbit admin |
 | [ui-design.md](ui-design.md) | **UI design system** — color tokens, typography, spacing, every component spec, feature UI patterns (editor, databases, settings, search, notifications, onboarding), accessibility (WCAG AA), responsive rules |

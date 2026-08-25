@@ -227,7 +227,7 @@ export function DatabasePage({
         body: JSON.stringify({ value }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:entry-value-changed", {
+        new CustomEvent("pagevo:entry-value-changed", {
           detail: { entryId, propertyId: propId, value },
         })
       );
@@ -277,12 +277,9 @@ export function DatabasePage({
         ];
       });
     }
-    window.addEventListener("workflik:entry-value-changed", onValueChanged);
+    window.addEventListener("pagevo:entry-value-changed", onValueChanged);
     return () =>
-      window.removeEventListener(
-        "workflik:entry-value-changed",
-        onValueChanged
-      );
+      window.removeEventListener("pagevo:entry-value-changed", onValueChanged);
   }, []);
 
   // Catches edits the event listener above can't see: bfcache restores and
@@ -322,7 +319,7 @@ export function DatabasePage({
         body: JSON.stringify({ title }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:page-title-changed", {
+        new CustomEvent("pagevo:page-title-changed", {
           detail: { pageId: entryId, title },
         })
       );
@@ -343,7 +340,7 @@ export function DatabasePage({
         body: JSON.stringify({ icon }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:page-title-changed", {
+        new CustomEvent("pagevo:page-title-changed", {
           detail: { pageId: entryId, icon },
         })
       );
@@ -410,7 +407,7 @@ export function DatabasePage({
     await fetch(`/api/pages/${entryId}`, { method: "DELETE" });
     // Trashing an entry removes its favorite row server-side (see DELETE
     // /api/pages/[id]) — tell the sidebar to drop it from Favorites too.
-    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+    window.dispatchEvent(new CustomEvent("pagevo:favorites-changed"));
   }, []);
 
   const duplicateEntry = useCallback(
@@ -441,7 +438,7 @@ export function DatabasePage({
     await Promise.all(
       ids.map((id) => fetch(`/api/pages/${id}`, { method: "DELETE" }))
     );
-    window.dispatchEvent(new CustomEvent("workflik:favorites-changed"));
+    window.dispatchEvent(new CustomEvent("pagevo:favorites-changed"));
   }, [selectedIds]);
 
   const addProperty = useCallback(

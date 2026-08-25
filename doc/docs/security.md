@@ -1,6 +1,6 @@
 # Security Model
 
-WorkFlik's security model, consolidated from the feature specs. Read this before working on anything touching auth, permissions, sharing, or file uploads. As the surface grows this file can split into a `docs/security/` folder (per-topic).
+Pagevo's security model, consolidated from the feature specs. Read this before working on anything touching auth, permissions, sharing, or file uploads. As the surface grows this file can split into a `docs/security/` folder (per-topic).
 
 The single most important principle: **access control is enforced in the database query, never in application code after a broad fetch.** That is [Phase-1 decision #5](../README.md#phase-1-architecture-decisions) and Rule 3 in [CLAUDE.md](../CLAUDE.md#rules).
 
@@ -53,7 +53,7 @@ Two layers: **workspace role** (Admin / Editor / Viewer) and **page-level permis
 
 ## Token storage policy
 
-Every token in WorkFlik belongs to one of three storage patterns:
+Every token in Pagevo belongs to one of three storage patterns:
 
 | Token | Column | Stored as | Rationale |
 |-------|--------|-----------|-----------|

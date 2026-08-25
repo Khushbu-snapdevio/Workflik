@@ -1,11 +1,11 @@
-# WorkFlik: SaaS → Self-Hosted Open-Source Conversion Plan
+# Pagevo: SaaS → Self-Hosted Open-Source Conversion Plan
 
 > Audit date: 2026-07-06 · Branch: `as-self-hosted`
 > This document tracks both what's been **implemented** (✅) during this pass and what's still a **recommendation** for you to act on.
 
 ## 1. Executive summary
 
-WorkFlik was **not** built with hard SaaS lock-in. There's no billing/subscription code, no analytics SDK, no multi-region/tenant-sharding logic to unwind. The infrastructure dependencies that usually make self-hosting painful — object storage, email, and the database — were already optional or fully local by default before this pass started.
+Pagevo was **not** built with hard SaaS lock-in. There's no billing/subscription code, no analytics SDK, no multi-region/tenant-sharding logic to unwind. The infrastructure dependencies that usually make self-hosting painful — object storage, email, and the database — were already optional or fully local by default before this pass started.
 
 What this pass added: a complete, **verified-working** Docker deployment (app + worker + Postgres, one command) with a built-in image healthcheck and a build-sanity CI workflow, and — more importantly — it surfaced and fixed **two real, pre-existing bugs** that would have broken a fresh self-hosted install on day one, independent of anything to do with SaaS vs. self-host. Both are documented in §2.
 
@@ -60,8 +60,8 @@ Previously missing entirely (only `Dockerfile.worker` existed, and it had a stal
 | File | Purpose |
 |---|---|
 | `Dockerfile` | Multi-stage build for the Next.js app: `deps` (full install) → `migrator` (standalone target that only runs `pnpm db:migrate`) → `builder` (`next build`, using `output: "standalone"`) → `runner` (minimal production image, non-root user) |
-| `Dockerfile.worker` | Fixed the stale `db/` copy; renamed the container user from the leftover `krova` scaffold name to `workflik`; now also creates `/app/uploads` so local-disk-driver cleanup jobs can reach the same files the app writes |
-| `docker-compose.yml` | Wires `postgres`, a one-shot `migrate` service, `app`, and `worker` together, plus an **optional** `--profile extras` pair (`mailpit`, `minio`) so you never need a real SMTP/S3 account to try WorkFlik |
+| `Dockerfile.worker` | Fixed the stale `db/` copy; renamed the container user from the leftover `krova` scaffold name to `pagevo`; now also creates `/app/uploads` so local-disk-driver cleanup jobs can reach the same files the app writes |
+| `docker-compose.yml` | Wires `postgres`, a one-shot `migrate` service, `app`, and `worker` together, plus an **optional** `--profile extras` pair (`mailpit`, `minio`) so you never need a real SMTP/S3 account to try Pagevo |
 | `.dockerignore` | Keeps `.env`, `node_modules`, `.next`, and local uploads out of the build context |
 | `next.config.mjs` | Added `output: "standalone"` — required for the lean production image |
 | `app/api/health/route.ts` | New unauthenticated liveness/readiness probe (checks DB connectivity) used by the `app` service's Docker healthcheck |
@@ -93,7 +93,7 @@ Previously missing entirely (only `Dockerfile.worker` existed, and it had a stal
 No `LICENSE` file exists anywhere in the repo, and `package.json` has `"private": true`. Without a license, no one may legally use, modify, or redistribute the code, regardless of the README.
 
 This was raised explicitly and **you chose to skip adding a LICENSE file for now** — so the code remains all-rights-reserved by default (no third party may legally use, modify, or redistribute it) even though the rest of this pass makes it deployable as self-hosted. Revisit this whenever you're ready to make the repo genuinely open-source:
-- **MIT / Apache-2.0** — maximum adoption; permits others to offer WorkFlik as a competing hosted SaaS with no obligation to share changes.
+- **MIT / Apache-2.0** — maximum adoption; permits others to offer Pagevo as a competing hosted SaaS with no obligation to share changes.
 - **AGPL-3.0** — the common choice for "open-source but don't repackage my product as your own SaaS" (Plausible, and formerly Outline, use this model): anyone running a modified version as a network service must publish their changes.
 
 Recommendation, whenever you decide: **AGPL-3.0** if you may ever sell a hosted version yourself; **MIT** if you want maximum community adoption regardless of who else hosts it.
@@ -102,10 +102,10 @@ Recommendation, whenever you decide: **AGPL-3.0** if you may ever sell a hosted 
 | File | Issue |
 |---|---|
 | `app/terms/page.tsx:33-34` | "Subscriptions and Billing" clause describing paid plans that don't exist in the code |
-| `app/privacy/page.tsx:38,54` | Hardcoded `privacy@workflik.com` |
-| `app/terms/page.tsx:54` | Hardcoded `legal@workflik.com` |
-| `app/page.tsx:182` | Landing-page mockup hardcodes `app.workflik.com/workspace` |
-| `lib/jobs/handlers/notification-digest-send.ts:109`, `notification-email-send.ts:67` | Dead-code fallback `https://app.workflik.com` (never reached since `NEXT_PUBLIC_APP_URL` is a required env var) |
+| `app/privacy/page.tsx:38,54` | Hardcoded `privacy@pagevo.com` |
+| `app/terms/page.tsx:54` | Hardcoded `legal@pagevo.com` |
+| `app/page.tsx:182` | Landing-page mockup hardcodes `app.pagevo.com/workspace` |
+| `lib/jobs/handlers/notification-digest-send.ts:109`, `notification-email-send.ts:67` | Dead-code fallback `https://app.pagevo.com` (never reached since `NEXT_PUBLIC_APP_URL` is a required env var) |
 
 **Fix applied:** Terms/Privacy now carry a plain "the deploying operator is the data controller" notice and the billing clause and hardcoded emails are gone, the landing-page mockup text no longer hardcodes a domain, and both dead fallback URLs were deleted.
 
@@ -155,7 +155,7 @@ This isn't dead code — it's an actual redirect target reached from real user f
 **Fix applied:** deleted `app/platform/dashboard/` (both the main page and `profile/page.tsx`) and the `components/scaffold/` shell (`app-shell.tsx`, `page-header.tsx`) entirely, confirming the real dashboard equivalents live elsewhere in the app. Fixed all four redirect sites (`app/invite/[token]/page.tsx`, `accept-invite-client.tsx`, `wrong-account.tsx`, and `app/api/workspaces/[id]/transfer/confirm/route.ts`) to point at the real `/platform/post-auth` route instead, and replaced raw `<a>` tags with Next.js `<Link>` along the way.
 
 ### 5.7 Cosmetic scaffold-name leftover in a live script
-`scripts/dev-db.ts` names the embedded-Postgres data directory `.krova-postgres` (also referenced in `.gitignore` and `.dockerignore`) — harmless functionally, but it's a leftover of the pre-WorkFlik scaffold name sitting in code that actually runs, not just in docs/marketing copy. Left as-is — lowest priority in this pass; rename whenever convenient.
+`scripts/dev-db.ts` names the embedded-Postgres data directory `.krova-postgres` (also referenced in `.gitignore` and `.dockerignore`) — harmless functionally, but it's a leftover of the pre-Pagevo scaffold name sitting in code that actually runs, not just in docs/marketing copy. Left as-is — lowest priority in this pass; rename whenever convenient.
 
 ### 5.8 ✅ Fixed — No friendly error page if the database hasn't been migrated yet
 There was no `app/error.tsx` or `app/global-error.tsx` anywhere in the repo. If a self-hoster started the app before running `docker compose run --rm migrate` / `pnpm db:migrate` (an easy step to forget on a first install), every query threw and the visitor saw Next.js's generic/raw error page — not a message telling them what actually went wrong or what to run.
@@ -168,7 +168,7 @@ There was no `app/error.tsx` or `app/global-error.tsx` anywhere in the repo. If 
 **Fix applied:** the sign-in form now reads `smtpConfigured` from `GET /api/auth/methods` and, when false, swaps the messaging to explain the link is only in the worker's server logs rather than falsely implying an email was sent.
 
 ### 5.10 ✅ Fixed — Template gallery's empty state had SaaS-vendor framing and no working call-to-action
-`components/templates/template-gallery-modal.tsx`'s `EmptyState()` (reached whenever the gallery genuinely has zero templates — see §5.5) read: *"No templates yet — Templates are added by the WorkFlik team via Orbit Admin."* Two problems: "the WorkFlik team" implied an external vendor would handle it, which makes no sense on a self-hosted instance; and the message was inert text with no link, even for an admin who could fix it in two clicks.
+`components/templates/template-gallery-modal.tsx`'s `EmptyState()` (reached whenever the gallery genuinely has zero templates — see §5.5) read: *"No templates yet — Templates are added by the Pagevo team via Orbit Admin."* Two problems: "the Pagevo team" implied an external vendor would handle it, which makes no sense on a self-hosted instance; and the message was inert text with no link, even for an admin who could fix it in two clicks.
 
 **Fix applied:** `EmptyState()` was rewritten with branching logic — a platform admin now sees a direct "Seed default templates" button wired to the real seeding endpoint (§5.5), while a non-admin viewer sees copy accurate for a self-hosted instance instead of a vendor name that isn't operating it. Threaded an `isPlatformAdmin` prop down through `app/app/[workspace]/templates/page.tsx` and `templates-page-client.tsx` to make this possible.
 

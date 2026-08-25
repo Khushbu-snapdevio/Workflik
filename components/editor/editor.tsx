@@ -278,13 +278,10 @@ export function PageEditor({
       }
       openBlockComment(detail.blockId);
     }
-    window.addEventListener(
-      "workflik:jump-to-base-200-comment",
-      onJumpToComment
-    );
+    window.addEventListener("pagevo:jump-to-base-200-comment", onJumpToComment);
     return () =>
       window.removeEventListener(
-        "workflik:jump-to-base-200-comment",
+        "pagevo:jump-to-base-200-comment",
         onJumpToComment
       );
   }, [pageId, openBlockComment]);

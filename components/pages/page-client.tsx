@@ -118,11 +118,11 @@ export function PageClient({
             setIsDraft(false);
           }
         }
-        document.title = `${title} | WORKFLIK`;
+        document.title = `${title} | PAGEVO`;
         setSaveState("saved");
         savedTimer.current = setTimeout(() => setSaveState("idle"), 2000);
         window.dispatchEvent(
-          new CustomEvent("workflik:page-title-changed", {
+          new CustomEvent("pagevo:page-title-changed", {
             detail: { pageId, title },
           })
         );
@@ -144,7 +144,7 @@ export function PageClient({
         body: JSON.stringify({ icon: emoji }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:page-title-changed", {
+        new CustomEvent("pagevo:page-title-changed", {
           detail: { pageId, icon: emoji },
         })
       );
@@ -223,9 +223,9 @@ export function PageClient({
         revealComments();
       }
     }
-    window.addEventListener("workflik:show-page-comments", onJump);
+    window.addEventListener("pagevo:show-page-comments", onJump);
     return () =>
-      window.removeEventListener("workflik:show-page-comments", onJump);
+      window.removeEventListener("pagevo:show-page-comments", onJump);
   }, [pageId, revealComments]);
 
   async function onCoverFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -416,7 +416,7 @@ export function PageClient({
               // debounced save (below) actually PATCHes the server — matches Notion,
               // where the crumb visibly follows what you're typing in real time.
               window.dispatchEvent(
-                new CustomEvent("workflik:page-title-changed", {
+                new CustomEvent("pagevo:page-title-changed", {
                   detail: { pageId, title: text },
                 })
               );

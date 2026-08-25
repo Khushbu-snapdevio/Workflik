@@ -64,7 +64,7 @@ export async function POST(_req: Request, { params }: Ctx) {
       workspaceId: id,
       invitedEmail: invite.invitedEmail ?? "",
       inviterName: inviter?.name ?? inviter?.email ?? "A teammate",
-      workspaceName: ws?.name ?? "Workflik",
+      workspaceName: ws?.name ?? "Pagevo",
       inviteToken: newToken,
     });
 

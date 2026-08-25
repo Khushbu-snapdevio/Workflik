@@ -54,8 +54,8 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-RUN groupadd --system --gid 1001 workflik \
-  && useradd --system --uid 1001 --gid workflik workflik
+RUN groupadd --system --gid 1001 pagevo \
+  && useradd --system --uid 1001 --gid pagevo pagevo
 
 # Next.js "standalone" output: a minimal server bundle with only the
 # node_modules it actually needs — this is why next.config.mjs sets
@@ -66,9 +66,9 @@ COPY --from=builder /app/.next/static ./.next/static
 
 # Default local-disk storage target (STORAGE_DRIVER=local) — mount a volume
 # here in docker-compose.yml so uploads survive container restarts/rebuilds.
-RUN mkdir -p /app/uploads && chown -R workflik:workflik /app/uploads
+RUN mkdir -p /app/uploads && chown -R pagevo:pagevo /app/uploads
 
-USER workflik
+USER pagevo
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0
 

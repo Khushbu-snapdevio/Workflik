@@ -84,7 +84,11 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
     <div className="relative">
       <button
         className="flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left transition-colors hover:bg-primary/[0.04] focus:outline-none"
-        onClick={() => { setOpen((v) => !v); setShowJoin(false); setJoinError(""); }}
+        onClick={() => {
+          setOpen((v) => !v);
+          setShowJoin(false);
+          setJoinError("");
+        }}
         type="button"
       >
         <WorkspaceAvatar
@@ -107,9 +111,14 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setShowJoin(false); }} />
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => {
+              setOpen(false);
+              setShowJoin(false);
+            }}
+          />
           <div className="absolute left-0 top-full z-50 mt-1 w-72 overflow-hidden rounded-[var(--radius-sm)] border border-border bg-popover shadow-[var(--shadow-raised)]">
-
             {/* Workspace list */}
             <div className="p-1.5">
               <p className="mb-1 px-2 text-2xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -132,8 +141,18 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
                       {ws.role}
                     </span>
                     {isActive && (
-                      <svg className="size-3.5 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        className="size-3.5 shrink-0 text-primary"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M5 13l4 4L19 7"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </button>
@@ -144,12 +163,20 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
             {/* Join workspace panel */}
             {showJoin && (
               <div className="border-t border-border p-3">
-                <p className="mb-2 text-xs font-semibold text-foreground">Paste invite link</p>
+                <p className="mb-2 text-xs font-semibold text-foreground">
+                  Paste invite link
+                </p>
                 <input
                   ref={joinInputRef}
                   className="mb-1.5 h-9 w-full rounded-[var(--radius-sm)] border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  onChange={(e) => { setJoinLink(e.target.value); setJoinError(""); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleJoin(); if (e.key === "Escape") setShowJoin(false); }}
+                  onChange={(e) => {
+                    setJoinLink(e.target.value);
+                    setJoinError("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleJoin();
+                    if (e.key === "Escape") setShowJoin(false);
+                  }}
                   placeholder="https://…/invite/token"
                   type="text"
                   value={joinLink}
@@ -168,7 +195,11 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
                     Join workspace
                   </Button>
                   <Button
-                    onClick={() => { setShowJoin(false); setJoinLink(""); setJoinError(""); }}
+                    onClick={() => {
+                      setShowJoin(false);
+                      setJoinLink("");
+                      setJoinError("");
+                    }}
                     size="sm"
                     type="button"
                     variant="outline"
@@ -180,16 +211,31 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
             )}
 
             {/* Footer */}
-            <div className={`border-t border-border p-1.5 ${showJoin ? "hidden" : ""}`}>
+            <div
+              className={`border-t border-border p-1.5 ${showJoin ? "hidden" : ""}`}
+            >
               <Button
                 className="w-full justify-start gap-2 px-2 font-medium text-muted-foreground hover:text-foreground"
-                onClick={() => { setOpen(false); router.push("/app/workspaces/new"); }}
+                onClick={() => {
+                  setOpen(false);
+                  router.push("/app/workspaces/new");
+                }}
                 size="sm"
                 type="button"
                 variant="ghost"
               >
-                <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  className="size-3.5 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 5v14M5 12h14"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 Create workspace
               </Button>
@@ -200,8 +246,18 @@ export function WorkspaceSwitcher({ currentSlug }: Props) {
                 type="button"
                 variant="ghost"
               >
-                <svg className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  className="size-3.5 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 Join workspace
               </Button>
@@ -225,7 +281,11 @@ function WorkspaceAvatar({
   }
   if (icon) {
     return (
-      <img alt={name} className="size-6 rounded-[var(--radius-sm)] object-cover" src={icon} />
+      <img
+        alt={name}
+        className="size-6 rounded-[var(--radius-sm)] object-cover"
+        src={icon}
+      />
     );
   }
   return (

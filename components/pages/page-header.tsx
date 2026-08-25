@@ -63,9 +63,9 @@ export function PageHeader({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title }),
         });
-        document.title = `${title} | WORKFLIK`;
+        document.title = `${title} | PAGEVO`;
         window.dispatchEvent(
-          new CustomEvent("workflik:page-title-changed", {
+          new CustomEvent("pagevo:page-title-changed", {
             detail: { pageId, title },
           })
         );
@@ -88,7 +88,7 @@ export function PageHeader({
         body: JSON.stringify({ icon: newIcon }),
       });
       window.dispatchEvent(
-        new CustomEvent("workflik:page-title-changed", {
+        new CustomEvent("pagevo:page-title-changed", {
           detail: { pageId, icon: newIcon },
         })
       );
@@ -101,7 +101,7 @@ export function PageHeader({
   function onInput(e: React.FormEvent<HTMLDivElement>) {
     const text = e.currentTarget.textContent ?? "";
     window.dispatchEvent(
-      new CustomEvent("workflik:page-title-changed", {
+      new CustomEvent("pagevo:page-title-changed", {
         detail: { pageId, title: text },
       })
     );

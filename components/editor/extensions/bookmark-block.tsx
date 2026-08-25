@@ -364,7 +364,7 @@ function getIframeEmbedUrl(rawUrl: string): string | null {
     }
   }
   if (host === "figma.com" || host === "www.figma.com") {
-    return `https://www.figma.com/embed?embed_host=workflik&url=${encodeURIComponent(rawUrl)}`;
+    return `https://www.figma.com/embed?embed_host=pagevo&url=${encodeURIComponent(rawUrl)}`;
   }
   if (host === "loom.com") {
     const id = u.pathname.split("/").filter(Boolean).pop();

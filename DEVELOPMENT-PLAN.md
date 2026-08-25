@@ -1,6 +1,6 @@
-# WorkFlik — Development Plan
+# Pagevo — Development Plan
 
-> **Project:** WorkFlik — An opinionated team workspace for small teams (3–15 people).
+> **Project:** Pagevo — An opinionated team workspace for small teams (3–15 people).
 > **Status:** Pre-development. Starter template is in place. Product features are not yet built.
 > **Last Updated:** 2026-06-15
 
@@ -10,7 +10,7 @@
 
 > **Read this section first every time before implementing anything.**
 
-This document is the single source of truth for building WorkFlik. Follow these rules when using it:
+This document is the single source of truth for building Pagevo. Follow these rules when using it:
 
 1. **Implement phases in strict order.** Phase N depends on every phase before it. Never skip ahead.
 2. **Before starting any phase:** read the `Spec ref` file listed at the top of that phase section. The spec has user stories, field-level data models, and business rules not repeated here.
@@ -61,7 +61,7 @@ Update this line to the current phase as you complete each one.
 
 ## 1. What We Are Building
 
-Workflik is a structured team workspace — Notion's core, pre-assembled. It is built for **small teams (3–15 people)** who want a fast block editor, shared wiki, lightweight databases, and good search — ready to use on day one without any setup overhead.
+Pagevo is a structured team workspace — Notion's core, pre-assembled. It is built for **small teams (3–15 people)** who want a fast block editor, shared wiki, lightweight databases, and good search — ready to use on day one without any setup overhead.
 
 **Content Model:**
 ```
@@ -174,7 +174,7 @@ Everything from Phase 0 onward is new product code that does not exist yet.
 This is the full folder structure you are building toward. Every path below is the **final target location**.
 
 ```
-workflik/
+pagevo/
 │
 ├── app/
 │   ├── layout.tsx                          # Root layout (keep as-is)
@@ -481,12 +481,12 @@ Only exception: SSE notification stream.
 ## Phase 0 — Pre-Development Fixes
 
 **Duration:** 2–3 days
-**Goal:** Align the starter template with the Workflik architecture before writing any product code.
+**Goal:** Align the starter template with the Pagevo architecture before writing any product code.
 **Spec ref:** `doc/CLAUDE.md`
 
 ### Checklist
 
-- [ ] **Remove Google OAuth from `lib/auth.ts`** — remove the `google` provider. Workflik is magic-link only (passwordless). No passwords, no social login.
+- [ ] **Remove Google OAuth from `lib/auth.ts`** — remove the `google` provider. Pagevo is magic-link only (passwordless). No passwords, no social login.
 - [ ] **Update `app/(auth)/login/page.tsx`** — remove the Google sign-in button. Keep only the magic-link email form.
 - [ ] **Create `lib/db/` directory** — this is the new home for all database code.
 - [ ] **Create `lib/db/schema/` directory** — split schema goes here (built in Phase 1).
@@ -516,7 +516,7 @@ Only exception: SSE notification stream.
 - [ ] **Create `lib/permissions/resolver.ts`** — stub file with exported function signatures (full implementation in Phase 12).
 - [ ] **Create `lib/pages/closure.ts`** — stub file with exported function signatures (full implementation in Phase 4).
 - [ ] **Update all imports** across the project — `lib/db.ts` → `lib/db`, `lib/auth.ts` → `lib/auth`, `lib/worker/` → `lib/jobs/`.
-- [ ] **Update `package.json` name** — change `"name": "saas-starter"` to `"name": "workflik"`.
+- [ ] **Update `package.json` name** — change `"name": "saas-starter"` to `"name": "pagevo"`.
 
 ### Verify Before Moving to Phase 1
 ```bash
@@ -691,7 +691,7 @@ ALTER TABLE pages
   ADD CONSTRAINT pages_default_view_fk
   FOREIGN KEY (default_view_id) REFERENCES database_views(id) ON DELETE SET NULL;
 
-# BLOCK 2 — FTS trigger functions (workflik_search_upsert, workflik_entry_search_upsert, workflik_comment_search_upsert)
+# BLOCK 2 — FTS trigger functions (pagevo_search_upsert, pagevo_entry_search_upsert, pagevo_comment_search_upsert)
 # See doc/DATABASE-PLAN.md for the full SQL — copy verbatim
 
 # BLOCK 3 — Closure table reference SQL comments
@@ -1157,7 +1157,7 @@ All limits and quota logic live in `lib/storage/index.ts` (single config module 
 STORAGE_DRIVER=local          # "local" | "s3" | "r2"
 UPLOAD_DIR=./uploads          # local driver only — where files are saved
 S3_ENDPOINT=                  # R2/MinIO only — omit for AWS S3
-S3_BUCKET=workflik
+S3_BUCKET=pagevo
 S3_REGION=auto
 S3_ACCESS_KEY_ID=
 S3_SECRET_ACCESS_KEY=
@@ -1353,7 +1353,7 @@ pnpm typecheck
 ### Template Types
 | Type | `workspace_id` | Who Authors | Who Can See |
 |------|---------------|-------------|------------|
-| Built-in | NULL | Workflik team via Orbit Admin | All users |
+| Built-in | NULL | Pagevo team via Orbit Admin | All users |
 | Custom | workspace UUID | Workspace members | That workspace only |
 
 ### Rules
@@ -1389,9 +1389,9 @@ pnpm typecheck
 ### How the Index Is Maintained (Already Set Up in Phase 1 Migration)
 - `search_index` table with `search_vector` (`tsvector` with GIN index)
 - Triggers fire automatically on data changes:
-  - `workflik_search_upsert()` — on `blocks.content` change (weight C), page title change (weight A)
-  - `workflik_entry_search_upsert()` — on `property_values.value` change (weight B/C)
-  - `workflik_comment_search_upsert()` — on `comments.content` change (weight D)
+  - `pagevo_search_upsert()` — on `blocks.content` change (weight C), page title change (weight A)
+  - `pagevo_entry_search_upsert()` — on `property_values.value` change (weight B/C)
+  - `pagevo_comment_search_upsert()` — on `comments.content` change (weight D)
 - No separate reindex job needed
 
 ### Files to Create
@@ -1791,7 +1791,7 @@ pnpm typecheck
 
 **Duration:** 1 week
 **Prerequisite:** Phase 15 (settings) complete.
-**Goal:** Internal platform operations dashboard for the WorkFlik team.
+**Goal:** Internal platform operations dashboard for the Pagevo team.
 **Spec ref:** `doc/Features/admin-panel.md`
 
 ### Access Control

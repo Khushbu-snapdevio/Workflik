@@ -20,7 +20,8 @@
       "!.remember",
       "!next-env.d.ts",
       "!workers/**/worker-configuration.d.ts",
-      "!workers/**/.wrangler"
+      "!workers/**/.wrangler",
+      "!.claude"
     ]
   },
   "linter": {

@@ -312,9 +312,9 @@ Ship with **all three enabled by default** (matching the schema's defaults above
 
 - **Storage quota hardcoded to 5 GB/workspace** (`lib/storage/index.ts:60`, `lib/jobs/handlers/notify-storage-threshold.ts:6`) — sized for a SaaS pricing tier; make it configurable via env var for self-hosters who own their own disk.
 - **No rate limiting anywhere** (no `middleware.ts`, no rate-limit library) — a self-hosted instance is often exposed directly to the internet without a SaaS provider's WAF/CDN. Recommend basic rate limiting on `/auth/login` and `/api/uploads/sign` at minimum.
-- **CONTRIBUTING.md / CODE_OF_CONDUCT.md** don't exist yet — standard expectations once a repo goes public.
-- **`package.json` version `0.1.0` / `"private": true`** — harmless, but worth a deliberate decision once you cut a public release tag.
-- **CI is now partial, not complete**: `.github/workflows/docker-build.yml` (added this pass) sanity-checks that both Docker images still build — it does **not** run `pnpm lint` / `pnpm typecheck` / `pnpm test` against the app code itself. Add a second workflow for that once you're ready to enforce it on PRs from outside contributors.
+- ~~**CONTRIBUTING.md / CODE_OF_CONDUCT.md** don't exist yet~~ ✅ done — added, along with `SECURITY.md` and `CHANGELOG.md`.
+- **`package.json` version `0.1.0` / `"private": true`** — harmless, but worth a deliberate decision once you cut a public release tag. Note `"private": true` is orthogonal to `"version"`: it only blocks a stray `npm publish`, and stays `true` regardless of what git tags or GitHub Releases exist.
+- ~~**CI is now partial, not complete**~~ ✅ done: `.github/workflows/ci.yml` now runs `pnpm typecheck`/`lint`/`test`/`build` plus a real-Postgres migrations check on every push and pull request. `.github/workflows/docker-build.yml` (added the prior pass) still sanity-checks that both Docker images build, now scoped to pull requests only. `.github/workflows/release.yml` builds and publishes the app/migrator/worker images to GHCR and cuts GitHub Releases from `CHANGELOG.md` after CI passes on `main`.
 
 ---
 
@@ -333,10 +333,11 @@ Ship with **all three enabled by default** (matching the schema's defaults above
 3. ~~Docker image HEALTHCHECK + build-sanity CI (incl. multi-arch)~~ ✅ done (§3).
 4. ~~Fix the leftover scaffold dashboard reachable via invite/transfer edge cases~~ ✅ done (§5.6).
 5. ~~Fix the three first-run UX rough edges that will confuse new self-hosters~~ ✅ done (§5.8-5.10): friendly error page when the DB isn't migrated yet, the "check your inbox" screen no longer lying when SMTP isn't configured, and the template-gallery empty state no longer naming a vendor and now giving admins a working fix-it button.
-6. ~~Rewrite Terms/Privacy/root README~~ ✅ done (§4.2, §4.3). LICENSE itself was explicitly left unadded per your instruction (§4.1) — the repo is not yet legally open-source until you choose one.
+6. ~~Rewrite Terms/Privacy/root README~~ ✅ done (§4.2, §4.3). LICENSE itself was explicitly left unadded per your instruction at the time (§4.1) — since then, an AGPL-3.0-or-later `LICENSE` has been added and `package.json`'s `"license"` field matches it.
 7. ~~First-user-auto-admin + conditional Google button~~ ✅ done (§5.1, §5.2).
 8. ~~De-duplicate the two competing template-seeding implementations~~ ✅ done (§5.5): orphaned `db:seed-templates` script deleted; the real seeding path is now the single source of truth and is reachable synchronously from an admin's own click, not just the 10-minute cron.
 9. ~~Password/magic-link/Google toggle system~~ ✅ done (§6) — the auth-methods feature, the biggest scope item this pass.
 10. ~~Config-status banner upgraded to a proactive first-run Setup Checklist~~ ✅ done (§5.3, §5.11).
 11. ~~Instance version indicator in Orbit Admin~~ ✅ done (§5.12).
-12. **Remaining, not done this pass:** choose and add a LICENSE (§4.1, your call to make), storage quota env var, rate limiting, app-level lint/test CI, CONTRIBUTING.md, `.krova-postgres` rename, `embedded-postgres` Docker image-size trim (§7) — hardening/polish that can trail a v1 release. Also still outstanding: an actual `docker compose up` run on real Docker (§3, this sandbox has no Docker daemon) and, **if you have any pre-existing production database, the manual migration-safety SQL workaround in §2.3** before merging this branch onto it.
+12. ~~Choose and add a LICENSE, app-level lint/test CI, CONTRIBUTING.md/CODE_OF_CONDUCT.md/SECURITY.md/CHANGELOG.md, GHCR image publishing~~ ✅ done (this pass) — see §7 above and the top-level `README.md`.
+13. **Remaining, not done any pass yet:** storage quota env var, rate limiting, `.krova-postgres` rename, `embedded-postgres` Docker image-size trim (§7) — hardening/polish that can trail a v1 release. Also still outstanding: **if you have any pre-existing production database, the manual migration-safety SQL workaround in §2.3** before merging this branch onto it. This pass's new `docker-compose.images.yml` and the `release.yml` image-publishing workflow are syntax-validated but not run end-to-end (no Docker daemon in this sandbox, and no GHCR images have been published yet) — the first real merge to `main` after this lands is the actual first test.

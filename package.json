@@ -1,7 +1,21 @@
 {
   "name": "pagevo",
   "version": "0.1.0",
+  "description": "Self-hosted, open-source Notion-style team workspace — pages, block editor, databases, comments and permissions, on your own server.",
   "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://github.com/sahajtavethiya96/Workflik#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sahajtavethiya96/Workflik.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sahajtavethiya96/Workflik/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "//private": "This is an application, not a library — it is never published to npm. Keeping `private` true guarantees a stray `npm publish` can't do anything; it does not affect the public GitHub repo or the Docker images.",
   "private": true,
   "packageManager": "pnpm@11.6.0",
   "scripts": {
@@ -13,6 +27,8 @@
     "lint:fix": "biome check --write",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "worker": "tsx --watch scripts/worker.ts",
     "worker:start": "tsx scripts/worker.ts",
     "db:local": "tsx scripts/dev-db.ts",
@@ -102,6 +118,7 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
-    "ultracite": "7.8.3"
+    "ultracite": "7.8.3",
+    "vitest": "^4.1.10"
   }
 }

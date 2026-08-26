@@ -86,6 +86,14 @@ File uploads (when using the default local-disk driver) persist in the `uploads`
 
 **Not using Compose?** The app image also has a `HEALTHCHECK` baked in directly (checking `/api/health`, which itself verifies database connectivity), so `docker run` reports container health the same way even without `docker-compose.yml`'s own healthcheck block.
 
+**Prefer not to build locally?** CI publishes prebuilt app/migrator/worker images to GitHub Container Registry on every merge to `main` — see [`.github/workflows/release.yml`](.github/workflows/release.yml). Use `docker-compose.images.yml` instead of `--build`:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.images.yml pull
+docker compose -f docker-compose.yml -f docker-compose.images.yml up -d
+docker compose run --rm migrate
+```
+Pin a version with `IMAGE_TAG=0.1.0` (see the file's own comments for the full tag list). Still building from source? Nothing above changes — `docker-compose.yml` alone continues to build with `--build` as shown earlier in this section.
+
 ---
 
 ## 3. Manual / Node setup (no Docker)
@@ -101,8 +109,7 @@ cp .env.example .env
 pnpm db:local        # boots an embedded Postgres on localhost:5432 — no separate install needed
 pnpm db:migrate      # apply the schema
 
-pnpm dev             # terminal 1 — http://localhost:3000
-pnpm worker          # terminal 2 — required, see §9
+pnpm dev             # http://localhost:3000 — runs the app and the worker together, see §9
 
 pnpm make:admin you@example.com   # promote yourself once signed in — see §8
 ```
@@ -289,10 +296,10 @@ Then visit `/orbit`. Run this again with any other email to add more admins late
 
 ## 9. Running the background worker
 
-`pnpm dev` / the `app` container alone does **not** process background jobs. A separate process — the pg-boss worker — handles: sending emails, notification digests, trash auto-deletion, page-version pruning, storage-usage reconciliation, and orphaned-file cleanup.
+The `app` container/process alone does **not** process background jobs. A separate process — the pg-boss worker — handles: sending emails, notification digests, trash auto-deletion, page-version pruning, storage-usage reconciliation, and orphaned-file cleanup.
 
-- **Docker:** the `worker` service in `docker-compose.yml` runs automatically alongside `app`.
-- **Manual/Node:** run `pnpm worker` in a second terminal. If you forget it, the app still loads and page editing works, but invites, notifications, and cleanup jobs silently do nothing.
+- **Docker:** the `worker` service in `docker-compose.yml` runs automatically alongside `app`, built from `Dockerfile.worker`.
+- **Manual/Node:** `pnpm dev` already runs the worker alongside the Next.js dev server (`concurrently`, see `package.json`) — no second terminal needed. In production (`pnpm build && pnpm start`), start the worker as its own process with `pnpm worker:start`. If it isn't running, the app still loads and page editing works, but invites, notifications, and cleanup jobs silently do nothing.
 
 ---
 

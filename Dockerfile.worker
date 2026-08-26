@@ -16,6 +16,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Stamped by CI on a release build (see .github/workflows/release.yml), same
+# as the app image, so `docker inspect` reports a matching version for both.
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
+
 # No corepack/pnpm at runtime. Corepack would try to download & initialize the
 # package manager into ~/.cache on first `pnpm` call, which fails for the
 # non-root user on a fresh host (EACCES). Everything needed is already baked
@@ -43,3 +48,14 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
   CMD test -f /tmp/worker-heartbeat && [ $(( $(date +%s) - $(stat -c %Y /tmp/worker-heartbeat) )) -lt 60 ]
 
 CMD ["/app/node_modules/.bin/tsx", "scripts/worker.ts"]
+
+# OCI metadata — renders on the GitHub Packages page and links the image back
+# to this repository.
+LABEL org.opencontainers.image.title="Pagevo Worker" \
+      org.opencontainers.image.description="Background job worker (pg-boss) for Pagevo — email, notifications, cleanup, and reminders." \
+      org.opencontainers.image.url="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.source="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.documentation="https://github.com/sahajtavethiya96/Workflik#readme" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.vendor="Pagevo" \
+      org.opencontainers.image.version="$APP_VERSION"

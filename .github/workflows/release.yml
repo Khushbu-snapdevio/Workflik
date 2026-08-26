@@ -1,0 +1,381 @@
+name: Release
+
+# Runs after CI succeeds on main. Never at the same time as CI.
+#
+# Unlike a typical "edge build on every push" release pipeline, this workflow
+# only ever builds and publishes an image when the "version" field in
+# package.json is new (no matching git tag yet). An ordinary push to main
+# that doesn't bump the version produces no image, no tag, and no release —
+# deliberately, since this repo does not publish images on ordinary pushes.
+#
+# When a push IS a release, this workflow does all of it:
+#   1. builds the app image and the worker image, for Intel and ARM
+#   2. publishes both to GitHub Packages (GHCR), tagged with the version
+#      ladder + latest
+#   3. creates the v<version> git tag
+#   4. creates the GitHub Release, with notes taken from CHANGELOG.md
+#
+# WHY workflow_run RATHER THAN push: on a plain `push` trigger this workflow
+# and CI would start together, so a build could be published from a commit
+# whose typecheck, lint, tests, build, or migration check are still running
+# — or have already failed. Chaining off CI's completion makes the two
+# strictly sequential and turns CI into a real gate: a red CI publishes
+# nothing.
+#
+# WHY ONE WORKFLOW RATHER THAN TWO for tag-then-build: a git tag pushed by a
+# workflow using the built-in GITHUB_TOKEN does NOT trigger other workflows.
+# GitHub blocks that to prevent runaway recursion. Splitting "create the tag"
+# and "build on the tag" into separate files looks tidier and quietly never
+# builds anything. That is why the tag and the build live here together.
+#
+# THE SHA GOTCHA: on a workflow_run event, github.sha and github.ref point at
+# the default branch, NOT at the commit CI actually tested. Every checkout,
+# the sha- image tag, and the release target below use
+# workflow_run.head_sha instead, so a release always lands on the commit
+# that passed.
+#
+# ONE-TIME STEP after the first successful run: a new GitHub Packages entry
+# is private, even in a public repository. Repository -> Packages -> a
+# package -> Package settings -> Change visibility -> Public. Until then
+# `docker pull` fails for anyone who is not signed in. The `verify-public`
+# job below asks the registry, anonymously, whether a customer could
+# actually pull what was just published, and turns the run red if not.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ── Is this push a release? ────────────────────────────────────────────────
+  check:
+    name: Check for a new version
+    runs-on: ubuntu-latest
+    # Only a green CI run that ran on a push gets through. The `event ==
+    # 'push'` half matters: CI also runs on pull_request, and a PR branch
+    # named `main` in a fork would otherwise slip past the branch filter.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      major: ${{ steps.v.outputs.major }}
+      minor: ${{ steps.v.outputs.minor }}
+      is_release: ${{ steps.v.outputs.is_release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - id: v
+        name: Compare package.json against existing tags
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./package.json').version")"
+
+          # Reject anything that is not plain semver, so a typo cannot create
+          # a nonsense tag that then has to be deleted from a public repo.
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::package.json version '$version' is not X.Y.Z"
+            exit 1
+          fi
+
+          major="${version%%.*}"
+          minor="${version%.*}"
+
+          # ls-remote rather than `git tag -l`: checkout does not fetch tags.
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            is_release=false
+            echo "v$version is already tagged. Nothing to publish for this push."
+          else
+            is_release=true
+            echo "v$version has no tag yet. This push is a release."
+          fi
+
+          {
+            echo "version=$version"
+            echo "major=$major"
+            echo "minor=$minor"
+            echo "is_release=$is_release"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Require a changelog entry for a release
+        if: steps.v.outputs.is_release == 'true'
+        run: |
+          set -euo pipefail
+          version="${{ steps.v.outputs.version }}"
+          if ! grep -q "^## \[$version\]" CHANGELOG.md; then
+            echo "::error file=CHANGELOG.md::No '## [$version]' section. Every release needs notes; that section becomes the GitHub Release body. See RELEASING.md."
+            exit 1
+          fi
+          echo "Found the changelog section for $version."
+
+  # ── Build and publish both images ─────────────────────────────────────────
+  # Only runs when check found an unreleased version — an ordinary push to
+  # main with no version bump publishes nothing.
+  image:
+    name: Build and push (amd64 + arm64)
+    needs: check
+    if: needs.check.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      app_image: ${{ steps.ctx.outputs.app_image }}
+      worker_image: ${{ steps.ctx.outputs.worker_image }}
+      tag: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      # Container registries reject uppercase repository names, and
+      # github.repository keeps whatever case the repo was created with.
+      # Lowercasing once here means every consumer below is safe, including
+      # in a fork whose owner has capitals in their name.
+      - name: Resolve image names and target commit
+        id: ctx
+        run: |
+          set -euo pipefail
+          sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+          repo_lower="${GITHUB_REPOSITORY,,}"
+          {
+            echo "app_image=ghcr.io/${repo_lower}"
+            echo "worker_image=ghcr.io/${repo_lower}-worker"
+            echo "sha=$sha"
+            echo "short_sha=${sha:0:7}"
+          } >> "$GITHUB_OUTPUT"
+
+      # arm64 is emulated on GitHub's amd64 runners, which is why this job
+      # can take 10-20 minutes rather than a couple.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive app image tags and labels
+        id: meta_app
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ctx.outputs.app_image }}
+          # This job only runs on an actual release (see the `if:` above),
+          # so every tag below applies unconditionally — no edge/"main"
+          # tag, since this repo does not publish images on ordinary pushes.
+          tags: |
+            type=raw,value=${{ needs.check.outputs.version }}
+            type=raw,value=${{ needs.check.outputs.minor }}
+            type=raw,value=${{ needs.check.outputs.major }}
+            type=raw,value=latest
+            type=raw,value=sha-${{ steps.ctx.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.title=Pagevo
+            org.opencontainers.image.description=Self-hosted, open-source Notion-style team workspace.
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+            org.opencontainers.image.vendor=Pagevo
+            org.opencontainers.image.revision=${{ steps.ctx.outputs.sha }}
+
+      - name: Build and push app image (runner target)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: runner
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta_app.outputs.tags }}
+          labels: ${{ steps.meta_app.outputs.labels }}
+          # Cache in the registry itself — survives across runners, unlike
+          # type=gha, which is capped at 10 GB per repository and evicts
+          # aggressively. docker-build.yml's PR-time sanity build keeps its
+          # own type=gha cache; this is a separate, longer-lived cache scope.
+          cache-from: type=registry,ref=${{ steps.ctx.outputs.app_image }}:buildcache
+          cache-to: type=registry,ref=${{ steps.ctx.outputs.app_image }}:buildcache,mode=max
+          provenance: true
+          sbom: true
+          build-args: |
+            APP_VERSION=${{ needs.check.outputs.version }}
+
+      - name: Derive worker image tags and labels
+        id: meta_worker
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ctx.outputs.worker_image }}
+          tags: |
+            type=raw,value=${{ needs.check.outputs.version }}
+            type=raw,value=${{ needs.check.outputs.minor }}
+            type=raw,value=${{ needs.check.outputs.major }}
+            type=raw,value=latest
+            type=raw,value=sha-${{ steps.ctx.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.title=Pagevo Worker
+            org.opencontainers.image.description=Background job worker (pg-boss) for Pagevo.
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+            org.opencontainers.image.vendor=Pagevo
+            org.opencontainers.image.revision=${{ steps.ctx.outputs.sha }}
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta_worker.outputs.tags }}
+          labels: ${{ steps.meta_worker.outputs.labels }}
+          cache-from: type=registry,ref=${{ steps.ctx.outputs.worker_image }}:buildcache
+          cache-to: type=registry,ref=${{ steps.ctx.outputs.worker_image }}:buildcache,mode=max
+          provenance: true
+          sbom: true
+          build-args: |
+            APP_VERSION=${{ needs.check.outputs.version }}
+
+  # ── Could a customer actually pull it? ────────────────────────────────────
+  # Anonymous on purpose: no docker/login-action, no GITHUB_TOKEN, no
+  # credentials of any kind. It asks ghcr.io exactly what a customer's
+  # Docker daemon asks, because that is the only vantage point from which a
+  # private package looks different from a public one. Does not gate
+  # `release` below — the images are already pushed by the time this runs,
+  # so blocking the tag would leave a published release with no image
+  # pointing at it. A red run is the signal; the fix is one click in Package
+  # settings and is never needed again for that package.
+  verify-public:
+    name: Anyone can pull it
+    needs: [check, image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve both images signed out, the way a self-hoster does
+        env:
+          TAG: ${{ needs.check.outputs.version }}
+          APP_IMAGE: ${{ needs.image.outputs.app_image }}
+          WORKER_IMAGE: ${{ needs.image.outputs.worker_image }}
+        run: |
+          set -euo pipefail
+
+          check_pullable() {
+            local repo="$1"
+            local tag="$2"
+
+            # `|| true` so a network failure reaches the explicit message
+            # below rather than dying inside the pipeline under `set -e`.
+            local token
+            token=$(curl -sS "https://ghcr.io/token?scope=repository:${repo}:pull&service=ghcr.io" \
+                    | jq -r '.token // empty' || true)
+
+            if [ -z "$token" ]; then
+              echo "::error::ghcr.io/${repo} refused an anonymous pull token, so the package is PRIVATE. Every 'docker pull' by anyone not signed in fails with 403. Fix: https://github.com/orgs/${GITHUB_REPOSITORY%%/*}/packages -> the package -> Package settings -> Danger Zone -> Change visibility -> Public."
+              return 1
+            fi
+
+            local code
+            code=$(curl -sS -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer $token" \
+              -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json' \
+              "https://ghcr.io/v2/${repo}/manifests/${tag}")
+
+            if [ "$code" != "200" ]; then
+              echo "::error::ghcr.io/${repo}:${tag} answered HTTP ${code} to a signed-out request — this tag is not pullable."
+              return 1
+            fi
+
+            echo "ghcr.io/${repo}:${tag} is publicly pullable."
+          }
+
+          app_repo="${APP_IMAGE#ghcr.io/}"
+          worker_repo="${WORKER_IMAGE#ghcr.io/}"
+
+          check_pullable "$app_repo" "$TAG"
+          check_pullable "$worker_repo" "$TAG"
+
+  # ── Tag it and write the release ──────────────────────────────────────────
+  release:
+    name: Tag and publish the release
+    needs: [check, image]
+    if: needs.check.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Extract the changelog section
+        id: notes
+        run: |
+          set -euo pipefail
+          version="${{ needs.check.outputs.version }}"
+          # Everything between this version's heading and the next one.
+          # index(...)==1 rather than a regex match: the heading contains
+          # "[0.1.0]", and as a regex that is a character class, matching a
+          # single character and silently producing empty notes.
+          awk -v v="## [$version]" '
+            index($0, v) == 1 {found=1; next}
+            found && index($0, "## [") == 1 {exit}
+            found {print}
+          ' CHANGELOG.md | sed -E '/^\[[^]]+\]: https?:/d' > notes.md
+
+          if [ ! -s notes.md ]; then
+            echo "::error file=CHANGELOG.md::Extracted no release notes for $version."
+            exit 1
+          fi
+
+          {
+            echo "Images for this release:"
+            echo
+            echo '```bash'
+            echo "docker pull ${{ needs.image.outputs.app_image }}:$version"
+            echo "docker pull ${{ needs.image.outputs.worker_image }}:$version"
+            echo '```'
+          } >> notes.md
+
+          echo "--- release notes ---"
+          cat notes.md
+
+      - name: Create the tag and the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${{ needs.check.outputs.version }}"
+          # gh creates the tag at --target as part of this, so there is no
+          # separate git tag/push step. --target must be the commit CI
+          # tested, not github.sha, which on a workflow_run event is the
+          # branch head.
+          gh release create "v$version" \
+            --target "${{ github.event.workflow_run.head_sha || github.sha }}" \
+            --title "Pagevo $version" \
+            --notes-file notes.md
+          echo "Released v$version"
+
+      - name: Summary
+        run: |
+          {
+            version="${{ needs.check.outputs.version }}"
+            echo "### Released v$version"
+            echo
+            echo "- Tag \`v$version\` created"
+            echo "- Release published"
+            echo "- App image: \`${{ needs.image.outputs.app_image }}:$version\` (also \`latest\`)"
+            echo "- Worker image: \`${{ needs.image.outputs.worker_image }}:$version\` (also \`latest\`)"
+            echo
+            echo "> [!NOTE]"
+            echo "> If this is the first release, both packages are still **private**."
+            echo "> Repository -> Packages -> each package -> Package settings -> Change visibility."
+          } >> "$GITHUB_STEP_SUMMARY"

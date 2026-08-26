@@ -54,6 +54,13 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
+# Stamped by CI on a release build (see .github/workflows/release.yml) so an
+# operator can tell which build a container is running via `docker inspect`.
+# Defaults to "dev" for anything built outside that workflow (local builds,
+# docker-build.yml's sanity check).
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
+
 RUN groupadd --system --gid 1001 pagevo \
   && useradd --system --uid 1001 --gid pagevo pagevo
 
@@ -79,3 +86,14 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=5 \
   CMD ["node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 
 CMD ["node", "server.js"]
+
+# OCI metadata — renders on the GitHub Packages page and links the image back
+# to this repository.
+LABEL org.opencontainers.image.title="Pagevo" \
+      org.opencontainers.image.description="Self-hosted, open-source Notion-style team workspace." \
+      org.opencontainers.image.url="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.source="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.documentation="https://github.com/sahajtavethiya96/Workflik#readme" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.vendor="Pagevo" \
+      org.opencontainers.image.version="$APP_VERSION"

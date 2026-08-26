@@ -1,7 +1,22 @@
 {
   "name": "pagevo",
   "version": "0.1.0",
+  "description": "Pagevo — a self-hosted, open-source Notion-style team workspace: notes, documents, databases, and project management in one place.",
   "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "author": "Pagevo contributors",
+  "homepage": "https://github.com/sahajtavethiya96/Workflik#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sahajtavethiya96/Workflik.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sahajtavethiya96/Workflik/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "//private": "This is an application, not a library — it is never published to npm. Keeping `private` true guarantees a stray `npm publish` can't do anything; it does not affect the public GitHub repo or the Docker images.",
   "private": true,
   "packageManager": "pnpm@11.6.0",
   "scripts": {
@@ -21,7 +36,9 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:reset": "tsx scripts/reset.ts && pnpm db:migrate",
     "make:admin": "tsx scripts/make-admin.ts",
-    "migrate:voting": "tsx scripts/migrate-voting-properties.ts"
+    "migrate:voting": "tsx scripts/migrate-voting-properties.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1070.0",
@@ -102,6 +119,7 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
-    "ultracite": "7.8.3"
+    "ultracite": "7.8.3",
+    "vitest": "^4.1.10"
   }
 }

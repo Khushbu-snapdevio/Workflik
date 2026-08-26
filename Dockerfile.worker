@@ -43,3 +43,11 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=15s --retries=3 \
   CMD test -f /tmp/worker-heartbeat && [ $(( $(date +%s) - $(stat -c %Y /tmp/worker-heartbeat) )) -lt 60 ]
 
 CMD ["/app/node_modules/.bin/tsx", "scripts/worker.ts"]
+
+# OCI metadata — this is what renders on the GitHub Packages page.
+LABEL org.opencontainers.image.title="Pagevo Worker" \
+      org.opencontainers.image.description="Background job worker (pg-boss) for Pagevo — email, notifications, cleanup jobs." \
+      org.opencontainers.image.url="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.source="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.documentation="https://github.com/sahajtavethiya96/Workflik#readme" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"

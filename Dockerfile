@@ -27,6 +27,10 @@ COPY lib ./lib
 # transaction, which breaks on the ALTER TYPE ... ADD VALUE migrations).
 COPY scripts ./scripts
 CMD ["pnpm", "db:migrate"]
+LABEL org.opencontainers.image.title="Pagevo Migrator" \
+      org.opencontainers.image.description="One-shot Drizzle migration runner for Pagevo." \
+      org.opencontainers.image.source="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 # ── builder ──────────────────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS builder
@@ -54,6 +58,11 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
+# Stamped by CI (see .github/workflows/release.yml) and reported by
+# GET /api/health, so an operator can tell which build a container is running.
+ARG APP_VERSION=dev
+ENV APP_VERSION=$APP_VERSION
+
 RUN groupadd --system --gid 1001 pagevo \
   && useradd --system --uid 1001 --gid pagevo pagevo
 
@@ -79,3 +88,12 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=5 \
   CMD ["node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 
 CMD ["node", "server.js"]
+
+# OCI metadata. This is what renders on the GitHub Packages page, and what
+# links the published image back to this repository.
+LABEL org.opencontainers.image.title="Pagevo" \
+      org.opencontainers.image.description="Self-hosted, open-source Notion-style team workspace." \
+      org.opencontainers.image.url="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.source="https://github.com/sahajtavethiya96/Workflik" \
+      org.opencontainers.image.documentation="https://github.com/sahajtavethiya96/Workflik#readme" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"

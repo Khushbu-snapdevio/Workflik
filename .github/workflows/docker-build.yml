@@ -3,9 +3,12 @@ name: Docker build sanity check
 # Build-only — no push, no registry credentials needed. Confirms the
 # self-hosted Docker path (Dockerfile, Dockerfile.worker, docker-compose.yml)
 # keeps working as the app code changes, since nothing else in CI exercises it.
+#
+# PR-only: release.yml already builds (and, on main, pushes) all three
+# targets after CI passes on main, so a separate push-triggered run here
+# would just duplicate that work. This one exists to fail fast on a PR,
+# before merge, rather than finding out from a red release run afterward.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 

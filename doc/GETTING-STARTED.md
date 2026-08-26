@@ -374,21 +374,19 @@ pagevo/
 pnpm install
 
 # 2. Set up environment
-cp .env.example .env.local
-#    → fill in every variable from Section 3
+cp .env.example .env
+#    → fill in every variable from Section 3. Scripts like `pnpm db:migrate`
+#    load `.env` specifically (scripts/migrate.ts), not `.env.local`.
 
 # 3. Generate + apply database migrations
 pnpm db:generate          # build migration SQL from the Drizzle schema
 pnpm db:migrate           # apply migrations to the database
 
-# 4. Start the dev server
-pnpm dev                  # → http://localhost:3000
-
-# 5. Start the background-job worker (separate terminal)
-pnpm worker               # pg-boss — notifications, email digests, cleanup jobs
+# 4. Start the dev server + background-job worker together
+pnpm dev                  # → http://localhost:3000, plus the pg-boss worker
 ```
 
-> **Important:** `pnpm dev` alone does **not** process background jobs. pg-boss work (email digests, stale-upload cleanup, trash auto-delete, private-page deletion, version pruning) runs in the **worker** process. Run `pnpm worker` in a second terminal during development, or features that depend on jobs will appear to silently do nothing.
+`pnpm dev` runs the Next.js dev server and the pg-boss worker together (`concurrently`, see `package.json`) — you do not need a second terminal. pg-boss handles notifications, email digests, stale-upload cleanup, trash auto-delete, private-page deletion, and version pruning; without the worker running, that work silently never happens. Run `pnpm worker` on its own only if you want the worker without the Next.js dev server (`pnpm dev:next` is the inverse).
 
 ### Expected package scripts
 
